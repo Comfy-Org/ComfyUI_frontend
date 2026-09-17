@@ -10256,6 +10256,64 @@ Enterprise`
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
   'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.outcome.upscaleRestore': {
+    en: 'Upscale and restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.outcome.cleanUp': {
+    en: 'Remove and clean up',
+    'zh-CN': '移除与修补'
+  },
+  'workshop.outcome.relightRestyle': {
+    en: 'Relight and restyle',
+    'zh-CN': '重新打光与换风格'
+  },
+  'workshop.outcome.productShots': {
+    en: 'Product shots and ads',
+    'zh-CN': '产品图与广告'
+  },
+  'workshop.outcome.animateCharacters': {
+    en: 'Animate characters',
+    'zh-CN': '让角色动起来'
+  },
+  'workshop.outcome.makeThemTalk': {
+    en: 'Make them talk',
+    'zh-CN': '让角色开口说话'
+  },
+  'workshop.outcome.firstLastFrame': {
+    en: 'First and last frame',
+    'zh-CN': '首尾帧'
+  },
+  'workshop.outcome.upscaleVideo': {
+    en: 'Upscale and smooth video',
+    'zh-CN': '视频放大与补帧'
+  },
+  'workshop.outcome.recutVideo': {
+    en: 'Recut and extend video',
+    'zh-CN': '视频剪辑与延长'
+  },
+  'workshop.outcome.fromAReference': {
+    en: 'From a reference',
+    'zh-CN': '基于参考生成'
+  },
+  'workshop.outcome.guidedGeneration': {
+    en: 'Guided generation',
+    'zh-CN': '可控生成'
+  },
+  'workshop.outcome.logosAndVectors': {
+    en: 'Logos and vectors',
+    'zh-CN': '标志与矢量图'
+  },
+  'workshop.outcome.modelFromAPhoto': {
+    en: 'A model from a photo',
+    'zh-CN': '照片生成模型'
+  },
+  'workshop.outcome.voices': { en: 'Voices', 'zh-CN': '人声' },
+  'workshop.outcome.musicAndSound': {
+    en: 'Music and sound',
+    'zh-CN': '音乐与音效'
+  },
+  'workshop.outcome.seeAll': { en: 'See all {n}', 'zh-CN': '查看全部 {n} 个' },
   'workshop.v2.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'

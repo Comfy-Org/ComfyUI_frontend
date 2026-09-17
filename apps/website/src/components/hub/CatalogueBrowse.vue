@@ -16,6 +16,8 @@ import {
   browseRequestFrom,
   sortBrowseEntries
 } from '../../lib/hub/browse-entry'
+import type { WorkshopOutcome } from '../../config/workshop-outcomes'
+import { capabilitiesOf } from '../../config/workshop-outcomes'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { entrySlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
@@ -25,6 +27,7 @@ import CatalogueCard from './CatalogueCard.vue'
 import CatalogueControls from './CatalogueControls.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
 import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
+import OutcomeRows from './OutcomeRows.vue'
 import PlaygroundSections from './PlaygroundSections.vue'
 
 // The catalogue is resolved on the server and arrives card-sized: the browser
@@ -47,6 +50,9 @@ const query = ref('')
 // Set by a model card's "N workflows use this": the catalogue arrives already
 // narrowed to that model's uses, with a chip saying so.
 const usesModel = ref('')
+// A curated row, asked to be seen in full. It narrows by the same tags the row
+// was built from, so the listing holds exactly what the row was showing.
+const outcome = ref<WorkshopOutcome | undefined>()
 const shown = ref(PAGE)
 
 const ORDERS: readonly OrderOption[] = [
@@ -84,6 +90,15 @@ const haystacks = computed(
 const matchesQuery = (entry: BrowseEntry, text: string) =>
   text === '' || (haystacks.value.get(entry.key) ?? '').includes(text)
 
+const matchesOutcome = (
+  entry: BrowseEntry,
+  asked: WorkshopOutcome | undefined
+) => {
+  if (!asked) return true
+  const wanted = new Set<string>([...asked.tags, ...capabilitiesOf(asked)])
+  return entry.tags.some((tag) => wanted.has(tag))
+}
+
 const usesTheModel = (entry: BrowseEntry, name: string) =>
   name === '' ||
   entry.models.some((model) => normalize(model) === normalize(name))
@@ -99,6 +114,7 @@ const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
     (entry) => output.value === 'all' || entry.outputs.includes(output.value),
     (entry) => provider.value === 'all' || entry.provider === provider.value,
     (entry) => usesTheModel(entry, usesModel.value),
+    (entry) => matchesOutcome(entry, outcome.value),
     (entry) => matchesQuery(entry, text)
   ]
 })
@@ -166,6 +182,7 @@ const resettable = computed(() => [
   { ref: output, rest: 'all' as const },
   { ref: provider, rest: 'all' },
   { ref: usesModel, rest: '' },
+  { ref: outcome, rest: undefined },
   { ref: query, rest: '' }
 ])
 
@@ -228,6 +245,14 @@ const featured = computed(() =>
         (entry) => t(kindLabelKey[entry.kind], locale)
       )
 )
+
+// The rows are a way in, so they stand while the medium is the only thing
+// chosen: once a reader narrows further they are past being shown around.
+const showRows = computed(() => useCase.value !== 'all' && !filtersOn.value)
+
+function openOutcome(asked: WorkshopOutcome) {
+  outcome.value = asked
+}
 
 const heading = computed(() =>
   useCase.value === 'all'
@@ -323,9 +348,19 @@ const heading = computed(() =>
       <CatalogueToolbar
         v-model:uses-model="usesModel"
         :narrowed-by="narrowedBy"
+        :outcome-label="outcome ? t(outcome.labelKey, locale) : undefined"
         :filters-on="filtersOn"
         :locale
         @clear="clearFilters"
+        @clear-outcome="outcome = undefined"
+      />
+
+      <OutcomeRows
+        v-if="showRows && useCase !== 'all'"
+        :use-case="useCase"
+        :entries="beforeType"
+        :locale
+        @open="openOutcome"
       />
 
       <div

@@ -51,6 +51,35 @@ const workflow = (overrides: Partial<BrowseEntry> = {}) =>
 
 const ENTRIES = [entry(), workflow()]
 
+// A row needs both halves of its answer, so each job below carries a
+// capability that does it and a workflow built for it.
+const EDITING = [
+  entry({
+    key: 'seedvr',
+    title: 'SeedVR2',
+    useCases: ['edit-images'],
+    tags: ['Upscale']
+  }),
+  workflow({
+    key: 'upscale-photo',
+    title: 'Upscale a photo',
+    useCases: ['edit-images'],
+    tags: ['Image Upscale']
+  }),
+  entry({
+    key: 'kontext',
+    title: 'Flux Kontext',
+    useCases: ['edit-images'],
+    tags: ['Inpainting']
+  }),
+  workflow({
+    key: 'erase',
+    title: 'Erase an object',
+    useCases: ['edit-images'],
+    tags: ['Inpainting']
+  })
+]
+
 const shown = () =>
   within(screen.getByTestId('catalogue-grid'))
     .getAllByRole('heading')
@@ -152,6 +181,35 @@ describe('CatalogueBrowse', () => {
     await at('?q=nothing-matches-this')
     expect(screen.queryByTestId('catalogue-grid')).toBeNull()
     expect(screen.getByTestId('catalogue-empty')).toBeTruthy()
+  })
+
+  // The medium is complete and filters; the job is curated and heads a row, so
+  // a model that does everything joins no row and an upscaler joins one.
+  it('opens a medium on the rows that name a job inside it', async () => {
+    render(CatalogueBrowse, { props: { entries: [...ENTRIES, ...EDITING] } })
+    await nextTick()
+
+    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+
+    const rows = screen.getByTestId('outcome-rows')
+    expect(within(rows).getByText('Upscale and restore')).toBeTruthy()
+    expect(within(rows).getByText('Remove and clean up')).toBeTruthy()
+    // Flux is in no row: it lists no capability any of these jobs stands for.
+    expect(within(rows).queryByText('Flux')).toBeNull()
+  })
+
+  it('narrows the listing to a row a reader asks to see in full', async () => {
+    render(CatalogueBrowse, { props: { entries: [...ENTRIES, ...EDITING] } })
+    await nextTick()
+    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+
+    await userEvent.click(screen.getByTestId('outcome-upscale-restore-see-all'))
+
+    expect(shown()).toEqual(['SeedVR2', 'Upscale a photo'])
+    expect(screen.queryByTestId('outcome-rows')).toBeNull()
+    expect(screen.getByTestId('catalogue-chips').textContent).toContain(
+      'Upscale and restore'
+    )
   })
 
   // A price order over things that carry no price is a ranking over nothing,

@@ -7,15 +7,18 @@ import type { EntryKind } from '../../lib/hub/catalogue-entries'
 
 const {
   narrowedBy,
+  outcomeLabel,
   filtersOn,
   locale = 'en'
 } = defineProps<{
   narrowedBy: EntryKind | undefined
+  /** The curated row a reader asked to see in full, while it is narrowing. */
+  outcomeLabel: string | undefined
   filtersOn: boolean
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ clear: [] }>()
+const emit = defineEmits<{ clear: []; clearOutcome: [] }>()
 
 const usesModel = defineModel<string>('usesModel', { required: true })
 
@@ -40,6 +43,18 @@ const narrowedLabel = () =>
       class="flex flex-wrap items-center gap-2"
       data-testid="catalogue-chips"
     >
+      <span v-if="outcomeLabel" :class="chipClass">
+        {{ outcomeLabel }}
+        <button
+          type="button"
+          class="cursor-pointer text-content-muted hover:text-content-bright"
+          :aria-label="t('workshop.v2.clear', locale)"
+          data-testid="catalogue-chip-outcome"
+          @click="emit('clearOutcome')"
+        >
+          <X class="size-3" />
+        </button>
+      </span>
       <span v-if="usesModel" :class="chipClass">
         {{ t('workshop.v2.card.runsOn', locale).replace('{model}', usesModel) }}
         <button
