@@ -1,0 +1,28 @@
+<template>
+  <Button
+    variant="outline"
+    size="sm"
+    :class="
+      cn(
+        'group no-drag shrink-0 gap-1 rounded-lg',
+        active ? 'bg-secondary-background-hover' : 'agent-shimmer-outline'
+      )
+    "
+    :aria-pressed="active"
+  >
+    <i
+      class="icon-[lucide--astroid] size-3 transition-transform duration-300 ease-out group-hover:rotate-360 group-hover:duration-500 motion-reduce:transition-none"
+    />
+    <span>{{ $t('agent.entryButton') }}</span>
+  </Button>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+
+const { active = false } = defineProps<{
+  active?: boolean
+}>()
+</script>
