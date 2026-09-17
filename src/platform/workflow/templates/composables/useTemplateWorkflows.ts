@@ -151,7 +151,13 @@ export function useTemplateWorkflows() {
     return { json, template }
   }
 
-  async function loadWorkflowTemplate(id: string, sourceModule: string) {
+  async function loadWorkflowTemplate(
+    id: string,
+    sourceModule: string,
+    {
+      onGraphLoadSettled
+    }: { onGraphLoadSettled?: (loaded: boolean) => void } = {}
+  ) {
     if (!isTemplatesLoaded.value) {
       showTemplateError(t('templateWorkflows.error.loading'))
       return false
@@ -175,17 +181,23 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      const loadedWorkflow = await app.loadGraphData(
-        data.json,
-        true,
-        true,
-        workflowName,
-        { openSource: 'template' }
-      )
+      let loaded = false
+      try {
+        const loadedWorkflow = await app.loadGraphData(
+          data.json,
+          true,
+          true,
+          workflowName,
+          { openSource: 'template' }
+        )
+        if (loadedWorkflow === false) return false
 
-      updateTemplateEducation(data.template?.isPartnerNode, loadedWorkflow)
-
-      return true
+        updateTemplateEducation(data.template?.isPartnerNode, loadedWorkflow)
+        loaded = true
+        return true
+      } finally {
+        onGraphLoadSettled?.(loaded)
+      }
     } catch (error) {
       if (controller.signal.aborted) return false
       reportError(error, { errorType: 'error_loading_template' })
