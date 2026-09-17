@@ -86,7 +86,14 @@ Required GitHub Actions secrets:
 | ------------------------------- | -------------------------------------------- |
 | `VERCEL_BILLING_WEB_ORG_ID`     | Vercel team ID for the `comfyui` scope       |
 | `VERCEL_BILLING_WEB_PROJECT_ID` | Project ID of the billing-web Vercel project |
-| `VERCEL_BILLING_WEB_TOKEN`      | Vercel access token scoped to that project   |
+| `VERCEL_BILLING_WEB_TOKEN`      | Vercel access token scoped to the team       |
+
+The token has to carry team scope. A token scoped to the `billing-web`
+project alone cannot read project settings — the API answers `403` and
+`vercel pull` fails with `Could not retrieve Project Settings`, which reads as
+a linking problem rather than a permission one. Narrowing the blast radius
+belongs to a dedicated CI account that owns the token, not to the token's
+scope.
 
 Client-side routes fall back to `index.html` through the `rewrites` rule. The
 rule matches extensionless paths only, so a missing file stays a 404 instead of
