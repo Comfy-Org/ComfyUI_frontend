@@ -14,7 +14,6 @@ import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -22,7 +21,6 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
-let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let consentStore: ReturnType<typeof useAgentConsentStore>
@@ -120,10 +118,8 @@ describe('AgentPanel extension flag gate', () => {
     vi.mocked(getNodeByLocatorId).mockImplementation(mocks.getNodeByLocatorId)
     agentStore = vi.mocked(useAgentPanelStore())
     agentStore.consentAccepted = false
-    canvasStore = vi.mocked(useCanvasStore())
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
-    canvasStore.updateSelectedItems.mockImplementation(() => {})
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
     mocks.capturedExtensions.length = 0
     mocks.notifyAfterGraphConfigure.mockClear()
@@ -134,7 +130,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
-    canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
     nodeSelectionStore.finishWorkflowLoad.mockClear()
@@ -276,7 +271,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
-    expect(canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -349,7 +343,6 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
-    expect(canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when graph configuration fails', async () => {

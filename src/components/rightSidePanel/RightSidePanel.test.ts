@@ -18,6 +18,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
@@ -82,7 +83,7 @@ function renderPanel(
 
   const canvasStore = useCanvasStore()
   canvasStore.currentGraph = currentGraph
-  canvasStore.selectedItems = [markRaw(node)]
+  setCanvasSelection([markRaw(node)])
 
   const rightSidePanelStore = useRightSidePanelStore()
   rightSidePanelStore.activeTab = activeTab
@@ -227,7 +228,7 @@ describe('RightSidePanel global parameters tab', () => {
 
     const canvasStore = useCanvasStore()
     canvasStore.currentGraph = rootGraph
-    canvasStore.selectedItems = []
+    setCanvasSelection([])
 
     const rightSidePanelStore = useRightSidePanelStore()
     rightSidePanelStore.activeTab = 'parameters'

@@ -885,7 +885,6 @@ function exitNodeSelectionMode(): void {
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
     canvas.deselectAll()
-    canvasStore.updateSelectedItems()
   }
 }
 
@@ -934,7 +933,6 @@ function onSelectNodes(): void {
   }
   if (merged.size) {
     canvas.selectItems([...merged.values()])
-    canvasStore.updateSelectedItems()
   }
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly
