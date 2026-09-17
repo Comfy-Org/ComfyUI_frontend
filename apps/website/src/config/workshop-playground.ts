@@ -1,6 +1,7 @@
 import { t } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
+import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import {
   parseWorkshopJsonInput,
@@ -149,7 +150,7 @@ export function urlUploadField(
     label: field.label,
     required: field.required,
     accept: URL_UPLOAD_ACCEPT[media],
-    maxBytes: MAX_UPLOAD_BYTES
+    maxBytes: field.presentation?.maxUploadBytes ?? MAX_UPLOAD_BYTES
   }
 }
 
@@ -432,7 +433,9 @@ export function validateForm(
           files.some((file) => !field.accept.includes(file.type))
         )
           errors[field.name] = 'badType'
-        else if (files.some((file) => file.size > field.maxBytes))
+        else if (
+          files.some((file) => (file.file ?? file).size > field.maxBytes)
+        )
           errors[field.name] = 'tooLarge'
       } else {
         errors[field.name] = 'badType'
@@ -463,6 +466,32 @@ export function validateForm(
           : validateWorkshopInput(value, field.inputSchema)
       if (!result) errors[field.name] = 'rejected'
     }
+  }
+  const inlineFiles = schema.flatMap((field) => {
+    const value = values[field.name]
+    if (field.kind !== 'file' || typeof value !== 'object') return []
+    return (Array.isArray(value) ? value : [value]).map((file) => ({
+      name: field.name,
+      file: file.file ?? file
+    }))
+  })
+  if (!inlineFiles.length) return errors
+  const plain = Object.fromEntries(
+    schema.flatMap((field) => {
+      const value = values[field.name]
+      return typeof value === 'object' || value === undefined
+        ? []
+        : [[field.name, value]]
+    })
+  )
+  const bytes =
+    new TextEncoder().encode(JSON.stringify(plain)).byteLength +
+    inlineFiles.reduce(
+      (sum, { file }) => sum + encodedWorkshopFileBytes(file),
+      0
+    )
+  if (bytes > MAX_REQUEST_BYTES) {
+    for (const { name } of inlineFiles) errors[name] ??= 'requestTooLarge'
   }
   return errors
 }

@@ -424,7 +424,8 @@ describe('ModelDetail', () => {
           concurrencyCurrent: null,
           concurrencyRemaining: null,
           body: 'Private provider response'
-        }
+        },
+        'response'
       )
     )
     mountDetail({ model: runnable })
@@ -443,6 +444,7 @@ describe('ModelDetail', () => {
           request_id: 'request-failed',
           http_status: 503,
           router_error_type: 'provider_timeout',
+          failure_stage: 'response',
           workspace_id: credential.workspace.id
         })
       })
@@ -1178,7 +1180,10 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'run_validation_failed',
-      properties: expect.objectContaining({ model_slug: runnable.slug })
+      properties: expect.objectContaining({
+        model_slug: runnable.slug,
+        field_error_codes: ['required']
+      })
     })
     expect(
       vi

@@ -60,9 +60,15 @@ async function rehostUrlInputs(
       resolved[field.name] = selected
     } catch {
       signal.throwIfAborted()
-      throw new WorkshopRouterError('validation', null, {
-        [field.name]: 'uploadFailed'
-      })
+      throw new WorkshopRouterError(
+        'upload',
+        null,
+        {
+          [field.name]: 'uploadFailed'
+        },
+        undefined,
+        'example_download'
+      )
     }
   }
   formSources.set(values, retained)
@@ -122,10 +128,15 @@ export async function resolveWorkshopUrlInputs(
       resolved[field.name] = url
     } catch (error) {
       signal.throwIfAborted()
-      if (error instanceof WorkshopRouterError) throw error
-      throw new WorkshopRouterError('validation', null, {
-        [field.name]: 'uploadFailed'
-      })
+      throw new WorkshopRouterError(
+        'upload',
+        error instanceof WorkshopRouterError ? error.requestId : null,
+        {
+          [field.name]: 'uploadFailed'
+        },
+        error instanceof WorkshopRouterError ? error.response : undefined,
+        error instanceof WorkshopRouterError ? error.stage : undefined
+      )
     }
   }
   return resolved

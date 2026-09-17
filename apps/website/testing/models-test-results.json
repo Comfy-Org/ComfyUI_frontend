@@ -2115,28 +2115,28 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-17T17:54:29.482Z",
+        "at": "2026-09-17T21:45:17.505Z",
         "fields": [],
         "source": {
-          "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
+          "revision": "2b044d241dd98a5d72f795d8ba93c6e07ad77eef",
           "dirty": true,
-          "runId": "2026-09-17T17-54-29.049Z-0c0fc035-e8c2-40ba-8af0-355a411e96b9"
+          "runId": "2026-09-17T21-45-17.334Z-c099d461-3977-455a-bdf0-67873a916199"
         }
       },
       "live": {
         "status": "passed",
-        "at": "2026-09-17T16:42:10.410Z",
-        "requestId": "6ea61ee0-c30b-44f1-84ff-162438a5f2e3",
+        "at": "2026-09-17T21:47:39.951Z",
+        "requestId": "bd5a1d05-81be-45bc-8557-74454f63cbd3",
         "source": {
-          "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
+          "revision": "2b044d241dd98a5d72f795d8ba93c6e07ad77eef",
           "dirty": true,
-          "runId": "2026-09-17T16-39-29.189Z-532a1018-aee4-433e-8a68-31e8778ad78d"
+          "runId": "2026-09-17T21-45-17.334Z-c099d461-3977-455a-bdf0-67873a916199"
         },
         "artifacts": [
           {
             "kind": "video",
-            "bytes": 19424765,
-            "sha256": "011873d8b29f892bbb4fa620b59f7bbb5ab3679e44f1218eb10a06fecbba2a87",
+            "bytes": 18725426,
+            "sha256": "473f586a0a652ce5f4e794019b951774503df02bb51c14793ada5484b04b652b",
             "width": 1280,
             "height": 720,
             "durationSeconds": 10.08
@@ -2145,18 +2145,18 @@
       },
       "lastSuccess": {
         "status": "passed",
-        "at": "2026-09-17T16:42:10.410Z",
-        "requestId": "6ea61ee0-c30b-44f1-84ff-162438a5f2e3",
+        "at": "2026-09-17T21:47:39.951Z",
+        "requestId": "bd5a1d05-81be-45bc-8557-74454f63cbd3",
         "source": {
-          "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
+          "revision": "2b044d241dd98a5d72f795d8ba93c6e07ad77eef",
           "dirty": true,
-          "runId": "2026-09-17T16-39-29.189Z-532a1018-aee4-433e-8a68-31e8778ad78d"
+          "runId": "2026-09-17T21-45-17.334Z-c099d461-3977-455a-bdf0-67873a916199"
         },
         "artifacts": [
           {
             "kind": "video",
-            "bytes": 19424765,
-            "sha256": "011873d8b29f892bbb4fa620b59f7bbb5ab3679e44f1218eb10a06fecbba2a87",
+            "bytes": 18725426,
+            "sha256": "473f586a0a652ce5f4e794019b951774503df02bb51c14793ada5484b04b652b",
             "width": 1280,
             "height": 720,
             "durationSeconds": 10.08

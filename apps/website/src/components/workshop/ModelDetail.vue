@@ -64,6 +64,7 @@ import {
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
   workshopHttpStatus,
+  workshopFieldErrorCodes,
   workshopModelAnalytics,
   workshopRouterErrorType
 } from '../../scripts/workshop-analytics'
@@ -494,7 +495,10 @@ async function renderRun(
           signal
         )
       },
-      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body)
+      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
+      onRequestId: (id) => {
+        if (runIsActive(attempt)) requestId.value = id
+      }
     }
   )
 }
@@ -507,7 +511,7 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   pendingRequest = undefined
   requestId.value = result.requestId
   const [output, ...attachments] = result.outputs
-  if (!output) throw new WorkshopRouterError('provider', result.requestId)
+  if (!output) throw new WorkshopRouterError('response', result.requestId)
   const { retained, discarded } = retainRunHistory([
     { output, attachments },
     ...runs.value
@@ -539,9 +543,10 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('provider')
+      : new WorkshopRouterError('client')
   const httpStatus = workshopHttpStatus(failure.response?.status)
   const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
+  const fieldErrorCodes = workshopFieldErrorCodes(failure.fieldErrors)
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -559,7 +564,9 @@ function failRun(error: unknown, attempt: ActiveRun): void {
       ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
       ...(routerErrorType === undefined
         ? {}
-        : { router_error_type: routerErrorType })
+        : { router_error_type: routerErrorType }),
+      ...(failure.stage ? { failure_stage: failure.stage } : {}),
+      ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
     }
   })
 }
@@ -571,7 +578,10 @@ async function run() {
   if (Object.keys(fieldErrors).length) {
     captureWorkshopEvent({
       name: 'run_validation_failed',
-      properties: modelAnalytics
+      properties: {
+        ...modelAnalytics,
+        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+      }
     })
     runState.value = transition(runState.value, {
       type: 'fail',

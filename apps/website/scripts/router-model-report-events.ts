@@ -37,7 +37,18 @@ const eventSchema = z.object({
 })
 
 function failureCode(event: z.infer<typeof eventSchema>): ReportFailureCode {
-  if (event.response?.errorType === 'concurrency_limit_exceeded')
+  switch (event.reason) {
+    case 'upload':
+    case 'network':
+    case 'response':
+    case 'client':
+    case 'conflict':
+      return event.reason
+  }
+  if (
+    event.reason === 'concurrency' ||
+    event.response?.errorType === 'concurrency_limit_exceeded'
+  )
     return 'concurrency-limit'
   if (event.response?.status === 429 || event.reason === 'rateLimit')
     return 'rate-limit'

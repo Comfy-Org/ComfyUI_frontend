@@ -39,7 +39,10 @@ pnpm --filter @comfyorg/website test:router-models [options]
 
 --execute requires COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
 and ffprobe/ffmpeg on PATH. A request is repeated only to collect a generation
-Router parked at its deadline, with the same key and body; nothing else retries.
+Router parked at its deadline, follows bounded in-flight retry advice, or recovers
+one interrupted connection, always with the same key and body. HTTP failures
+otherwise do not retry. This Node grid does not certify browser upload CORS.
+Use test:workshop-upload separately to verify the live browser upload path.
 Preflight validates defaults without network calls; ready is not a generation pass.
 Each run writes manifest.json, append-only events.jsonl, summary.json and artifacts.
 Parsed outputs and full JSON/text attachments are saved before media verification.
@@ -75,6 +78,7 @@ function failureEvidence(error: unknown, token: string) {
       ? {
           requestId: error.requestId,
           fieldErrors: error.fieldErrors,
+          stage: error.stage,
           ...(error.response
             ? {
                 response: {

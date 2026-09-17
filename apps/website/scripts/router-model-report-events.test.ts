@@ -11,6 +11,20 @@ const source = { revision: '1234567', dirty: true, runId: 'campaign-1' }
 const at = '2026-09-11T00:00:00.000Z'
 
 describe('public Router result events', () => {
+  it.for(['upload', 'network', 'response', 'client', 'conflict'] as const)(
+    'keeps %s separate from a provider failure',
+    (reason) => {
+      expect(
+        routerReportUpdate(model, 'prod', source, {
+          at,
+          phase: 'generation',
+          status: 'failed',
+          reason
+        })?.live
+      ).toMatchObject({ status: 'failed', failure: reason })
+    }
+  )
+
   it('reports caller cancellation without a provider failure', () => {
     expect(
       routerReportUpdate(model, 'prod', source, {

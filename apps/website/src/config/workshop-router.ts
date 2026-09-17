@@ -3,7 +3,10 @@ import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
-import { WorkshopRouterError } from './workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopResponseDetails
+} from './workshop-router-errors'
 import { validateWorkshopInput } from './workshop-json-schema'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
@@ -12,6 +15,7 @@ const TOTAL_RUN_TIMEOUT_MS = 2_700_000
 const DEADLINE_COLLECTIONS = 3
 const IN_FLIGHT_RETRIES = 5
 const IN_FLIGHT_MAX_WAIT_MS = 10_000
+const NETWORK_RECOVERIES = 1
 
 function isParkedDeadline(response: Response): boolean {
   return (
@@ -60,20 +64,14 @@ async function failureDetails(response: Response) {
         remaining -= value.byteLength
       }
       body += decoder.decode()
+    } catch {
+      body = ''
     } finally {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   }
-  return {
-    status: response.status,
-    errorType: response.headers.get('X-Comfy-Error-Type'),
-    retryAfter: response.headers.get('Retry-After'),
-    concurrencyLimit: response.headers.get('X-Concurrency-Limit'),
-    concurrencyCurrent: response.headers.get('X-Concurrency-Current'),
-    concurrencyRemaining: response.headers.get('X-Concurrency-Remaining'),
-    body
-  }
+  return workshopResponseDetails(response, body)
 }
 
 function failureFor(response: Response): RunFailure {
@@ -81,8 +79,10 @@ function failureFor(response: Response): RunFailure {
   if (bucket === 'insufficient_credits') return 'noCredits'
   if (bucket === 'content_policy_violation') return 'policy'
   if (bucket === 'not_enabled' || bucket === 'forbidden') return 'unavailable'
+  if (bucket === 'concurrency_limit_exceeded') return 'concurrency'
   if (response.status === 402) return 'noCredits'
   if (response.status === 429) return 'rateLimit'
+  if (response.status === 409) return 'conflict'
   if (response.status === 400 || response.status === 422) return 'validation'
   if ([401, 403, 404].includes(response.status)) return 'unavailable'
   if (response.status === 504) return 'timeout'
@@ -103,6 +103,7 @@ interface RunProgress {
   readonly requestId: string | null
   readonly deadlineCollections: number
   readonly inFlightRetries: number
+  readonly networkRecoveries: number
 }
 
 type ActiveRun = RunProgress &
@@ -177,7 +178,13 @@ function throwRunFailure(
   if (context.signal.aborted)
     throw new WorkshopRouterError('timeout', requestId)
   if (error instanceof WorkshopRouterError) throw error
-  throw new WorkshopRouterError('provider', requestId)
+  throw new WorkshopRouterError(
+    error instanceof TypeError ? 'network' : 'client',
+    requestId,
+    {},
+    undefined,
+    'request'
+  )
 }
 
 async function handleAttemptResponse(
@@ -198,7 +205,8 @@ async function handleAttemptResponse(
         failureFor(response),
         progress.requestId,
         {},
-        await failureDetails(response)
+        await failureDetails(response),
+        'request'
       )
     const outputs = await parseRouterResponse(
       options.contract,
@@ -212,7 +220,23 @@ async function handleAttemptResponse(
     }
     return { ...progress, phase: 'complete', outputs }
   } catch (error) {
-    return throwRunFailure(error, context, progress.requestId)
+    options.signal.throwIfAborted()
+    if (signal.aborted)
+      throw new WorkshopRouterError(
+        'timeout',
+        progress.requestId,
+        {},
+        workshopResponseDetails(response),
+        'response'
+      )
+    if (error instanceof WorkshopRouterError) throw error
+    throw new WorkshopRouterError(
+      'response',
+      progress.requestId,
+      {},
+      workshopResponseDetails(response),
+      'response'
+    )
   }
 }
 
@@ -247,9 +271,11 @@ async function attempt(
     return handleAttemptResponse(
       response,
       {
-        requestId: response.headers.get('X-Comfy-Request-Id'),
+        requestId:
+          response.headers.get('X-Comfy-Request-Id') ?? state.requestId,
         deadlineCollections: state.deadlineCollections,
-        inFlightRetries: state.inFlightRetries
+        inFlightRetries: state.inFlightRetries,
+        networkRecoveries: state.networkRecoveries
       },
       context
     )
@@ -281,10 +307,36 @@ export async function runWorkshopRouter(options: RouterRunOptions): Promise<{
     phase: 'request',
     requestId: null,
     deadlineCollections: 0,
-    inFlightRetries: 0
+    inFlightRetries: 0,
+    networkRecoveries: 0
   }
   try {
-    while (state.phase !== 'complete') state = await attempt(state, context)
+    while (state.phase !== 'complete') {
+      try {
+        state = await attempt(state, context)
+      } catch (error) {
+        options.signal.throwIfAborted()
+        const network =
+          error instanceof WorkshopRouterError
+            ? error.reason === 'network'
+            : error instanceof TypeError
+        if (
+          !context.signal.aborted &&
+          network &&
+          state.networkRecoveries < NETWORK_RECOVERIES
+        ) {
+          state = {
+            ...state,
+            phase: 'request',
+            requestId:
+              error instanceof WorkshopRouterError
+                ? (error.requestId ?? state.requestId)
+                : state.requestId,
+            networkRecoveries: state.networkRecoveries + 1
+          }
+        } else throw error
+      }
+    }
     return {
       outputs: state.outputs,
       requestId: state.requestId,

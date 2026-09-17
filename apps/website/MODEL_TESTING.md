@@ -9,6 +9,9 @@ It verifies the Run-button request path for the customer that owns
 `COMFY_API_KEY`; it does not verify another signed-in customer's credits,
 entitlements or concurrency settings.
 
+This is a Node request-path test, not a browser E2E pass. It cannot certify
+live upload CORS, browser session authentication or browser output display.
+
 ## Setup
 
 Run commands from the repository root. Use the Node and pnpm versions specified
@@ -177,13 +180,36 @@ submitted generation. The shared Router client, used by both the page's Run
 button and the tester, repeats the identical request with the same idempotency
 key up to three times; Router hands back the original generation instead of
 starting and billing another. It also waits out a `409` that carries
-`Retry-After` while the original request is still settling. Any other failure is
-reported without a retry. The September 11
+`Retry-After` while the original request is still settling. An interrupted fetch
+or response body gets one recovery attempt with the identical body and key.
+Other HTTP errors, malformed results and conflicts without retry advice are
+reported without automatic resubmission. The September 11
 [backend investigation](reviews/2026-09-11-backend-model-failures.md) documents
 the parking behaviour. The grid labels passes that needed collection
 `Collected after initial timeout` (`completion: "collected-after-timeout"`).
 
 ## Results, separate campaigns and commits
+
+### Verify live browser uploads separately
+
+```sh
+PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:workshop-upload \
+  --origin https://comfy.org
+```
+
+This explicit live check uses `COMFY_API_KEY` and the actual upload client in
+Chromium. Only an empty probe page is locally fulfilled under the specified
+origin; the storage grant, signed PUT and image download are real. It creates
+one tiny PNG in temporary storage, verifies that it decodes, and never submits
+a paid generation. It prints the environment, origin and failed stage without
+credentials or signed URLs. A Node upload or HTTP 200 preflight alone does not
+establish browser CORS success. This is separate from network-isolated E2E CI.
+
+As of September 17, the production `comfy.org` probe fails at `upload_put`.
+The storage CORS allowlist must be corrected and this check must pass before
+reopening uploads. Do not interpret a Node generation pass as clearing it.
+
+### Persistent result files
 
 The default public files update after each result:
 

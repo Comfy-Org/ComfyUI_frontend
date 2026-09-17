@@ -1,5 +1,7 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
 import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { FieldErrorCode, FieldErrors } from '../config/workshop-playground'
+import type { WorkshopFailureStage } from '../config/workshop-router-errors'
 
 interface WorkshopModelAnalytics {
   model_slug: string
@@ -46,6 +48,9 @@ const WORKSHOP_CHECKOUT_ERROR_CODES: Readonly<
 }
 
 export type WorkshopRouterErrorType =
+  | 'concurrency_limit_exceeded'
+  | 'rate_limit_exceeded'
+  | 'invalid_input'
   | 'content_policy_violation'
   | 'deadline_exceeded'
   | 'forbidden'
@@ -57,8 +62,14 @@ export type WorkshopRouterErrorType =
 export type WorkshopAnalyticsEvent =
   | { name: 'catalogue_viewed'; properties: { model_count: number } }
   | {
-      name: 'model_viewed' | 'api_viewed' | 'run_validation_failed'
+      name: 'model_viewed' | 'api_viewed'
       properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'run_validation_failed'
+      properties: WorkshopModelAnalytics & {
+        field_error_codes?: FieldErrorCode[]
+      }
     }
   | { name: 'run_started'; properties: WorkshopRunAnalytics }
   | {
@@ -73,6 +84,8 @@ export type WorkshopAnalyticsEvent =
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
+              failure_stage?: WorkshopFailureStage
+              field_error_codes?: FieldErrorCode[]
             }
           | { status: 'cancelled' }
         )
@@ -119,6 +132,9 @@ export function workshopRouterErrorType(
   errorType: string | null | undefined
 ): WorkshopRouterErrorType | undefined {
   switch (errorType) {
+    case 'concurrency_limit_exceeded':
+    case 'rate_limit_exceeded':
+    case 'invalid_input':
     case 'content_policy_violation':
     case 'deadline_exceeded':
     case 'forbidden':
@@ -130,6 +146,10 @@ export function workshopRouterErrorType(
     default:
       return undefined
   }
+}
+
+export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
+  return [...new Set(Object.values(errors))]
 }
 
 export function workshopCheckoutErrorCode(
