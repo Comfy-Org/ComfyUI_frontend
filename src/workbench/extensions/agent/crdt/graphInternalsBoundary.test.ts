@@ -15,18 +15,22 @@ const sources = import.meta.glob('./*.ts', {
   query: '?raw',
   import: 'default',
   eager: true
-}) as Record<string, string>
+})
 
 const FORBIDDEN_WRITES: Array<{ name: string; pattern: RegExp }> = [
   {
     name: 'node record ownership write',
-    pattern: /\b(?:nodeStore|useNodeDataStore\(\))\.(?:deleteNode|registerNode)\(/
+    pattern:
+      /\b(?:nodeStore|useNodeDataStore\(\))\.(?:deleteNode|registerNode)\(/
   },
   {
     name: '_nodes_by_id assignment',
     pattern: /_nodes_by_id\[[^\]]*\]\s*=[^=]/
   },
-  { name: '_nodes mutation', pattern: /_nodes\.(?:push|splice|pop|shift|unshift)\(/ },
+  {
+    name: '_nodes mutation',
+    pattern: /_nodes\.(?:push|splice|pop|shift|unshift)\(/
+  },
   { name: 'node.graph assignment', pattern: /\.graph\s*=[^=]/ },
   { name: '_graphScope assignment', pattern: /\._graphScope\s*=[^=]/ },
   { name: '_state assignment', pattern: /\._state\s*=[^=]/ }
@@ -43,7 +47,7 @@ describe('agent crdt code does not write graph internals', () => {
     expect(productionSources().length).toBeGreaterThan(0)
   })
 
-  it.each(productionSources())('%s', (_path, text) => {
+  it.for(productionSources())('%s', ([, text]) => {
     const offenders = text
       .split('\n')
       .flatMap((line, index) =>
