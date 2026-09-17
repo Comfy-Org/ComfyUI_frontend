@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -57,18 +58,16 @@ function selectSingleNodeWithNodeDef(id: number) {
   vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
 }
 
-function mockSettingValues(overrides: Record<string, unknown> = {}) {
+function mockSettingValues(overrides: Partial<Settings> = {}) {
   const settingStore = useSettingStore()
-  const settingValues: Record<string, unknown> = {
+  const settingValues: Partial<Settings> = {
     'Comfy.UseNewMenu': 'Top',
     'Comfy.NodeLibrary.NewDesign': true,
     'Comfy.Load3D.3DViewerEnable': false,
     ...overrides
   }
 
-  vi.mocked(settingStore.get).mockImplementation(
-    (key: string): unknown => settingValues[key]
-  )
+  vi.mocked(settingStore.get).mockImplementation((key) => settingValues[key])
 }
 
 describe('useSelectionState', () => {

@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "從資產面板拖曳加入資產",
     "addNodesFromGraph": "提及圖表中的節點",
-    "addPromptToSend": "新增要傳送的提示詞",
     "addToPrompt": "加入提示詞",
     "alpha": "早期測試版",
     "askComfyAgent": "詢問 Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "選擇工作流程",
     "chooseWorkflowForChat": "選擇此聊天的工作流程",
     "close": "關閉",
+    "coachBody": "描述您的想法，請它建立並執行工作流程。它可以看到您的畫布和檔案。",
+    "coachGraphBody": "Agent 工作時，您仍可編輯節點圖或切換分頁。",
+    "coachGraphTitle": "讓 Agent 在您編輯時執行",
+    "coachHistoryBody": "先前的對話會儲存在這裡。開啟其中一個以檢視，或繼續與 Agent 協作。",
+    "coachHistoryTitle": "從上次中斷處繼續",
+    "coachProgress": "{current} / {total}",
+    "coachTitle": "認識您的 Comfy Agent",
+    "coachWorkflowBody": "Agent 只會編輯您選擇的工作流程。您也可以上傳參考檔案或提及其他工作流程。",
+    "coachWorkflowTitle": "選擇要讓 Agent 編輯的工作流程",
     "consent": {
       "accept": "開始使用 Comfy Agent",
       "body1": "Comfy Agent 可協助您規劃、建立、執行及反覆改進工作流程。描述您想創作的內容，Comfy Agent 將成為您強大的夥伴。",
@@ -49,6 +57,13 @@
     "credits": "點數",
     "currentTab": "目前分頁",
     "delete": "刪除",
+    "diagnosticReport": {
+      "clipboardFailed": "無法存取剪貼簿。請選取並複製下方報告，或重試。",
+      "collectionFailed": "無法收集報告。請重試，或關閉選用來源後再重試。",
+      "includedSources": "納入報告（預設開啟）",
+      "manualCopy": "要複製的報告",
+      "retry": "重試複製報告"
+    },
     "dismiss": "關閉",
     "downloadAssets": "下載資產",
     "dragAndDropAssets": "將資產拖放至此處",
@@ -144,6 +159,7 @@
     "showMore": "顯示更多",
     "skip": "略過",
     "stop": "停止",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "生成一隻戴著冰球面具的黃色鴨子",
       "列出我儲存的工作流程",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "潛空間",
     "loaders": "載入器",
     "logic": "邏輯",
+    "looping": "迴圈",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "著色器",
     "sigmas": "西格瑪值",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "繼續前，請套用優惠碼以更新您的報價。",
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收費 {amount}。可隨時取消。",
+      "billingAddress": "帳單地址",
       "changePaymentMethod": "變更",
       "commitment": "承諾期",
       "completePayment": "完成付款",
@@ -5143,6 +5163,13 @@
     },
     "invite": "邀請",
     "inviteLimitReached": "您已達到 {count} 位成員的上限",
+    "inviteLinks": {
+      "copied": "已複製！",
+      "copyAll": "複製邀請連結 | 複製全部連結（{count}）",
+      "copyLink": "複製邀請連結",
+      "sentLead": "每封邀請都有專屬連結，您可以直接分享：",
+      "sentTitle": "已送出 {count} 封邀請 | 已送出 {count} 封邀請"
+    },
     "inviteMember": "邀請成員",
     "inviteMemberDialog": {
       "failedCount": "無法發送 {count} 封邀請，請再試一次。",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "取消邀請",
         "changeRole": "變更角色",
+        "copyInviteLink": "複製邀請連結",
         "removeMember": "移除成員",
         "resendInvite": "重新發送邀請",
         "setCreditLimit": "設定點數上限"

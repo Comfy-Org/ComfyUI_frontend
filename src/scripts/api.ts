@@ -21,11 +21,14 @@ import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
-  ShareableAssetsResponse,
+  WorkflowApiAssetsResponse as ShareableAssetsResponse,
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse,
+  GetI18nResponse
+} from '@comfyorg/ingest-types'
+import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -33,27 +36,28 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
-  ExtensionsResponse,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptResponse,
-  Settings,
   StatusWsMessage,
-  StatusWsMessageStatus,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  PromptFailureResponse,
+  PromptResponse,
   SystemStats,
-  User,
+  UserConfigResponse,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+  zGetEmbeddingsResponse as zEmbeddingsResponse,
+  zWorkflowApiAssetsResponse as zShareableAssetsResponse
+} from '@comfyorg/ingest-types/zod'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -375,10 +379,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -1028,8 +1032,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**
@@ -1449,7 +1453,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -1711,7 +1715,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

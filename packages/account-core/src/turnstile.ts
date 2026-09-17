@@ -1,4 +1,4 @@
-import type { AuthCopyLocale } from './firebaseAuthError'
+import type { AuthCopyLocale } from './firebaseAuthError.js'
 
 export type TurnstileMode = 'off' | 'shadow' | 'enforce'
 
