@@ -546,7 +546,7 @@ describe('PartnerNodeAccessPanel', () => {
     )
   })
 
-  it.fails('KNOWN BUG: leaves a provider on the server state when its save fails', async () => {
+  it('keeps a provider on the server state when its save fails', async () => {
     const user = userEvent.setup()
     restrictPolicy()
     vi.mocked(
@@ -565,6 +565,9 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(providerSwitch)
     await screen.findByRole('alert')
 
+    expect(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).toHaveBeenCalledWith('openai', false)
     expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
   })
 
