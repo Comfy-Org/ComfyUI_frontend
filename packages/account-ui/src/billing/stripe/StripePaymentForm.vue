@@ -315,6 +315,31 @@ onBeforeUnmount(() => {
   addressElement?.destroy()
 })
 
+async function mintConfirmationToken(
+  elements: StripeElements,
+  client: Stripe
+): Promise<string | undefined> {
+  // Validation boundary: submit() normally resolves with an error field, but
+  // an unexpected rejection here is still a pre-token validation failure.
+  let submitResult
+  try {
+    submitResult = await elements.submit()
+  } catch {
+    failSubmit('validation')
+    return undefined
+  }
+  if (submitResult.error) {
+    failSubmit('validation', submitResult.error)
+    return undefined
+  }
+  const result = await client.createConfirmationToken({ elements })
+  if (result.error) {
+    failSubmit('token_creation', result.error)
+    return undefined
+  }
+  return result.confirmationToken.id
+}
+
 async function submit() {
   if (submitBlocked.value || !stripeElements.value || !stripe) return
   isSubmitting.value = true
@@ -322,31 +347,14 @@ async function submit() {
   configurationError.value = ''
   reportPhase({ phase: 'payment_submit_attempted' })
   try {
-    // Validation boundary: submit() normally resolves with an error field, but
-    // an unexpected rejection here is still a pre-token validation failure.
-    let submitResult
-    try {
-      submitResult = await stripeElements.value.submit()
-    } catch {
-      failSubmit('validation')
-      return
-    }
-    if (submitResult.error) {
-      failSubmit('validation', submitResult.error)
-      return
-    }
-    const result = await stripe.createConfirmationToken({
-      elements: stripeElements.value
-    })
-    if (result.error) {
-      failSubmit('token_creation', result.error)
-      return
-    }
+    const confirmationToken = await mintConfirmationToken(
+      stripeElements.value,
+      stripe
+    )
     // Same hazard as reportPhase, with money on it: the customer may have
     // closed this checkout while the token was minting, and a confirm the
     // host acts on would charge them for a flow they left.
-    if (isUnmounted) return
-    emit('confirm', result.confirmationToken.id)
+    if (confirmationToken && !isUnmounted) emit('confirm', confirmationToken)
   } catch {
     failSubmit('token_creation')
   } finally {
