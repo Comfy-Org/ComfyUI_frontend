@@ -87,7 +87,7 @@ export class AgentCrdtProjection {
   /** Rematerialize placeholders of `type` now that it is registered. */
   rebindPlaceholders(workflowId: string, type: string): void {
     const graph = this.getGraph()
-    const placeholder = graph?._nodes.some(
+    const placeholder = graph?.nodes.some(
       (node) => node.type === type && node.constructor === LGraphNode
     )
     if (placeholder) this.reconcileLiveGraph(workflowId)

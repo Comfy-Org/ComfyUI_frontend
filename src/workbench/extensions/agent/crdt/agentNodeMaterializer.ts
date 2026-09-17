@@ -27,6 +27,7 @@ export type MaterializableGraph = Pick<
   LGraph,
   | 'id'
   | 'rootGraph'
+  | 'nodes'
   | '_nodes'
   | '_nodes_by_id'
   | 'add'

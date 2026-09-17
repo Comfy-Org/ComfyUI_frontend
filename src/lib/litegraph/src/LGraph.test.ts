@@ -1187,6 +1187,70 @@ describe('node:before-removed event', () => {
     expect(removed).toHaveBeenCalledOnce()
   })
 
+  it('finishes the removal when graph.onNodeRemoved throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    graph.onNodeRemoved = () => {
+      throw new Error('graph hook failed')
+    }
+    const removed = vi.fn()
+    graph.events.addEventListener('node:removed', removed)
+
+    expect(() => graph.remove(node)).toThrow('graph hook failed')
+
+    expect(graph._nodes).not.toContain(node)
+    expect(graph._nodes_in_order).not.toContain(node)
+    expect(removed).toHaveBeenCalledOnce()
+  })
+
+  it('aggregates node and graph callback failures after detaching', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.onRemoved = () => {
+      throw new Error('node hook failed')
+    }
+    graph.onNodeRemoved = () => {
+      throw new Error('graph hook failed')
+    }
+
+    let thrown: unknown
+    try {
+      graph.remove(node)
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError)
+    expect((thrown as AggregateError).errors.map((e) => String(e))).toEqual([
+      'Error: node hook failed',
+      'Error: graph hook failed'
+    ])
+    expect(graph._nodes).not.toContain(node)
+    expect(node.graph).toBeNull()
+  })
+
+  it('finishes detaching a subgraph host when an interior node throws from onRemoved', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, nodeCount: 2 })
+    const [first, second] = subgraph.nodes
+    first.onRemoved = () => {
+      throw new Error('interior cleanup failed')
+    }
+    second.onRemoved = vi.fn()
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+
+    expect(() => graph.remove(host)).toThrow('interior cleanup failed')
+
+    expect(graph._nodes).not.toContain(host)
+    expect(graph.getNodeById(host.id)).toBeNull()
+    expect(host.graph).toBeNull()
+    expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+    expect(second.onRemoved).toHaveBeenCalledOnce()
+  })
+
   it('reports canonical preservation for an owning node removed with the option', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

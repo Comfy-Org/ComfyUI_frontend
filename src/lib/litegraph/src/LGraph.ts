@@ -250,22 +250,26 @@ export interface GraphRemoveOptions {
   replacement?: boolean
 }
 
-/** Runs the node's `onRemoved` hook and captures, rather than propagates, what it throws. */
-function captureRemovedHookFailure(
-  node: LGraphNode
-): { error: unknown } | undefined {
-  try {
-    node.onRemoved?.()
-    return undefined
-  } catch (error) {
-    return { error }
-  }
-}
+/**
+ * Collects what lifecycle callbacks throw during one structural transaction
+ * so the transaction can finish before the failures surface.
+ */
+class LifecycleFailures {
+  readonly #errors: unknown[] = []
 
-function rethrowRemovedHookFailure(
-  failure: { error: unknown } | undefined
-): void {
-  if (failure) throw failure.error
+  run(effect: () => void): void {
+    try {
+      effect()
+    } catch (error) {
+      this.#errors.push(error)
+    }
+  }
+
+  rethrow(message: string): void {
+    if (this.#errors.length === 0) return
+    if (this.#errors.length === 1) throw this.#errors[0]
+    throw new AggregateError(this.#errors, message)
+  }
 }
 
 /**
@@ -317,11 +321,22 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   graph?.onNodeRemoved?.(node)
 }
 
-function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
+/**
+ * With `failures`, every node still receives its lifecycle after an earlier
+ * one throws (a released subgraph's interior); without it the first throw
+ * propagates at once (`clear()`).
+ */
+function fireNodeRemovalLifecycles(
+  nodes: LGraphNode[],
+  failures?: LifecycleFailures
+): void {
   const pending = nodes.filter((node) => !nodesBeingRemoved.has(node))
   for (const node of pending) nodesBeingRemoved.add(node)
   try {
-    for (const node of pending) fireNodeRemovalLifecycle(node)
+    for (const node of pending) {
+      if (failures) failures.run(() => fireNodeRemovalLifecycle(node))
+      else fireNodeRemovalLifecycle(node)
+    }
   } finally {
     for (const node of pending) nodesBeingRemoved.delete(node)
   }
@@ -1569,22 +1584,25 @@ export class LGraph
       }
     }
 
+    // Lifecycle callbacks are effects around the structural removal: what
+    // they throw is collected and rethrown once the node is fully detached.
+    const failures = new LifecycleFailures()
     if (node.isSubgraphNode()) {
-      this.releaseSubgraphs(
-        findReleasableSubgraphs(
-          this.rootGraph,
-          node,
-          canonicalSubgraphResolver(
+      failures.run(() =>
+        this.releaseSubgraphs(
+          findReleasableSubgraphs(
             this.rootGraph,
-            options.preserveCanonicalState
+            node,
+            canonicalSubgraphResolver(
+              this.rootGraph,
+              options.preserveCanonicalState
+            )
           )
         )
       )
     }
 
-    // callback; a throwing hook is rethrown once the graph has finished
-    // detaching the node, so no removal ends half-way
-    const removedHookFailure = captureRemovedHookFailure(node)
+    failures.run(() => node.onRemoved?.())
     if (!preserveReplacement) clearNodeOwnedStoreState(node)
 
     const order = node.order
@@ -1621,19 +1639,21 @@ export class LGraph
     if (this._nodes_by_id[node.id] === node) {
       delete this._nodes_by_id[node.id]
     }
-    this.onNodeRemoved?.(node)
-    this.events.dispatch('node:removed', { node })
+    failures.run(() => this.onNodeRemoved?.(node))
+    failures.run(() => this.events.dispatch('node:removed', { node }))
 
     // close panels
-    this.canvasAction((c) => c.checkPanels())
+    failures.run(() => this.canvasAction((c) => c.checkPanels()))
 
     this.setDirtyCanvas(true, true)
     // sure? - almost sure is wrong
-    this.afterChange()
-    this.change()
+    failures.run(() => {
+      this.afterChange()
+      this.change()
+    })
 
     this.updateExecutionOrder()
-    rethrowRemovedHookFailure(removedHookFailure)
+    failures.rethrow('LGraph.remove: lifecycle callbacks failed')
   }
 
   /**
@@ -1646,11 +1666,12 @@ export class LGraph
    * the same id can be registered again later.
    */
   releaseSubgraphs(subgraphs: readonly Subgraph[]): void {
+    const failures = new LifecycleFailures()
     try {
       for (const subgraph of subgraphs) {
         const nodes: LGraphNode[] = []
         visitGraphNodes(subgraph, (node) => nodes.push(node))
-        fireNodeRemovalLifecycles(nodes)
+        fireNodeRemovalLifecycles(nodes, failures)
       }
     } finally {
       for (const subgraph of subgraphs) {
@@ -1663,6 +1684,7 @@ export class LGraph
       }
       detachGraphLayouts(subgraphs)
     }
+    failures.rethrow('LGraph.releaseSubgraphs: interior lifecycles failed')
   }
 
   /**
