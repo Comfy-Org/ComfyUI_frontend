@@ -15,25 +15,16 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast'
 import type { ToastId } from '@/components/ui/toast'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { app } from '@/scripts/app'
-import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
-const { toastId } = defineProps<{ toastId: ToastId }>()
+const { toastId, onMigrate } = defineProps<{
+  toastId: ToastId
+  onMigrate: () => Promise<void>
+}>()
 const { t } = useI18n()
 const toast = useToast()
 
-const workflowStore = useWorkflowStore()
 const migrateToLitegraphReroute = async () => {
-  const workflowJSON = app.rootGraph.serialize() as unknown as WorkflowJSON04
-  const migratedWorkflowJSON = migrateLegacyRerouteNodes(workflowJSON)
-  await app.loadGraphData(
-    migratedWorkflowJSON,
-    false,
-    false,
-    workflowStore.activeWorkflow
-  )
+  await onMigrate()
   toast.dismiss(toastId)
 }
 </script>

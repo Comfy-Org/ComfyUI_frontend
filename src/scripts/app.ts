@@ -56,7 +56,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -147,6 +148,7 @@ import {
 } from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
+  migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -1347,7 +1349,22 @@ export class ComfyApp {
       findLegacyRerouteNodes(graphData).length &&
       noNativeReroutes(graphData)
     ) {
-      useToast().custom(RerouteMigrationToast, undefined, { role: 'alert' })
+      useToast().custom(
+        RerouteMigrationToast,
+        {
+          onMigrate: async () => {
+            const workflowJSON =
+              this.rootGraph.serialize() as unknown as WorkflowJSON04
+            await this.loadGraphData(
+              migrateLegacyRerouteNodes(workflowJSON),
+              false,
+              false,
+              useWorkflowStore().activeWorkflow
+            )
+          }
+        },
+        { role: 'alert' }
+      )
     }
     useSubgraphService().loadSubgraphs(graphData)
 
