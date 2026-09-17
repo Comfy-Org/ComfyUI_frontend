@@ -9,9 +9,11 @@ import enMessages from '@/locales/en/main.json'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
 
-vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
-}))
+const openPlatformBuild = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/usePlatformBuildHandoff'),
+  () => ({ usePlatformBuildHandoff: () => ({ open: openPlatformBuild }) })
+)
 
 vi.mock(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () =>
@@ -59,17 +61,12 @@ describe('DeployToComfyApiCard', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('opens the developer platform and reports done', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+  it('hands the workflow to the platform and reports done', async () => {
     const { onDone, user } = renderCard()
 
     await user.click(screen.getByTestId('deploy-to-comfy-api-platform'))
 
-    expect(open).toHaveBeenCalledWith(
-      'https://platform.comfy.org',
-      '_blank',
-      'noopener'
-    )
+    expect(openPlatformBuild).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
   })
 })

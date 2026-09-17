@@ -78,7 +78,7 @@
             size="lg"
             class="w-full @xl:w-auto"
             data-testid="deploy-to-comfy-api-platform"
-            @click="openPlatform"
+            @click="deployOnPlatform"
           >
             {{ $t('deployToComfyApi.deployOnPlatform') }}
           </Button>
@@ -94,7 +94,7 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
 const { videoSrc = '' } = defineProps<{
   titleId?: string
@@ -109,13 +109,14 @@ const emit = defineEmits<{
 defineOptions({ inheritAttrs: false })
 
 const { buildDocsUrl } = useExternalLink()
+const { open: openPlatformBuild } = usePlatformBuildHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const videoFailed = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 
-function openPlatform() {
-  window.open(getComfyPlatformBaseUrl(), '_blank', 'noopener')
+async function deployOnPlatform() {
+  await openPlatformBuild()
   emit('done')
 }
 </script>
