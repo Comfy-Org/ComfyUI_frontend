@@ -224,7 +224,7 @@ class Load3DConfiguration {
         if (!isRemoteMutationContext(context)) return
         if (widgetId !== modelWidget.widgetId) return
         if (value === modelWidget.value) return
-        modelWidget.value = value as IBaseWidget['value']
+        modelWidget.value = value
       }
     )
   }
