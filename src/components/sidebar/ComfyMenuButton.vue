@@ -70,8 +70,6 @@
         </span>
         <i v-if="item.items" class="pi pi-angle-right ml-auto" />
       </a>
-      <!-- tabindex dropped: a focusable row takes click focus off the
-           menubar, which disables hover submenus and arrow-key navigation -->
       <div
         v-else
         v-bind="{ ...props.action, tabindex: undefined }"

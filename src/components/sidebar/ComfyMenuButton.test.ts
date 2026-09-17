@@ -87,7 +87,7 @@ describe('ComfyMenuButton', () => {
     })
   })
 
-  it('does not take focus off the menu when the row is clicked, so hover submenus and arrow keys keep working', async () => {
+  it('does not move focus onto the row when it is clicked', async () => {
     const { user, row } = await openMenu()
 
     await user.click(row)
