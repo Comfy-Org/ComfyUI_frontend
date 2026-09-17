@@ -61,17 +61,6 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
-      fn,
-    wrapWithErrorHandlingAsync: <T extends (...args: unknown[]) => unknown>(
-      fn: T
-    ) => fn,
-    toastErrorHandler: vi.fn()
-  })
-}))
-
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     persistUserKeybindings: mockPersistUserKeybindings
@@ -161,12 +150,16 @@ describe('useKeybindingPresetService', () => {
       store.currentPresetName = 'old-preset'
 
       const service = await getPresetService()
-      await expect(service.savePreset('my-preset')).rejects.toThrow(
-        'Server error'
-      )
+      await expect(service.savePreset('my-preset')).resolves.toBeUndefined()
 
       expect(store.currentPresetName).toBe('old-preset')
       expect(store.savedPresetData).toBeNull()
+      expect(store.getUserKeybindingValues()).toEqual([keybinding])
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'Server error'
+      })
     })
   })
 
@@ -237,15 +230,34 @@ describe('useKeybindingPresetService', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    it('rejects infrastructure failures without changing state', async () => {
+    it('reports infrastructure failures without changing state', async () => {
       mockApi.deleteUserData.mockRejectedValue(new Error('Network error'))
       store.currentPresetName = 'vim'
+      const keybinding = new KeybindingImpl({
+        commandId: 'vim.cmd',
+        combo: { key: 'J', ctrl: false }
+      })
+      store.addUserKeybinding(keybinding)
+      const savedPreset: KeybindingPreset = {
+        name: 'vim',
+        newBindings: [keybinding],
+        unsetBindings: []
+      }
+      store.savedPresetData = savedPreset
 
       const service = await getPresetService()
 
-      await expect(service.deletePreset('vim')).rejects.toThrow('Network error')
+      await expect(service.deletePreset('vim')).resolves.toBeUndefined()
       expect(store.currentPresetName).toBe('vim')
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(store.savedPresetData).toEqual(savedPreset)
+      expect(store.getUserKeybindingValues()).toEqual([keybinding])
+      expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
+      expect(mockSettingSet).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'Network error'
+      })
     })
 
     it('does not reset to default when deleting a non-active preset', async () => {
@@ -279,7 +291,7 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('importPreset', () => {
-    it('validates and rejects invalid files', async () => {
+    it('reports invalid files', async () => {
       mockUploadFile.mockResolvedValue(
         new File(['{"invalid": true}'], 'bad.json', {
           type: 'application/json'
@@ -287,10 +299,15 @@ describe('useKeybindingPresetService', () => {
       )
 
       const service = await getPresetService()
-      await expect(service.importPreset()).rejects.toThrow()
+      await expect(service.importPreset()).resolves.toBeUndefined()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: expect.stringContaining('g.keybindingPresets.invalidPresetFile')
+      })
     })
 
-    it('throws when file contains non-JSON content', async () => {
+    it('reports files containing non-JSON content', async () => {
       mockUploadFile.mockResolvedValue(
         new File(['not valid json {{'], 'bad.json', {
           type: 'application/json'
@@ -298,9 +315,12 @@ describe('useKeybindingPresetService', () => {
       )
 
       const service = await getPresetService()
-      await expect(service.importPreset()).rejects.toThrow(
-        'g.keybindingPresets.invalidPresetFile'
-      )
+      await expect(service.importPreset()).resolves.toBeUndefined()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'g.keybindingPresets.invalidPresetFile'
+      })
     })
 
     it('saves preset to storage and switches to it', async () => {
@@ -335,33 +355,25 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('presetFilePath sanitization', () => {
-    it('rejects names with path separators', async () => {
+    it.for([
+      '../evil',
+      'foo/bar',
+      'foo\\bar',
+      '.hidden',
+      'default',
+      'vim.json',
+      'preset.JSON',
+      '',
+      '   '
+    ])('reports invalid preset name %j without saving', async (name) => {
       const service = await getPresetService()
-      await expect(service.savePreset('../evil')).rejects.toThrow()
-      await expect(service.savePreset('foo/bar')).rejects.toThrow()
-      await expect(service.savePreset('foo\\bar')).rejects.toThrow()
-    })
-
-    it('rejects names starting with a dot', async () => {
-      const service = await getPresetService()
-      await expect(service.savePreset('.hidden')).rejects.toThrow()
-    })
-
-    it('rejects the reserved name "default"', async () => {
-      const service = await getPresetService()
-      await expect(service.savePreset('default')).rejects.toThrow()
-    })
-
-    it('rejects names ending with .json extension', async () => {
-      const service = await getPresetService()
-      await expect(service.savePreset('vim.json')).rejects.toThrow()
-      await expect(service.savePreset('preset.JSON')).rejects.toThrow()
-    })
-
-    it('rejects empty names', async () => {
-      const service = await getPresetService()
-      await expect(service.savePreset('')).rejects.toThrow()
-      await expect(service.savePreset('   ')).rejects.toThrow()
+      await expect(service.savePreset(name)).resolves.toBeUndefined()
+      expect(mockApi.storeUserData).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'g.keybindingPresets.invalidPresetName'
+      })
     })
   })
 
@@ -801,27 +813,35 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('loadPreset error handling', () => {
-    it('throws when API returns non-ok response', async () => {
+    it('reports a non-ok response', async () => {
       mockApi.getUserData.mockResolvedValueOnce(
         new Response(null, { status: 404 })
       )
 
       const service = await getPresetService()
-      await expect(service.loadPreset('missing')).rejects.toThrow(
-        'g.keybindingPresets.loadPresetFailed'
-      )
+      await expect(service.loadPreset('missing')).resolves.toBeUndefined()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'g.keybindingPresets.loadPresetFailed'
+      })
     })
 
-    it('throws when response contains invalid JSON', async () => {
+    it('reports invalid JSON in the response', async () => {
       mockApi.getUserData.mockResolvedValueOnce(
         new Response('not-json{{{', { status: 200 })
       )
 
       const service = await getPresetService()
-      await expect(service.loadPreset('bad-json')).rejects.toThrow()
+      await expect(service.loadPreset('bad-json')).resolves.toBeUndefined()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: expect.stringMatching(/JSON/)
+      })
     })
 
-    it('throws when Zod validation fails', async () => {
+    it('reports a response that fails schema validation', async () => {
       mockApi.getUserData.mockResolvedValueOnce(
         new Response(JSON.stringify({ name: 'valid', wrongField: true }), {
           status: 200
@@ -829,9 +849,12 @@ describe('useKeybindingPresetService', () => {
       )
 
       const service = await getPresetService()
-      await expect(service.loadPreset('bad-schema')).rejects.toThrow(
-        'g.keybindingPresets.invalidPresetFile'
-      )
+      await expect(service.loadPreset('bad-schema')).resolves.toBeUndefined()
+      expect(mockToastAdd).toHaveBeenCalledExactlyOnceWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: expect.stringContaining('g.keybindingPresets.invalidPresetFile')
+      })
     })
   })
 })

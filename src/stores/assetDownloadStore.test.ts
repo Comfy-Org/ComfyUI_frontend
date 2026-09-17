@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
@@ -213,6 +213,70 @@ describe('useAssetDownloadStore', () => {
       await vi.advanceTimersByTimeAsync(45_000)
 
       expect(store.activeDownloads).toHaveLength(1)
+    })
+
+    it.for([
+      { name: 'missing', response: undefined },
+      {
+        name: 'failed',
+        response: createTaskResponse({ status: 'failed', result: undefined })
+      }
+    ])(
+      'keeps newer metadata when a $name poll resolves',
+      async ({ response }) => {
+        const store = useAssetDownloadStore()
+        let resolveTask: ((task: TaskResponse | undefined) => void) | undefined
+        const request = new Promise<TaskResponse | undefined>((resolve) => {
+          resolveTask = resolve
+        })
+        vi.mocked(taskService.getTask).mockReturnValue(request)
+        dispatch(createDownloadMessage())
+
+        await vi.advanceTimersByTimeAsync(10_000)
+        expect(taskService.getTask).toHaveBeenCalledTimes(1)
+        dispatch(
+          createDownloadMessage({
+            asset_id: 'new-asset',
+            asset_name: 'new-model.safetensors',
+            bytes_total: 2700,
+            bytes_downloaded: 730,
+            progress: 0.27
+          })
+        )
+        assert(resolveTask)
+        resolveTask(response)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.finishedDownloads).toMatchObject([
+          {
+            assetId: 'new-asset',
+            assetName: 'new-model.safetensors',
+            bytesTotal: 2700,
+            progress: 0.27,
+            status: 'failed'
+          }
+        ])
+      }
+    )
+
+    it('does not recreate a dismissed download when its poll resolves', async () => {
+      const store = useAssetDownloadStore()
+      let resolveTask: ((task: undefined) => void) | undefined
+      const request = new Promise<undefined>((resolve) => {
+        resolveTask = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(request)
+      dispatch(createDownloadMessage())
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      dispatch(createDownloadMessage({ status: 'completed' }))
+      store.clearFinishedDownloads()
+      assert(resolveTask)
+      resolveTask(undefined)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.downloadList).toEqual([])
     })
 
     it('marks a missing task as failed and stops polling it', async () => {

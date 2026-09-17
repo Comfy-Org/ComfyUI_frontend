@@ -147,9 +147,11 @@ export const useAssetExportStore = defineStore('assetExport', () => {
 
     if (staleExports.length === 0) return
 
-    async function pollSingleExport(exp: AssetExport) {
+    async function pollSingleExport(staleExport: AssetExport) {
       try {
-        const task = await taskService.getTask(exp.taskId)
+        const task = await taskService.getTask(staleExport.taskId)
+        const exp = exports.value.get(staleExport.taskId)
+        if (!exp) return
 
         if (!task) {
           handleAssetExport({

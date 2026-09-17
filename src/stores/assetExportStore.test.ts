@@ -97,38 +97,126 @@ describe('useAssetExportStore', () => {
     expect(store.finishedExports).toHaveLength(0)
   })
 
+  it.for([
+    { name: 'missing', response: undefined },
+    {
+      name: 'failed',
+      response: taskResponse({ status: 'failed', result: undefined })
+    }
+  ])(
+    'keeps newer metadata when a $name poll resolves',
+    async ({ response }) => {
+      const store = useAssetExportStore()
+      let resolveTask: ((task: TaskResponse | undefined) => void) | undefined
+      const request = new Promise<TaskResponse | undefined>((resolve) => {
+        resolveTask = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(request)
+      dispatchExport()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      dispatchExport({
+        export_name: 'new-export.zip',
+        assets_total: 7,
+        assets_attempted: 3,
+        assets_failed: 1,
+        bytes_total: 2700,
+        bytes_processed: 730,
+        progress: 0.27
+      })
+      assert(resolveTask)
+      resolveTask(response)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.finishedExports).toMatchObject([
+        {
+          exportName: 'new-export.zip',
+          assetsTotal: 7,
+          assetsAttempted: 3,
+          assetsFailed: 1,
+          bytesTotal: 2700,
+          progress: 0.27,
+          status: 'failed'
+        }
+      ])
+    }
+  )
+
+  it('does not recreate a dismissed export when its poll resolves', async () => {
+    const store = useAssetExportStore()
+    let resolveTask: ((task: undefined) => void) | undefined
+    const request = new Promise<undefined>((resolve) => {
+      resolveTask = resolve
+    })
+    vi.mocked(taskService.getTask).mockReturnValue(request)
+    dispatchExport()
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    dispatchExport({ status: 'failed' })
+    store.clearFinishedExports()
+    assert(resolveTask)
+    resolveTask(undefined)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(store.exportList).toEqual([])
+  })
+
   it('marks a missing stale task as failed and stops polling it', async () => {
     const store = useAssetExportStore()
     const taskId = 'task-123'
     const getExportDownloadUrl = vi.spyOn(assetService, 'getExportDownloadUrl')
 
     vi.mocked(taskService.getTask).mockResolvedValue(undefined)
-    store.trackExport(taskId)
+    dispatchExport({
+      task_id: taskId,
+      export_name: 'partial.zip',
+      assets_total: 7,
+      assets_attempted: 3,
+      assets_failed: 1,
+      bytes_total: 250,
+      bytes_processed: 80,
+      progress: 0.32
+    })
 
     await vi.advanceTimersByTimeAsync(45_000)
 
     expect(store.activeExports).toHaveLength(0)
-    expect(store.finishedExports[0].status).toBe('failed')
+    expect(store.finishedExports).toMatchObject([
+      {
+        taskId,
+        exportName: 'partial.zip',
+        assetsTotal: 7,
+        assetsAttempted: 3,
+        assetsFailed: 1,
+        bytesTotal: 250,
+        bytesProcessed: 80,
+        progress: 0.32,
+        status: 'failed',
+        downloadTriggered: false
+      }
+    ])
     expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    const failedExport = { ...store.finishedExports[0] }
 
-    assert(eventHandler.current)
-    eventHandler.current(
-      new CustomEvent('asset_export', {
-        detail: {
-          task_id: taskId,
-          export_name: 'late.zip',
-          assets_total: 1,
-          assets_attempted: 1,
-          assets_failed: 0,
-          bytes_total: 100,
-          bytes_processed: 100,
-          progress: 1,
-          status: 'completed'
-        }
-      })
-    )
+    dispatchExport({
+      task_id: taskId,
+      export_name: 'late.zip',
+      assets_total: 1,
+      assets_attempted: 1,
+      assets_failed: 0,
+      bytes_total: 100,
+      bytes_processed: 100,
+      progress: 1,
+      status: 'completed'
+    })
 
-    expect(store.finishedExports[0].status).toBe('failed')
+    await vi.advanceTimersByTimeAsync(45_000)
+
+    expect(store.activeExports).toHaveLength(0)
+    expect(store.finishedExports).toEqual([failedExport])
+    expect(taskService.getTask).toHaveBeenCalledTimes(1)
     expect(getExportDownloadUrl).not.toHaveBeenCalled()
   })
 })

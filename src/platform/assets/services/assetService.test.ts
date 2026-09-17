@@ -368,6 +368,13 @@ describe(assetService.deleteAsset, () => {
     )
 
     await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
+    expect(mockReportError).toHaveBeenCalledWith(
+      new Error('Unable to delete asset asset-1: Server returned 503'),
+      {
+        errorType: 'asset_deletion_http_failure',
+        tags: { status: 503 }
+      }
+    )
   })
 
   it('issues a DELETE to the asset endpoint when the response is ok', async () => {

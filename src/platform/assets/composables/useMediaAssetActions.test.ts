@@ -1568,6 +1568,9 @@ describe('useMediaAssetActions', () => {
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
       expect(mockInputAssets.items).toEqual([asset])
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
       expect(useToast().add).not.toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })
       )

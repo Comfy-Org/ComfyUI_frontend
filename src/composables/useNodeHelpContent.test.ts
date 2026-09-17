@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
 import { reportError } from '@/platform/telemetry/reportError'
+import { nodeHelpService } from '@/services/nodeHelpService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { getNodeSource } from '@/types/nodeSource'
 
@@ -31,10 +32,6 @@ function useNodeHelpContent(
   return result
 }
 
-async function flushPromises() {
-  await new Promise((r) => setTimeout(r, 0))
-}
-
 function markdownResponse(markdown: string): Response {
   return new Response(markdown)
 }
@@ -55,7 +52,7 @@ function createMockNode(
     output_node: false,
     api_node: false,
     nodeSource: getNodeSource(
-      overrides.python_module,
+      overrides.python_module ?? 'nodes',
       overrides.essentials_category
     ),
     ...overrides
@@ -68,7 +65,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -92,6 +89,38 @@ describe('useNodeHelpContent', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
   })
+
+  it.for([
+    { source: 'core', node: mockCoreNode, localeStatus: 200, requests: 1 },
+    {
+      source: 'custom locale',
+      node: mockCustomNode,
+      localeStatus: 200,
+      requests: 1
+    },
+    {
+      source: 'custom fallback',
+      node: mockCustomNode,
+      localeStatus: 404,
+      requests: 2
+    },
+    {
+      source: 'custom fallback after failure',
+      node: mockCustomNode,
+      localeStatus: 500,
+      requests: 2
+    }
+  ])(
+    'preserves empty markdown from $source',
+    async ({ node, localeStatus, requests }) => {
+      mockFetch
+        .mockResolvedValueOnce(new Response('', { status: localeStatus }))
+        .mockResolvedValueOnce(markdownResponse(''))
+
+      await expect(nodeHelpService.fetchNodeHelp(node, 'en')).resolves.toBe('')
+      expect(mockFetch).toHaveBeenCalledTimes(requests)
+    }
+  )
 
   it('should generate correct baseUrl for core nodes', async () => {
     const nodeRef = ref(mockCoreNode)
@@ -120,9 +149,9 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain('This is test help content')
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('This is test help content')
+    )
   })
 
   it('should show the unavailable state when core help is absent', async () => {
@@ -132,9 +161,7 @@ describe('useNodeHelpContent', () => {
     )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(error.value).toBe('Help not found')
+    await vi.waitFor(() => expect(error.value).toBe('Help not found'))
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -147,9 +174,7 @@ describe('useNodeHelpContent', () => {
     })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(error.value).toBe('Help not found')
+    await vi.waitFor(() => expect(error.value).toBe('Help not found'))
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
   })
 
@@ -162,10 +187,11 @@ describe('useNodeHelpContent', () => {
     mockFetch.mockResolvedValueOnce(markdownResponse('# Essentials help'))
 
     const { renderedHelpHtml } = useNodeHelpContent(ref(node))
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('Essentials help')
+    )
 
     expect(mockFetch).toHaveBeenCalledWith('/docs/EssentialsNode/en.md')
-    expect(renderedHelpHtml.value).toContain('Essentials help')
   })
 
   it('should use the core base URL for relative Essentials images', async () => {
@@ -177,10 +203,10 @@ describe('useNodeHelpContent', () => {
     mockFetch.mockResolvedValueOnce(markdownResponse('![preview](preview.png)'))
 
     const { renderedHelpHtml } = useNodeHelpContent(ref(node))
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="/docs/EssentialsNode/preview.png"'
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        'src="/docs/EssentialsNode/preview.png"'
+      )
     )
   })
 
@@ -192,10 +218,11 @@ describe('useNodeHelpContent', () => {
     })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(ref(node))
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('Blueprint help')
+    )
 
     expect(error.value).toBeNull()
-    expect(renderedHelpHtml.value).toContain('Blueprint help')
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
@@ -205,9 +232,7 @@ describe('useNodeHelpContent', () => {
     )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(error.value).toBe('Help not found')
+    await vi.waitFor(() => expect(error.value).toBe('Help not found'))
     expect(renderedHelpHtml.value).toBe('')
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -223,10 +248,11 @@ describe('useNodeHelpContent', () => {
     mockFetch.mockResolvedValueOnce(markdownResponse('# Unknown help'))
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('Unknown help')
+    )
 
     expect(error.value).toBeNull()
-    expect(renderedHelpHtml.value).toContain('Unknown help')
     expect(mockFetch).toHaveBeenCalledWith('/docs/UnknownNode/en.md')
   })
 
@@ -239,9 +265,7 @@ describe('useNodeHelpContent', () => {
     })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(error.value).toBe('Help not found')
+    await vi.waitFor(() => expect(error.value).toBe('Help not found'))
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -254,7 +278,11 @@ describe('useNodeHelpContent', () => {
     })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(error.value).toBe(
+        'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
+      )
+    )
 
     expect(reportError).toHaveBeenCalledWith(
       new Error(
@@ -265,9 +293,6 @@ describe('useNodeHelpContent', () => {
         context: { path: '/docs/TestNode/en.md' }
       }
     )
-    expect(error.value).toBe(
-      'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
-    )
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -276,9 +301,9 @@ describe('useNodeHelpContent', () => {
     mockFetch.mockResolvedValueOnce(markdownResponse('![image](test.jpg)'))
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain('alt="image"')
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('alt="image"')
+    )
   })
 
   it('should prefix relative video src in custom nodes', async () => {
@@ -288,10 +313,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/docs/video.mp4"'
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        'src="/extensions/test_module/docs/video.mp4"'
+      )
     )
   })
 
@@ -302,10 +327,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      `src="/docs/${mockCoreNode.name}/video.mp4"`
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        `src="/docs/${mockCoreNode.name}/video.mp4"`
+      )
     )
   })
 
@@ -327,8 +352,8 @@ describe('useNodeHelpContent', () => {
       )
       .mockResolvedValueOnce(markdownResponse('# Fallback content'))
 
-    useNodeHelpContent(nodeRef)
-    await flushPromises()
+    const { helpContent } = useNodeHelpContent(nodeRef)
+    await vi.waitFor(() => expect(helpContent.value).toBe('# Fallback content'))
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockFetch).toHaveBeenCalledWith(
@@ -347,10 +372,11 @@ describe('useNodeHelpContent', () => {
       .mockResolvedValueOnce(markdownResponse('# Fallback content'))
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('Fallback content')
+    )
 
     expect(error.value).toBeNull()
-    expect(renderedHelpHtml.value).toContain('Fallback content')
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(requestError, {
       errorType: 'node_help_fetch_failure',
@@ -369,10 +395,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/docs/video.mp4"'
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        'src="/extensions/test_module/docs/video.mp4"'
+      )
     )
   })
 
@@ -385,10 +411,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      `src="/docs/${mockCoreNode.name}/video.webm"`
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        `src="/docs/${mockCoreNode.name}/video.webm"`
+      )
     )
   })
 
@@ -399,10 +425,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="/extensions/test_module/docs/image.png"'
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        'src="/extensions/test_module/docs/image.png"'
+      )
     )
     expect(renderedHelpHtml.value).toContain('alt="Test image"')
   })
@@ -414,10 +440,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      `src="/docs/${mockCoreNode.name}/image.png"`
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        `src="/docs/${mockCoreNode.name}/image.png"`
+      )
     )
     expect(renderedHelpHtml.value).toContain('alt="Test image"')
   })
@@ -429,9 +455,9 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain('src="/absolute/image.png"')
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain('src="/absolute/image.png"')
+    )
     expect(renderedHelpHtml.value).toContain('alt="Absolute"')
   })
 
@@ -444,10 +470,10 @@ describe('useNodeHelpContent', () => {
     )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
-
-    expect(renderedHelpHtml.value).toContain(
-      'src="https://example.com/image.png"'
+    await vi.waitFor(() =>
+      expect(renderedHelpHtml.value).toContain(
+        'src="https://example.com/image.png"'
+      )
     )
     expect(renderedHelpHtml.value).toContain('alt="External"')
   })
@@ -472,8 +498,8 @@ Testing quote styles in properly formed HTML:
 The MEDIA_SRC_REGEX handles both single and double quotes in img, video and source tags.`)
     )
 
-    const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
-    await flushPromises()
+    const { renderedHelpHtml, isLoading } = useNodeHelpContent(nodeRef)
+    await vi.waitFor(() => expect(isLoading.value).toBe(false))
 
     // All media src attributes should be prefixed correctly
     // Note: marked normalizes quotes to double quotes in output
@@ -499,26 +525,28 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
 
   it('should ignore stale requests when node changes', async () => {
     const nodeRef = ref(mockCoreNode)
-    let resolveFirst: (value: unknown) => void
-    const firstRequest = new Promise((resolve) => {
+    let resolveFirst: ((value: string) => void) | undefined
+    const firstRequest = new Promise<string>((resolve) => {
       resolveFirst = resolve
     })
 
-    mockFetch
-      .mockImplementationOnce(() => firstRequest)
-      .mockResolvedValueOnce(markdownResponse('# Second node content'))
+    vi.spyOn(nodeHelpService, 'fetchNodeHelp')
+      .mockReturnValueOnce(firstRequest)
+      .mockResolvedValueOnce('# Second node content')
 
     const { helpContent } = useNodeHelpContent(nodeRef)
     await nextTick()
 
     // Change node before first request completes
     nodeRef.value = mockCustomNode
-    await nextTick()
-    await flushPromises()
+    await vi.waitFor(() =>
+      expect(helpContent.value).toBe('# Second node content')
+    )
 
     // Now resolve the first (stale) request
-    resolveFirst!(markdownResponse('# First node content'))
-    await flushPromises()
+    assert(resolveFirst)
+    resolveFirst('# First node content')
+    await firstRequest
 
     // Should have second node's content, not first
     expect(helpContent.value).toBe('# Second node content')
@@ -526,11 +554,11 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
 
   it('should ignore a pending request when the node is cleared', async () => {
     const nodeRef = ref<ComfyNodeDefImpl | null>(mockCoreNode)
-    let resolveRequest: ((response: Response) => void) | undefined
-    const request = new Promise<Response>((resolve) => {
+    let resolveRequest: ((content: string) => void) | undefined
+    const request = new Promise<string>((resolve) => {
       resolveRequest = resolve
     })
-    mockFetch.mockReturnValueOnce(request)
+    vi.spyOn(nodeHelpService, 'fetchNodeHelp').mockReturnValueOnce(request)
 
     const { helpContent, isLoading } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -541,8 +569,8 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     expect(isLoading.value).toBe(false)
 
     assert(resolveRequest)
-    resolveRequest(markdownResponse('# Stale content'))
-    await flushPromises()
+    resolveRequest('# Stale content')
+    await request
 
     expect(helpContent.value).toBe('')
   })
