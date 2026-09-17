@@ -41,7 +41,7 @@ export type { WorkspaceTokenResponse }
 
 const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
 /** Ceiling on waiting for the identity port before a host mint gives up. */
-const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
+export const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
 
 // Retain expired unified-token contexts briefly so a concurrent reactive-401
 // replay for the just-rotated token still resolves, then evict them so a
