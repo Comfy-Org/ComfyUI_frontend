@@ -549,6 +549,11 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
+function submitTopup(amountCents: number) {
+  topupIdempotencyKey ??= createUuidv4()
+  return topup(amountCents, topupIdempotencyKey)
+}
+
 async function handleBuy() {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
@@ -580,8 +585,7 @@ async function handleBuy() {
     }
 
     const amountCents = payAmount.value * 100
-    topupIdempotencyKey ??= createUuidv4()
-    const response = await topup(amountCents, topupIdempotencyKey)
+    const response = await submitTopup(amountCents)
     if (!response) {
       if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
