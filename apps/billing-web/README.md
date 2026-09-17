@@ -48,6 +48,7 @@ Configure these per deployment (see `.env_example`):
 | `VITE_FIREBASE_STORAGE_BUCKET`      | no       |                                                                                                                                                                                                                                                                                 |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | no       |                                                                                                                                                                                                                                                                                 |
 | `VITE_FIREBASE_MEASUREMENT_ID`      | no       |                                                                                                                                                                                                                                                                                 |
+| `VITE_STRIPE_PUBLISHABLE_KEY`       | no       | Stripe publishable key for the same family. Without it the checkout form is unavailable and every payment step routes to the provider's hosted page.                                                                                                                            |
 
 The Firebase project has to belong to the same family as `VITE_BILLING_ENV`: a
 token minted against one family is meaningless in another. With any required

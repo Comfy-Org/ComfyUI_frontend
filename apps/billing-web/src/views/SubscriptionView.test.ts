@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
@@ -36,32 +37,40 @@ const CATALOG: BillingPlansData = {
   ]
 }
 
-function renderSubscription(options: FakeBillingClientOptions = {}) {
+const SURFACE_PATH = '/v1/subscription'
+const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
+
+async function renderSubscription(options: FakeBillingClientOptions = {}) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: SURFACE_PATH, component: SubscriptionView },
+      { path: '/v1/checkout', component: { template: '<div />' } }
+    ]
+  })
   const fake = createFakeBillingClient({
     plans: { status: 'ok', value: CATALOG },
     preview: { status: 'ok', value: previewOf() },
     ...options
   })
+  await router.push(`${SURFACE_PATH}?${ENTRY_QUERY}`)
+  await router.isReady()
   render(SubscriptionView, {
     global: {
-      plugins: [createBillingI18n()],
+      plugins: [createBillingI18n(), router],
       provide: { [BILLING_CLIENT_KEY]: fake.client }
     }
   })
-  return fake
+  return { ...fake, router }
 }
 
 describe('SubscriptionView', () => {
   beforeEach(() => {
-    recordBillingEntry(
-      parseBillingEntry(
-        '/v1/subscription?product=comfyui&return_to=comfyui_workspace'
-      )
-    )
+    recordBillingEntry(parseBillingEntry(`${SURFACE_PATH}?${ENTRY_QUERY}`))
   })
 
   it('names the plan the workspace is on today', async () => {
-    renderSubscription()
+    await renderSubscription()
 
     expect(
       await screen.findByText('Current plan: Free · Monthly')
@@ -70,7 +79,7 @@ describe('SubscriptionView', () => {
   })
 
   it('prices every plan the catalog offers', async () => {
-    renderSubscription()
+    await renderSubscription()
 
     expect(await screen.findByText('$28.00')).toBeInTheDocument()
     expect(screen.getByText('$69.00 in monthly credits')).toBeInTheDocument()
@@ -78,7 +87,7 @@ describe('SubscriptionView', () => {
   })
 
   it('blocks a plan the workspace cannot move to and says why', async () => {
-    renderSubscription()
+    await renderSubscription()
 
     expect(
       await screen.findByRole('button', { name: 'Choose Team · Monthly' })
@@ -88,8 +97,8 @@ describe('SubscriptionView', () => {
     ).toBeInTheDocument()
   })
 
-  it('quotes the chosen plan and leaves subscribing to the SDK', async () => {
-    const fake = renderSubscription()
+  it('quotes the chosen plan and carries it into checkout', async () => {
+    const fake = await renderSubscription()
 
     await userEvent.click(
       await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
@@ -102,13 +111,18 @@ describe('SubscriptionView', () => {
     expect(await screen.findByText('Upgrade')).toBeInTheDocument()
     expect(screen.getByText('Oct 1, 2026')).toBeInTheDocument()
     expect(screen.getByText('Cost today')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Continue to checkout' })
+    )
+
+    expect(fake.router.currentRoute.value.fullPath).toBe(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
   })
 
   it('explains a quote the server will not allow', async () => {
-    const fake = renderSubscription({
+    const fake = await renderSubscription({
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
 
@@ -120,10 +134,15 @@ describe('SubscriptionView', () => {
     expect(
       await screen.findByText("This plan change isn't available right now.")
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Continue to checkout' })
+    ).toBeDisabled()
   })
 
   it('explains a failed catalog read with copy of our own', async () => {
-    renderSubscription({ plans: { status: 'error', code: 'REQUEST_FAILED' } })
+    await renderSubscription({
+      plans: { status: 'error', code: 'REQUEST_FAILED' }
+    })
 
     expect(
       await screen.findByText(
