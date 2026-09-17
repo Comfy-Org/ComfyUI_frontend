@@ -118,20 +118,31 @@ function renderComponent(props: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
-  useBillingCapabilities().canChangeSeats = computed(() => false)
-  useBillingCapabilities().canReactivate = computed(() => false)
-  useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-  useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
-  useBillingCapabilities().snapshotAuthoritative = computed(() => true)
   mockApiPlans.value = []
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
-    useBillingCapabilities().canChangeSeats = computed(() => true)
-    useBillingCapabilities().canReactivate = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
@@ -242,7 +253,11 @@ describe('UnifiedPricingTable plan CTA labels', () => {
       stop_usd: 700
     }
     mockIsTeamPlan.value = true
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -388,10 +403,26 @@ describe('UnifiedPricingTable team plan CTA', () => {
   }
 
   beforeEach(() => {
-    useBillingCapabilities().canChangeSeats = computed(() => true)
-    useBillingCapabilities().canReactivate = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
@@ -486,10 +517,26 @@ describe('UnifiedPricingTable team plan CTA', () => {
       isCancelled: true
     }
     mockCurrentTeamCreditStop.value = TEAM_STOP
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -555,8 +602,16 @@ describe('UnifiedPricingTable outside Cloud', () => {
   }
 
   beforeEach(() => {
-    useBillingCapabilities().canChangeSeats = computed(() => true)
-    useBillingCapabilities().canReactivate = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
@@ -740,8 +795,16 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     mockDistributionTypes.isCloud = true
   })
 
@@ -804,10 +867,26 @@ describe('UnifiedPricingTable credit allotment copy', () => {
 // the server is in fact permitting a subscribe.
 describe('UnifiedPricingTable capability gating', () => {
   beforeEach(() => {
-    useBillingCapabilities().canChangeSeats = computed(() => true)
-    useBillingCapabilities().canReactivate = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
@@ -826,8 +905,16 @@ describe('UnifiedPricingTable capability gating', () => {
   it('keeps a paid plan actionable when only change-seats is withheld', async () => {
     const user = userEvent.setup()
     mockSubscription.value = { tier: 'PRO', duration: 'ANNUAL' }
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     const { emitted } = renderComponent()
 
@@ -839,10 +926,26 @@ describe('UnifiedPricingTable capability gating', () => {
 
   it('keeps the CTA live while the capability snapshot is unresolved', () => {
     mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
-    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().snapshotAuthoritative,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent()
 
@@ -852,11 +955,31 @@ describe('UnifiedPricingTable capability gating', () => {
   })
 
   it('keeps the team CTA live while the capability snapshot is unresolved', () => {
-    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().snapshotAuthoritative,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -868,10 +991,26 @@ describe('UnifiedPricingTable capability gating', () => {
   // can_downgrade_to_personal governs leaving a team plan for a personal one, so
   // it must not stand in for permission to buy the team plan.
   it('does not let the downgrade capability alone enable the team CTA', () => {
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -882,10 +1021,26 @@ describe('UnifiedPricingTable capability gating', () => {
 
   it('blocks the CTA when a resolved snapshot permits no lifecycle write', () => {
     mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent()
 
@@ -897,10 +1052,26 @@ describe('UnifiedPricingTable capability gating', () => {
 
 describe('UnifiedPricingTable plan-scope availability', () => {
   beforeEach(() => {
-    useBillingCapabilities().canChangeSeats = computed(() => true)
-    useBillingCapabilities().canReactivate = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
     mockSubscriptionStatus.value = null
@@ -921,11 +1092,31 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('keeps personal plans reachable on a team plan while the snapshot is unresolved', () => {
-    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().snapshotAuthoritative,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -935,9 +1126,21 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('keeps personal cards actionable when only the downgrade is permitted', () => {
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canChangeSeats = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canChangeSeats,
+      'value',
+      'get'
+    ).mockReturnValue(false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -947,7 +1150,11 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('withholds personal plans when a resolved snapshot denies the downgrade', () => {
-    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canDowngradeToPersonal,
+      'value',
+      'get'
+    ).mockReturnValue(false)
 
     renderComponent({ initialPlanMode: 'personal' })
 

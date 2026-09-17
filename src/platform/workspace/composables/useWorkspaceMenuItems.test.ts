@@ -114,7 +114,6 @@ describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
 
-    useBillingCapabilities().canCancel = computed(() => false)
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -129,7 +128,11 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
-    useBillingCapabilities().canCancel = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canCancel,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
@@ -155,7 +158,11 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for a free plan the capability still allows', () => {
-    useBillingCapabilities().canCancel = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canCancel,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     state.isFreeTier = true
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -166,7 +173,11 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('defers to the capability for subscription state it already encodes', () => {
-    useBillingCapabilities().canCancel = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canCancel,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     state.isSubscriptionCancelled = true
     state.canAccessSubscriptionFeatures = false
     state.planSlug = null
@@ -296,7 +307,11 @@ describe('useWorkspaceMenuItems', () => {
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
     const canCancel = ref(true)
-    useBillingCapabilities().canCancel = computed(() => canCancel.value)
+    vi.spyOn(
+      useBillingCapabilities().canCancel,
+      'value',
+      'get'
+    ).mockImplementation(() => canCancel.value)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(

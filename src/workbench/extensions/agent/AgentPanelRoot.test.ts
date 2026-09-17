@@ -284,13 +284,19 @@ beforeEach(() => {
       tier: computed(() => paywallBilling.tier)
     })
   )
-  useBillingCapabilities().canTopUp = computed(
-    () => paywallCapabilities.canTopUp
+  vi.spyOn(
+    useBillingCapabilities().canTopUp,
+    'value',
+    'get'
+  ).mockImplementation(() => paywallCapabilities.canTopUp)
+  vi.spyOn(
+    useBillingCapabilities().canSubscribeSelfServe,
+    'value',
+    'get'
+  ).mockImplementation(() => paywallCapabilities.canSubscribeSelfServe)
+  vi.spyOn(useBillingCapabilities().isReady, 'value', 'get').mockImplementation(
+    () => paywallCapabilities.isReady
   )
-  useBillingCapabilities().canSubscribeSelfServe = computed(
-    () => paywallCapabilities.canSubscribeSelfServe
-  )
-  useBillingCapabilities().isReady = computed(() => paywallCapabilities.isReady)
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())

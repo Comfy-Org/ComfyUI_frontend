@@ -220,9 +220,11 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    useBillingCapabilities().canTopUp = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
   })
@@ -260,8 +262,14 @@ describe('BillingStatusBanner', () => {
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     renderBanner()
 
@@ -284,7 +292,9 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    useBillingCapabilities().canTopUp = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -336,7 +346,9 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    useBillingCapabilities().canTopUp = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -421,7 +433,11 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -446,7 +462,11 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(false)
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

@@ -199,9 +199,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
-    useBillingCapabilities().canReactivate = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
 
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -378,7 +378,11 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     renderComponent('team')
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
@@ -408,7 +412,11 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     state.planSlug = null
 
     renderComponent('team')
@@ -450,7 +458,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canTopUp = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      true
+    )
 
     renderComponent('personal')
 
@@ -464,8 +474,14 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canTopUp = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      true
+    )
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
     state.canManageSubscription = true
 
     renderComponent('personal')
@@ -481,7 +497,9 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    useBillingCapabilities().canTopUp = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      true
+    )
 
     renderComponent('personal')
 
@@ -493,7 +511,11 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('shows one subscription CTA on the Cloud free tier', () => {
     state.canAccessSubscriptionFeatures = false
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     renderComponent('personal')
 
@@ -510,7 +532,11 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
-    useBillingCapabilities().canReactivate = computed(() => true)
+    vi.spyOn(
+      useBillingCapabilities().canReactivate,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     renderComponent('team')
 
@@ -598,10 +624,16 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
-      useBillingCapabilities().canSubscribeSelfServe = computed(
-        () => canSubscribeSelfServe
-      )
-      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      vi.spyOn(
+        useBillingCapabilities().canSubscribeSelfServe,
+        'value',
+        'get'
+      ).mockReturnValue(canSubscribeSelfServe)
+      vi.spyOn(
+        useBillingCapabilities().canTopUp,
+        'value',
+        'get'
+      ).mockReturnValue(canTopUp)
 
       renderComponent('team')
 
@@ -617,7 +649,9 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()
     state.isCancelled = true
-    useBillingCapabilities().canTopUp = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      true
+    )
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true

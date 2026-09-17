@@ -117,7 +117,6 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    useBillingCapabilities().canTopUp = computed(() => true)
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -480,7 +479,11 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
-      useBillingCapabilities().canTopUp = computed(() => false)
+      vi.spyOn(
+        useBillingCapabilities().canTopUp,
+        'value',
+        'get'
+      ).mockReturnValue(false)
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

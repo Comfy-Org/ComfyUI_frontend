@@ -16,7 +16,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -166,7 +166,6 @@ beforeEach(() => {
 })
 
 beforeEach(() => {
-  useBillingCapabilities().canTopUp = computed(() => true)
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
@@ -507,7 +506,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -523,7 +524,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('enters verification once permission resolves after an operation already exists', async () => {
     const canTopUp = ref(false)
-    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    vi.spyOn(
+      useBillingCapabilities().canTopUp,
+      'value',
+      'get'
+    ).mockImplementation(() => canTopUp.value)
 
     setTopupActionOperation({
       opId: 'op-action',
@@ -896,7 +901,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('does not top up after the server capability is revoked', async () => {
     const canTopUp = ref(true)
-    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    vi.spyOn(
+      useBillingCapabilities().canTopUp,
+      'value',
+      'get'
+    ).mockImplementation(() => canTopUp.value)
 
     renderDialog()
     await clickAddCredits()

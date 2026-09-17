@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,8 +50,6 @@ describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
 
-    useBillingCapabilities().canTopUp = computed(() => true)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -91,7 +89,11 @@ describe('useTopUpUrlLoader', () => {
 
   it('retains the deep link until capability loading settles', async () => {
     const canTopUp = ref(false)
-    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+    vi.spyOn(
+      useBillingCapabilities().canTopUp,
+      'value',
+      'get'
+    ).mockImplementation(() => canTopUp.value)
 
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
@@ -119,7 +121,9 @@ describe('useTopUpUrlLoader', () => {
 
   it('is a silent no-op when the server denies top-up', async () => {
     mockRouteQuery.value = { topup: '1' }
-    useBillingCapabilities().canTopUp = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -132,8 +136,14 @@ describe('useTopUpUrlLoader', () => {
 
   it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
+    vi.spyOn(
+      useBillingCapabilities().canSubscribeSelfServe,
+      'value',
+      'get'
+    ).mockReturnValue(true)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -146,7 +156,9 @@ describe('useTopUpUrlLoader', () => {
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
-    useBillingCapabilities().canTopUp = computed(() => false)
+    vi.spyOn(useBillingCapabilities().canTopUp, 'value', 'get').mockReturnValue(
+      false
+    )
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
