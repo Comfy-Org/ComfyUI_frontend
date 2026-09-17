@@ -67,7 +67,7 @@ async function bootAgentLoad3d(page: Page): Promise<void> {
     route.fulfill({ path: assetPath('cube.obj') })
   )
   await page.route('**/api/view?*filename=workflow.glb*', (route) =>
-    route.fulfill({ path: assetPath('workflowInMedia/workflow.glb') })
+    route.fulfill({ path: assetPath('animated_triangle.glb') })
   )
   await page.route('**://t.comfy.org/**', (route) =>
     route.fulfill(jsonRoute({ status: 1 }))
@@ -111,7 +111,7 @@ async function captureNextPrompt(page: Page): Promise<string> {
 
 async function setRemoteModel(page: Page, value: string, opId: string) {
   await page.evaluate(
-    async ({ value, opId }) => {
+    async ({ nodeId, value, opId }) => {
       const root = document.querySelector('#vue-app') as Element & {
         __vue_app__?: {
           _context: { provides: Record<PropertyKey, unknown> }
@@ -135,7 +135,7 @@ async function setRemoteModel(page: Page, value: string, opId: string) {
           }
         | undefined
       const modelWidget = window
-        .app!.graph.getNodeById('1' as never)
+        .app!.graph.getNodeById(nodeId)
         ?.widgets?.find((widget) => widget.name === 'model_file')
       if (!widgetStore || !modelWidget?.widgetId) {
         throw new Error('model_file widget store binding unavailable')
@@ -150,7 +150,7 @@ async function setRemoteModel(page: Page, value: string, opId: string) {
         throw new Error('remote model_file update was not applied')
       }
     },
-    { value, opId }
+    { nodeId: toNodeId('1'), value, opId }
   )
 }
 
