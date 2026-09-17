@@ -77,7 +77,7 @@ export async function launchCancellationFlow({
       }
     })
 
-    if (results.discountApplied) {
+    if (results.type === 'discount-applied') {
       if (isLaunchWorkspaceCurrent()) {
         await billing.fetchStatus().catch((error) => {
           reportError(error, { errorType: 'churnkey_discount_billing_refresh' })
@@ -85,7 +85,7 @@ export async function launchCancellationFlow({
       }
       return
     }
-    if (results.aborted === true) {
+    if (results.type === 'abandoned') {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {

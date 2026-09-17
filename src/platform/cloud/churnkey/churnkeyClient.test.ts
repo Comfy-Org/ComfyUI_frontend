@@ -1,7 +1,8 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
@@ -49,7 +51,7 @@ describe('churnkeyClient', () => {
 
   it('builds a Stripe-provider session from backend credentials', async () => {
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
 
     const handleCancel = vi.fn().mockResolvedValue({ message: 'Canceled' })
     const showPromise = session.show({
@@ -78,7 +80,7 @@ describe('churnkeyClient', () => {
     expect(handleCancel).toHaveBeenCalledWith('Too expensive', 'Feedback')
 
     config.onClose({ aborted: true })
-    await expect(showPromise).resolves.toEqual({ aborted: true })
+    await expect(showPromise).resolves.toEqual({ type: 'abandoned' })
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
@@ -91,7 +93,7 @@ describe('churnkeyClient', () => {
     'handleRedirect'
   ] as const)('keeps %s blocked by default', async (handler) => {
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
     const showPromise = session.show({ handleCancel: vi.fn() })
 
     await expect(capturedConfig()[handler]?.()).rejects.toThrow(
@@ -111,7 +113,7 @@ describe('churnkeyClient', () => {
         test_discount_subscription_id: 'sub_test_1'
       })
       const session = await prepareChurnkey()
-      if (!session) throw new Error('Expected a Churnkey session')
+      assert.exists(session)
       const showPromise = session.show({ handleCancel: vi.fn() })
 
       expect(capturedConfig().subscriptionId).toBeUndefined()
@@ -124,15 +126,26 @@ describe('churnkeyClient', () => {
     }
   )
 
-  it.for(['close', 'error'] as const)(
-    'preserves a confirmed native discount on subsequent %s',
-    async (ending) => {
+  it.for([
+    { ending: 'close', reports: [] },
+    {
+      ending: 'error',
+      reports: [
+        [
+          new Error('display failed after success (display)'),
+          { errorType: 'error_displaying_churnkey_after_discount' }
+        ]
+      ]
+    }
+  ] as const)(
+    'preserves a confirmed native discount on subsequent $ending',
+    async ({ ending, reports }) => {
       mocks.getChurnkeyAuth.mockResolvedValue({
         ...authResponse(),
         test_discount_subscription_id: 'sub_test_1'
       })
       const session = await prepareChurnkey()
-      if (!session) throw new Error('Expected a Churnkey session')
+      assert.exists(session)
       const handleCancel = vi.fn()
       const showPromise = session.show({ handleCancel })
       const config = capturedConfig()
@@ -145,15 +158,16 @@ describe('churnkeyClient', () => {
       config.onDiscount?.({}, {})
       const end = {
         close: () => config.onClose({ aborted: true }),
-        error: () => config.onError('display failed after success')
+        error: () => config.onError('display failed after success', 'display')
       }
       end[ending]()
+      config.onError('late error')
 
       await expect(showPromise).resolves.toEqual({
-        aborted: false,
-        discountApplied: true
+        type: 'discount-applied'
       })
       expect(handleCancel).not.toHaveBeenCalled()
+      expect(vi.mocked(reportError).mock.calls).toEqual(reports)
     }
   )
 
@@ -163,13 +177,14 @@ describe('churnkeyClient', () => {
       test_discount_subscription_id: 'sub_test_1'
     })
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
     const showPromise = session.show({ handleCancel: vi.fn() })
     const config = capturedConfig()
-    config.onClose({ aborted: true, discountApplied: true })
+    const closeResults = { aborted: true, discountApplied: true }
+    config.onClose(closeResults)
     config.onDiscount?.({}, {})
 
-    await expect(showPromise).resolves.toEqual({ aborted: true })
+    await expect(showPromise).resolves.toEqual({ type: 'abandoned' })
   })
 
   it('reports a failed native action without claiming a discount or canceling', async () => {
@@ -178,7 +193,7 @@ describe('churnkeyClient', () => {
       test_discount_subscription_id: 'sub_test_1'
     })
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
     const handleCancel = vi.fn()
     const showPromise = session.show({ handleCancel })
     capturedConfig().onError('Stripe rejected the coupon')
@@ -195,18 +210,25 @@ describe('churnkeyClient', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
-  it('settles when closed without requesting cancellation', async () => {
-    const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
-    const handleCancel = vi.fn()
+  it.for([
+    { aborted: true, outcome: 'abandoned' },
+    { aborted: false, outcome: 'completed' },
+    { aborted: undefined, outcome: 'completed' }
+  ] as const)(
+    'normalizes close with aborted=$aborted to $outcome',
+    async ({ aborted, outcome }) => {
+      const session = await prepareChurnkey()
+      assert.exists(session)
+      const handleCancel = vi.fn()
 
-    const showPromise = session.show({ handleCancel })
-    capturedConfig().onClose({ aborted: true })
+      const showPromise = session.show({ handleCancel })
+      capturedConfig().onClose({ aborted })
 
-    await expect(showPromise).resolves.toEqual({ aborted: true })
-    expect(handleCancel).not.toHaveBeenCalled()
-    expect(mocks.clearState).toHaveBeenCalledOnce()
-  })
+      await expect(showPromise).resolves.toEqual({ type: outcome })
+      expect(handleCancel).not.toHaveBeenCalled()
+      expect(mocks.clearState).toHaveBeenCalledOnce()
+    }
+  )
 
   it('waits for an in-flight cancellation before settling close', async () => {
     let rejectCancellation: ((reason: Error) => void) | undefined
@@ -214,7 +236,7 @@ describe('churnkeyClient', () => {
       rejectCancellation = reject
     })
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
 
     const showPromise = session.show({
       handleCancel: () => cancellation
@@ -239,7 +261,7 @@ describe('churnkeyClient', () => {
 
   it('settles provider errors after the callback returns', async () => {
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
 
     const showPromise = session.show({ handleCancel: vi.fn() })
     capturedConfig().onError('provider failed')
@@ -252,7 +274,7 @@ describe('churnkeyClient', () => {
 
   it('cleans up when ChurnKey initialization throws synchronously', async () => {
     const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
+    assert.exists(session)
     mocks.init.mockImplementation(() => {
       throw new Error('init failed')
     })

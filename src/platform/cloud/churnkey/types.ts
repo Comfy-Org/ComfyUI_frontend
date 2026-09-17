@@ -6,10 +6,14 @@ export interface ChurnkeyHandlerResult {
   message?: string
 }
 
-export interface ChurnkeySessionResults {
+interface ChurnkeyCloseResults {
   aborted?: boolean
-  discountApplied?: boolean
 }
+
+export type ChurnkeySessionOutcome =
+  | { type: 'discount-applied' }
+  | { type: 'abandoned' }
+  | { type: 'completed' }
 
 type ChurnkeyUnsupportedHandler = (
   ...args: unknown[]
@@ -34,7 +38,7 @@ export interface ChurnkeyInitConfig {
   handleRebate: ChurnkeyUnsupportedHandler
   handleRedirect: ChurnkeyUnsupportedHandler
   onDiscount?: (customer: unknown, coupon: unknown) => void
-  onClose: (results: ChurnkeySessionResults) => void
+  onClose: (results: ChurnkeyCloseResults) => void
   onError: (error: unknown, type?: string) => void
 }
 

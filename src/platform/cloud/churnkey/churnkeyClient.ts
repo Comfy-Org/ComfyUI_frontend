@@ -3,6 +3,7 @@ import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternal
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 
@@ -10,7 +11,7 @@ import type {
   ChurnkeyHandlerResult,
   ChurnkeyInit,
   ChurnkeyInitConfig,
-  ChurnkeySessionResults
+  ChurnkeySessionOutcome
 } from './types'
 
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
@@ -41,7 +42,7 @@ export interface ChurnkeyShowOptions {
 }
 
 export interface ChurnkeySession {
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
+  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
 }
 
 function rejectUnsupportedOffer(): Promise<never> {
@@ -59,7 +60,7 @@ function createSession(
     auth.mode === 'test' ? auth.test_discount_subscription_id : undefined
   return {
     show: (options) =>
-      new Promise<ChurnkeySessionResults>((resolve, reject) => {
+      new Promise<ChurnkeySessionOutcome>((resolve, reject) => {
         let settled = false
         let discountApplied = false
         let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
@@ -98,9 +99,9 @@ function createSession(
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
           onClose: (results) => {
-            const outcome = discountApplied
-              ? { aborted: false, discountApplied: true }
-              : { aborted: results.aborted }
+            const outcome: ChurnkeySessionOutcome = discountApplied
+              ? { type: 'discount-applied' }
+              : { type: results.aborted === true ? 'abandoned' : 'completed' }
             if (!pendingCancellation) {
               settle(() => resolve(outcome))
               return
@@ -115,7 +116,10 @@ function createSession(
             settled = true
             window.churnkey?.hide?.()
             if (discountApplied) {
-              resolve({ aborted: false, discountApplied: true })
+              resolve({ type: 'discount-applied' })
+              reportError(churnkeyError(error, type), {
+                errorType: 'error_displaying_churnkey_after_discount'
+              })
             } else {
               reject(churnkeyError(error, type))
             }
