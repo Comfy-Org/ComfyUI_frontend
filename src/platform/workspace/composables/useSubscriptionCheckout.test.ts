@@ -500,7 +500,6 @@ describe('useSubscriptionCheckout', () => {
     useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
-    vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
     sessionStorage.clear()
     clearCheckoutJourney()
   })
