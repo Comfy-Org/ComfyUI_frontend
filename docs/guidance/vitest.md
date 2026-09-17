@@ -69,24 +69,25 @@ import { onTestFinished, vi } from 'vitest'
 
 type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
 
-function defaultFlags(): FeatureFlags {
-  return { assetsEnabled: false, hostedBillingDestination: 'stripe' }
+const defaultFlags: FeatureFlags = {
+  assetsEnabled: false,
+  hostedBillingDestination: 'stripe'
 }
 
 const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
-  flags: reactive(defaultFlags()),
+  flags: reactive({ ...defaultFlags }),
   featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
 }
 
 export const useFeatureFlags = vi.fn(() => {
   onTestFinished(() => {
-    Object.assign(featureFlags.flags, defaultFlags())
+    Object.assign(featureFlags.flags, defaultFlags)
   })
   return featureFlags
 })
 ```
 
-Restore in place (`Object.assign(reactiveObject, defaults())`,
+Restore in place (`Object.assign(reactiveObject, defaults)`,
 `someRef.value = default`) so consumer `computed`s are notified. Do not call
 `beforeEach` inside a mock module: it binds to the file being collected, so a
 cached module (`isolate: false`) registers no hook for later files, and a
