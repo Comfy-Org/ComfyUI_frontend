@@ -123,13 +123,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: vi.fn(() => 'https://docs.comfy.org'),
-    docsPaths: { partnerNodesPricing: 'partner-nodes' }
-  })
-}))
-
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {

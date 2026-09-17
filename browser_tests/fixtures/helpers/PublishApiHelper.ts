@@ -6,13 +6,12 @@ import type {
   HubLabelInfo,
   HubLabelListResponse,
   HubProfile,
-  WorkflowPublishInfo
+  WorkflowPublishInfo,
+  WorkflowApiAssetsResponse as ShareableAssetsResponse
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
-
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 
 const DEFAULT_PROFILE: HubProfile = {
   username: 'testuser',

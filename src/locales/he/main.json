@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "גררו נכס מלוח הנכסים",
     "addNodesFromGraph": "אזכור צמתים מהגרף",
-    "addPromptToSend": "הוסף פרומפט לשליחה",
     "addToPrompt": "הוסף לפרומפט",
     "alpha": "אלפא",
     "askComfyAgent": "שאל את Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "בחר תהליך עבודה",
     "chooseWorkflowForChat": "בחר תהליך עבודה עבור צ'אט זה",
     "close": "סגור",
+    "coachBody": "תארו את הרעיונות שלכם, ובקשו ממנו לבנות ולהריץ תהליכי עבודה. הוא רואה את הקנבס והקבצים שלכם.",
+    "coachGraphBody": "עדיין תוכלו לערוך את הגרף או לעבור בין לשוניות בזמן שהסוכן עובד.",
+    "coachGraphTitle": "אפשרו לסוכן לפעול בזמן שאתם עורכים",
+    "coachHistoryBody": "שיחות קודמות נשמרות כאן. פתחו אחת כדי לעיין בה או להמשיך לעבוד עם הסוכן.",
+    "coachHistoryTitle": "המשיכו מהמקום שבו הפסקתם",
+    "coachProgress": "{current} מתוך {total}",
+    "coachTitle": "הכירו את Comfy Agent שלכם",
+    "coachWorkflowBody": "הסוכן עורך רק את תהליך העבודה שתבחרו. ניתן גם להעלות קובצי ייחוס או להזכיר תהליכי עבודה אחרים.",
+    "coachWorkflowTitle": "בחרו תהליך עבודה לעריכה בידי הסוכן שלכם",
     "consent": {
       "accept": "התחלת השימוש ב-Comfy Agent",
       "body1": "Comfy Agent מסייע לכם לתכנן, לבנות, להריץ ולשפר תהליכי עבודה. תארו מה ברצונכם ליצור, ו-Comfy Agent יעבוד כעמית רב-עוצמה שלכם.",
@@ -49,6 +57,13 @@
     "credits": "זיכויים",
     "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
+    "diagnosticReport": {
+      "clipboardFailed": "הגישה ללוח הגזירים נכשלה. בחרו והעתיקו את הדוח שלהלן, או נסו שוב.",
+      "collectionFailed": "לא ניתן לאסוף את הדוח. נסו שוב, או כבו מקורות אופציונליים ונסו שוב.",
+      "includedSources": "הכללה בדוח (מופעל כברירת מחדל)",
+      "manualCopy": "דוח להעתקה",
+      "retry": "נסה שוב להעתיק את הדוח"
+    },
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
@@ -144,6 +159,7 @@
     "showMore": "הצג עוד",
     "skip": "דלג",
     "stop": "עצור",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "צור ברווז צהוב עם מסכת הוקי",
       "הצג את תהליכי העבודה השמורים שלי",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "latent",
     "loaders": "loaders",
     "logic": "logic",
+    "looping": "לולאה",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "החל את קוד הקידום כדי לרענן את הצעת המחיר לפני ההמשך.",
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
+      "billingAddress": "כתובת לחיוב",
       "changePaymentMethod": "שנה",
       "commitment": "התחייבות",
       "completePayment": "השלמת התשלום",
@@ -5143,6 +5163,13 @@
     },
     "invite": "הזמנה",
     "inviteLimitReached": "הגעת למקסימום של {count} חברים",
+    "inviteLinks": {
+      "copied": "הועתק!",
+      "copyAll": "העתקת קישור הזמנה | העתקת כל הקישורים ({count})",
+      "copyLink": "העתקת קישור הזמנה",
+      "sentLead": "לכל הזמנה יש קישור אישי שאפשר לשתף ישירות:",
+      "sentTitle": "{count} הזמנה נשלחה | {count} הזמנות נשלחו"
+    },
     "inviteMember": "הזמנת חבר",
     "inviteMemberDialog": {
       "failedCount": "לא ניתן היה לשלוח {count} הזמנה. נסה שוב. | לא ניתן היה לשלוח {count} הזמנות. נסה שוב.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "בטל הזמנה",
         "changeRole": "שנה תפקיד",
+        "copyInviteLink": "העתקת קישור הזמנה",
         "removeMember": "הסרת החבר",
         "resendInvite": "שלח הזמנה מחדש",
         "setCreditLimit": "הגדר מגבלת קרדיטים"
