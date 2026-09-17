@@ -13,7 +13,10 @@ import type {
   PreviewSubscribeInput,
   SubscribeInput
 } from '@comfyorg/account-core/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
+import {
+  BILLING_OPERATION_TELEMETRY_EVENT,
+  validateActionUrl
+} from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
@@ -123,12 +126,17 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     topupViews.value.find(needsCustomerAttention)
   )
 
+  // The lifecycle already refuses anything but https on the way in
+  // (`operationLifecycle.ts` adoption, `operationState.ts` on every poll); the
+  // same predicate runs again here so the rule holds for whoever publishes a
+  // state, and so the guarantee is readable where the URL is handed out.
+  const hostedActionUrl = (state: BillingOperationState): string | undefined =>
+    state.phase === 'pending' ? validateActionUrl(state.actionUrl) : undefined
+
   const subscriptionActionUrl = computed(
     () =>
       operations.value.flatMap((state) =>
-        state.kind === 'subscription' && state.phase === 'pending'
-          ? (state.actionUrl ?? [])
-          : []
+        state.kind === 'subscription' ? (hostedActionUrl(state) ?? []) : []
       )[0] ?? null
   )
 
@@ -209,9 +217,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // owes stays on `subscriptionActionUrl` for the checkout to put behind a
   // button of their own.
   function openHostedAction(state: PendingBillingOperation) {
-    const { id, actionUrl } = state
-    if (actionUrl === undefined || offeredActions.get(id) === actionUrl) return
-    offeredActions.set(id, actionUrl)
+    const actionUrl = hostedActionUrl(state)
+    if (actionUrl === undefined || offeredActions.get(state.id) === actionUrl) {
+      return
+    }
+    offeredActions.set(state.id, actionUrl)
     if (window.open(actionUrl, '_blank')) return
     toastStore.add({
       severity: 'warn',

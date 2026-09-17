@@ -561,6 +561,18 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/second')
   })
 
+  it('offers nothing for a hosted page that is not https', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'javascript:alert(document.cookie)' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBeNull()
+  })
+
   it('offers nothing once the subscribe has settled', () => {
     vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
