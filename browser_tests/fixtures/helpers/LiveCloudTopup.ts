@@ -36,7 +36,7 @@ export class LiveCloudTopup {
       .click()
     await expect(
       this.dialog.getByText(
-        'Your saved payment method is charged immediately.',
+        'Credits are added to this workspace as soon as payment completes.',
         { exact: true }
       )
     ).toBeVisible()
