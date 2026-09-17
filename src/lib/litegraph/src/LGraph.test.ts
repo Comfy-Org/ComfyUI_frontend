@@ -1120,7 +1120,151 @@ describe('node:before-removed event', () => {
     graph.remove(node, { preserveCanonicalState: true })
 
     expect(beforeRemoved).toHaveBeenCalledOnce()
-    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor,
+      preserveCanonicalState: true
+    })
+  })
+
+  it.for([
+    { options: { replacement: true } },
+    { options: { preserveCanonicalState: true, replacement: true } }
+  ])(
+    'a replacement removal preserves canonical state: $options',
+    ({ options }) => {
+      const graph = new LGraph()
+      const origin = new LGraphNode('origin')
+      origin.addOutput('out', '*')
+      const node = new LGraphNode('replaced')
+      node.addInput('in', '*')
+      node.addWidget('number', 'value', 7, () => {})
+      graph.add(origin)
+      graph.add(node)
+      const link = origin.connect(0, node, 0)
+      const scope = graphScopeOf(graph)
+      const state = node._state
+      const beforeRemoved = vi.fn()
+      graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+      graph.remove(node, options)
+
+      expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+        node,
+        successor: undefined,
+        preserveCanonicalState: true
+      })
+      expect(graph._nodes).not.toContain(node)
+      expect(node.graph).toBeNull()
+      expect(useNodeDataStore().getNode(graph.id, node.id)).toBe(state)
+      expect(useLinkStore().getInputSlotLink(scope, node.id, 0)?.id).toBe(
+        link?.id
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'value'))
+          ?.value
+      ).toBe(7)
+      expect(layoutStore.getNodeLayout(graph.id, node.id)).toBeDefined()
+    }
+  )
+
+  it('finishes detaching a node whose onRemoved throws, then rethrows', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.onRemoved = () => {
+      throw new Error('extension cleanup failed')
+    }
+    const removed = vi.fn()
+    graph.events.addEventListener('node:removed', removed)
+
+    expect(() => graph.remove(node)).toThrow('extension cleanup failed')
+
+    expect(graph._nodes).not.toContain(node)
+    expect(graph.getNodeById(node.id)).toBeNull()
+    expect(node.graph).toBeNull()
+    expect(node._graphScope).toBeUndefined()
+    expect(removed).toHaveBeenCalledOnce()
+  })
+
+  it('finishes the removal when graph.onNodeRemoved throws', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    graph.onNodeRemoved = () => {
+      throw new Error('graph hook failed')
+    }
+    const removed = vi.fn()
+    graph.events.addEventListener('node:removed', removed)
+
+    expect(() => graph.remove(node)).toThrow('graph hook failed')
+
+    expect(graph._nodes).not.toContain(node)
+    expect(graph._nodes_in_order).not.toContain(node)
+    expect(removed).toHaveBeenCalledOnce()
+  })
+
+  it('aggregates node and graph callback failures after detaching', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.onRemoved = () => {
+      throw new Error('node hook failed')
+    }
+    graph.onNodeRemoved = () => {
+      throw new Error('graph hook failed')
+    }
+
+    let thrown: unknown
+    try {
+      graph.remove(node)
+    } catch (error) {
+      thrown = error
+    }
+
+    expect(thrown).toBeInstanceOf(AggregateError)
+    expect((thrown as AggregateError).errors.map((e) => String(e))).toEqual([
+      'Error: node hook failed',
+      'Error: graph hook failed'
+    ])
+    expect(graph._nodes).not.toContain(node)
+    expect(node.graph).toBeNull()
+  })
+
+  it('finishes detaching a subgraph host when an interior node throws from onRemoved', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, nodeCount: 2 })
+    const [first, second] = subgraph.nodes
+    first.onRemoved = () => {
+      throw new Error('interior cleanup failed')
+    }
+    second.onRemoved = vi.fn()
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+
+    expect(() => graph.remove(host)).toThrow('interior cleanup failed')
+
+    expect(graph._nodes).not.toContain(host)
+    expect(graph.getNodeById(host.id)).toBeNull()
+    expect(host.graph).toBeNull()
+    expect(graph.subgraphs.has(subgraph.id)).toBe(false)
+    expect(second.onRemoved).toHaveBeenCalledOnce()
+  })
+
+  it('reports canonical preservation for an owning node removed with the option', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const beforeRemoved = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor: undefined,
+      preserveCanonicalState: true
+    })
   })
 
   it('does not fire node:before-removed for a node not in the graph', () => {
@@ -1449,6 +1593,34 @@ describe('node:before-removed event', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
+  it.for([false, true])(
+    'retains definitions needed by a pending replacement (nested: %s)',
+    (nested) => {
+      const { rootGraph, subgraphs, subgraphNodes } = createNestedSubgraphs({
+        depth: 2,
+        nodesPerLevel: 1
+      })
+      for (const subgraph of subgraphs) {
+        rootGraph.subgraphs.set(subgraph.id, subgraph)
+      }
+      const stale = subgraphNodes[0]
+      const retained = subgraphs[nested ? 1 : 0]
+      const innerNodes = [...retained.nodes]
+      const scope = graphScopeOf(rootGraph)
+      const nodeStore = useNodeDataStore()
+      nodeStore.deleteNode(scope, stale._state)
+      nodeStore.registerNode(scope, { ...stale._state, type: retained.id })
+
+      rootGraph.remove(stale, { preserveCanonicalState: true })
+
+      expect(rootGraph.nodes).not.toContain(stale)
+      expect(rootGraph.subgraphs.get(retained.id)).toBe(retained)
+      expect(retained.nodes).toEqual(innerNodes)
+      expect(rootGraph.subgraphs.has(subgraphs[0].id)).toBe(!nested)
+      expect(rootGraph.subgraphs.get(subgraphs[1].id)).toBe(subgraphs[1])
+    }
+  )
+
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 

@@ -25,6 +25,8 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
@@ -968,25 +970,16 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(modelStore.missingModelCandidates).toBeNull()
   })
 
-  it('preserves same-id successor missing model errors', () => {
-    const graph = new LGraph()
-    const orphan = new LGraphNode('CheckpointLoaderSimple')
-    graph.add(orphan)
-    const successor = new LGraphNode('CheckpointLoaderSimple')
-    successor.id = orphan.id
-    graph._nodes.push(successor)
-    graph._nodes_by_id[orphan.id] = successor
-
+  function seedMissingModel(graph: LGraph, node: LGraphNode) {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     installErrorClearingHooks(graph)
-
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
       fromAny<
         Parameters<typeof modelStore.setMissingModels>[0][number],
         unknown
       >({
-        nodeId: String(successor.id),
+        nodeId: String(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -994,10 +987,59 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
         isMissing: true
       })
     ])
+    return modelStore
+  }
+
+  it('retains errors when a live successor already holds the slot', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    const successor = new LGraphNode('CheckpointLoaderSimple')
+    successor.id = orphan.id
+    graph._nodes.push(successor)
+    graph._nodes_by_id[orphan.id] = successor
+    const modelStore = seedMissingModel(graph, orphan)
 
     graph.remove(orphan, { preserveCanonicalState: true })
 
-    expect(graph.getNodeById(successor.id)).toBe(successor)
+    expect(graph._nodes).not.toContain(orphan)
+    expect(modelStore.missingModelCandidates).toHaveLength(1)
+  })
+
+  it('retains errors when the canonical record was re-created', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    const nodeStore = useNodeDataStore()
+    const scope = graphScopeOf(graph)
+    nodeStore.deleteNode(scope, orphan._state)
+    nodeStore.registerNode(scope, { ...orphan._state })
+    const modelStore = seedMissingModel(graph, orphan)
+
+    graph.remove(orphan, { preserveCanonicalState: true })
+
+    expect(graph._nodes).not.toContain(orphan)
+    expect(modelStore.missingModelCandidates).toHaveLength(1)
+  })
+
+  it('retains errors when a canonical removal throws in onRemoved', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    const nodeStore = useNodeDataStore()
+    const scope = graphScopeOf(graph)
+    nodeStore.deleteNode(scope, orphan._state)
+    nodeStore.registerNode(scope, { ...orphan._state })
+    const modelStore = seedMissingModel(graph, orphan)
+    orphan.onRemoved = () => {
+      throw new Error('cleanup failed')
+    }
+
+    expect(() =>
+      graph.remove(orphan, { preserveCanonicalState: true })
+    ).toThrow('cleanup failed')
+
+    expect(graph._nodes).not.toContain(orphan)
     expect(modelStore.missingModelCandidates).toHaveLength(1)
   })
 

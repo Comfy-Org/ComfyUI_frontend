@@ -651,15 +651,15 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
 
     const after = state.graph.getNodeById(toNodeId(3))!
     expect(after).not.toBeInstanceOf(SubgraphNode)
-    // `reconcileNode` registers an array payload under positional names
-    // (`widgetEntries` in graphMutations) and clears the named entries. The
-    // store is the authoritative contract here; projecting positional values
-    // onto a plain node's litegraph widgets is the materializer's concern and
-    // out of scope for the follower (see agentNodeMaterializer.ts).
+    // `reconcileNode` binds a positional payload to the registered
+    // definition's widget names, so the store carries the value under `value`
+    // rather than a positional key. The store is the authoritative contract
+    // here; projecting it onto the litegraph widgets is the materializer's
+    // concern (see agentNodeMaterializer.ts).
     const stored = useWidgetValueStore()
       .getNodeWidgets(graphScopeOf(state.graph).rootGraphId, toNodeId(3))
       .map((w) => [w.name, w.value])
-    expect(stored).toEqual([['0', 9]])
+    expect(stored).toEqual([['value', 9]])
     // The host is untouched: the fallback must not bleed into promoted state.
     expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
   })

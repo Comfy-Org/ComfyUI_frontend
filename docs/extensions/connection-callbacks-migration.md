@@ -62,6 +62,43 @@ separately verify that `node:removed` sees a detached node. The complete
 sequence, including step 2, is observed from source rather than guaranteed by
 one end-to-end test.
 
+The `node:before-removed` detail carries `preserveCanonicalState`. It is
+`true` when the caller keeps the node's canonical record (an adapter being
+swapped for the same record, including `remove(node, { replacement: true })`),
+so a consumer that clears per-node state on removal can tell a real removal
+from a swap.
+
+## A throwing removal callback no longer leaves the node half-removed
+
+Previously, a `node.onRemoved()` that threw stopped the removal after the
+links were already disconnected: the node stayed in `graph.nodes` with its
+links gone. Now the graph treats every removal callback as an effect around
+one structural transaction. Interior subgraph lifecycles, `node.onRemoved()`,
+`graph.onNodeRemoved()`, `node:removed` listeners and the change hooks all
+run, the node is fully detached (steps 4 and 5 above always complete), and
+only then is the failure rethrown: the single error when one callback threw,
+an `AggregateError` listing them when several did.
+
+What this means for an extension:
+
+- After your `onRemoved` throws, the node is gone. Do not retry the removal
+  and do not expect `node.graph` to still be set.
+- One interior node's throwing `onRemoved` no longer stops the other interior
+  nodes of a released subgraph from receiving theirs.
+- Cleanup that must run on removal belongs before anything that can throw,
+  or in `node:removed`, which now fires even when an earlier callback failed.
+
+## Subscribe to node type registration
+
+`LiteGraph.subscribeNodeTypeRegistered(listener)` notifies `listener(type,
+base_class)` after each `registerNodeType()` on that registry and returns an
+unsubscribe function. Listeners run after the legacy
+`LiteGraph.onNodeTypeRegistered` callback, even when that callback throws, and
+each listener is isolated: one that throws is logged and does not stop the
+others or the registration. Assigning `onNodeTypeRegistered` still replaces
+any previous single-slot handler; use the subscription when more than one
+consumer needs the event.
+
 To resolve the removed node from a peer's `onConnectionsChange` handler, do it
 at step 2 via `graph.getNodeById()`. By `node:removed`, the node is gone.
 

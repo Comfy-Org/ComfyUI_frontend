@@ -517,20 +517,22 @@ export function findUsedSubgraphIds(
   return usedSubgraphIds
 }
 
+/** The subgraph instances one graph level still holds live. */
+export type LiveSubgraphResolver = (graph: GraphOrSubgraph) => Subgraph[]
+
 function findLiveSubgraphIds(
   rootGraph: LGraph,
-  removedNode: SubgraphNode
+  liveSubgraphs: LiveSubgraphResolver
 ): Set<SubgraphId> {
   const liveIds = new Set<SubgraphId>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
 
   while (toVisit.length > 0) {
     const graph = toVisit.shift()!
-    for (const node of graph._nodes) {
-      if (node === removedNode || !node.isSubgraphNode()) continue
-      if (liveIds.has(node.subgraph.id)) continue
-      liveIds.add(node.subgraph.id)
-      toVisit.push(node.subgraph)
+    for (const subgraph of liveSubgraphs(graph)) {
+      if (liveIds.has(subgraph.id)) continue
+      liveIds.add(subgraph.id)
+      toVisit.push(subgraph)
     }
   }
 
@@ -556,9 +558,13 @@ function collectSubgraphsPostOrder(
 
 export function findReleasableSubgraphs(
   rootGraph: LGraph,
-  removedNode: SubgraphNode
+  removedNode: SubgraphNode,
+  liveSubgraphs: LiveSubgraphResolver = (graph) =>
+    graph._nodes.flatMap((node) =>
+      node !== removedNode && node.isSubgraphNode() ? [node.subgraph] : []
+    )
 ): Subgraph[] {
-  const liveIds = findLiveSubgraphIds(rootGraph, removedNode)
+  const liveIds = findLiveSubgraphIds(rootGraph, liveSubgraphs)
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))

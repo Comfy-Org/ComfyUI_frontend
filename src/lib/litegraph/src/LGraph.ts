@@ -155,6 +155,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import type { LiveSubgraphResolver } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -240,6 +241,53 @@ export interface GraphRemoveOptions {
    * Same-id replacement state is left intact.
    */
   preserveCanonicalState?: boolean
+  /**
+   * The caller replaces this node's adapter for the same canonical record:
+   * links, widget values and execution order stay untouched for the
+   * successor, whether or not this node still owns the record. Implies
+   * {@link preserveCanonicalState}.
+   */
+  replacement?: boolean
+}
+
+/**
+ * Collects what lifecycle callbacks throw during one structural transaction
+ * so the transaction can finish before the failures surface.
+ */
+class LifecycleFailures {
+  readonly #errors: unknown[] = []
+
+  run(effect: () => void): void {
+    try {
+      effect()
+    } catch (error) {
+      this.#errors.push(error)
+    }
+  }
+
+  rethrow(message: string): void {
+    if (this.#errors.length === 0) return
+    if (this.#errors.length === 1) throw this.#errors[0]
+    throw new AggregateError(this.#errors, message)
+  }
+}
+
+/**
+ * Child definitions still live according to the canonical node records: each
+ * record's type id is mapped through `rootGraph.subgraphs`. Used when another
+ * authority reconciled the stores before this removal, where the default
+ * resolver (the nodes still attached to each graph) would be stale.
+ */
+function canonicalSubgraphResolver(
+  rootGraph: LGraph,
+  preserveCanonicalState: boolean | undefined
+): LiveSubgraphResolver | undefined {
+  if (!preserveCanonicalState) return undefined
+  const nodeStore = useNodeDataStore()
+  return (graph) =>
+    nodeStore
+      .getGraphNodesFor(rootGraph.id, graph.id)
+      .flatMap((state) => rootGraph.subgraphs.get(state.type) ?? [])
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -273,11 +321,22 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   graph?.onNodeRemoved?.(node)
 }
 
-function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
+/**
+ * With `failures`, every node still receives its lifecycle after an earlier
+ * one throws (a released subgraph's interior); without it the first throw
+ * propagates at once (`clear()`).
+ */
+function fireNodeRemovalLifecycles(
+  nodes: LGraphNode[],
+  failures?: LifecycleFailures
+): void {
   const pending = nodes.filter((node) => !nodesBeingRemoved.has(node))
   for (const node of pending) nodesBeingRemoved.add(node)
   try {
-    for (const node of pending) fireNodeRemovalLifecycle(node)
+    for (const node of pending) {
+      if (failures) failures.run(() => fireNodeRemovalLifecycle(node))
+      else fireNodeRemovalLifecycle(node)
+    }
   } finally {
     for (const node of pending) nodesBeingRemoved.delete(node)
   }
@@ -1450,13 +1509,16 @@ export class LGraph
 
     if (nodesBeingRemoved.has(node)) return
 
+    const replacement = !!options.replacement
+    const preserveCanonicalState =
+      !!options.preserveCanonicalState || replacement
     // not found
-    if (this._nodes_by_id[node.id] == null && !options.preserveCanonicalState) {
+    if (this._nodes_by_id[node.id] == null && !preserveCanonicalState) {
       console.warn('LiteGraph: node not found', node)
       return
     }
     // cannot be removed
-    if (node.ignore_remove && !options.preserveCanonicalState) {
+    if (node.ignore_remove && !preserveCanonicalState) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1468,7 +1530,9 @@ export class LGraph
 
     nodesBeingRemoved.add(node)
     try {
-      this.batchVersionUpdates(() => this.removeNode(node, options))
+      this.batchVersionUpdates(() =>
+        this.removeNode(node, { preserveCanonicalState, replacement })
+      )
     } finally {
       nodesBeingRemoved.delete(node)
     }
@@ -1481,13 +1545,25 @@ export class LGraph
       this._nodes_by_id[node.id] != null
         ? this._nodes_by_id[node.id]
         : undefined
+    const nodeStore = useNodeDataStore()
+    const canonical = nodeStore.getNode(this.rootGraph.id, node.id)
+    const preserveReplacement =
+      options.replacement ||
+      successor ||
+      (options.preserveCanonicalState &&
+        canonical?.graphId === this.id &&
+        !nodeStore.ownsNode(graphScopeOf(this), node._state))
 
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node, successor })
+    this.events.dispatch('node:before-removed', {
+      node,
+      successor,
+      preserveCanonicalState: !!options.preserveCanonicalState
+    })
 
-    if (!successor) {
+    if (!preserveReplacement) {
       const { inputs, outputs } = node
 
       // disconnect inputs
@@ -1508,16 +1584,29 @@ export class LGraph
       }
     }
 
+    // Lifecycle callbacks are effects around the structural removal: what
+    // they throw is collected and rethrown once the node is fully detached.
+    const failures = new LifecycleFailures()
     if (node.isSubgraphNode()) {
-      this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
+      failures.run(() =>
+        this.releaseSubgraphs(
+          findReleasableSubgraphs(
+            this.rootGraph,
+            node,
+            canonicalSubgraphResolver(
+              this.rootGraph,
+              options.preserveCanonicalState
+            )
+          )
+        )
+      )
     }
 
-    // callback
-    node.onRemoved?.()
-    if (!successor) clearNodeOwnedStoreState(node)
+    failures.run(() => node.onRemoved?.())
+    if (!preserveReplacement) clearNodeOwnedStoreState(node)
 
     const order = node.order
-    if (!successor) {
+    if (!preserveReplacement) {
       useExecutionOrderStore().remove(graphScopeOf(this), node.id)
     }
     if (options.preserveCanonicalState) {
@@ -1550,18 +1639,21 @@ export class LGraph
     if (this._nodes_by_id[node.id] === node) {
       delete this._nodes_by_id[node.id]
     }
-    this.onNodeRemoved?.(node)
-    this.events.dispatch('node:removed', { node })
+    failures.run(() => this.onNodeRemoved?.(node))
+    failures.run(() => this.events.dispatch('node:removed', { node }))
 
     // close panels
-    this.canvasAction((c) => c.checkPanels())
+    failures.run(() => this.canvasAction((c) => c.checkPanels()))
 
     this.setDirtyCanvas(true, true)
     // sure? - almost sure is wrong
-    this.afterChange()
-    this.change()
+    failures.run(() => {
+      this.afterChange()
+      this.change()
+    })
 
     this.updateExecutionOrder()
+    failures.rethrow('LGraph.remove: lifecycle callbacks failed')
   }
 
   /**
@@ -1574,11 +1666,12 @@ export class LGraph
    * the same id can be registered again later.
    */
   releaseSubgraphs(subgraphs: readonly Subgraph[]): void {
+    const failures = new LifecycleFailures()
     try {
       for (const subgraph of subgraphs) {
         const nodes: LGraphNode[] = []
         visitGraphNodes(subgraph, (node) => nodes.push(node))
-        fireNodeRemovalLifecycles(nodes)
+        fireNodeRemovalLifecycles(nodes, failures)
       }
     } finally {
       for (const subgraph of subgraphs) {
@@ -1591,6 +1684,7 @@ export class LGraph
       }
       detachGraphLayouts(subgraphs)
     }
+    failures.rethrow('LGraph.releaseSubgraphs: interior lifecycles failed')
   }
 
   /**

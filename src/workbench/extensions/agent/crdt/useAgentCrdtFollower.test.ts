@@ -17,6 +17,8 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
@@ -597,11 +599,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
+    expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
@@ -807,13 +805,19 @@ describe('useAgentCrdtFollower', () => {
   })
 
   describe('live-graph reconcile', () => {
-    // The materializer is module-mocked, so the graph only needs to be a
-    // distinct reference the composable hands through.
+    // The materializer is module-mocked, so the composable only has to hand
+    // the same live graph through.
     const { fakeDefinitions } = definitionsState
-    const fakeGraph = {
-      rootGraph: { subgraphs: new Map() },
-      setDirtyCanvas: vi.fn()
-    } as unknown as MaterializableGraph
+    let liveGraph: LGraph
+    beforeEach(() => {
+      liveGraph = new LGraph()
+    })
+
+    function placeholderGraph(type: string): LGraph {
+      const graph = new LGraph()
+      graph.add(new LGraphNode('Missing', type))
+      return graph
+    }
 
     it('counts the frame even when a removal hook throws out of the reconcile', () => {
       // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
@@ -823,7 +827,7 @@ describe('useAgentCrdtFollower', () => {
       materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
         throw new Error('onRemoved threw')
       })
-      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+      const { unmount, status } = mountFollower('wf-1', true, () => liveGraph)
 
       expect(() =>
         dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
@@ -835,19 +839,138 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('rebinds a placeholder when its node type registers, and stops after unmount', () => {
+      const graphWithPlaceholder = placeholderGraph('late-registered')
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateNode extends LGraphNode {}
+      class OtherNode extends LGraphNode {}
+      try {
+        LiteGraph.registerNodeType('other-type', OtherNode)
+        expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphWithPlaceholder,
+          fakeDefinitions
+        )
+
+        unmount()
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        LiteGraph.unregisterNodeType('late-registered')
+        LiteGraph.unregisterNodeType('other-type')
+      }
+    })
+
+    it('keeps rebinding after another consumer assigns the legacy callback', () => {
+      const graphWithPlaceholder = placeholderGraph('late-assigned')
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      const previous = LiteGraph.onNodeTypeRegistered
+      const legacy = vi.fn()
+      class LateNode extends LGraphNode {}
+      try {
+        LiteGraph.onNodeTypeRegistered = legacy
+        materializerState.reconcileAgentAdapters.mockClear()
+        LiteGraph.registerNodeType('late-assigned', LateNode)
+        expect(legacy).toHaveBeenCalledOnce()
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        LiteGraph.onNodeTypeRegistered = previous
+        unmount()
+        LiteGraph.unregisterNodeType('late-assigned')
+      }
+    })
+
+    it('reports a rebind that throws without breaking the registration', () => {
+      const graphWithPlaceholder = placeholderGraph('late-throwing')
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      class LateNode extends LGraphNode {}
+      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+        throw new Error('onRemoved threw')
+      })
+      try {
+        expect(() =>
+          LiteGraph.registerNodeType('late-throwing', LateNode)
+        ).not.toThrow()
+        expect(LiteGraph.registered_node_types['late-throwing']).toBe(LateNode)
+        expect(telemetryState.reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_placeholder_rebind_failed'
+          })
+        )
+      } finally {
+        unmount()
+        LiteGraph.unregisterNodeType('late-throwing')
+      }
+    })
+
+    it('keeps rebinding a newer follower after an older overlapping one unmounts', () => {
+      const graphA = placeholderGraph('late-a')
+      const graphB = placeholderGraph('late-b')
+      const followerA = mountFollower('wf-a', true, () => graphA)
+      const followerB = mountFollower('wf-b', true, () => graphB)
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateA extends LGraphNode {}
+      class LateB extends LGraphNode {}
+      try {
+        followerA.unmount()
+
+        LiteGraph.registerNodeType('late-b', LateB)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphB,
+          fakeDefinitions
+        )
+
+        LiteGraph.registerNodeType('late-a', LateA)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        followerB.unmount()
+        LiteGraph.unregisterNodeType('late-b')
+        LiteGraph.unregisterNodeType('late-a')
+      }
+    })
+
     it('reconciles the live graph after every applied frame', () => {
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const setDirtyCanvas = vi.spyOn(liveGraph, 'setDirtyCanvas')
+      const { unmount } = mountFollower('wf-1', true, () => liveGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
+        liveGraph,
         fakeDefinitions
       )
       // A frame that only connects nodes changes no layout, so the repaint
       // has to come from here or the new wire stays invisible until a pan.
-      expect(fakeGraph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
@@ -857,12 +980,10 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('does not deep-copy definitions for a frame when all are registered', () => {
-      const registeredGraph = {
-        rootGraph: {
-          subgraphs: new Map([[fakeDefinitions[0].id, {}]])
-        },
-        setDirtyCanvas: vi.fn()
-      } as unknown as MaterializableGraph
+      const registeredGraph = new LGraph()
+      registeredGraph.createSubgraph(
+        createTestSubgraphData({ id: fakeDefinitions[0].id })
+      )
       const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
@@ -880,7 +1001,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('does not reconcile after a frame the adapter skipped', () => {
       adapterState.applyFrame.mockReturnValueOnce(false)
-      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+      const { unmount, status } = mountFollower('wf-1', true, () => liveGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
@@ -907,12 +1028,12 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
       expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
 
-      graph.value = fakeGraph
+      graph.value = liveGraph
       await nextTick()
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
+        liveGraph,
         fakeDefinitions
       )
       unmount()
@@ -922,7 +1043,7 @@ describe('useAgentCrdtFollower', () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
 
-      graph.value = fakeGraph
+      graph.value = liveGraph
       await nextTick()
 
       expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
@@ -941,7 +1062,7 @@ describe('useAgentCrdtFollower', () => {
         () => graph.value
       )
 
-      graph.value = fakeGraph
+      graph.value = liveGraph
       await nextTick()
       expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
 
@@ -949,7 +1070,7 @@ describe('useAgentCrdtFollower', () => {
       await nextTick()
 
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
+        liveGraph,
         fakeDefinitions
       )
       unmount()
@@ -958,7 +1079,7 @@ describe('useAgentCrdtFollower', () => {
     it('reconciles after a doc_reset clear, without waiting for another frame', () => {
       // `clearForReset` empties the stores only. Every live adapter survives it
       // and would be serialised back into a save until some later frame landed.
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const { unmount } = mountFollower('wf-1', true, () => liveGraph)
 
       dispatchFrame('doc_reset', {
         workflowId: 'wf-1',
@@ -968,36 +1089,27 @@ describe('useAgentCrdtFollower', () => {
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
+        liveGraph,
         fakeDefinitions
       )
       unmount()
     })
 
-    it('reconciles a follower_replaced clear against the replacement document', () => {
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+    it('waits for a document frame before reconciling a replacement', () => {
+      const { unmount } = mountFollower('wf-1', true, () => liveGraph)
       const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
-      expect(
-        definitionsState.readSubgraphDefinitionIds
-      ).toHaveBeenLastCalledWith(replacementDoc)
-      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
-        replacementDoc
-      )
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
       unmount()
     })
 
     it('records a dev event only when nodes were materialized', async () => {
       const { recordDevEvent } = await import('./devPanelLog')
-      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const { unmount } = mountFollower('wf-1', true, () => liveGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
       materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])

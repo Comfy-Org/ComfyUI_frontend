@@ -46,6 +46,11 @@ type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 /**
  * The Global Scope. It contains all the registered node classes.
  */
+type NodeTypeRegisteredListener = (
+  type: string,
+  base_class: typeof LGraphNode
+) => void
+
 export class LiteGraphGlobal {
   // Enums
   SlotShape = SlotShape
@@ -409,6 +414,36 @@ export class LiteGraphGlobal {
   }
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
+  readonly #nodeTypeRegisteredListeners = new Set<NodeTypeRegisteredListener>()
+
+  /**
+   * Subscribe to this registry's node type registrations. Listeners run after
+   * the legacy `onNodeTypeRegistered` callback, even when that callback
+   * throws, and each one is isolated, so a throwing listener neither aborts
+   * the registration nor starves the others.
+   * @returns unsubscribe
+   */
+  subscribeNodeTypeRegistered(
+    listener: NodeTypeRegisteredListener
+  ): () => void {
+    this.#nodeTypeRegisteredListeners.add(listener)
+    return () => {
+      this.#nodeTypeRegisteredListeners.delete(listener)
+    }
+  }
+
+  #notifyNodeTypeRegistered(type: string, base_class: typeof LGraphNode): void {
+    for (const listener of this.#nodeTypeRegisteredListeners) {
+      try {
+        listener(type, base_class)
+      } catch (error) {
+        console.error(
+          `[LiteGraph] nodeTypeRegistered listener failed for "${type}"`,
+          error
+        )
+      }
+    }
+  }
   onNodeTypeReplaced?(
     type: string,
     base_class: typeof LGraphNode,
@@ -446,7 +481,11 @@ export class LiteGraphGlobal {
     this.registered_node_types[type] = base_class
     if (base_class.constructor.name) this.Nodes[classname] = base_class
 
-    this.onNodeTypeRegistered?.(type, base_class)
+    try {
+      this.onNodeTypeRegistered?.(type, base_class)
+    } finally {
+      this.#notifyNodeTypeRegistered(type, base_class)
+    }
     if (prev) this.onNodeTypeReplaced?.(type, base_class, prev)
 
     // warnings

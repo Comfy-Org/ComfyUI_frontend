@@ -240,4 +240,16 @@ describe('agentNodeSelectionStore', () => {
     expect(store.isLoadingWorkflow).toBe(false)
     expect(store.restoredNodeIds).toBeNull()
   })
+
+  it('clears restored node IDs when a new workflow load begins', () => {
+    const store = useAgentNodeSelectionStore()
+    store.beginWorkflowLoad()
+    store.restoreNodeIds(['20'])
+    expect(store.restoredNodeIds).toEqual(['20'])
+
+    store.beginWorkflowLoad()
+
+    expect(store.isLoadingWorkflow).toBe(true)
+    expect(store.restoredNodeIds).toBeNull()
+  })
 })

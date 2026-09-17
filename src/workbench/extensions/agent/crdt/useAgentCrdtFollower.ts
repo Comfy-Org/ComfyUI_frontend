@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -355,11 +356,6 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
       projection.bind(workflowId, bridge.follower)
     }
   }
@@ -437,6 +433,19 @@ function startAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // A placeholder for a type that registers later (definitions refreshed, a
+  // custom node installed) rebinds without a workflow reload.
+  const stopRebinding = LiteGraph.subscribeNodeTypeRegistered((type) => {
+    if (boundWorkflowId === null || !isTargetActive.value) return
+    try {
+      projection.rebindPlaceholders(boundWorkflowId, type)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_placeholder_rebind_failed',
+        context: { workflowId: boundWorkflowId, type }
+      })
+    }
+  })
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
@@ -533,6 +542,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => sender.detach(),
+      () => stopRebinding(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()

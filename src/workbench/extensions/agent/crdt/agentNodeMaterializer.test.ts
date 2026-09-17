@@ -5,10 +5,12 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
   LGraph,
   LGraphNode,
@@ -19,8 +21,10 @@ import {
 import {
   createTestSubgraphData,
   createTestSubgraphNode,
-  enableSubgraphNodeCreation
+  enableSubgraphNodeCreation,
+  setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -61,9 +65,32 @@ class DummyNode extends LGraphNode {
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
+    this.serialize_widgets = true
     this.addWidget('number', 'value', 0, () => {})
   }
 }
+
+class TwoWidgetNode extends LGraphNode {
+  constructor() {
+    super('two-widget-node')
+    this.serialize_widgets = true
+    this.addWidget('number', 'steps', 0, () => {})
+    this.addWidget('number', 'seed', 0, () => {})
+  }
+}
+
+class ThreeWidgetNode extends LGraphNode {
+  constructor() {
+    super('three-widget-node')
+    this.serialize_widgets = true
+    this.addWidget('number', 'a', 0, () => {})
+    this.addWidget('number', 'b', 0, () => {})
+    this.addWidget('number', 'c', 0, () => {})
+  }
+}
+
+class LateWidgetNode extends WidgetNode {}
+class LateTwoWidgetNode extends TwoWidgetNode {}
 
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
@@ -177,15 +204,19 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
+/** One node payload shape, complete enough for a definition's own `nodes`. */
 function nodePayload(id: number, type = 'dummy') {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
-  }
+  } satisfies ISerialisedNode
 }
 
 /** Commit a remote add to the stores only, the way a follower frame does. */
@@ -201,6 +232,7 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('two-widget-node', TwoWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -209,6 +241,106 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  it.for([false, true])(
+    'retains promoted controls after reconciling a live subgraph (empty values: %s)',
+    (emptyValues) => {
+      const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+      const settings = new LGraphNode('Settings')
+      subgraph.add(settings)
+      const steps = settings.addWidget('number', 'steps', 8, () => {}, {
+        min: 1,
+        max: 100
+      })
+      settings.addInput('steps', 'INT').widget = { name: 'steps' }
+      expect(
+        promoteValueWidgetViaSubgraphInput(hostNode, settings, steps).ok
+      ).toBe(true)
+      useWidgetValueStore().setValue(
+        widgetId(graph.id, hostNode.id, 'steps'),
+        12
+      )
+      expect(hostNode.widgets.find(({ name }) => name === 'steps')?.value).toBe(
+        12
+      )
+      const widgets = hostNode.widgets.map(({ name, value, type }) => ({
+        name,
+        value,
+        type
+      }))
+      expect(widgets.length).toBeGreaterThan(0)
+      const inputs = hostNode.inputs.map((input) => input.widgetId)
+      const serialized = hostNode.serialize()
+      const floating = new LLink(
+        toLinkId(98),
+        'INT',
+        UNASSIGNED_NODE_ID,
+        -1,
+        hostNode.id,
+        1
+      )
+      graph.addFloatingLink(floating)
+      hostNode.inputs[0].boundingRect = [10, 20, 30, 40]
+
+      expect(
+        remoteMutations(graphScopeOf(graph)).batch(REMOTE, (batch) =>
+          batch.reconcileNode({
+            ...serialized,
+            widgets_values: emptyValues ? [] : serialized.widgets_values,
+            inputs: emptyValues
+              ? serialized.inputs?.slice(0, 1)
+              : serialized.inputs,
+            properties: emptyValues
+              ? {
+                  ...serialized.properties,
+                  proxyWidgets: [[String(settings.id), 'steps']]
+                }
+              : serialized.properties
+          })
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+
+      expect(graph.getNodeById(hostNode.id)).toBe(hostNode)
+      expect(
+        hostNode.widgets.map(({ name, value, type }) => ({ name, value, type }))
+      ).toEqual(widgets)
+      expect(hostNode.inputs.map((input) => input.widgetId)).toEqual(inputs)
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(hostNode.inputs[0].boundingRect).toEqual([10, 20, 30, 40])
+      expect(hostNode.serialize().widgets_values).toEqual(
+        serialized.widgets_values
+      )
+
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('text', 'STRING')
+      graph.add(upstream)
+      expect(
+        remoteMutations(graphScopeOf(graph)).connect(
+          {
+            id: 99,
+            originNodeId: upstream.id,
+            originSlot: 0,
+            targetNodeId: hostNode.id,
+            targetSlot: 0,
+            type: 'STRING',
+            targetInputs: serialized.inputs?.map((input, index) => ({
+              ...input,
+              link: index === 0 ? 99 : input.link
+            }))
+          },
+          REMOTE
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      expect(hostNode.inputs[0].link).toBe(toLinkId(99))
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(hostNode.inputs[0].boundingRect).toEqual([10, 20, 30, 40])
+      expect(hostNode.widgets.map(({ value }) => value)).toEqual(
+        widgets.map(({ value }) => value)
+      )
+    }
+  )
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
@@ -353,23 +485,345 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('applies the serialised widget values to the new node', () => {
+    it.for([{ value: 7 }, [7]])(
+      'retains %j through a partial reconcile before materializing',
+      (widgets_values) => {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        const mutations = remoteMutations(scope)
+        mutations.addNode(
+          { ...nodePayload(1, 'widget-node'), widgets_values: { value: 3 } },
+          REMOTE
+        )
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({
+              ...nodePayload(1, 'widget-node'),
+              widgets_values
+            })
+            batch.reconcileNode({
+              ...nodePayload(1, 'widget-node'),
+              pos: [10, 20]
+            })
+          })
+        ).toBe(true)
+
+        reconcileAgentAdapters(graph)
+
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node?.widgets?.[0].value).toBe(7)
+        expect(
+          useWidgetValueStore().getWidget(
+            widgetId(scope.rootGraphId, toNodeId(1), 'value')
+          )?.value
+        ).toBe(7)
+      }
+    )
+
+    it.for([{ value: 4 }, [4]])(
+      'materializes the incremental value after reconciling %j without widgets',
+      (widgets_values) => {
+        const graph = new LGraph()
+        const mutations = remoteMutations(graphScopeOf(graph))
+        const payload = nodePayload(1, 'widget-node')
+        mutations.addNode({ ...payload, widgets_values: { value: 3 } }, REMOTE)
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({ ...payload, widgets_values })
+            batch.setWidget(toNodeId(1), 'value', 7)
+            batch.reconcileNode({ ...payload, pos: [10, 20] })
+          })
+        ).toBe(true)
+
+        reconcileAgentAdapters(graph)
+
+        expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+      }
+    )
+
+    it.for([{ emptyValues: [] }, { emptyValues: {} }])(
+      'preserves missing-node values on save and reload until cleared with $emptyValues',
+      ({ emptyValues }) => {
+        const graph = new LGraph()
+        const mutations = remoteMutations(graphScopeOf(graph))
+        const payload = nodePayload(1, 'unregistered-widget-node')
+        graph.configure({
+          ...graph.asSerialisable(),
+          nodes: [
+            {
+              ...new LGraphNode('Missing').serialize(),
+              id: 1,
+              type: payload.type,
+              widgets_values: [4],
+              widgets_values_named: { seed: 4 }
+            }
+          ]
+        })
+
+        expect(
+          mutations.batch(REMOTE, (batch) =>
+            batch.reconcileNode({ ...payload, pos: [10, 20] })
+          )
+        ).toBe(true)
+        const saved = graph.serialize()
+        expect(saved.nodes[0]).toMatchObject({
+          widgets_values: [4],
+          widgets_values_named: { seed: 4 }
+        })
+        graph.configure(saved)
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [4],
+          widgets_values_named: { seed: 4 }
+        })
+
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({ ...payload, widgets_values: emptyValues })
+            batch.reconcileNode(payload)
+          })
+        ).toBe(true)
+        expect(graph.serialize().nodes[0].widgets_values).toEqual(emptyValues)
+        expect(graph.serialize().nodes[0].widgets_values_named).toBeUndefined()
+      }
+    )
+
+    it('keeps an incremental setWidget in the named record through an omitted-widget reconcile, save and reload, and rebinds it when the type registers', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
-      remoteMutations(scope).addNode(
-        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+      const mutations = remoteMutations(scope)
+      const payload = nodePayload(1, 'late-widget-node')
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: payload.type,
+            widgets_values: [4],
+            widgets_values_named: { value: 4 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'value', 7)
+        )
+      ).toBe(true)
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({ ...payload, pos: [10, 20] })
+        )
+      ).toBe(true)
+
+      const saved = graph.serialize()
+      expect(saved.nodes[0]).toMatchObject({
+        widgets_values: [4],
+        widgets_values_named: { value: 7 }
+      })
+      graph.configure(saved)
+      expect(graph.serialize().nodes[0]).toMatchObject({
+        widgets_values: [4],
+        widgets_values_named: { value: 7 }
+      })
+
+      LiteGraph.registerNodeType('late-widget-node', LateWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateWidgetNode)
+        expect(node?.widgets?.map((widget) => widget.value)).toEqual([7])
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [7],
+          widgets_values_named: { value: 7 }
+        })
+        expect(
+          useWidgetValueStore()
+            .getNodeWidgets(scope.rootGraphId, toNodeId(1))
+            .map((widget) => widget.name)
+        ).toEqual(['value'])
+      } finally {
+        LiteGraph.unregisterNodeType('late-widget-node')
+      }
+    })
+
+    it('keeps the positional array as saved for a two-widget missing node and rebinds both values by name', () => {
+      const graph = new LGraph()
+      const mutations = remoteMutations(graphScopeOf(graph))
+      const payload = nodePayload(1, 'late-two-widget-node')
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: payload.type,
+            widgets_values: [20, 4],
+            widgets_values_named: { seed: 4, steps: 20 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'seed', 7)
+        )
+      ).toBe(true)
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({ ...payload, pos: [10, 20] })
+        )
+      ).toBe(true)
+
+      const saved = graph.serialize()
+      expect(saved.nodes[0]).toMatchObject({
+        widgets_values: [20, 4],
+        widgets_values_named: { seed: 7, steps: 20 }
+      })
+      graph.configure(saved)
+
+      LiteGraph.registerNodeType('late-two-widget-node', LateTwoWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateTwoWidgetNode)
+        expect(node?.widgets?.map((widget) => widget.value)).toEqual([20, 7])
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [20, 7],
+          widgets_values_named: { seed: 7, steps: 20 }
+        })
+      } finally {
+        LiteGraph.unregisterNodeType('late-two-widget-node')
+      }
+    })
+
+    it('rebinds a placeholder in place and keeps its canonical link', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: 'late-two-widget-node',
+            inputs: [{ name: 'in', type: '*', link: null }],
+            widgets_values: [20, 4],
+            widgets_values_named: { seed: 4, steps: 20 }
+          }
+        ]
+      })
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('out', '*')
+      graph.add(upstream)
+      expect(
+        remoteMutations(scope).connect(
+          {
+            id: 9,
+            originNodeId: upstream.id,
+            originSlot: 0,
+            targetNodeId: 1,
+            targetSlot: 0,
+            type: '*',
+            targetInputs: [{ name: 'in', type: '*', link: 9 }]
+          },
+          REMOTE
+        )
+      ).toBe(true)
+
+      LiteGraph.registerNodeType('late-two-widget-node', LateTwoWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateTwoWidgetNode)
+        expect(useLinkStore().getInputSlotLink(scope, toNodeId(1), 0)?.id).toBe(
+          toLinkId(9)
+        )
+        expect(node?.inputs[0]?.link).toBe(toLinkId(9))
+        expect(node?.getInputLink(0)?.id).toBe(toLinkId(9))
+      } finally {
+        LiteGraph.unregisterNodeType('late-two-widget-node')
+      }
+    })
+
+    it('never rewrites a sibling slot after an ambiguous write', () => {
+      const graph = new LGraph()
+      const mutations = remoteMutations(graphScopeOf(graph))
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: 'late-three-widget-node',
+            widgets_values: [4, 4, 7],
+            widgets_values_named: { a: 4, b: 4, c: 7 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) => {
+          batch.setWidget(toNodeId(1), 'a', 7)
+          batch.setWidget(toNodeId(1), 'a', 9)
+          batch.reconcileNode(nodePayload(1, 'late-three-widget-node'))
+        })
+      ).toBe(true)
+
+      expect(graph.serialize().nodes[0]).toMatchObject({
+        widgets_values: [4, 4, 7],
+        widgets_values_named: { a: 9, b: 4, c: 7 }
+      })
+
+      LiteGraph.registerNodeType('late-three-widget-node', ThreeWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+        ).toEqual([9, 4, 7])
+      } finally {
+        LiteGraph.unregisterNodeType('late-three-widget-node')
+      }
+    })
+
+    it('restores a value written before the adapter existed over the positional snapshot', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'two-widget-node'), widgets_values: [20, 4] },
+        REMOTE
+      )
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'seed', 7)
+        )
+      ).toBe(true)
+
+      reconcileAgentAdapters(graph)
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node).toBeInstanceOf(TwoWidgetNode)
+      expect(node?.widgets?.map((widget) => widget.value)).toEqual([20, 7])
+      expect(graph.serialize().nodes[0].widgets_values).toEqual([20, 7])
+    })
+
+    it('materializes positional slots that a partial named record does not name', () => {
+      const graph = new LGraph()
+      remoteMutations(graphScopeOf(graph)).addNode(
+        {
+          ...nodePayload(1, 'two-widget-node'),
+          widgets_values: [20, 4],
+          widgets_values_named: { steps: 20 }
+        },
         REMOTE
       )
 
       reconcileAgentAdapters(graph)
 
-      const node = graph.getNodeById(toNodeId(1))
-      expect(node?.widgets?.[0].value).toBe(7)
       expect(
-        useWidgetValueStore().getWidget(
-          widgetId(scope.rootGraphId, toNodeId(1), 'value')
-        )?.value
-      ).toBe(7)
+        graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+      ).toEqual([20, 4])
     })
 
     it('is idempotent once the node is live', () => {
@@ -383,6 +837,46 @@ describe('reconcileAgentAdapters', () => {
       expect(graph._nodes).toEqual([node])
       expect(node?._state).toBe(state)
       expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
+    })
+
+    it('restores named combo and text values before onConfigure', () => {
+      const observed: unknown[] = []
+      class NamedWidgetNode extends LGraphNode {
+        constructor() {
+          super('named-widgets')
+          this.addWidget('combo', 'model', 'default', () => {}, {
+            values: ['default', 'chosen']
+          })
+          this.addWidget('text', 'prompt', '', () => {})
+        }
+        override onConfigure() {
+          observed.push(this.widgets?.map(({ value }) => value))
+        }
+      }
+      LiteGraph.registerNodeType('named-widgets', NamedWidgetNode)
+      const previous = LiteGraph.namedValuesRestore
+      LiteGraph.namedValuesRestore = false
+      try {
+        const graph = new LGraph()
+        remoteMutations(graphScopeOf(graph)).addNode(
+          {
+            ...nodePayload(1, 'named-widgets'),
+            widgets_values: { model: 'chosen', prompt: 'Preserve this prompt' }
+          },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        expect(observed).toEqual([['chosen', 'Preserve this prompt']])
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+        ).toEqual(['chosen', 'Preserve this prompt'])
+        expect(LiteGraph.namedValuesRestore).toBe(false)
+      } finally {
+        LiteGraph.namedValuesRestore = previous
+        LiteGraph.unregisterNodeType('named-widgets')
+      }
     })
 
     it('leaves a locally added node alone', () => {
@@ -403,10 +897,65 @@ describe('reconcileAgentAdapters', () => {
       const node = graph.getNodeById(toNodeId(1))
       expect(node?.has_errors).toBe(true)
       expect(node?.type).toBe('not-a-registered-type')
+      expect(node?.serialize()).toMatchObject({
+        id: 1,
+        type: 'not-a-registered-type'
+      })
+    })
+
+    it('rebinds the placeholder it built for a remote add once the type registers', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'late-widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const placeholder = graph.getNodeById(toNodeId(1))
+      expect(placeholder?.constructor).toBe(LGraphNode)
+
+      LiteGraph.registerNodeType('late-widget-node', LateWidgetNode)
+      try {
+        expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateWidgetNode)
+        expect(node?.widgets?.[0]).toMatchObject({ name: 'value', value: 7 })
+        expect(graph._nodes).toHaveLength(1)
+      } finally {
+        LiteGraph.unregisterNodeType('late-widget-node')
+      }
     })
   })
 
   describe('remote update of a live node', () => {
+    it('retains a subgraph needed by another replacement in the same batch', () => {
+      const graph = new LGraph()
+      const disable = enableSubgraphNodeCreation(graph)
+      try {
+        const subgraph = graph.createSubgraph(createTestSubgraphData())
+        const inner = new DummyNode()
+        inner.id = toNodeId(3)
+        subgraph.add(inner)
+        graph.add(createTestSubgraphNode(subgraph, { id: 1 }))
+        const scope = seedAgentAddedNode(graph, 2)
+        reconcileAgentAdapters(graph)
+        remoteMutations(scope).batch(REMOTE, (batch) => {
+          batch.reconcileNode(nodePayload(1))
+          batch.reconcileNode(nodePayload(2, subgraph.id))
+        })
+
+        expect(reconcileAgentAdapters(graph)).toEqual([
+          toNodeId(1),
+          toNodeId(2)
+        ])
+        expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+        expect(subgraph.nodes).toEqual([inner])
+        expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+      } finally {
+        disable()
+      }
+    })
+
     it('keeps the same live node when the record is updated in place', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
@@ -472,31 +1021,53 @@ describe('reconcileAgentAdapters', () => {
 
       const stale = graph.getNodeById(toNodeId(1))!
       const lifecycle: string[] = []
+      const resources = new Map([[stale.id, stale]])
       graph.events.addEventListener('node:before-removed', (event) => {
         if (event.detail.node === stale) lifecycle.push('before-removed')
       })
-      stale.onRemoved = () => lifecycle.push('onRemoved')
-      const incumbent = useNodeDataStore().getNode(
-        scope.rootGraphId,
-        toNodeId(1)
-      )!
-      expect(useNodeDataStore().deleteNode(scope, incumbent, REMOTE)).toBe(true)
-      expect(
-        mutations.addNode(
-          {
-            ...nodePayload(1, 'widget-node'),
-            outputs: [{ name: 'value', type: '*', links: [9] }],
-            widgets_values: { value: 7 }
-          },
-          { ...REMOTE, opId: 'op-replace-1' }
-        )
-      ).toBe(true)
+      stale.onRemoved = () => {
+        lifecycle.push('onRemoved')
+        resources.delete(stale.id)
+      }
+      class ReplacementNode extends WidgetNode {
+        override onAdded() {
+          lifecycle.push('onAdded')
+          expect(graph._nodes).not.toContain(stale)
+          resources.set(this.id, this)
+        }
+
+        override onConfigure() {
+          lifecycle.push('onConfigure')
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      mutations.batch(REMOTE, (batch) => {
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          outputs: [{ name: 'value', type: '*', links: [] }],
+          widgets_values: { value: 7 }
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
 
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
 
       const replacement = graph.getNodeById(toNodeId(1))!
-      expect(lifecycle).toEqual(['before-removed', 'onRemoved'])
+      expect(lifecycle).toEqual([
+        'before-removed',
+        'onRemoved',
+        'onAdded',
+        'onConfigure'
+      ])
       expect(replacement).not.toBe(stale)
+      expect(resources.get(stale.id)).toBe(replacement)
       expect(graph._nodes).not.toContain(stale)
       expect(graph.getLink(toLinkId(9))).toMatchObject({
         origin_id: toNodeId(1),
@@ -511,6 +1082,111 @@ describe('reconcileAgentAdapters', () => {
         layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
       ).toBeDefined()
       expect(useExecutionOrderStore().get(scope, toNodeId(1))).toBeDefined()
+    })
+
+    it('keeps the incumbent when successor creation throws, and can retry', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))!
+      const onRemoved = vi.fn()
+      stale.onRemoved = onRemoved
+      const failure = new Error('extension creation failed')
+      let creationFails = true
+      class ReplacementNode extends WidgetNode {
+        override onNodeCreated() {
+          if (creationFails) throw failure
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          widgets_values: { value: 7 }
+        })
+      )
+
+      expect.soft(() => reconcileAgentAdapters(graph)).not.toThrow()
+      expect(graph._nodes).toHaveLength(1)
+      expect(graph.getNodeById(stale.id)).toBe(stale)
+      expect(stale.graph).toBe(graph)
+      expect(onRemoved).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'agent_node_materialize_create_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      creationFails = false
+      expect(reconcileAgentAdapters(graph)).toEqual([stale.id])
+      expect(graph._nodes).toHaveLength(1)
+      expect(graph.getNodeById(stale.id)).not.toBe(stale)
+      expect(graph.getNodeById(stale.id)?.widgets?.[0].value).toBe(7)
+      expect(onRemoved).toHaveBeenCalledOnce()
+      expect(stale.graph).toBeNull()
+    })
+
+    it('cleans up the unused successor when incumbent removal throws, and can retry', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))!
+      const resources = new Map([[stale.id, stale]])
+      const failure = new Error('extension cleanup failed')
+      stale.onRemoved = () => {
+        throw failure
+      }
+      const events = new EventTarget()
+      let handled = 0
+      class ReplacementNode extends WidgetNode {
+        listener = () => handled++
+
+        constructor() {
+          super()
+          events.addEventListener('probe', this.listener)
+        }
+
+        override onRemoved() {
+          events.removeEventListener('probe', this.listener)
+          resources.delete(this.id)
+        }
+
+        override onAdded() {
+          resources.set(this.id, this)
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          widgets_values: { value: 7 }
+        })
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      events.dispatchEvent(new Event('probe'))
+      expect(handled).toBe(0)
+      expect(resources.get(stale.id)).toBe(stale)
+      expect(graph._nodes).toEqual([stale])
+      expect(graph.getNodeById(stale.id)).toBe(stale)
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, stale.id)?.type
+      ).toBe('replacement-node')
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, stale.id)
+      ).toBeDefined()
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'agent_node_materialize_remove_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      stale.onRemoved = undefined
+      expect(reconcileAgentAdapters(graph)).toEqual([stale.id])
+      expect(graph._nodes).toHaveLength(1)
+      events.dispatchEvent(new Event('probe'))
+      expect(handled).toBe(1)
+      expect(resources.get(stale.id)).toBe(graph.getNodeById(stale.id))
+      expect(graph.getNodeById(stale.id)?.widgets?.[0].value).toBe(7)
+      expect(stale.graph).toBeNull()
     })
   })
 
@@ -673,17 +1349,94 @@ describe('reconcileAgentAdapters', () => {
       ).toBeDefined()
     })
 
-    it('retries a failed add on the next reconcile', () => {
+    it('retries add after a transient failure', () => {
       const graph = new LGraph()
       seedAgentAddedNode(graph, 1)
       const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
         throw new Error('transient')
       })
       expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toHaveLength(0)
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
       add.mockRestore()
 
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
       expect(graph._nodes).toHaveLength(1)
+    })
+
+    it('restores the incumbent when the successor fails to attach, then retries', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode(nodePayload(1, 'widget-node'))
+      )
+      const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
+        throw new Error('transient')
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toEqual([incumbent])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent?.graph).toBe(graph)
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.type
+      ).toBe('widget-node')
+      add.mockRestore()
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph._nodes).toHaveLength(1)
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(WidgetNode)
+    })
+
+    it('restores the incumbent when the successor throws in onAdded()', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode(nodePayload(1, 'throws-on-added'))
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toEqual([incumbent])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.type
+      ).toBe('throws-on-added')
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+      ).toBeDefined()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_add_failed'
+        })
+      )
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_rollback_failed'
+        })
+      )
+    })
+
+    it('applies a stored undefined value over the snapshot value', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const id = widgetId(scope.rootGraphId, toNodeId(1), 'value')
+      expect(useWidgetValueStore().setValue(id, undefined)).toBe(true)
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const widget = graph.getNodeById(toNodeId(1))?.widgets?.[0]
+      expect(widget?.name).toBe('value')
+      expect(widget?.value).toBeUndefined()
+      expect(useWidgetValueStore().getWidget(id)?.value).toBeUndefined()
     })
 
     it('keeps the attached node when configure() throws', () => {
@@ -735,6 +1488,88 @@ describe('reconcileAgentAdapters', () => {
       await Promise.resolve()
     }
 
+    it('restores a usable spare autogrow input omitted by reconciliation', async () => {
+      const node = LiteGraph.createNode('widget-node')
+      const upstream = LiteGraph.createNode('dummy')
+      if (!node || !upstream) throw new Error('Test node types not registered')
+      graph.add(node)
+      graph.add(upstream)
+      upstream.addOutput('image', 'IMAGE')
+      const names = ['image_1', 'image_2', 'image_3']
+      const inputNames = names.map((name) => `0.${name}`)
+      addAutogrow(node, {
+        input: { required: { image: ['IMAGE', {}] } },
+        names
+      })
+      node.addInput('obsolete', 'IMAGE')
+      const firstLink = upstream.connect(0, node, 0)
+      if (!firstLink) throw new Error('Initial image connection failed')
+      const widget = node.widgets?.[0]
+      if (!widget) throw new Error('Expected value widget')
+      widget.value = 7
+      node.serialize_widgets = true
+      const configure = vi.spyOn(node, 'configure')
+      const serialized = node.serialize()
+      expect(serialized.widgets_values).toEqual([7])
+      const payload = {
+        ...serialized,
+        inputs: serialized.inputs?.slice(0, 1)
+      }
+      const mutations = remoteMutations(graphScopeOf(graph))
+      await settle()
+      minted.length = 0
+
+      for (let frame = 0; frame < 2; frame++) {
+        expect(
+          mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+        ).toBe(true)
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        await settle()
+
+        expect(node.inputs.map(({ name }) => name)).toEqual(
+          inputNames.slice(0, 2)
+        )
+        expect(node.getInputLink(0)).toBe(firstLink)
+        expect(node.widgets).toEqual([widget])
+        expect(widget.value).toBe(7)
+        expect(configure).not.toHaveBeenCalled()
+        expect(minted).toEqual([])
+      }
+
+      const spare = node.inputs[1]
+      reconcileAgentAdapters(graph)
+      expect(node.inputs[1]).toBe(spare)
+      const secondLink = upstream.connect(0, node, 1)
+      if (!secondLink) throw new Error('Restored image connection failed')
+      expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+      expect(node.getInputLink(0)).toBe(firstLink)
+      expect(node.getInputLink(1)).toBe(secondLink)
+      expect(node.getInputLink(2)).toBeNull()
+      expect(widget.value).toBe(7)
+
+      const thirdLink = upstream.connect(0, node, 2)
+      if (!thirdLink) throw new Error('Final image connection failed')
+      reconcileAgentAdapters(graph)
+      reconcileAgentAdapters(graph)
+      expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+      expect(node.getInputLink(2)).toBe(thirdLink)
+      await settle()
+      minted.length = 0
+
+      expect(
+        mutations.batch(REMOTE, (batch) => {
+          batch.reconcileNode({ ...payload, inputs: [] })
+          batch.removeLinks([firstLink.id, secondLink.id, thirdLink.id])
+        })
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      await settle()
+      expect(node.inputs).toEqual([])
+      expect(upstream.isOutputConnected(0)).toBe(false)
+      expect(widget.value).toBe(7)
+      expect(minted).toEqual([])
+    })
+
     it('does not echo a remote add back as local operations', async () => {
       const scope = graphScopeOf(graph)
       remoteMutations(scope).addNode(
@@ -779,43 +1614,111 @@ describe('reconcileAgentAdapters', () => {
       expect(minted).toEqual([])
     })
 
-    it('restores the record when the rollback cleanup itself throws', () => {
-      // `LGraph.remove()` runs `onRemoved()` uncaught, so an extension that
-      // throws on BOTH halves of the lifecycle used to escape the rollback
-      // before `restore()`, leaving the record deleted with a partial adapter
-      // still live -- worse than either failure alone. Cleanup is best-effort
-      // now; putting the authoritative record back is not.
-      const scope = seedAgentAddedNode(graph, 1, 'throws-on-added')
-      const onRemoved = vi
-        .spyOn(ThrowsOnAddedNode.prototype, 'onRemoved')
-        .mockImplementation(() => {
-          throw new Error('extension code blew up in onRemoved')
-        })
+    const REPLACEMENT_PAYLOAD = {
+      ...nodePayload(1, 'replacement-node'),
+      properties: { remoteValue: 7 },
+      widgets_values: { value: 7 }
+    }
 
-      expect(() => reconcileAgentAdapters(graph)).not.toThrow()
-      expect(onRemoved).toHaveBeenCalled()
+    /** A successor whose onAdded and rollback onRemoved both throw until told otherwise. */
+    function failingReplacementType() {
+      const control = { fails: true, instances: [] as LGraphNode[] }
+      class ReplacementNode extends WidgetNode {
+        constructor() {
+          super()
+          control.instances.push(this)
+        }
 
-      // The record the rollback deleted is registered again, so the store still
-      // owns the node the agent added.
-      const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
-      expect(state).toBeDefined()
-      expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
+        override onAdded() {
+          if (control.fails) throw new Error('replacement add failed')
+        }
 
-      // Both failures are reported: the original `onAdded` throw, and the
-      // cleanup that could not complete.
-      expect(reportError).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
-        })
+        override onRemoved() {
+          if (control.fails) throw new Error('replacement cleanup failed')
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      return control
+    }
+
+    async function expectAuthorityRestored(
+      scope: GraphScope,
+      incumbent: LGraphNode[],
+      control: { fails: boolean; instances: LGraphNode[] }
+    ) {
+      const nodeStore = useNodeDataStore()
+      const authoritative = nodeStore.getNode(scope.rootGraphId, toNodeId(1))
+      expect(authoritative).toBeDefined()
+
+      // The successor leaves by membership and the incumbent is back at once.
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toEqual(incumbent)
+      for (const node of incumbent) expect(node.graph).toBe(graph)
+      // The failed successor is fully detached by the graph, not just dropped
+      // from the node lists.
+      for (const successor of control.instances) {
+        expect(successor.graph).toBeNull()
+        expect(successor._graphScope).toBeUndefined()
+      }
+      expect(nodeStore.getNode(scope.rootGraphId, toNodeId(1))).toBe(
+        authoritative
       )
-      expect(reportError).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'agent_node_materialize_rollback_failed'
-        })
-      )
+      for (const errorType of [
+        'agent_node_materialize_add_failed',
+        'agent_node_materialize_rollback_failed'
+      ]) {
+        expect(reportError).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ errorType })
+        )
+      }
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toEqual(incumbent)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(7)
+
+      control.fails = false
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const restored = graph.getNodeById(toNodeId(1))!
+      expect(graph._nodes).toEqual([restored])
+      expect(incumbent).not.toContain(restored)
+      expect(restored.properties).toEqual(REPLACEMENT_PAYLOAD.properties)
+      expect(restored.widgets?.[0].value).toBe(7)
+      expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, restored.id)
+      ).toBeDefined()
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph.getNodeById(restored.id)).toBe(restored)
+      await settle()
       expect(minted).toEqual([])
+    }
+
+    it('restores add authority after a dual lifecycle failure', async () => {
+      const control = failingReplacementType()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(REPLACEMENT_PAYLOAD, REMOTE)
+
+      await expectAuthorityRestored(scope, [], control)
+    })
+
+    it('restores replace authority after a dual lifecycle failure', async () => {
+      const control = failingReplacementType()
+      const scope = graphScopeOf(graph)
+      seedAgentAddedNode(graph, 1, 'widget-node')
+      reconcileAgentAdapters(graph)
+      const original = graph.getNodeById(toNodeId(1))
+      assert(original, 'missing incumbent')
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode(REPLACEMENT_PAYLOAD)
+      )
+
+      await expectAuthorityRestored(scope, [original], control)
+      expect(original.graph).toBeNull()
     })
 
     it('still mints a later local widget edit on the materialized node', async () => {
@@ -896,7 +1799,7 @@ describe('reconcileAgentAdapters', () => {
      */
     it('regression: materializes an agent-added subgraph instance as a SubgraphNode via the subgraph-created lifecycle', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -913,7 +1816,8 @@ describe('reconcileAgentAdapters', () => {
       const instance = graph.getNodeById(toNodeId(1))
       expect(instance).toBeInstanceOf(SubgraphNode)
       expect(instance?.has_errors).toBeFalsy()
-      expect((instance as SubgraphNode).subgraph.nodes).toHaveLength(1)
+      assert(instance instanceof SubgraphNode)
+      expect(instance.subgraph.nodes).toHaveLength(1)
       // Interior nodes belong to the subgraph, never to the root scope.
       expect(graph._nodes).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
@@ -921,7 +1825,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -945,7 +1849,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('does not treat a definition payload as an edit to an existing subgraph', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [nodePayload(7)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -960,7 +1864,7 @@ describe('reconcileAgentAdapters', () => {
         {
           ...definition,
           name: 'replacement must not apply',
-          nodes: [nodePayload(8)] as never
+          nodes: [nodePayload(8)]
         }
       ])
 
@@ -972,9 +1876,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('carries interior widget values into the instantiated subgraph', () => {
       const definition = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(7, 'widget-node'), widgets_values: [42] }
-        ] as never
+        nodes: [{ ...nodePayload(7, 'widget-node'), widgets_values: [42] }]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -984,7 +1886,8 @@ describe('reconcileAgentAdapters', () => {
 
       reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
 
-      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const instance = graph.getNodeById(toNodeId(1))
+      assert(instance instanceof SubgraphNode)
       const interior = instance.subgraph.getNodeById(toNodeId(7))
       expect(interior?.widgets?.[0]?.value).toBe(42)
     })
@@ -993,21 +1896,17 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs hoists nested definitions into its return value, so
       // the created subgraphs outnumber the definitions handed in.
       const inner = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(30, 'widget-node'), widgets_values: [1] }
-        ] as never
+        nodes: [{ ...nodePayload(30, 'widget-node'), widgets_values: [1] }]
       })
       const outer = createTestSubgraphData({
         nodes: [
           { ...nodePayload(20, 'widget-node'), widgets_values: [2] },
           nodePayload(21, inner.id)
-        ] as never,
+        ],
         definitions: { subgraphs: [inner] }
       })
       const sibling = createTestSubgraphData({
-        nodes: [
-          { ...nodePayload(10, 'widget-node'), widgets_values: [3] }
-        ] as never
+        nodes: [{ ...nodePayload(10, 'widget-node'), widgets_values: [3] }]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, outer.id), nodePayload(2, sibling.id)],
@@ -1028,10 +1927,10 @@ describe('reconcileAgentAdapters', () => {
 
     it('keeps a registered definition when a later frame nests a copy of it', () => {
       const inner = createTestSubgraphData({
-        nodes: [nodePayload(30, 'widget-node')] as never
+        nodes: [nodePayload(30, 'widget-node')]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, inner.id)] as never,
+        nodes: [nodePayload(21, inner.id)],
         definitions: { subgraphs: [inner] }
       })
       const first = seedDocument(graph, {
@@ -1041,7 +1940,8 @@ describe('reconcileAgentAdapters', () => {
       })
       reconcileAgentAdapters(graph, readSubgraphDefinitions(first.follower.doc))
       const registered = graph.subgraphs.get(inner.id)
-      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const instance = graph.getNodeById(toNodeId(1))
+      assert(instance instanceof SubgraphNode)
       expect(instance.subgraph).toBe(registered)
 
       const second = seedDocument(graph, {
@@ -1063,10 +1963,10 @@ describe('reconcileAgentAdapters', () => {
 
     it('registers the missing child of an already registered parent', () => {
       const inner = createTestSubgraphData({
-        nodes: [nodePayload(30, 'widget-node')] as never
+        nodes: [nodePayload(30, 'widget-node')]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, 'widget-node')] as never
+        nodes: [nodePayload(21, 'widget-node')]
       })
       const first = seedDocument(graph, {
         nodes: [nodePayload(1, outer.id)],
@@ -1099,7 +1999,7 @@ describe('reconcileAgentAdapters', () => {
       const definition = createTestSubgraphData({
         nodes: [
           { ...nodePayload(7, 'configure-capture'), widgets_values: [42] }
-        ] as never
+        ]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1120,7 +2020,7 @@ describe('reconcileAgentAdapters', () => {
     it('leaves the named-restore switch as it found it when registration throws', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1137,7 +2037,7 @@ describe('reconcileAgentAdapters', () => {
     it('reports a definition that fails to register and still reconciles the other root nodes', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id), nodePayload(2)],
@@ -1176,7 +2076,7 @@ describe('reconcileAgentAdapters', () => {
         }
       )
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id), nodePayload(2)],
@@ -1201,7 +2101,7 @@ describe('reconcileAgentAdapters', () => {
     it('retries a failed definition on the next reconcile and reports it once', () => {
       configureShouldThrow = true
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1220,20 +2120,18 @@ describe('reconcileAgentAdapters', () => {
 
       expect(graph.subgraphs.has(definition.id)).toBe(true)
       const instance = graph.getNodeById(toNodeId(1))
-      expect(instance).toBeInstanceOf(SubgraphNode)
-      expect(instance?.has_errors).toBeFalsy()
-      expect((instance as SubgraphNode).subgraph).toBe(
-        graph.subgraphs.get(definition.id)
-      )
+      assert(instance instanceof SubgraphNode)
+      expect(instance.has_errors).toBeFalsy()
+      expect(instance.subgraph).toBe(graph.subgraphs.get(definition.id))
     })
 
     it('registers a valid sibling when another definition in the same frame fails', () => {
       configureShouldThrow = true
       const bad = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
       const good = createTestSubgraphData({
-        nodes: [nodePayload(8)] as never
+        nodes: [nodePayload(8)]
       })
       const { follower } = seedDocument(graph, {
         nodes: [nodePayload(1, bad.id), nodePayload(2, good.id)],
@@ -1258,10 +2156,10 @@ describe('reconcileAgentAdapters', () => {
 
     it('keeps a live nested definition and registers a missing one under an existing outer', () => {
       const inner = createTestSubgraphData({
-        nodes: [nodePayload(30)] as never
+        nodes: [nodePayload(30)]
       })
       const outer = createTestSubgraphData({
-        nodes: [nodePayload(21, inner.id)] as never,
+        nodes: [nodePayload(21, inner.id)],
         definitions: { subgraphs: [inner] }
       })
       const { follower } = seedDocument(graph, {
@@ -1293,7 +2191,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('reports and skips a definition whose id is not a UUID instead of remapping it', () => {
       const definition = {
-        ...createTestSubgraphData({ nodes: [nodePayload(7)] as never }),
+        ...createTestSubgraphData({ nodes: [nodePayload(7)] }),
         id: 'legacy-subgraph'
       }
       const { follower } = seedDocument(graph, {
