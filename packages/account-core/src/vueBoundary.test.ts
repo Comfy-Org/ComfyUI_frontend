@@ -5,13 +5,18 @@ import { describe, expect, it } from 'vitest'
 
 const SRC_DIR = dirname(fileURLToPath(import.meta.url))
 const PACKAGE_JSON = join(SRC_DIR, '..', 'package.json')
-const COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/g
+const COMMENT_OR_STRING =
+  /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g
 const VUE_IMPORT =
   /(?:from|import|require)\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
 const VUE_DEPENDENCY = /^(vue|vue-tsc|@vueuse\/|@vitejs\/plugin-vue)/
 
-const importsVue = (source: string) =>
-  VUE_IMPORT.test(source.replace(COMMENT, ' '))
+const withoutComments = (source: string) =>
+  source.replace(COMMENT_OR_STRING, (token) =>
+    token.startsWith('/') ? ' ' : token
+  )
+
+const importsVue = (source: string) => VUE_IMPORT.test(withoutComments(source))
 
 describe('vue boundary', () => {
   it.for([
@@ -26,11 +31,16 @@ describe('vue boundary', () => {
     ["await import(/* bypass */ 'vue')", true],
     ["require(/* bypass */ 'vue')", true],
     ["import { ref } from /* keep */ 'vue'", true],
+    ["const open = '/*'\nimport 'vue'\nconst close = '*/'", true],
+    ["const glob = '/*.ts'\nimport { ref } from 'vue'\n/** doc */", true],
+    ["const url = 'https://comfy.org'; import 'vue'", true],
+    ['const snippet = "import { ref } from \'vue\'"', true],
     ["import { createSession } from './vue'", false],
     ["import { useRoute } from 'vue-router'", false],
     ["import { cn } from '@vueuse-lookalike/core'", false],
     ["// import { ref } from 'vue'", false],
-    ["/* import { ref } from 'vue' */", false]
+    ["/* import { ref } from 'vue' */", false],
+    ["// see https://comfy.org, then import 'vue'", false]
   ] as const)('reads %s as a Vue import: %s', ([source, isVueImport]) => {
     expect(importsVue(source)).toBe(isVueImport)
   })
