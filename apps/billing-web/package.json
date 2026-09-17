@@ -13,7 +13,7 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@comfyorg/account": "workspace:*",
+    "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",

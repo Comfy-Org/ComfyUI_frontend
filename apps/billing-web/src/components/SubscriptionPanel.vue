@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { BillingPlansData } from '@comfyorg/account/billing'
+import type { BillingPlansData } from '@comfyorg/account-core/billing'
 import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
 
 import PlanCard from '@/components/PlanCard.vue'

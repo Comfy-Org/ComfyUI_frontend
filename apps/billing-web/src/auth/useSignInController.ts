@@ -3,8 +3,8 @@
  * phases, the identity restore listener, and the commands the view calls. The
  * view reads the returned state and holds no flow logic of its own.
  */
-import type { FirebaseIdentity } from '@comfyorg/account/firebase'
-import { authErrorMessage } from '@comfyorg/account/firebaseAuthError'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { authErrorMessage } from '@comfyorg/account-core/firebaseAuthError'
 import type { User, UserCredential } from 'firebase/auth'
 import { computed, ref, watch } from 'vue'
 
