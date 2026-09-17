@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 
+import Button from '@/components/ui/button/Button.vue'
+
 const { expanded = false, workflowName } = defineProps<{
   expanded?: boolean
   workflowName?: string
@@ -28,13 +30,15 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
         {{ $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice') }}
       </template>
     </p>
-    <button
+    <Button
       type="button"
+      variant="muted-textonly"
+      size="icon-sm"
       :aria-label="$t('agent.dismiss')"
-      class="flex size-5 shrink-0 cursor-pointer items-center justify-center p-0 text-muted-foreground hover:text-base-foreground"
+      class="shrink-0"
       @click="dismissed = true"
     >
       <span class="icon-[lucide--x] size-5" />
-    </button>
+    </Button>
   </div>
 </template>
