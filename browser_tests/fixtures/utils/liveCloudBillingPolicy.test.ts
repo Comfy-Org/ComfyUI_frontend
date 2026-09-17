@@ -385,8 +385,14 @@ describe('Disposable payment permissions', () => {
 })
 
 describe('Stripe test challenge permissions', () => {
-  it('requires sandbox payment permission for challenge responses', () => {
-    const url = new URL('https://testmode-acs.stripe.com/authorize')
+  it.for([
+    'https://testmode-acs.stripe.com/authorize',
+    'https://api.stripe.com/v1/3ds2/authenticate',
+    'https://api.stripe.com/v1/3ds2/challenge_complete',
+    'https://api.stripe.com/v1/consumers/sessions/lookup',
+    'https://hooks.stripe.com/3d_secure_2/notify/acct_example/tds2_example'
+  ])('requires sandbox payment permission for %s', (endpoint) => {
+    const url = new URL(endpoint)
     expect(isLiveCloudMutationAllowed(url, 'POST', config)).toBe(false)
     expect(
       isLiveCloudMutationAllowed(url, 'POST', {

@@ -86,10 +86,11 @@ portal, because Staging disables the embedded-checkout saved-card API.
 ## 3DS outcomes
 
 PR #17545 depends only on #17481. Run `--project=cloud-live-disposable` for
-successful and failed authentication. Challenge interaction, challenge permissions,
-and terminal-state assertions live in this PR. Success activates Creator and
-grants once; failure becomes retryable without adding credits. Earlier Test Cloud
-operations remained pending; no current-head 3DS pass is claimed.
+successful and failed invoice authentication. Both scenarios complete the card-setup
+challenge, then open the hosted invoice through Complete verification. Success
+activates Creator and grants once. A rejected invoice challenge leaves the operation
+pending with failed_retryable authentication, keeps the account on Free, and adds
+no credits. Challenge interactions and permissions stay in this PR.
 
 ## Required sandbox controls
 
