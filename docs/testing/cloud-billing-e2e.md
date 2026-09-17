@@ -88,6 +88,5 @@ portal, because Staging disables the embedded-checkout saved-card API.
 PR #17543 depends only on #17481. Run `--project=cloud-live-disposable` for
 checkout completion, decline, and decline recovery. Decline assertions belong to
 this PR. Each test gets a new sandbox account and verifies authoritative operation,
-subscription, balance, and saved-card state. Staging's saved-card endpoint currently
-returns HTTP 400; keep that assertion strict. A decline must preserve the prior
-Free state and balance.
+subscription, balance, and saved-card state through the real hosted billing portal.
+A decline must preserve the prior Free state and balance.

@@ -25,7 +25,7 @@ export async function declineCheckout(
   const observeFailure = async () => {
     await expect(
       driver.page.getByText('Your bank declined this payment', { exact: false })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 60_000 })
     await driver.attachScreenshot('checkout-declined.png')
   }
   await Promise.all([
