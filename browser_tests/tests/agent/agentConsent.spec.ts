@@ -195,7 +195,7 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('in a narrow viewport', () => {
     test.use({ viewport: { width: 430, height: 900 } })
 
-    test('uses square media and aligns keyboard order with action order', async ({
+    test('uses widescreen media and aligns keyboard order with action order', async ({
       comfyPage
     }) => {
       const page = comfyPage.page
@@ -213,16 +213,16 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.reject
       })
 
-      await test.step('Narrow layout keeps media square and actions in visual order', async () => {
+      await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
         await page
           .getByRole('button', { name: enMessages.agent.askComfyAgent })
           .click()
         await expect
           .poll(async () => {
             const box = await video.boundingBox()
-            return box ? Math.abs(box.width - box.height) : undefined
+            return box ? Math.abs(box.width / box.height - 16 / 9) : undefined
           })
-          .toBeLessThanOrEqual(1)
+          .toBeLessThanOrEqual(0.01)
         await expect
           .poll(async () => {
             const [acceptBox, rejectBox] = await Promise.all([
