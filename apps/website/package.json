@@ -38,6 +38,7 @@
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
