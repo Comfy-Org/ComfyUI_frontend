@@ -22,6 +22,7 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  PickWorkspaceReleaseRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -37,6 +38,8 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceRelease,
+  WorkspaceReleaseList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
@@ -87,6 +90,8 @@ export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
 export type { CurrentWorkspaceResponse }
+export type { WorkspaceRelease }
+export type { WorkspaceReleaseList }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -259,6 +264,61 @@ export const workspaceApi = {
         auth
       )
       return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * List the developer-platform Releases this browser may pick, and which
+   * one it picked. 403 when the account is outside the rollout.
+   * GET /api/workspaces/:id/releases
+   */
+  async listReleases(workspaceId: WorkspaceId): Promise<WorkspaceReleaseList> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<WorkspaceReleaseList>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/releases`),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Pick the Release this browser runs on. The pick is a cookie on the
+   * response; nothing about the workspace changes.
+   * PUT /api/workspaces/:id/release
+   */
+  async pickRelease(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceReleaseRequest
+  ): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/release`),
+        payload,
+        { headers }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Clear the pick; this browser runs on Comfy Cloud again.
+   * DELETE /api/workspaces/:id/release
+   */
+  async clearRelease(workspaceId: WorkspaceId): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/release`),
+        { headers }
+      )
     } catch (err) {
       handleAxiosError(err)
     }
