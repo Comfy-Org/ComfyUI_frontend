@@ -297,6 +297,10 @@ describe('dialogStore', () => {
       expect(originalRemoved).toHaveBeenCalledTimes(1)
       expect(replacementRemoved).not.toHaveBeenCalled()
       expect(store.isDialogOpen('target')).toBe(true)
+      expect(
+        store.activeKey,
+        'Escape must reach the reopened dialog, not the filler behind it'
+      ).toBe('target')
     })
 
     it('evicts the most recently shown dialog when priorities are equal', () => {

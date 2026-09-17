@@ -193,10 +193,15 @@ export const useDialogStore = defineStore('dialog', () => {
     const removed = index !== -1
     if (removed) dialogStack.value.splice(index, 1)
 
-    activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
+    // A reentrant callback may have already activated a dialog of its own;
+    // only fall back to the stack tail when the active key named a dialog that
+    // is now gone.
+    if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
+      activeKey.value =
+        dialogStack.value.length > 0
+          ? dialogStack.value[dialogStack.value.length - 1].key
+          : null
+    }
 
     updateCloseOnEscapeStates()
     if (removed) notifyRemoved(targetDialog)
