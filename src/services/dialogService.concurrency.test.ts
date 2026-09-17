@@ -9,23 +9,21 @@
  * the module registry and dynamically imports the modules it needs — a
  * mid-test failure then cannot wedge the queue for later tests.
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isActiveSubscription: { value: true },
     isFreeTier: { value: false },
@@ -51,10 +49,13 @@ async function importDialogModules() {
   return { service: useDialogService(), dialogStore: useDialogStore() }
 }
 
-describe('dialogService global prompt FIFO queue', () => {
+// Each test reimports the dialog module graph after vi.resetModules(); that
+// transform costs more than the default 5s timeout on a cold cache.
+describe('dialogService global prompt FIFO queue', { timeout: 30_000 }, () => {
   beforeEach(() => {
+    // flushQueue below needs a real macrotask; the shared setup fakes timers.
+    vi.useRealTimers()
     vi.resetModules()
-    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('settles both promises when two confirm() calls race', async () => {

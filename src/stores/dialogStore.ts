@@ -195,7 +195,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : null
 
     updateCloseOnEscapeStates()
-    if (removed) targetDialog.dialogComponentProps?.onRemoved?.()
+    if (removed) targetDialog.dialogComponentProps.onRemoved?.()
   }
 
   function createDialog<
@@ -255,7 +255,7 @@ export const useDialogStore = defineStore('dialog', () => {
     // Eviction is not a user close: fire only the cleanup hook, never
     // onClose (which callers treat as user intent — telemetry, "don't show
     // again" persistence).
-    evicted?.dialogComponentProps?.onRemoved?.()
+    evicted?.dialogComponentProps.onRemoved?.()
 
     return dialog
   }

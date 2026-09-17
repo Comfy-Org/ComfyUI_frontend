@@ -79,9 +79,9 @@ describe('dialogService Reka renderer opt-in', () => {
     await vi.waitFor(() => expect(showDialog).toHaveBeenCalledTimes(2))
     const keys = showDialog.mock.calls.slice(-2).map(([args]) => args.key)
     expect(
-      keys.toSorted(),
+      new Set(keys),
       'a shared key would make showDialog reuse the open prompt and drop the second resolver, leaving its promise pending forever'
-    ).toEqual(['global-desktop-login-confirm', 'global-prompt'])
+    ).toEqual(new Set(['global-prompt', 'global-desktop-login-confirm']))
 
     for (const [args] of showDialog.mock.calls.slice(-2)) {
       args.dialogComponentProps?.onRemoved?.()
