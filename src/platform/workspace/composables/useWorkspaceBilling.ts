@@ -544,9 +544,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     return true
   }
 
-  // Layer C before Layer A: where the customer lands is the server's call, so
-  // the rail the host would otherwise take never gets asked for a portal URL
-  // it would not open.
+  // Layer C first; the rail, and then the legacy client, only when the tab
+  // before them was refused. Each step opens a different destination, so a
+  // block on one says nothing about the next.
   async function manageSubscription(): Promise<void> {
     const hosted = hostedBillingRoute(
       flags.hostedBillingDestination,
