@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -34,8 +35,6 @@ const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
-const mockEmbeddedCheckoutEnabled = vi.hoisted(() => ({ value: false }))
-
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
@@ -74,16 +73,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get embeddedCheckoutEnabled() {
-        return mockEmbeddedCheckoutEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -154,7 +144,6 @@ describe('useSubscriptionDialog', () => {
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
-    mockEmbeddedCheckoutEnabled.value = false
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
@@ -354,7 +343,7 @@ describe('useSubscriptionDialog', () => {
 
     it('enables embedded checkout only for the exact server flag', () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockEmbeddedCheckoutEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()

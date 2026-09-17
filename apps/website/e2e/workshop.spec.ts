@@ -72,27 +72,29 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(leading.first()).toBeVisible()
     const rowCount = await leading.count()
-    expect(rowCount).toBeGreaterThanOrEqual(3)
+    expect(rowCount).toBeGreaterThanOrEqual(6)
     const recommended = await leading.evaluateAll((cards) =>
-      cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+      cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
     )
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/byteplus--seedream-4--generate-images/'
+      '/models/openai--gpt-image-2--generate-images/',
+      '/models/byteplus--seedream-4--generate-images/',
+      '/models/xai--grok-imagine-image-2.0--generate-images/',
+      '/models/vertexai--gemini-nano-banana-2--generate-images/',
+      '/models/bfl--flux-2-pro--generate-images/'
     ])
-    expect(await recommendedIn('generate-videos', 7)).toEqual([
+    expect(await recommendedIn('generate-videos', 5)).toEqual([
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
       '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
       '/models/xai--grok-imagine-video-1.5--generate-videos/',
-      '/models/xai--grok-imagine-video--generate-videos/',
-      '/models/byteplus--seedance-2-fast-reference--generate-videos/',
-      '/models/gemini--omni-1.1-flash--generate-videos/',
-      '/models/kling--v3--generate-videos/'
+      '/models/wan--text-to-video-3.0--generate-videos/',
+      '/models/gemini--omni-1.1-flash--generate-videos/'
     ])
-    expect(await recommendedIn('animate-images', 5)).toEqual([
+    expect(await recommendedIn('animate-images', 6)).toEqual([
       '/models/byteplus--seedance-2-5-reference--generate-videos/',
       '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
+      '/models/byteplus--seedance-2-image-to-video--animate-images/',
       '/models/xai--grok-imagine-video--animate-images/',
       '/models/wan--image-to-video-3.0--animate-images/',
       '/models/wan--reference-to-video-3.0--animate-images/'
@@ -100,9 +102,20 @@ test.describe('Models catalog', () => {
     expect(await recommendedIn('other-formats', 1)).toEqual([
       '/models/byteplus--seed-audio-1.0--audio/'
     ])
-    expect(await recommendedIn('edit-videos', 2)).toEqual([
+    expect(await recommendedIn('edit-videos', 6)).toEqual([
+      '/models/byteplus--seedance-2-5-edit-video--edit-videos/',
+      '/models/kling--omni-pro-edit-video--edit-videos/',
       '/models/gemini--omni-1.1-flash--edit-videos/',
-      '/models/runway--aleph2-video-to-video--edit-videos/'
+      '/models/runway--aleph2-video-to-video--edit-videos/',
+      '/models/gemini--omni-flash-preview--edit-videos/',
+      '/models/wan--video-edit-2.7--edit-videos/'
+    ])
+    expect(await recommendedIn('edit-images', 5)).toEqual([
+      '/models/vertexai--gemini-nano-banana-2--edit-images/',
+      '/models/vertexai--gemini-3-pro-image--edit-images/',
+      '/models/byteplus--seedream-5-pro--edit-images/',
+      '/models/openai--gpt-image-2--edit-images/',
+      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
     ])
 
     await sort.click()
@@ -128,8 +141,12 @@ test.describe('Models catalog', () => {
     await expect(sort).toContainText('Most popular')
     await expect
       .poll(() =>
-        leading.evaluateAll((cards) =>
-          cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+        leading.evaluateAll(
+          (cards, limit) =>
+            cards
+              .slice(0, limit)
+              .map((card) => card.getAttribute('href') ?? ''),
+          recommended.length
         )
       )
       .toEqual(recommended)
@@ -296,7 +313,7 @@ test.describe('Models catalog', () => {
       /\/models\/bfl--flux-2-max--generate-images\/$/
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'FLUX 2 Max'
+      'FLUX 2 Max Text-to-Image'
     )
   })
 
@@ -459,17 +476,18 @@ test.describe('Model playground', () => {
       .getByRole('navigation', { name: 'Main navigation', exact: true })
       .getByRole('link', { name: 'Models', exact: true })
       .click()
-    await page
-      .getByTestId('section-generate-images')
-      .getByRole('link', { name: /Seedream 4\.5/ })
-      .click()
+    await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
+    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Seedream 4.5'
+      'Seedream 4.5 Image Edit'
     )
     await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText(/^Select or drop /).click()
+      page
+        .getByRole('button', { name: /^Replace / })
+        .first()
+        .click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await expect(
@@ -515,7 +533,7 @@ test.describe('Model playground', () => {
     await page.goto('/models/byteplus--seedream-4-5--edit-images/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText(/^Select or drop /).click()
+      page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await page.getByRole('tab', { name: 'API', exact: true }).click()
@@ -601,6 +619,23 @@ test.describe('Model playground', () => {
           ) < 2
         )
       })
+      .toBe(true)
+  })
+
+  test('a phone sample is big enough to judge @mobile', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    // A sample exists to be judged. Below this it is a thumbnail of a
+    // thumbnail, which is what it was.
+    await expect
+      .poll(async () => (await cards.first().boundingBox())?.width ?? 0)
+      .toBeGreaterThan(260)
+
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
       .toBe(true)
   })
 })

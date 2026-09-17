@@ -5,7 +5,7 @@ import type * as PostHogModule from 'posthog-js'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 
 const hoisted = vi.hoisted(() => ({
   localDev: false,
