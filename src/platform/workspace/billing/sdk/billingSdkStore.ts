@@ -399,9 +399,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function readPlans(): Promise<BillingResult<BillingPlansResponse>> {
     const result = await sdk.plans.read()
-    return result.status === 'ok'
-      ? { status: 'ok', value: projectBillingPlans(result.value.data) }
-      : result
+    if (result.status === 'error') return result
+    const plans = projectBillingPlans(result.value.data)
+    return plans === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: plans }
   }
 
   async function retryPaymentAuthentication(

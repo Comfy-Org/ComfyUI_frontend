@@ -39,7 +39,7 @@ describe('projectBillingPlans', () => {
   it('reads every catalog int64 back as the numbers the pricing surfaces hold', () => {
     const projected = projectBillingPlans(DECODED)
 
-    expect(projected.plans).toStrictEqual([
+    expect(projected?.plans).toStrictEqual([
       {
         slug: 'creator_monthly',
         tier: 'CREATOR',
@@ -55,7 +55,7 @@ describe('projectBillingPlans', () => {
         }
       }
     ])
-    expect(projected.team_credit_stops).toStrictEqual({
+    expect(projected?.team_credit_stops).toStrictEqual({
       default_stop_index: 0,
       stops: [
         {
@@ -66,7 +66,7 @@ describe('projectBillingPlans', () => {
         }
       ]
     })
-    expect(projected.current_plan_slug).toBe('creator_monthly')
+    expect(projected?.current_plan_slug).toBe('creator_monthly')
   })
 
   it('leaves the credit-stop ladder absent when the server sent none', () => {
@@ -77,7 +77,22 @@ describe('projectBillingPlans', () => {
 
     const projected = projectBillingPlans(withoutStops)
 
-    expect('team_credit_stops' in projected).toBe(false)
-    expect(projected.plans).toHaveLength(1)
+    expect(projected).toBeDefined()
+    expect(projected && 'team_credit_stops' in projected).toBe(false)
+    expect(projected?.plans).toHaveLength(1)
+  })
+
+  it('refuses a catalog with a price a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          price_cents: BigInt(Number.MAX_SAFE_INTEGER) + 1n
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
   })
 })
