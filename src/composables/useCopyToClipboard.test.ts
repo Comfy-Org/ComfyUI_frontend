@@ -39,6 +39,16 @@ describe('useCopyToClipboard', () => {
     )
   })
 
+  it('reports success without a toast when the caller shows its own', async () => {
+    mockWriteText.mockResolvedValue(undefined)
+
+    const { copyToClipboard } = useCopyToClipboard()
+    const copied = await copyToClipboard('hello', { toastOnSuccess: false })
+
+    expect(copied).toBe(true)
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
   it('falls back to legacy when modern clipboard fails', async () => {
     mockWriteText.mockRejectedValue(new Error('Not allowed'))
     document.execCommand = vi.fn(() => true)

@@ -21,7 +21,10 @@ function legacyCopy(text: string): boolean {
 export function useCopyToClipboard() {
   const toast = useToast()
 
-  async function copyToClipboard(text: string) {
+  async function copyToClipboard(
+    text: string,
+    { toastOnSuccess = true }: { toastOnSuccess?: boolean } = {}
+  ): Promise<boolean> {
     let success = false
 
     try {
@@ -39,6 +42,8 @@ export function useCopyToClipboard() {
       }
     }
 
+    if (success && !toastOnSuccess) return true
+
     toast.add(
       success
         ? {
@@ -53,6 +58,7 @@ export function useCopyToClipboard() {
             detail: t('clipboard.errorMessage')
           }
     )
+    return success
   }
 
   return {
