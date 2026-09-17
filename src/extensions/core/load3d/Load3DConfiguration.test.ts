@@ -1,7 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import fc from 'fast-check'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration, {
@@ -220,7 +220,8 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -506,7 +507,8 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -600,7 +602,8 @@ describe('Load3DConfiguration "none" model handling', () => {
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -679,7 +682,8 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -832,7 +836,8 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
