@@ -54,7 +54,7 @@ describe('browseEntries', () => {
     )
 
     expect(entry).toEqual({
-      key: 'flux',
+      key: 'bfl--flux',
       kind: 'model',
       title: 'Flux',
       useCases: ['generate-images'],
@@ -69,7 +69,7 @@ describe('browseEntries', () => {
       credits: 12,
       card: expect.objectContaining({
         kind: 'model',
-        href: '/playground/model/flux/'
+        href: '/playground/model/bfl--flux/'
       })
     })
   })

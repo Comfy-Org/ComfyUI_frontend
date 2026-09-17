@@ -1,11 +1,10 @@
-import type { Modality, UseCase } from '../../config/models-catalogue'
+import type { UseCase } from '../../config/models-catalogue'
 import { USE_CASES } from '../../config/models-catalogue'
 import type { CardView } from './catalogue-card'
 import type { EntryKind } from './catalogue-entries'
 
 export type TypeFilter = 'all' | EntryKind
 export type NeedsFilter = 'any' | 'runsHere' | 'comfyui' | 'customNodes'
-export type OutputFilter = 'all' | Modality
 
 /**
  * One card, projected for the browser. The catalogue itself never crosses the

@@ -38,13 +38,14 @@ function template(overrides: Partial<FacetedTemplate> = {}): FacetedTemplate {
 
 const entry = (workflows: readonly FacetedTemplate[]): ModelEntry => ({
   kind: 'model',
-  key: 'flux',
+  key: 'bfl--flux',
   model: model(),
+  name: 'Flux',
   operations: [model(), model({ slug: 'bfl--flux--edit-images' })],
   workflows
 })
 
-const known = new Set(['flux'])
+const known = new Map([['flux', 'bfl--flux']])
 
 describe('modelGroupFrom', () => {
   it('splits what the model does from what people did with it', () => {
@@ -65,7 +66,11 @@ describe('modelGroupFrom', () => {
   it('keeps every row the registry lists under the name', () => {
     const page = modelGroupFrom(entry([]), known)
 
-    expect(page).toMatchObject({ key: 'flux', name: 'Flux', provider: 'BFL' })
+    expect(page).toMatchObject({
+      key: 'bfl--flux',
+      name: 'Flux',
+      provider: 'BFL'
+    })
     expect(page.operations).toHaveLength(2)
     expect(page.uses).toEqual([])
     expect(page.operationsFromWorkflows).toEqual([])

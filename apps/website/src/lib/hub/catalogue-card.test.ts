@@ -40,8 +40,9 @@ const modelEntry = (
   overrides: Partial<Extract<CatalogueEntry, { kind: 'model' }>> = {}
 ): CatalogueEntry => ({
   kind: 'model',
-  key: 'flux',
+  key: 'bfl--flux',
   model: model(),
+  name: 'Flux',
   operations: [model()],
   workflows: [],
   ...overrides
@@ -65,7 +66,7 @@ describe('cardViewFor', () => {
 
     expect(view).toMatchObject({
       kind: 'model',
-      href: '/playground/model/flux/',
+      href: '/playground/model/bfl--flux/',
       title: 'Flux',
       needsCustomNodes: false
     })

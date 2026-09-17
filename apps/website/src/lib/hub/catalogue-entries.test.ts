@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import {
   buildCatalogue,
-  catalogueNameKeys,
+  catalogueNameIndex,
   cheapestOperation,
   entryTitle,
   entryUseCases,
@@ -47,18 +47,24 @@ function template(overrides: Partial<FacetedTemplate> = {}): FacetedTemplate {
 const titles = (entries: readonly CatalogueEntry[]) => entries.map(entryTitle)
 
 describe('buildCatalogue', () => {
-  it('collapses a name the registry lists once per operation into one card', () => {
+  // The registry names a row after its operation, so the two halves of one
+  // model never share a name; what they share is the model half of the slug.
+  it('collapses the operations of one model into one card', () => {
     const entries = buildCatalogue(
       [],
       [
-        model({ slug: 'flux--generate', name: 'Flux', modality: 'image' }),
         model({
-          slug: 'flux--edit',
-          name: 'Flux',
+          slug: 'bfl--flux--generate-images',
+          name: 'Flux Text-to-Image',
+          modality: 'image'
+        }),
+        model({
+          slug: 'bfl--flux--edit-images',
+          name: 'Flux Image Edit',
           task: 'image-to-image',
           modality: 'image'
         }),
-        model({ slug: 'kontext', name: 'Kontext' })
+        model({ slug: 'bfl--kontext--edit-images', name: 'Kontext' })
       ]
     )
 
@@ -69,10 +75,14 @@ describe('buildCatalogue', () => {
 
   it('answers to every use case the collapsed operations cover', () => {
     const models = [
-      model({ slug: 'flux--generate', name: 'Flux', modality: 'image' }),
       model({
-        slug: 'flux--edit',
-        name: 'Flux',
+        slug: 'bfl--flux--generate-images',
+        name: 'Flux Text-to-Image',
+        modality: 'image'
+      }),
+      model({
+        slug: 'bfl--flux--edit-images',
+        name: 'Flux Image Edit',
         modality: 'image',
         task: 'image-to-image'
       })
@@ -143,14 +153,18 @@ describe('buildCatalogue', () => {
 })
 
 describe('ownerOf', () => {
-  const known = new Set(['flux', 'fluxpro', 'seedance25'])
+  const known = new Map([
+    ['flux', 'bfl--flux'],
+    ['fluxpro', 'bfl--flux-pro'],
+    ['seedance25', 'byteplus--seedance-2-5']
+  ])
 
   it.for([
-    ['Flux: Text to Image', ['Flux'], 'flux'],
+    ['Flux: Text to Image', ['Flux'], 'bfl--flux'],
     // The registry writes the same model both ways, so spacing cannot decide.
-    ['Seedance2.5: Video Editing', ['Seedance 2.5'], 'seedance25'],
+    ['Seedance2.5: Video Editing', ['Seedance 2.5'], 'byteplus--seedance-2-5'],
     // A longer name that also matches is the more specific claim.
-    ['Flux Pro: Generate', ['Flux', 'Flux Pro'], 'fluxpro'],
+    ['Flux Pro: Generate', ['Flux', 'Flux Pro'], 'bfl--flux-pro'],
     // The name has to end where a word ends.
     ['Fluxion Portrait', ['Flux'], undefined],
     // Naming a model somewhere in the title is not being titled after it.
@@ -167,30 +181,45 @@ describe('cheapestOperation', () => {
     const [flux] = buildCatalogue(
       [],
       [
-        model({ slug: 'flux--edit', creditsPerRun: 40 }),
-        model({ slug: 'flux--generate', creditsPerRun: 12 })
+        model({ slug: 'bfl--flux--edit-images', creditsPerRun: 40 }),
+        model({ slug: 'bfl--flux--generate-images', creditsPerRun: 12 })
       ]
     )
 
     expect(flux.kind === 'model' && cheapestOperation(flux).slug).toBe(
-      'flux--generate'
+      'bfl--flux--generate-images'
     )
   })
 
   it('falls back to an operation the Router has not priced', () => {
-    const [flux] = buildCatalogue([], [model({ slug: 'flux--only' })])
+    const [flux] = buildCatalogue(
+      [],
+      [model({ slug: 'bfl--flux--generate-images' })]
+    )
 
     expect(flux.kind === 'model' && cheapestOperation(flux).slug).toBe(
-      'flux--only'
+      'bfl--flux--generate-images'
     )
   })
 })
 
-describe('catalogueNameKeys', () => {
-  it('keys a name by what survives case and punctuation', () => {
-    expect(catalogueNameKeys([model({ name: 'Seedance 2.5' })])).toEqual(
-      new Set(['seedance25'])
-    )
+describe('catalogueNameIndex', () => {
+  // A workflow written before the rename still says "Seedance 2.5", and one
+  // written after says "Seedance 2.5 Text-to-Image"; both mean this model.
+  it('answers to the model name and to each operation name', () => {
+    const index = catalogueNameIndex([
+      model({
+        slug: 'byteplus--seedance-2-5--generate-videos',
+        name: 'Seedance 2.5 Text-to-Video'
+      }),
+      model({
+        slug: 'byteplus--seedance-2-5--edit-videos',
+        name: 'Seedance 2.5 Video Edit'
+      })
+    ])
+
+    expect(index.get('seedance25')).toBe('byteplus--seedance-2-5')
+    expect(index.get('seedance25texttovideo')).toBe('byteplus--seedance-2-5')
   })
 })
 

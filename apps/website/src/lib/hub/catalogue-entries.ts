@@ -1,6 +1,7 @@
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import { useCasesFor } from '../../config/models-catalogue'
 import type { FacetedTemplate } from './facet-fields'
+import { groupByModel, groupName } from './model-identity'
 import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 
 export type EntryKind = 'model' | 'workflow' | 'app'
@@ -13,10 +14,12 @@ export interface ModelEntry {
   readonly kind: 'model'
   readonly key: string
   readonly model: WorkshopModel
+  /** What the operations agree the model is called, without the operation. */
+  readonly name: string
   /**
-   * Every catalogue row sharing this model's name. The registry lists a model
-   * once per operation, so a name can carry several; they are a choice inside
-   * the model page rather than rival cards in the grid.
+   * Every catalogue row for this model. The registry lists a model once per
+   * operation, so one can carry several; they are a choice inside the model
+   * page rather than rival cards in the grid.
    */
   readonly operations: readonly WorkshopModel[]
   /** Workflows naming this model, whether or not they browse on their own. */
@@ -36,22 +39,32 @@ export type CatalogueEntry = ModelEntry | WorkflowEntry
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-function groupByName(
+/**
+ * A workflow names a model in whatever words the registry used at the time, so
+ * both the model's own name and each of its operations' point at the one group.
+ */
+export function catalogueNameIndex(
   models: readonly WorkshopModel[]
-): Map<string, WorkshopModel[]> {
-  const groups = new Map<string, WorkshopModel[]>()
-  for (const model of models) {
-    const key = normalize(model.name)
-    groups.set(key, [...(groups.get(key) ?? []), model])
+): ReadonlyMap<string, string> {
+  const index = new Map<string, string>()
+  for (const [key, operations] of groupByModel(models)) {
+    for (const operation of operations)
+      index.set(normalize(operation.name), key)
+    index.set(normalize(groupName(operations)), key)
   }
-  return groups
+  return index
 }
 
-const namesInCatalogue = (
+const keysInCatalogue = (
   template: FacetedTemplate,
-  known: ReadonlySet<string>
-) =>
-  [...new Set(template.models.map(normalize))].filter((key) => known.has(key))
+  known: ReadonlyMap<string, string>
+) => [
+  ...new Set(
+    template.models
+      .map((name) => known.get(normalize(name)))
+      .filter((key): key is string => key !== undefined)
+  )
+]
 
 const isWordCharacter = (character: string) => /[a-z0-9]/i.test(character)
 
@@ -78,9 +91,6 @@ const titleOpensWith = (title: string, key: string) => {
   return end >= 0 && !isWordCharacter(title.charAt(end))
 }
 
-export const catalogueNameKeys = (models: readonly WorkshopModel[]) =>
-  new Set(models.map((model) => normalize(model.name)))
-
 /**
  * A workflow titled after a model it runs is that model's own operation, not a
  * competitor to it: "Seedance 2.5: Image to Video" beside "Seedance 2.5" reads
@@ -92,11 +102,12 @@ export const catalogueNameKeys = (models: readonly WorkshopModel[]) =>
  */
 export function ownerOf(
   template: FacetedTemplate,
-  known: ReadonlySet<string>
+  known: ReadonlyMap<string, string>
 ): string | undefined {
-  return namesInCatalogue(template, known)
-    .filter((key) => titleOpensWith(template.title, key))
-    .sort((a, b) => b.length - a.length)[0]
+  return [...new Set(template.models.map(normalize))]
+    .filter((name) => known.has(name) && titleOpensWith(template.title, name))
+    .sort((a, b) => b.length - a.length)
+    .map((name) => known.get(name))[0]
 }
 
 /**
@@ -116,12 +127,12 @@ export function buildCatalogue(
   templates: readonly FacetedTemplate[],
   models: readonly WorkshopModel[]
 ): readonly CatalogueEntry[] {
-  const groups = groupByName(models)
-  const known = new Set(groups.keys())
+  const groups = groupByModel(models)
+  const known = catalogueNameIndex(models)
   const naming = new Map<string, FacetedTemplate[]>()
   const standalone: FacetedTemplate[] = []
   for (const template of templates) {
-    for (const key of namesInCatalogue(template, known))
+    for (const key of keysInCatalogue(template, known))
       naming.set(key, [...(naming.get(key) ?? []), template])
     if (!ownerOf(template, known)) standalone.push(template)
   }
@@ -130,6 +141,7 @@ export function buildCatalogue(
       kind: 'model',
       key,
       model: operations[0],
+      name: groupName(operations),
       operations,
       workflows: naming.get(key) ?? []
     })
@@ -146,7 +158,7 @@ export function buildCatalogue(
 }
 
 export function entryTitle(entry: CatalogueEntry): string {
-  return entry.kind === 'model' ? entry.model.name : entry.template.title
+  return entry.kind === 'model' ? entry.name : entry.template.title
 }
 
 /**

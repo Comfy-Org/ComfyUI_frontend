@@ -10462,20 +10462,23 @@ Enterprise`
     'zh-CN': '自定义节点'
   },
   'workshop.v2.filter.type': { en: 'Type', 'zh-CN': '类型' },
-  'workshop.v2.filter.needs': { en: 'What it needs', 'zh-CN': '运行条件' },
-  'workshop.v2.filter.output': { en: 'Output', 'zh-CN': '输出' },
-  'workshop.v2.filter.provider': { en: 'Provider', 'zh-CN': '提供商' },
-  'workshop.v2.filter.allProviders': {
-    en: 'All providers',
-    'zh-CN': '全部提供商'
+  'workshop.v2.filter.needs': {
+    en: 'What it takes to run',
+    'zh-CN': '运行条件'
   },
-  'workshop.v2.needs.any': { en: 'Any requirement', 'zh-CN': '不限条件' },
-  'workshop.v2.output.any': { en: 'Any output', 'zh-CN': '不限输出' },
-  'workshop.v2.needs.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
-  'workshop.v2.needs.comfyui': { en: 'Needs ComfyUI', 'zh-CN': '需要 ComfyUI' },
+  'workshop.v2.filter.provider': { en: 'Provider', 'zh-CN': '提供商' },
+  'workshop.v2.workflow.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
+  'workshop.v2.needs.runsHere': {
+    en: 'Nothing, it runs here',
+    'zh-CN': '无需任何准备，可在此运行'
+  },
+  'workshop.v2.needs.comfyui': {
+    en: 'ComfyUI on your machine',
+    'zh-CN': '需要本机的 ComfyUI'
+  },
   'workshop.v2.needs.customNodes': {
-    en: 'Needs custom nodes',
-    'zh-CN': '需要自定义节点'
+    en: 'ComfyUI and custom nodes',
+    'zh-CN': '需要 ComfyUI 与自定义节点'
   },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
   'workshop.v2.filter.label': { en: 'Filter', 'zh-CN': '筛选' },

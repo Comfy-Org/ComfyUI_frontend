@@ -2,6 +2,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
+import { modelIdentity, modelName } from './model-identity'
 import { partnerModelFor } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
 import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
@@ -19,13 +20,23 @@ interface HubIoRow {
   readonly type: string
 }
 
+/**
+ * The model page a workflow opens, named after the model rather than the one
+ * operation the join happened to land on.
+ */
+interface HubWorkflowDestination {
+  readonly key: string
+  readonly slug: string
+  readonly name: string
+}
+
 export interface HubWorkflowPage {
   readonly template: HubTemplate
   readonly mediaType: string
   readonly details: HubTemplateDetail
   readonly runsOn: readonly HubWorkflowModelRef[]
   /** The one model page this workflow can open without guessing. */
-  readonly destination: WorkshopModel | undefined
+  readonly destination: HubWorkflowDestination | undefined
   readonly callsPartnerModel: boolean
   readonly customNodes: readonly string[]
   /** Bytes of weights to download before it runs. Zero for partner workflows. */
@@ -107,6 +118,19 @@ export function formatWeights(bytes: number): string | undefined {
     : `${Math.round(bytes / 1_000_000)} MB`
 }
 
+function destinationFor(
+  template: HubTemplate
+): HubWorkflowDestination | undefined {
+  const model = partnerModelFor(template, workshopModels)
+  return model
+    ? {
+        key: modelIdentity(model.slug),
+        slug: model.slug,
+        name: modelName(model, workshopModels)
+      }
+    : undefined
+}
+
 export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
   const template = templates.find((entry) => entry.name === name)
   if (!template) return undefined
@@ -116,7 +140,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     mediaType: outputMediaType(template, detail),
     details: detail,
     runsOn: modelRefs(template, workshopModels),
-    destination: partnerModelFor(template, workshopModels),
+    destination: destinationFor(template),
     callsPartnerModel: template.tags.includes('API'),
     customNodes: detail.requiresCustomNodes ?? [],
     weightsBytes: detail.size ?? 0,

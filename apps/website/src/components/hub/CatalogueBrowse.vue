@@ -9,7 +9,6 @@ import type {
   BrowseEntry,
   CatalogueOrder,
   NeedsFilter,
-  OutputFilter,
   TypeFilter
 } from '../../lib/hub/browse-entry'
 import {
@@ -44,7 +43,6 @@ const PAGE = 30
 const useCase = ref<UseCase | 'all'>('all')
 const type = ref<TypeFilter>('all')
 const needs = ref<NeedsFilter>('any')
-const output = ref<OutputFilter>('all')
 const provider = ref('all')
 const order = ref<CatalogueOrder>('popular')
 const query = ref('')
@@ -112,7 +110,6 @@ const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
     (entry) =>
       useCase.value === 'all' || entry.useCases.includes(useCase.value),
     (entry) => meetsNeeds(entry, needs.value),
-    (entry) => output.value === 'all' || entry.outputs.includes(output.value),
     (entry) => provider.value === 'all' || entry.provider === provider.value,
     (entry) => usesTheModel(entry, usesModel.value),
     (entry) => matchesOutcome(entry, outcome.value),
@@ -146,18 +143,9 @@ const sorted = computed(() => sortBrowseEntries(matched.value, order.value))
 const visible = computed(() => sorted.value.slice(0, shown.value))
 
 const NEEDS: readonly { value: NeedsFilter; label: TranslationKey }[] = [
-  { value: 'any', label: 'workshop.v2.needs.any' },
   { value: 'runsHere', label: 'workshop.v2.needs.runsHere' },
   { value: 'comfyui', label: 'workshop.v2.needs.comfyui' },
   { value: 'customNodes', label: 'workshop.v2.needs.customNodes' }
-]
-
-const OUTPUTS: readonly { value: OutputFilter; label: TranslationKey }[] = [
-  { value: 'all', label: 'workshop.v2.output.any' },
-  { value: 'image', label: 'workshop.hub.io.image' },
-  { value: 'video', label: 'workshop.hub.io.video' },
-  { value: 'audio', label: 'workshop.hub.io.audio' },
-  { value: '3d', label: 'workshop.hub.io.3d' }
 ]
 
 // A count says what choosing that option would return, so it is taken with
@@ -179,7 +167,7 @@ const facetGroups = computed<FacetSheetGroup[]>(() => [
   {
     key: 'needs',
     label: t('workshop.v2.filter.needs', locale),
-    selected: [needs.value],
+    selected: needs.value === 'any' ? [] : [needs.value],
     options: NEEDS.map((option) => ({
       value: option.value,
       label: t(option.label, locale),
@@ -189,38 +177,17 @@ const facetGroups = computed<FacetSheetGroup[]>(() => [
     }))
   },
   {
-    key: 'output',
-    label: t('workshop.v2.filter.output', locale),
-    selected: [output.value],
-    options: OUTPUTS.map((option) => ({
-      value: option.value,
-      label: t(option.label, locale),
-      count: countWithout(
-        narrowings.value[2],
-        (entry) =>
-          option.value === 'all' || entry.outputs.includes(option.value)
-      )
-    }))
-  },
-  {
     key: 'provider',
     label: t('workshop.v2.filter.provider', locale),
-    selected: [provider.value],
-    options: [
-      {
-        value: 'all',
-        label: t('workshop.v2.filter.allProviders', locale),
-        count: countWithout(narrowings.value[3], () => true)
-      },
-      ...providers.value.map((name) => ({
-        value: name,
-        label: name,
-        count: countWithout(
-          narrowings.value[3],
-          (entry) => entry.provider === name
-        )
-      }))
-    ]
+    selected: provider.value === 'all' ? [] : [provider.value],
+    options: providers.value.map((name) => ({
+      value: name,
+      label: name,
+      count: countWithout(
+        narrowings.value[2],
+        (entry) => entry.provider === name
+      )
+    }))
   }
 ])
 
@@ -228,9 +195,6 @@ const facetGroups = computed<FacetSheetGroup[]>(() => [
 const PICKERS: Record<string, (value: string) => void> = {
   needs: (value) => {
     needs.value = needs.value === value ? 'any' : (value as NeedsFilter)
-  },
-  output: (value) => {
-    output.value = output.value === value ? 'all' : (value as OutputFilter)
   },
   provider: (value) => {
     provider.value = provider.value === value ? 'all' : value
@@ -276,7 +240,6 @@ const narrowedBy = computed(
 const resettable = computed(() => [
   { ref: type, rest: 'all' as const },
   { ref: needs, rest: 'any' as const },
-  { ref: output, rest: 'all' as const },
   { ref: provider, rest: 'all' },
   { ref: usesModel, rest: '' },
   { ref: outcome, rest: undefined },
@@ -399,7 +362,6 @@ const heading = computed(() =>
         :filters-on="filtersOn"
         :result-count="sorted.length"
         :locale
-        class="ms-auto"
         @clear="clearFilters"
         @pick="pickFacet"
       />

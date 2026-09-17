@@ -74,7 +74,7 @@ const operations = runnable
 const pills = [
   template.isApp ? t('workshop.v2.kind.app') : t('workshop.v2.kind.workflow'),
   mediaLabels[mediaType],
-  operations.length > 0 ? t('workshop.v2.needs.runsHere') : undefined,
+  operations.length > 0 ? t('workshop.v2.workflow.runsHere') : undefined,
   details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
 ].filter((label): label is string => Boolean(label))
 

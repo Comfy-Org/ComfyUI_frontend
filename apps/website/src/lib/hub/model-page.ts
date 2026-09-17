@@ -2,7 +2,11 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplates from '../../data/hubTemplates.json'
 import type { ModelEntry } from './catalogue-entries'
-import { buildCatalogue, catalogueNameKeys, ownerOf } from './catalogue-entries'
+import {
+  buildCatalogue,
+  catalogueNameIndex,
+  ownerOf
+} from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
 import { withFacetFields } from './facet-fields'
 import { hubTemplatesSchema } from './types'
@@ -23,7 +27,7 @@ const templates = hubTemplatesSchema
   .parse(hubTemplates)
   .map((template) => withFacetFields(template, workshopModels))
 
-const known = catalogueNameKeys(workshopModels)
+const known = catalogueNameIndex(workshopModels)
 
 const entries = buildCatalogue(templates, workshopModels).filter(
   (entry): entry is ModelEntry => entry.kind === 'model'
@@ -40,7 +44,7 @@ export function listModelGroups(): readonly ModelEntry[] {
  */
 export function modelGroupFrom(
   entry: ModelEntry,
-  known: ReadonlySet<string>
+  known: ReadonlyMap<string, string>
 ): ModelGroupPage {
   const owned = entry.workflows.filter(
     (template) => ownerOf(template, known) === entry.key
@@ -48,7 +52,7 @@ export function modelGroupFrom(
   const ownedNames = new Set(owned.map((template) => template.name))
   return {
     key: entry.key,
-    name: entry.model.name,
+    name: entry.name,
     provider: entry.model.provider,
     operations: entry.operations,
     uses: entry.workflows.filter((template) => !ownedNames.has(template.name)),
