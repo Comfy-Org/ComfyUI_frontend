@@ -205,18 +205,46 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expect(comfyPage.searchBox.input).toBeVisible()
     })
 
-    test('Escape dismisses filter panel but keeps search box visible', async ({
-      comfyPage
-    }) => {
-      await comfyPage.searchBox.filterButton.click()
-      const panel = comfyPage.searchBox.filterSelectionPanel
-      await expect(
-        panel.root.getByRole('button', { name: 'Close' })
-      ).toBeFocused()
-      await comfyPage.page.keyboard.press('Escape')
+    test.describe('Escape dismissal', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.searchBox.filterButton.click()
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.root.getByRole('button', {
+            name: 'Close'
+          })
+        ).toBeFocused()
+      })
 
-      await expect(panel.header).toBeHidden()
-      await expect(comfyPage.searchBox.input).toBeVisible()
+      test('keeps search open when the filter has keyboard focus', async ({
+        comfyPage
+      }) => {
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+      })
+
+      test('keeps search open after clicking the filter heading', async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterSelectionPanel.root
+          .getByRole('heading', { name: 'Add node filter condition' })
+          .click()
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+
+        await comfyPage.searchBox.filterButton.focus()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.searchBox.input).toBeHidden()
+      })
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
