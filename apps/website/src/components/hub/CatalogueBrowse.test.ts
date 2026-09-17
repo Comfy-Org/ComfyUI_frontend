@@ -169,10 +169,9 @@ describe('CatalogueBrowse', () => {
 
   it('keeps only what this site can run', async () => {
     await at('?useCase=generate-images')
-    await userEvent.click(screen.getByTestId('catalogue-filter-toggle'))
-    await userEvent.selectOptions(
-      screen.getByLabelText('What it needs'),
-      'runsHere'
+    await userEvent.click(screen.getByTestId('catalogue-facet-needs'))
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: /runs here/i })
     )
     expect(shown()).toEqual(['Flux'])
   })
@@ -216,8 +215,8 @@ describe('CatalogueBrowse', () => {
   // so the order follows the type it was chosen for or gives way.
   it('drops a price order when the reader leaves the models behind', async () => {
     await at('?useCase=generate-images')
-    const order = screen.getByLabelText('Sort')
-    await userEvent.selectOptions(order, 'priceAsc')
+    await userEvent.click(screen.getByTestId('catalogue-sort'))
+    await userEvent.click(await screen.findByTestId('catalogue-sort-priceAsc'))
     expect(shown()).toEqual(['Flux'])
 
     await userEvent.click(

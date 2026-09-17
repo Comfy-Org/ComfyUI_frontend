@@ -22,6 +22,7 @@ import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { entrySlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
+import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
 import type { OrderOption } from './CatalogueControls.vue'
 import CatalogueCard from './CatalogueCard.vue'
 import CatalogueControls from './CatalogueControls.vue'
@@ -143,6 +144,102 @@ const matched = computed(() =>
 
 const sorted = computed(() => sortBrowseEntries(matched.value, order.value))
 const visible = computed(() => sorted.value.slice(0, shown.value))
+
+const NEEDS: readonly { value: NeedsFilter; label: TranslationKey }[] = [
+  { value: 'any', label: 'workshop.v2.needs.any' },
+  { value: 'runsHere', label: 'workshop.v2.needs.runsHere' },
+  { value: 'comfyui', label: 'workshop.v2.needs.comfyui' },
+  { value: 'customNodes', label: 'workshop.v2.needs.customNodes' }
+]
+
+const OUTPUTS: readonly { value: OutputFilter; label: TranslationKey }[] = [
+  { value: 'all', label: 'workshop.v2.output.any' },
+  { value: 'image', label: 'workshop.hub.io.image' },
+  { value: 'video', label: 'workshop.hub.io.video' },
+  { value: 'audio', label: 'workshop.hub.io.audio' },
+  { value: '3d', label: 'workshop.hub.io.3d' }
+]
+
+// A count says what choosing that option would return, so it is taken with
+// every other narrowing still on and that one lifted.
+function countWithout(
+  lifted: (entry: BrowseEntry) => boolean,
+  holds: (entry: BrowseEntry) => boolean
+): number {
+  const others = narrowings.value.filter((one) => one !== lifted)
+  return entries.filter(
+    (entry) =>
+      holds(entry) &&
+      others.every((one) => one(entry)) &&
+      (type.value === 'all' || entry.kind === type.value)
+  ).length
+}
+
+const facetGroups = computed<FacetSheetGroup[]>(() => [
+  {
+    key: 'needs',
+    label: t('workshop.v2.filter.needs', locale),
+    selected: [needs.value],
+    options: NEEDS.map((option) => ({
+      value: option.value,
+      label: t(option.label, locale),
+      count: countWithout(narrowings.value[1], (entry) =>
+        meetsNeeds(entry, option.value)
+      )
+    }))
+  },
+  {
+    key: 'output',
+    label: t('workshop.v2.filter.output', locale),
+    selected: [output.value],
+    options: OUTPUTS.map((option) => ({
+      value: option.value,
+      label: t(option.label, locale),
+      count: countWithout(
+        narrowings.value[2],
+        (entry) =>
+          option.value === 'all' || entry.outputs.includes(option.value)
+      )
+    }))
+  },
+  {
+    key: 'provider',
+    label: t('workshop.v2.filter.provider', locale),
+    selected: [provider.value],
+    options: [
+      {
+        value: 'all',
+        label: t('workshop.v2.filter.allProviders', locale),
+        count: countWithout(narrowings.value[3], () => true)
+      },
+      ...providers.value.map((name) => ({
+        value: name,
+        label: name,
+        count: countWithout(
+          narrowings.value[3],
+          (entry) => entry.provider === name
+        )
+      }))
+    ]
+  }
+])
+
+// A facet is one choice, so picking what is already picked is how it comes off.
+const PICKERS: Record<string, (value: string) => void> = {
+  needs: (value) => {
+    needs.value = needs.value === value ? 'any' : (value as NeedsFilter)
+  },
+  output: (value) => {
+    output.value = output.value === value ? 'all' : (value as OutputFilter)
+  },
+  provider: (value) => {
+    provider.value = provider.value === value ? 'all' : value
+  }
+}
+
+function pickFacet(group: string, value: string) {
+  PICKERS[group]?.(value)
+}
 
 const providers = computed(() =>
   [
@@ -297,15 +394,14 @@ const heading = computed(() =>
 
       <CatalogueControls
         v-model:order="order"
-        v-model:needs="needs"
-        v-model:output="output"
-        v-model:provider="provider"
         :orders="ORDERS"
-        :providers
+        :groups="facetGroups"
         :filters-on="filtersOn"
+        :result-count="sorted.length"
         :locale
         class="ms-auto"
         @clear="clearFilters"
+        @pick="pickFacet"
       />
     </div>
 

@@ -10256,6 +10256,10 @@ Enterprise`
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
   'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.v2.filter.show': {
+    en: 'Show {n} results',
+    'zh-CN': '显示 {n} 个结果'
+  },
   'workshop.outcome.upscaleRestore': {
     en: 'Upscale and restore',
     'zh-CN': '放大与修复'

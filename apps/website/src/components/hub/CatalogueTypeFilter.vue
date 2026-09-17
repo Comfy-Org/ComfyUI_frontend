@@ -23,7 +23,7 @@ const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
 
 <template>
   <div
-    class="inline-flex items-center gap-1 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full"
+    class="scrollbar-hide inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl bg-transparency-white-t8 p-1 max-sm:gap-0"
     role="group"
     :aria-label="t('workshop.v2.kind.all', locale)"
     data-testid="catalogue-type-facet"
@@ -34,7 +34,7 @@ const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
       type="button"
       :class="
         cn(
-          'inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:flex-1',
+          'inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-2.5',
           type === option.value
             ? 'bg-primary-warm-white text-page'
             : 'text-content-secondary hover:text-content-bright'
@@ -46,7 +46,7 @@ const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
       @click="type = option.value"
     >
       {{ t(option.label, locale) }}
-      <span class="text-2xs tabular-nums opacity-70">
+      <span class="text-2xs tabular-nums opacity-70 max-sm:hidden">
         {{ counts[option.value] }}
       </span>
     </button>
