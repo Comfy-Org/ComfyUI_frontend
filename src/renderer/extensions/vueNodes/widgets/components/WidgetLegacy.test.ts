@@ -210,9 +210,10 @@ describe('WidgetLegacy', () => {
 
   it('forwards node-local movement to the rebound host and retains pointer movement', async () => {
     const pointerMove = vi.spyOn(CanvasPointer.prototype, 'move')
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      scale: vi.fn()
-    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+    const context = fromPartial<CanvasRenderingContext2D>({ scale: vi.fn() })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      fromPartial<HTMLCanvasElement>({ getContext: () => context }).getContext
+    )
     const draw = vi.fn()
     const widget = fromPartial<IBaseWidget>({
       name: 'compare',
