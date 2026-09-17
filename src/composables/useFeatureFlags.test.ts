@@ -280,6 +280,59 @@ describe('useFeatureFlags', () => {
     )
   })
 
+  describe('billingSdkSubscriptionEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(
+        expected
+      )
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(false)
+    })
+  })
+
+  describe('billingSdkSubscriptionRailEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      { auth: 'off', unifiedCloudAuth: false, expected: false },
+      { auth: 'on', unifiedCloudAuth: true, expected: true }
+    ])(
+      'follows the SDK flag only while unified auth is $auth',
+      ({ unifiedCloudAuth, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        vi.mocked(api.getServerFeature).mockImplementation((path) => {
+          if (path === ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED)
+            return true
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
+            return unifiedCloudAuth
+          return false
+        })
+
+        expect(useFeatureFlags().flags.billingSdkSubscriptionRailEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
