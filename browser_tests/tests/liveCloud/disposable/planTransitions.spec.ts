@@ -10,10 +10,11 @@ test.describe('Real Cloud plan transitions', { tag: ['@cloud-live'] }, () => {
   test('upgrades now and schedules a downgrade', async ({
     disposableCheckout
   }, testInfo) => {
-    await disposableCheckout.checkout.completeCheckout(
+    const completion = await disposableCheckout.checkout.completeCheckout(
       disposableCheckout.billingSession,
       testInfo
     )
+    expect(completion.paymentMethodCount).toBe(1)
     const transitions = await verifyPlanTransitions(
       disposableCheckout.billingSession,
       testInfo

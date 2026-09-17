@@ -89,5 +89,5 @@ PR #17548 depends only on #17481. Run `--project=cloud-live-disposable` for
 cancellation/reactivation and plan transitions. The shared setup provisions a
 paid sandbox subscription; all lifecycle assertions and endpoint permissions live
 in this PR. Cancellation/reactivation preserves balance, upgrade grants the quote,
-and scheduled downgrade grants nothing. Live execution still requires the saved-card
-endpoint needed by paid setup.
+and scheduled downgrade grants nothing. Paid setup verifies the saved card through
+the hosted billing portal.

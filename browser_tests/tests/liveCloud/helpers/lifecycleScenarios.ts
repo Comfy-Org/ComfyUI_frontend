@@ -5,7 +5,6 @@ import {
   zCancelSubscriptionAcceptedResponse,
   zCancelSubscriptionResponse,
   zResubscribeResponse,
-  zListSavedPaymentMethodsResponse,
   zPreviewSubscribeResponse,
   zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
@@ -102,11 +101,6 @@ export async function verifyPlanTransitions(
   session: LiveCloudBillingSession,
   testInfo: TestInfo
 ) {
-  const methods = await session.read(
-    '/api/billing/payment-methods',
-    zListSavedPaymentMethodsResponse
-  )
-  expect(methods).toHaveLength(1)
   const balanceBeforeUpgrade = await session.read(
     '/api/billing/balance',
     zBillingBalanceResponse
