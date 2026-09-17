@@ -132,7 +132,6 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = false
     vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     Object.assign(useWorkflowStore(), {
       activeWorkflow: {

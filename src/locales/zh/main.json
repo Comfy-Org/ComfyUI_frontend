@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "从资源面板拖入资源",
     "addNodesFromGraph": "提及画布中的节点",
-    "addPromptToSend": "添加要发送的提示词",
     "addToPrompt": "添加到提示词",
     "alpha": "ALPHA",
     "askComfyAgent": "询问 Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "选择工作流",
     "chooseWorkflowForChat": "为此聊天选择工作流",
     "close": "关闭",
+    "coachBody": "描述你的想法，让它构建并运行工作流。它可以查看你的画布和文件。",
+    "coachGraphBody": "智能体工作时，你仍可编辑工作流图或切换标签页。",
+    "coachGraphTitle": "编辑时让智能体继续运行",
+    "coachHistoryBody": "之前的聊天记录会保存在这里。打开一条记录以查看，或继续与智能体协作。",
+    "coachHistoryTitle": "从上次中断处继续",
+    "coachProgress": "{current} / {total}",
+    "coachTitle": "认识你的 Comfy Agent",
+    "coachWorkflowBody": "智能体仅编辑你选择的工作流。你还可以上传参考文件或提及其他工作流。",
+    "coachWorkflowTitle": "选择要让智能体编辑的工作流",
     "consent": {
       "accept": "开始使用 Comfy Agent",
       "body1": "Comfy Agent 可帮助您规划、构建、运行和迭代工作流。描述您想要创建的内容，Comfy Agent 将成为您的强大伙伴。",
@@ -49,6 +57,13 @@
     "credits": "积分",
     "currentTab": "当前标签页",
     "delete": "删除",
+    "diagnosticReport": {
+      "clipboardFailed": "无法访问剪贴板。请选择并复制下方报告，或重试。",
+      "collectionFailed": "无法收集报告。请重试，或关闭可选来源后重试。",
+      "includedSources": "包含在报告中（默认开启）",
+      "manualCopy": "待复制的报告",
+      "retry": "重试复制报告"
+    },
     "dismiss": "关闭",
     "downloadAssets": "下载资源",
     "dragAndDropAssets": "将资源拖放到此处",
@@ -144,6 +159,7 @@
     "showMore": "显示更多",
     "skip": "跳过",
     "stop": "停止",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "生成一只戴着曲棍球面具的黄色鸭子",
       "列出我保存的工作流",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "Latent",
     "loaders": "加载器",
     "logic": "逻辑",
+    "looping": "循环",
     "lotus": "lotus",
     "ltxv": "LTXV",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "请先应用优惠码以刷新报价，然后再继续。",
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收取 {amount}。随时可取消。",
+      "billingAddress": "账单地址",
       "changePaymentMethod": "更改",
       "commitment": "承诺",
       "completePayment": "完成支付",
@@ -5143,6 +5163,13 @@
     },
     "invite": "邀请",
     "inviteLimitReached": "您已达到 {count} 名成员的上限",
+    "inviteLinks": {
+      "copied": "已复制！",
+      "copyAll": "复制邀请链接 | 复制全部链接（{count}）",
+      "copyLink": "复制邀请链接",
+      "sentLead": "每个邀请都有可直接分享的专属链接：",
+      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请"
+    },
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
       "failedCount": "无法发送 {count} 个邀请，请重试。",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "取消邀请",
         "changeRole": "更改角色",
+        "copyInviteLink": "复制邀请链接",
         "removeMember": "移除成员",
         "resendInvite": "重新发送邀请",
         "setCreditLimit": "设置积分上限"

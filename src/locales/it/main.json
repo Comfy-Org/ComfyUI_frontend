@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "Trascina una risorsa dal pannello delle risorse",
     "addNodesFromGraph": "Menziona nodi dal grafo",
-    "addPromptToSend": "Aggiungi un prompt da inviare",
     "addToPrompt": "Aggiungi al prompt",
     "alpha": "ALPHA",
     "askComfyAgent": "Chiedi a Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "Scegli un flusso di lavoro",
     "chooseWorkflowForChat": "Scegli un flusso di lavoro per questa chat",
     "close": "Chiudi",
+    "coachBody": "Descrivi le tue idee, chiedigli di creare ed eseguire workflow. Può vedere la tua area di lavoro e i file.",
+    "coachGraphBody": "Puoi comunque modificare il grafo o cambiare scheda mentre l'agente è al lavoro.",
+    "coachGraphTitle": "Lascia che l'agente venga eseguito mentre modifichi",
+    "coachHistoryBody": "Le chat precedenti sono salvate qui. Aprine una per rivederla o continua a lavorare con l'agente.",
+    "coachHistoryTitle": "Riprendi da dove avevi lasciato",
+    "coachProgress": "{current} di {total}",
+    "coachTitle": "Conosci il tuo Comfy Agent",
+    "coachWorkflowBody": "L'agente modifica solo il workflow che scegli. Puoi anche caricare file di riferimento o menzionare altri workflow.",
+    "coachWorkflowTitle": "Seleziona un workflow da modificare per il tuo agente",
     "consent": {
       "accept": "Inizia a usare Comfy Agent",
       "body1": "Comfy Agent ti aiuta a pianificare, creare, eseguire e perfezionare i workflow. Descrivi ciò che vuoi creare e Comfy Agent lavorerà al tuo fianco come un potente collaboratore.",
@@ -49,6 +57,13 @@
     "credits": "crediti",
     "currentTab": "Scheda corrente",
     "delete": "Elimina",
+    "diagnosticReport": {
+      "clipboardFailed": "Accesso agli appunti non riuscito. Seleziona e copia il report qui sotto oppure riprova.",
+      "collectionFailed": "Impossibile raccogliere il report. Riprova oppure disattiva le fonti opzionali e riprova.",
+      "includedSources": "Includi nel report (attivo per impostazione predefinita)",
+      "manualCopy": "Report da copiare",
+      "retry": "Riprova a copiare il report"
+    },
     "dismiss": "Ignora",
     "downloadAssets": "Scarica risorse",
     "dragAndDropAssets": "Trascina qui le risorse",
@@ -144,6 +159,7 @@
     "showMore": "Mostra altro",
     "skip": "Salta",
     "stop": "Interrompi",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "Genera un'anatra gialla con una maschera da hockey",
       "Elenca i miei flussi di lavoro salvati",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "latente",
     "loaders": "caricatori",
     "logic": "logica",
+    "looping": "ciclo",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "scheduler",
     "scheduling": "pianificazione",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigma",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "Applica il codice promozionale per aggiornare il preventivo prima di continuare.",
       "backToAllPlans": "Torna a tutti i piani",
       "billedEachMonth": "{amount} fatturato ogni mese. Puoi annullare in qualsiasi momento.",
+      "billingAddress": "Indirizzo di fatturazione",
       "changePaymentMethod": "Modifica",
       "commitment": "impegno",
       "completePayment": "Completa il pagamento",
@@ -5143,6 +5163,13 @@
     },
     "invite": "Invita",
     "inviteLimitReached": "Hai raggiunto il massimo di {count} membri",
+    "inviteLinks": {
+      "copied": "Copiato!",
+      "copyAll": "Copia link di invito | Copia tutti i link ({count})",
+      "copyLink": "Copia link di invito",
+      "sentLead": "Ogni invito ha un link personale che puoi condividere direttamente:",
+      "sentTitle": "{count} invito inviato | {count} inviti inviati"
+    },
     "inviteMember": "Invita membro",
     "inviteMemberDialog": {
       "failedCount": "Impossibile inviare {count} invito. Riprova. | Impossibile inviare {count} inviti. Riprova.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "Annulla invito",
         "changeRole": "Cambia ruolo",
+        "copyInviteLink": "Copia link di invito",
         "removeMember": "Rimuovi membro",
         "resendInvite": "Invia nuovamente invito",
         "setCreditLimit": "Imposta limite crediti"

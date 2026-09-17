@@ -405,17 +405,19 @@ defineExpose({
               >#{{ tag.id }}</span
             >
           </span>
-          <button
+          <Button
             v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
             type="button"
+            variant="muted-textonly"
+            size="unset"
             :aria-label="
               t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
             "
-            class="flex size-3.5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-base-foreground"
+            class="size-3.5"
             @click.stop="emit('removeTag', selectedNodeKey(tag))"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
+          </Button>
         </span>
       </div>
 
@@ -488,11 +490,13 @@ defineExpose({
               :collision-padding="8"
             >
               <template #trigger>
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="unset"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 inline-flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-1 align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
@@ -502,7 +506,7 @@ defineExpose({
                     class="underline decoration-dashed underline-offset-2"
                     >{{ placeholderHint.mentionNodes }}</span
                   >
-                </button>
+                </Button>
               </template>
             </AccessibleTooltip>
           </div>
@@ -511,12 +515,15 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger
-            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="flex size-8 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-          >
-            <span class="icon-[lucide--plus] size-4" />
+          <DropdownMenuTrigger as-child>
+            <Button
+              v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="t('agent.addToPrompt')"
+            >
+              <span class="icon-[lucide--plus] size-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent
