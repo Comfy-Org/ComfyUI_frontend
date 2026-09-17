@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
@@ -954,30 +953,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const modifiedSince = Date.now()
     await node.click('collapse')
     await comfyPage.canvasOps.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence debounce to save the modified workflow
-    const start = Date.now()
-    await comfyPage.page.waitForFunction((since) => {
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i)
-        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
-        const json = window.localStorage.getItem(key)
-        if (!json) continue
-        try {
-          const index = JSON.parse(json)
-          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
-            return true
-          }
-        } catch {
-          // ignore
-        }
-      }
-      return false
-    }, start)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(modifiedSince)
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -1193,17 +1175,6 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator) => {
-      await tab.click()
-      await comfyPage.nextFrame()
-      await comfyMouse.move(DefaultGraphPositions.emptySpace)
-
-      // If tooltip is visible, wait for it to hide
-      await expect(
-        comfyPage.page.locator('.workflow-popover-fade')
-      ).toHaveCount(0)
-    }
-
     // Screenshot the canvas element
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
 
@@ -1220,18 +1191,17 @@ test.describe('Viewport settings', () => {
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
 
     await comfyPage.nextFrame()
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    await changeTab(tabA)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow A')
 
     const viewportA = await getViewport()
 
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
-    await changeTab(tabB)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow B')
 
     await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
+    await comfyMouse.wheel(0, 60)
 
     await comfyPage.nextFrame()
     const viewportB = await getViewport()
@@ -1239,11 +1209,11 @@ test.describe('Viewport settings', () => {
     expect(viewportB).not.toEqual(viewportA)
 
     // Go back to Workflow A
-    await changeTab(tabA)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow A')
     await expect.poll(getViewport).toEqual(viewportA)
 
     // And back to Workflow B
-    await changeTab(tabB)
+    await comfyPage.menu.topbar.selectWorkflowTab('Workflow B')
     await expect.poll(getViewport).toEqual(viewportB)
   })
 })
