@@ -88,7 +88,6 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name'

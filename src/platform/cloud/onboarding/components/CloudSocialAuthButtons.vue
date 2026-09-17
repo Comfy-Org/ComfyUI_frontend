@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import SocialAuthButtons from '@comfyorg/account-core/vue/SocialAuthButtons'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { buttonVariants } from '@/components/ui/button/button.variants'

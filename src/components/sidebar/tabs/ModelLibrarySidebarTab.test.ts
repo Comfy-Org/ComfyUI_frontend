@@ -163,7 +163,6 @@ const i18n = createI18n({
 
 describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false

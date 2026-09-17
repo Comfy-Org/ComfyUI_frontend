@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "Varlık panelinden varlık sürükleyip bırakın",
     "addNodesFromGraph": "Graftaki düğümlerden bahsedin",
-    "addPromptToSend": "Göndermek için istem ekle",
     "addToPrompt": "İsteme ekle",
     "alpha": "ALFA",
     "askComfyAgent": "Comfy Agent'e sor",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "Bir iş akışı seçin",
     "chooseWorkflowForChat": "Bu sohbet için bir iş akışı seçin",
     "close": "Kapat",
+    "coachBody": "Fikirlerinizi açıklayın, ondan iş akışları oluşturmasını ve çalıştırmasını isteyin. Tuvalinizi ve dosyalarınızı görür.",
+    "coachGraphBody": "Araç çalışırken grafiği düzenlemeye veya sekmeler arasında geçiş yapmaya devam edebilirsiniz.",
+    "coachGraphTitle": "Siz düzenlerken aracın çalışmasına izin verin",
+    "coachHistoryBody": "Önceki sohbetler burada kaydedilir. İncelemek veya araçla çalışmaya devam etmek için birini açın.",
+    "coachHistoryTitle": "Kaldığınız yerden devam edin",
+    "coachProgress": "{current} / {total}",
+    "coachTitle": "Comfy Agent'inizle tanışın",
+    "coachWorkflowBody": "Araç yalnızca seçtiğiniz iş akışını düzenler. Ayrıca referans dosyaları yükleyebilir veya diğer iş akışlarından bahsedebilirsiniz.",
+    "coachWorkflowTitle": "Aracınızın düzenlemesi için bir iş akışı seçin",
     "consent": {
       "accept": "Comfy Agent'ı kullanmaya başla",
       "body1": "Comfy Agent, iş akışlarını planlamanıza, oluşturmanıza, çalıştırmanıza ve yinelemenize yardımcı olur. Oluşturmak istediğiniz şeyi açıklayın; Comfy Agent güçlü ekip arkadaşınız olarak çalışacaktır.",
@@ -49,6 +57,13 @@
     "credits": "kredi",
     "currentTab": "Geçerli sekme",
     "delete": "Sil",
+    "diagnosticReport": {
+      "clipboardFailed": "Panoya erişilemedi. Aşağıdaki raporu seçip kopyalayın veya yeniden deneyin.",
+      "collectionFailed": "Rapor toplanamadı. Yeniden deneyin veya isteğe bağlı kaynakları kapatıp tekrar deneyin.",
+      "includedSources": "Rapora dahil et (varsayılan olarak açık)",
+      "manualCopy": "Kopyalanacak rapor",
+      "retry": "Raporu kopyalamayı yeniden dene"
+    },
     "dismiss": "Kapat",
     "downloadAssets": "Varlıkları indir",
     "dragAndDropAssets": "Varlıkları buraya sürükleyip bırakın",
@@ -144,6 +159,7 @@
     "showMore": "Daha fazlasını göster",
     "skip": "Atla",
     "stop": "Durdur",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "Hokey maskeli sarı bir ördek oluştur",
       "Kaydedilmiş iş akışlarımı listele",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "gizli",
     "loaders": "yükleyiciler",
     "logic": "mantık",
+    "looping": "döngü",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmalar",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "Devam etmeden önce teklifinizi yenilemek için promosyon kodunu uygulayın.",
       "backToAllPlans": "Tüm planlara geri dön",
       "billedEachMonth": "Her ay {amount} faturalandırılır. İstediğiniz zaman iptal edebilirsiniz.",
+      "billingAddress": "Fatura adresi",
       "changePaymentMethod": "Değiştir",
       "commitment": "taahhüt",
       "completePayment": "Ödemenizi tamamlayın",
@@ -5143,6 +5163,13 @@
     },
     "invite": "Davet Et",
     "inviteLimitReached": "En fazla {count} üyeye ulaştınız",
+    "inviteLinks": {
+      "copied": "Kopyalandı!",
+      "copyAll": "Davet bağlantısını kopyala | Tüm bağlantıları kopyala ({count})",
+      "copyLink": "Davet bağlantısını kopyala",
+      "sentLead": "Her davetin doğrudan paylaşabileceğiniz kişisel bir bağlantısı vardır:",
+      "sentTitle": "{count} davet gönderildi | {count} davet gönderildi"
+    },
     "inviteMember": "Üye Davet Et",
     "inviteMemberDialog": {
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "Daveti iptal et",
         "changeRole": "Rolü değiştir",
+        "copyInviteLink": "Davet bağlantısını kopyala",
         "removeMember": "Üyeyi kaldır",
         "resendInvite": "Daveti yeniden gönder",
         "setCreditLimit": "Kredi limiti belirle"
