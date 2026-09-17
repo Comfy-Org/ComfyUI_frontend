@@ -34,12 +34,14 @@ const {
   heading,
   eyebrow,
   locale = 'en',
-  rows
+  rows,
+  titleClass
 } = defineProps<{
   heading?: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
+  titleClass?: string
 }>()
 </script>
 
@@ -68,7 +70,14 @@ const {
             )
           "
         >
-          <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
+          <h3
+            :class="
+              cn(
+                'text-2xl font-light text-primary-comfy-canvas lg:text-3xl',
+                titleClass
+              )
+            "
+          >
             {{ row.title }}
           </h3>
           <p class="text-sm text-smoke-700 lg:text-base">

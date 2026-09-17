@@ -34,23 +34,27 @@ const supportedProviders = [
   {
     name: 'fal',
     src: '/icons/router-providers/fal.svg',
-    logoClass: 'w-28'
+    logoClass: 'h-8 w-auto'
   },
   {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
-    logoClass: 'w-36'
+    logoClass: 'h-5.5 w-auto'
   },
   {
     name: 'WaveSpeed',
     src: '/icons/router-providers/wavespeed.svg',
-    logoClass: 'w-36'
+    logoClass: 'h-6 w-auto'
   }
 ]
 </script>
 
 <template>
-  <FeatureRows01 :locale="locale" :rows="rows" />
+  <FeatureRows01
+    :locale="locale"
+    :rows="rows"
+    title-class="text-primary-warm-white"
+  />
 
   <section class="mx-auto max-w-4xl px-6 py-10 lg:py-14">
     <p
