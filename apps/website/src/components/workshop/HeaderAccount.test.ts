@@ -520,6 +520,123 @@ describe('HeaderAccount workspace switcher', () => {
     )
   })
 
+  it('carries the switch through when the run ends under the dialog', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+    expect(cancel).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+  })
+
+  it('drops a pending switch when the authenticated session changes', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    const replacement = {
+      token: 'other-jwt',
+      uid: 'user-2',
+      workspace: { id: 'other', name: 'Other', type: 'personal' as const },
+      role: 'owner'
+    }
+    h.user!.value = {
+      uid: 'user-2',
+      email: 'other@b.co',
+      displayName: 'Other'
+    }
+    h.session!.value = replacement
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.session!.value).toEqual(replacement)
+  })
+
+  // The other arm of the same scope check: the reader stays signed in, and only
+  // the workspace moves under the dialog. ModelDetail watches uid and workspace
+  // separately, and this is the arm where a stale answer would overwrite the
+  // newer workspace rather than reach for another account's.
+  it('drops a pending switch when only the workspace changes', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    const moved = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-2', name: 'Other team', type: 'team' as const },
+      role: 'owner'
+    }
+    h.session!.value = moved
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.session!.value).toEqual(moved)
+  })
+
   it('switches by reminting for the picked workspace', async () => {
     signIn()
     vi.stubGlobal(

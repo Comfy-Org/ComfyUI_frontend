@@ -419,9 +419,9 @@
       "contactSupport": "若要刪除你的帳號，請聯絡 {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "此電子郵件地址已有帳戶，但使用不同的登入方式。請使用您原先的方式登入。",
+      "auth/account-exists-with-different-credential": "無法使用此方式登入。請嘗試其他登入方式，或重設密碼後繼續。",
       "auth/cancelled-popup-request": "另一個登入視窗已開啟，因此此視窗已取消。請再試一次。",
-      "auth/email-already-in-use": "此電子郵件已有帳戶存在。請嘗試登入。",
+      "auth/email-already-in-use": "無法使用此電子郵件建立帳戶。請嘗試登入或重設密碼。",
       "auth/invalid-credential": "登入憑證無效。請檢查您的電子郵件和密碼。",
       "auth/invalid-email": "請輸入有效的電子郵件地址。",
       "auth/network-request-failed": "網路錯誤。請檢查您的連線並再試一次。",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "登入完成前，登入視窗已關閉。請再試一次。",
       "auth/too-many-requests": "登入嘗試次數過多。請稍候再試。",
       "auth/user-disabled": "此帳戶已被停用。請聯絡支援團隊。",
-      "auth/user-not-found": "登入憑證無效。請檢查您的電子郵件地址和密碼。",
       "auth/weak-password": "密碼強度不足。請使用至少 6 個字元的更強密碼。",
-      "auth/wrong-password": "登入憑證無效。請檢查您的電子郵件地址和密碼。",
       "generic": "登入時發生錯誤，請再試一次。",
       "signupBlocked": "目前無法建立您的帳號。請稍後再試。如果問題持續發生，請聯絡 support@comfy.org。"
     },

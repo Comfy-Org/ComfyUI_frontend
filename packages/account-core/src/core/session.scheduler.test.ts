@@ -1,72 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import { DEFAULT_BUFFER_MS } from './refreshScheduler.js'
+import {
+  NINETY_MINUTES_MS,
+  manualIdentity,
+  mintResponse,
+  testUser
+} from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
-  AccountUser,
-  CredentialStorage,
   CrossTabRefreshPort,
   ScheduledRefreshReport,
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
-import { createTestIdentity } from '../testing.js'
-import { createSessionClient } from './session.js'
 
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-const NINETY_MINUTES_MS = 90 * 60 * 1000
-const DEFAULT_BUFFER_MS = 5 * 60 * 1000
-
-function memoryStorage(): CredentialStorage {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    }
-  }
-}
-
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
-  return createSessionClient({
-    exchangeUrl: EXCHANGE_URL,
-    storage: memoryStorage(),
-    refreshScheduler: {},
-    ...overrides
-  })
-}
-
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
-
-function mintResponse(token: string) {
-  return new Response(
-    JSON.stringify({
-      token,
-      permissions: ['workspace:read'],
-      expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
-      workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-      role: 'owner'
-    }),
-    { status: 200 }
-  )
-}
-
-function manualIdentity() {
-  let deliver: ((user: AccountUser | null) => void) | undefined
-  const port = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      deliver = callback
-      return () => undefined
-    }
-  })
-  return {
-    port,
-    fire: (user: AccountUser | null) => deliver?.(user)
-  }
+function schedulerClient(overrides: Partial<SessionClientOptions> = {}) {
+  return makeClient({ refreshScheduler: {}, ...overrides }).client
 }
 
 beforeEach(() => {
@@ -79,7 +30,7 @@ describe('opt-in refresh scheduler', () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       mintResponse(`jwt-${(minted += 1)}`)
     )
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -106,7 +57,7 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => mintResponse('jwt-2'))
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -132,7 +83,7 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         onScheduledOutcome: (report) => outcomes.push(report.outcome)
@@ -184,7 +135,7 @@ describe('opt-in refresh scheduler', () => {
           { status: 200 }
         )
     )
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -201,7 +152,7 @@ describe('opt-in refresh scheduler', () => {
 
   it('stops scheduling on sign-out', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -224,7 +175,7 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 401 }))
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -248,7 +199,7 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementationOnce(async () => new Response('{}', { status: 401 }))
       .mockImplementation(async () => mintResponse('jwt-resurrected'))
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -290,7 +241,7 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementation(async () =>
         workspaceResponse('jwt-wrong', 'ws-other')
       )
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port, { autoMint: false })
     const user = testUser()
@@ -319,7 +270,7 @@ describe('opt-in refresh scheduler', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementationOnce(async () => mintResponse('jwt-2'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         onScheduledOutcome: (report) => reported.push(report)
@@ -368,7 +319,7 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 403 }))
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         onScheduledOutcome: (report) => reported.push(report)
@@ -395,7 +346,7 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => mintResponse('jwt-2'))
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         onScheduledOutcome: (report) => reported.push(report)
@@ -463,7 +414,7 @@ describe('opt-in refresh scheduler', () => {
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 401 }))
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         onScheduledOutcome: (report) => outcomes.push(report.outcome)
@@ -495,7 +446,7 @@ describe('opt-in refresh scheduler', () => {
           { status: 200 }
         )
     )
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port, { autoMint: false })
     const user = testUser()
@@ -536,7 +487,7 @@ describe('opt-in refresh scheduler', () => {
             { status: 200 }
           )
       )
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
     const user = testUser()
@@ -567,7 +518,7 @@ describe('opt-in refresh scheduler', () => {
 
   it('arms nothing without the opt-in', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
-    const client = makeClient({ fetchImpl, refreshScheduler: undefined })
+    const client = schedulerClient({ fetchImpl, refreshScheduler: undefined })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -593,7 +544,7 @@ describe('opt-in refresh scheduler', () => {
         ? Promise.resolve(mintResponse('jwt-1'))
         : new Promise<Response>((resolve) => (releaseScheduled = resolve))
     })
-    const client = makeClient({ fetchImpl })
+    const client = schedulerClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
     identity.fire(testUser())
@@ -697,7 +648,7 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -728,7 +679,7 @@ describe('cross-tab refresh coordination', () => {
   it('a follower adopts the published credential instead of minting', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -759,7 +710,7 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: { port: tab.port, followerJitterMs: 10_000 }
@@ -794,7 +745,7 @@ describe('cross-tab refresh coordination', () => {
     )
     vi.spyOn(Math, 'random').mockReturnValue(0.999)
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: { port: tab.port, followerJitterMs: 60_000 }
@@ -839,7 +790,7 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: vi.fn(),
       onCredential: () => vi.fn()
     }
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
@@ -867,7 +818,7 @@ describe('cross-tab refresh coordination', () => {
   it('ignores a leadership grant for an abandoned same-key request', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -911,7 +862,7 @@ describe('cross-tab refresh coordination', () => {
       .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
       .mockImplementation(async () => mintResponse('jwt-2'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port, followerJitterMs: 0 } }
     })
@@ -951,7 +902,7 @@ describe('cross-tab refresh coordination', () => {
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: {
@@ -1006,7 +957,7 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: () => undefined,
       onCredential: () => () => undefined
     }
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
@@ -1039,7 +990,7 @@ describe('cross-tab refresh coordination', () => {
     const adopted: string[] = []
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: {
@@ -1075,7 +1026,7 @@ describe('cross-tab refresh coordination', () => {
         )
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -1111,7 +1062,7 @@ describe('cross-tab refresh coordination', () => {
       mintResponse(`jwt-${(minted += 1)}`)
     )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -1136,7 +1087,7 @@ describe('cross-tab refresh coordination', () => {
   it('never adopts a credential for another user or a malformed message', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -1167,7 +1118,7 @@ describe('cross-tab refresh coordination', () => {
         () => new Promise<Response>((resolve) => (releaseOwn = resolve))
       )
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: {
         crossTab: { port: tab.port, followerJitterMs: 10_000 }
@@ -1197,7 +1148,7 @@ describe('cross-tab refresh coordination', () => {
   it('never adopts a broadcast credential with a non-finite expiry', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
     const tab = fakeCrossTabPort()
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port: tab.port } }
     })
@@ -1238,7 +1189,7 @@ describe('cross-tab refresh coordination', () => {
       onCredential: () => vi.fn()
     }
     const snapshots: SessionSnapshot[] = []
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port } }
     })
@@ -1280,7 +1231,7 @@ describe('cross-tab refresh coordination', () => {
       onCredential: () => stopCredentialFeed
     }
     const snapshots: SessionSnapshot[] = []
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port } }
     })
@@ -1327,7 +1278,7 @@ describe('cross-tab refresh coordination', () => {
       publishCredential: vi.fn(),
       onCredential: () => stopCredentialFeed
     }
-    const client = makeClient({
+    const client = schedulerClient({
       fetchImpl,
       refreshScheduler: { crossTab: { port } }
     })
