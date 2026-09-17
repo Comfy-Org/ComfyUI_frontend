@@ -41,6 +41,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
+import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -72,7 +73,7 @@ const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
 const worldPosition = ref({ x: 0, y: 0 })
 const screenPosition = ref({ x: 0, y: 0 })
 
-const anchorStyle = computed(() => ({
+const anchorStyle = computed<CSSProperties>(() => ({
   left: `${screenPosition.value.x}px`,
   top: `${screenPosition.value.y}px`,
   pointerEvents: 'none'
