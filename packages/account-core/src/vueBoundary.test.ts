@@ -47,7 +47,7 @@ describe('vue boundary', () => {
     expect(importsVue(source)).toBe(isVueImport)
   })
 
-  it('keeps the whole package free of Vue, so it is consumable without Vue', () => {
+  it('imports Vue from no source file of its own', () => {
     const offenders = readdirSync(SRC_DIR, { recursive: true })
       .map(String)
       .filter((name) => /\.(ts|vue)$/.test(name) && !name.endsWith('.test.ts'))
@@ -56,7 +56,7 @@ describe('vue boundary', () => {
     expect(offenders).toEqual([])
   })
 
-  it('declares no Vue dependency of any kind', () => {
+  it('declares no Vue dependency of any kind, direct only', () => {
     const manifest: Record<string, Record<string, string> | undefined> =
       JSON.parse(readFileSync(PACKAGE_JSON, 'utf8'))
 
