@@ -18,13 +18,15 @@ const operation = (slug: string, task: string, price?: string) => ({
 const mounts: string[] = []
 
 // The real playground carries the whole Router session with it, and none of
-// that is what this component decides.
+// that is what this component decides. It does place the operation choice,
+// which the playground takes as a slot under its own tabs.
 const ModelDetailStub = defineComponent({
   props: { model: { type: Object, required: true } },
   setup: (props) => {
     mounts.push(props.model.slug)
   },
-  template: '<p data-testid="detail">{{ model.slug }}</p>'
+  template:
+    '<p data-testid="detail">{{ model.slug }}</p><slot name="operations" />'
 })
 
 const mount = (operations: ReturnType<typeof operation>[]) =>
@@ -47,26 +49,38 @@ describe('ModelRun', () => {
     expect(running()).toBe('flux--generate-images')
   })
 
+  // The switch rebuilds the playground the choice sits inside, so every read
+  // here is of the row as it stands now rather than of the one that was there.
+  const choice = (name: RegExp) =>
+    within(screen.getByTestId('model-operations')).getByRole('button', { name })
+
   it('hands back the choice the catalogue collapsed', async () => {
     mount([
       operation('flux--generate-images', 'Text to Image', '10 credits'),
       operation('flux--edit-images', 'Image to Image', '14 credits')
     ])
 
-    const choices = within(screen.getByTestId('model-operations'))
-    expect(
-      choices.getByRole('button', { name: /Text to Image/ })
-    ).toHaveAttribute('aria-pressed', 'true')
+    expect(choice(/Text to Image/)).toHaveAttribute('aria-pressed', 'true')
     expect(running()).toBe('flux--generate-images')
 
-    await userEvent.click(
-      choices.getByRole('button', { name: /Image to Image/ })
-    )
+    await userEvent.click(choice(/Image to Image/))
 
     expect(running()).toBe('flux--edit-images')
-    expect(
-      choices.getByRole('button', { name: /Text to Image/ })
-    ).toHaveAttribute('aria-pressed', 'false')
+    expect(choice(/Text to Image/)).toHaveAttribute('aria-pressed', 'false')
+    expect(choice(/Image to Image/)).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // Switching destroys the button that was pressed, so without putting it back
+  // a keyboard would be left on the document body.
+  it('keeps the keyboard on the operation it switched to', async () => {
+    mount([
+      operation('flux--generate-images', 'Text to Image'),
+      operation('flux--edit-images', 'Image to Image')
+    ])
+
+    await userEvent.click(choice(/Image to Image/))
+
+    expect(choice(/Image to Image/)).toHaveFocus()
   })
 
   it('builds the playground again for the operation it switches to', async () => {

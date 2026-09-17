@@ -243,7 +243,7 @@ const heading = computed(() =>
       <!-- The type says what is in the list; the search and the order narrow
         and rank what it chose, so they group together away from it. -->
       <div class="flex flex-1 items-center gap-3 sm:ms-auto sm:flex-none">
-        <div class="relative min-w-56 flex-1 sm:w-80 sm:flex-none">
+        <div class="relative min-w-56 flex-1 sm:w-96 sm:flex-none">
           <Search
             class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
             aria-hidden="true"

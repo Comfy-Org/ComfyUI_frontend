@@ -83,9 +83,6 @@ const {
   model: WorkshopModelDetail
   locale?: Locale
   clone?: { href: string }
-  /** Names the form's groups as numbered steps and keeps the result in view
-   * while they are filled in. The workflow pages ask for it; a model page has
-   * a shorter form that reads fine as one list. */
 }>()
 
 const slots = useSlots()
@@ -702,6 +699,10 @@ function useInCode() {
         <ExternalLink class="size-4" aria-hidden="true" />
       </a>
     </div>
+
+    <!-- A page that stands for several operations of one model hands that
+      choice back here, under the view it applies to rather than above it. -->
+    <slot name="operations" />
 
     <section
       v-if="activeSection === 'playground'"
