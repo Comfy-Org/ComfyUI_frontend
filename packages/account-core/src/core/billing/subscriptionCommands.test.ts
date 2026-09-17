@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
@@ -896,6 +896,56 @@ describe('createBillingCommands', () => {
         status: 'ok',
         value: { phase: 'succeeded' }
       })
+    })
+
+    it.for([
+      ['subscribed', subscribed],
+      ['pending_payment', pendingPayment],
+      [
+        'needs_payment_method',
+        http(200, {
+          billing_op_id: 'op-1',
+          status: 'needs_payment_method',
+          payment_method_url: 'https://checkout.example/pay'
+        })
+      ]
+    ] as const)(
+      'settles a %s subscribe under the status the server issued it with',
+      async ([issuedStatus, response]) => {
+        const h = harness({
+          status: FREE,
+          script: { [POST_SUBSCRIBE]: [response], [GET_OP]: settledOk }
+        })
+
+        const result = h.commands.subscribe(PLAN)
+        await flush()
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+        await expect(result).resolves.toMatchObject({
+          status: 'ok',
+          value: { phase: 'succeeded', issuedStatus }
+        })
+      }
+    )
+
+    it('leaves a cancel without an issued subscribe status', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: {
+          [POST_CANCEL]: [
+            http(200, {
+              billing_op_id: 'op-1',
+              cancel_at: '2026-10-01T00:00:00.000Z'
+            })
+          ],
+          [GET_OP]: settledOk
+        }
+      })
+
+      const result = await h.commands.cancelSubscription()
+
+      assert(result.status === 'ok')
+      expect(result.value.issuedStatus).toBeUndefined()
     })
 
     it('reports a hosted payment step without a page as MISSING_PAYMENT_METHOD_URL', async () => {

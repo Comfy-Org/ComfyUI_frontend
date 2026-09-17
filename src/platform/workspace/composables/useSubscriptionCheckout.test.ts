@@ -422,6 +422,9 @@ const i18n = createI18n({
           }
         }
       },
+      billingOperation: {
+        subscriptionSuccess: 'Subscription updated'
+      },
       toastMessages: {
         failedToAccessBillingPortal: 'Billing portal unavailable',
         invalidBillingPortalUrl: 'Invalid billing portal URL'
@@ -3997,6 +4000,58 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
+    })
+
+    it('counts the conversion and announces a subscribe the server charged for', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: true
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).toHaveBeenCalledExactlyOnceWith({
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        billing_op_id: 'op-3'
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated'
+        })
+      )
+    })
+
+    it('counts neither for a subscribe the server activated without a payment', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: false
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('shows error toast on failure', async () => {

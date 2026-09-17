@@ -25,8 +25,7 @@ import type {
   CreateTopupResponse,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
-  SubscribeOptions,
-  SubscribeResponse
+  SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
@@ -34,7 +33,10 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import type {
+  SettledSubscribeResponse,
+  SubscriptionRailOutcome
+} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -422,7 +424,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function subscribe(
     planSlug: string,
     options?: SubscribeOptions
-  ): Promise<SubscribeResponse> {
+  ): Promise<SettledSubscribeResponse> {
     const rail = useSubscriptionRail()
     if (rail) {
       const response = await onSubscriptionRail(() =>

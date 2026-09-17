@@ -110,20 +110,33 @@ describe('projectSubscriptionResult', () => {
 })
 
 describe('projectSubscribeResult', () => {
-  it('hands back the operation the checkout reports as subscribed', () => {
-    expect(
-      projectSubscribeResult({
+  it.for([
+    { issuedStatus: 'subscribed', requiredPayment: false },
+    { issuedStatus: 'pending_payment', requiredPayment: true },
+    { issuedStatus: 'needs_payment_method', requiredPayment: true },
+    { issuedStatus: undefined, requiredPayment: true }
+  ] as const)(
+    'reports a subscribe issued as $issuedStatus as subscribed, requiredPayment $requiredPayment',
+    ({ issuedStatus, requiredPayment }) => {
+      expect(
+        projectSubscribeResult({
+          status: 'ok',
+          value: {
+            phase: 'succeeded',
+            operation: settledOperation('succeeded', 'subscription'),
+            ...(issuedStatus === undefined ? {} : { issuedStatus })
+          }
+        })
+      ).toEqual({
         status: 'ok',
         value: {
-          phase: 'succeeded',
-          operation: settledOperation('succeeded', 'subscription')
+          billing_op_id: 'op-1',
+          status: 'subscribed',
+          requiredPayment
         }
       })
-    ).toEqual({
-      status: 'ok',
-      value: { billing_op_id: 'op-1', status: 'subscribed' }
-    })
-  })
+    }
+  )
 
   it.for([
     {

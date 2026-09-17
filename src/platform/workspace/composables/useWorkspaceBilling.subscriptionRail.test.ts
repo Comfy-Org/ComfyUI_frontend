@@ -376,7 +376,8 @@ describe('subscribe on the billing SDK rail', () => {
     })
     expect(response).toEqual({
       billing_op_id: 'op-1',
-      status: 'subscribed'
+      status: 'subscribed',
+      requiredPayment: true
     })
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })

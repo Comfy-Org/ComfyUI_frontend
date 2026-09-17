@@ -78,10 +78,21 @@ export type SubscriptionCommandFailure =
   | BillingFailure
   | { readonly status: 'error'; readonly code: SubscriptionCommandCode }
 
+/** What the subscribe route answered before the lifecycle drove the operation on. */
+type SubscribeIssuedStatus = z.infer<typeof zSubscribeResponse>['status']
+
 export interface SubscriptionCommandOutcome {
   readonly phase: TerminalBillingOperation['phase']
   /** Absent when the requested state already held and nothing was issued. */
   readonly operation?: TerminalBillingOperation
+  /**
+   * The `status` the subscribe response carried, before the lifecycle settled
+   * the operation: `subscribed` is a plan the server activated on the spot,
+   * the other two are payment steps it could not complete without the
+   * customer. Absent for every other command, and for a subscribe that
+   * adopted an operation the server was already settling.
+   */
+  readonly issuedStatus?: SubscribeIssuedStatus
 }
 
 export type SubscriptionCommandResult =
@@ -180,8 +191,14 @@ export interface BillingCommands {
   }) => Promise<PaymentPortalResult>
 }
 
+interface IssuedOutcome {
+  readonly status: 'ok'
+  readonly value: IssuedBillingOperation
+  readonly issuedStatus?: SubscribeIssuedStatus
+}
+
 type IssueOutcome =
-  | { readonly status: 'ok'; readonly value: IssuedBillingOperation }
+  | IssuedOutcome
   /** The server refused because the requested state already holds. */
   | { readonly status: 'already_held' }
   | SubscriptionCommandFailure
@@ -282,11 +299,17 @@ export function createBillingCommands(
     issue: () => Promise<IssueOutcome>
   ): Promise<SubscriptionCommandResult> {
     // The lifecycle carries only the shared codes; the command's own verdict
-    // waits here for `begin` to return.
+    // and what it read off the issuing response wait here for `begin` to
+    // return. Both stay unset when `begin` adopted an operation the server was
+    // already settling instead of issuing this one.
     const verdict: { value?: Exclude<IssueOutcome, { status: 'ok' }> } = {}
+    const issued: { value?: IssuedOutcome } = {}
     const began = await lifecycle.begin(kind, async () => {
       const outcome = await issue()
-      if (outcome.status === 'ok') return outcome
+      if (outcome.status === 'ok') {
+        issued.value = outcome
+        return outcome
+      }
       verdict.value = outcome
       return { status: 'error', code: 'REQUEST_FAILED' }
     })
@@ -303,7 +326,15 @@ export function createBillingCommands(
       return { status: 'error', code: 'SUPERSEDED' }
     }
     if (operation.phase === 'succeeded') await refreshAfterSuccess()
-    return { status: 'ok', value: { phase: operation.phase, operation } }
+    const issuedStatus = issued.value?.issuedStatus
+    return {
+      status: 'ok',
+      value: {
+        phase: operation.phase,
+        operation,
+        ...(issuedStatus === undefined ? {} : { issuedStatus })
+      }
+    }
   }
 
   async function issueSubscribe(input: SubscribeInput): Promise<IssueOutcome> {
@@ -324,14 +355,19 @@ export function createBillingCommands(
     }
     const { billing_op_id, status, payment_method_url } = response.value.data
     if (status !== 'needs_payment_method') {
-      return { status: 'ok', value: { operationId: billing_op_id } }
+      return {
+        status: 'ok',
+        value: { operationId: billing_op_id },
+        issuedStatus: status
+      }
     }
     if (payment_method_url === undefined) {
       return coded('MISSING_PAYMENT_METHOD_URL')
     }
     return {
       status: 'ok',
-      value: { operationId: billing_op_id, actionUrl: payment_method_url }
+      value: { operationId: billing_op_id, actionUrl: payment_method_url },
+      issuedStatus: status
     }
   }
 

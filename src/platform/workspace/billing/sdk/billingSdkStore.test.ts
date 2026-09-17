@@ -488,7 +488,11 @@ describe('useBillingSdkStore subscription commands', () => {
       useBillingSdkStore().subscribe({ plan_slug: 'pro-yearly' })
     ).resolves.toEqual({
       status: 'ok',
-      value: { billing_op_id: 'op-1', status: 'subscribed' }
+      value: {
+        billing_op_id: 'op-1',
+        status: 'subscribed',
+        requiredPayment: true
+      }
     })
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
       plan_slug: 'pro-yearly'
