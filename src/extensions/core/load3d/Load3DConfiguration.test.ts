@@ -19,6 +19,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({
@@ -53,37 +54,22 @@ type ValueChangeListener = (change: {
   context?: unknown
 }) => void
 
-const { widgetValueStoreMock } = vi.hoisted(() => {
-  const listeners = new Set<ValueChangeListener>()
-  const widgets = new Map<string, unknown>()
-  return {
-    widgetValueStoreMock: {
-      listeners,
-      widgets,
-      onValueChange: vi.fn((listener: ValueChangeListener) => {
-        listeners.add(listener)
-        return () => listeners.delete(listener)
-      }),
-      getWidget: vi.fn((id: string) => widgets.get(id)),
-      emit: (change: {
-        widgetId: string
-        value: unknown
-        oldValue?: unknown
-        context?: unknown
-      }) => {
-        for (const listener of [...listeners]) listener(change)
-      },
-      reset: () => {
-        listeners.clear()
-        widgets.clear()
-      }
-    }
+const widgetValueStoreMock = {
+  listeners: new Set<ValueChangeListener>(),
+  widgets: new Map<string, unknown>(),
+  emit(change: {
+    widgetId: string
+    value: unknown
+    oldValue?: unknown
+    context?: unknown
+  }) {
+    for (const listener of [...this.listeners]) listener(change)
+  },
+  reset() {
+    this.listeners.clear()
+    this.widgets.clear()
   }
-})
-
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => widgetValueStoreMock
-}))
+}
 
 type WithPrivate = {
   loadModelConfig(): ModelConfig
@@ -856,6 +842,15 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
   beforeEach(() => {
     widgetValueStoreMock.reset()
+    const widgetValueStore = useWidgetValueStore()
+    vi.mocked(widgetValueStore.onValueChange).mockImplementation((listener) => {
+      widgetValueStoreMock.listeners.add(listener as ValueChangeListener)
+      return () =>
+        widgetValueStoreMock.listeners.delete(listener as ValueChangeListener)
+    })
+    vi.mocked(widgetValueStore.getWidget).mockImplementation(
+      (id) => widgetValueStoreMock.widgets.get(id) as never
+    )
     vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
   })
@@ -988,7 +983,7 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
     await flush()
 
-    expect(widgetValueStoreMock.onValueChange).toHaveBeenCalledTimes(1)
+    expect(useWidgetValueStore().onValueChange).toHaveBeenCalledTimes(1)
 
     vi.mocked(load3d.loadModel).mockClear()
     onSceneInvalidated.mockClear()
