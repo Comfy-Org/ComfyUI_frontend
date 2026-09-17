@@ -205,6 +205,20 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expect(comfyPage.searchBox.input).toBeVisible()
     })
 
+    test('Escape dismisses filter panel but keeps search box visible', async ({
+      comfyPage
+    }) => {
+      await comfyPage.searchBox.filterButton.click()
+      const panel = comfyPage.searchBox.filterSelectionPanel
+      await expect(
+        panel.root.getByRole('button', { name: 'Close' })
+      ).toBeFocused()
+      await comfyPage.page.keyboard.press('Escape')
+
+      await expect(panel.header).toBeHidden()
+      await expect(comfyPage.searchBox.input).toBeVisible()
+    })
+
     test('Can add multiple filters', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.addFilter('CLIP', 'Output Type')

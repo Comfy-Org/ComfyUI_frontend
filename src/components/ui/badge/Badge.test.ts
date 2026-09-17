@@ -22,6 +22,24 @@ describe('Badge', () => {
     expect(screen.getByText('12')).toBeInTheDocument()
   })
 
+  it('keeps caller colors without losing the badge text size', () => {
+    render(Badge, {
+      props: { variant: 'badge', class: 'bg-green-500 text-white' },
+      slots: { default: 'Input' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Input')).toHaveClass(
+      'bg-green-500',
+      'text-white',
+      'text-xs'
+    )
+    expect(screen.getByText('Input')).not.toHaveClass(
+      'bg-secondary-background',
+      'text-base-foreground'
+    )
+  })
+
   it('emits remove from a removable chip', async () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
