@@ -94,6 +94,7 @@ export type {
   BillingOperationServerPhase,
   BillingOperationState,
   BillingPresentation,
+  BillingPresentationState,
   BillingRecoveryAction,
   EmbeddedChallenge,
   FailedBillingOperation,

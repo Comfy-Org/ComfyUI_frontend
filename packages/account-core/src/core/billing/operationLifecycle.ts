@@ -47,6 +47,7 @@ import type {
   BillingOperationKind,
   BillingOperationState,
   BillingPresentation,
+  BillingPresentationState,
   HostedBillingDestination,
   PendingBillingOperation
 } from './operationState.js'
@@ -233,7 +234,8 @@ function pendingFromStatus(
 
 function initialPendingState(
   input: AdoptInput,
-  observedAt: number
+  observedAt: number,
+  presentation: BillingPresentationState
 ): PendingBillingOperation {
   const actionUrl = validateActionUrl(input.actionUrl)
   const challenge =
@@ -244,7 +246,7 @@ function initialPendingState(
     id: input.id,
     kind: input.kind,
     scope: input.context.scope,
-    presentation: input.presentation,
+    ...presentation,
     observedAt,
     attemptStartedAt: input.attemptStartedAt,
     phase: 'pending',
@@ -457,12 +459,12 @@ export function createBillingOperationLifecycle(
   }
 
   /** Read at every adoption, so an operation recovered from the pointer lands on today's destination. */
-  function destinationFor(presentation: BillingPresentation): {
-    hostedDestination?: HostedBillingDestination
-  } {
+  function destinationFor(
+    presentation: BillingPresentation
+  ): BillingPresentationState {
     return presentation === 'hosted'
-      ? { hostedDestination: hostedDestination() }
-      : {}
+      ? { presentation, hostedDestination: hostedDestination() }
+      : { presentation }
   }
 
   function adopt(input: AdoptInput): OperationRecord {
@@ -475,10 +477,11 @@ export function createBillingOperationLifecycle(
       return existing
     }
 
-    const state: PendingBillingOperation = {
-      ...initialPendingState(input, now()),
-      ...destinationFor(input.presentation)
-    }
+    const state = initialPendingState(
+      input,
+      now(),
+      destinationFor(input.presentation)
+    )
 
     let resolveSettled: (state: BillingOperationState) => void = () => {}
     const settled = new Promise<BillingOperationState>((resolve) => {

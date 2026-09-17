@@ -4,6 +4,7 @@ import type {
   BillingOperationKind,
   BillingOperationLifecycle,
   BillingOperationState,
+  BillingPresentationState,
   BillingServerCode,
   FailedBillingOperation,
   PendingBillingOperation
@@ -18,23 +19,43 @@ export function serverCode(code: string): BillingServerCode | undefined {
   return readBillingErrorCode({ code, message: 'server text' })
 }
 
-const IDENTITY = {
+const IDENTITY_CORE = {
   id: 'op-1',
   kind: 'topup',
   scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
-  presentation: 'hosted',
   observedAt: 0,
   attemptStartedAt: 0
+} as const
+
+const IDENTITY = {
+  ...IDENTITY_CORE,
+  presentation: 'hosted',
+  hostedDestination: 'stripe'
 } as const satisfies BillingOperationIdentity
 
+/** The presentation stays a variant, so a hosted override carries a destination. */
+type PendingOverrides = Partial<
+  Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+> &
+  Partial<BillingPresentationState>
+
 export function pendingTopup(
-  overrides: Partial<PendingBillingOperation> = {}
+  overrides: PendingOverrides = {}
 ): PendingBillingOperation {
+  const { presentation, hostedDestination, ...rest } = overrides
+  const identity: BillingOperationIdentity =
+    presentation === 'embedded'
+      ? { ...IDENTITY_CORE, presentation }
+      : {
+          ...IDENTITY_CORE,
+          presentation: 'hosted',
+          hostedDestination: hostedDestination ?? IDENTITY.hostedDestination
+        }
   return {
-    ...IDENTITY,
+    ...identity,
     phase: 'pending',
     customerActionSeen: false,
-    ...overrides
+    ...rest
   }
 }
 
