@@ -1,7 +1,8 @@
-import { test as base, expect } from '@playwright/test'
+import { expect } from '@playwright/test'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
-import type { LogsRawResponse } from '@/schemas/apiSchema'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { LogsRawResponse } from '@/platform/remote/comfyui/execution/types'
 
 const RAW_LOGS_URL = '**/internal/logs/raw**'
 const SUBSCRIBE_LOGS_URL = '**/internal/logs/subscribe**'

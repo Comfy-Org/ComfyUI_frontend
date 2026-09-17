@@ -18,8 +18,8 @@ import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/d
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(
-  '@/platform/workspace/composables/useSubscriptionCheckout',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -41,8 +41,6 @@ vi.mock(
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
         authenticationError: ref(null),
-        canRetryAuthentication: ref(false),
-        isAuthenticating: ref(false),
         reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
@@ -56,7 +54,6 @@ vi.mock(
         handleTeamSubscribe: vi.fn(),
         handleSubscriptionPayment: vi.fn(),
         handleTeamSubscriptionPayment: vi.fn(),
-        retryPaymentAuthentication: vi.fn(),
         applyPromotionCode: vi.fn(),
         invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()

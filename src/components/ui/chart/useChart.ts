@@ -62,8 +62,8 @@ function getDefaultOptions(type: ChartType): ChartOptions {
                 '#888'
               return {
                 text: dataset.label ?? '',
-                fillStyle: color as string,
-                strokeStyle: color as string,
+                fillStyle: color,
+                strokeStyle: color,
                 lineWidth: 0,
                 pointStyle: 'circle' as const,
                 hidden: !chart.isDatasetVisible(i),

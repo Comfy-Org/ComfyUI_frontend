@@ -111,10 +111,20 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   ])
 
   const captureAdapterFlags = (source: Load3d) => {
-    isSplatModel.value = source.isSplatModel()
-    isPlyModel.value = source.isPlyModel()
-    sourceFormat.value = source.getSourceFormat()
-    const caps = source.getCurrentModelCapabilities()
+    isSplatModel.value =
+      typeof source.isSplatModel === 'function' ? source.isSplatModel() : false
+    isPlyModel.value =
+      typeof source.isPlyModel === 'function' ? source.isPlyModel() : false
+    sourceFormat.value =
+      typeof source.getSourceFormat === 'function'
+        ? source.getSourceFormat()
+        : null
+    const getCapabilities = source.getCurrentModelCapabilities
+    const caps =
+      typeof getCapabilities === 'function'
+        ? getCapabilities.call(source)
+        : undefined
+    if (!caps) return
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
     canUseLighting.value = caps.lighting
@@ -189,7 +199,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   watch(fov, (newFov) => {
     if (!load3d) return
     try {
-      load3d.setFOV(Number(newFov))
+      load3d.setFOV(newFov)
     } catch (error) {
       console.error('Error updating FOV:', error)
       useToastStore().addAlert(
@@ -201,7 +211,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   watch(lightIntensity, (newValue) => {
     if (!load3d) return
     try {
-      load3d.setLightIntensity(Number(newValue))
+      load3d.setLightIntensity(newValue)
     } catch (error) {
       console.error('Error updating light intensity:', error)
       useToastStore().addAlert(
@@ -273,7 +283,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   })
 
   watch(selectedAnimation, (newValue) => {
-    if (load3d && newValue !== undefined) {
+    if (load3d) {
       load3d.updateSelectedAnimation(newValue)
     }
   })
@@ -344,7 +354,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     containerRef: HTMLElement,
     source: Load3d
   ) => {
-    if (!containerRef || !node) return
+    if (!node) return
 
     sourceLoad3d = source
 
@@ -381,24 +391,22 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | ModelConfig
         | undefined
       const cameraConfig = node.properties['Camera Config'] as
-        | CameraConfig
+        | Partial<CameraConfig>
         | undefined
       const lightConfig = node.properties['Light Config'] as
         | LightConfig
         | undefined
 
-      isPreview.value = isLoad3dResultViewerNode(node.type ?? '')
+      isPreview.value = isLoad3dResultViewerNode(node.type)
 
       if (sceneConfig) {
         backgroundColor.value =
           sceneConfig.backgroundColor ||
           source.sceneManager.currentBackgroundColor
-        showGrid.value =
-          sceneConfig.showGrid ?? source.sceneManager.gridHelper.visible
+        showGrid.value = sceneConfig.showGrid
         backgroundRenderMode.value =
           sceneConfig.backgroundRenderMode ||
-          source.sceneManager.backgroundRenderMode ||
-          'tiled'
+          source.sceneManager.backgroundRenderMode
 
         const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
         if (backgroundInfo.type === 'image' && sceneConfig.backgroundImage) {
@@ -412,7 +420,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       if (cameraConfig) {
         cameraType.value =
-          cameraConfig.cameraType || source.getCurrentCameraType()
+          cameraConfig.cameraType ?? source.getCurrentCameraType()
         fov.value =
           cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
       }
@@ -424,10 +432,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
 
       if (modelConfig) {
-        upDirection.value =
-          modelConfig.upDirection || source.modelManager.currentUpDirection
-        materialMode.value =
-          modelConfig.materialMode || source.modelManager.materialMode
+        upDirection.value = modelConfig.upDirection
+        materialMode.value = modelConfig.materialMode
         if (modelConfig.gizmo) {
           gizmoEnabled.value = modelConfig.gizmo.enabled
           gizmoMode.value = modelConfig.gizmo.mode
@@ -471,8 +477,6 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     containerRef: HTMLElement,
     modelUrl: string
   ) => {
-    if (!containerRef) return
-
     try {
       if (load3d) {
         await loadStandaloneModel(modelUrl)
@@ -635,46 +639,44 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     needApplyChanges.value = false
 
-    if (nodeValue.properties) {
-      nodeValue.properties['Scene Config'] = {
-        showGrid: initialState.value.showGrid,
-        backgroundColor: initialState.value.backgroundColor,
-        backgroundImage: initialState.value.backgroundImage,
-        backgroundRenderMode: initialState.value.backgroundRenderMode
-      }
+    nodeValue.properties['Scene Config'] = {
+      showGrid: initialState.value.showGrid,
+      backgroundColor: initialState.value.backgroundColor,
+      backgroundImage: initialState.value.backgroundImage,
+      backgroundRenderMode: initialState.value.backgroundRenderMode
+    }
 
-      nodeValue.properties['Camera Config'] = {
-        cameraType: initialState.value.cameraType,
-        fov: initialState.value.fov
-      }
+    nodeValue.properties['Camera Config'] = {
+      cameraType: initialState.value.cameraType,
+      fov: initialState.value.fov
+    }
 
-      nodeValue.properties['Light Config'] = {
-        intensity: initialState.value.lightIntensity
-      }
+    nodeValue.properties['Light Config'] = {
+      intensity: initialState.value.lightIntensity
+    }
 
-      const existingModelConfig = nodeValue.properties['Model Config'] as
-        | ModelConfig
-        | undefined
-      nodeValue.properties['Model Config'] = {
-        ...existingModelConfig,
-        upDirection: initialState.value.upDirection,
-        materialMode: initialState.value.materialMode,
-        gizmo: {
-          enabled: initialState.value.gizmoEnabled,
-          mode: initialState.value.gizmoMode,
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 }
-        }
+    const existingModelConfig = nodeValue.properties['Model Config'] as
+      | ModelConfig
+      | undefined
+    nodeValue.properties['Model Config'] = {
+      ...existingModelConfig,
+      upDirection: initialState.value.upDirection,
+      materialMode: initialState.value.materialMode,
+      gizmo: {
+        enabled: initialState.value.gizmoEnabled,
+        mode: initialState.value.gizmoMode,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
       }
+    }
 
-      const currentCameraConfig = nodeValue.properties['Camera Config'] as
-        | CameraConfig
-        | undefined
-      nodeValue.properties['Camera Config'] = {
-        ...currentCameraConfig,
-        state: initialState.value.cameraState
-      }
+    const currentCameraConfig = nodeValue.properties['Camera Config'] as
+      | CameraConfig
+      | undefined
+    nodeValue.properties['Camera Config'] = {
+      ...currentCameraConfig,
+      state: initialState.value.cameraState
     }
   }
 
@@ -689,39 +691,37 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     const viewerCameraState = load3d.getCameraState()
     const nodeValue = node
 
-    if (nodeValue.properties) {
-      nodeValue.properties['Scene Config'] = {
-        showGrid: showGrid.value,
-        backgroundColor: backgroundColor.value,
-        backgroundImage: backgroundImage.value,
-        backgroundRenderMode: backgroundRenderMode.value
-      }
+    nodeValue.properties['Scene Config'] = {
+      showGrid: showGrid.value,
+      backgroundColor: backgroundColor.value,
+      backgroundImage: backgroundImage.value,
+      backgroundRenderMode: backgroundRenderMode.value
+    }
 
-      nodeValue.properties['Camera Config'] = {
-        cameraType: cameraType.value,
-        fov: fov.value,
-        state: viewerCameraState
-      }
+    nodeValue.properties['Camera Config'] = {
+      cameraType: cameraType.value,
+      fov: fov.value,
+      state: viewerCameraState
+    }
 
-      nodeValue.properties['Light Config'] = {
-        intensity: lightIntensity.value
-      }
+    nodeValue.properties['Light Config'] = {
+      intensity: lightIntensity.value
+    }
 
-      const gizmoTransform = load3d.getGizmoTransform()
-      const existingModelConfig = nodeValue.properties['Model Config'] as
-        | ModelConfig
-        | undefined
-      nodeValue.properties['Model Config'] = {
-        ...existingModelConfig,
-        upDirection: upDirection.value,
-        materialMode: materialMode.value,
-        gizmo: {
-          enabled: gizmoEnabled.value,
-          mode: gizmoMode.value,
-          position: gizmoTransform.position,
-          rotation: gizmoTransform.rotation,
-          scale: gizmoTransform.scale
-        }
+    const gizmoTransform = load3d.getGizmoTransform()
+    const existingModelConfig = nodeValue.properties['Model Config'] as
+      | ModelConfig
+      | undefined
+    nodeValue.properties['Model Config'] = {
+      ...existingModelConfig,
+      upDirection: upDirection.value,
+      materialMode: materialMode.value,
+      gizmo: {
+        enabled: gizmoEnabled.value,
+        mode: gizmoMode.value,
+        position: gizmoTransform.position,
+        rotation: gizmoTransform.rotation,
+        scale: gizmoTransform.scale
       }
     }
 
@@ -753,7 +753,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    */
   const getUploadSubfolder = () => {
     const resourceFolder = String(
-      node?.properties?.['Resource Folder'] ?? ''
+      node?.properties['Resource Folder'] ?? ''
     ).trim()
     return resourceFolder ? `3d/${resourceFolder}` : '3d'
   }

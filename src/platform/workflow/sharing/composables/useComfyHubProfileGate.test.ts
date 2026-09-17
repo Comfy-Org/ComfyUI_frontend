@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 const mockGetMyProfile = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
@@ -11,22 +11,25 @@ const mockResolvedUserInfo = vi.hoisted(() => ({
   value: { id: 'user-a' }
 }))
 
-vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
-  useComfyHubService: () => ({
-    getMyProfile: mockGetMyProfile,
-    requestAssetUploadUrl: mockRequestAssetUploadUrl,
-    uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
-    createProfile: mockCreateProfile
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/comfyHubService'),
+  () => ({
+    useComfyHubService: () => ({
+      getMyProfile: mockGetMyProfile,
+      requestAssetUploadUrl: mockRequestAssetUploadUrl,
+      uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
+      createProfile: mockCreateProfile
+    })
   })
-}))
+)
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: mockResolvedUserInfo
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: mockToastErrorHandler
   })

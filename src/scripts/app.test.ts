@@ -1,9 +1,23 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
+
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@/components/curve/types'
+import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -17,6 +31,8 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -41,7 +57,6 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -52,68 +67,22 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
 
+vi.mock(import('firebase/auth'))
+
 const {
-  mockApiKeyAuthStore,
-  mockAuthStore,
-  mockSettingStore,
-  mockToastStore,
   mockExtensionService,
-  mockNodeOutputStore,
-  mockSubgraphNavigationStore,
-  mockTeamWorkspaceStore,
-  mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService
 } = vi.hoisted(() => ({
-  mockApiKeyAuthStore: {
-    getApiKey: vi.fn(),
-    isAuthenticated: false
-  },
-  mockAuthStore: {
-    getWorkspaceAuthToken: vi.fn(),
-    currentUser: null as { uid: string } | null
-  },
-  mockSettingStore: {
-    get: vi.fn()
-  },
-  mockToastStore: {
-    addAlert: vi.fn(),
-    add: vi.fn(),
-    remove: vi.fn()
-  },
   mockExtensionService: {
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
-  },
-  mockNodeOutputStore: {
-    refreshNodeOutputs: vi.fn(),
-    replaceOutputsFromLegacy: vi.fn(),
-    setOutputFromLegacy: vi.fn(),
-    removeOutputFromLegacy: vi.fn(),
-    resetAllOutputsAndPreviews: vi.fn(),
-    stashPreviewsForWorkflow: vi.fn(),
-    restorePreviewsForWorkflow: vi.fn(),
-    discardPreviewsForWorkflow: vi.fn()
-  },
-  mockSubgraphNavigationStore: {
-    saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
-  },
-  mockTeamWorkspaceStore: {
-    activeWorkspaceId: 'workspace-a' as string | null,
-    workspaceTransitionGeneration: 0,
-    waitForWorkspaceSwitch: vi.fn(() => Promise.resolve())
-  },
-  mockWorkspaceWorkflow: {
-    activeWorkflow: null as ComfyWorkflow | null,
-    createNewTemporary: vi.fn(),
-    openWorkflow: vi.fn(),
-    getWorkflowByPath: vi.fn(() => null)
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
@@ -124,31 +93,15 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn(),
-  isAudioNode: vi.fn(),
+  isImageNode: fromAny(vi.fn()),
+  isVideoNode: fromAny(vi.fn()),
+  isAudioNode: fromAny(vi.fn()),
   executeWidgetsCallback: vi.fn()
 }))
 
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
-}))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => mockAuthStore)
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: vi.fn(() => mockTeamWorkspaceStore)
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => mockSettingStore)
-}))
-
-vi.mock('@/composables/usePaste', () => ({
+vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -157,60 +110,40 @@ vi.mock('@/composables/usePaste', () => ({
   pasteVideoNodes: vi.fn()
 }))
 
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
 
-vi.mock('@/utils/eventUtils', async (importOriginal) => {
-  const eventUtils = await importOriginal<typeof import('@/utils/eventUtils')>()
-  return {
-    ...eventUtils,
-    extractFilesFromDragEvent: vi.fn()
-  }
-})
+vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock('./pnginfo', () => ({
+vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'), {
+  spy: true
+})
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     uploadFile: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: vi.fn(() =>
+    fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
+  )
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: vi.fn(() => mockExtensionService)
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
-}))
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: vi.fn(() => ({
-    workflow: mockWorkspaceWorkflow
-  }))
-}))
-
-vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
   refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
   runMissingModelPipeline: vi.fn()
 }))
 
-function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
+function createMockNode(
+  options: Partial<Record<keyof LGraphNode, unknown>> = {}
+) {
   return {
     id: 1,
     pos: [0, 0],
@@ -244,12 +177,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
-const actualWorkflowService = await vi.importActual<
-  typeof import('@/platform/workflow/core/services/workflowService')
->('@/platform/workflow/core/services/workflowService')
-
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const real = actualWorkflowService.useWorkflowService()
+  vi.mocked(useWorkflowService).mockRestore()
+  const real = useWorkflowService()
+  vi.mocked(useWorkflowService).mockReturnValue(
+    fromPartial<WorkflowService>(mockWorkflowService)
+  )
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -287,34 +220,57 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(useWorkflowService).mockReturnValue(
+      fromPartial<WorkflowService>(mockWorkflowService)
+    )
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
-    app.canvas = mockCanvas as LGraphCanvas
-    mockWorkspaceWorkflow.activeWorkflow = null
+    app.canvas = mockCanvas
+    useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
       modified: 0,
       size: 0
     })
-    mockWorkspaceWorkflow.createNewTemporary.mockReturnValue(temporaryWorkflow)
-    mockWorkspaceWorkflow.openWorkflow.mockImplementation(async (workflow) => {
-      mockWorkspaceWorkflow.activeWorkflow = workflow
-      return workflow
+    vi.mocked(useWorkflowStore().createNewTemporary).mockReturnValue(
+      temporaryWorkflow
+    )
+    vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
+      async (workflow) => {
+        useWorkflowStore().activeWorkflow = markLoaded(workflow)
+        return markLoaded(workflow)
+      }
+    )
+    vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(null)
+    Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(
+      'workspace-token'
+    )
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a',
+      workspaceTransitionGeneration: 0
     })
-    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
-    mockApiKeyAuthStore.isAuthenticated = false
-    mockAuthStore.currentUser = null
-    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
-    mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
-    mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
-    mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockResolvedValue()
+    vi.mocked(
+      useTeamWorkspaceStore().waitForWorkspaceSwitch
+    ).mockResolvedValue()
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
-    mockSettingStore.get.mockImplementation((key: string) =>
-      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
+    vi.mocked(useWorkflowStore().isActive).mockReturnValue(false)
+    vi.mocked(useSubgraphNavigationStore().updateHash).mockResolvedValue(
+      undefined
+    )
+    vi.mocked(
+      useSubgraphNavigationStore().saveCurrentViewport
+    ).mockImplementation(() => {})
+    vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue([])
+    vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+      () => {}
     )
   })
 
@@ -328,7 +284,7 @@ describe('ComfyApp', () => {
       })
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
-      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
         'workflow-load',
         42
       )
@@ -340,7 +296,7 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData())
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(true)
-      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
         'workflow-load',
         undefined
       )
@@ -372,9 +328,13 @@ describe('ComfyApp', () => {
 
       expect(showDialog).toHaveBeenCalledOnce()
       // The finally still repairs the URL even on the handled-failure path.
-      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
         'workflow-load',
         7
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad workflow json' })
       )
     })
 
@@ -421,17 +381,55 @@ describe('ComfyApp', () => {
   })
 
   describe('nodeOutputs', () => {
+    it('does O(1) work per write instead of rebuilding the whole output record (#16008)', () => {
+      // Regression for a per-write full-record rekey: each write used to
+      // call `replaceOutputsFromLegacy`, an O(N) `mapKeys` rebuild of every
+      // node's entry, making N sequential output writes O(N^2) overall. A
+      // reintroduction of that path would fail this by calling
+      // `replaceOutputsFromLegacy` and by triggering more than one
+      // `setOutputFromLegacy` commit per single-key write.
+      app.vueAppReady = true
+      const nodeCount = 50
+      const storedOutputs = new Map<string, NodeExecutionOutput>()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockImplementation(
+        (id, output) => storedOutputs.set(id, output)
+      )
+
+      for (let i = 0; i < nodeCount; i++) {
+        vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
+        app.nodeOutputs[String(i)] = { images: [{ filename: `${i}.png` }] }
+        expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledOnce()
+        expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
+          String(i),
+          {
+            images: [{ filename: `${i}.png` }]
+          }
+        )
+      }
+
+      expect(
+        useNodeOutputStore().replaceOutputsFromLegacy
+      ).not.toHaveBeenCalled()
+
+      expect(storedOutputs.size).toBe(nodeCount)
+      for (let i = 0; i < nodeCount; i++) {
+        expect(storedOutputs.get(String(i))).toEqual({
+          images: [{ filename: `${i}.png` }]
+        })
+      }
+    })
+
     it('commits legacy property mutations to the output store', () => {
       app.vueAppReady = true
       const output = { images: [{ filename: 'legacy.png' }] }
 
       app.nodeOutputs['1'] = output
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
         output
       )
       delete app.nodeOutputs['1']
-      expect(mockNodeOutputStore.removeOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().removeOutputFromLegacy).toHaveBeenCalledWith(
         '1'
       )
     })
@@ -439,18 +437,18 @@ describe('ComfyApp', () => {
     it('commits nested legacy output mutations to the output store', () => {
       app.vueAppReady = true
       app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
-      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
 
       const output = app.nodeOutputs['1']
       output.images = [{ filename: 'second.png' }]
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
         { images: [{ filename: 'second.png' }] }
       )
-      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
       const images = output.images
       images?.push({ filename: 'third.png' })
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
         {
           images: [{ filename: 'second.png' }, { filename: 'third.png' }]
@@ -459,11 +457,11 @@ describe('ComfyApp', () => {
       expect(app.nodeOutputs['1']).toBe(output)
       expect(output.images).toBe(images)
 
-      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
       const image = images?.[0]
       if (!image) throw new Error('Expected a legacy output image')
       image.filename = 'mutated.png'
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
         {
           images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
@@ -479,12 +477,12 @@ describe('ComfyApp', () => {
       app.nodeOutputs['2'] = shared
       void app.nodeOutputs['1']
       const second = app.nodeOutputs['2']
-      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
 
       second.images = [{ filename: 'second.png' }]
 
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '2',
         shared
       )
@@ -493,13 +491,13 @@ describe('ComfyApp', () => {
     it('commits only the changed entry after whole-record assignment', () => {
       app.vueAppReady = true
       app.nodeOutputs = { '1': { images: [{ filename: 'first.png' }] } }
-      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+      vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
 
       const second = { images: [{ filename: 'second.png' }] }
       app.nodeOutputs['2'] = second
 
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
-      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '2',
         second
       )
@@ -516,7 +514,7 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      mockWorkspaceWorkflow.activeWorkflow = workflow
+      useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
         workflow: createWorkflowGraphData()
@@ -527,7 +525,7 @@ describe('ComfyApp', () => {
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}
-      mockAuthStore.getWorkspaceAuthToken.mockReturnValueOnce(
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockReturnValueOnce(
         new Promise((resolve) => {
           resolveToken = resolve
         })
@@ -536,12 +534,12 @@ describe('ComfyApp', () => {
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.authToken).toBe('workspace-token')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       const submission = app.queuePrompt(0)
       await vi.waitFor(() =>
-        expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+        expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledOnce()
       )
       expect(queuePrompt).not.toHaveBeenCalled()
 
@@ -553,54 +551,58 @@ describe('ComfyApp', () => {
     it('waits for a workspace switch before selecting the billing context', async () => {
       prepareEmptyPromptQueue()
       let finishSwitch: () => void = () => {}
-      mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockImplementationOnce(
+      vi.mocked(
+        useTeamWorkspaceStore().waitForWorkspaceSwitch
+      ).mockImplementationOnce(
         () =>
           new Promise<void>((resolve) => {
             finishSwitch = () => {
-              mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+              Object.assign(useTeamWorkspaceStore(), {
+                activeWorkspaceId: 'workspace-b'
+              })
               resolve()
             }
           })
       )
-      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
         'workspace-token-b'
       )
       const queuePrompt = vi
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.authToken).toBe('workspace-token-b')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       const submission = app.queuePrompt(0)
       await vi.waitFor(() =>
         expect(
-          mockTeamWorkspaceStore.waitForWorkspaceSwitch
+          useTeamWorkspaceStore().waitForWorkspaceSwitch
         ).toHaveBeenCalledOnce()
       )
 
-      expect(mockAuthStore.getWorkspaceAuthToken).not.toHaveBeenCalled()
+      expect(useAuthStore().getWorkspaceAuthToken).not.toHaveBeenCalled()
       expect(app.graphToPrompt).not.toHaveBeenCalled()
       expect(queuePrompt).not.toHaveBeenCalled()
 
       finishSwitch()
       await expect(submission).resolves.toBe(true)
 
-      expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledOnce()
       expect(queuePrompt).toHaveBeenCalledOnce()
     })
 
     it('does not submit when an in-progress workspace switch fails', async () => {
       prepareEmptyPromptQueue()
-      mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockRejectedValueOnce(
-        new Error('Token exchange failed')
-      )
+      vi.mocked(
+        useTeamWorkspaceStore().waitForWorkspaceSwitch
+      ).mockRejectedValueOnce(new Error('Token exchange failed'))
       const queuePrompt = vi.spyOn(api, 'queuePrompt')
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
 
-      expect(mockAuthStore.getWorkspaceAuthToken).not.toHaveBeenCalled()
+      expect(useAuthStore().getWorkspaceAuthToken).not.toHaveBeenCalled()
       expect(app.graphToPrompt).not.toHaveBeenCalled()
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
@@ -610,16 +612,22 @@ describe('ComfyApp', () => {
       'uses a workspace initialized while local authentication is pending',
       async () => {
         prepareEmptyPromptQueue()
-        mockTeamWorkspaceStore.activeWorkspaceId = null
-        mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
-          mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
-          return 'workspace-token'
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: null
         })
+        vi.mocked(useAuthStore().getWorkspaceAuthToken).mockImplementationOnce(
+          async () => {
+            Object.assign(useTeamWorkspaceStore(), {
+              activeWorkspaceId: 'workspace-a'
+            })
+            return 'workspace-token'
+          }
+        )
         const queuePrompt = vi
           .spyOn(api, 'queuePrompt')
           .mockImplementation(() => {
             expect(api.authToken).toBe('workspace-token')
-            return Promise.resolve({ prompt_id: 'job-1', error: '' })
+            return Promise.resolve({ prompt_id: 'job-1' })
           })
 
         await expect(app.queuePrompt(0)).resolves.toBe(true)
@@ -632,11 +640,17 @@ describe('ComfyApp', () => {
       'does not submit when a cloud workspace appears during authentication',
       async () => {
         prepareEmptyPromptQueue()
-        mockTeamWorkspaceStore.activeWorkspaceId = null
-        mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
-          mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
-          return 'firebase-token'
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: null
         })
+        vi.mocked(useAuthStore().getWorkspaceAuthToken).mockImplementationOnce(
+          async () => {
+            Object.assign(useTeamWorkspaceStore(), {
+              activeWorkspaceId: 'workspace-a'
+            })
+            return 'firebase-token'
+          }
+        )
         const queuePrompt = vi.spyOn(api, 'queuePrompt')
         const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
@@ -649,10 +663,14 @@ describe('ComfyApp', () => {
 
     it('does not submit when the workspace changes during authentication', async () => {
       prepareEmptyPromptQueue()
-      mockAuthStore.getWorkspaceAuthToken.mockImplementationOnce(async () => {
-        mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
-        return 'workspace-token-a'
-      })
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockImplementationOnce(
+        async () => {
+          Object.assign(useTeamWorkspaceStore(), {
+            activeWorkspaceId: 'workspace-b'
+          })
+          return 'workspace-token-a'
+        }
+      )
       const queuePrompt = vi.spyOn(api, 'queuePrompt')
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
@@ -680,7 +698,9 @@ describe('ComfyApp', () => {
 
       const submission = app.queuePrompt(0)
       await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
       finishPromptBuild()
 
       await expect(submission).resolves.toBe(false)
@@ -690,8 +710,10 @@ describe('ComfyApp', () => {
 
     it('does not fall back to an API key when workspace authentication fails', async () => {
       prepareEmptyPromptQueue()
-      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
-      mockApiKeyAuthStore.getApiKey.mockReturnValueOnce('api-key')
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        undefined
+      )
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValueOnce('api-key')
       const queuePrompt = vi.spyOn(api, 'queuePrompt')
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
@@ -702,10 +724,14 @@ describe('ComfyApp', () => {
 
     it('does not accept the API key when a Firebase session lost its workspace token', async () => {
       prepareEmptyPromptQueue()
-      mockAuthStore.currentUser = { uid: 'firebase-user' }
-      mockApiKeyAuthStore.isAuthenticated = true
-      mockApiKeyAuthStore.getApiKey.mockReturnValue('api-key')
-      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      useAuthStore().currentUser = fromPartial({
+        uid: 'firebase-user'
+      })
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key')
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        undefined
+      )
       const queuePrompt = vi.spyOn(api, 'queuePrompt')
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
@@ -716,14 +742,18 @@ describe('ComfyApp', () => {
 
     it('submits with the validated API key when the key session has a workspace', async () => {
       prepareEmptyPromptQueue()
-      mockApiKeyAuthStore.isAuthenticated = true
-      mockApiKeyAuthStore.getApiKey.mockReturnValue('comfyui-valid-key')
-      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'comfyui-valid-key'
+      )
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        undefined
+      )
       const queuePrompt = vi
         .spyOn(api, 'queuePrompt')
         .mockImplementation(() => {
           expect(api.apiKey).toBe('comfyui-valid-key')
-          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+          return Promise.resolve({ prompt_id: 'job-1' })
         })
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
@@ -732,7 +762,7 @@ describe('ComfyApp', () => {
 
     it('does not submit after switching away and back to the same workspace', async () => {
       prepareEmptyPromptQueue()
-      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
         'workspace-token'
       )
       let finishPromptBuild: () => void = () => {}
@@ -751,10 +781,14 @@ describe('ComfyApp', () => {
 
       const submission = app.queuePrompt(0)
       await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
-      mockTeamWorkspaceStore.workspaceTransitionGeneration++
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
-      mockTeamWorkspaceStore.workspaceTransitionGeneration++
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b',
+        workspaceTransitionGeneration: 1
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-a',
+        workspaceTransitionGeneration: 2
+      })
       finishPromptBuild()
 
       await expect(submission).resolves.toBe(false)
@@ -778,8 +812,7 @@ describe('ComfyApp', () => {
         traceback: []
       })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       await app.queuePrompt(0)
@@ -820,7 +853,7 @@ describe('ComfyApp', () => {
       }
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      mockWorkspaceWorkflow.activeWorkflow = workflow
+      useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
         workflow: createWorkflowGraphData()
@@ -828,8 +861,7 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1',
-        node_errors: nodeErrors,
-        error: ''
+        node_errors: nodeErrors
       })
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
@@ -852,12 +884,10 @@ describe('ComfyApp', () => {
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt')
         .mockResolvedValueOnce({
-          prompt_id: 'job-1',
-          error: ''
+          prompt_id: 'job-1'
         })
         .mockResolvedValueOnce({
-          prompt_id: 'job-2',
-          error: ''
+          prompt_id: 'job-2'
         })
 
       try {
@@ -892,7 +922,7 @@ describe('ComfyApp', () => {
 
     it('attributes a queued job to the mode used when submission started', async () => {
       prepareEmptyPromptQueue()
-      const workflow = mockWorkspaceWorkflow.activeWorkflow
+      const workflow = useWorkflowStore().activeWorkflow
       if (!workflow) throw new Error('Expected an active workflow')
       workflow.activeMode = 'graph'
 
@@ -912,8 +942,7 @@ describe('ComfyApp', () => {
           })
       )
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -945,9 +974,7 @@ describe('ComfyApp', () => {
       const now = vi.spyOn(performance, 'now').mockReturnValue(42)
       vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
         now.mockReturnValue(62)
-        return {
-          error: 'Prompt rejected'
-        }
+        return {}
       })
 
       try {
@@ -1020,6 +1047,43 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('records a rejected submission on the workflow that queued it', async () => {
+      prepareEmptyPromptQueue()
+      const executionErrorStore = useExecutionErrorStore()
+      const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
+      const recordPromptError = vi.spyOn(
+        executionErrorStore,
+        'recordPromptError'
+      )
+      let rejectQueue: (error: PromptExecutionError) => void = () => {}
+      vi.spyOn(api, 'queuePrompt').mockImplementation(
+        () =>
+          new Promise((_, reject) => {
+            rejectQueue = reject
+          })
+      )
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledOnce())
+      executionErrorStore.setActiveGraph('22222222-2222-4222-8222-222222222222')
+      rejectQueue(
+        new PromptExecutionError({
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      await expect(submission).resolves.toBe(true)
+      expect(recordPromptError).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'prompt_no_outputs' }),
+        queuedRunErrorKey
+      )
+      expect(executionErrorStore.lastPromptError).toBeNull()
+    })
+
     it('tracks prompt construction failures at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackExecutionOutcome = vi.fn()
@@ -1061,8 +1125,7 @@ describe('ComfyApp', () => {
         throw new Error('Context unavailable')
       })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -1089,8 +1152,7 @@ describe('ComfyApp', () => {
       registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       try {
@@ -1117,8 +1179,7 @@ describe('ComfyApp', () => {
     it('preserves legacy partial execution calls from extensions', async () => {
       prepareEmptyPromptQueue()
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
       const queueNodeIds = [createNodeExecutionId([1])]
 
@@ -1140,8 +1201,7 @@ describe('ComfyApp', () => {
         'getExecutionContext'
       )
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       await app.queuePrompt(0)
@@ -1155,8 +1215,7 @@ describe('ComfyApp', () => {
       registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
       vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
         new Error('Queue UI refresh failed')
@@ -1286,8 +1345,7 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt')
         .mockImplementationOnce(() => firstResponse)
         .mockResolvedValueOnce({
-          prompt_id: 'job-2',
-          error: ''
+          prompt_id: 'job-2'
         })
 
       const firstQueue = app.queuePrompt(0)
@@ -1345,6 +1403,210 @@ describe('ComfyApp', () => {
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockCanvas.graph).toBe(graph)
       expect(mockCanvas.subgraph).toBeNull()
+    })
+
+    it('restores late autogrow widgets and links without repeating callbacks', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiSourceNode'
+      const targetType = 'test/ApiTargetNode'
+      const targetConnectionChanges = vi.fn()
+      class ApiSourceNode extends LGraphNode {
+        constructor(title = 'ApiSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiTargetNode extends LGraphNode {
+        constructor(title = 'ApiTargetNode') {
+          super(title)
+          this.widgets = []
+          addAutogrow(this, {
+            min: 0,
+            input: {
+              required: {
+                image: ['LATENT', {}],
+                weight: ['FLOAT', { default: 1 }]
+              }
+            }
+          })
+        }
+        override onConnectionsChange(...args: unknown[]) {
+          targetConnectionChanges(...args)
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: {
+                '0.weight2': 0.5,
+                '0.image2': ['1', 0],
+                '0.image1': ['1', 0],
+                '0.image0': ['1', 0]
+              },
+              _meta: { title: 'Api Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Api Source' }
+            }
+          },
+          ''
+        )
+
+        expect(targetConnectionChanges).toHaveBeenCalledTimes(3)
+        expect(graph.links.size).toBe(3)
+        expect(
+          graph
+            .getNodeById(toNodeId(2))
+            ?.widgets?.find((widget) => widget.name === '0.weight2')?.value
+        ).toBe(0.5)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
+    it('saves links connected on retry in missing-node snapshots', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(useNodeReplacementStore(), 'load').mockResolvedValue()
+      const sourceType = 'test/ApiSnapshotSource'
+      const lateType = 'test/ApiLateOutput'
+      class SnapshotSource extends LGraphNode {
+        constructor() {
+          super('Snapshot source')
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class LateOutput extends LGraphNode {
+        constructor() {
+          super('Late output')
+          this.addInput('input', 'LATENT')
+        }
+        override onConnectionsChange(...args: unknown[]) {
+          if (args[2] && !this.outputs.length) this.addOutput('out', 'LATENT')
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, SnapshotSource)
+      LiteGraph.registerNodeType(lateType, LateOutput)
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'MissingRetryTarget',
+              inputs: { input: ['2', 0] },
+              _meta: { title: 'Missing' }
+            },
+            '2': {
+              class_type: lateType,
+              inputs: { input: ['3', 0] },
+              _meta: { title: 'Late output' }
+            },
+            '3': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Source' }
+            }
+          },
+          ''
+        )
+        const placeholder = graph.getNodeById(toNodeId(1))
+        const link = placeholder?.getInputLink(0)?.id
+        expect(link).toBeDefined()
+        expect(link).not.toBeNull()
+        expect(placeholder?.last_serialization?.inputs?.[0].link).toBe(link)
+        const saved = graph.serialize()
+        const reloaded = new LGraph()
+        reloaded.configure({ ...saved, id: reloaded.id })
+        expect(reloaded.getNodeById(toNodeId(1))?.getInputLink(0)?.id).toBe(
+          link
+        )
+        expect(reloaded.links.size).toBe(2)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(lateType)
+      }
+    })
+
+    it('does not retry a connection vetoed by an extension callback', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
+      const previousSingletonGraph = Reflect.get(
+        singletonApp,
+        'rootGraphInternal'
+      )
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const sourceType = 'test/ApiVetoSourceNode'
+      const targetType = 'test/ApiVetoTargetNode'
+      const connectionAttempts = vi.fn()
+      class ApiVetoSourceNode extends LGraphNode {
+        constructor(title = 'ApiVetoSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class ApiVetoTargetNode extends LGraphNode {
+        constructor(title = 'ApiVetoTargetNode') {
+          super(title)
+          this.addInput('input', 'LATENT')
+        }
+        override onConnectInput() {
+          connectionAttempts()
+          return false
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, ApiVetoSourceNode)
+      LiteGraph.registerNodeType(targetType, ApiVetoTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '2': {
+              class_type: targetType,
+              inputs: { input: ['1', 0] },
+              _meta: { title: 'API Veto Target' }
+            },
+            '1': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'API Veto Source' }
+            }
+          },
+          ''
+        )
+
+        expect(connectionAttempts).toHaveBeenCalledOnce()
+        expect(graph.links.size).toBe(0)
+      } finally {
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
     })
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
@@ -1707,7 +1969,7 @@ describe('ComfyApp', () => {
         { deferWarnings: true }
       )
 
-      const deferredWorkflow = mockWorkspaceWorkflow.activeWorkflow
+      const deferredWorkflow = useWorkflowStore().activeWorkflow
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(deferredWorkflow?.pendingWarnings?.missingNodeTypes).toEqual([
         expect.objectContaining({ type: 'UninstalledDeferredNode' })
@@ -1731,7 +1993,7 @@ describe('ComfyApp', () => {
       })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -1785,6 +2047,225 @@ describe('ComfyApp', () => {
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(executionErrorStore.lastExecutionError).toBeNull()
     })
+
+    it('records run errors after clearing the current workflow', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const executionErrorStore = useExecutionErrorStore()
+
+      app.clean()
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'after-clear',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+
+      expect(executionErrorStore.lastExecutionError?.prompt_id).toBe(
+        'after-clear'
+      )
+    })
+  })
+
+  describe('workflow tab switching', () => {
+    const workflowAId = '11111111-1111-4111-8111-111111111111'
+    const workflowBId = '22222222-2222-4222-8222-222222222222'
+
+    const failedKSamplerErrors: Record<string, NodeError> = {
+      '1': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Value 200 bigger than max of 100',
+            details: 'steps',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    }
+
+    function workflowGraphData(id: string): ComfyWorkflowJSON {
+      return { ...createWorkflowGraphData(), id }
+    }
+
+    function serialisedGraph(id: string): SerialisableGraph {
+      return {
+        id,
+        revision: 0,
+        version: 1,
+        state: {
+          lastGroupId: 0,
+          lastNodeId: 0,
+          lastLinkId: 0,
+          lastRerouteId: 0
+        },
+        nodes: [],
+        links: []
+      }
+    }
+
+    async function switchToWorkflow(
+      workflowService: WorkflowService,
+      graph: LGraph,
+      workflow: ComfyWorkflow,
+      workflowId: string
+    ) {
+      workflowService.beforeLoadNewGraph()
+      app.clean()
+      graph.configure(serialisedGraph(workflowId))
+      await workflowService.afterLoadNewGraph(
+        workflow,
+        workflowGraphData(workflowId)
+      )
+    }
+
+    it('does not open the visible workflow overlay for a background run error', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.setActiveGraph(workflowAId, workflowA.path)
+
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+
+      executionErrorHandler?.(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-b',
+            node_id: '1',
+            node_type: 'TestNode',
+            exception_message: 'boom',
+            exception_type: 'RuntimeError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(executionErrorHandler).toBeTypeOf('function')
+      expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    })
+
+    it('restores the failed run state when returning to a workflow tab', async () => {
+      const workflowService = await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
+
+      await switchToWorkflow(workflowService, graph, workflowB, workflowBId)
+
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+      expect(executionErrorStore.totalErrorCount).toBe(0)
+
+      await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+      expect(executionErrorStore.totalErrorCount).toBe(1)
+    })
+
+    it('gives each imported workflow its own restorable run errors', async () => {
+      const workflowService = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      singletonApp.canvas = mockCanvas
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+
+      await app.loadApiJson({}, 'api-a')
+      const importedA = useWorkflowStore().activeWorkflow
+      const importedAId = importedA?.activeState?.id
+      if (!importedA || !importedAId) {
+        throw new Error('Expected the first imported workflow to have an id')
+      }
+      expect(importedAId).not.toBe(zeroUuid)
+      expect(importedAId).toBe(graph.id)
+
+      const executionErrorStore = useExecutionErrorStore()
+      executionErrorStore.recordNodeErrors(failedKSamplerErrors)
+
+      await app.loadApiJson({}, 'api-b')
+      const importedBId = useWorkflowStore().activeWorkflow?.activeState?.id
+      expect(importedBId).not.toBe(zeroUuid)
+      expect(importedBId).not.toBe(importedAId)
+      expect(executionErrorStore.lastNodeErrors).toBeNull()
+
+      await switchToWorkflow(workflowService, graph, importedA, importedAId)
+
+      expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+    })
+
+    it('reuses the active workflow when importing the same file again', async () => {
+      await useRealWorkflowService()
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const importedWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/repeat.json',
+          modified: 0,
+          size: -1
+        })
+      )
+      vi.mocked(useWorkflowStore().createNewTemporary).mockImplementation(
+        (_path, workflowData) => {
+          if (workflowData) {
+            importedWorkflow.changeTracker.activeState = workflowData
+          }
+          return importedWorkflow
+        }
+      )
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockImplementation(
+        () => useWorkflowStore().activeWorkflow
+      )
+      vi.mocked(useWorkflowStore().isActive).mockImplementation(
+        (workflow) => useWorkflowStore().activeWorkflow === workflow
+      )
+
+      await app.loadApiJson({}, 'repeat')
+      const activeWorkflow = useWorkflowStore().activeWorkflow
+      await app.loadApiJson({}, 'repeat')
+
+      expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
   })
 
   describe('refreshComboInNodes', () => {
@@ -1794,14 +2275,14 @@ describe('ComfyApp', () => {
 
       await app.refreshComboInNodes()
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'info' })
       )
-      expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })
       )
-      expect(mockToastStore.remove).toHaveBeenCalledWith(
-        mockToastStore.add.mock.calls[0][0]
+      expect(useToastStore().remove).toHaveBeenCalledWith(
+        vi.mocked(useToastStore().add).mock.calls[0][0]
       )
     })
 
@@ -1812,11 +2293,11 @@ describe('ComfyApp', () => {
 
       await expect(app.refreshComboInNodes()).rejects.toThrow(error)
 
-      expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(mockToastStore.remove).toHaveBeenCalledWith(
-        mockToastStore.add.mock.calls[0][0]
+      expect(useToastStore().remove).toHaveBeenCalledWith(
+        vi.mocked(useToastStore().add).mock.calls[0][0]
       )
     })
   })
@@ -2295,10 +2776,10 @@ describe('ComfyApp', () => {
       )
     })
 
-    it.each([
+    it.for([
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
-    ])('shows one error for %s', async (_case, workflow) => {
+    ])('shows one error for %s', async ([, workflow]) => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -2306,8 +2787,8 @@ describe('ComfyApp', () => {
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).toHaveBeenCalledTimes(1)
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'Unable to find workflow in broken.json'
       )
       consoleError.mockRestore()
@@ -2352,8 +2833,8 @@ describe('ComfyApp', () => {
         parameters,
         expect.any(Function)
       )
-      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
-      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledWith(
+      expect(useToastStore()[testCase.toastMethod]).toHaveBeenCalledOnce()
+      expect(useToastStore()[testCase.toastMethod]).toHaveBeenCalledWith(
         testCase.expectedToast
       )
       if (testCase.outcome === 'imported-without-embeddings') {
@@ -2421,11 +2902,11 @@ describe('ComfyApp', () => {
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
         ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
       })
-      app.canvas = {
-        ...mockCanvas,
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
         graph_mouse: graphMouse,
         adjustMouseEvent
-      } as unknown as LGraphCanvas
+      })
 
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -2438,7 +2919,7 @@ describe('ComfyApp', () => {
       outgoingWorkflow.pendingWarnings = {
         missingNodeTypes: ['OutgoingMissingNode']
       }
-      mockWorkspaceWorkflow.activeWorkflow = outgoingWorkflow
+      useWorkflowStore().activeWorkflow = markLoaded(outgoingWorkflow)
       const realWorkflowStore = useWorkflowStore()
       realWorkflowStore.activeWorkflow = markLoaded(outgoingWorkflow)
       const missingNodesStore = useMissingNodesErrorStore()
@@ -2462,12 +2943,12 @@ describe('ComfyApp', () => {
       const openWorkflowGate = new Promise<void>((resolve) => {
         releaseOpenWorkflow = resolve
       })
-      mockWorkspaceWorkflow.openWorkflow.mockImplementation(
+      vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
         async (workflow: ComfyWorkflow) => {
           await openWorkflowGate
-          mockWorkspaceWorkflow.activeWorkflow = workflow
+          useWorkflowStore().activeWorkflow = markLoaded(workflow)
           realWorkflowStore.activeWorkflow = markLoaded(workflow)
-          return workflow
+          return markLoaded(workflow)
         }
       )
 
@@ -2476,7 +2957,7 @@ describe('ComfyApp', () => {
 
         document.dispatchEvent(new DragEvent('drop'))
         await vi.waitFor(() => {
-          expect(mockWorkspaceWorkflow.openWorkflow).toHaveBeenCalledOnce()
+          expect(useWorkflowStore().openWorkflow).toHaveBeenCalledOnce()
         })
 
         expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
@@ -2485,9 +2966,7 @@ describe('ComfyApp', () => {
 
         releaseOpenWorkflow()
         await vi.waitFor(() => {
-          expect(mockWorkspaceWorkflow.activeWorkflow).not.toBe(
-            outgoingWorkflow
-          )
+          expect(useWorkflowStore().activeWorkflow).not.toBe(outgoingWorkflow)
         })
         await vi.waitFor(() => {
           expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([

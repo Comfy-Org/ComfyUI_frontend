@@ -37,6 +37,8 @@ export interface CameraState {
   zoom: number
   cameraType: CameraType
   quaternion?: CameraQuaternion
+  useCustomUp?: boolean
+  customUp?: { x: number; y: number; z: number }
   fov?: number
   aspect?: number
   near?: number
@@ -189,7 +191,7 @@ export interface ViewHelperManagerInterface extends BaseManager {
 export interface EventManagerInterface {
   addEventListener<T>(event: string, callback: EventCallback<T>): void
   removeEventListener<T>(event: string, callback: EventCallback<T>): void
-  emitEvent<T>(event: string, data: T): void
+  emitEvent(event: string, data: unknown): void
 }
 
 export interface AnimationManagerInterface extends BaseManager {

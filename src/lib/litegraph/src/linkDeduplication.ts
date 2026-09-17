@@ -1,7 +1,8 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
@@ -53,6 +54,18 @@ export function remapLinkReferences(
   for (const extension of data.extra?.linkExtensions ?? []) {
     extension.id = toLinkId(remap(extension.id))
   }
+
+  const presentation = data.extra?.linkPresentation
+  if (!presentation) return
+
+  for (const [key, value] of Object.entries(presentation)) {
+    const linkId = parseLinkId(key)
+    if (linkId === undefined) continue
+    const remappedKey = String(remap(linkId))
+    if (remappedKey === key) continue
+    presentation[remappedKey] ??= value
+    delete presentation[key]
+  }
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
@@ -101,11 +114,17 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
     if (!isExactDuplicate) {
+      const targetNodeId = toNodeId(fields.target_id)
       console.warn('Dropping competing link to an occupied input', {
         droppedLinkId,
         survivorLinkId,
-        targetNodeId: toNodeId(fields.target_id),
+        targetNodeId,
         targetSlot: fields.target_slot
+      })
+      useTelemetry()?.trackLinkDedupDrop({
+        droppedLinkId,
+        survivorLinkId,
+        target: `${targetNodeId}:${fields.target_slot}`
       })
     }
   }
@@ -113,6 +132,27 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
 
   const normalized = Object.assign({}, data, { links })
   const cloned = cloneDeep(normalized)
+  const presentation = cloned.extra?.linkPresentation
+  if (presentation) {
+    const survivorById = new Map(
+      links.map((link) => {
+        const fields = linkFields(link)
+        return [fields.id, fields]
+      })
+    )
+    for (const link of data.links) {
+      const fields = linkFields(link)
+      const survivorId = survivorByDuplicateId.get(fields.id)
+      if (survivorId === undefined || survivorId === fields.id) continue
+      const survivor = survivorById.get(survivorId)
+      if (
+        survivor &&
+        (toNodeId(fields.origin_id) !== toNodeId(survivor.origin_id) ||
+          fields.origin_slot !== survivor.origin_slot)
+      )
+        delete presentation[fields.id]
+    }
+  }
   remapLinkReferences(cloned, survivorByDuplicateId)
   return cloned
 }

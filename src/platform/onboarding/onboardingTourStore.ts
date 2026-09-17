@@ -172,7 +172,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const current = state.value
     if (!isRunning(current)) return
     const nextStep = current.steps[idx]
-    if (!nextStep) return
 
     stepController?.abort()
     const controller = new AbortController()
@@ -348,7 +347,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   async function begin(entryPath: EntryPath): Promise<boolean> {
     const definition = tourDefinition(entryPath)
-    if (!definition) return false
+    if (!definition || !tourHolds(entryPath)) return false
     const run = nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
     // A new run has no ending yet; the one before it must not speak for it.

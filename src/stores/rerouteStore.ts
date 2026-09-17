@@ -111,7 +111,9 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   /**
-   * @returns The registered chain, or `undefined` when its ID is occupied.
+   * @returns The registered chain. Re-registering the same raw chain under the
+   * same owner returns the incumbent; `undefined` means a distinct chain
+   * occupies its ID.
    */
   function registerReroute(
     scope: GraphScope,

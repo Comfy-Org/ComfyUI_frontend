@@ -34,16 +34,16 @@ const saturationTrack = computed(
   >
     <div class="flex h-[2.25em] shrink-0 items-center px-[1.05em]">
       <span
-        class="bg-primary-comfy-yellow size-(--hero-dot,0.55em) rounded-full"
+        class="size-(--hero-dot,0.55em) rounded-full bg-primary-comfy-yellow"
       />
       <span class="ml-auto flex items-center gap-[0.5em]">
         <span
-          class="font-formula ppformula-text-center text-[0.7em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
+          class="ppformula-text-center font-formula text-[0.7em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
         >
           COLOR
         </span>
         <span
-          class="bg-primary-comfy-yellow size-(--hero-dot,0.55em) rounded-full"
+          class="size-(--hero-dot,0.55em) rounded-full bg-primary-comfy-yellow"
         />
       </span>
     </div>

@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -37,7 +37,7 @@ export function useGroupMenuOptions() {
       groupContext.resizeTo(groupContext.children, padding)
       groupContext.graph?.change()
       canvasStore.canvas?.setDirty(true, true)
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     }
   })
 
@@ -51,7 +51,7 @@ export function useGroupMenuOptions() {
     submenu: shapeOptions.map((shape) => ({
       label: shape.localizedName,
       action: () => {
-        const nodes = (groupContext.nodes || []) as LGraphNode[]
+        const nodes = groupContext.nodes
         nodes.forEach((node) => (node.shape = shape.value))
         canvasRefresh.refreshCanvas()
         bump()
@@ -92,7 +92,7 @@ export function useGroupMenuOptions() {
       return options
     }
 
-    const groupNodes = (groupContext.nodes || []) as LGraphNode[]
+    const groupNodes = groupContext.nodes
     if (!groupNodes.length) return options
 
     // Check if all nodes have the same mode
@@ -118,7 +118,7 @@ export function useGroupMenuOptions() {
         })
         canvasStore.canvas?.setDirty(true, true)
         groupContext.graph?.change()
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
         bump()
       }
     })

@@ -1,15 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { computed, effect, nextTick, stop, watch } from 'vue'
 
 import { LGraph, LGraphNode } from './litegraph'
 import type { IBaseWidget } from './types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('_setConcreteSlots', () => {
   test('per-frame calls do not invalidate slot-array subscribers', async () => {

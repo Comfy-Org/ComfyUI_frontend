@@ -1,8 +1,12 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
-    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+    :class="
+      cn(
+        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden',
+        isDesktop && 'workflow-tabs-container-desktop'
+      )
+    "
   >
     <Button
       v-if="showOverflowArrows"
@@ -15,44 +19,41 @@
     >
       <i class="icon-[lucide--chevron-left] size-full" />
     </Button>
-    <ScrollPanel
-      class="no-drag overflow-hidden"
-      :pt:content="{
-        class: 'p-0 w-full flex',
-        onwheel: handleWheel
-      }"
-      pt:bar-x="h-1"
-    >
-      <SelectButton
-        :ref="setSelectButton"
-        class="workflow-tabs bg-transparent"
-        :class="props.class"
-        :model-value="selectedWorkflow"
-        :options="options"
-        option-label="label"
-        data-key="value"
-        :allow-empty="false"
-        @click="onWorkflowClick"
+    <div class="no-drag overflow-hidden">
+      <div
+        ref="scrollContent"
+        class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
+        @wheel="handleWheel"
       >
-        <template #option="{ option, index }">
-          <WorkflowTab
-            :workflow-option="option"
-            :is-first="index === 0"
-            :is-last="index === options.length - 1"
-            :data-workflow-path="option.value"
-            @click.middle="onCloseWorkflow(option)"
-            @close-to-left="closeWorkflows(options.slice(0, index))"
-            @close-to-right="closeWorkflows(options.slice(index + 1))"
-            @close-others="
-              closeWorkflows([
-                ...options.slice(index + 1),
-                ...options.slice(0, index)
-              ])
-            "
-          />
-        </template>
-      </SelectButton>
-    </ScrollPanel>
+        <SelectButton
+          :class="cn('workflow-tabs bg-transparent', props.class)"
+          :model-value="selectedWorkflow"
+          :options
+          option-label="label"
+          data-key="value"
+          :allow-empty="false"
+          @click="onWorkflowClick"
+        >
+          <template #option="{ option, index }">
+            <WorkflowTab
+              :workflow-option="option"
+              :is-first="index === 0"
+              :is-last="index === options.length - 1"
+              :data-workflow-path="option.value"
+              @click.middle="onCloseWorkflow(option)"
+              @close-to-left="closeWorkflows(options.slice(0, index))"
+              @close-to-right="closeWorkflows(options.slice(index + 1))"
+              @close-others="
+                closeWorkflows([
+                  ...options.slice(index + 1),
+                  ...options.slice(0, index)
+                ])
+              "
+            />
+          </template>
+        </SelectButton>
+      </div>
+    </div>
     <Button
       v-if="showOverflowArrows"
       variant="muted-textonly"
@@ -89,18 +90,14 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled"
+        v-if="
+          agentPanelStore.enabled &&
+          !agentPanelStore.isVisible &&
+          !(agentPanelStore.isOpen && isChecking)
+        "
         variant="link"
         size="sm"
-        :aria-pressed="agentPanelStore.isOpen"
-        :class="
-          cn(
-            'no-drag shrink-0 border border-solid text-base-foreground',
-            agentPanelStore.isOpen
-              ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
-          )
-        "
+        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
         @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
@@ -125,38 +122,38 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
-import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
+  revision: number
 }
 
 const props = defineProps<{
@@ -169,15 +166,37 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
-
-function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
-  })
-  agentPanelStore.toggle()
-}
+const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
+
+async function onAgentEntryClick(): Promise<void> {
+  if (isOpeningAgent.value) return
+  isOpeningAgent.value = true
+
+  try {
+    if (agentPanelStore.isVisible) {
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'closed'
+      })
+      agentPanelStore.toggle()
+      return
+    }
+
+    agentPanelStore.suppressRestoredOpen()
+    await withConsent(() => {
+      if (!agentPanelStore.enabled) return
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'opened'
+      })
+      agentPanelStore.open()
+    })
+  } finally {
+    isOpeningAgent.value = false
+  }
+}
+
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
 
@@ -191,10 +210,15 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
+const selectionRevision = ref(0)
 
-const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
+const workflowToOption = (
+  workflow: ComfyWorkflow,
+  revision = 0
+): WorkflowOption => ({
   value: workflow.path,
-  workflow
+  workflow,
+  revision
 })
 
 const options = computed<WorkflowOption[]>(() =>
@@ -202,7 +226,10 @@ const options = computed<WorkflowOption[]>(() =>
 )
 const selectedWorkflow = computed<WorkflowOption | null>(() =>
   workflowStore.activeWorkflow
-    ? workflowToOption(workflowStore.activeWorkflow as ComfyWorkflow)
+    ? workflowToOption(
+        workflowStore.activeWorkflow as ComfyWorkflow,
+        selectionRevision.value
+      )
     : null
 )
 
@@ -217,7 +244,19 @@ const onWorkflowClick = async (event: MouseEvent) => {
       ?.querySelector<HTMLElement>('[data-workflow-path]')
   const path = workflowElement?.dataset.workflowPath
   const option = options.value.find(({ value }) => value === path)
-  if (option) await workflowService.openWorkflow(option.workflow)
+  if (!option) return
+
+  try {
+    const opened = await workflowService.openWorkflow(option.workflow)
+    if (opened === false) {
+      selectionRevision.value++
+      await nextTick()
+    }
+  } catch (error) {
+    selectionRevision.value++
+    await nextTick()
+    throw error
+  }
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
@@ -247,11 +286,6 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 const scrollContent = ref<HTMLElement | null>(null)
-function setSelectButton(element: Element | ComponentPublicInstance | null) {
-  const selectButton = element instanceof Element ? element : element?.$el
-  scrollContent.value =
-    selectButton instanceof HTMLElement ? selectButton.parentElement : null
-}
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -302,22 +336,17 @@ watch(
 const scrollState = useScroll(scrollContent)
 const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
 const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
-const {
-  isOverflowing: showOverflowArrows,
-  checkOverflow: checkScrollOverflow
-} = useOverflowObserver(scrollContent)
+const { isOverflowing: showOverflowArrows, checkOverflow } =
+  useOverflowObserver(scrollContent)
 
-whenever(
-  () => showOverflowArrows.value && scrollContent.value,
-  () => {
-    void nextTick(() => {
-      scrollState.measure()
-      void ensureActiveTabVisible({ waitForDom: false })
-    })
-  }
-)
+whenever(showOverflowArrows, () => {
+  void nextTick(() => {
+    scrollState.measure()
+    void ensureActiveTabVisible({ waitForDom: false })
+  })
+})
 
-onUpdated(checkScrollOverflow)
+onUpdated(checkOverflow)
 </script>
 
 <style scoped>
@@ -380,18 +409,8 @@ onUpdated(checkScrollOverflow)
   opacity: 0.75;
 }
 
-:deep(.p-scrollpanel-content) {
-  height: 100%;
-}
-
 :deep(.workflow-tabs) {
   display: flex;
-}
-
-/* Scrollbar half opacity to avoid blocking the active tab bottom border */
-:deep(.p-scrollpanel:hover .p-scrollpanel-bar),
-:deep(.p-scrollpanel:active .p-scrollpanel-bar) {
-  opacity: 0.5;
 }
 
 :deep(.p-selectbutton) {

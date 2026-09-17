@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -7,7 +7,8 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   MissingPackGroup,
   SwapNodeGroup
@@ -26,15 +27,18 @@ const mockErrorGroups = vi.hoisted(() => ({
 
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
-vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => mockErrorGroups
-}))
+vi.mock<unknown>(
+  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  () => ({
+    useErrorGroups: () => mockErrorGroups
+  })
+)
 
-vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
+vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     isGraphReady: false,
     rootGraph: {
@@ -44,7 +48,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
   getExecutionIdByNode: vi.fn(),
@@ -79,8 +83,7 @@ function makeNodeError(messages: string[]): NodeError {
 }
 
 function mountOverlayState() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const Harness = defineComponent({
     setup() {
@@ -476,6 +479,52 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('message')).toHaveTextContent(
       'Resolve them before running the workflow.'
     )
+  })
+
+  it('hides an open overlay while the issues tab setting is off', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Required input is missing',
+        count: 1,
+        priority: 0,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              {
+                message: 'Required input is missing',
+                toastTitle: 'Required input missing',
+                toastMessage: 'KSampler is missing a required input: model'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': makeNodeError(['Required input is missing'])
+    })
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      false
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('false')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
   })
 
   it('does not show when a raw error has no resolved overlay message', async () => {

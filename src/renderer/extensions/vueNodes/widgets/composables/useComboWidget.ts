@@ -1,6 +1,7 @@
 import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
@@ -33,7 +34,9 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 }
 
 // Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
+const NODE_MEDIA_TYPE_MAP: Partial<
+  Record<string, 'image' | 'video' | 'audio'>
+> = {
   LoadImage: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'
@@ -86,7 +89,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {
@@ -240,7 +243,9 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
+    if (
+      assetService.shouldUseWidgetAssetPicker(node.comfyClass, inputSpec.name)
+    ) {
       // Default from cloud assets, not from server combo options.
       // Server options list local files that may not exist in the user's
       // cloud asset library, leading to missing-model errors on undo/reload.
@@ -284,6 +289,10 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
+    registerComboWidgetInventory(widget, {
+      getStatus: remoteWidget.getInventoryStatus,
+      waitForSettled: remoteWidget.waitForInventory
+    })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 

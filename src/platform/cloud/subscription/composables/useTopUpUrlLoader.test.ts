@@ -1,6 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -10,7 +12,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -19,7 +21,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,7 +34,7 @@ const mockShowTopUpCreditsDialog = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   })
@@ -42,21 +44,18 @@ const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
 const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: mockCanTopUp,
-    canSubscribeSelfServe: mockCanSubscribeSelfServe,
-    initialize: mockInitialize
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: mockCanTopUp,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe,
+      initialize: mockInitialize
+    })
   })
-}))
+)
 
-const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
@@ -94,9 +93,11 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
-      source: 'deep_link'
-    })
+    expect(useTelemetry()?.trackAddApiCreditButtonClicked).toHaveBeenCalledWith(
+      {
+        source: 'deep_link'
+      }
+    )
   })
 
   it('retains the deep link until capability loading settles', async () => {
@@ -133,7 +134,9 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('opens the subscription path without top-up telemetry', async () => {
@@ -145,7 +148,9 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {

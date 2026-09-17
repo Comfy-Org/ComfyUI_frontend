@@ -317,7 +317,7 @@ export class AssetsHelper {
     this.deleteHistoryRouteHandler = async (route: Route) => {
       const request = route.request()
       if (request.method() !== 'POST') {
-        await route.continue()
+        await route.fallback()
         return
       }
 

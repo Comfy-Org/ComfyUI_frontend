@@ -3,6 +3,7 @@
   <div
     v-else
     v-tooltip.left="tooltipConfig"
+    :aria-label="standalone ? accessibleName : undefined"
     :class="
       cn(
         'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
@@ -16,6 +17,8 @@
         props.socketless && 'pointer-events-none invisible'
       )
     "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -66,6 +69,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -81,6 +85,8 @@ interface InputSlotProps {
   nodeType?: string
   nodeId?: NodeId
   socketless?: boolean
+  /** The slot is the input's only rendered representation, so the dot carries the accessible name. */
+  standalone?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -93,7 +99,13 @@ const hasNoLabel = computed(
     props.slotData.name === ''
 )
 const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
-
+const accessibleName = computed(
+  () =>
+    props.slotData.label ||
+    props.slotData.localized_name ||
+    props.slotData.name ||
+    undefined
+)
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
@@ -109,7 +121,14 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(fallbackText)
 })
 
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'input'
+})
+
 onErrorCaptured((error) => {
+  unrevealLinks()
   renderError.value = error.message
   toastErrorHandler(error)
   return false

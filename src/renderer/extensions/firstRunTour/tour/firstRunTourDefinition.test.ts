@@ -13,7 +13,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
-import type * as CanvasCoachTarget from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -29,23 +28,16 @@ const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
 
 const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
-vi.mock('./canvasCoachTarget', async (importOriginal) => {
-  const actual = await importOriginal<typeof CanvasCoachTarget>()
-  return {
-    canvasNodeTarget: (...args: Parameters<typeof actual.canvasNodeTarget>) => {
-      const target = actual.canvasNodeTarget(...args)
-      return {
-        ...target,
-        dispose: () => {
-          disposals.spy()
-          target.dispose?.()
-        }
-      }
-    }
-  }
-})
 
-vi.mock('./cameraFraming', () => ({
+vi.mock(import('./canvasCoachTarget'), () => ({
+  canvasNodeTarget: () => ({
+    getRect: () => new DOMRect(0, 0, 1, 1),
+    onMove: () => () => {},
+    dispose: disposals.spy
+  })
+}))
+
+vi.mock(import('./cameraFraming'), () => ({
   frameNode: (_id: unknown, _signal: AbortSignal, options = {}) => {
     framings.push(options)
     return Promise.resolve()
@@ -62,9 +54,12 @@ function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
 }
 
 const appState = vi.hoisted(() => ({ graph: undefined as LGraph | undefined }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
+      return appState.graph
+    },
+    get rootGraphOrUndefined() {
       return appState.graph
     },
     get canvas() {

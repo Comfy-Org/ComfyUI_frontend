@@ -175,8 +175,9 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   /**
-   * @returns The registered topology, or `undefined` when its ID or
-   * non-floating target slot is occupied.
+   * @returns The registered topology. Re-registering the same raw topology
+   * under the same owner returns the incumbent; `undefined` means a distinct
+   * topology occupies its ID or non-floating target slot.
    */
   function registerLink(
     scope: GraphScope,

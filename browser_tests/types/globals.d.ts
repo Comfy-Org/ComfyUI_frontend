@@ -11,7 +11,7 @@ import type { useWorkspaceStore } from '@/stores/workspaceStore'
  * Provides typed access to graph internals without requiring `any`.
  */
 export interface TestGraphAccess {
-  _nodes_by_id: Record<string, LGraphNode>
+  _nodes_by_id: Partial<Record<string, LGraphNode>>
 }
 
 interface AppReadiness {
@@ -37,6 +37,7 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

@@ -17,12 +17,47 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { addBreadcrumb } from '@sentry/vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
+import type {
+  WorkflowApiAssetsResponse as ShareableAssetsResponse,
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse,
+  GetI18nResponse
+} from '@comfyorg/ingest-types'
+import type {
+  AssetDownloadWsMessage,
+  AssetExportWsMessage,
+  ExecutedWsMessage,
+  ExecutingWsMessage,
+  ExecutionCachedWsMessage,
+  ExecutionErrorWsMessage,
+  ExecutionInterruptedWsMessage,
+  ExecutionStartWsMessage,
+  ExecutionSuccessWsMessage,
+  FeatureFlagsWsMessage,
+  LogsRawResponse,
+  LogsWsMessage,
+  NotificationWsMessage,
+  ProgressStateWsMessage,
+  ProgressTextWsMessage,
+  ProgressWsMessage,
+  StatusWsMessage,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  PromptFailureResponse,
+  PromptResponse,
+  SystemStats,
+  UserConfigResponse,
+  UserDataFullInfo
+} from '@/platform/remote/comfyui/types'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+  zGetEmbeddingsResponse as zEmbeddingsResponse,
+  zWorkflowApiAssetsResponse as zShareableAssetsResponse
+} from '@comfyorg/ingest-types/zod'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -32,35 +67,6 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  AssetDownloadWsMessage,
-  AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
-  ExecutedWsMessage,
-  ExecutingWsMessage,
-  ExecutionCachedWsMessage,
-  ExecutionErrorWsMessage,
-  ExecutionInterruptedWsMessage,
-  ExecutionStartWsMessage,
-  ExecutionSuccessWsMessage,
-  ExtensionsResponse,
-  FeatureFlagsWsMessage,
-  LogsRawResponse,
-  LogsWsMessage,
-  NotificationWsMessage,
-  PreviewMethod,
-  ProgressStateWsMessage,
-  ProgressTextWsMessage,
-  ProgressWsMessage,
-  PromptResponse,
-  Settings,
-  StatusWsMessage,
-  StatusWsMessageStatus,
-  SystemStats,
-  User,
-  UserDataFullInfo
-} from '@/schemas/apiSchema'
 import type {
   JobAssetsResult,
   JobDetail,
@@ -129,6 +135,58 @@ interface QueuePromptRequestBody {
   }
   front?: boolean
   number?: number
+}
+
+const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+
+interface FetchApiOptions extends RequestInit {
+  timeoutMs?: number | null
+}
+
+const FETCH_ROUTE_GROUPS = new Set([
+  'assets',
+  'embeddings',
+  'experiment',
+  'extensions',
+  'features',
+  'files',
+  'folder_paths',
+  'free',
+  'global_subgraphs',
+  'history',
+  'hub',
+  'internal',
+  'interrupt',
+  'jobs',
+  'logs',
+  'models',
+  'node_replacements',
+  'object_info',
+  'prompt',
+  'providers',
+  'queue',
+  'secrets',
+  'settings',
+  'system_stats',
+  'upload',
+  'user',
+  'userdata',
+  'users',
+  'video_metadata',
+  'view',
+  'view_metadata',
+  'workflow_templates',
+  'workflows',
+  'workspace'
+])
+
+function getFetchRouteTemplate(route: string): string {
+  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
+  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
+  const [routeGroup, ...resources] = routeSegments
+
+  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }
 
 /**
@@ -244,7 +302,7 @@ type ApiToEventType<T = ApiCalls> = {
 }
 
 /** Dictionary of types used in the detail for a custom event */
-type ApiEventTypes = ApiToEventType<ApiCalls>
+type ApiEventTypes = ApiToEventType
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
@@ -321,10 +379,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -490,8 +548,10 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
-    const headers: HeadersInit = options?.headers ?? {}
+  async fetchApi(route: string, options?: FetchApiOptions) {
+    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
+      options ?? {}
+    const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
 
     if (isCloud) {
@@ -519,11 +579,51 @@ export class ComfyApi extends EventTarget {
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
+
+    const timeout =
+      timeoutMs === null
+        ? null
+        : { controller: new AbortController(), duration: timeoutMs }
+    const timeoutId = timeout
+      ? setTimeout(() => {
+          const method = (requestOptions.method ?? 'GET').toUpperCase()
+          const routeTemplate = getFetchRouteTemplate(route)
+
+          addBreadcrumb({
+            category: 'fetch',
+            message: `Timeout on ${method} ${routeTemplate}`,
+            level: 'warning',
+            data: { timeout_ms: timeout.duration }
+          })
+
+          useTelemetry()?.trackFetchTimeout({
+            route: routeTemplate,
+            method,
+            timeout_ms: timeout.duration
+          })
+
+          timeout.controller.abort(
+            new DOMException('Fetch timeout', 'TimeoutError')
+          )
+        }, timeout.duration)
+      : undefined
+    const signal =
+      requestOptions.signal && timeout
+        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        : (requestOptions.signal ?? timeout?.controller.signal)
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
-      { cache: 'no-cache', ...options, headers },
+      {
+        cache: 'no-cache',
+        ...requestOptions,
+        headers,
+        signal
+      },
       unifiedRetryOn401
-    )
+    ).finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    })
   }
 
   /**
@@ -645,7 +745,7 @@ export class ComfyApi extends EventTarget {
    * @param type The type of event to emit
    * @param detail The detail property used for a custom event ({@link CustomEventInit.detail})
    */
-  dispatchCustomEvent<T extends SimpleApiEvents>(type: T): boolean
+  dispatchCustomEvent(type: SimpleApiEvents): boolean
   dispatchCustomEvent<T extends ComplexApiEvents>(
     type: T,
     detail: ApiEventTypes[T] | null
@@ -692,7 +792,7 @@ export class ComfyApi extends EventTarget {
     const generation = ++this.socketGeneration
 
     let opened = false
-    let existingSession = window.name
+    const existingSession = window.name
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -785,7 +885,6 @@ export class ComfyApi extends EventTarget {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
 
-          let imageMime
           switch (eventType) {
             case 3: {
               try {
@@ -825,24 +924,17 @@ export class ComfyApi extends EventTarget {
               }
               break
             }
-            case 1:
+            case 1: {
               const imageType = view.getUint32(4)
               const imageData = event.data.slice(8)
-              switch (imageType) {
-                case 2:
-                  imageMime = 'image/png'
-                  break
-                case 1:
-                default:
-                  imageMime = 'image/jpeg'
-                  break
-              }
+              const imageMime = imageType === 2 ? 'image/png' : 'image/jpeg'
               const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
               break
-            case 4:
+            }
+            case 4: {
               // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
@@ -850,7 +942,7 @@ export class ComfyApi extends EventTarget {
               const metadata = JSON.parse(decoder4.decode(metadataBytes))
               const imageData4 = event.data.slice(8 + metadataLength)
 
-              let imageMime4 = metadata.image_type
+              const imageMime4 = metadata.image_type
 
               const imageBlob4 = new Blob([imageData4], {
                 type: imageMime4
@@ -869,6 +961,7 @@ export class ComfyApi extends EventTarget {
               // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
+            }
             default:
               console.error(
                 `Unknown binary websocket message of type ${eventType}`
@@ -939,8 +1032,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**
@@ -1206,7 +1299,7 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this))
+      return await fetchQueue(this.fetchApi.bind(this), options)
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
@@ -1360,7 +1453,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -1522,7 +1615,7 @@ export class ComfyApi extends EventTarget {
     if (!subgraph?.data) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
-    return subgraph.data as string
+    return subgraph.data
   }
   async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
     const resp = await api.fetchApi('/global_subgraphs')
@@ -1536,7 +1629,10 @@ export class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
-    return (await axios.get(url)).data
+    const { data } = await axios.get<unknown>(url)
+    return typeof data === 'string'
+      ? data
+      : (JSON.stringify(data, null, 2) ?? '')
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
@@ -1619,7 +1715,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 
