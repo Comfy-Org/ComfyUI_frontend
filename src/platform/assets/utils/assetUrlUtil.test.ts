@@ -131,10 +131,6 @@ describe('getAssetFileUrl', () => {
   })
 
   describe('with history-backed assets', () => {
-    beforeEach(() => {
-      vi.mocked(useFeatureFlags().flags).assetsEnabled = false
-    })
-
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

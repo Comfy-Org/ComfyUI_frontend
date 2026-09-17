@@ -93,9 +93,9 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       )
     )
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        load3d.loadModel(modelUrl)
+        await load3d.loadModel(modelUrl)
       } catch (error) {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
@@ -504,7 +504,7 @@ function applyPreview3DOutput(
       silentOnNotFound: true
     })
 
-    if (bgImagePath) load3d.setBackgroundImage(bgImagePath)
+    if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
     if (extrinsics && intrinsics) {
       const targetGeneration = load3d.currentLoadGeneration
@@ -655,9 +655,7 @@ useExtensionService().registerExtension({
 
           config.configure(settings)
 
-          if (bgImagePath) {
-            load3d.setBackgroundImage(bgImagePath)
-          }
+          if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
           if (filePath && extrinsics && intrinsics) {
             // configure(settings) above triggered loadModel for this
