@@ -45,7 +45,12 @@ const workspaceRoot = resolve(packageDir, '..', '..')
 const packagesDir = resolve(packageDir, '..')
 const keep = process.argv.includes('--keep')
 
-const PUBLISHED_PACKAGES = ['account-core', 'billing-contract', 'ingest-types']
+const PUBLISHED_PACKAGES = [
+  'account-core',
+  'account-ui',
+  'billing-contract',
+  'ingest-types'
+]
 
 function readWorkspaceManifest(dir: string): WorkspaceManifest {
   const path = join(dir, 'package.json')
@@ -208,6 +213,19 @@ import type { BillingEntry, ReturnTarget } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl, parseBillingEntry } from '@comfyorg/billing-contract'
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+import type { Credits } from '@comfyorg/account-ui/billing'
+import { useCredits } from '@comfyorg/account-ui/billing'
+import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
+import TurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
+import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isInChina } from '@comfyorg/account-ui/auth/regionProbe'
+import { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'
+import type { LifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
+import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 
 export const values = {
   createBoundedOperation,
@@ -227,7 +245,16 @@ export const values = {
   isEmbeddedWebView,
   buildBillingEntryUrl,
   parseBillingEntry,
-  zExchangeTokenResponse
+  zExchangeTokenResponse,
+  useCredits,
+  PasswordRules,
+  SocialAuthButtons,
+  TurnstileWidget,
+  useRegionGate,
+  isInChina,
+  useTurnstileGate,
+  createLifecycleScope,
+  useGenerationGuard
 }
 
 export interface Types {
@@ -249,6 +276,15 @@ export interface Types {
   billingContract: BillingEntry
   returnTarget: ReturnTarget
   ingestTypes: ExchangeTokenResponse
+  accountUiBilling: Credits
+  passwordRules: PasswordRulesCopy
+  socialAuthButtons: typeof SocialAuthButtons
+  turnstileWidget: typeof TurnstileWidget
+  regionGate: RegionGateStatus
+  regionProbe: ReturnType<typeof isInChina>
+  turnstileGate: ReturnType<typeof useTurnstileGate>
+  lifecycleScope: LifecycleScope
+  generationGuard: ReturnType<typeof useGenerationGuard>
 }
 
 export interface RejectedByRealDeclarations {
