@@ -1,6 +1,7 @@
 <template>
   <div
     ref="contentRoot"
+    data-testid="checkout-dialog-shell"
     :class="
       cn(
         'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
@@ -282,7 +283,9 @@ const isEmbeddedSuccessStep = computed(
     checkoutStep.value === 'success' &&
     stripePaymentElementEnabled &&
     (previewVariant.value === 'team-new' ||
-      previewVariant.value === 'personal-new')
+      previewVariant.value === 'personal-new' ||
+      previewVariant.value === 'team-change' ||
+      previewVariant.value === 'personal-change')
 )
 
 watch(checkoutStep, (step) => {
