@@ -373,6 +373,10 @@ export function useSubscriptionCheckout(
     quoteIsCurrent.value = false
   }
 
+  function restoreQuote(): void {
+    if (previewData.value) quoteIsCurrent.value = true
+  }
+
   function withCurrentPromotion(
     options: PreviewSubscribeOptions = {}
   ): PreviewSubscribeOptions {
@@ -1805,6 +1809,7 @@ export function useSubscriptionCheckout(
     handleTeamSubscriptionPayment,
     applyPromotionCode,
     invalidateQuote,
+    restoreQuote,
     handleResubscribe
   }
 }
