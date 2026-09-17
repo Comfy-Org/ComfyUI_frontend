@@ -755,6 +755,12 @@ describe('createBillingCommands', () => {
       'total_credits_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan']['seat_summary'])[]
 
+    type PreviewDiscount = NonNullable<SubscriptionPreview['discounts']>[number]
+
+    const DISCOUNT_CENT_FIELDS = [
+      'amount_off_cents'
+    ] as const satisfies readonly (keyof PreviewDiscount)[]
+
     // Compile-time pins: an amount a regen adds fails the package typecheck
     // until it reaches a row below.
     expectTypeOf<(typeof QUOTE_CENT_FIELDS)[number]>().toEqualTypeOf<
@@ -768,6 +774,9 @@ describe('createBillingCommands', () => {
         keyof SubscriptionPreview['new_plan']['seat_summary'],
         `${string}_cents`
       >
+    >()
+    expectTypeOf<(typeof DISCOUNT_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof PreviewDiscount, `${string}_cents`>
     >()
 
     const rejectsQuote = async (patch: object) => {
@@ -821,17 +830,20 @@ describe('createBillingCommands', () => {
         })
     )
 
-    it('refuses a fraction of a cent off a discount', () =>
-      rejectsQuote({
-        discounts: [
-          {
-            amount_off_cents: FRACTION_OF_A_CENT,
-            code: 'LAUNCH',
-            kind: 'promotion',
-            name: 'Launch offer'
-          }
-        ]
-      }))
+    it.for(DISCOUNT_CENT_FIELDS)(
+      'refuses a fraction of a cent at discounts[].%s',
+      (field) =>
+        rejectsQuote({
+          discounts: [
+            {
+              code: 'LAUNCH',
+              kind: 'promotion',
+              name: 'Launch offer',
+              [field]: FRACTION_OF_A_CENT
+            }
+          ]
+        })
+    )
 
     it.for([
       ['past the safe integers', Number.MAX_SAFE_INTEGER + 2],
