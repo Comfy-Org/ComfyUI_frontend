@@ -53,7 +53,10 @@
 </template>
 
 <script lang="ts">
-import type { PaymentCopyKey, PaymentStep } from '@comfyorg/account/billing'
+import type {
+  PaymentCopyKey,
+  PaymentStep
+} from '@comfyorg/account-core/billing'
 
 /** The customer-facing actions the approved copy names. */
 export type PaymentAction = 'retry' | 'continue_verification'
@@ -84,8 +87,11 @@ const ACTION_COPY_KEY: Readonly<Record<PaymentAction, PaymentCopyKey>> = {
  */
 import { computed, useId } from 'vue'
 
-import type { PaymentProjection } from '@comfyorg/account/billing'
-import { createPaymentCopy, paymentCopyKeys } from '@comfyorg/account/billing'
+import type { PaymentProjection } from '@comfyorg/account-core/billing'
+import {
+  createPaymentCopy,
+  paymentCopyKeys
+} from '@comfyorg/account-core/billing'
 
 const {
   projection,

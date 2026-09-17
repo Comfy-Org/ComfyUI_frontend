@@ -1,6 +1,5 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
@@ -66,10 +65,10 @@ import {
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
-  NodeError,
   NodeExecutionOutput,
   ResultItem
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
@@ -105,7 +104,10 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import type { ExtensionManager } from '@/types/extensionTypes'
+import type {
+  ExtensionManager,
+  ToastMessageOptions
+} from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
@@ -156,7 +158,7 @@ import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import type { CustomComfyWidgetConstructor } from './widgets'
+import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -194,7 +196,7 @@ export function sanitizeNodeName(string: string) {
     '`': '',
     '=': ''
   }
-  return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
+  return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
 }
@@ -420,7 +422,7 @@ export class ComfyApp {
    * @deprecated Use useWidgetStore().widgets instead
    */
   get widgets(): Record<string, CustomComfyWidgetConstructor> &
-    typeof import('./widgets').ComfyWidgets {
+    typeof ComfyWidgets {
     const widgetStore = useWidgetStore()
     return Object.assign(
       Object.fromEntries(widgetStore.widgets.entries()),
@@ -836,7 +838,7 @@ export class ComfyApp {
           keybinding &&
           keybinding.targetElementId === 'graph-canvas-container'
         ) {
-          useCommandStore().execute(keybinding.commandId)
+          void useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
           e.preventDefault()
@@ -924,7 +926,7 @@ export class ComfyApp {
       void useNodeReplacementStore().load()
     })
 
-    api.init()
+    void api.init()
   }
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
@@ -2093,9 +2095,8 @@ export class ComfyApp {
     // Check workflow first - it should take priority over parameters
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
-      let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
-        workflowObj =
+        const workflowObj =
           typeof workflow === 'string'
             ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
             : (workflow as ComfyWorkflowJSON)
@@ -2539,7 +2540,7 @@ export class ComfyApp {
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
+      await this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()

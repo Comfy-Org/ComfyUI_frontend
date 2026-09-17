@@ -49,7 +49,6 @@ const sizeToggleLabel = computed(() =>
         v-tooltip.bottom="buildTooltipConfig(t('agent.newChat'))"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
@@ -59,7 +58,6 @@ const sizeToggleLabel = computed(() =>
         v-tooltip.bottom="buildTooltipConfig(sizeToggleLabel)"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
@@ -69,7 +67,6 @@ const sizeToggleLabel = computed(() =>
         v-tooltip.bottom="buildTooltipConfig(t('agent.close'))"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >
