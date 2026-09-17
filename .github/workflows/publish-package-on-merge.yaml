@@ -10,8 +10,8 @@ on:
       - 'packages/ingest-types/package.json'
 
 env:
-  # #product-design — the channel the design-system release notice posts to.
-  SLACK_CHANNEL_ID: 'C09A24D4692'
+  # #proj-billing — where the SDK package release notices go.
+  SLACK_CHANNEL_ID: 'C0BNGQG2LCW'
 
 permissions:
   contents: read
