@@ -348,6 +348,10 @@ test.describe('Workflow Persistence', () => {
     test(`widget value and node title edited in the UI survive saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
       comfyPage
     }) => {
+      // Save + reload + UI edit path burns the 15s Chromium fuse without test.slow()
+      // (same harness class as #17887).
+      test.slow()
+
       await comfyPage.settings.setSetting(
         'Comfy.VueNodes.Enabled',
         vueNodesEnabled
@@ -449,6 +453,10 @@ test.describe('Workflow Persistence', () => {
     test(`copied links keep copied endpoints after saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
       comfyPage
     }) => {
+      // Copy/paste + save/reload path burns the 15s Chromium fuse without test.slow()
+      // (same harness class as #17887).
+      test.slow()
+
       await comfyPage.settings.setSetting(
         'Comfy.VueNodes.Enabled',
         vueNodesEnabled
@@ -974,6 +982,10 @@ test.describe('Workflow Persistence', () => {
   test('Restores saved workflow drafts from inactive restored tabs', async ({
     comfyPage
   }) => {
+    // Multi-tab draft restore burns the 15s Chromium fuse without test.slow()
+    // (same harness class as #17887).
+    test.slow()
+
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
     await comfyPage.settings.setSetting(
