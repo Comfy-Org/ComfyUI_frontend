@@ -203,7 +203,10 @@ describe('reconcileAgentAdapters', () => {
 
     /** A successor whose onAdded and rollback onRemoved both throw until told otherwise. */
     function failingReplacementType() {
-      const control = { fails: true, instances: [] as LGraphNode[] }
+      const control: { fails: boolean; instances: LGraphNode[] } = {
+        fails: true,
+        instances: []
+      }
       class ReplacementNode extends WidgetNode {
         constructor() {
           super()
@@ -264,7 +267,8 @@ describe('reconcileAgentAdapters', () => {
 
       control.fails = false
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
-      const restored = graph.getNodeById(toNodeId(1))!
+      const restored = graph.getNodeById(toNodeId(1))
+      assert(restored)
       expect(graph._nodes).toEqual([restored])
       expect(incumbent).not.toContain(restored)
       expect(restored.properties).toEqual(REPLACEMENT_PAYLOAD.properties)

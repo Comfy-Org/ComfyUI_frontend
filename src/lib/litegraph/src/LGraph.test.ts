@@ -1231,6 +1231,23 @@ describe('node:before-removed event', () => {
     expect(node.graph).toBeNull()
   })
 
+  it('still notifies on_change when onAfterChange throws during removal', () => {
+    // afterChange and change are separate effects: a throwing afterChange
+    // must not swallow the change notification that follows it.
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    graph.onAfterChange = () => {
+      throw new Error('after-change hook failed')
+    }
+    graph.on_change = vi.fn()
+
+    expect(() => graph.remove(node)).toThrow('after-change hook failed')
+
+    expect(graph.on_change).toHaveBeenCalledOnce()
+    expect(graph._nodes).not.toContain(node)
+  })
+
   it('finishes detaching a subgraph host when an interior node throws from onRemoved', () => {
     const graph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: graph, nodeCount: 2 })
