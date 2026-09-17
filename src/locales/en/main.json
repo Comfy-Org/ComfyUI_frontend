@@ -104,6 +104,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "subgraphUnpackFailed": "Unable to unpack the selected subgraph.",
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
