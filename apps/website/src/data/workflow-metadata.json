@@ -67,5 +67,130 @@
       "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_image_upscale-1.webp",
       "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_image_upscale-2.webp"
     ]
+  },
+  {
+    "name": "image_flux2_fp8",
+    "models": ["Flux.2 Dev", "Flux"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/image_flux2_fp8-1.webp"
+    ]
+  },
+  {
+    "name": "templates-fashion_shoot_vton",
+    "models": [
+      "Google Gemini Image",
+      "Nano Banana Pro",
+      "Google",
+      "Gemini3 Pro Image Preview"
+    ],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-fashion_shoot_vton-1.webp"
+    ]
+  },
+  {
+    "name": "templates-photo_to_product_vid",
+    "models": ["Seedream", "MiniMax"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-photo_to_product_vid-1.webp"
+    ]
+  },
+  {
+    "name": "video_wan21_scail2_character_replacement",
+    "models": ["SCAIL-2"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_wan21_scail2_character_replacement-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_wan21_scail2_character_replacement-2.webp"
+    ]
+  },
+  {
+    "name": "templates-character_sheet",
+    "models": ["Gemini3 Pro Image Preview", "Google", "Nano Banana Pro"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-character_sheet-1.webp"
+    ]
+  },
+  {
+    "name": "utility_birefnet_remove_background",
+    "models": ["BiRefNet"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_birefnet_remove_background-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_birefnet_remove_background-2.webp"
+    ]
+  },
+  {
+    "name": "api_bria_eraser",
+    "models": ["BRIA"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/api_bria_eraser-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/api_bria_eraser-2.webp"
+    ]
+  },
+  {
+    "name": "flux_fill_inpaint_example",
+    "models": ["Flux", "Flux.1"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/flux_fill_inpaint_example-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/flux_fill_inpaint_example-2.webp"
+    ]
+  },
+  {
+    "name": "image_qwen_image_layered",
+    "models": ["Qwen-Image-Layered"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/image_qwen_image_layered-1.webp"
+    ]
+  },
+  {
+    "name": "utility_seedvr2_3b_int8_upscale_video",
+    "models": ["SeedVR2"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_3b_int8_upscale_video-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_seedvr2_3b_int8_upscale_video-2.webp"
+    ]
+  },
+  {
+    "name": "template_ltx2_3_lora_restore_archival_footage",
+    "models": ["LTX-2.3"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/template_ltx2_3_lora_restore_archival_footage-1.webp"
+    ]
+  },
+  {
+    "name": "utility_hitpaw_general_image_enhance",
+    "models": ["HitPaw"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_hitpaw_general_image_enhance-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_hitpaw_general_image_enhance-2.webp"
+    ]
+  },
+  {
+    "name": "utility_nanobanana_pro_product_upscale",
+    "models": ["Nano Banana Pro"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_nanobanana_pro_product_upscale-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_nanobanana_pro_product_upscale-2.webp"
+    ]
+  },
+  {
+    "name": "utility_topaz_illustration_upscale",
+    "models": ["Topaz"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_topaz_illustration_upscale-1.webp",
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_topaz_illustration_upscale-2.webp"
+    ]
   }
 ]

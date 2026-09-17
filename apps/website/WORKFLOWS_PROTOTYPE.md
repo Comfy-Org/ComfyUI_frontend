@@ -1,6 +1,6 @@
 # Workshop Phase 2: workflow prototype
 
-Review entry: `/models/workflows/`. Eight outcome-led workflow pages extend the
+Review entry: `/models/workflows/`. Twenty-two outcome-led workflow pages extend the
 existing Models catalog. Primary action: run with editable inputs on the page.
 Secondary action: open the original template in the Cloud canvas. The prototype
 has no marketplace, clone fees, creator earnings, ratings, or publishing tools.
@@ -15,7 +15,12 @@ the included templates change. This orders the current curated set, not the full
 template catalog. The catalog shares the Models hero and horizontal
 card rows, with matching banner dimensions, card proportions, and typography.
 The shortlist combines popular editing/animation templates with concrete product
-photography use cases. Cards remain curated within each ranked shelf. The category
+photography use cases. Cards within each shelf are also ordered by full-period
+distinct template starters, using the same window and filters. These are start
+attempts, not successful runs. Shelf sizes are 4 character workflows, 6 product
+workflows, 6 upscaling/restoration workflows, and 6 photo-editing workflows.
+The filter reuses the Models component: multi-select, search, clear, keyboard
+dismissal, and a mobile bottom sheet. The category
 labels and customer-facing descriptions are editorial proposals for review.
 
 ## Run locally
@@ -65,10 +70,18 @@ Cloud node definitions on September 16, 2026 (`run --print-prompt`, no execution
 Only explicit curated node/input bindings are exposed; there is no general
 runtime conversion of arbitrary user graphs.
 
-The upscaler API artifact omits editor comparison node 46 (`ImageCompare`), whose
-UI-only comparison input is missing from the export. SaveImage node 45 remains.
-All eight artifacts pass structural validation. The upscaler validator warns
-about a FLOAT edge into an `INT,FLOAT` union; that warning is retained here.
+The API artifacts omit editor-only `ImageCompare` nodes (image upscaler 46,
+Bria 5, HitPaw 4, Topaz 8); their save outputs remain. Background removal replaces
+the result preview with `SaveImage` and omits the mask preview, so the result can
+be retrieved as an output asset. Bria's canvas Painter and Flux inpainting's
+alpha-mask connection are adapted to a separate `LoadImageMask` input. Both pages
+require a same-size black-and-white mask upload (white edits, black preserves),
+with validation before any upload or submission. They have no default mask.
+
+All 22 artifacts pass structural validation against live Cloud definitions.
+The validator reports union-type edge warnings in virtual try-on, character
+replacement, image upscaling, and archival restoration. The archival template
+also retains an unused audio-decode node that the backend prunes.
 Structural validation is not proof that model availability or every run succeeds.
 
 Live smoke test: both material-replacement example uploads returned 200. The

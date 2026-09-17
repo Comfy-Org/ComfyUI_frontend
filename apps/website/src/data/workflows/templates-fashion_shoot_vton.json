@@ -1,0 +1,416 @@
+{
+  "13": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_2",
+      "images": ["11:9", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "15": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_4",
+      "images": ["11:11", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "1": {
+    "inputs": {
+      "image": "subject.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Subject Image"
+    }
+  },
+  "35": {
+    "inputs": {
+      "image": "outfit.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Outfit Image"
+    }
+  },
+  "38": {
+    "inputs": {
+      "image": ["1", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "37": {
+    "inputs": {
+      "padding_color": "white",
+      "interpolation": "area",
+      "image": ["35", 0],
+      "target_width": ["38", 0],
+      "target_height": ["38", 1]
+    },
+    "class_type": "ResizeAndPadImage",
+    "_meta": {
+      "title": "Resize And Pad Image"
+    }
+  },
+  "12": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_1",
+      "images": ["11:8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "36": {
+    "inputs": {
+      "image1": ["1", 0],
+      "image2": ["37", 0]
+    },
+    "class_type": "ImageBatch",
+    "_meta": {
+      "title": "Batch Images (DEPRECATED)"
+    }
+  },
+  "20": {
+    "inputs": {
+      "image1": ["23", 0],
+      "image2": ["36", 0]
+    },
+    "class_type": "ImageBatch",
+    "_meta": {
+      "title": "Batch Images (DEPRECATED)"
+    }
+  },
+  "27": {
+    "inputs": {
+      "images": ["23", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Selected Image"
+    }
+  },
+  "8": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_stitched",
+      "images": ["9", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Stitched Image"
+    }
+  },
+  "25": {
+    "inputs": {
+      "prompt": "Upscale image 1 while maintaining pose and composition, add subtle details. Use the face from image 2 to add back facial consistency and ensure the outfit details match the clothes and accessories from image 3.",
+      "model": "gemini-3-pro-image-preview",
+      "seed": 12345,
+      "aspect_ratio": "auto",
+      "resolution": "4K",
+      "response_modalities": "IMAGE+TEXT",
+      "system_prompt": "You are an expert image-generation engine. You must ALWAYS produce an image.\nInterpret all user input\u2014regardless of format, intent, or abstraction\u2014as literal visual directives for image composition.\nIf a prompt is conversational or lacks specific visual details, you must creatively invent a concrete visual scenario that depicts the concept.\nPrioritize generating the visual representation above any text, formatting, or conversational requests.",
+      "images": ["20", 0]
+    },
+    "class_type": "GeminiImage2Node",
+    "_meta": {
+      "title": "Nano Banana Pro (Google Gemini Image)"
+    }
+  },
+  "10": {
+    "inputs": {
+      "value": 0
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Crop Inset Grid Images"
+    }
+  },
+  "14": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_3",
+      "images": ["11:10", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "11:4": {
+    "inputs": {
+      "images": ["11:8", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "11:5": {
+    "inputs": {
+      "images": ["11:9", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "11:7": {
+    "inputs": {
+      "images": ["11:11", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "11:16": {
+    "inputs": {
+      "value": "(a-2*b) / 2",
+      "a": ["11:17", 1],
+      "b": ["11:14", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "HEIGHT"
+    }
+  },
+  "11:6": {
+    "inputs": {
+      "images": ["11:10", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "11:15": {
+    "inputs": {
+      "value": "(a-2*b) / 2",
+      "a": ["11:17", 0],
+      "b": ["11:14", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "WIDTH"
+    }
+  },
+  "11:17": {
+    "inputs": {
+      "image": ["9", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "11:21": {
+    "inputs": {
+      "images": ["11:20", 0]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "11:23": {
+    "inputs": {
+      "value": "(a) / 2",
+      "b": 0.0,
+      "a": ["11:17", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "WIDTH / 2"
+    }
+  },
+  "11:22": {
+    "inputs": {
+      "value": "(a) / 2",
+      "b": 0.0,
+      "a": ["11:17", 1]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "HEIGHT / 2"
+    }
+  },
+  "11:20": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "keep_proportion": "stretch",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": ["11:19", 0],
+      "width": ["11:23", 0],
+      "height": ["11:22", 0]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Images"
+    }
+  },
+  "11:8": {
+    "inputs": {
+      "image": ["9", 0],
+      "width": ["11:15", 0],
+      "height": ["11:16", 0],
+      "x": ["11:24", 0],
+      "y": ["11:24", 0]
+    },
+    "class_type": "ImageCrop",
+    "_meta": {
+      "title": "1"
+    }
+  },
+  "11:19": {
+    "inputs": {
+      "inputcount": 4,
+      "image_1": ["11:8", 0],
+      "image_2": ["11:9", 0],
+      "image_3": ["11:10", 0],
+      "image_4": ["11:11", 0]
+    },
+    "class_type": "ImageBatchMulti",
+    "_meta": {
+      "title": "Image Batch Multi"
+    }
+  },
+  "11:9": {
+    "inputs": {
+      "y": 0,
+      "image": ["9", 0],
+      "width": ["11:15", 0],
+      "height": ["11:16", 0],
+      "x": ["11:13", 0]
+    },
+    "class_type": "ImageCrop",
+    "_meta": {
+      "title": "2"
+    }
+  },
+  "11:10": {
+    "inputs": {
+      "image": ["9", 0],
+      "width": ["11:15", 0],
+      "height": ["11:16", 0],
+      "x": ["11:24", 0],
+      "y": ["11:12", 0]
+    },
+    "class_type": "ImageCrop",
+    "_meta": {
+      "title": "3"
+    }
+  },
+  "11:11": {
+    "inputs": {
+      "image": ["9", 0],
+      "width": ["11:15", 0],
+      "height": ["11:16", 0],
+      "x": ["11:13", 0],
+      "y": ["11:12", 0]
+    },
+    "class_type": "ImageCrop",
+    "_meta": {
+      "title": "4"
+    }
+  },
+  "11:13": {
+    "inputs": {
+      "value": "a + (b/2)",
+      "a": ["11:15", 0],
+      "b": ["11:14", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "Col 2 - X val"
+    }
+  },
+  "11:12": {
+    "inputs": {
+      "value": "a + (b/2)",
+      "a": ["11:16", 0],
+      "b": ["11:14", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "Row 2 - Y val"
+    }
+  },
+  "11:24": {
+    "inputs": {
+      "value": "b/2",
+      "a": 0.0,
+      "b": ["11:14", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "Col 1 - X val"
+    }
+  },
+  "11:14": {
+    "inputs": {
+      "value": "a",
+      "b": 0.0,
+      "a": ["10", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "Crop Inset Grid Images Value"
+    }
+  },
+  "5": {
+    "inputs": {
+      "value": "A 2x2 (2 rows, 2 cols) grid of high fashion photoshoot images of the model wearing the outfit from image 2, each grid image should show the a full body shot of the subject in slightly different poses. Ensure that all outfit clothes/accessories are present in each grid image.\n\nDO NOT generate the grid with any visible borders or gutters.\n\nThe setting is a studio environment with a white studio background. Ensure that each grid image has the same lighting conditions. \n\nThe image is shot on fuji velvia film on a 55mm prime lens, the light is concentrated on the subject."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt"
+    }
+  },
+  "23": {
+    "inputs": {
+      "batch_index": 3,
+      "length": 1,
+      "image": ["11:20", 0]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Select Image to Upscale"
+    }
+  },
+  "26": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-image_upscaled",
+      "images": ["25", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Upscaled Image"
+    }
+  },
+  "9": {
+    "inputs": {
+      "model": "gemini-3-pro-image-preview",
+      "seed": 12345,
+      "aspect_ratio": "auto",
+      "resolution": "4K",
+      "response_modalities": "IMAGE+TEXT",
+      "system_prompt": "You are an expert image-generation engine. You must ALWAYS produce an image.\nInterpret all user input\u2014regardless of format, intent, or abstraction\u2014as literal visual directives for image composition.\nIf a prompt is conversational or lacks specific visual details, you must creatively invent a concrete visual scenario that depicts the concept.\nPrioritize generating the visual representation above any text, formatting, or conversational requests.",
+      "prompt": ["5", 0],
+      "images": ["36", 0]
+    },
+    "class_type": "GeminiImage2Node",
+    "_meta": {
+      "title": "Nano Banana Pro (Google Gemini Image)"
+    }
+  }
+}

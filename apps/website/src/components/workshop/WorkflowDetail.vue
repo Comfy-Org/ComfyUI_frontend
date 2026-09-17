@@ -148,12 +148,22 @@ function downloadGraph() {
               class="mb-2.5 block text-sm font-medium text-primary-comfy-canvas"
               >{{ index + 1 }}. {{ field.label }}</label
             >
+            <p
+              v-if="field.help"
+              :id="`input-help-${index}`"
+              class="mb-3 text-sm/relaxed text-primary-warm-gray"
+            >
+              {{ field.help }}
+            </p>
             <template v-if="['image', 'video', 'audio'].includes(field.kind)">
               <div
                 class="overflow-hidden rounded-xl border border-transparency-white-t8 bg-transparency-white-t8"
               >
                 <img
-                  v-if="field.kind === 'image'"
+                  v-if="
+                    field.kind === 'image' &&
+                    inputPreview(`${field.node}.${field.input}`)
+                  "
                   :src="inputPreview(`${field.node}.${field.input}`)"
                   :alt="field.label"
                   class="h-44 w-full object-contain"
@@ -166,7 +176,7 @@ function downloadGraph() {
                   class="h-44 w-full"
                 />
                 <audio
-                  v-else
+                  v-else-if="field.kind === 'audio'"
                   :src="inputPreview(`${field.node}.${field.input}`)"
                   controls
                   preload="metadata"
@@ -175,6 +185,10 @@ function downloadGraph() {
                 <input
                   :id="`input-${index}`"
                   type="file"
+                  :aria-describedby="
+                    field.help ? `input-help-${index}` : undefined
+                  "
+                  :required="!inputPreview(`${field.node}.${field.input}`)"
                   :accept="`${field.kind}/*`"
                   class="block w-full cursor-pointer p-3 text-xs text-primary-warm-gray file:mr-3 file:rounded-lg file:border-0 file:bg-transparency-white-t8 file:px-3 file:py-2 file:text-primary-comfy-canvas"
                   @change="changedFile(`${field.node}.${field.input}`, $event)"

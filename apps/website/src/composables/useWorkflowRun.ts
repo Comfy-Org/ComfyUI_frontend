@@ -70,7 +70,10 @@ export function useWorkflowRun(
   }
   function inputPreview(key: string) {
     return (
-      previews.value[key] ?? templateAsset('input', String(values.value[key]))
+      previews.value[key] ??
+      (values.value[key]
+        ? templateAsset('input', String(values.value[key]))
+        : undefined)
     )
   }
   async function poll(id: string, signal: AbortSignal) {
@@ -126,6 +129,15 @@ export function useWorkflowRun(
     let jobId: string | undefined
     state.value = { phase: 'uploading' }
     try {
+      for (const field of workflow.fields) {
+        const key = `${field.node}.${field.input}`
+        if (
+          ['image', 'video', 'audio'].includes(field.kind) &&
+          !files.has(key) &&
+          !values.value[key]
+        )
+          throw new Error(`Upload ${field.label.toLowerCase()} before running.`)
+      }
       const bindings = []
       for (const field of workflow.fields) {
         const key = `${field.node}.${field.input}`

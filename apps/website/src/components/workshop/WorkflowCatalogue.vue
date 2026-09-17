@@ -12,25 +12,44 @@ import Badge from '../ui/badge/Badge.vue'
 import CardRow from './CardRow.vue'
 import WorkshopBrowseTabs from './WorkshopBrowseTabs.vue'
 import WorkshopHero from './WorkshopHero.vue'
+import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
 const search = ref('')
-const category = ref('All workflows')
+const categories = ref<(typeof workflowCategories)[number][]>([])
+const matchingWorkflows = computed(() =>
+  workflows.filter((workflow) =>
+    `${workflow.title} ${workflow.description}`
+      .toLowerCase()
+      .includes(search.value.trim().toLowerCase())
+  )
+)
+const categoryOptions = computed(() =>
+  workflowCategories.map((value) => ({
+    value,
+    label: value,
+    count: matchingWorkflows.value.filter(
+      (workflow) => workflow.category === value
+    ).length
+  }))
+)
 const shelves = computed(() =>
   workflowCategories
     .map((name) => ({
       name,
-      items: workflows.filter(
+      items: matchingWorkflows.value.filter(
         (workflow) =>
           workflow.category === name &&
-          (category.value === 'All workflows' || category.value === name) &&
-          `${workflow.title} ${workflow.description}`
-            .toLowerCase()
-            .includes(search.value.trim().toLowerCase())
+          (!categories.value.length || categories.value.includes(name))
       )
     }))
     .filter((shelf) => shelf.items.length)
 )
-const featured = workflows[1]
+const resultCount = computed(() =>
+  shelves.value.reduce((total, shelf) => total + shelf.items.length, 0)
+)
+const featured = workflows.find(
+  (workflow) => workflow.slug === 'change-material'
+)!
 const cardClass =
   'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
 </script>
@@ -113,17 +132,12 @@ const cardClass =
           class="h-11 w-full rounded-2xl bg-transparency-white-t4 pr-4 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:text-base"
         />
       </label>
-      <label class="sr-only" for="workflow-category">Use case</label>
-      <select
-        id="workflow-category"
-        v-model="category"
-        class="h-11 max-w-full cursor-pointer rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium text-primary-comfy-canvas outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
-      >
-        <option>All workflows</option>
-        <option v-for="name in workflowCategories" :key="name">
-          {{ name }}
-        </option>
-      </select>
+      <WorkshopFilterMenu
+        v-model:use-cases="categories"
+        :use-case-options="categoryOptions"
+        :result-count="resultCount"
+        show-label="Show {n} workflows"
+      />
     </div>
     <div class="flex flex-col gap-12">
       <section
@@ -141,7 +155,7 @@ const cardClass =
             <button
               type="button"
               class="group inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-              @click="category = shelf.name"
+              @click="categories = [shelf.name]"
             >
               <span class="tabular-nums">See all {{ shelf.items.length }}</span>
               <ChevronRight

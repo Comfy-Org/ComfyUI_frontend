@@ -47,7 +47,7 @@ const completed: WorkflowJob = {
   create_time: 1n,
   update_time: 2n
 }
-function setup() {
+function setup(requireMask = false) {
   let runner: ReturnType<typeof useWorkflowRun> | undefined
   const wrapper = render(
     defineComponent({
@@ -59,11 +59,24 @@ function setup() {
             title: 'Test',
             category: 'Edit & clean up photos',
             description: 'Test',
-            fields: [
-              { node: '1', input: 'text', kind: 'text', label: 'Prompt' }
-            ]
+            fields: requireMask
+              ? [
+                  {
+                    node: '2',
+                    input: 'image',
+                    kind: 'image',
+                    label: 'Edit mask'
+                  }
+                ]
+              : [{ node: '1', input: 'text', kind: 'text', label: 'Prompt' }]
           },
-          { '1': { class_type: 'CLIPTextEncode', inputs: { text: 'example' } } }
+          {
+            '1': { class_type: 'CLIPTextEncode', inputs: { text: 'example' } },
+            '2': {
+              class_type: 'LoadImageMask',
+              inputs: { image: '', channel: 'red' }
+            }
+          }
         )
         return () => h('div')
       }
@@ -82,6 +95,27 @@ beforeEach(() => {
 })
 
 describe('workflow run lifecycle', () => {
+  it('requires a mask before uploading or submitting, then binds the uploaded mask', async () => {
+    const { runner } = setup(true)
+    await runner.run()
+    expect(runner.state.value).toMatchObject({
+      phase: 'error',
+      message: 'Upload edit mask before running.',
+      retrySafe: true
+    })
+    expect(transport.upload).not.toHaveBeenCalled()
+    expect(transport.submit).not.toHaveBeenCalled()
+    transport.upload.mockResolvedValue('uploaded-mask.png')
+    runner.selectFile(
+      '2.image',
+      new File(['mask'], 'mask.png', { type: 'image/png' })
+    )
+    await runner.run()
+    expect(transport.submit.mock.calls[0][0]['2'].inputs.image).toBe(
+      'uploaded-mask.png'
+    )
+    expect(runner.state.value.phase).toBe('finished')
+  })
   it('submits edited inputs and waits for real outputs before enabling another run', async () => {
     let release: ((value: { assets: [] }) => void) | undefined
     transport.outputs.mockImplementation(
