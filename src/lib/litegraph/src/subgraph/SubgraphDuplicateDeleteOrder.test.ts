@@ -170,15 +170,11 @@ function expectSurvivorUndamaged(
   const survivorLink = scenario.links[survivorIndex]
   const survivorReroute = scenario.reroutes[survivorIndex]
   const survivorValue = promotedValueOf(survivor)
-  const survivorWidgetId = survivor.inputs.find(
-    (input) => input.name === PROMOTED_INPUT
-  )?.widgetId
+  const survivorWidgetId = promotedId(survivor)
 
   rootGraph.remove(removed)
 
-  expect(survivorWidgetId).not.toBe(
-    removed.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
-  )
+  expect(survivorWidgetId).not.toBe(promotedId(removed))
   expect(promotedValueOf(survivor)).toBe(survivorValue)
 
   const liveLink = rootGraph.links.get(survivorLink.id)
