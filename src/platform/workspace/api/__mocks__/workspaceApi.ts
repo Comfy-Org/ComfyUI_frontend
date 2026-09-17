@@ -13,72 +13,66 @@ export class WorkspaceApiError extends Error {
   }
 }
 
-export const workspaceApi: typeof realWorkspaceApi = {
-  list: vi.fn(async () => ({ workspaces: [] })),
-  getCurrentWorkspace: vi.fn<typeof realWorkspaceApi.getCurrentWorkspace>(
-    async () => ({
+export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
+  {
+    list: async () => ({ workspaces: [] }),
+    getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
       type: 'personal',
       role: 'owner',
       auth_method: 'cloud_jwt'
-    })
-  ),
-  create: vi.fn<typeof realWorkspaceApi.create>(async ({ name }) => ({
-    id: 'workspace-1',
-    name,
-    type: 'team',
-    role: 'owner',
-    created_at: '2026-01-01T00:00:00Z',
-    joined_at: '2026-01-01T00:00:00Z'
-  })),
-  update: vi.fn<typeof realWorkspaceApi.update>(async (id, { name }) => ({
-    id,
-    name: name ?? 'Team',
-    type: 'team',
-    role: 'owner',
-    created_at: '2026-01-01T00:00:00Z',
-    joined_at: '2026-01-01T00:00:00Z'
-  })),
-  delete: vi.fn(async () => {}),
-  leave: vi.fn(async () => {}),
-  listMembers: vi.fn(async () => ({
-    members: [],
-    pagination: { has_more: false, limit: 20, offset: 0, total: 0 }
-  })),
-  removeMember: vi.fn(async () => {}),
-  updateMemberRole: vi.fn<typeof realWorkspaceApi.updateMemberRole>(
-    async (id, role) => ({
+    }),
+    create: async ({ name }) => ({
+      id: 'workspace-1',
+      name,
+      type: 'team',
+      role: 'owner',
+      created_at: '2026-01-01T00:00:00Z',
+      joined_at: '2026-01-01T00:00:00Z'
+    }),
+    update: async (id, { name }) => ({
+      id,
+      name: name ?? 'Team',
+      type: 'team',
+      role: 'owner',
+      created_at: '2026-01-01T00:00:00Z',
+      joined_at: '2026-01-01T00:00:00Z'
+    }),
+    delete: async () => {},
+    leave: async () => {},
+    listMembers: async () => ({
+      members: [],
+      pagination: { has_more: false, limit: 20, offset: 0, total: 0 }
+    }),
+    removeMember: async () => {},
+    updateMemberRole: async (id, role) => ({
       id,
       role,
       name: 'Member',
       email: 'member@example.com',
       is_original_owner: false,
       joined_at: '2026-01-01T00:00:00Z'
-    })
-  ),
-  listInvites: vi.fn(async () => ({ invites: [] })),
-  createInvite: vi.fn<typeof realWorkspaceApi.createInvite>(
-    async ({ email }) => ({
+    }),
+    listInvites: async () => ({ invites: [] }),
+    createInvite: async ({ email }) => ({
       id: 'invite-1',
       email,
       invited_at: '2026-01-01T00:00:00Z',
       expires_at: '2026-01-08T00:00:00Z'
-    })
-  ),
-  revokeInvite: vi.fn(async () => {}),
-  resendInvite: vi.fn<typeof realWorkspaceApi.resendInvite>(async (id) => ({
-    id,
-    email: 'member@example.com',
-    invited_at: '2026-01-01T00:00:00Z',
-    expires_at: '2026-01-08T00:00:00Z'
-  })),
-  acceptInvite: vi.fn(async () => ({
-    workspace_id: 'workspace-1',
-    workspace_name: 'Team'
-  })),
-  getBillingStatus: vi.fn<typeof realWorkspaceApi.getBillingStatus>(
-    async () => ({
+    }),
+    revokeInvite: async () => {},
+    resendInvite: async (id) => ({
+      id,
+      email: 'member@example.com',
+      invited_at: '2026-01-01T00:00:00Z',
+      expires_at: '2026-01-08T00:00:00Z'
+    }),
+    acceptInvite: async () => ({
+      workspace_id: 'workspace-1',
+      workspace_name: 'Team'
+    }),
+    getBillingStatus: async () => ({
       is_active: false,
       has_funds: false,
       subscription_tier: 'FREE',
@@ -86,14 +80,12 @@ export const workspaceApi: typeof realWorkspaceApi = {
       occupied_seats: 1,
       scheduled_change: null,
       team_credit_stop: null
-    })
-  ),
-  getBillingBalance: vi.fn(async () => ({
-    amount_micros: 0,
-    currency: 'USD'
-  })),
-  getBillingCapabilities: vi.fn<typeof realWorkspaceApi.getBillingCapabilities>(
-    async (signal) => {
+    }),
+    getBillingBalance: async () => ({
+      amount_micros: 0,
+      currency: 'USD'
+    }),
+    getBillingCapabilities: async (signal) => {
       signal?.throwIfAborted()
       return {
         capabilities: {
@@ -114,12 +106,10 @@ export const workspaceApi: typeof realWorkspaceApi = {
           can_top_up: false
         }
       }
-    }
-  ),
-  getBillingPlans: vi.fn(async () => ({ plans: [] })),
-  listSavedPaymentMethods: vi.fn(async () => []),
-  previewSubscribe: vi.fn<typeof realWorkspaceApi.previewSubscribe>(
-    async (slug) => ({
+    },
+    getBillingPlans: async () => ({ plans: [] }),
+    listSavedPaymentMethods: async () => [],
+    previewSubscribe: async (slug) => ({
       allowed: true,
       transition_type: 'new_subscription',
       effective_at: '2026-01-01T00:00:00Z',
@@ -140,46 +130,43 @@ export const workspaceApi: typeof realWorkspaceApi = {
           total_credits_cents: 0
         }
       }
-    })
-  ),
-  subscribe: vi.fn<typeof realWorkspaceApi.subscribe>(async () => ({
-    billing_op_id: 'op-1',
-    status: 'subscribed'
-  })),
-  cancelSubscription: vi.fn(async () => ({
-    billing_op_id: 'op-1',
-    cancel_at: '2026-02-01T00:00:00Z'
-  })),
-  getChurnkeyAuth: vi.fn<typeof realWorkspaceApi.getChurnkeyAuth>(async () => ({
-    auth_hash: 'test-hash',
-    customer_id: 'customer-1',
-    mode: 'test'
-  })),
-  resubscribe: vi.fn<typeof realWorkspaceApi.resubscribe>(async () => ({
-    billing_op_id: 'op-1',
-    status: 'active'
-  })),
-  getPaymentPortalUrl: vi.fn(async () => ({ url: '' })),
-  createTopup: vi.fn<typeof realWorkspaceApi.createTopup>(
-    async (amount_cents) => ({
+    }),
+    subscribe: async () => ({
+      billing_op_id: 'op-1',
+      status: 'subscribed'
+    }),
+    cancelSubscription: async () => ({
+      billing_op_id: 'op-1',
+      cancel_at: '2026-02-01T00:00:00Z'
+    }),
+    getChurnkeyAuth: async () => ({
+      auth_hash: 'test-hash',
+      customer_id: 'customer-1',
+      mode: 'test'
+    }),
+    resubscribe: async () => ({
+      billing_op_id: 'op-1',
+      status: 'active'
+    }),
+    getPaymentPortalUrl: async () => ({ url: '' }),
+    createTopup: async (amount_cents) => ({
       amount_cents,
       billing_op_id: 'op-1',
       topup_id: 'op-1',
       status: 'completed'
-    })
-  ),
-  getBillingEvents: vi.fn(async () => ({
-    events: [],
-    limit: 20,
-    page: 1,
-    total: 0,
-    totalPages: 0
-  })),
-  getBillingOpStatus: vi.fn<typeof realWorkspaceApi.getBillingOpStatus>(
-    async (id) => ({
+    }),
+    getBillingEvents: async () => ({
+      events: [],
+      limit: 20,
+      page: 1,
+      total: 0,
+      totalPages: 0
+    }),
+    getBillingOpStatus: async (id) => ({
       id,
       started_at: '2026-01-01T00:00:00Z',
       status: 'succeeded'
     })
-  )
-}
+  },
+  { spy: true }
+)
