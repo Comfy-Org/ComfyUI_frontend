@@ -31,6 +31,7 @@
       :can-use-recording="canUseRecording && !isPreview"
       :material-modes="materialModes"
       :has-skeleton="hasSkeleton"
+      :model-stats="modelStats"
       :source-format="sourceFormat"
       @update-background-image="handleBackgroundImageUpdate"
       @update-hdri-file="handleHDRIFileUpdate"
@@ -120,6 +121,7 @@ const {
   canExport,
   materialModes,
   hasSkeleton,
+  modelStats,
   sourceFormat,
   hasRecording,
   recordingDuration,
