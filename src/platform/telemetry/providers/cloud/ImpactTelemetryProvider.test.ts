@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,12 +20,13 @@ vi.mock(import('@/platform/telemetry/utils/checkoutAttribution'), () => ({
   captureCheckoutAttributionFromSearch: mockCaptureCheckoutAttributionFromSearch
 }))
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn(),
-  setPersistence: vi.fn()
-}))
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+})
 
 import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
 

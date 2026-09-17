@@ -24,6 +24,10 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -53,6 +57,8 @@ await bootstrapTracer.settle('startup/remote-config', async () => {
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
 })
+
+markStoresPending()
 
 if (isCloud) {
   await bootstrapTracer.settle('startup/telemetry-init', async () => {
@@ -130,12 +136,12 @@ flushErrorReports()
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
 setAssertReporter(
-  (message) => {
+  (message, context) => {
     if (isDesktop) {
-      captureMessage(message, { level: 'warning' })
+      captureMessage(message, { level: 'warning', extra: context })
     }
     if (isCloud) {
-      reportAssertFailure(message)
+      reportAssertFailure(message, context)
     }
     if (isNightly) {
       useToastStore(pinia).add({
@@ -181,6 +187,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()

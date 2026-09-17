@@ -7,12 +7,11 @@ import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 test.describe('Workflows sidebar', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
     await tab.open()

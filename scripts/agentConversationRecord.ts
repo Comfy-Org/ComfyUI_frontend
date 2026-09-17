@@ -79,7 +79,7 @@ const writeJson = (path: string, value: unknown): void =>
 const ROWS_MAX_BYTES = 64 * 1024 * 1024
 const ROWS_TIMEOUT_MS = 60_000
 
-function readRows(
+export function readRows(
   exec: string[],
   path: string,
   ids: TurnIds & { workflowId: string }

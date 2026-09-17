@@ -642,7 +642,7 @@ export class SubgraphHelper {
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await this.comfyPage.menu.topbar.setVueNodesEnabled(false)
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
       bubbles: true,
       cancelable: true,

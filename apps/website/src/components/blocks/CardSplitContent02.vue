@@ -19,7 +19,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <div
       class="flex flex-col gap-2 p-2 lg:items-stretch"
       :class="reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'"

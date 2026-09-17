@@ -26,18 +26,18 @@ const workflowLabel = computed(
 
 <template>
   <div
-    class="border-agent-border bg-agent-surface-raised flex w-full flex-col gap-2 overflow-hidden rounded-lg border p-4 shadow-[0_4px_12px_-1px_rgb(0_0_0/10%)]"
+    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="text-agent-fg m-0 font-medium">
+      <p class="m-0 font-medium text-base-foreground">
         {{ t('agent.runApproval.lead') }}
       </p>
-      <ul class="text-agent-fg-muted m-0 min-w-0 list-disc pl-5">
+      <ul class="m-0 min-w-0 list-disc pl-5 text-muted-foreground">
         <li>
           <button
             v-if="part.workflowId"
             type="button"
-            class="hover:text-agent-fg focus-visible:ring-agent-accent max-w-full cursor-pointer border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-inherit underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            class="max-w-full cursor-pointer border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-inherit underline underline-offset-2 transition-colors hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
             @click="emit('openWorkflow', part.workflowId, part.workflowName)"
           >
             {{ workflowLabel }}
@@ -47,7 +47,7 @@ const workflowLabel = computed(
           </span>
         </li>
       </ul>
-      <p class="text-agent-fg-muted m-0">
+      <p class="m-0 text-muted-foreground">
         {{ t('agent.runApproval.question') }}
       </p>
     </div>

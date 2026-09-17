@@ -2,21 +2,23 @@ import { useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
+import {
+  AuthErrorCodes,
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'), { spy: true })
 
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
@@ -35,7 +37,7 @@ const mockDialogService = vi.hoisted(() => ({
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
+
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockBillingState = vi.hoisted(() => ({
@@ -77,11 +79,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
@@ -137,6 +135,9 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 }
 
 beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
   mockAuthStore = useAuthStore()
   mockToastStore = useToastStore()
   mockWorkflowStore = useWorkflowStore()
@@ -383,7 +384,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       signInWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/user-not-found',
       auth_action: 'email_sign_in'
     })
@@ -403,7 +404,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       signUpWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'unknown',
       auth_action: 'email_sign_up'
     })
@@ -416,7 +417,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await expect(signInWithGoogle({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'google_sign_up'
     })
@@ -429,7 +430,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await expect(signInWithGithub({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'github_sign_up'
     })
@@ -442,7 +443,7 @@ describe('useAuthActions auth flow error telemetry', () => {
 
     await logout()
 
-    expect(mockTrackAuthFailed).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackAuthFailed).not.toHaveBeenCalled()
   })
 })
 
@@ -620,5 +621,26 @@ describe('useAuthActions.reportError', () => {
     reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
 
     expect(accessError.value).toBe(false)
+  })
+})
+
+describe('useAuthActions.sendPasswordReset', () => {
+  it('resolves true when the identity layer answers an unknown email as sent', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValueOnce(undefined)
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(
+      sendPasswordReset('never-registered@example.com'),
+      'an unknown email must resolve like a known one, or CloudForgotPasswordView shows the error copy and leaks that the address is unregistered'
+    ).resolves.toBe(true)
+  })
+
+  it('resolves undefined when the reset genuinely fails, so the caller can show its error', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockRejectedValueOnce(
+      new FirebaseError('auth/network-request-failed', 'msg')
+    )
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
   })
 })

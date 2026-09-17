@@ -11,7 +11,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto px-6 pt-10 pb-24 lg:px-20 lg:pt-12 lg:pb-32"
+    class="mx-auto max-w-9xl px-6 pt-10 pb-24 lg:px-20 lg:pt-12 lg:pb-32"
   >
     <SectionHeader align="start" max-width="xl">
       {{ t('brand.questions.heading', locale) }}
