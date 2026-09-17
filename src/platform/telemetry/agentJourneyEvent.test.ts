@@ -93,6 +93,31 @@ describe('agent journey effect contract', () => {
     ).toBeNull()
   })
 
+  it.for([
+    'operation_ids',
+    'target_ref',
+    'session_id',
+    'thread_id',
+    'turn_id',
+    'mutation_id',
+    'run_id'
+  ] as const)('rejects non-opaque values in %s', (key) => {
+    for (const value of [
+      'person@example.com',
+      'https://example.com/workflow/1',
+      'workflow with arbitrary context'
+    ]) {
+      const correlation =
+        key === 'operation_ids'
+          ? { ...baseEvent.correlation, operation_ids: [value] }
+          : { ...baseEvent.correlation, [key]: value }
+
+      expect(
+        serializeAgentJourneyEvent({ ...baseEvent, correlation })
+      ).toBeNull()
+    }
+  })
+
   it('omits unavailable optional correlation instead of fabricating it', () => {
     const serialized = serializeAgentJourneyEvent(baseEvent)
 

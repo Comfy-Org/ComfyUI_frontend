@@ -81,6 +81,12 @@ const EFFECT_EVENT_NAMES = {
   reverted: 'agent.journey.frontend_semantic_effect.reverted'
 } as const satisfies Record<AgentJourneyEffectOutcome, AgentJourneyEventName>
 
+const OPAQUE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
+
+function isOpaqueIdentifier(value: string): boolean {
+  return OPAQUE_IDENTIFIER_PATTERN.test(value)
+}
+
 export function getAgentJourneyEventName(
   event: AgentJourneyEvent
 ): AgentJourneyEventName {
@@ -91,7 +97,11 @@ export function serializeAgentJourneyEvent(
   event: AgentJourneyEvent
 ): SerializedAgentJourneyEvent | null {
   const operationIds = [...new Set(event.correlation.operation_ids)]
-  if (operationIds.length === 0) {
+  if (
+    operationIds.length === 0 ||
+    !operationIds.every(isOpaqueIdentifier) ||
+    !isOpaqueIdentifier(event.correlation.target_ref)
+  ) {
     return null
   }
 
@@ -108,7 +118,9 @@ export function serializeAgentJourneyEvent(
   ] as const
   for (const key of optionalKeys) {
     const value = event.correlation[key]
-    if (value !== undefined) correlation[key] = value
+    if (value === undefined) continue
+    if (!isOpaqueIdentifier(value)) return null
+    correlation[key] = value
   }
 
   return {
