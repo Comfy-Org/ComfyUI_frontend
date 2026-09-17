@@ -30,6 +30,7 @@
           <span
             v-if="!terminalKind"
             class="inline-block size-[15px] animate-spin rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80"
+            data-testid="queue-status-spinner"
             aria-hidden
           />
           <i
@@ -40,7 +41,7 @@
         </span>
 
         <span
-          class="truncate text-sm leading-none font-normal whitespace-nowrap text-base-foreground tabular-nums"
+          class="truncate text-sm/5 font-normal whitespace-nowrap text-base-foreground tabular-nums"
           aria-live="polite"
         >
           {{ label }}
@@ -48,7 +49,7 @@
 
         <span
           v-if="badge"
-          class="shrink-0 rounded-full bg-base-foreground/8 px-2 py-1 text-xs leading-none font-medium text-muted-foreground"
+          class="shrink-0 rounded-full bg-base-foreground/8 px-2 py-1 text-xs/4 font-medium text-muted-foreground"
         >
           {{ badge }}
         </span>
@@ -57,6 +58,7 @@
           v-if="progress !== undefined"
           class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-base-foreground/70 transition-[width] duration-200 ease-out"
           :style="{ width: `${progress}%` }"
+          data-testid="queue-status-progress"
           aria-hidden
         />
       </div>

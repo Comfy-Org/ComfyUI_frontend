@@ -5055,7 +5055,7 @@
     "nothingRunning": "Nothing running yet",
     "cancel": "Stop this run",
     "recentResults": "Recent results",
-    "recentResultsCount": "Recent results ({count})",
+    "resultsCount": "Results ({count})",
     "running": "Running",
     "runningCount": "Running {count}",
     "completed": "Completed",
