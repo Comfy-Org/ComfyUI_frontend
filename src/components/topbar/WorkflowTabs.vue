@@ -116,6 +116,7 @@
         />
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
+          :inviting="!agentPanelStore.hasEverOpened"
           @click="onAgentEntryClick"
         />
       </template>

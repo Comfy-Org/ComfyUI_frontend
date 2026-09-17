@@ -5,7 +5,8 @@
     :class="
       cn(
         'group no-drag shrink-0 gap-1 rounded-lg',
-        active ? 'bg-secondary-background-hover' : 'agent-shimmer-outline'
+        active && 'bg-secondary-background-hover',
+        inviting && !active && 'agent-shimmer-outline'
       )
     "
     :aria-pressed="active"
@@ -22,7 +23,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-const { active = false } = defineProps<{
+const { active = false, inviting = false } = defineProps<{
   active?: boolean
+  /** Draw attention to the button for a user who has never opened the panel. */
+  inviting?: boolean
 }>()
 </script>
