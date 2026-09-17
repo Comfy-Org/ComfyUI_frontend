@@ -10,12 +10,14 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 
 import type { ComfyExtension } from '@/types/comfy'
 import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -26,6 +28,7 @@ let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let consentStore: ReturnType<typeof useAgentConsentStore>
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 
@@ -40,6 +43,20 @@ vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+
+const withConsentMock = vi.fn(async (onAccept: () => void) => {
+  onAccept()
+})
+
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
+  () => ({
+    useAgentConsent: () =>
+      fromPartial<ReturnType<typeof useAgentConsent>>({
+        withConsent: withConsentMock
+      })
+  })
+)
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -110,6 +127,11 @@ describe('AgentPanel extension flag gate', () => {
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     consentStore = useAgentConsentStore()
+    workspaceStore = useTeamWorkspaceStore()
+    Object.assign(workspaceStore, {
+      activeWorkspaceId: 'workspace-a',
+      isSwitching: false
+    })
     Object.assign(consentStore, { accepted: true })
     Object.assign(consentStore, { identity: 'account-a/workspace-a' })
     vi.mocked(consentStore.load).mockResolvedValue(false)
@@ -134,6 +156,8 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
+    withConsentMock.mockClear()
+    localStorage.clear()
     canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
@@ -146,6 +170,53 @@ describe('AgentPanel extension flag gate', () => {
     workflowStore.activeWorkflow = createMockLoadedWorkflow({
       path: 'workflows/first.json'
     })
+  })
+
+  it('offers the consent card without a click when the account has not accepted', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(withConsentMock).toHaveBeenCalledOnce()
+    expect(agentStore.open).toHaveBeenCalledOnce()
+  })
+
+  it('stays silent when the account already accepted', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: true, isChecking: false })
+    vi.mocked(consentStore.load).mockResolvedValue(true)
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(withConsentMock).not.toHaveBeenCalled()
+  })
+
+  it('offers the card one time only for the same account and workspace', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(withConsentMock).toHaveBeenCalledOnce()
+
+    Object.assign(consentStore, { identity: 'account-a/workspace-a-again' })
+    await flush()
+
+    expect(withConsentMock).toHaveBeenCalledOnce()
+  })
+
+  it('stays silent when the saved consent cannot be read', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(withConsentMock).not.toHaveBeenCalled()
   })
 
   it('does not self-register when its module is imported', async () => {

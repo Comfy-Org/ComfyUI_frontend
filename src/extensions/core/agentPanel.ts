@@ -3,6 +3,8 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -16,6 +18,24 @@ import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+
+/**
+ * Records that the consent card was offered unprompted, before it opens.
+ * Claiming up front keeps a blocked or full storage from re-prompting on
+ * every load, which is the failure mode the onboarding coach already has.
+ */
+function claimAutoShow(userId: string, workspaceId: string): boolean {
+  const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+  try {
+    if (localStorage.getItem(key) === 'true') return false
+    localStorage.setItem(key, 'true')
+    return true
+  } catch {
+    return false
+  }
+}
 
 let registered = false
 
@@ -73,7 +93,9 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
-      const { resolvedUserInfo } = useCurrentUser()
+      const workspaceStore = useTeamWorkspaceStore()
+      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { withConsent } = useAgentConsent()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -84,13 +106,35 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      let autoShowInFlight = false
+      const offerConsentUnprompted = (): void => {
+        if (autoShowInFlight) return
+        if (!agentPanelStore.enabled || !isLoggedIn.value) return
+        if (consentStore.isChecking || consentStore.accepted) return
+
+        const userId = resolvedUserInfo.value?.id
+        const workspaceId = workspaceStore.activeWorkspaceId
+        if (!userId || !workspaceId || workspaceStore.isSwitching) return
+        if (!claimAutoShow(userId, workspaceId)) return
+
+        autoShowInFlight = true
+        void withConsent(() => agentPanelStore.open()).finally(() => {
+          autoShowInFlight = false
+        })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
-        void consentStore.load().catch((error: unknown) => {
-          reportError(error, {
-            errorType: 'agent_consent_setting_load_failure'
+        void consentStore
+          .load()
+          .then((isAccepted) => {
+            if (!isAccepted) offerConsentUnprompted()
           })
-        })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_consent_setting_load_failure'
+            })
+          })
       }
       watch(
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
