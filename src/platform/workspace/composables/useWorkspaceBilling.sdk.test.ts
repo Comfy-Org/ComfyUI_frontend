@@ -40,10 +40,11 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({ useSubscriptionDialog: () => ({ show: vi.fn() }) })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingCapabilities'),
@@ -84,12 +85,11 @@ beforeEach(() => {
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true
-  vi.spyOn(workspaceApi, 'getBillingStatus').mockResolvedValue(STATUS)
-  vi.spyOn(workspaceApi, 'getBillingBalance').mockResolvedValue({
+  vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(STATUS)
+  vi.mocked(workspaceApi.getBillingBalance).mockResolvedValue({
     amount_micros: 0,
     currency: 'USD'
   })
-  vi.spyOn(workspaceApi, 'createTopup')
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     undefined as never
   )
