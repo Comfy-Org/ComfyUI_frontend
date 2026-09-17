@@ -1,7 +1,7 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { BrowserContext, Page } from '@playwright/test'
 
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { LiveCloudOnboarding } from '@e2e/fixtures/components/LiveCloudOnboarding'
 import { LiveCloudBillingSession } from '@e2e/fixtures/helpers/LiveCloudBillingSession'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
@@ -39,7 +39,12 @@ export async function installLiveCloudBillingRouting(
     if (
       (networkPolicy.origins.has(url.origin) ||
         LIVE_CHECKOUT_ORIGINS.includes(url.origin)) &&
-      !isLiveCloudMutationAllowed(targetUrl, request.method(), config)
+      !isLiveCloudMutationAllowed(
+        targetUrl,
+        request.method(),
+        config,
+        url.pathname === '/api/settings' ? request.postDataJSON() : undefined
+      )
     ) {
       networkPolicy.unexpected.add(
         `Mutation ${request.method()} ${url.origin}${url.pathname}`
@@ -70,9 +75,8 @@ export async function signInToLiveCloud(
 ) {
   if (!config.CLOUD_ACCOUNT_EMAIL || !config.CLOUD_ACCOUNT_PASSWORD)
     throw new Error('Live Cloud sign-in requires account credentials')
-  await new FeatureFlagHelper(page).seedFlags({
-    onboarding_survey_enabled: false
-  })
+  const onboarding = new LiveCloudOnboarding(page)
+  await onboarding.dismissTutorialsWhenVisible()
   await page.goto(`${config.PLAYWRIGHT_TEST_URL}/cloud/login`)
   await page
     .getByRole('button', { name: 'Use email instead', exact: true })
@@ -94,6 +98,7 @@ export async function signInToLiveCloud(
   zBillingStatusResponse.parse(await response.json())
   const authorization = await response.request().headerValue('authorization')
   if (!authorization) throw new Error('Missing billing authorization')
+  await onboarding.completeSurveyIfNeeded(config.PLAYWRIGHT_TEST_URL)
   return new LiveCloudBillingSession(
     page.request,
     config.PLAYWRIGHT_SETUP_API_URL,

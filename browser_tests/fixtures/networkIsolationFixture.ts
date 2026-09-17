@@ -42,7 +42,8 @@ function guardApiRequests(
       !isLiveCloudMutationAllowed(
         url,
         method.toUpperCase(),
-        liveCloudBillingConfig
+        liveCloudBillingConfig,
+        options?.data
       )
     ) {
       const message = `Mutation ${method} ${url.origin}${url.pathname}`

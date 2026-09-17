@@ -41,10 +41,11 @@ account credentials. The fixture forwards frontend API requests to the selected
 backend and derives its matching customer API and Stripe checkout mode. A deployed
 frontend must match the selected backend origin; local URLs exercise the PR code.
 
-Live tests do not install shared response mocks. They override only
-`onboarding_survey_enabled=false` in the local PR frontend to skip the unrelated
-survey. Deployed builds ignore this dev-only override and require completed
-onboarding. Assets,
+Live tests do not install shared response mocks or override feature flags.
+Sign-in completes the real onboarding survey when required and waits for the
+canvas. Known tutorial dialogs are dismissed through their Skip button whenever
+they appear during an interaction, including after navigation. Billing dialogs
+are left to the scenario. Assets,
 location detection, Google auth scripts, analytics, and feature flags use their real
 services. Accounts must have the hosted checkout flow enabled in the selected
 environment.
@@ -53,8 +54,10 @@ The smoke test signs in, validates the browser's real billing-status response,
 waits for app readiness, and checks that the graph canvas is visible.
 It attaches a post-login screenshot. The shared network boundary rejects Cloud and Stripe mutations except the specific
 POST endpoints used for Firebase sign-in/token refresh, customer provisioning,
-Cloud auth tokens/session cookies, and the startup write to
-`/api/settings/Comfy.InstalledVersion`. A rejected mutation fails the test even
+Cloud auth tokens/session cookies, the startup write to
+`/api/settings/Comfy.InstalledVersion`, and onboarding survey/tutorial state.
+Bulk settings writes may contain only `onboarding_survey`.
+A rejected mutation fails the test even
 if the app catches the request error. The smoke fixture blocks checkout, payment, and reset mutations in both browser
 routing and Playwright API clients.
 

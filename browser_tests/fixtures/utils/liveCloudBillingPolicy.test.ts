@@ -32,6 +32,11 @@ describe('live Cloud mutation policy', () => {
       allowed: true
     },
     { method: 'POST', path: '/api/settings/other', allowed: false },
+    {
+      method: 'POST',
+      path: '/api/settings/Comfy.OnboardingCoachmarks.Seen',
+      allowed: true
+    },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
     { method: 'POST', path: '/customers/credit', allowed: false },
@@ -69,6 +74,35 @@ describe('live Cloud mutation policy', () => {
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(
       allowed
     )
+  })
+
+  it.for([
+    { data: { onboarding_survey: { intent: 'exploring' } }, allowed: true },
+    { data: undefined, allowed: false },
+    { data: {}, allowed: false },
+    { data: { onboarding_survey: null }, allowed: false },
+    { data: { unrelated: true }, allowed: false },
+    {
+      data: { onboarding_survey: { intent: 'exploring' }, unrelated: true },
+      allowed: false
+    }
+  ])('survey settings $data allowed=$allowed', ({ data, allowed }) => {
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('/api/settings', config.PLAYWRIGHT_SETUP_API_URL),
+        'POST',
+        config,
+        data
+      )
+    ).toBe(allowed)
+    expect(
+      isLiveCloudMutationAllowed(
+        new URL('/api/settings', 'https://stagingcloud.comfy.org'),
+        'POST',
+        config,
+        data
+      )
+    ).toBe(false)
   })
 })
 

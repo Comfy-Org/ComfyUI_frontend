@@ -12,6 +12,7 @@ import {
   expect,
   liveCloudDisposableBillingFixture
 } from '@e2e/fixtures/liveCloudDisposableBillingFixture'
+import { LiveCloudOnboarding } from '@e2e/fixtures/components/LiveCloudOnboarding'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 const test = liveCloudDisposableBillingFixture.extend<{
@@ -95,6 +96,37 @@ const test = liveCloudDisposableBillingFixture.extend<{
 })
 
 test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
+  for (const testId of ['coach-landing', 'coach-card']) {
+    test(`dismisses late ${testId} across navigation without closing billing`, async ({
+      page
+    }) => {
+      await page.route('http://localhost:5173/', (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `
+            <button onclick="document.getElementById('tutorial').hidden = false">Show tutorial</button>
+            <section role="dialog" aria-label="Confirm your payment">
+              <button>Continue billing</button>
+            </section>
+            <section id="tutorial" data-testid="${testId}" role="dialog" hidden>
+              <button onclick="document.getElementById('tutorial').hidden = true">Skip</button>
+            </section>
+          `
+        })
+      )
+      await new LiveCloudOnboarding(page).dismissTutorialsWhenVisible()
+      for (let visit = 0; visit < 2; visit++) {
+        await page.goto('http://localhost:5173/')
+        await page.getByRole('button', { name: 'Show tutorial' }).click()
+        await page.getByRole('button', { name: 'Continue billing' }).click()
+        await expect(page.getByTestId(testId)).toBeHidden()
+        await expect(
+          page.getByRole('dialog', { name: 'Confirm your payment' })
+        ).toBeVisible()
+      }
+    })
+  }
+
   test('rewrites browser auth to Cloud and provisions customers at the Comfy API', async ({
     page,
     sandboxProxy
@@ -117,9 +149,19 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
         )
       )
     ).toBe('POST https://testapi.comfy.org/customers')
+    expect(
+      await page.evaluate(() =>
+        fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboarding_survey: { intent: 'exploring' } })
+        }).then((response) => response.text())
+      )
+    ).toBe('POST https://testcloud.comfy.org/api/settings')
     expect(sandboxProxy.requests).toEqual([
       'POST https://testcloud.comfy.org/api/auth/token',
-      'POST https://testapi.comfy.org/customers'
+      'POST https://testapi.comfy.org/customers',
+      'POST https://testcloud.comfy.org/api/settings'
     ])
   })
 
@@ -196,6 +238,15 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       expect(await auth.text()).toBe(
         'POST https://testcloud.comfy.org/api/auth/session'
       )
+      const survey = await api.post(
+        'https://testcloud.comfy.org/api/settings',
+        {
+          data: { onboarding_survey: { intent: 'exploring' } }
+        }
+      )
+      expect(await survey.text()).toBe(
+        'POST https://testcloud.comfy.org/api/settings'
+      )
       await expect(
         api.post('https://testcloud.comfy.org/customers')
       ).rejects.toThrow('Forbidden live Cloud request')
@@ -213,7 +264,8 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       ).rejects.toThrow('Forbidden live Cloud request')
       expect(sandboxProxy.requests).toEqual([
         'POST https://testapi.comfy.org/customers',
-        'POST https://testcloud.comfy.org/api/auth/session'
+        'POST https://testcloud.comfy.org/api/auth/session',
+        'POST https://testcloud.comfy.org/api/settings'
       ])
       expect([...networkPolicy.unexpected]).toEqual([
         'Mutation POST https://testcloud.comfy.org/customers',

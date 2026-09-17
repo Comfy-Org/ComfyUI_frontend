@@ -55,10 +55,24 @@ export function isLiveCloudMutationAllowed(
     | 'allowCheckout'
     | 'allowPayments'
     | 'allowAccountCreation'
-  >
+  >,
+  data?: unknown
 ): boolean {
   if (SAFE_METHODS.includes(method)) return true
   if (method !== 'POST') return false
+  if (
+    url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
+    url.pathname === '/api/settings'
+  ) {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      Object.keys(data).length === 1 &&
+      'onboarding_survey' in data &&
+      typeof data.onboarding_survey === 'object' &&
+      data.onboarding_survey !== null
+    )
+  }
   if (
     config.allowAccountCreation &&
     config.PLAYWRIGHT_SETUP_API_URL !== 'https://cloud.comfy.org' &&
@@ -105,7 +119,8 @@ export function isLiveCloudMutationAllowed(
     [
       '/api/auth/token',
       '/api/auth/session',
-      '/api/settings/Comfy.InstalledVersion'
+      '/api/settings/Comfy.InstalledVersion',
+      '/api/settings/Comfy.OnboardingCoachmarks.Seen'
     ].includes(url.pathname)
   )
 }
