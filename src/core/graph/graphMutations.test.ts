@@ -64,7 +64,11 @@ describe('graphMutations', () => {
       flags: { pinned: true },
       properties: { source: 'mint-time' }
     })
-    expect(state.lastSerialization).toEqual(node(7, { seed: 42 }))
+    expect(state.lastSerialization).toEqual({
+      ...node(7, { seed: 42 }),
+      mode: 0,
+      order: 0
+    })
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'seed'))
     ).toMatchObject({ name: 'seed', value: 42, type: 'number' })

@@ -125,7 +125,7 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
-function isSafeDefinition(value: unknown): boolean {
+function isSafeDefinition(value: unknown): value is ExportedSubgraph {
   return (
     isRecord(value) &&
     hasSafeInputs(value.inputs) &&
@@ -154,9 +154,7 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
       definition[key] = plain(value)
     }
   })
-  return isSafeDefinition(definition)
-    ? (definition as unknown as ExportedSubgraph)
-    : null
+  return isSafeDefinition(definition) ? definition : null
 }
 
 function readField(source: unknown, key: string): unknown {

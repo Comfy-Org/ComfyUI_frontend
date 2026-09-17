@@ -9,6 +9,8 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { readGraph } from '@comfyorg/comfy-multi-player'
+
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -233,10 +235,7 @@ function startAgentCrdtFollower(
   let knownDocNodeIds: Set<string> = new Set()
   const currentDocNodeIds = (): Set<string> => {
     try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
-      }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
+      return new Set(Object.keys(readGraph(bridge.follower.doc).nodes))
     } catch {
       return new Set()
     }

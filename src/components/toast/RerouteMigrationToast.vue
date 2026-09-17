@@ -20,7 +20,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
@@ -29,8 +29,9 @@ const toast = useToast()
 
 const workflowStore = useWorkflowStore()
 const migrateToLitegraphReroute = async () => {
-  const workflowJSON = app.rootGraph.serialize() as unknown as WorkflowJSON04
-  const migratedWorkflowJSON = migrateLegacyRerouteNodes(workflowJSON)
+  const result = await zComfyWorkflow.safeParseAsync(app.rootGraph.serialize())
+  if (!result.success) return
+  const migratedWorkflowJSON = migrateLegacyRerouteNodes(result.data)
   await app.loadGraphData(
     migratedWorkflowJSON,
     false,
