@@ -12,6 +12,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
+  billingSdkSubscriptionEnabled: false,
   unifiedCloudAuthEnabled: true
 }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
@@ -25,7 +26,12 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
           flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
         )
       },
-      billingSdkSubscriptionRailEnabled: false,
+      get billingSdkSubscriptionRailEnabled() {
+        return (
+          flagState.billingSdkSubscriptionEnabled &&
+          flagState.unifiedCloudAuthEnabled
+        )
+      },
       embeddedCheckoutEnabled: false
     }
   })
@@ -113,6 +119,7 @@ function setupBilling() {
 beforeEach(() => {
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
+  flagState.billingSdkSubscriptionEnabled = false
   flagState.unifiedCloudAuthEnabled = true
   vi.spyOn(workspaceApi, 'getBillingStatus').mockResolvedValue(STATUS)
   vi.spyOn(workspaceApi, 'getBillingBalance').mockResolvedValue({
@@ -211,6 +218,35 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
     expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
     expect(billing.tier.value).toBe('PRO')
     expect(billing.error.value).toBeNull()
+  })
+
+  it('reads through the SDK reader when only the subscription rail is on', async () => {
+    flagState.billingSdkTopupEnabled = false
+    flagState.billingSdkSubscriptionEnabled = true
+    sdkStatus({ subscription_tier: 'PRO' })
+    const billing = setupBilling()
+
+    await billing.fetchStatus()
+
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(billing.tier.value).toBe('PRO')
+  })
+
+  it('reports a status the host cannot hold exactly as a malformed read', async () => {
+    flagState.billingSdkTopupEnabled = true
+    sdkStatus({
+      team_credit_stop: {
+        id: 'team_huge',
+        credits_monthly: BigInt(Number.MAX_SAFE_INTEGER) + 1n,
+        stop_usd: 200n
+      }
+    })
+    const billing = setupBilling()
+
+    await expect(billing.fetchStatus()).rejects.toThrow('MALFORMED_RESPONSE')
+
+    expect(billing.tier.value).toBeNull()
+    expect(billing.error.value).toBe('MALFORMED_RESPONSE')
   })
 
   it('reads the balance through the SDK reader', async () => {

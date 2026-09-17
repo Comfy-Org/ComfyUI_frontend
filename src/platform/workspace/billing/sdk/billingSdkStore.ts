@@ -381,9 +381,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // through the workspace client.
   async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
     const result = await sdk.status.read()
-    return result.status === 'ok'
-      ? { status: 'ok', value: projectBillingStatus(result.value.status) }
-      : result
+    if (result.status === 'error') return result
+    const status = projectBillingStatus(result.value.status)
+    return status === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: status }
   }
 
   async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
