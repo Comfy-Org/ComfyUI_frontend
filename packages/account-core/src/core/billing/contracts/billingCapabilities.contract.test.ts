@@ -44,7 +44,7 @@ function capabilitiesBody(
 }
 
 describe('billing capabilities contract', () => {
-  it('accepts the body the capabilities reader decodes', () => {
+  it('accepts the body the capabilities endpoint returns', () => {
     expect(
       zBillingCapabilitiesResponse.safeParse(capabilitiesBody())
     ).toMatchObject({ success: true })
@@ -97,7 +97,7 @@ describe('billing capabilities contract', () => {
     ).toBe(false)
   })
 
-  it('rejects an expiry the reader could not pace freshness from', () => {
+  it('requires a datetime expiry, which the reader re-decodes leniently as a plain string', () => {
     expect(
       zBillingCapabilitiesResponse.safeParse(
         capabilitiesBody({ expires_at: 'not-a-date' })
