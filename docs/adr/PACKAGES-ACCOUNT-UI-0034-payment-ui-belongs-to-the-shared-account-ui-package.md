@@ -55,7 +55,12 @@ does not live in the package.
    including the provider-bound pieces: mounting the card element, creating
    a confirmation token, and presenting the authentication challenge. A
    payment surface that more than one host renders belongs to the package
-   rather than to whichever host built it first.
+   rather than to whichever host built it first. That rule is stated for
+   payment surfaces and is not extended here. Sign-in is duplicated on the
+   same reasoning — `apps/website/src/components/auth/AuthSignIn.vue` and
+   its Astro routes against the cloud app's own sign-in — and whether it
+   reaches the same conclusion is settled separately, not by citing this
+   sentence.
 
 2. **The header contract changes with it.** "The payment provider's SDK
    stays with the host" stops being true and must be edited, not quietly
