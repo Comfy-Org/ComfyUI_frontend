@@ -1178,31 +1178,27 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   /**
-   * A positional-only snapshot carries no names: its slots follow the
-   * serializable-widget order, like the positional remap in prepare. With a
-   * named record the array is left as saved; the record carries the values.
+   * A positional array's slots follow the serializable-widget order, like the
+   * positional remap in prepare, so every slot can take the live value; the
+   * store owns the values and the snapshot is derived from it.
    */
   function stalePositionalNames(
     namedKeys: string[],
     stalePositional: unknown,
     serializableNames: string[]
   ): string[] {
-    return namedKeys.length > 0 || !Array.isArray(stalePositional)
-      ? namedKeys
-      : serializableNames
+    return Array.isArray(stalePositional) ? serializableNames : namedKeys
   }
 
   function overlaidPositional({
     stalePositional,
-    namedKeys,
     positionalNames,
     overlay
   }: ReturnType<typeof staleWidgetOverlay>): StoredWidgetValues | undefined {
     if (Array.isArray(stalePositional)) {
-      if (namedKeys.length > 0) return stalePositional
       return stalePositional.map((value, index) => {
-        const name = positionalNames[index]
-        return name && name in overlay ? overlay[name] : value
+        const name = positionalNames.at(index)
+        return name !== undefined && name in overlay ? overlay[name] : value
       })
     }
     if (isRecord(stalePositional)) return { ...stalePositional, ...overlay }

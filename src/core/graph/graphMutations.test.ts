@@ -721,6 +721,35 @@ describe('graphMutations', () => {
     expect(state.lastSerialization?.widgets_values).toMatchObject({ seed: 7 })
   })
 
+  it('overlays a live change to a slot the partial named record does not name', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({
+          ...node(1),
+          widgets_values: [21, 5],
+          widgets_values_named: { steps: 21 }
+        })
+      )
+    ).toBe(true)
+    expect(
+      graph.batch(context, (batch) => batch.setWidget(toNodeId(1), 'seed', 7))
+    ).toBe(true)
+    const { widgets_values: _values, ...omitted } = node(1)
+
+    expect(graph.batch(context, (batch) => batch.reconcileNode(omitted))).toBe(
+      true
+    )
+
+    expect(
+      useNodeDataStore().getNode('root', toNodeId(1))?.lastSerialization
+    ).toMatchObject({
+      widgets_values: [21, 7],
+      widgets_values_named: { steps: 21, seed: 7 }
+    })
+  })
+
   it('retains an incremental setValue over a stale positional-only lastSerialization on an omitted-widget reconcile', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
