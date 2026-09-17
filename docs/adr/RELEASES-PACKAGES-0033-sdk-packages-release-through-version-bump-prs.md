@@ -93,14 +93,21 @@ The decisions inside those workflows:
 - **Prereleases go to `next`, releases to `latest`.** The dist-tag is derived
   from the version: a `-` after the patch segment means `next`. `latest` is
   never set by a workflow that a prerelease can reach.
-- **Provenance is on.** Every publish runs under `id-token: write` with
-  `--provenance`, so the npm page carries a signed link back to the workflow
-  run and the commit. An external consumer installing an alpha of an auth
-  package should be able to verify where the tarball came from.
+- **Provenance is on for releases, off for snapshots.** Every release publish
+  runs under `id-token: write` with `--provenance`, so the npm page carries a
+  signed link back to the workflow run and the commit. An external consumer
+  installing an alpha of an auth package should be able to verify where the
+  tarball came from. The snapshot job holds no `id-token: write` at all: it
+  runs `build` and `smoke:pack` out of the pull request under review, and a
+  job that runs an unreviewed script must not be able to mint an OIDC token.
+  A throwaway `0.0.0-pr-<N>-<sha7>` is not worth that capability.
 - **Snapshots are labelled, same-repo, and never `latest`.** The snapshot
   workflow refuses fork PRs (which never receive `NPM_TOKEN` anyway), writes
   the version into a working copy it restores afterwards rather than
-  committing it, and tags the result `pr-<N>`.
+  committing it, and tags the result `pr-<N>`. Because a re-run replays the
+  original event payload, it re-reads the pull request's head SHA before
+  publishing and refuses to run when the branch has moved on, so `pr-<N>`
+  cannot be pointed back at a superseded snapshot.
 
 ### Versioning policy
 

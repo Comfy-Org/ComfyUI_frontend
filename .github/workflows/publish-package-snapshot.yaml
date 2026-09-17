@@ -5,7 +5,9 @@ on:
     types: [labeled, synchronize]
 
 concurrency:
-  group: publish-package-snapshot-${{ github.event.pull_request.number }}
+  group: >-
+    publish-package-snapshot-${{ github.event.pull_request.number }}-${{
+    github.event.pull_request.head.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -20,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
       pull-requests: write
     steps:
       - name: Checkout pull request merge commit
@@ -44,8 +45,11 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
-      # No NODE_AUTH_TOKEN here: build and smoke:pack are scripts this pull
-      # request can rewrite, so they run before the token is in scope.
+      # No NODE_AUTH_TOKEN and no id-token: write anywhere in this job.
+      # build and smoke:pack are scripts this pull request can rewrite, so
+      # neither the registry token nor a mintable OIDC token may be in scope
+      # while they run. Snapshots are therefore published without provenance;
+      # the real release path keeps it.
       - name: Select and build every changed package
         id: prepare
         env:
@@ -101,15 +105,53 @@ jobs:
         id: snapshot
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           DIST_TAG: pr-${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           SELECTED: ${{ steps.prepare.outputs.selected }}
           SNAPSHOT_VERSION: ${{ steps.prepare.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
+          # A re-run replays the event payload, so HEAD_SHA can name a commit
+          # the branch has moved past. Publishing it would point pr-<N> at an
+          # older snapshot than the one the comment already advertises.
+          CURRENT_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')
+          if [ "$CURRENT_SHA" != "$HEAD_SHA" ]; then
+            echo "::error title=Stale snapshot run::This run was triggered for ${HEAD_SHA}, but pull request #${PR_NUMBER} now points at ${CURRENT_SHA}. Publishing would move the ${DIST_TAG} dist-tag backwards, so nothing was published." >&2
+            exit 1
+          fi
           INSTALL_LINES=$(mktemp)
           while IFS=$'\t' read -r PACKAGE NAME <&3; do
+            # The build and smoke:pack scripts ran after the selection step
+            # checked these manifests, so check them again against the fixed
+            # table rather than trusting what the loop was handed.
+            case "$PACKAGE" in
+              account-core) EXPECTED_NAME='@comfyorg/account-core' ;;
+              billing-contract) EXPECTED_NAME='@comfyorg/billing-contract' ;;
+              ingest-types) EXPECTED_NAME='@comfyorg/ingest-types' ;;
+              *)
+                echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
+                exit 1
+                ;;
+            esac
+            PACKAGE_JSON="packages/$PACKAGE/package.json"
+            ACTUAL_NAME=$(node -p "require('./$PACKAGE_JSON').name")
+            ACTUAL_VERSION=$(node -p "require('./$PACKAGE_JSON').version")
+            ACTUAL_PRIVATE=$(node -p "String(require('./$PACKAGE_JSON').private === true)")
+            if [ "$NAME" != "$EXPECTED_NAME" ] || [ "$ACTUAL_NAME" != "$EXPECTED_NAME" ]; then
+              echo "::error title=Package name mismatch::$PACKAGE_JSON name '$ACTUAL_NAME' (selected as '$NAME') is not '$EXPECTED_NAME'" >&2
+              exit 1
+            fi
+            if [ "$ACTUAL_VERSION" != "$SNAPSHOT_VERSION" ]; then
+              echo "::error title=Version mismatch::$PACKAGE_JSON version '$ACTUAL_VERSION' is not the snapshot version '$SNAPSHOT_VERSION'" >&2
+              exit 1
+            fi
+            if [ "$ACTUAL_PRIVATE" = "true" ]; then
+              echo "::error title=Package is private::$PACKAGE_JSON sets \"private\": true after the build scripts ran" >&2
+              exit 1
+            fi
             STATUS=0
             PUBLISHED=$(npm view "${NAME}@${SNAPSHOT_VERSION}" version 2>&1) || STATUS=$?
             if [ "$STATUS" -eq 0 ] && [ -n "$PUBLISHED" ]; then
@@ -119,8 +161,7 @@ jobs:
                 --access public \
                 --tag "$DIST_TAG" \
                 --no-git-checks \
-                --ignore-scripts \
-                --provenance
+                --ignore-scripts
             else
               echo "::error title=Registry lookup failed::$PUBLISHED" >&2
               exit "$STATUS"
