@@ -28,7 +28,9 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -109,6 +111,9 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
     // Intentionally ignored: the next read corrects the view.
   }
 }
+
+/** The SDK rail refusing an action, distinct from any value it could return. */
+const DECLINED = Symbol('subscription rail declined')
 
 interface SeatCapacity {
   maxSeats: number
@@ -436,16 +441,52 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     })
   }
 
+  /**
+   * Runs one action on the SDK rail and reports into this adapter's own
+   * state. `DECLINED` means the routes are not deployed on this backend, so
+   * the caller runs its legacy path.
+   */
+  async function onSubscriptionRail<T>(
+    run: () => Promise<SubscriptionRailOutcome<T>>
+  ): Promise<T | typeof DECLINED> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const outcome = await run()
+      if (outcome.status === 'unavailable') return DECLINED
+      if (outcome.status === 'error') {
+        error.value = outcome.error.message
+        throw outcome.error
+      }
+      return outcome.value
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function openPortalWindow(url: string): void {
+    const portalWindow = window.open(url, '_blank')
+    if (portalWindow) refreshOnPortalReturn()
+  }
+
   async function manageSubscription(): Promise<void> {
+    const rail = useSubscriptionRail()
+    if (rail) {
+      const url = await onSubscriptionRail(() =>
+        rail.openPaymentPortal(window.location.href)
+      )
+      if (url !== DECLINED) {
+        openPortalWindow(url)
+        return
+      }
+    }
+
     isLoading.value = true
     error.value = null
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) {
-        const portalWindow = window.open(response.url, '_blank')
-        if (portalWindow) refreshOnPortalReturn()
-      }
+      if (response.url) openPortalWindow(response.url)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
@@ -456,15 +497,48 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    isLoading.value = true
-    error.value = null
     const attemptStartedAt = Date.now()
+    const trackCancelSucceeded = () =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'cancel',
+        duration_ms: Date.now() - attemptStartedAt
+      })
+    const trackCancelFailed = (err: unknown) =>
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'failed',
+        outcome: 'failure',
+        operation_type: 'cancel',
+        failure_category: categorizeBillingApiError(err),
+        duration_ms: Date.now() - attemptStartedAt
+      })
+
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
       operation_type: 'cancel'
     })
+
+    const rail = useSubscriptionRail()
+    if (rail) {
+      const settled = await onSubscriptionRail(() =>
+        rail.cancelSubscription()
+      ).catch((err: unknown) => {
+        trackCancelFailed(err)
+        throw err
+      })
+      if (settled !== DECLINED) {
+        trackCancelSucceeded()
+        return
+      }
+    }
+
+    isLoading.value = true
+    error.value = null
     // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
@@ -487,25 +561,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'cancel',
-          duration_ms: Date.now() - attemptStartedAt
-        })
+        trackCancelSucceeded()
         return
       }
-      if (billingOpId === undefined) {
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'failed',
-          outcome: 'failure',
-          operation_type: 'cancel',
-          failure_category: categorizeBillingApiError(err),
-          duration_ms: Date.now() - attemptStartedAt
-        })
-      }
+      if (billingOpId === undefined) trackCancelFailed(err)
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err
@@ -520,6 +579,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     // Workspace's resubscribe() call is itself the terminal reactivation, so
     // the click-time source isn't needed here the way the legacy adapter
     // needs it for its pending-checkout-recovery terminal event.
+    const rail = useSubscriptionRail()
+    if (
+      rail &&
+      (await onSubscriptionRail(() => rail.resubscribe())) !== DECLINED
+    ) {
+      return
+    }
+
     isLoading.value = true
     error.value = null
     try {
