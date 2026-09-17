@@ -271,14 +271,20 @@ export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   useCanvasStore().canvas?.setDirty(true, true)
 }
 
-type CanonicalPromotionResult =
+export type CanonicalPromotionResult =
   | { ok: true }
   | { ok: false; reason: 'missingSourceSlot' | 'connectFailed' }
+
+export interface WidgetPromotionFailure {
+  host: SubgraphNode
+  reason: Extract<CanonicalPromotionResult, { ok: false }>['reason']
+}
 
 export function promoteValueWidgetViaSubgraphInput(
   subgraphNode: SubgraphNode,
   sourceNode: LGraphNode,
-  sourceWidget: IBaseWidget
+  sourceWidget: IBaseWidget,
+  preferredInputName = sourceWidget.name
 ): CanonicalPromotionResult {
   const sourceWidgetName = sourceWidget.name
   if (isLinkedPromotion(subgraphNode, sourceNode.id, sourceWidgetName)) {
@@ -289,7 +295,7 @@ export function promoteValueWidgetViaSubgraphInput(
   if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
-  const inputName = nextUniqueName(sourceWidgetName, existingNames)
+  const inputName = nextUniqueName(preferredInputName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
     inputName,
     // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy extension slots may omit type at runtime
@@ -400,17 +406,25 @@ export function isPreviewPseudoWidget(widget: RuntimeWidget): boolean {
 export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
-  parents: SubgraphNode[]
-) {
+  parents: SubgraphNode[],
+  preferredInputName = widget.name
+): WidgetPromotionFailure[] {
+  const failures: WidgetPromotionFailure[] = []
   const source = toPromotionSource(node, widget)
-  if (!(node instanceof LGraphNode)) return
+  if (!(node instanceof LGraphNode)) return failures
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
       promotePreviewViaExposure(parent, node, source.sourceWidgetName)
       continue
     }
-    const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
+    const result = promoteValueWidgetViaSubgraphInput(
+      parent,
+      node,
+      widget,
+      preferredInputName
+    )
     if (!result.ok) {
+      failures.push({ host: parent, reason: result.reason })
       addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
@@ -424,32 +438,7 @@ export function promoteWidget(
     message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
   })
-}
-
-/**
- * Removes the host input projecting a linked promotion identified by source.
- * Returns true when an input was found and demoted.
- */
-function demotePromotedInput(
-  subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
-): boolean {
-  const hostInput = findHostInputForPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-  const linkedInput = hostInput?._subgraphSlot
-  if (!linkedInput) return false
-  const hostWidgetId = hostInput.widgetId
-
-  if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
-    linkedInput.disconnect()
-  } else {
-    subgraphNode.subgraph.removeInput(linkedInput)
-  }
-  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
-  return true
+  return failures
 }
 
 export function demoteWidget(
@@ -458,29 +447,13 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
+  const promotedInputs = findPromotedInputs(parents, source)
+  clearConnectedPromotedWidgets(promotedInputs)
+  removeUnconnectedPromotedInput(promotedInputs)
+  deletePromotedWidgetValues(promotedInputs)
   for (const parent of parents) {
-    if (demotePromotedInput(parent, source)) continue
-
-    if (isPreviewPseudoWidget(widget)) {
-      const previewStore = usePreviewExposureStore()
-      const hostLocator = getPreviewExposureHostLocator(parent)
-      if (!hostLocator) continue
-      const exposure = previewStore
-        .getExposures(parent.rootGraph.id, hostLocator)
-        .find(
-          (entry) =>
-            entry.sourceNodeId === source.sourceNodeId &&
-            entry.sourcePreviewName === source.sourceWidgetName
-        )
-      if (exposure) {
-        previewStore.removeExposure(
-          parent.rootGraph.id,
-          hostLocator,
-          exposure.name
-        )
-        continue
-      }
-    }
+    if (promotedInputs.some((entry) => entry.parent === parent)) continue
+    if (isPreviewPseudoWidget(widget)) removePreviewExposure(parent, source)
   }
   refreshPromotedWidgetRendering(parents)
   addBreadcrumb({
@@ -488,6 +461,72 @@ export function demoteWidget(
     message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
   })
+}
+
+type PromotedInput = NonNullable<ReturnType<typeof findHostInputForPromotion>>
+
+interface PromotedHostInput {
+  parent: SubgraphNode
+  input: PromotedInput
+}
+
+function findPromotedInputs(
+  parents: SubgraphNode[],
+  source: PromotedWidgetSource
+): PromotedHostInput[] {
+  return parents.flatMap((parent) => {
+    const input = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    return input ? [{ parent, input }] : []
+  })
+}
+
+function clearConnectedPromotedWidgets(inputs: PromotedHostInput[]): void {
+  for (const { parent, input } of inputs) {
+    if (!parent.isInputConnected(parent.inputs.indexOf(input))) continue
+    input._widget?.onRemove?.()
+    if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+    input.widget = undefined
+    input.widgetId = undefined
+    input._widget = undefined
+  }
+}
+
+function removeUnconnectedPromotedInput(inputs: PromotedHostInput[]): void {
+  const promotion = inputs.find(
+    ({ parent, input }) =>
+      !parent.isInputConnected(parent.inputs.indexOf(input))
+  )
+  const linkedInput = promotion?.input._subgraphSlot
+  if (linkedInput) promotion.parent.subgraph.removeInput(linkedInput)
+}
+
+function deletePromotedWidgetValues(inputs: PromotedHostInput[]): void {
+  const store = useWidgetValueStore()
+  for (const { input } of inputs) {
+    if (input.widgetId) store.deleteWidget(input.widgetId)
+  }
+}
+
+function removePreviewExposure(
+  parent: SubgraphNode,
+  source: PromotedWidgetSource
+): void {
+  const hostLocator = getPreviewExposureHostLocator(parent)
+  if (!hostLocator) return
+  const store = usePreviewExposureStore()
+  const exposure = store
+    .getExposures(parent.rootGraph.id, hostLocator)
+    .find(
+      (entry) =>
+        entry.sourceNodeId === source.sourceNodeId &&
+        entry.sourcePreviewName === source.sourceWidgetName
+    )
+  if (exposure)
+    store.removeExposure(parent.rootGraph.id, hostLocator, exposure.name)
 }
 
 function getParentNodes(): SubgraphNode[] {

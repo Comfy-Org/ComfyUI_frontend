@@ -354,6 +354,24 @@ describe('promoteRecommendedWidgets', () => {
     expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
   })
 
+  it('demotes virtual previews by removing their exposure', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
+    subgraph.add(glslNode)
+    const previewWidget = getPromotableWidgets(glslNode).find(
+      ({ name }) => name === CANVAS_IMAGE_PREVIEW_WIDGET
+    )
+    if (!previewWidget) throw new Error('Missing virtual preview widget')
+    promoteWidget(glslNode, previewWidget, [host])
+
+    demoteWidget(glslNode, previewWidget, [host])
+
+    expect(
+      usePreviewExposureStore().getExposures(host.rootGraph.id, String(host.id))
+    ).toEqual([])
+  })
+
   it('skips deferred updatePreviews when a preview widget already exists', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -822,7 +840,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(externalLink.id)
     expect(host.inputs[0]?._widget).toBeUndefined()
-    expect(interiorNode.inputs[0]?.link).toBeNull()
+    expect(interiorNode.inputs[0]?.link).not.toBeNull()
     expect(host.widgets).toHaveLength(0)
     if (!promotedInputId) throw new Error('Missing promoted input widgetId')
     expect(useWidgetValueStore().getWidget(promotedInputId)).toBeUndefined()
