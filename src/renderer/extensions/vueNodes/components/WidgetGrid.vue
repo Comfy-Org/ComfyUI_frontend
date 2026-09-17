@@ -110,10 +110,7 @@ const {
   syncLayout?: boolean
 }>()
 
-const tracking = useVueElementTracking(
-  syncLayout ? String(nodeId ?? '') : '',
-  'widgets-grid'
-)
+useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
@@ -148,7 +145,8 @@ const gridTemplateRows = computed(() =>
 const layoutKey = computed(() =>
   renderedRows.value
     .map(
-      ({ widget }) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`
+      ({ widget, showsControl }) =>
+        `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}:${showsControl}`
     )
     .join('|')
 )
@@ -156,7 +154,6 @@ const layoutKey = computed(() =>
 watch(
   layoutKey,
   () => {
-    tracking.reconcile()
     const rootGraphId = canvasStore.rootGraphId
     if (syncLayout && grid.value && rootGraphId && nodeId) {
       syncSlotOffsets(grid.value, rootGraphId, nodeId)

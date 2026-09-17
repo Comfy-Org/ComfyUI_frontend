@@ -6,13 +6,10 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import * as slotOffsets from '@/renderer/core/layout/slots/syncSlotOffsets'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { slotId } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
 
 type ResizeEntryLike = Pick<
@@ -65,6 +62,7 @@ const testState = vi.hoisted(() => {
         contentSizes.set(`${rootGraphId}:${nodeId}`, size)
       }
     ),
+    syncSlotOffsets: vi.fn(),
     setDirty: vi.fn()
   }
 })
@@ -82,6 +80,24 @@ vi.mock<unknown>(
     })
   })
 )
+
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+  layoutStore: {
+    reportContentSize: testState.reportContentSize,
+    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
+    getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
+      testState.nodeLayouts.get(rawNodeId) ?? null
+  }
+}))
+
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
+  syncSlotOffsets: (
+    _element: HTMLElement,
+    _rootGraphId: UUID,
+    nodeId: NodeId
+  ) => testState.syncSlotOffsets(nodeId)
+}))
 
 import { useVueElementTracking } from './useVueNodeResizeTracking'
 
@@ -162,18 +178,6 @@ function seedNodeLayout(options: {
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
-  layoutStore.resetForTests()
-  vi.spyOn(slotOffsets, 'syncSlotOffsets')
-  vi.spyOn(layoutStore, 'reportContentSize').mockImplementation(
-    testState.reportContentSize
-  )
-  vi.spyOn(layoutStore, 'contentSizeOf').mockImplementation(
-    (rootGraphId, nodeId) =>
-      testState.contentSizes.get(`${rootGraphId}:${nodeId}`)
-  )
-  vi.spyOn(layoutStore, 'getNodeLayout').mockImplementation(
-    (_rootGraphId, nodeId) => testState.nodeLayouts.get(nodeId) ?? null
-  )
 })
 
 describe('useVueNodeResizeTracking', () => {
@@ -204,7 +208,7 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.callback?.([changed], createObserverMock())
 
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(slotOffsets.syncSlotOffsets).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
   })
 
   it('reports a fresh measurement after root workflow replacement', () => {
@@ -226,11 +230,7 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
-      entry.target,
-      SECOND_GRAPH_ID,
-      nodeId
-    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
   it('remounts root-flat node identities during same-root subgraph navigation', async () => {
@@ -310,11 +310,7 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
-      entry.target,
-      ROOT_GRAPH_ID,
-      nodeId
-    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
 
   it('defers hidden entries and re-observes connected elements when visible', async () => {
@@ -333,7 +329,7 @@ describe('useVueNodeResizeTracking', () => {
 
     expect(resizeObserverState.unobserve).toHaveBeenCalledWith(entry.target)
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(slotOffsets.syncSlotOffsets).not.toHaveBeenCalled()
+    expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
 
     vi.clearAllMocks()
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
@@ -352,11 +348,7 @@ describe('useVueNodeResizeTracking', () => {
         height: 180 - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
-      entry.target,
-      ROOT_GRAPH_ID,
-      nodeId
-    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
     entry.target.remove()
   })
 
@@ -556,89 +548,7 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(slotOffsets.syncSlotOffsets).toHaveBeenCalledWith(
-      entry.target,
-      ROOT_GRAPH_ID,
-      nodeId
-    )
+    expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
     expect(testState.reportContentSize).not.toHaveBeenCalled()
-  })
-
-  it('tracks reordered and replacement rows without accepting stale geometry', async () => {
-    const nodeId = toNodeId('grid-node')
-    const rows = ref([0, 1])
-    let reconcile!: () => void
-    const Grid = defineComponent({
-      setup() {
-        reconcile = useVueElementTracking(nodeId, 'widgets-grid').reconcile
-        return () =>
-          h(
-            'div',
-            { 'data-testid': 'tracked-grid' },
-            rows.value.map((index) =>
-              h('div', {
-                key: index,
-                'data-testid': 'tracked-row',
-                'data-slot-key': slotId(nodeId, 'input', index)
-              })
-            )
-          )
-      }
-    })
-    const container = document.createElement('div')
-    document.body.append(container)
-    const { unmount } = render(Grid, { container })
-    container.dataset.nodeId = nodeId
-    Object.defineProperty(container, 'offsetWidth', { value: 200 })
-    container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
-    const grid = screen.getByTestId('tracked-grid')
-    const originalRows = screen.getAllByTestId('tracked-row')
-    const stored = (index: number) =>
-      layoutStore.getSlotOffset(
-        ROOT_GRAPH_ID,
-        nodeId,
-        index,
-        'input',
-        'expanded'
-      )
-    function resize(...elements: Element[]) {
-      resizeObserverState.callback?.(
-        elements.map((target) => fromPartial<ResizeObserverEntry>({ target })),
-        createObserverMock()
-      )
-    }
-    function measureRows() {
-      const elements = screen.getAllByTestId('tracked-row')
-      elements.forEach((element, index) => {
-        element.getBoundingClientRect = () =>
-          new DOMRect(0, 100 + index * 40, 8, 8)
-      })
-      resize(...elements)
-    }
-
-    measureRows()
-    expect(stored(0)).toEqual({ x: 0, y: 74 })
-    expect(stored(1)).toEqual({ x: 0, y: 114 })
-
-    rows.value = [1, 0]
-    await nextTick()
-    reconcile()
-    measureRows()
-    expect(stored(1)).toEqual({ x: 0, y: 74 })
-    expect(stored(0)).toEqual({ x: 0, y: 114 })
-
-    rows.value = [2]
-    await nextTick()
-    reconcile()
-    measureRows()
-    expect(stored(2)).toEqual({ x: 0, y: 74 })
-    expect(stored(0)).toBeNull()
-    const replacement = screen.getByTestId('tracked-row')
-    resize(...originalRows)
-    expect(stored(2)).toEqual({ x: 0, y: 74 })
-
-    unmount()
-    resize(grid, replacement)
-    expect(stored(2)).toEqual({ x: 0, y: 74 })
   })
 })

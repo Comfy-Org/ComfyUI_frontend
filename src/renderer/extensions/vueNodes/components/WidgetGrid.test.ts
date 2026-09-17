@@ -124,8 +124,12 @@ function renderLayoutGrid(syncLayout = true) {
   container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
   const grid = screen.getByTestId('node-widgets')
   grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
+  let socketTop = 140
   const socket = screen.getByTestId('slot-dot')
-  socket.getBoundingClientRect = () => new DOMRect(0, 140, 8, 8)
+  socket.getBoundingClientRect = () => new DOMRect(0, socketTop, 8, 8)
+  const moveSocket = (top: number) => {
+    socketTop = top
+  }
   const stored = () =>
     layoutStore.getSlotOffset(
       'widget-grid-graph',
@@ -134,7 +138,7 @@ function renderLayoutGrid(syncLayout = true) {
       'input',
       'expanded'
     )
-  return { grid, rerender, stored }
+  return { grid, rerender, stored, moveSocket }
 }
 
 describe('WidgetGrid', () => {
@@ -149,16 +153,22 @@ describe('WidgetGrid', () => {
     layoutStore.resetForTests()
   })
 
-  it('updates slot offsets when rows resize without changing grid bounds', async () => {
-    const { grid, rerender, stored } = renderLayoutGrid()
+  it('resyncs slot offsets when a connected row swaps its control for a label', async () => {
+    const { grid, rerender, stored, moveSocket } = renderLayoutGrid()
     for (const observer of observers) observer.resize(grid)
     expect(stored()).toEqual({ x: 0, y: 114 })
 
-    await rerender({ processedWidgets: [widget('steps', 'number', 0)] })
-    screen.getByTestId('slot-dot').getBoundingClientRect = () =>
-      new DOMRect(0, 100, 8, 8)
-    for (const observer of observers)
-      observer.resize(screen.getByTestId('node-widget'))
+    moveSocket(100)
+    await rerender({
+      processedWidgets: [
+        {
+          ...widget('width', 'number', 0),
+          visible: false,
+          suppressedByConnection: true
+        }
+      ]
+    })
+
     expect(stored()).toEqual({ x: 0, y: 74 })
   })
 
