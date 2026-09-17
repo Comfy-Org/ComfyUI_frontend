@@ -42,6 +42,7 @@ import {
   ContextMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -66,6 +67,7 @@ const activeContext = ref<SlotMenuContext | null>(null)
 
 const canvasStore = useCanvasStore()
 const lgCanvas = canvasStore.getCanvas()
+const { t } = useI18n()
 const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
 const worldPosition = ref({ x: 0, y: 0 })
 const screenPosition = ref({ x: 0, y: 0 })
@@ -81,6 +83,17 @@ function updateAnchorPosition() {
     x: (worldPosition.value.x + offset[0]) * scale + canvasLeft.value,
     y: (worldPosition.value.y + offset[1]) * scale + canvasTop.value
   }
+  if (isOpen.value) dispatchContextMenuEvent()
+}
+
+function dispatchContextMenuEvent() {
+  contextMenuTrigger.value?.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      clientX: screenPosition.value.x,
+      clientY: screenPosition.value.y
+    })
+  )
 }
 
 const { resume: startSync, pause: stopSync } = useRafFn(updateAnchorPosition, {
@@ -97,9 +110,9 @@ const menuItems = computed<SlotMenuItem[]>(() => {
 
   if (canRenameSlot(ctx)) {
     items.push({
-      label: 'Rename slot',
+      label: t('g.renameSlot'),
       command: () => {
-        const newLabel = window.prompt('New slot label:')
+        const newLabel = window.prompt(t('g.newSlotLabel'))
         if (newLabel !== null) renameSlot(ctx, newLabel)
         hide()
       }
@@ -109,9 +122,9 @@ const menuItems = computed<SlotMenuItem[]>(() => {
 
   const targets = findCompatibleTargets(ctx)
   if (targets.length === 0) {
-    items.push({ label: 'No compatible nodes', disabled: true })
+    items.push({ label: t('g.noCompatibleNodes'), disabled: true })
   } else {
-    items.push({ label: 'Connect to...', disabled: true })
+    items.push({ label: t('g.connectTo'), disabled: true })
     items.push({ separator: true })
     items.push(
       ...targets.map((target) => ({
@@ -137,13 +150,7 @@ async function show(event: MouseEvent, context: SlotMenuContext) {
   updateAnchorPosition()
 
   await nextTick()
-  contextMenuTrigger.value?.dispatchEvent(
-    new MouseEvent('contextmenu', {
-      bubbles: true,
-      clientX: event.clientX,
-      clientY: event.clientY
-    })
-  )
+  dispatchContextMenuEvent()
 }
 
 function hide() {
