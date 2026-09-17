@@ -434,8 +434,6 @@ export default defineConfig([
       'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
       'src/**/{generated,vendor}/**',
       'src/__ecs_matrix__/**',
-      'src/extensions/core/**',
-      'src/scripts/**',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts'
     ],

@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "Ziehen Sie ein Asset aus dem Asset-Panel hinein",
     "addNodesFromGraph": "Erwähnen Sie Nodes aus dem Graphen",
-    "addPromptToSend": "Prompt zum Senden hinzufügen",
     "addToPrompt": "Zum Prompt hinzufügen",
     "alpha": "ALPHA",
     "askComfyAgent": "Comfy Agent fragen",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "Workflow auswählen",
     "chooseWorkflowForChat": "Workflow für diesen Chat auswählen",
     "close": "Schließen",
+    "coachBody": "Beschreiben Sie Ihre Ideen und lassen Sie ihn Workflows erstellen und ausführen. Er sieht Ihr Canvas und Ihre Dateien.",
+    "coachGraphBody": "Sie können den Graph weiterhin bearbeiten oder zu anderen Tabs wechseln, während der Agent arbeitet.",
+    "coachGraphTitle": "Bearbeiten Sie weiter, während der Agent arbeitet",
+    "coachHistoryBody": "Frühere Chats werden hier gespeichert. Öffnen Sie einen, um ihn zu prüfen oder die Arbeit mit dem Agenten fortzusetzen.",
+    "coachHistoryTitle": "Machen Sie dort weiter, wo Sie aufgehört haben",
+    "coachProgress": "{current} von {total}",
+    "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
+    "coachWorkflowBody": "Der Agent bearbeitet nur den von Ihnen ausgewählten Workflow. Sie können auch Referenzdateien hochladen oder andere Workflows erwähnen.",
+    "coachWorkflowTitle": "Wählen Sie einen Workflow aus, den Ihr Agent bearbeiten soll",
     "consent": {
       "accept": "Comfy Agent verwenden",
       "body1": "Comfy Agent hilft Ihnen, Workflows zu planen, zu erstellen, auszuführen und zu iterieren. Beschreiben Sie, was Sie erstellen möchten, und Comfy Agent arbeitet als leistungsstarkes Teammitglied mit Ihnen zusammen.",
@@ -49,6 +57,13 @@
     "credits": "Credits",
     "currentTab": "Aktueller Tab",
     "delete": "Löschen",
+    "diagnosticReport": {
+      "clipboardFailed": "Zugriff auf die Zwischenablage fehlgeschlagen. Wählen Sie den folgenden Bericht aus und kopieren Sie ihn, oder versuchen Sie es erneut.",
+      "collectionFailed": "Der Bericht konnte nicht erfasst werden. Versuchen Sie es erneut oder deaktivieren Sie optionale Quellen und versuchen Sie es erneut.",
+      "includedSources": "In Bericht aufnehmen (standardmäßig aktiviert)",
+      "manualCopy": "Zu kopierender Bericht",
+      "retry": "Bericht erneut kopieren"
+    },
     "dismiss": "Verwerfen",
     "downloadAssets": "Assets herunterladen",
     "dragAndDropAssets": "Assets hierher ziehen und ablegen",
@@ -144,6 +159,7 @@
     "showMore": "Mehr anzeigen",
     "skip": "Überspringen",
     "stop": "Stopp",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "Erstellen Sie eine gelbe Ente mit einer Hockeymaske",
       "Meine gespeicherten Workflows auflisten",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "latent",
     "loaders": "Loader",
     "logic": "Logik",
+    "looping": "Schleifen",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "Scheduler",
     "scheduling": "Planung",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "Shader",
     "sigmas": "Sigmas",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "Wenden Sie den Promo-Code an, um Ihr Angebot zu aktualisieren, bevor Sie fortfahren.",
       "backToAllPlans": "Zurück zu allen Plänen",
       "billedEachMonth": "{amount} werden monatlich berechnet. Jederzeit kündbar.",
+      "billingAddress": "Rechnungsadresse",
       "changePaymentMethod": "Ändern",
       "commitment": "Bindung",
       "completePayment": "Schließen Sie Ihre Zahlung ab",
@@ -5143,6 +5163,13 @@
     },
     "invite": "Einladen",
     "inviteLimitReached": "Sie haben die maximale Anzahl von {count} Mitgliedern erreicht",
+    "inviteLinks": {
+      "copied": "Kopiert!",
+      "copyAll": "Einladungslink kopieren | Alle Links kopieren ({count})",
+      "copyLink": "Einladungslink kopieren",
+      "sentLead": "Jede Einladung enthält einen persönlichen Link, den Sie direkt teilen können:",
+      "sentTitle": "{count} Einladung gesendet | {count} Einladungen gesendet"
+    },
     "inviteMember": "Mitglied einladen",
     "inviteMemberDialog": {
       "failedCount": "{count} Einladung konnte nicht gesendet werden. Versuchen Sie es erneut. | {count} Einladungen konnten nicht gesendet werden. Versuchen Sie es erneut.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "Einladung stornieren",
         "changeRole": "Rolle ändern",
+        "copyInviteLink": "Einladungslink kopieren",
         "removeMember": "Mitglied entfernen",
         "resendInvite": "Einladung erneut senden",
         "setCreditLimit": "Credit-Limit festlegen"
