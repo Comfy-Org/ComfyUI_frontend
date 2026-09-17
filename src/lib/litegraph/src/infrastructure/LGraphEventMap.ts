@@ -66,7 +66,14 @@ export interface LGraphEventMap {
    */
   'node:before-removed': {
     node: LGraphNode
+    /** A live node already registered under the same id, when one exists. */
     successor?: LGraphNode
+    /**
+     * Whether the node's canonical state (store record, widget values, links)
+     * survives this removal: a successor, a re-created record, or an explicit
+     * replacement claims it. This is the outcome, not the option passed to
+     * `LGraph.remove`; the option alone does not keep state nobody claims.
+     */
     preserveCanonicalState?: boolean
   }
 

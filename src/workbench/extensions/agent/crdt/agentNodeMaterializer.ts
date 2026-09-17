@@ -463,7 +463,7 @@ function withNamedWidgetValues(
     (widget) => widget.serialize !== false
   )
   serialisable.forEach((widget, index) => {
-    if (!(widget.name in completed) && index < values.length)
+    if (!Object.hasOwn(completed, widget.name) && index < values.length)
       completed[widget.name] = values[index]
   })
   return { ...serialised, widgets_values_named: completed }

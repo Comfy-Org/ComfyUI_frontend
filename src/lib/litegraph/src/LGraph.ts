@@ -349,7 +349,15 @@ function isAttachedToAGraph(node: LGraphNode): boolean {
   )
 }
 
-/** Copies every own field of a record; `Object.assign` back restores it in place. */
+/**
+ * Copies every own field of a record; `restoreRecord` puts them back in place.
+ *
+ * Shallow on purpose. Adoption replaces the nested `properties`, `flags`,
+ * `inputs` and widget-option references with the successor's own containers
+ * before `configure` runs, so a hook that mutates those in place touches the
+ * successor's objects, never the incumbent's. Rollback therefore only has to
+ * restore the top-level references, which this snapshot captures.
+ */
 function snapshotRecord(record: NodeState): NodeState {
   return { ...toRaw(record) }
 }
@@ -1728,11 +1736,18 @@ export class LGraph
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', {
-      node,
-      successor,
-      preserveCanonicalState: !!options.preserveCanonicalState
-    })
+    // Lifecycle callbacks are effects around the structural removal: what
+    // they throw is collected and rethrown once the node is fully detached.
+    const failures = new LifecycleFailures()
+    failures.run(() =>
+      this.events.dispatch('node:before-removed', {
+        node,
+        successor,
+        // Reports the outcome, not the requested option: listeners need to
+        // know whether canonical state survives this removal.
+        preserveCanonicalState: !!preserveReplacement
+      })
+    )
 
     if (!preserveReplacement) {
       const { inputs, outputs } = node
@@ -1755,9 +1770,6 @@ export class LGraph
       }
     }
 
-    // Lifecycle callbacks are effects around the structural removal: what
-    // they throw is collected and rethrown once the node is fully detached.
-    const failures = new LifecycleFailures()
     if (node.isSubgraphNode()) {
       failures.run(() =>
         this.releaseSubgraphs(
