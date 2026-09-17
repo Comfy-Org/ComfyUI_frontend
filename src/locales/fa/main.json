@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "asset را از پنل asset بکشید و رها کنید",
     "addNodesFromGraph": "به nodeهای نمودار اشاره کنید",
-    "addPromptToSend": "افزودن یک prompt برای ارسال",
     "addToPrompt": "افزودن به پرامپت",
     "alpha": "آلفا",
     "askComfyAgent": "از Comfy Agent بپرسید",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "انتخاب یک workflow",
     "chooseWorkflowForChat": "انتخاب یک workflow برای این گفت‌وگو",
     "close": "بستن",
+    "coachBody": "ایده‌های خود را شرح دهید و از آن بخواهید workflowها را بسازد و اجرا کند. canvas و فایل‌های شما را می‌بیند.",
+    "coachGraphBody": "هنگام کار agent، همچنان می‌توانید graph را ویرایش کنید یا تب‌ها را تغییر دهید.",
+    "coachGraphTitle": "اجازه دهید agent هنگام ویرایش شما اجرا شود",
+    "coachHistoryBody": "گفت‌وگوهای قبلی اینجا ذخیره می‌شوند. یکی را باز کنید تا آن را مرور کنید یا کار با agent را ادامه دهید.",
+    "coachHistoryTitle": "از همان‌جا که رها کردید ادامه دهید",
+    "coachProgress": "{current} از {total}",
+    "coachTitle": "با Comfy Agent خود آشنا شوید",
+    "coachWorkflowBody": "agent فقط workflow انتخابی شما را ویرایش می‌کند. همچنین می‌توانید فایل‌های مرجع بارگذاری کنید یا به workflowهای دیگر اشاره کنید.",
+    "coachWorkflowTitle": "یک workflow را برای ویرایش توسط agent انتخاب کنید",
     "consent": {
       "accept": "شروع استفاده از Comfy Agent",
       "body1": "Comfy Agent به شما کمک می‌کند workflowها را برنامه‌ریزی، ایجاد، اجرا و تکرار کنید. آنچه می‌خواهید ایجاد کنید را شرح دهید تا Comfy Agent به‌عنوان هم‌تیمی قدرتمند شما عمل کند.",
@@ -49,6 +57,13 @@
     "credits": "اعتبار",
     "currentTab": "زبانهٔ فعلی",
     "delete": "حذف",
+    "diagnosticReport": {
+      "clipboardFailed": "دسترسی به کلیپ‌بورد ناموفق بود. گزارش زیر را انتخاب و کپی کنید، یا دوباره تلاش کنید.",
+      "collectionFailed": "امکان گردآوری گزارش وجود نداشت. دوباره تلاش کنید، یا منابع اختیاری را غیرفعال کرده و دوباره تلاش کنید.",
+      "includedSources": "افزودن به گزارش (به‌طور پیش‌فرض فعال)",
+      "manualCopy": "گزارش برای کپی",
+      "retry": "تلاش مجدد برای کپی گزارش"
+    },
     "dismiss": "بستن",
     "downloadAssets": "دانلود دارایی‌ها",
     "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
@@ -144,6 +159,7 @@
     "showMore": "نمایش بیشتر",
     "skip": "رد کردن",
     "stop": "توقف",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "یک اردک زرد با ماسک هاکی تولید کن",
       "workflowهای ذخیره‌شدهٔ من را فهرست کن",
@@ -3163,6 +3179,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3248,7 @@
     "latent": "لاتنت",
     "loaders": "بارگذارها",
     "logic": "منطق",
+    "looping": "حلقه‌ای",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3281,7 @@
     "scail": "scail",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سیگماها",
@@ -4500,6 +4519,7 @@
       "applyQuoteBeforeContinuing": "پیش از ادامه، کد تخفیف را اعمال کنید تا پیش‌فاکتور شما به‌روزرسانی شود.",
       "backToAllPlans": "بازگشت به همه طرح‌ها",
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
+      "billingAddress": "نشانی صورتحساب",
       "changePaymentMethod": "تغییر",
       "commitment": "تعهد",
       "completePayment": "پرداخت خود را تکمیل کنید",
@@ -5143,6 +5163,13 @@
     },
     "invite": "دعوت",
     "inviteLimitReached": "به حداکثر تعداد {count} عضو رسیده‌اید",
+    "inviteLinks": {
+      "copied": "کپی شد!",
+      "copyAll": "کپی پیوند دعوت | کپی همه پیوندها ({count})",
+      "copyLink": "کپی پیوند دعوت",
+      "sentLead": "هر دعوت یک پیوند شخصی دارد که می‌توانید مستقیماً به اشتراک بگذارید:",
+      "sentTitle": "{count} دعوت ارسال شد | {count} دعوت ارسال شد"
+    },
     "inviteMember": "دعوت عضو",
     "inviteMemberDialog": {
       "failedCount": "ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید. | ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید.",
@@ -5170,6 +5197,7 @@
       "actions": {
         "cancelInvite": "لغو دعوت‌نامه",
         "changeRole": "تغییر نقش",
+        "copyInviteLink": "کپی پیوند دعوت",
         "removeMember": "حذف عضو",
         "resendInvite": "ارسال مجدد دعوت‌نامه",
         "setCreditLimit": "تنظیم سقف اعتبار"
