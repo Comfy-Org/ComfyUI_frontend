@@ -14,8 +14,10 @@ import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  SessionErrorCode
+  SessionErrorCode,
+  SessionSnapshot
 } from './session.js'
+import { createTestIdentity } from '../testing.js'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
@@ -965,7 +967,7 @@ describe('identity brand', () => {
         // @ts-expect-error an unbranded port is not an AccountIdentity
         { onUserChanged: () => () => undefined }
       )
-    ).toThrow('attachIdentity needs the identity')
+    ).toThrow('the session client needs the identity')
   })
 
   it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {
@@ -1428,6 +1430,35 @@ describe('sign-in state ownership', () => {
     identity.fire(testUser())
 
     expect(client.getSnapshot().phase).toBe('pending')
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('detaches a subscription disposed from inside its first synchronous delivery', () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const { client } = makeClient({ fetchImpl })
+    const first = testUser()
+    let deliver: ((user: AccountUser | null) => void) | undefined
+    const unsubscribe = vi.fn()
+    const port = createTestIdentity<AccountUser>({
+      onUserChanged: (callback) => {
+        deliver = callback
+        callback(first)
+        return unsubscribe
+      }
+    })
+    const seen: SessionSnapshot['phase'][] = []
+    client.subscribe((snapshot) => {
+      seen.push(snapshot.phase)
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    client.attachIdentity(port)
+    deliver?.(testUser('uid-2', 'id-token-2'))
+
+    expect(seen).toEqual(['pending', 'minting', 'pending'])
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(first.getIdToken).not.toHaveBeenCalled()
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })
