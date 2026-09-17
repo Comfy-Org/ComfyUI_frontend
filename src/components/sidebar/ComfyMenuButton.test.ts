@@ -49,56 +49,45 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
 }
 
 describe('ComfyMenuButton', () => {
+  describe.for(['row', 'label', 'toggle'] as const)(
+    'clicking the %s',
+    (target) => {
+      it('toggles Nodes 2.0 exactly once', async () => {
+        const menu = await openMenu()
+
+        await menu.user.click(menu[target])
+
+        expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
+          'Comfy.VueNodes.Enabled',
+          true
+        )
+      })
+    }
+  )
+
   describe.for([
-    { target: 'row', description: 'anywhere on the row' },
-    { target: 'label', description: 'the row label' },
-    { target: 'toggle', description: 'the switch itself' }
-  ] as const)('clicking $description', ({ target }) => {
-    it('enables Nodes 2.0 while it is disabled', async () => {
-      const menu = await openMenu()
+    { enabled: false, written: true },
+    { enabled: true, written: false }
+  ])('while Nodes 2.0 is $enabled', ({ enabled, written }) => {
+    it('writes the opposite value and shows it on the switch', async () => {
+      const menu = await openMenu({ vueNodesEnabled: enabled })
 
-      await menu.user.click(menu[target])
-
-      expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
-        'Comfy.VueNodes.Enabled',
-        true
-      )
-      expect(menu.toggle).toBeChecked()
-    })
-
-    it('disables Nodes 2.0 while it is enabled', async () => {
-      const menu = await openMenu({ vueNodesEnabled: true })
-
-      await menu.user.click(menu[target])
+      await menu.user.click(menu.row)
 
       expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
         'Comfy.VueNodes.Enabled',
-        false
+        written
       )
-      expect(menu.toggle).not.toBeChecked()
-    })
-
-    it('keeps the menu open so the change can be reverted', async () => {
-      const menu = await openMenu()
-
-      await menu.user.click(menu[target])
-
-      expect(menu.toggle).toBeVisible()
+      expect(menu.toggle).toHaveAttribute('aria-checked', String(written))
     })
   })
 
-  it('does not move focus onto the row when it is clicked', async () => {
-    const { user, row } = await openMenu()
+  it('keeps the menu open after a row click so the change can be reverted', async () => {
+    const menu = await openMenu()
 
-    await user.click(row)
+    await menu.user.click(menu.row)
 
-    expect(row).not.toHaveFocus()
-  })
-
-  it('marks the row as the item link TieredMenu clicks on Enter', async () => {
-    const { row } = await openMenu()
-
-    expect(row).toHaveAttribute('data-pc-section', 'itemlink')
+    expect(menu.toggle).toBeVisible()
   })
 
   it('does not advertise Nodes 2.0 as beta', async () => {

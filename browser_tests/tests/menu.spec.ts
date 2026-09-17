@@ -245,6 +245,48 @@ test.describe('Menu', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('Nodes 2.0 toggle', () => {
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': false } })
+
+    test('Toggles from a click anywhere on the row', async ({ comfyPage }) => {
+      const { topbar } = comfyPage.menu
+      await topbar.openTopbarMenu()
+
+      await topbar.clickNodes2RowBody()
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+        .toBe(true)
+      await expect(
+        comfyPage.page.getByRole('switch', { name: 'Nodes 2.0' })
+      ).toBeChecked()
+    })
+
+    test('Leaves the menu usable after a row click', async ({ comfyPage }) => {
+      const { topbar } = comfyPage.menu
+      await topbar.openTopbarMenu()
+
+      await topbar.clickNodes2RowBody()
+
+      await expect(topbar.menuRootList).toBeFocused()
+      await expect(await topbar.openSubmenu('Theme')).toBeVisible()
+    })
+
+    test('Does not toggle when Space reaches the focused row', async ({
+      comfyPage
+    }) => {
+      const { topbar } = comfyPage.menu
+      await topbar.openTopbarMenu()
+      await topbar.focusMenuItem('Nodes 2.0')
+
+      await comfyPage.page.keyboard.press('Space')
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+        .toBe(false)
+    })
+  })
+
   // Only test 'Top' to reduce test time.
   // ['Bottom', 'Top']
   ;['Top'].forEach(async (position) => {

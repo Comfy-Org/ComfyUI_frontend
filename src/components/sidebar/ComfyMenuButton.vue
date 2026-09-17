@@ -72,8 +72,7 @@
       </a>
       <div
         v-else
-        v-bind="{ ...props.action, tabindex: undefined }"
-        class="flex cursor-pointer items-center justify-between px-4 py-2"
+        class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
         data-testid="nodes-2-toggle-item"
         @click.stop="toggleNodes2"
       >
