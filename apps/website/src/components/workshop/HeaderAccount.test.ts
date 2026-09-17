@@ -554,6 +554,48 @@ describe('HeaderAccount workspace switcher', () => {
     )
   })
 
+  it('drops a pending switch when the authenticated session changes', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    const replacement = {
+      token: 'other-jwt',
+      uid: 'user-2',
+      workspace: { id: 'other', name: 'Other', type: 'personal' as const },
+      role: 'owner'
+    }
+    h.user!.value = {
+      uid: 'user-2',
+      email: 'other@b.co',
+      displayName: 'Other'
+    }
+    h.session!.value = replacement
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.session!.value).toEqual(replacement)
+  })
+
   it('switches by reminting for the picked workspace', async () => {
     signIn()
     vi.stubGlobal(
