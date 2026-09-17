@@ -9,6 +9,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 const test = cloudAppFixture
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -169,10 +170,11 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     await expect
       .poll(() =>
         page.evaluate(
-          () =>
+          (nodeId) =>
             window
-              .app!.graph.getNodeById('1' as never)
-              ?.widgets?.find((widget) => widget.name === 'model_file')?.value
+              .app!.graph.getNodeById(nodeId)
+              ?.widgets?.find((widget) => widget.name === 'model_file')?.value,
+          toNodeId('1')
         )
       )
       .toBe('workflow.glb')
