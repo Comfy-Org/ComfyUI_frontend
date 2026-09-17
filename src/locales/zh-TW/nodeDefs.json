@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "結束迴圈",
+    "inputs": {
+      "accumulate": {
+        "name": "累積",
+        "tooltip": "啟用時傳回每次迭代的 output_value；否則僅傳回最後一次迭代。"
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "從結束迴圈傳送回開始迴圈，供下一次迭代使用的值。"
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "結束迴圈傳回的值。它會依據累積設定傳回最後一次迭代或所有迭代。"
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "連接每次迭代都必須執行的輸出。其值不會傳回。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "輸出",
+        "tooltip": "最後一次迭代的 output_value，或啟用累積時跨迭代累積的值。"
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Epsilon縮放",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "使用 Google 的 Gemini 模型產生文字回應。提供文字提示詞，並可選擇提供一張或多張圖片、音訊片段、影片或檔案作為多模態內容。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於產生回應的 Gemini 模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "使用 Google 的 Gemini Omni Flash 模型，從文字提示生成帶音訊的影片。可選擇提供參考圖像及／或影片以引導或編輯結果。請直接在提示中描述所需長度（3-10 秒）及長寬比（16:9 或 9:16）。",
     "display_name": "Google Gemini Omni（影片）",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "批次大小",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "從清單取得項目",
+    "inputs": {
+      "index": {
+        "name": "索引"
+      },
+      "list": {
+        "name": "清單"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "文字",
         "tooltip": "文字標題清單。"
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "位置"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "總計"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "使用 Pruna 影片模型將圖片製作成動畫影片，可選擇指定最後一幀、產生的聲音或音訊軌。",
+    "display_name": "Pruna P-Video-2 圖片轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_draft": {
+        "name": "草稿"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "使用 Pruna 影片模型根據文字提示詞生成影片，可選擇生成音效或使用音軌驅動影片。",
+    "display_name": "Pruna P-Video-2 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "草稿"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[配方]\n\nhidream: long clip-l、long clip-g、t5xxl、llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "開始迴圈",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "重複使用先前執行中未變更的迭代結果。停用後將再次執行每次迭代。"
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "在第一次迭代時，作為 current_iteration_value 提供的值。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "迴圈迭代模式。"
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "連接外層「開始迴圈」的 iteration_index，以巢狀化此迴圈。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "目前迴圈迭代的索引。"
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "在迴圈第一次迭代期間為 True。"
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "在迴圈的最後一次迭代期間為 True。"
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "使用清單模式時，清單中的目前項目。在簡易與 For 模式中為無。"
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "目前迭代的迴圈傳遞值：第一次迭代時為 initial_iteration_value，之後每次迭代則為來自結束迴圈的 next_iteration_value。"
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "比較",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "從影像產生具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：影像轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "方向"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "從正視圖加上左、後、右視圖中的一至三張，產生具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：多視角轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "方向"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時提供。"
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "根據文字提示詞生成具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：文字轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quad": {
+        "name": "四邊形"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時提供。"
       }
     }
   },
