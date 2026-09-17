@@ -85,8 +85,8 @@ portal, because Staging disables the embedded-checkout saved-card API.
 
 ## Saved-card top-ups
 
-PR #17538 depends only on #17481. Run `--project=cloud-live-paid` with a
-dedicated Creator account and saved Stripe test card. The top-up driver, exact
+PR #17538 depends only on #17481. Run `--project=cloud-live-paid`. Each test
+creates a disposable account and completes a real Creator checkout with a saved
+Stripe test card before purchasing credits. The top-up driver, exact
 balance/operation assertions, retry-key fix, and top-up endpoint permission belong
-to this PR. Payment tests reject production. The existing Staging test account
-reports Free, so it does not currently satisfy the live test prerequisite.
+to this PR. Payment tests reject production and require no permanent account credentials.

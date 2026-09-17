@@ -3,8 +3,7 @@ import {
   zBillingOpStatusResponse,
   zBillingStatusResponse,
   zCreateTopupRequest,
-  zCreateTopupResponse,
-  zListSavedPaymentMethodsResponse
+  zCreateTopupResponse
 } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 import type { TestInfo } from '@playwright/test'
@@ -30,11 +29,6 @@ export class LiveCloudTopup {
     )
     expect(status.is_active).toBe(true)
     expect(status.subscription_tier).toBe('CREATOR')
-    const methods = await this.session.read(
-      '/api/billing/payment-methods',
-      zListSavedPaymentMethodsResponse
-    )
-    expect(methods).not.toHaveLength(0)
     await this.comfyPage.page.goto(`${this.frontend}/?topup=1`)
     await this.dialog.getByRole('button', { name: '$10', exact: true }).click()
     await this.dialog
