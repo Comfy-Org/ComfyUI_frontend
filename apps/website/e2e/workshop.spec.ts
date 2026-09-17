@@ -302,16 +302,18 @@ test.describe('Models catalog', () => {
     // Both measured after the scroll settles: the nav only reaches its docked
     // height once the banner above it has scrolled away.
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    await expect
-      .poll(async () => {
-        const [headingBox, navBox] = await Promise.all([
-          heading.boundingBox(),
-          nav.boundingBox()
-        ])
-        if (!headingBox || !navBox) return null
-        return headingBox.y - (navBox.y + navBox.height)
-      })
-      .toBeGreaterThanOrEqual(0)
+    const clearanceBelowNav = async () => {
+      const [headingBox, navBox] = await Promise.all([
+        heading.boundingBox(),
+        nav.boundingBox()
+      ])
+      if (!headingBox || !navBox) return null
+      return headingBox.y - (navBox.y + navBox.height)
+    }
+
+    await expect.poll(clearanceBelowNav).toBeGreaterThanOrEqual(0)
+    // Without an upper bound, dropping the scroll altogether would also pass.
+    await expect.poll(clearanceBelowNav).toBeLessThan(40)
   })
 
   test('cards open canonical model pages with related models', async ({

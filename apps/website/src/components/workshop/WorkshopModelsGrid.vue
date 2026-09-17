@@ -234,6 +234,7 @@ const menuItemClass =
         {{ t('workshop.sections.back', locale) }}
       </button>
 
+      <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
       <h1
         v-if="inSection"
         ref="heading"
