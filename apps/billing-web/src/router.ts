@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import type { SessionSnapshot } from '@comfyorg/account/session'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type { BillingIntent } from '@comfyorg/billing-contract'
 import {
   BILLING_INTENTS,

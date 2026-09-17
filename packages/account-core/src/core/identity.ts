@@ -2,8 +2,8 @@ import type { AccountUser } from './session.js'
 
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts
- * get their implementation from `@comfyorg/account/firebase`; tests brand a
- * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
+ * get their implementation from `@comfyorg/account-core/firebase`; tests brand a
+ * fake through `@comfyorg/account-core/testing`. `attachIdentity` accepts only
  * the branded form.
  */
 export interface IdentityPort<TUser extends AccountUser = AccountUser> {
@@ -15,7 +15,9 @@ export interface IdentityPort<TUser extends AccountUser = AccountUser> {
  * an identity the session client accepts. A host cannot hand in its own
  * provider: the symbol lives in a module the exports map never exposes.
  */
-export const identityBrand: unique symbol = Symbol('@comfyorg/account identity')
+export const identityBrand: unique symbol = Symbol(
+  '@comfyorg/account-core identity'
+)
 
 export interface AccountIdentity<
   TUser extends AccountUser = AccountUser

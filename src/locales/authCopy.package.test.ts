@@ -4,8 +4,8 @@ import {
   AUTH_ERROR_COPY,
   AUTH_TOAST_SUMMARIES,
   UNAUTHORIZED_DOMAIN_MESSAGES
-} from '@comfyorg/account/firebaseAuthError'
-import { TURNSTILE_MESSAGES } from '@comfyorg/account/turnstile'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { TURNSTILE_MESSAGES } from '@comfyorg/account-core/turnstile'
 
 import en from './en/main.json'
 import ja from './ja/main.json'
@@ -17,7 +17,7 @@ import zh from './zh/main.json'
  * the translation job from that source and are pinned by key set only; the
  * package carries its own ja/zh tables for the Workshop site.
  */
-describe('auth copy shipped here and the @comfyorg/account tables', () => {
+describe('auth copy shipped here and the @comfyorg/account-core tables', () => {
   it('en auth.errors equals the package table', () => {
     expect(
       en.auth.errors,

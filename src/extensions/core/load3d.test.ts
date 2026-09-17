@@ -544,6 +544,42 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     ])
   })
 
+  it('shows a toast when the uploaded model fails to load', async () => {
+    const node = makeLoad3DNode()
+    const load3d = { ...makeLoad3dMock(), loadModel: vi.fn() }
+    load3d.loadModel.mockRejectedValue(new Error('bad glb'))
+    waitForLoad3dMock.mockImplementation((cb: (l: typeof load3d) => void) =>
+      cb(load3d)
+    )
+    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
+    vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
+    const createElement = document.createElement.bind(document)
+    const fileInputs: HTMLInputElement[] = []
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const element = createElement(tag)
+      if (element instanceof HTMLInputElement) fileInputs.push(element)
+      return element
+    })
+
+    ;(await load3DExt.getCustomWidgets!(app)).LOAD_3D(
+      node,
+      'model_file',
+      ['LOAD_3D', {}],
+      app
+    )
+    const [modelInput] = fileInputs
+    Object.defineProperty(modelInput, 'files', {
+      value: [new File(['x'], 'model.glb')]
+    })
+    await modelInput.onchange!(new Event('change'))
+    await flush()
+
+    expect(load3d.loadModel).toHaveBeenCalledWith('/view')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'toastMessages.failedToLoadModel'
+    )
+  })
+
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
     const node = makeLoad3DNode({
       comfyClass: 'Preview3DAdvanced',

@@ -101,7 +101,7 @@ async function download(): Promise<void> {
             size="icon-sm"
             :aria-label="t('g.download')"
             class="size-6 rounded-lg"
-            @click="download()"
+            @click="download"
           >
             <span class="icon-[lucide--download] size-4" />
           </Button>
