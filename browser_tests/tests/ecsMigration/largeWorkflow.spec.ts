@@ -8,7 +8,8 @@ test.describe(
   { tag: ['@workflow', '@smoke'] },
   () => {
     test('legacy canvas loads, navigates, and executes its CPU branch', async ({
-      comfyPage
+      comfyPage,
+      comfyMouse
     }, testInfo) => {
       expect(
         await comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
@@ -51,11 +52,10 @@ test.describe(
         x: canvasBox.x + canvasBox.width / 2,
         y: canvasBox.y + canvasBox.height / 2
       }
-      await comfyPage.page.mouse.move(canvasCenter.x, canvasCenter.y)
-      await comfyPage.page.mouse.down({ button: 'middle' })
-      await comfyPage.page.mouse.move(canvasCenter.x + 120, canvasCenter.y + 80)
-      await comfyPage.page.mouse.up({ button: 'middle' })
-      await comfyPage.nextFrame()
+      await comfyMouse.middleDragFromCenter(comfyPage.canvas, {
+        x: 120,
+        y: 80
+      })
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => [...window.app!.canvas.ds.offset])
