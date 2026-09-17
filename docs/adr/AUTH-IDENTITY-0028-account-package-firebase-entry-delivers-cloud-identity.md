@@ -12,6 +12,11 @@ construction (FE-2196).
 Amended 2026-09-16: rule 5 follows the package initializing the cloud app's
 Firebase, replacing vuefire (FE-2196, C4).
 
+The original transitional text (the Pinia identity adapter and the
+`attachIdentity` seam) is superseded by
+[AUTH-IDENTITY-0033](AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md);
+rules 1 to 5 as amended still stand.
+
 ## Context
 
 The cloud app holds two consumers of Firebase identity:
@@ -51,7 +56,13 @@ is not a contract to build on.
    port's user is what mints. The wait is bounded, so a silent port fails
    the mint closed instead of hanging the auth gate. Mints stay
    host-driven (`autoMint: false`), so telemetry and coalescing are
-   unchanged.
+   unchanged. The two stores construct each other (`workspaceAuthStore`
+   reads `useAuthStore().identity` in its setup, `authStore`'s listener
+   calls `useWorkspaceAuthStore()`), which holds only because the SDK
+   delivers a new observer's first emission asynchronously, after
+   persistence resolves; a synchronous identity source in its place would
+   re-enter a half-built store, leaving the client unsubscribed and every
+   mint waiting its ceiling.
 4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
    subscription: identity is bound to the session client for the store's
    lifetime. With `unified_cloud_auth` off the port stays subscribed but
@@ -63,20 +74,23 @@ is not a contract to build on.
 5. The package initializes the cloud app's Firebase: the identity module
    (`src/platform/auth/firebaseIdentity.ts`) is the one entry, created from
    `getFirebaseConfig()` under the default app name (`[DEFAULT]`, the name
-   persisted sessions are keyed by) with `browserLocalPersistence`. Nothing
-   else in `src/` creates a Firebase app or `Auth`. `main.ts` calls
-   `initialize()` after remote config has loaded, so the config is the
-   server's; the module refuses to resolve while remote config is still
-   unloaded. In DEV that early resolution throws; in production it reports
-   through the assert reporter and boots on the build-time fallback, which
-   is then cached for the session, so the `main.ts` ordering is the real
-   invariant and the cloud e2e set is what proves it. `currentUser()` never
-   initializes, so a feature-flag read before that point fails closed
-   instead of booting Firebase early.
+   persisted sessions are keyed by) with an ordered persistence hierarchy:
+   localStorage, then the IndexedDB store vuefire persisted sessions into,
+   then session storage, and the popup resolver. Firebase restores a user
+   from the first store that holds one and migrates it into localStorage,
+   which is what keeps existing sign-ins alive. Nothing else in `src/`
+   creates a Firebase app or `Auth`. `main.ts` calls `initialize()` after
+   remote config has loaded, so the config is the server's; resolution
+   before remote config has loaded throws in every environment, so the
+   `main.ts` ordering is the invariant and the cloud e2e set proves it.
+   Booting on build-time config could point auth at the wrong Firebase
+   project, so the module fails closed rather than falling back.
+   `currentUser()` never initializes, so a feature-flag read before that
+   point fails closed instead of booting Firebase early.
 
 The contract is pinned by the "unified identity source" test in
 `authStore.test.ts`, the identity-driven cases in `useWorkspaceAuth.test.ts`
-(driven through a fake port, never through the store), and the package's
+(driven through a fake port that mirrors the store's user), and the package's
 "keeps the identity after invalidation" test.
 
 ## Alternatives Considered

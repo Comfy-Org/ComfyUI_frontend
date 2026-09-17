@@ -1,9 +1,21 @@
+/**
+ * The storage, identity, user, credential and exchange fakes the session
+ * suites build on. A suite keeps what only it needs.
+ */
 import { vi } from 'vitest'
 
 import { createTestIdentity } from '../../testing.js'
-import type { AccountUser, CredentialStorage } from '../session.js'
+import type {
+  AccountIdentity,
+  AccountCredential,
+  AccountUser,
+  CredentialStorage,
+  SessionClientOptions
+} from '../session.js'
+import { createSessionClient } from '../session.js'
 
-const NINETY_MINUTES_MS = 90 * 60 * 1000
+export const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
+export const NINETY_MINUTES_MS = 90 * 60 * 1000
 
 export function memoryStorage(): CredentialStorage & {
   raw: () => string | null
@@ -19,6 +31,43 @@ export function memoryStorage(): CredentialStorage & {
     },
     raw: () => value
   }
+}
+
+export function makeClient(
+  overrides: Partial<SessionClientOptions> = {},
+  identity?: AccountIdentity
+) {
+  const storage = memoryStorage()
+  const client = createSessionClient(
+    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
+    identity
+  )
+  return { client, storage }
+}
+
+export function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
+  return { uid, getIdToken: vi.fn(async () => idToken) }
+}
+
+export function credential(
+  token: string,
+  overrides: Partial<AccountCredential> = {}
+): AccountCredential {
+  return {
+    token,
+    expiresAt: 1_000_000,
+    uid: 'uid-1',
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    permissions: ['workspace:read'],
+    ...overrides
+  }
+}
+
+export function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((r) => (resolve = r))
+  return { promise, resolve }
 }
 
 export function mintBody(overrides: Record<string, unknown> = {}) {
@@ -39,12 +88,12 @@ export function jsonResponse(status: number, body: unknown) {
   })
 }
 
-export function mintResponse(token: string) {
-  return jsonResponse(200, mintBody({ token }))
+export function okFetch(token = 'workspace-jwt') {
+  return vi.fn<typeof fetch>(async () => jsonResponse(200, mintBody({ token })))
 }
 
-export function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => mintResponse(token))
+export function mintResponse(token: string) {
+  return new Response(JSON.stringify(mintBody({ token })), { status: 200 })
 }
 
 export function manualIdentity() {
@@ -58,7 +107,11 @@ export function manualIdentity() {
   })
   return {
     port,
-    fire: (user: AccountUser | null) => deliver?.(user),
+    fire: (user: AccountUser | null) => {
+      if (!deliver)
+        throw new Error('fire() before a client subscribed the port')
+      deliver(user)
+    },
     unsubscribe
   }
 }

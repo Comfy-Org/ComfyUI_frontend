@@ -1,10 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { Auth } from 'firebase/auth'
-import {
-  initializeAuth,
-  onAuthStateChanged,
-  onIdTokenChanged
-} from 'firebase/auth'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
@@ -12,12 +7,11 @@ import { useAuthStore } from '@/stores/authStore'
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const stopHandles: Array<() => void> = []
 

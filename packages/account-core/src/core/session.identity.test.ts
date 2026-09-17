@@ -1,31 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  EXCHANGE_URL,
+  NINETY_MINUTES_MS,
+  deferred,
   manualIdentity,
   memoryStorage,
   mintResponse,
-  okFetch
+  okFetch,
+  testUser
 } from './__fixtures__/sessionFakes.js'
 import type {
-  AccountUser,
+  AccountIdentity,
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
 import { createSessionClient } from './session.js'
 
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-const NINETY_MINUTES_MS = 90 * 60 * 1000
-
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
-
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
+function makeClient(
+  overrides: Partial<SessionClientOptions> = {},
+  port?: AccountIdentity
+) {
   const storage = memoryStorage()
   const identity = manualIdentity()
   const client = createSessionClient(
     { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
-    identity.port
+    port ?? identity.port
   )
   return { client, storage, identity }
 }
@@ -56,7 +56,8 @@ describe('constructing with identity', () => {
     }
   ] as const)('$name', async ({ options, phases, mints }) => {
     const fetchImpl = okFetch()
-    const { client, identity } = makeClient({ fetchImpl, ...options })
+    const identity = manualIdentity()
+    const { client } = makeClient({ fetchImpl, ...options }, identity.port)
     const seen = phasesOf(client)
     const user = testUser()
 
@@ -72,7 +73,8 @@ describe('constructing with identity', () => {
 
   it('settles signed-out without a mint when the first delivery is null', () => {
     const fetchImpl = okFetch()
-    const { client, identity } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    const { client } = makeClient({ fetchImpl }, identity.port)
     const seen = phasesOf(client)
 
     identity.fire(null)
@@ -85,10 +87,14 @@ describe('constructing with identity', () => {
 describe('dispose', () => {
   it('returns the snapshot to pending, stops the armed scheduler, and unsubscribes the port exactly once', async () => {
     const fetchImpl = okFetch()
-    const { client, identity } = makeClient({
-      fetchImpl,
-      refreshScheduler: {}
-    })
+    const identity = manualIdentity()
+    const { client } = makeClient(
+      {
+        fetchImpl,
+        refreshScheduler: {}
+      },
+      identity.port
+    )
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
 
@@ -118,7 +124,8 @@ describe('dispose', () => {
 
   it('ignores an identity event delivered after dispose', () => {
     const fetchImpl = okFetch()
-    const { client, identity } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    const { client } = makeClient({ fetchImpl }, identity.port)
 
     client.dispose()
     identity.fire(testUser())
@@ -128,16 +135,15 @@ describe('dispose', () => {
   })
 
   it('never commits a mint that was in flight when the client was disposed', async () => {
-    let release!: (response: Response) => void
-    const fetchImpl = vi.fn<typeof fetch>(
-      () => new Promise<Response>((resolve) => (release = resolve))
-    )
-    const { client, storage, identity } = makeClient({ fetchImpl })
+    const mint = deferred<Response>()
+    const fetchImpl = vi.fn<typeof fetch>(() => mint.promise)
+    const identity = manualIdentity()
+    const { client, storage } = makeClient({ fetchImpl }, identity.port)
     identity.fire(testUser())
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
 
     client.dispose()
-    release(mintResponse('stale-after-dispose'))
+    mint.resolve(mintResponse('stale-after-dispose'))
     await vi.advanceTimersByTimeAsync(0)
 
     expect(client.getSnapshot().phase).toBe('pending')
@@ -148,14 +154,40 @@ describe('dispose', () => {
     ).toBeNull()
   })
 
-  it('never publishes an explicit-user mint made after dispose', async () => {
-    const { client, identity } = makeClient({ fetchImpl: okFetch() })
+  it('does not mint when a listener disposes the client during the identity publish', async () => {
+    const fetchImpl = okFetch()
+    const { client, storage, identity } = makeClient({
+      fetchImpl,
+      refreshScheduler: {}
+    })
+    const user = testUser()
+    client.subscribe((snapshot) => {
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    identity.fire(user)
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(user.getIdToken).not.toHaveBeenCalled()
+    expect(
+      fetchImpl,
+      'a client disposed inside the publish no longer tracks the user it would mint for'
+    ).not.toHaveBeenCalled()
+    expect(storage.raw()).toBeNull()
+  })
+
+  it('still serves an explicit-user mint after dispose, like a detach, without publishing it', async () => {
+    const { client, storage, identity } = makeClient({ fetchImpl: okFetch() })
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
     client.dispose()
 
-    await client.ensureFresh(testUser())
+    await expect(client.ensureFresh(testUser())).resolves.toMatchObject({
+      status: 'ok'
+    })
 
+    expect(storage.raw()).not.toBeNull()
     expect(client.getSnapshot().phase).toBe('pending')
     expect(client.getToken()).toBeUndefined()
   })

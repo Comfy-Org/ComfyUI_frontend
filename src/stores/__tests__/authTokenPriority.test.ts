@@ -8,6 +8,7 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
@@ -40,6 +41,7 @@ describe('auth token priority chain', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+    stubFirebaseAuthHarness()
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>
       authStateObservers.forEach((observer) => observer(user))

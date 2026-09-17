@@ -354,7 +354,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = null
   })
 
-  // Identity is bound for the store's lifetime; the flag gates minting only.
+  // Identity is bound for the store's lifetime; the flag gates minting, and a
+  // rollback invalidates the credential, so scheduler and cross-tab lease stop.
   const stopUnifiedFlagWatch = watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {

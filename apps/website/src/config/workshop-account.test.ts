@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { User } from 'firebase/auth'
 
 import type { LazyIdentity } from '@comfyorg/account-core/lazyIdentity'
-import type { AccountUser } from '@comfyorg/account-core/session'
+
+import { okFetch, testUser } from './__fixtures__/workshopSessionFakes'
+import { STORAGE_KEY } from './workshop-account'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
@@ -33,30 +35,8 @@ vi.mock<unknown>(import('./workshop-firebase'), async () => {
   }
 })
 
-const STORAGE_KEY = 'comfy.workshop.session.v1'
-
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
-
 function testFirebaseUser(uid = 'uid-1'): User {
   return testUser(uid) as Partial<User> as User
-}
-
-function mintBody(token: string) {
-  return {
-    token,
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner'
-  }
-}
-
-function okFetch(token = 'jwt-1') {
-  return vi.fn<typeof fetch>(
-    async () => new Response(JSON.stringify(mintBody(token)), { status: 200 })
-  )
 }
 
 function statusFetch(status: number) {
