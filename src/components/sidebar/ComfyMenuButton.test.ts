@@ -95,6 +95,12 @@ describe('ComfyMenuButton', () => {
     expect(row).not.toHaveFocus()
   })
 
+  it('marks the row as the item link TieredMenu clicks on Enter', async () => {
+    const { row } = await openMenu()
+
+    expect(row).toHaveAttribute('data-pc-section', 'itemlink')
+  })
+
   it('does not advertise Nodes 2.0 as beta', async () => {
     await openMenu()
 
