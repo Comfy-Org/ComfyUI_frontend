@@ -19,7 +19,7 @@
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
+      <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
         <div
           data-testid="top-menu-actionbars"
           :inert="isActionBarsHidden"
