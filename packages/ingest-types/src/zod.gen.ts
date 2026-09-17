@@ -1599,7 +1599,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -2186,6 +2186,23 @@ export const zCreateTopupRequest = z.object({
 })
 
 /**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export const zCreateTopupCheckoutResponse = z.object({
+  checkout_url: z.string().url(),
+  session_id: z.string().optional()
+})
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export const zCreateTopupCheckoutRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(473900)),
+  idempotency_key: z.string().optional(),
+  return_url: z.string().url()
+})
+
+/**
  * Response after creating a session cookie
  */
 export const zCreateSessionResponse = z.object({
@@ -2657,10 +2674,9 @@ export const zAgentRunMode = z.object({
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
-  content: z.string(),
-  workflow_id: z.string().optional(),
-  selection: z.record(z.unknown()).optional(),
   attachments: z.array(z.string()).optional(),
+  content: z.string(),
+  current_tab: z.string().optional(),
   draft: z
     .object({
       content: z.record(z.unknown()).optional(),
@@ -2670,17 +2686,18 @@ export const zAgentPostMessageRequest = z.object({
   open_tabs: z
     .array(
       z.object({
-        workflow_id: z.string(),
-        name: z.string().optional()
+        name: z.string().optional(),
+        workflow_id: z.string()
       })
     )
     .optional(),
-  current_tab: z.string().optional(),
+  selection: z.record(z.unknown()).optional(),
+  workflow_id: z.string().optional(),
   workflow_references: z
     .array(
       z.object({
-        workflow_id: z.string(),
-        name: z.string().optional()
+        name: z.string().optional(),
+        workflow_id: z.string()
       })
     )
     .optional()
@@ -3386,6 +3403,13 @@ export const zCreateTopupBody = zCreateTopupRequest
  * Top-up initiated successfully
  */
 export const zCreateTopupResponse2 = zCreateTopupResponse
+
+export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
+
+/**
+ * Checkout session created
+ */
+export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
 
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z

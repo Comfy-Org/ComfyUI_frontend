@@ -14,12 +14,7 @@ function getErrorOverlay(comfyPage: ComfyPage) {
 }
 
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.describe('Detection', () => {
     test('Shows missing media group in errors tab', async ({ comfyPage }) => {

@@ -4,8 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node library sidebar V2', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
-
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()
   })

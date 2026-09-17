@@ -46,7 +46,7 @@ export function refreshWorkshopCredits(
 let stopActive: (() => void) | undefined
 
 function begin(): void {
-  const { session } = useWorkshopSession()
+  const { session, sessionFailure, user } = useWorkshopSession()
   const stopClient = workshopBalanceReader.subscribe((state) => {
     balance.value = toBalanceState(state)
   })
@@ -55,13 +55,36 @@ function begin(): void {
     watch(
       () => session.value?.token,
       (token) => {
+        // Never show one workspace's balance while a newly selected
+        // workspace is still loading its own wallet.
+        workshopBalanceReader.reset()
         if (!token) {
-          workshopBalanceReader.reset()
           return
         }
         // A rotated token means any read in flight is about to be discarded
         // by the publish guard; joining it would skip this refresh cycle.
         void refreshWorkshopCredits({ force: true })
+      },
+      { immediate: true }
+    )
+    watch(
+      [
+        () => user.value?.uid,
+        () => session.value?.uid,
+        () => session.value?.workspace.id,
+        () => sessionFailure.value?.code
+      ],
+      ([userUid, sessionUid, workspaceId, failure]) => {
+        const active = topUpWatch.value
+        if (active.status === 'idle') return
+        if (
+          userUid !== active.uid ||
+          failure !== undefined ||
+          (sessionUid !== undefined &&
+            (sessionUid !== active.uid || workspaceId !== active.workspaceId))
+        ) {
+          clearTopUpWatch()
+        }
       },
       { immediate: true }
     )
@@ -93,11 +116,142 @@ function start(): void {
         stopActive?.()
         stopActive = undefined
         if (isSettled) begin()
-        else workshopBalanceReader.reset()
+        else {
+          clearTopUpWatch()
+          workshopBalanceReader.reset()
+        }
       },
       { immediate: true }
     )
   })
+}
+
+/**
+ * Stripe grants a top-up through its webhook seconds after the buyer pays,
+ * so the one refocus read usually races the grant and loses. While a
+ * checkout is in flight, keep re-reading until the balance moves or
+ * patience runs out — and let the dialog watch the outcome: waiting is its
+ * 4a card, landed carries the receipt's ledger, unresolved is the held
+ * state that names a support handle.
+ */
+const TOP_UP_POLL_MS = 5_000
+const TOP_UP_POLL_LIMIT = 24
+
+type TopUpWatchState =
+  | { readonly status: 'idle' }
+  | ({ readonly status: 'waiting' } & TopUpWatchContext)
+  | ({
+      readonly status: 'landed'
+      readonly newCredits: number
+      readonly landedAt: number
+    } & TopUpWatchContext)
+  | ({ readonly status: 'unresolved' } & TopUpWatchContext)
+
+const topUpWatch = ref<TopUpWatchState>({ status: 'idle' })
+let topUpPoll: ReturnType<typeof setInterval> | undefined
+let topUpGeneration = 0
+
+export function clearTopUpWatch(): void {
+  topUpGeneration += 1
+  if (topUpPoll) clearInterval(topUpPoll)
+  topUpPoll = undefined
+  topUpWatch.value = { status: 'idle' }
+}
+
+export interface TopUpWatchContext {
+  readonly uid: string
+  readonly workspaceId: string
+  readonly workspaceName: string
+  readonly previousCredits: number
+}
+
+export function watchForTopUp(context: TopUpWatchContext): void {
+  if (typeof window === 'undefined') return
+  clearTopUpWatch()
+  const generation = topUpGeneration
+  const { session, sessionFailure, user } = useWorkshopSession()
+  topUpWatch.value = {
+    status: 'waiting',
+    ...context
+  }
+  let ticks = 0
+  let refreshing = false
+  const deadline = Date.now() + TOP_UP_POLL_MS * TOP_UP_POLL_LIMIT
+
+  function scope(): 'current' | 'pending' | 'changed' {
+    const owner = user.value
+    if (!owner || owner.uid !== context.uid) return 'changed'
+    const live = session.value
+    if (live === undefined)
+      return sessionFailure.value === undefined ? 'pending' : 'changed'
+    return live.uid === context.uid && live.workspace.id === context.workspaceId
+      ? 'current'
+      : 'changed'
+  }
+
+  function settleFromBalance(): boolean {
+    if (
+      balance.value.status === 'ok' &&
+      balance.value.credits > context.previousCredits
+    ) {
+      const newCredits = balance.value.credits
+      if (topUpPoll) clearInterval(topUpPoll)
+      topUpPoll = undefined
+      topUpWatch.value = {
+        status: 'landed',
+        ...context,
+        newCredits,
+        landedAt: Date.now()
+      }
+      return true
+    }
+    return false
+  }
+
+  function giveUp(): void {
+    if (topUpPoll) clearInterval(topUpPoll)
+    topUpPoll = undefined
+    topUpWatch.value = { status: 'unresolved', ...context }
+  }
+
+  function continuesInScope(): boolean {
+    if (generation !== topUpGeneration) return false
+    const current = scope()
+    if (current === 'changed') {
+      clearTopUpWatch()
+      return false
+    }
+    if (current === 'pending' && Date.now() >= deadline) giveUp()
+    return current === 'current'
+  }
+
+  async function poll(): Promise<void> {
+    if (refreshing || !continuesInScope()) return
+    // Only a definitely different workspace retires the watch: a snapshot
+    // mid-remint has no session for a beat, and that transient must not
+    // kill a checkout in flight.
+    if (settleFromBalance()) return
+    if (ticks >= TOP_UP_POLL_LIMIT || Date.now() >= deadline) {
+      giveUp()
+      return
+    }
+    ticks += 1
+    refreshing = true
+    try {
+      await refreshWorkshopCredits({ force: true })
+    } finally {
+      refreshing = false
+    }
+    if (!continuesInScope()) return
+    settleFromBalance()
+  }
+
+  topUpPoll = setInterval(() => void poll(), TOP_UP_POLL_MS)
+  void poll()
+}
+
+export function useTopUpWatch() {
+  return computed(() => topUpWatch.value)
 }
 
 export function useWorkshopCredits() {

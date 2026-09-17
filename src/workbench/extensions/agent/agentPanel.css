@@ -1,3 +1,38 @@
+@keyframes agent-collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-collapsible-content-height);
+  }
+}
+
+@keyframes agent-collapsible-up {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes agent-shimmer {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+.agent-work-summary:where([data-state='open']) {
+  animation: agent-collapsible-down 200ms ease-out;
+}
+
+.agent-work-summary:where([data-state='closed']) {
+  animation: agent-collapsible-up 200ms ease-out;
+}
+
 .agent-shimmer-text {
   background: linear-gradient(
     90deg,
@@ -20,6 +55,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .agent-work-summary {
+    animation-duration: 0.001ms;
+  }
+
   .agent-shimmer-text {
     animation: none;
     color: var(--color-muted-foreground);
@@ -40,7 +79,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-agent-border-strong) transparent;
+    scrollbar-color: var(--color-border-default) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)

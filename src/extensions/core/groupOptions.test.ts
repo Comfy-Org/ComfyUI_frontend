@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -20,8 +21,8 @@ const { registerExtension } = vi.hoisted(() => ({
   registerExtension: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { registerExtension }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ registerExtension })
 }))
 
 import '@/extensions/core/groupOptions'

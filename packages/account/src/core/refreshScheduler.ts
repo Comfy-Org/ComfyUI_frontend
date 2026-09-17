@@ -58,6 +58,17 @@ export interface RefreshScheduler {
   stop: () => void
 }
 
+function disposeQuietly(
+  dispose: (() => void) | undefined,
+  label: string
+): void {
+  try {
+    dispose?.()
+  } catch (error) {
+    console.warn(`Cross-tab refresh ${label} teardown failed:`, error)
+  }
+}
+
 export function createRefreshScheduler(
   options: RefreshSchedulerOptions,
   host: RefreshHost
@@ -107,9 +118,9 @@ export function createRefreshScheduler(
 
   function teardownCoordination(): void {
     coordinationGeneration += 1
-    releaseLeadership?.()
+    disposeQuietly(releaseLeadership, 'leadership release')
     releaseLeadership = undefined
-    stopCredentialFeed?.()
+    disposeQuietly(stopCredentialFeed, 'credential feed')
     stopCredentialFeed = undefined
     coordinationKey = undefined
     isRefreshLeader = crossTab === undefined
@@ -127,26 +138,35 @@ export function createRefreshScheduler(
     teardownCoordination()
     coordinationKey = key
     const generationAtRequest = coordinationGeneration
-    stopCredentialFeed = crossTab.port.onCredential(
-      key,
-      adoptPublishedCredential
-    )
-    releaseLeadership = crossTab.port.requestLeadership(key, () => {
-      // A grant is honored only for the coordination generation that issued
-      // the request: abandoned requests can still win the grant race in the
-      // lock manager, and after a same-user round trip their key is
-      // byte-identical to the live request's.
-      if (generationAtRequest !== coordinationGeneration) return
+    // Cross-tab coordination is optional: a port that throws during setup
+    // must never propagate past a committed credential. Tear down whatever
+    // partial wiring landed and lead this tab on its own schedule.
+    try {
+      stopCredentialFeed = crossTab.port.onCredential(
+        key,
+        adoptPublishedCredential
+      )
+      releaseLeadership = crossTab.port.requestLeadership(key, () => {
+        // A grant is honored only for the coordination generation that issued
+        // the request: abandoned requests can still win the grant race in the
+        // lock manager, and after a same-user round trip their key is
+        // byte-identical to the live request's.
+        if (generationAtRequest !== coordinationGeneration) return
+        isRefreshLeader = true
+        // Promotion retakes the schedule unconditionally — the follower timer
+        // may be jittered, mid-retry, or already dead from exhausted retries.
+        // The latch skips the redundant re-arm when the grant fires
+        // synchronously inside armScheduledRefresh itself.
+        const live = host.getCredential()
+        if (live !== undefined && !armingScheduledRefresh) {
+          armScheduledRefresh(live.expiresAt, host.now())
+        }
+      })
+    } catch (error) {
+      console.warn('Cross-tab refresh coordination setup failed:', error)
+      teardownCoordination()
       isRefreshLeader = true
-      // Promotion retakes the schedule unconditionally — the follower timer
-      // may be jittered, mid-retry, or already dead from exhausted retries.
-      // The latch skips the redundant re-arm when the grant fires
-      // synchronously inside armScheduledRefresh itself.
-      const live = host.getCredential()
-      if (live !== undefined && !armingScheduledRefresh) {
-        armScheduledRefresh(live.expiresAt, host.now())
-      }
-    })
+    }
   }
 
   /**
@@ -159,7 +179,13 @@ export function createRefreshScheduler(
    */
   function publishToSiblings(session: AccountCredential): void {
     if (coordinationKey === undefined) return
-    crossTab?.port.publishCredential(coordinationKey, session)
+    // Publication is optional: a throwing port must not unwind a mint that
+    // already committed and persisted its credential.
+    try {
+      crossTab?.port.publishCredential(coordinationKey, session)
+    } catch (error) {
+      console.warn('Cross-tab refresh credential publish failed:', error)
+    }
   }
 
   function adoptPublishedCredential(message: unknown): void {
@@ -221,7 +247,7 @@ export function createRefreshScheduler(
         const committed = host.commitExpired(expiring)
         if (!committed) return
         stopScheduledRefresh()
-        reportOutcome?.('expired', committed)
+        reportOutcome?.({ outcome: 'expired', failure: committed })
       },
       Math.max(0, expiring.expiresAt - now)
     )
@@ -253,18 +279,18 @@ export function createRefreshScheduler(
     if (result.status === 'ok') {
       const rejected = host.commitRefreshed(result.session)
       if (rejected) {
-        reportOutcome?.('permanent_failure', rejected)
+        reportOutcome?.({ outcome: 'permanent_failure', failure: rejected })
         return
       }
       clearExpiry()
       armScheduledRefresh(result.session.expiresAt, host.now())
       publishToSiblings(result.session)
-      reportOutcome?.('succeeded')
+      reportOutcome?.({ outcome: 'succeeded' })
       return
     }
     if (isPermanentSessionError(result.code)) {
       host.commitPermanentFailure(result)
-      reportOutcome?.('permanent_failure', result)
+      reportOutcome?.({ outcome: 'permanent_failure', failure: result })
       return
     }
     if (scheduledRetryCount >= maxRetries) {
@@ -275,7 +301,7 @@ export function createRefreshScheduler(
       // adopt what that sibling mints or be promoted back if nobody does.
       teardownCoordination()
       ensureCoordination()
-      reportOutcome?.('retries_exhausted')
+      reportOutcome?.({ outcome: 'retries_exhausted' })
       return
     }
     const delay = retryBaseMs * 2 ** scheduledRetryCount
@@ -285,7 +311,7 @@ export function createRefreshScheduler(
       scheduledTimer = undefined
       void runScheduledRefresh()
     }, delay)
-    reportOutcome?.('retry_scheduled')
+    reportOutcome?.({ outcome: 'retry_scheduled' })
   }
 
   return {

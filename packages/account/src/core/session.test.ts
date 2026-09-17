@@ -1596,6 +1596,77 @@ describe('storage resilience', () => {
   })
 })
 
+describe('getToken freshness', () => {
+  it('withholds an expired token from synchronous readers', async () => {
+    let clock = Date.parse('2020-01-01T00:00:00.000Z')
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({
+          token: 'short-jwt',
+          expires_at: new Date(clock + 90 * 60 * 1000).toISOString()
+        })
+      )
+    )
+    const { client } = makeClient({ fetchImpl, now: () => clock })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    await client.ensureFresh(user, {})
+    expect(
+      client.getToken(),
+      'a still-valid token is served to synchronous consumers'
+    ).toBe('short-jwt')
+
+    clock += 90 * 60 * 1000 + 1
+
+    expect(
+      client.getToken(),
+      'timer throttling must never let getToken expose a bearer past its expiry'
+    ).toBeUndefined()
+  })
+})
+
+describe('cached credential validation', () => {
+  it('rejects a cached credential with an empty token instead of serving it', async () => {
+    const fetchImpl = okFetch('minted-jwt')
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(storage, { token: '' })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(
+      fetchImpl,
+      'an empty stored token is not a credential and must not suppress the mint'
+    ).toHaveBeenCalledOnce()
+    expect(result?.status === 'ok' && result.session.token).toBe('minted-jwt')
+  })
+})
+
+describe('settled sign-out blocks an explicit remint', () => {
+  it('never commits an explicit-user mint once identity has settled signed out', async () => {
+    const fetchImpl = okFetch('stale-jwt')
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(null)
+    const result = await client.remint(testUser('stale-uid'), {})
+
+    expect(
+      result,
+      'a settled null identity is nobody signed in; an explicit mint must not commit past it'
+    ).toBeUndefined()
+    expect(client.getToken()).toBeUndefined()
+    expect(
+      storage.raw(),
+      'a stale explicit remint must never persist a JWT after a settled sign-out'
+    ).toBeNull()
+  })
+})
+
 describe('shared session copy', () => {
   it('covers every session error code and both success states', () => {
     const codes: SessionErrorCode[] = [

@@ -164,6 +164,7 @@ export const useAuthActions = () => {
         detail: t('auth.login.passwordResetSentDetail'),
         life: 5000
       })
+      return true
     },
     reportAuthFlowError('password_reset')
   )

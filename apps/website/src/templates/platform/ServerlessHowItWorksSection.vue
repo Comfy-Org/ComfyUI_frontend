@@ -123,7 +123,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.heading', locale) }}
       <template #subtitle>
@@ -140,12 +140,12 @@ watchEffect(() => {
       <li
         v-for="step in steps"
         :key="step.number"
-        class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6"
+        class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6"
       >
         <article class="h-full">
           <div
             aria-hidden="true"
-            class="border-transparency-white-t4 flex h-72 items-center justify-center overflow-hidden rounded-2xl border bg-primary-comfy-ink p-4"
+            class="flex h-72 items-center justify-center overflow-hidden rounded-2xl border border-transparency-white-t4 bg-primary-comfy-ink p-4"
           >
             <div
               v-if="step.number === 1"
@@ -179,7 +179,7 @@ watchEffect(() => {
                     height="134"
                     rx="24"
                     transform="matrix(0.866025 0.5 0 1 12 0)"
-                    class="stroke-primary-comfy-plum fill-primary-comfy-ink"
+                    class="fill-primary-comfy-ink stroke-primary-comfy-plum"
                   />
                   <g transform="matrix(0.866025 0.5 0 1 0 8)">
                     <rect
@@ -214,7 +214,7 @@ watchEffect(() => {
                     d="M247.68315 231C354 292 161.199 282 69 282"
                     :class="
                       cn(
-                        'stroke-primary-comfy-yellow fill-none',
+                        'fill-none stroke-primary-comfy-yellow',
                         animated && 'animate-dash-flow'
                       )
                     "
@@ -226,7 +226,7 @@ watchEffect(() => {
                     width="68"
                     height="39"
                     rx="15.5"
-                    class="stroke-primary-comfy-yellow fill-transparent"
+                    class="fill-transparent stroke-primary-comfy-yellow"
                   />
                   <text
                     x="13"
@@ -282,12 +282,12 @@ watchEffect(() => {
                 <path
                   :id="outerTrackId"
                   :d="TEAM_OUTER_PATH"
-                  class="stroke-primary-comfy-plum fill-none"
+                  class="fill-none stroke-primary-comfy-plum"
                 />
                 <path
                   :id="innerTrackId"
                   :d="TEAM_INNER_PATH"
-                  class="stroke-primary-comfy-plum fill-none"
+                  class="fill-none stroke-primary-comfy-plum"
                 />
                 <g
                   v-for="member in team"
@@ -382,7 +382,7 @@ watchEffect(() => {
                   :d="`M 246 138 C 270 138, 266 ${22 + index * 76}, 291 ${22 + index * 76}`"
                   :class="
                     cn(
-                      'stroke-primary-comfy-yellow fill-none',
+                      'fill-none stroke-primary-comfy-yellow',
                       animated && 'animate-dash-flow'
                     )
                   "

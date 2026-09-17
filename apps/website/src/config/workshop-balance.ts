@@ -4,6 +4,7 @@
  * is allowed. Billing stays outside @comfyorg/account in V1, so this is
  * the site's own copy of that rule, bound to the shared session client.
  */
+import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
 import type { User } from 'firebase/auth'
 
 import type {
@@ -46,8 +47,7 @@ export function createBalanceReader(
   const listeners = new Set<(state: BalanceState) => void>()
   let inFlight: Promise<void> | undefined
   let inFlightUid: string | undefined
-  /** Bumped by reset(): an abandoned read must not publish its late result. */
-  let generation = 0
+  const operation = createBoundedOperation()
 
   function publish(next: BalanceState): void {
     state = next
@@ -84,7 +84,7 @@ export function createBalanceReader(
   }
 
   async function runRefresh(): Promise<void> {
-    const startGeneration = generation
+    const attempt = operation.capture()
     const snapshot = session.getSnapshot()
     if (snapshot.phase !== 'authenticated') {
       publish({ status: 'unknown' })
@@ -95,9 +95,13 @@ export function createBalanceReader(
     let token = snapshot.session.token
     let result = await fetchBalance(token)
     // One re-mint on a stale token, spent for the identity whose read
-    // failed, never whoever is signed in by the time the 401 lands.
+    // failed, never whoever is signed in by the time the 401 lands. The
+    // mint names the read's own workspace: a target-less mint resolves the
+    // personal workspace and would silently switch a team session.
     if (result.status === 'error' && result.unauthorized) {
-      const reminted = await session.remint(owner)
+      const reminted = await session.remint(owner, {
+        workspaceId: snapshot.session.workspace.id
+      })
       if (reminted?.status === 'ok') {
         token = reminted.session.token
         result = await fetchBalance(token)
@@ -105,11 +109,7 @@ export function createBalanceReader(
     }
     // Publish only if the same user and token are still live.
     const live = activeCredential()
-    if (
-      generation === startGeneration &&
-      live?.uid === uid &&
-      live.token === token
-    ) {
+    if (attempt.live() && live?.uid === uid && live.token === token) {
       publish(result)
     }
   }
@@ -130,9 +130,9 @@ export function createBalanceReader(
       const uid = activeCredential()?.uid
       if (inFlight !== undefined && inFlightUid === uid) {
         if (!refreshOptions.force) return inFlight
-        const queuedGeneration = generation
+        const queued = operation.capture()
         return inFlight.then(() =>
-          queuedGeneration === generation ? reader.refresh() : undefined
+          queued.live() ? reader.refresh() : undefined
         )
       }
       inFlightUid = uid
@@ -146,7 +146,7 @@ export function createBalanceReader(
       return refresh
     },
     reset() {
-      generation += 1
+      operation.abandon()
       inFlight = undefined
       inFlightUid = undefined
       publish({ status: 'unknown' })

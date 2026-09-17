@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
-import { routerWorkshopModels } from '../src/config/workshop-browse-content'
+import { workshopModels } from '../src/config/workshop-browse-content'
 import { resolveWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
 import { releaseRouterOutputs } from '../src/config/workshop-response'
@@ -123,7 +123,7 @@ async function main() {
     : fileURLToPath(
         new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
       )
-  const models = routerWorkshopModels.filter(
+  const models = workshopModels.filter(
     (model) =>
       isMediaKind(model.modality) &&
       (!values.modality || model.modality === values.modality)
@@ -163,7 +163,7 @@ async function main() {
   }
   const report = openRouterModelReport({ jsonPath, markdownPath })
   try {
-    for (const model of routerWorkshopModels) {
+    for (const model of workshopModels) {
       report.update({
         slug: model.slug,
         routerId: model.routerId,

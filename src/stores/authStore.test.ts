@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -6,6 +7,8 @@ import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -21,7 +24,6 @@ import {
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import type * as ApiModule from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
@@ -33,19 +35,9 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    unifiedCloudAuthEnabled: false
-  }
-}))
-
-const { mockResetSocket } = vi.hoisted(() => ({
-  mockResetSocket: vi.fn()
-}))
-
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -99,21 +91,9 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-const mockTrackAuth = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAuth: mockTrackAuth
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-// Keep the real API singleton (other modules rely on its full surface) but
-// override resetSocket so we can assert socket lifecycle calls without opening
-// a real WebSocket.
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal<typeof ApiModule>()
-  Object.assign(actual.api, { resetSocket: mockResetSocket })
-  return actual
-})
+let mockResetSocket: Mock
 
 // Mock useDialogService
 vi.mock(import('@/services/dialogService'))
@@ -121,11 +101,7 @@ vi.mock<unknown>(
   import('@/platform/distribution/types'),
   () => mockDistributionTypes
 )
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 // Mock apiKeyAuthStore
 
@@ -144,10 +120,10 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+    mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
-
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -239,7 +215,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       idTokenCallback(mockUser) // initial event (always skipped)
       idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
@@ -367,7 +343,7 @@ describe('useAuthStore', () => {
 
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
 
       await useWorkspaceAuthStore().mintAtLogin()
@@ -1546,7 +1522,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1563,7 +1539,7 @@ describe('useAuthStore', () => {
 
           await store[method]({ isNewUser: true })
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1580,7 +1556,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1593,7 +1569,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1644,7 +1620,7 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1659,7 +1635,7 @@ describe('useAuthStore', () => {
 
       await store.login('test@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
         user_id: 'test-user-id',
@@ -1674,7 +1650,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGoogle()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1689,7 +1665,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGithub()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -2370,13 +2346,12 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
-
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })

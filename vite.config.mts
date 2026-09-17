@@ -217,6 +217,18 @@ if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
   )
 }
 
+// The proxy attaches DEV_AGENT_SESSION_TOKEN as a bearer token, so cleartext
+// is only acceptable when the target never leaves the machine.
+if (DEV_AGENT_URL) {
+  const { protocol, hostname } = new URL(DEV_AGENT_URL)
+  const loopback = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname)
+  if (protocol !== 'https:' && !(protocol === 'http:' && loopback)) {
+    throw new Error(
+      `DEV_AGENT_URL must use https unless it targets loopback; got ${DEV_AGENT_URL}`
+    )
+  }
+}
+
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
@@ -895,7 +907,6 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
@@ -912,6 +923,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        'packages/**',
         ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],

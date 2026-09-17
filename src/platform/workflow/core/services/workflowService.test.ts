@@ -2,7 +2,14 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type {
   LoadedComfyWorkflow,
@@ -31,6 +38,14 @@ import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+})
 
 function createModeTestWorkflow(
   options: {
@@ -74,9 +89,8 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
 
-const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
-  mockConfirm: vi.fn(),
-  mockTrackWorkflowSaved: vi.fn()
+const { mockConfirm } = vi.hoisted(() => ({
+  mockConfirm: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -118,13 +132,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackDefaultViewSet: vi.fn(),
-    trackWorkflowSaved: mockTrackWorkflowSaved,
-    trackEnterLinear: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 function createWorkflow(
   warnings: PendingWarnings | null = null,
@@ -145,7 +153,8 @@ function createWorkflow(
 function enableWarningSettings() {
   vi.spyOn(useSettingStore(), 'get').mockImplementation(
     (key: string): boolean => {
-      if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+      if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+      if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
       return false
     }
   )
@@ -248,7 +257,8 @@ describe('useWorkflowService', () => {
     it('should NOT call showErrorOverlay when silent is true even with missing nodes', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
@@ -268,7 +278,8 @@ describe('useWorkflowService', () => {
     it('should call showErrorOverlay when silent is false and missing nodes exist', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string): boolean => {
-          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.ErrorSystem.ShowMissingModels') return true
+          if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
           if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
           return false
         }
@@ -1616,6 +1627,128 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('insertWorkflow', () => {
+    it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
+      const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
+      const workflow = createModeTestWorkflow()
+
+      try {
+        const options = { position: [120, 240] as [number, number] }
+        await useWorkflowService().insertWorkflow(workflow, options)
+
+        expect(deserialize).toHaveBeenCalledOnce()
+        expect(deserialize).toHaveBeenCalledWith(
+          expect.objectContaining({ nodes: [], links: [] }),
+          options
+        )
+      } finally {
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+
+    it('does not insert after the canvas itself is replaced while loading', async () => {
+      const originalCanvas = app.canvas
+      const priorGraph = originalCanvas.graph
+      const priorDeserialize = originalCanvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(originalCanvas, 'graph', originalGraph)
+      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
+
+      reportErrorMock.mockClear()
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(app, 'canvas', {
+          graph: originalGraph,
+          _deserializeItems: vi.fn()
+        })
+        finishLoad(workflow)
+        await pending
+
+        expect(deserialize).not.toHaveBeenCalled()
+        expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
+        expect(reportErrorMock).toHaveBeenCalledTimes(1)
+        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: 'canvas' }
+        })
+      } finally {
+        Reflect.set(app, 'canvas', originalCanvas)
+        Reflect.set(originalCanvas, 'graph', priorGraph)
+        Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+
+    it('does not insert after the canvas graph changes while loading', async () => {
+      const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
+
+      reportErrorMock.mockClear()
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(canvas, 'graph', {})
+        finishLoad(workflow)
+        await pending
+
+        expect(deserialize).not.toHaveBeenCalled()
+        expect(reportErrorMock).toHaveBeenCalledTimes(1)
+        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: 'graph' }
+        })
+      } finally {
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+  })
+
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 
@@ -2395,8 +2528,8 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })
@@ -2433,8 +2566,8 @@ describe('useWorkflowService', () => {
         isApp: true
       })
 
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
-      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackWorkflowSaved).toHaveBeenCalledWith({
         is_app: true,
         is_new: true
       })
@@ -2720,10 +2853,3 @@ vi.mock(import('@vueuse/router'), async () => {
   const { ref } = await import('vue')
   return { useRouteHash: () => ref('') }
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

@@ -16,7 +16,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { TurnstileWidget as SharedTurnstileWidget } from '@comfyorg/account/vue'
+import SharedTurnstileWidget from '@comfyorg/account/vue/TurnstileWidget'
 import { loadTurnstile } from '@comfyorg/account/turnstileScript'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'

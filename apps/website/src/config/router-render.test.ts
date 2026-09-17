@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { router_render } from './router-render'
+import type { RouterRenderOptions } from './router-render'
+import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { releaseRouterOutputs } from './workshop-response'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
+
+function router_render(
+  slug: string,
+  parameters: Parameters<typeof renderWithModel>[1],
+  options: Omit<RouterRenderOptions, 'model'>
+) {
+  const model = getRouterWorkshopModelDetail(slug)
+  if (!model) throw new Error(`Missing test model: ${slug}`)
+  return renderWithModel(slug, parameters, { ...options, model })
+}
 
 const png = Uint8Array.from(
   atob(
