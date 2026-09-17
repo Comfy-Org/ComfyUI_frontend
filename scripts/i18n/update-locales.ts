@@ -11,7 +11,7 @@ import {
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { OpenAI } from 'openai'
+import type { ResponseUsage } from 'openai/resources/responses/responses'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
@@ -333,21 +333,21 @@ function print(line: string): void {
 }
 
 export function formatUsageSummary(
-  usages: ReadonlyArray<Partial<OpenAI.CompletionUsage> | undefined>,
+  usages: ReadonlyArray<Partial<ResponseUsage> | undefined>,
   requestCount: number
 ): string {
-  let promptTokens = 0
-  let completionTokens = 0
+  let inputTokens = 0
+  let outputTokens = 0
   let reasoningTokens = 0
   let totalTokens = 0
   for (const usage of usages) {
     if (!usage) continue
-    promptTokens += usage.prompt_tokens ?? 0
-    completionTokens += usage.completion_tokens ?? 0
-    reasoningTokens += usage.completion_tokens_details?.reasoning_tokens ?? 0
+    inputTokens += usage.input_tokens ?? 0
+    outputTokens += usage.output_tokens ?? 0
+    reasoningTokens += usage.output_tokens_details?.reasoning_tokens ?? 0
     totalTokens += usage.total_tokens ?? 0
   }
-  return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} completions; ${promptTokens} input, ${completionTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
+  return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} responses; ${inputTokens} input, ${outputTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
 function reportCheck(states: readonly LocaleFileState[]): number {
@@ -506,7 +506,7 @@ async function run(argv: readonly string[]): Promise<void> {
       `${pendingTotal} strings need translation but OPENAI_API_KEY is not set.`
     )
   }
-  const completionUsages: (OpenAI.CompletionUsage | undefined)[] = []
+  const responseUsages: (ResponseUsage | undefined)[] = []
   const counter = createRequestCounter()
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
@@ -516,8 +516,8 @@ async function run(argv: readonly string[]): Promise<void> {
         reasoningEffort: config.reasoningEffort,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
-        onCompletion: (completion) => {
-          completionUsages.push(completion.usage)
+        onUsage: (usage) => {
+          responseUsages.push(usage)
         }
       })
     : async () => {
@@ -567,7 +567,7 @@ async function run(argv: readonly string[]): Promise<void> {
   )
 
   if (counter.requestCount() > 0) {
-    print(formatUsageSummary(completionUsages, counter.requestCount()))
+    print(formatUsageSummary(responseUsages, counter.requestCount()))
   }
 
   const failuresByFile = new Map<string, string[]>()
