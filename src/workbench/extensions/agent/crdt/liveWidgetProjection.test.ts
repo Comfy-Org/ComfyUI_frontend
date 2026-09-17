@@ -14,9 +14,13 @@ import { widgetId } from '@/types/widgetId'
 import type { GraphOperation } from './graphOperations'
 import {
   applyLiveWidgetValue,
+  createLiveWidgetProjection,
   rebindLiveWidgetState
 } from './liveWidgetProjection'
 import { attachMintPortWiring } from './mintPortWiring'
+
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 const rootScope = {
   rootGraphId: toRootGraphId('root'),
@@ -39,10 +43,28 @@ function graphWithWidget(type: TWidgetType = 'text') {
   return { graph, node, widget, callback }
 }
 
+function withMintWiring(
+  graph: LGraph,
+  run: (minted: GraphOperation[]) => void
+): void {
+  const minted: GraphOperation[] = []
+  const wiring = attachMintPortWiring({
+    isEnabled: () => true,
+    isDocBound: () => true,
+    enqueue: (operations) => minted.push(...operations),
+    layoutChanges: () => () => undefined,
+    localActorPrefix: 'user-',
+    getGraph: () => graph
+  })
+  try {
+    run(minted)
+  } finally {
+    wiring.detach()
+  }
+}
+
 describe('applyLiveWidgetValue', () => {
-  beforeEach(() =>
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-  )
+  beforeEach(() => reportError.mockReset())
 
   it('rebinds a live widget to type-changing reconciliation state', () => {
     const graph = new LGraph()
@@ -88,7 +110,7 @@ describe('applyLiveWidgetValue', () => {
     expect(widget.value).toBe('updated')
   })
 
-  it('guards a missing graph and identifies the widget in its warning', () => {
+  it('quietly skips while the graph is not ready', () => {
     expect(
       applyLiveWidgetValue(
         undefined,
@@ -99,9 +121,7 @@ describe('applyLiveWidgetValue', () => {
         remoteContext
       )
     ).toEqual({ status: 'skipped' })
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('node 7, widget value: graph is not ready')
-    )
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('guards a missing node or widget', () => {
@@ -111,6 +131,17 @@ describe('applyLiveWidgetValue', () => {
       applyLiveWidgetValue(
         graph,
         rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'skipped' })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        { ...rootScope, owningGraphId: toOwningGraphId('missing-subgraph') },
         toNodeId(7),
         'value',
         'after',
@@ -175,6 +206,34 @@ describe('applyLiveWidgetValue', () => {
     expect(node.properties.mode).toBe('after')
   })
 
+  it('invokes a custom widget setter once when syncing its property', () => {
+    const { graph, node, widget } = graphWithWidget()
+    widget.options = { ...widget.options, property: 'mode' }
+    node.properties.mode = 'before'
+    let liveValue = widget.value
+    const setter = vi.fn((value) => {
+      liveValue = value
+    })
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => liveValue,
+      set: setter
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
+    expect(setter).toHaveBeenCalledOnce()
+    expect(node.properties.mode).toBe('after')
+  })
+
   it('creates an undefined backing property and syncs callback edits', () => {
     const { graph, node, widget } = graphWithWidget()
     widget.options = { ...widget.options, property: 'mode' }
@@ -218,6 +277,24 @@ describe('applyLiveWidgetValue', () => {
 
   it('skips callback-only widgets', () => {
     const { graph, widget, callback } = graphWithWidget('button')
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'skipped' })
+    expect(widget.value).toBe('before')
+    expect(callback).not.toHaveBeenCalled()
+  })
+
+  it('skips widgets excluded from serialization', () => {
+    const { graph, widget, callback } = graphWithWidget()
+    widget.serialize = false
 
     expect(
       applyLiveWidgetValue(
@@ -305,22 +382,38 @@ describe('applyLiveWidgetValue', () => {
     expect(widget.value).toBe('before')
   })
 
+  it('rolls back when the initial store write throws', () => {
+    const { graph, widget } = graphWithWidget()
+    vi.spyOn(useWidgetValueStore(), 'setValue').mockImplementationOnce(() => {
+      throw new Error('store write failed')
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
+    expect(widget.value).toBe('before')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'store write failed' }),
+      expect.objectContaining({
+        errorType: 'agent_live_widget_projection_failed'
+      })
+    )
+  })
+
   it('suppresses the remote store write but mints a callback-produced edit', () => {
     const { graph, widget } = graphWithWidget()
-    const minted: GraphOperation[] = []
-    const wiring = attachMintPortWiring({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
-      layoutChanges: () => () => undefined,
-      localActorPrefix: 'user-',
-      getGraph: () => graph
-    })
     widget.callback = () => {
       widget.value = 'callback edit'
     }
 
-    try {
+    withMintWiring(graph, (minted) => {
       expect(
         applyLiveWidgetValue(
           graph,
@@ -340,28 +433,17 @@ describe('applyLiveWidgetValue', () => {
           old: 'after'
         }
       ])
-    } finally {
-      wiring.detach()
-    }
+    })
   })
 
   it('mints a callback-produced edit to a sibling widget', () => {
     const { graph, node, widget } = graphWithWidget()
     const sibling = node.addWidget('text', 'sibling', 'before', null)
-    const minted: GraphOperation[] = []
-    const wiring = attachMintPortWiring({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
-      layoutChanges: () => () => undefined,
-      localActorPrefix: 'user-',
-      getGraph: () => graph
-    })
     widget.callback = () => {
       sibling.value = 'callback edit'
     }
 
-    try {
+    withMintWiring(graph, (minted) => {
       expect(
         applyLiveWidgetValue(
           graph,
@@ -381,61 +463,18 @@ describe('applyLiveWidgetValue', () => {
           old: 'before'
         }
       ])
-    } finally {
-      wiring.detach()
-    }
+    })
   })
 
-  it('does not mint remote apply or rollback writes', () => {
-    const { graph, widget, callback } = graphWithWidget()
-    const minted: GraphOperation[] = []
-    const wiring = attachMintPortWiring({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
-      layoutChanges: () => () => undefined,
-      localActorPrefix: 'user-',
-      getGraph: () => graph
-    })
-    callback.mockImplementation(() => {
-      throw new Error('callback failed')
-    })
-
-    try {
-      expect(
-        applyLiveWidgetValue(
-          graph,
-          rootScope,
-          toNodeId(7),
-          'value',
-          'after',
-          remoteContext
-        )
-      ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
-      expect(widget.value).toBe('before')
-      expect(minted).toEqual([])
-    } finally {
-      wiring.detach()
-    }
-  })
-
-  it('does not mint a callback edit when the callback later throws', () => {
-    const { graph, widget } = graphWithWidget()
-    const minted: GraphOperation[] = []
-    const wiring = attachMintPortWiring({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
-      layoutChanges: () => () => undefined,
-      localActorPrefix: 'user-',
-      getGraph: () => graph
-    })
+  it('restores a sibling edit when the callback later throws', () => {
+    const { graph, node, widget } = graphWithWidget()
+    const sibling = node.addWidget('text', 'sibling', 'before', null)
     widget.callback = () => {
-      widget.value = 'callback edit'
+      sibling.value = 'callback edit'
       throw new Error('callback failed')
     }
 
-    try {
+    withMintWiring(graph, (minted) => {
       expect(
         applyLiveWidgetValue(
           graph,
@@ -447,10 +486,9 @@ describe('applyLiveWidgetValue', () => {
         )
       ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
       expect(widget.value).toBe('before')
+      expect(sibling.value).toBe('before')
       expect(minted).toEqual([])
-    } finally {
-      wiring.detach()
-    }
+    })
   })
 
   it('resolves nodes from the owning subgraph instead of the root graph', () => {
@@ -493,5 +531,26 @@ describe('applyLiveWidgetValue', () => {
     ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(innerWidget.value).toBe('after')
     expect(rootWidget.value).toBe('root')
+  })
+
+  it('adapts live projection to canvas invalidation', () => {
+    const { graph, widget } = graphWithWidget()
+    const markDirty = vi.fn()
+    const projection = createLiveWidgetProjection({
+      getRootGraph: () => graph,
+      markDirty
+    })
+
+    expect(
+      projection.setValue(
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
+    expect(widget.value).toBe('after')
+    expect(markDirty).toHaveBeenCalledOnce()
   })
 })

@@ -173,6 +173,12 @@ type PreparedMutation =
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
 
+type PreparedNodeMutation = Extract<
+  PreparedMutation,
+  { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
+>
+type PreparedConnectMutation = Extract<PreparedMutation, { kind: 'connect' }>
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -749,10 +755,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   function commitNodeState(
     scope: GraphScope,
-    mutation: Extract<
-      PreparedMutation,
-      { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
-    >,
+    mutation: PreparedNodeMutation,
     context: RemoteMutationContext
   ): boolean {
     let existing = nodeStore.getNode(scope.rootGraphId, mutation.node.state.id)
@@ -775,10 +778,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   function commitNodeWidgets(
     scope: GraphScope,
-    mutation: Extract<
-      PreparedMutation,
-      { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
-    >,
+    mutation: PreparedNodeMutation,
     context: RemoteMutationContext
   ): void {
     const incomingWidgetIds = new Set(
@@ -833,10 +833,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   function commitNode(
     scope: GraphScope,
-    mutation: Extract<
-      PreparedMutation,
-      { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
-    >,
+    mutation: PreparedNodeMutation,
     context: RemoteMutationContext
   ): void {
     const hadExistingNode = commitNodeState(scope, mutation, context)
@@ -889,7 +886,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   function commitConnection(
     scope: GraphScope,
-    mutation: Extract<PreparedMutation, { kind: 'connect' }>,
+    mutation: PreparedConnectMutation,
     context: RemoteMutationContext
   ): void {
     const existing = linkStore.getTopology(
@@ -925,7 +922,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
 
   function commitConnectionSlots(
     scope: GraphScope,
-    mutation: Extract<PreparedMutation, { kind: 'connect' }>,
+    mutation: PreparedConnectMutation,
     context: RemoteMutationContext
   ): void {
     const endpointNodes = new Map(
@@ -978,68 +975,46 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     nodeStore.clearOwner(scope, context)
   }
 
-  type Committer = (
-    scope: GraphScope,
-    mutation: PreparedMutation,
-    context: RemoteMutationContext
-  ) => void
-
-  const committers: Record<PreparedMutation['kind'], Committer> = {
-    addNode(scope, mutation, context) {
-      if (mutation.kind === 'addNode') commitNode(scope, mutation, context)
-    },
-    reconcileNode(scope, mutation, context) {
-      if (mutation.kind === 'reconcileNode')
-        commitNode(scope, mutation, context)
-    },
-    replaceNode(scope, mutation, context) {
-      if (mutation.kind === 'replaceNode') commitNode(scope, mutation, context)
-    },
-    reconcileNodeFields(scope, mutation, context) {
-      if (mutation.kind !== 'reconcileNodeFields') return
-      nodeStore.updateNodeFields(
-        scope,
-        mutation.state.id,
-        mutation.state,
-        context
-      )
-    },
-    setWidget(scope, mutation, context) {
-      if (mutation.kind === 'setWidget') commitWidget(scope, mutation, context)
-    },
-    connect(scope, mutation, context) {
-      if (mutation.kind === 'connect')
-        commitConnection(scope, mutation, context)
-    },
-    removeMissing(scope, mutation, context) {
-      if (mutation.kind !== 'removeMissing') return
-      commitRemovedLinks(scope, mutation.linkIds, context)
-      for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
-    },
-    removeLinks(scope, mutation, context) {
-      if (mutation.kind === 'removeLinks') {
-        commitRemovedLinks(scope, mutation.linkIds, context)
-      }
-    },
-    deleteNode: (scope, mutation, context) => {
-      if (mutation.kind === 'deleteNode') {
-        deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
-      }
-    },
-    clearSemanticGraph(scope, mutation, context) {
-      if (mutation.kind === 'clearSemanticGraph') {
-        commitClear(scope, mutation.nodeIds, context)
-      }
-    }
-  }
-
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
     context: RemoteMutationContext
   ): void {
     for (const mutation of prepared) {
-      committers[mutation.kind](scope, mutation, context)
+      switch (mutation.kind) {
+        case 'addNode':
+        case 'reconcileNode':
+        case 'replaceNode':
+          commitNode(scope, mutation, context)
+          break
+        case 'reconcileNodeFields':
+          nodeStore.updateNodeFields(
+            scope,
+            mutation.state.id,
+            mutation.state,
+            context
+          )
+          break
+        case 'setWidget':
+          commitWidget(scope, mutation, context)
+          break
+        case 'connect':
+          commitConnection(scope, mutation, context)
+          break
+        case 'removeMissing':
+          commitRemovedLinks(scope, mutation.linkIds, context)
+          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+          break
+        case 'removeLinks':
+          commitRemovedLinks(scope, mutation.linkIds, context)
+          break
+        case 'deleteNode':
+          deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+          break
+        case 'clearSemanticGraph':
+          commitClear(scope, mutation.nodeIds, context)
+          break
+      }
     }
   }
 

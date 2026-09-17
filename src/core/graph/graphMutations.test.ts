@@ -46,10 +46,12 @@ describe('graphMutations', () => {
       _nodeId,
       _name,
       value
-    ): {
-      status: 'applied' | 'rolledBack'
-      resolvedValue: typeof value
-    } => ({
+    ):
+      | { status: 'skipped' }
+      | {
+          status: 'applied' | 'rolledBack'
+          resolvedValue: typeof value
+        } => ({
       status: 'applied',
       resolvedValue: value
     })
@@ -174,27 +176,19 @@ describe('graphMutations', () => {
     }
   )
 
-  it.for([null, undefined])(
-    'preserves a nullish rollback value of %s',
-    (resolvedValue) => {
-      const graph = mutations()
-      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
-        true
-      )
-      setLiveWidgetValue.mockReset()
-      setLiveWidgetValue.mockReturnValue({
-        status: 'rolledBack',
-        resolvedValue
-      })
+  it('commits the remote value when live projection is skipped', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({ status: 'skipped' })
 
-      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
-        true
-      )
-      expect(
-        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
-      ).toMatchObject({ value: resolvedValue })
-    }
-  )
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'after.png' })
+  })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
