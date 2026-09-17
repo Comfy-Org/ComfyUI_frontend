@@ -58,6 +58,20 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
 
+### Watching the label
+
+`pr-notify-needs-backport.yaml` DMs the backport watchers as soon as
+`needs-backport` is added, so a backport decision is heard while its context is
+fresh rather than when the next release cut lists it. The DM says whether
+`pr-backport.yaml` is cherry-picking already, waiting on the merge, or blocked —
+a PR based on a release branch or carrying no version label never reaches the
+cherry-pick, and that is the case worth hearing about early.
+
+The recipients are the repository **variable**
+`SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
+(`U…`), which is also how you subscribe or unsubscribe without a PR. Leaving it
+unset falls back to the default in the workflow.
+
 ## Release Sheriff Assignment
 
 `pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any

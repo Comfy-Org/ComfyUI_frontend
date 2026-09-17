@@ -1,0 +1,107 @@
+---
+# Description: DMs the backport watchers the moment `needs-backport` is added
+# to a pull request.
+#
+# Why: the label was only ever reported after the fact. ComfyPR-Bot's backport
+# digest lands in #frontend-releases when a release cuts, so the gap between
+# somebody deciding a change has to ship on a release line and anybody hearing
+# about it was as wide as the gap between releases — and by then the decision
+# is being re-litigated from a list rather than caught while its context is
+# still fresh.
+#
+# Who gets the DM is the SLACK_NEEDS_BACKPORT_WATCHERS repository variable, so
+# the list changes without a PR. The literal default below is the fallback: an
+# unset variable would otherwise make this whole workflow a no-op that nobody
+# would notice, which is the failure mode it exists to remove.
+name: 'PR: Notify Needs Backport'
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+# Removing and re-adding the label is how `pr-backport.yaml`'s own failure
+# comment tells you to re-run a conflicted backport, so two events for one PR
+# in quick succession is normal. Serialize them rather than letting a re-add
+# cancel the DM for the add.
+concurrency:
+  group: notify-needs-backport-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: DM the backport watchers
+    # Every label on every PR fires this event. The job-level condition is
+    # evaluated before a runner is allocated, so the other labels cost nothing.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.label.name == 'needs-backport'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # pull_request_target checks out the base branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build the direct messages
+        id: build
+        # Every PR-controlled value reaches the script through the environment.
+        # This job runs under pull_request_target, so it holds SLACK_BOT_TOKEN
+        # on a PR anyone can open: interpolating a title into `run:` would hand
+        # whoever wrote that title a shell next to the secret.
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          LABELED_BY: ${{ github.event.sender.login }}
+          # Space- or comma-separated Slack member IDs. Default: @huang47, who
+          # asked to be notified on the label rather than on the release cut.
+          SLACK_NEEDS_BACKPORT_WATCHERS: >-
+            ${{ vars.SLACK_NEEDS_BACKPORT_WATCHERS || 'U0BA79D8R1T' }}
+        run: pnpm exec tsx scripts/cicd/notify-needs-backport.ts --out dms.json
+
+      # A step with an `if` loses the implicit success() guard, so it is spelled
+      # out: without it a failed build step would still reach the send below.
+      - name: Send the direct messages
+        if: success() && steps.build.outputs.count != '0'
+        # A Slack outage is not worth a red cross on somebody's pull request.
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          FAILED=0
+          # Read from a process substitution rather than a pipe so FAILED
+          # survives the loop.
+          while IFS= read -r BODY; do
+            CHANNEL=$(jq -r '.channel' <<<"$BODY")
+            # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
+            # scope and recipient errors, so the status code alone would
+            # report a dropped DM as a success.
+            RESPONSE=$(curl -sS -X POST \
+              --connect-timeout 10 --max-time 30 \
+              -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -d "$BODY" \
+              https://slack.com/api/chat.postMessage)
+            if jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+              echo "Notified ${CHANNEL}"
+            else
+              ERROR=$(jq -r '.error // "unparseable response"' <<<"$RESPONSE")
+              echo "::warning::Slack rejected the DM to ${CHANNEL}: ${ERROR}"
+              FAILED=1
+            fi
+          done < <(jq -c '.[]' dms.json)
+
+          exit "$FAILED"
