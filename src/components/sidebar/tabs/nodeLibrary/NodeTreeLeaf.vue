@@ -7,16 +7,12 @@
   >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
-        <Badge
-          v-if="nodeDef.experimental"
-          :value="$t('g.experimental')"
-          severity="primary"
-        />
-        <Badge
-          v-if="nodeDef.deprecated"
-          :value="$t('g.deprecated')"
-          severity="danger"
-        />
+        <Badge v-if="nodeDef.experimental" severity="primary">
+          {{ $t('g.experimental') }}
+        </Badge>
+        <Badge v-if="nodeDef.deprecated" severity="danger">
+          {{ $t('g.deprecated') }}
+        </Badge>
       </template>
       <template v-if="isUserBlueprint" #actions>
         <Button

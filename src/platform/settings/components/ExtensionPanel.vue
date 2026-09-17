@@ -40,11 +40,10 @@
       <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
-          <Badge
-            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
-            :value="$t('g.core')"
-          />
-          <Badge v-else :value="$t('g.custom')" severity="info" />
+          <Badge v-if="extensionStore.isCoreExtension(slotProps.data.name)">
+            {{ $t('g.core') }}
+          </Badge>
+          <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
         </template>
       </Column>
       <Column

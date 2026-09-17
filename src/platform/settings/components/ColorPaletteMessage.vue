@@ -1,5 +1,8 @@
 <template>
-  <Message severity="info" icon="pi pi-palette">
+  <Message severity="info">
+    <template #icon>
+      <i class="pi pi-palette" />
+    </template>
     <div class="flex items-center justify-between">
       <div>
         {{ $t('settingsCategories.ColorPalette') }}

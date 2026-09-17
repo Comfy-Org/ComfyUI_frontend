@@ -25,22 +25,18 @@
       </div>
     </div>
     <div class="option-badges">
-      <Badge
-        v-if="nodeDef.deprecated"
-        :value="$t('g.deprecated')"
-        severity="danger"
-      />
-      <Badge
-        v-if="nodeDef.experimental"
-        :value="$t('g.experimental')"
-        severity="primary"
-      />
-      <Badge v-if="nodeDef.dev_only" :value="$t('g.devOnly')" severity="info" />
-      <Badge
-        v-if="showNodeFrequency && nodeFrequency > 0"
-        :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
-        severity="secondary"
-      />
+      <Badge v-if="nodeDef.deprecated" severity="danger">
+        {{ $t('g.deprecated') }}
+      </Badge>
+      <Badge v-if="nodeDef.experimental" severity="primary">
+        {{ $t('g.experimental') }}
+      </Badge>
+      <Badge v-if="nodeDef.dev_only" severity="info">
+        {{ $t('g.devOnly') }}
+      </Badge>
+      <Badge v-if="showNodeFrequency && nodeFrequency > 0" severity="secondary">
+        {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
+      </Badge>
       <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
         variant="chip"

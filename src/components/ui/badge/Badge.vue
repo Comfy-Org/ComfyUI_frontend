@@ -9,13 +9,11 @@ import type { BadgeVariants } from './badge.variants'
 import { badgeVariants } from './badge.variants'
 
 const {
-  value,
   variant,
   severity,
   removable = false,
   class: customClass = ''
 } = defineProps<{
-  value?: string | number
   variant?: BadgeVariants['variant']
   severity?: BadgeVariants['severity']
   removable?: boolean
@@ -28,7 +26,7 @@ const emit = defineEmits<{ remove: [event: MouseEvent] }>()
 <template>
   <span :class="cn(badgeVariants({ variant, severity }), customClass)">
     <slot name="icon" />
-    <slot>{{ value }}</slot>
+    <slot />
     <Button
       v-if="removable"
       type="button"

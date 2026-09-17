@@ -27,9 +27,10 @@
     <Badge
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"
-      :value="t('breadcrumbsMenu.blueprint')"
       severity="primary"
-    />
+    >
+      {{ t('breadcrumbsMenu.blueprint') }}
+    </Badge>
     <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
   </div>
   <Menu

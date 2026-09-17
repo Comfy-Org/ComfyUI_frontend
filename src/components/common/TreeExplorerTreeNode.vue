@@ -23,11 +23,12 @@
       </span>
       <Badge
         v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
         variant="badge"
         severity="secondary"
         class="leaf-count-badge"
-      />
+      >
+        {{ nodeBadgeText }}
+      </Badge>
     </div>
     <div
       class="node-actions flex gap-1 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"

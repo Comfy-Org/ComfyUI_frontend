@@ -29,6 +29,19 @@ describe('Message', () => {
     }
   )
 
+  it('keeps its icon decorative', () => {
+    render(Message, {
+      slots: {
+        default: 'Helpful information',
+        icon: '<svg role="img" aria-label="Information" />'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('img', { hidden: true })).toBeVisible()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
   it('dismisses a closable message and emits close', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()

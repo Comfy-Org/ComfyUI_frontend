@@ -20,10 +20,11 @@
       <Column field="event_type" :header="$t('credits.eventType')">
         <template #body="{ data }">
           <Badge
-            :value="customerEventService.formatEventType(data.event_type)"
             variant="badge"
             :severity="customerEventService.getEventSeverity(data.event_type)"
-          />
+          >
+            {{ customerEventService.formatEventType(data.event_type) }}
+          </Badge>
         </template>
       </Column>
       <Column field="details" :header="$t('credits.details')">

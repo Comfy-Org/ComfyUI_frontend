@@ -3,9 +3,11 @@
   <Message
     v-if="userStore.isMultiUserServer"
     severity="info"
-    icon="pi pi-user"
     data-testid="current-user-indicator"
   >
+    <template #icon>
+      <i class="pi pi-user" />
+    </template>
     <div class="flex items-center justify-between">
       <div class="tabular-nums">
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}

@@ -126,12 +126,10 @@
             </a>
           </small>
         </template>
-        <Message
-          v-if="authActions.accessError.value"
-          severity="info"
-          icon="pi pi-info-circle"
-          closable
-        >
+        <Message v-if="authActions.accessError.value" severity="info" closable>
+          <template #icon>
+            <i class="pi pi-info-circle" />
+          </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
       </div>

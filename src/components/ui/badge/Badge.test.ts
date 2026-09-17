@@ -12,9 +12,10 @@ const i18n = createI18n({
 })
 
 describe('Badge', () => {
-  it('renders a value', () => {
+  it('renders its content', () => {
     render(Badge, {
-      props: { value: 12, variant: 'badge' },
+      props: { variant: 'badge' },
+      slots: { default: '12' },
       global: { plugins: [i18n] }
     })
 

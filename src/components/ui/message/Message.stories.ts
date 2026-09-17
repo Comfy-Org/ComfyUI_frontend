@@ -38,6 +38,10 @@ export const Closable: Story = {
   render: (args) => ({
     components: { Message },
     setup: () => ({ args }),
-    template: '<Message v-bind="args">Dismiss this message.</Message>'
+    template: `
+      <Message v-bind="args">
+        <template #icon><i class="pi pi-info-circle" /></template>
+        Dismiss this message.
+      </Message>`
   })
 }

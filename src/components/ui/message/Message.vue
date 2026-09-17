@@ -12,12 +12,10 @@ import { messageVariants } from './message.variants'
 const {
   severity,
   closable = false,
-  icon,
   class: customClass = ''
 } = defineProps<{
   severity?: MessageVariants['severity']
   closable?: boolean
-  icon?: string
   class?: HTMLAttributes['class']
 }>()
 
@@ -38,8 +36,8 @@ function close(event: MouseEvent) {
     aria-atomic="true"
     :class="cn(messageVariants({ severity }), customClass)"
   >
-    <span v-if="$slots.icon || icon" class="shrink-0" aria-hidden="true">
-      <slot name="icon"><i :class="icon" /></slot>
+    <span v-if="$slots.icon" class="shrink-0" aria-hidden="true">
+      <slot name="icon" />
     </span>
     <div class="min-w-0 flex-1"><slot /></div>
     <Button
