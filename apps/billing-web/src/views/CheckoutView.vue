@@ -88,14 +88,35 @@ const amountCents = computed(
   () => preview.value?.amount_due_cents ?? preview.value?.cost_today_cents ?? 0
 )
 
+const currency = computed(() => preview.value?.currency ?? 'usd')
+
+const paymentMethodConfigurationId = computed(
+  () => preview.value?.payment_method_configuration_id ?? ''
+)
+
+const canSubmit = computed(() => preview.value?.allowed ?? false)
+
+const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
+
+const quoting = computed(() => loading.value && summary.value === undefined)
+
+const phase = computed(() =>
+  checkout.projection.value.step === 'success' ? 'success' : 'payment'
+)
+
+const productName = computed(() => coded('product', entry.value?.product))
+
+function submitBlocked(disabled: boolean, submitting: boolean): boolean {
+  return disabled || submitting
+}
+
 const returnLink = computed(() => {
   const arrival = entry.value
   if (!arrival) return undefined
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,
-    result:
-      checkout.projection.value.step === 'success' ? 'success' : undefined,
+    result: phase.value === 'success' ? 'success' : undefined,
     reference: checkout.projection.value.operationId
   })
   return url?.href
@@ -174,7 +195,7 @@ const subscriptionPath = computed(() => ({
     class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section class="mx-auto flex min-h-full max-w-7xl items-center">
-      <p v-if="loading && !summary" class="m-0 text-sm text-muted-foreground">
+      <p v-if="quoting" class="m-0 text-sm text-muted-foreground">
         {{ t('hosted.loading') }}
       </p>
       <section
@@ -195,9 +216,7 @@ const subscriptionPath = computed(() => ({
       <EmbeddedCheckout
         v-else-if="summary"
         v-bind="summary"
-        :phase="
-          checkout.projection.value.step === 'success' ? 'success' : 'payment'
-        "
+        :phase="phase"
         @back="back"
         @close="close"
       >
@@ -218,21 +237,19 @@ const subscriptionPath = computed(() => ({
           />
           <StripePaymentForm
             v-else
-            :publishable-key="STRIPE_PUBLISHABLE_KEY ?? ''"
+            :publishable-key="publishableKey"
             :amount-cents="amountCents"
-            :currency="preview?.currency ?? 'usd'"
+            :currency="currency"
             :copy="paymentCopy"
-            :payment-method-configuration-id="
-              preview?.payment_method_configuration_id ?? ''
-            "
+            :payment-method-configuration-id="paymentMethodConfigurationId"
             :is-loading="checkout.submitting.value"
-            :can-submit="preview?.allowed ?? false"
+            :can-submit="canSubmit"
             @confirm="confirm"
           >
             <template #submit="{ disabled, loading: submitting }">
               <button
                 type="submit"
-                :disabled="disabled || submitting"
+                :disabled="submitBlocked(disabled, submitting)"
                 class="h-12 w-full cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {{ t('checkout.payAndSubscribe') }}
@@ -246,11 +263,7 @@ const subscriptionPath = computed(() => ({
             :href="returnLink"
             class="mt-10 flex h-12 w-full items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
           >
-            {{
-              t('checkout.returnToProduct', {
-                product: coded('product', entry?.product)
-              })
-            }}
+            {{ t('checkout.returnToProduct', { product: productName }) }}
           </a>
         </template>
       </EmbeddedCheckout>
