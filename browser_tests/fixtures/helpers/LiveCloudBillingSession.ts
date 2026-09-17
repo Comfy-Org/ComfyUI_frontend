@@ -86,10 +86,12 @@ export class LiveCloudBillingSession {
   }
 
   async ensureProvisioned(returnUrl: string) {
-    await this.post(
-      '/api/billing/payment-portal',
-      { return_url: returnUrl },
-      zPaymentPortalResponse
-    )
+    await expect(async () => {
+      await this.post(
+        '/api/billing/payment-portal',
+        { return_url: returnUrl },
+        zPaymentPortalResponse
+      )
+    }).toPass({ timeout: 30_000 })
   }
 }
