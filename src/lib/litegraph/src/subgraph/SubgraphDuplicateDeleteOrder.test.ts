@@ -169,7 +169,7 @@ function expectSurvivorUndamaged(
   const survivor = scenario.instances[survivorIndex]
   const survivorLink = scenario.links[survivorIndex]
   const survivorReroute = scenario.reroutes[survivorIndex]
-  const survivorValue = promotedValueOf(survivor)
+  const survivorValue = [111, 222][survivorIndex]
   const survivorWidgetId = promotedId(survivor)
 
   rootGraph.remove(removed)
