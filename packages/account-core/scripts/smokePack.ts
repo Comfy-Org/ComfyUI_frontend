@@ -7,6 +7,11 @@
  * unrewritten `catalog:` specifier, an export target missing from the tarball,
  * or an extensionless relative import in the emitted ESM first fails.
  *
+ * Tarball shape itself is not decided here: `publishableTarball.ts` owns those
+ * rules, and CI runs them per package through `checkPublishable.ts`. This
+ * script additionally applies them to the workspace closure it pins as npm
+ * `overrides`, which the per-package CI matrix never packs.
+ *
  * None of them is on npm yet, so each is also pinned through npm `overrides`;
  * drop an entry from PUBLISHED_PACKAGES once it resolves from the registry.
  */
@@ -25,28 +30,17 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 
-const zExportTarget = z.union([
-  z.string(),
-  z.object({ types: z.string(), import: z.string() })
-])
-const zSpecifiers = z.record(z.string(), z.string())
+import type { PackedPublishable } from './packPublishable'
+import { packPublishable } from './packPublishable'
+import type { PublishedManifest } from './publishableTarball'
+import { formatViolations } from './publishableTarball'
 
-const zManifest = z.object({
+const zWorkspaceManifest = z.object({
   name: z.string(),
-  version: z.string(),
-  exports: z.record(z.string(), zExportTarget),
-  dependencies: zSpecifiers.optional(),
-  peerDependencies: zSpecifiers.optional()
+  dependencies: z.record(z.string(), z.string()).optional()
 })
 
-const zPackResult = z.object({
-  filename: z.string(),
-  files: z.array(z.object({ path: z.string() }))
-})
-
-type ExportTarget = z.infer<typeof zExportTarget>
-type Manifest = z.infer<typeof zManifest>
-type PackResult = z.infer<typeof zPackResult>
+type WorkspaceManifest = z.infer<typeof zWorkspaceManifest>
 
 const packageDir = fileURLToPath(new URL('..', import.meta.url))
 const workspaceRoot = resolve(packageDir, '..', '..')
@@ -54,8 +48,6 @@ const packagesDir = resolve(packageDir, '..')
 const keep = process.argv.includes('--keep')
 
 const PUBLISHED_PACKAGES = ['account-core', 'billing-contract', 'ingest-types']
-const WORKSPACE_ONLY_SPECIFIER = /^(catalog|workspace):/
-const NON_PUBLIC_FILE = /(\.test\.ts$|(^|\/)__fixtures__\/|^src\/)/
 
 function run(command: string, args: string[], cwd: string): string {
   return execFileSync(command, args, {
@@ -65,16 +57,12 @@ function run(command: string, args: string[], cwd: string): string {
   })
 }
 
-function parseJson<T>(schema: z.ZodType<T>, text: string, origin: string): T {
-  const result = schema.safeParse(JSON.parse(text))
-  return result.success
-    ? result.data
-    : fail(`${origin}: ${result.error.message}`)
-}
-
-function readManifest(dir: string): Manifest {
+function readWorkspaceManifest(dir: string): WorkspaceManifest {
   const path = join(dir, 'package.json')
-  return parseJson(zManifest, readFileSync(path, 'utf8'), path)
+  const result = zWorkspaceManifest.safeParse(
+    JSON.parse(readFileSync(path, 'utf8'))
+  )
+  return result.success ? result.data : fail(`${path}: ${result.error.message}`)
 }
 
 function workspacePackageDirs(): Map<string, string> {
@@ -82,7 +70,7 @@ function workspacePackageDirs(): Map<string, string> {
     readdirSync(packagesDir)
       .map((entry) => join(packagesDir, entry))
       .filter((dir) => existsSync(join(dir, 'package.json')))
-      .map((dir) => [readManifest(dir).name, dir])
+      .map((dir) => [readWorkspaceManifest(dir).name, dir])
   )
 }
 
@@ -90,7 +78,7 @@ function workspaceDependencies(
   dir: string,
   dirsByName: Map<string, string>
 ): Array<[string, string]> {
-  return Object.entries(readManifest(dir).dependencies ?? {})
+  return Object.entries(readWorkspaceManifest(dir).dependencies ?? {})
     .filter(([, specifier]) => specifier.startsWith('workspace:'))
     .map(([name]) => [
       name,
@@ -112,26 +100,6 @@ function workspaceDependencyClosure(
   return closure
 }
 
-function pack(dir: string, destination: string): PackResult {
-  return parseJson(
-    zPackResult,
-    run('pnpm', ['pack', '--json', '--pack-destination', destination], dir),
-    `pnpm pack --json in ${dir}`
-  )
-}
-
-function packedManifest(tarball: string): Manifest {
-  return parseJson(
-    zManifest,
-    run('tar', ['-xzOf', tarball, 'package/package.json'], packageDir),
-    `package/package.json in ${tarball}`
-  )
-}
-
-function targetFiles(target: ExportTarget): string[] {
-  return typeof target === 'string' ? [target] : [target.types, target.import]
-}
-
 function log(line: string): void {
   process.stdout.write(`${line}\n`)
 }
@@ -140,35 +108,15 @@ function fail(message: string): never {
   throw new Error(message)
 }
 
-function assertPublishable(packed: PackResult): Manifest {
-  const manifest = packedManifest(packed.filename)
-  const shipped = new Set(packed.files.map((file) => file.path))
-  const missingTargets = Object.values(manifest.exports)
-    .flatMap(targetFiles)
-    .map((target) => target.replace(/^\.\//, ''))
-    .filter((target) => !shipped.has(target))
-  if (missingTargets.length > 0) {
-    fail(
-      `export targets missing from the tarball:\n${missingTargets.join('\n')}`
-    )
+function packOrFail(dir: string, destination: string): PackedPublishable {
+  const packed = packPublishable(dir, destination)
+  if (packed.violations.length > 0) {
+    fail(`${packed.manifest.name}\n${formatViolations(packed.violations)}`)
   }
-  const nonPublic = [...shipped].filter((path) => NON_PUBLIC_FILE.test(path))
-  if (nonPublic.length > 0) {
-    fail(`source or test-only files in the tarball:\n${nonPublic.join('\n')}`)
-  }
-  const unrewritten = Object.entries({
-    ...manifest.dependencies,
-    ...manifest.peerDependencies
-  }).filter(([, specifier]) => WORKSPACE_ONLY_SPECIFIER.test(specifier))
-  if (unrewritten.length > 0) {
-    fail(
-      `specifiers only pnpm can rewrite survived packing:\n${unrewritten
-        .map(([name, specifier]) => `${name}: ${specifier}`)
-        .join('\n')}`
-    )
-  }
-  log(`packed ${manifest.name}: ${shipped.size} files, specifiers rewritten`)
-  return manifest
+  log(
+    `packed ${packed.manifest.name}: ${packed.files.length} files, specifiers rewritten`
+  )
+  return packed
 }
 
 const NODE_CONSUMER_SOURCE = `
@@ -326,7 +274,9 @@ export interface RejectedByRealDeclarations {
 }
 `
 
-function assertTypedConsumerCoversEveryExport(manifests: Manifest[]): void {
+function assertTypedConsumerCoversEveryExport(
+  manifests: PublishedManifest[]
+): void {
   const uncovered = manifests
     .flatMap((manifest) =>
       Object.keys(manifest.exports)
@@ -349,8 +299,8 @@ function main(): void {
   try {
     const dirsByName = workspacePackageDirs()
     const rootDirs = PUBLISHED_PACKAGES.map((name) => join(packagesDir, name))
-    const packedRoots = rootDirs.map((dir) => pack(dir, tarballDir))
-    const manifests = packedRoots.map(assertPublishable)
+    const packedRoots = rootDirs.map((dir) => packOrFail(dir, tarballDir))
+    const manifests = packedRoots.map((packed) => packed.manifest)
     assertTypedConsumerCoversEveryExport(manifests)
 
     const directDependencies = Object.fromEntries(
@@ -364,11 +314,10 @@ function main(): void {
       ...Object.fromEntries(
         [...siblings]
           .filter(([name]) => !(name in directDependencies))
-          .map(([name, dir]) => {
-            const packedSibling = pack(dir, tarballDir)
-            assertPublishable(packedSibling)
-            return [name, `file:${packedSibling.filename}`]
-          })
+          .map(([name, dir]) => [
+            name,
+            `file:${packOrFail(dir, tarballDir).filename}`
+          ])
       ),
       ...directDependencies
     }

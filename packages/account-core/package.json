@@ -107,6 +107,7 @@
   },
   "scripts": {
     "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "check:pack": "tsx scripts/checkPublishable.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
