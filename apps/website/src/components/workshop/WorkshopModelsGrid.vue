@@ -50,7 +50,6 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 
@@ -250,10 +249,7 @@ const useCasesInFilter = computed(
 // as the catalogue grows.
 const FEATURED_LIMIT = 6
 const featured = computed(() =>
-  modelSlides(
-    sortWorkshopModels(models, 'popular').slice(0, FEATURED_LIMIT),
-    locale
-  )
+  sortWorkshopModels(models, 'popular').slice(0, FEATURED_LIMIT)
 )
 
 function openSection(value: UseCase | 'other') {
@@ -316,7 +312,7 @@ const menuItemClass =
   >
     <FeaturedBanner
       v-if="browsing && showFeatured && featured.length"
-      :slides="featured"
+      :models="featured"
       :locale
       class="short:mb-6 mb-10"
     />

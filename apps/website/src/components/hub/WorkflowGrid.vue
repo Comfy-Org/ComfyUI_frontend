@@ -31,7 +31,6 @@ const {
   hrefFor,
   extraFilters = 0,
   modelCount = 0,
-  showShelves = false,
   locale = 'en'
 } = defineProps<{
   templates: readonly HubTemplate[]
@@ -43,8 +42,6 @@ const {
   /** The Models tab lists what the parent passes in, so its tally comes from
    * there rather than from the workflows this grid holds. */
   modelCount?: number
-  /** The curated rows stand in for the listing until something narrows it. */
-  showShelves?: boolean
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
   locale?: Locale
@@ -131,10 +128,7 @@ const showingText = computed(() =>
       </BrowseToolbar>
     </div>
 
-    <slot name="banner" />
-
-    <slot v-if="showShelves" name="shelves" />
-    <slot v-else-if="store.activeTab.value === 'models'" name="models" />
+    <slot v-if="store.activeTab.value === 'models'" name="models" />
     <div
       v-else
       class="relative z-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
@@ -153,9 +147,7 @@ const showingText = computed(() =>
 
     <div
       v-if="
-        !showShelves &&
-        store.activeTab.value !== 'models' &&
-        displayedTemplates.length === 0
+        store.activeTab.value !== 'models' && displayedTemplates.length === 0
       "
       class="text-content-muted py-20 text-center"
       data-testid="hub-empty"
@@ -164,7 +156,7 @@ const showingText = computed(() =>
       <p class="mt-2 text-sm">{{ labels.emptyHint }}</p>
     </div>
 
-    <div v-if="hasMore && !showShelves" class="flex justify-center pt-10 pb-4">
+    <div v-if="hasMore" class="flex justify-center pt-10 pb-4">
       <button
         type="button"
         data-testid="hub-load-more"
@@ -176,7 +168,7 @@ const showingText = computed(() =>
     </div>
 
     <div
-      v-if="!showShelves && store.activeTab.value !== 'models'"
+      v-if="store.activeTab.value !== 'models'"
       class="text-hub-muted pt-2 pb-4 text-center text-sm"
       data-testid="hub-showing"
     >
