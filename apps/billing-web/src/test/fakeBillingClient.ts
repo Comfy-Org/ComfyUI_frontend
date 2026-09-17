@@ -14,7 +14,7 @@ import type {
   PreviewSubscribeResult,
   SavedPaymentMethod,
   SubscriptionPreview
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
 /** Nothing on these surfaces touches the rest of the client. */

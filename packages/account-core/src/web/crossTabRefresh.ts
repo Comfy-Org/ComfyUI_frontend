@@ -30,7 +30,7 @@ export function createWebCrossTabRefreshPort():
   // sandbox, privacy mode, partial impl); probe once so the port is either
   // fully usable or absent, never interrupted mid-commit.
   try {
-    const probe = new BroadcastChannel('@comfyorg/account cross-tab probe')
+    const probe = new BroadcastChannel('@comfyorg/account-core cross-tab probe')
     probe.close()
   } catch {
     return undefined
