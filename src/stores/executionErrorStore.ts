@@ -312,6 +312,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   ): SlotNodeErrorClearTarget[] {
     const surfaced = surfacedNodeErrors.value
     if (!surfaced || !app.isGraphReady) return []
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return []
 
     return Object.values(surfaced).flatMap((surface) =>
       surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
@@ -324,7 +326,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         if (!sourceExecutionId) return []
 
         const clearsThisError = resolveLiftChain(
-          app.rootGraph,
+          rootGraph,
           sourceExecutionId,
           source.source_input_name
         ).some(
@@ -545,11 +547,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const hasNodeError = computed(() => lastNodeErrors.value !== null)
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
-  const surfacedNodeErrors = computed(() =>
-    lastNodeErrors.value && app.isGraphReady
-      ? liftNodeErrorsToBoundary(app.rootGraph, lastNodeErrors.value)
+  const surfacedNodeErrors = computed(() => {
+    if (!lastNodeErrors.value || !app.isGraphReady) return lastNodeErrors.value
+    const rootGraph = app.rootGraph
+    return rootGraph
+      ? liftNodeErrorsToBoundary(rootGraph, lastNodeErrors.value)
       : lastNodeErrors.value
-  )
+  })
 
   const hasMissingError = computed(
     () =>
@@ -607,13 +611,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const activeGraphErrorNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
     if (!app.isGraphReady) return ids
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return ids
 
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
-    const activeGraph = canvasStore.currentGraph ?? app.rootGraph
+    const activeGraph = canvasStore.currentGraph ?? rootGraph
 
     if (surfacedNodeErrors.value) {
       for (const executionId of Object.keys(surfacedNodeErrors.value)) {
-        const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
+        const graphNode = getNodeByExecutionId(rootGraph, executionId)
         if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
         }
@@ -622,7 +628,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
-      const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
+      const graphNode = getNodeByExecutionId(rootGraph, execNodeId)
       if (graphNode?.graph === activeGraph) {
         ids.add(String(graphNode.id))
       }
@@ -691,7 +697,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** True if the node has errors inside it at any nesting depth. */
   function isContainerWithInternalError(node: LGraphNode): boolean {
     if (!app.isGraphReady) return false
-    const execId = getExecutionIdByNode(app.rootGraph, node)
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return false
+    const execId = getExecutionIdByNode(rootGraph, node)
     if (!execId) return false
     return errorAncestorExecutionIds.value.has(execId)
   }

@@ -4,11 +4,13 @@ import { nextTick } from 'vue'
 
 import type * as VueRouter from 'vue-router'
 
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { app as mockedApp } from '@/scripts/app'
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph; graph: LGraph }
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>

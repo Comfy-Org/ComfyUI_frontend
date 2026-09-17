@@ -6,7 +6,10 @@ import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { app } from '@/scripts/app'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app as mockedApp } from '@/scripts/app'
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph }
 import { api } from '@/scripts/api'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'

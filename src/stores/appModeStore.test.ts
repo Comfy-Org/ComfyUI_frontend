@@ -26,7 +26,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { app as mockedApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createMockChangeTracker,
@@ -65,6 +65,8 @@ vi.mock(import('@/components/builder/useEmptyWorkflowDialog'), () => ({
 import { useAppModeStore } from './appModeStore'
 
 const mockResolveNode = vi.mocked(resolveNode)
+
+const app = mockedApp as typeof mockedApp & { rootGraph: LGraph }
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'

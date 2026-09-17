@@ -101,7 +101,7 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const navigationStack = computed(() =>
       idStack.value
-        .map((id) => app.rootGraph.subgraphs.get(id))
+        .map((id) => app.rootGraph?.subgraphs.get(id))
         .filter(isNonNullish)
     )
 
@@ -297,6 +297,7 @@ export const useSubgraphNavigationStore = defineStore(
     async function redirectToRoot(reason: string, navigationId: number) {
       if (navigationId !== navigationIntentId) return
       const root = app.rootGraph
+      if (!root) return
       const rootHash = '#' + root.id
       console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
       try {
@@ -308,6 +309,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     async function navigateToHash(newHash: string, navigationId: number) {
       const root = app.rootGraph
+      if (!root) return
       const locatorId = newHash.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
 
@@ -353,10 +355,11 @@ export const useSubgraphNavigationStore = defineStore(
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return
+          const currentRoot = app.rootGraph
           const loadedGraph =
-            app.rootGraph.id === locatorId
-              ? app.rootGraph
-              : app.rootGraph.subgraphs.get(locatorId)
+            currentRoot?.id === locatorId
+              ? currentRoot
+              : currentRoot?.subgraphs.get(locatorId)
           if (!loadedGraph) {
             return redirectToRoot(
               'subgraph not found after workflow load',
@@ -407,7 +410,9 @@ export const useSubgraphNavigationStore = defineStore(
     async function syncGraphHash(intent: GraphNavigationIntent) {
       if (intent.id !== navigationIntentId) return false
       if (!routeHash.value) {
-        const rootHash = '#' + app.rootGraph.id
+        const rootGraph = app.rootGraph
+        if (!rootGraph) return false
+        const rootHash = '#' + rootGraph.id
         if (!(await writeRouteHash(rootHash, true))) return false
         if (intent.id !== navigationIntentId) return false
       }
