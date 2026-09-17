@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   afterAll,
   beforeAll,
@@ -45,11 +46,11 @@ class FakeCompositor implements Compositor {
     return {}
   }
   readback(): ImageData {
-    return {
+    return fromAny<ImageData, unknown>({
       width: 1,
       height: 1,
       data: new Uint8ClampedArray(4)
-    } as unknown as ImageData
+    })
   }
   async toBlob(): Promise<Blob> {
     return new Blob()
@@ -72,7 +73,7 @@ function stub2d(): () => void {
     kind: string
   ) {
     if (kind !== '2d') return null
-    return {
+    return fromAny<CanvasRenderingContext2D, unknown>({
       canvas: this,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
@@ -103,18 +104,18 @@ function stub2d(): () => void {
       setLineDash: () => {},
       putImageData: () => {},
       getImageData: (_x: number, _y: number, w: number, h: number) =>
-        ({
+        fromAny<ImageData, unknown>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4).fill(255)
-        }) as unknown as ImageData,
+        }),
       createImageData: (w: number, h: number) =>
-        ({
+        fromAny<ImageData, unknown>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
-        }) as unknown as ImageData
-    } as unknown as CanvasRenderingContext2D
+        })
+    })
   } as typeof HTMLCanvasElement.prototype.getContext
   return () => {
     HTMLCanvasElement.prototype.getContext = orig
@@ -212,7 +213,7 @@ function makeElements() {
 }
 
 function pointer(init: Partial<PointerEvent>): PointerEvent {
-  return {
+  return fromAny<PointerEvent, unknown>({
     button: 0,
     pointerId: 1,
     clientX: 0,
@@ -223,11 +224,11 @@ function pointer(init: Partial<PointerEvent>): PointerEvent {
     ctrlKey: false,
     metaKey: false,
     ...init
-  } as unknown as PointerEvent
+  })
 }
 
 function key(init: Partial<KeyboardEvent>): KeyboardEvent {
-  return {
+  return fromAny<KeyboardEvent, unknown>({
     code: '',
     key: '',
     ctrlKey: false,
@@ -236,7 +237,7 @@ function key(init: Partial<KeyboardEvent>): KeyboardEvent {
     target: null,
     preventDefault: () => {},
     ...init
-  } as unknown as KeyboardEvent
+  })
 }
 
 function rasterLayer(
@@ -647,11 +648,13 @@ describe('useLayerEditorSession', () => {
       session.setElements(makeElements())
       await flushFrames()
       const before = session.zoomRatio.value
-      session.onWheel({
-        deltaY: -1,
-        offsetX: 10,
-        offsetY: 10
-      } as unknown as WheelEvent)
+      session.onWheel(
+        fromAny<WheelEvent, unknown>({
+          deltaY: -1,
+          offsetX: 10,
+          offsetY: 10
+        })
+      )
       await flushFrames()
       expect(session.zoomRatio.value).toBeCloseTo(before * 1.1)
     })

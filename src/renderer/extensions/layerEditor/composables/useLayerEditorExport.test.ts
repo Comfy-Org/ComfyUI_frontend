@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -54,7 +55,7 @@ function renderLayerEditorExport(session: LayerEditorSession) {
 
 function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const noop = () => {}
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     canvas,
     imageSmoothingEnabled: false,
     imageSmoothingQuality: 'low',
@@ -70,7 +71,7 @@ function stubContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
     rect: noop,
     clip: noop,
     putImageData: noop
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 const origGetContext = HTMLCanvasElement.prototype.getContext
@@ -150,7 +151,7 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
       }
     ])
   )
-  return {
+  return fromAny<LayerEditorSession, unknown>({
     glOk: ref(glOk),
     requestRender: vi.fn(),
     compositor: {
@@ -168,7 +169,7 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
       document: () => doc,
       render: vi.fn()
     }
-  } as unknown as LayerEditorSession
+  })
 }
 
 beforeEach(() => {

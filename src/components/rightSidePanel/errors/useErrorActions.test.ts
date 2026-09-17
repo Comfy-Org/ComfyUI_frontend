@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
@@ -138,7 +139,7 @@ describe('useErrorActions', () => {
 
       findOnGitHub('error with spaces & symbols?')
 
-      const [[url]] = windowOpenSpy.mock.calls as unknown as [[string]]
+      const [[url]] = fromAny<[[string]], unknown>(windowOpenSpy.mock.calls)
       expect(url).toContain('?q=')
       const queryPart = url.split('?q=')[1]
       expect(decodeURIComponent(queryPart)).toBe(

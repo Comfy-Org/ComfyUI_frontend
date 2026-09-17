@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,7 +9,7 @@ import type { ComfyApp } from '@/scripts/app'
 const { app } = vi.hoisted(() => ({
   app: {
     registerExtension: vi.fn(),
-    graph: undefined as unknown as LGraph
+    graph: fromAny<LGraph, unknown>(undefined)
   }
 }))
 

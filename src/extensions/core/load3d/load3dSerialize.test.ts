@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
@@ -6,15 +7,15 @@ import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 function makeNode(props: Record<string, unknown> = {}): LGraphNode {
-  return { properties: { ...props } } as unknown as LGraphNode
+  return fromAny<LGraphNode, unknown>({ properties: { ...props } })
 }
 
-const baseCameraState: CameraState = {
+const baseCameraState: CameraState = fromAny<CameraState, unknown>({
   position: { x: 1, y: 2, z: 3 },
   target: { x: 0, y: 0, z: 0 },
   zoom: 1,
   cameraType: 'perspective'
-} as unknown as CameraState
+})
 
 function makeLoad3d({
   cameraType = 'perspective',
@@ -25,13 +26,13 @@ function makeLoad3d({
   fov?: number
   modelInfo?: unknown
 } = {}) {
-  return {
+  return fromAny<Load3d, unknown>({
     getCurrentCameraType: vi.fn(() => cameraType),
     cameraManager: { perspectiveCamera: { fov } },
     getCameraState: vi.fn(() => baseCameraState),
     stopRecording: vi.fn(),
     getModelInfo: vi.fn(() => modelInfo)
-  } as unknown as Load3d
+  })
 }
 
 describe('snapshotLoad3dState', () => {

@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
@@ -149,9 +149,9 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 }
 
 function createGraph(graphData = createWorkflowGraphData()): LGraph {
-  return {
+  return fromAny<LGraph, unknown>({
     serialize: vi.fn(() => graphData)
-  } as unknown as LGraph
+  })
 }
 
 describe('missingModelPipeline', () => {
@@ -426,9 +426,11 @@ describe('missingModelPipeline', () => {
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [confirmedCandidate]
       const widget = { name: 'ckpt_name', value: 'missing.safetensors' }
-      mockHandles.getNodeByExecutionId.mockReturnValue({
-        widgets: [widget]
-      } as unknown as LGraphNode)
+      mockHandles.getNodeByExecutionId.mockReturnValue(
+        fromAny<LGraphNode, unknown>({
+          widgets: [widget]
+        })
+      )
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
       mockHandles.api.getFolderPaths.mockReturnValueOnce(

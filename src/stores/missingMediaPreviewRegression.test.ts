@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -11,7 +12,7 @@ const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
   nodePreviewImages: {},
   nodeOutputs: {},
-  rootGraph: { nodes: [], _nodes: [] } as unknown as LGraph
+  rootGraph: fromAny<LGraph, unknown>({ nodes: [], _nodes: [] })
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
@@ -32,18 +33,18 @@ vi.mock<unknown>(
 import { useExecutionErrorStore } from './executionErrorStore'
 
 function makeNodeWithPreview(id: number): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id,
     imgs: [{ src: 'blob:mask-edited' }],
     videoContainer: undefined,
     graph: { setDirtyCanvas: vi.fn() }
-  } as unknown as LGraphNode
+  })
 }
 
 describe('FE-230 regression — workflow-load missing-media flagging must not wipe node previews', () => {
   beforeEach(() => {
     mockApp.isGraphReady = true
-    mockApp.rootGraph = { nodes: [], _nodes: [] } as unknown as LGraph
+    mockApp.rootGraph = fromAny<LGraph, unknown>({ nodes: [], _nodes: [] })
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
       false
   })

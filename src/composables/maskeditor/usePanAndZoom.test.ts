@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
@@ -6,7 +7,7 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
-  return {
+  return fromAny<HTMLElement, unknown>({
     clientWidth: width,
     clientHeight: height,
     style: {} as CSSStyleDeclaration,
@@ -19,11 +20,11 @@ function createMockElement(width = 1200, height = 800): HTMLElement {
         right: width,
         bottom: height
       }) as DOMRect
-  } as unknown as HTMLElement
+  })
 }
 
 function createMockCanvas(width: number, height: number): HTMLCanvasElement {
-  return {
+  return fromAny<HTMLCanvasElement, unknown>({
     width,
     height,
     getContext: vi.fn().mockImplementation(() => null),
@@ -39,7 +40,7 @@ function createMockCanvas(width: number, height: number): HTMLCanvasElement {
         right: width,
         bottom: height
       }) as DOMRect
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 function createMockImage(width: number, height: number): HTMLImageElement {
@@ -55,10 +56,10 @@ function createTouchList(...points: { x: number; y: number }[]): TouchList {
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
-  return {
+  return fromAny<TouchEvent, unknown>({
     touches,
     preventDefault: vi.fn()
-  } as unknown as TouchEvent
+  })
 }
 
 async function initComposable() {

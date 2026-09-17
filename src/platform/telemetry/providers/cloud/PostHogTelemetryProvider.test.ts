@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
@@ -37,8 +38,8 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<RemoteConfig>
+    tier: fromAny<Ref<string | null>, unknown>(null),
+    remoteConfig: fromAny<Ref<RemoteConfig>, unknown>(null)
   }
 
   return {

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -312,13 +313,10 @@ async function runGuard(
 ) {
   const next = vi.fn()
   const to = { query, name, path }
-  await (
-    guard as unknown as (
-      to: unknown,
-      from: unknown,
-      next: unknown
-    ) => Promise<void>
-  )(to, undefined, next)
+  await fromAny<
+    (to: unknown, from: unknown, next: unknown) => Promise<void>,
+    unknown
+  >(guard)(to, undefined, next)
   return next.mock.calls[0]?.[0]
 }
 

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
@@ -13,7 +14,7 @@ import {
 
 function makeMockCtx() {
   const gradient = { addColorStop: vi.fn() }
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     beginPath: vi.fn(),
     fill: vi.fn(),
     rect: vi.fn(),
@@ -21,7 +22,7 @@ function makeMockCtx() {
     fillStyle: '',
     drawImage: vi.fn(),
     createRadialGradient: vi.fn(() => gradient)
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 function makeMockCanvas(nullCtx = false) {
@@ -29,11 +30,11 @@ function makeMockCanvas(nullCtx = false) {
   const ctx2d = nullCtx
     ? null
     : { createImageData: vi.fn(() => imageData), putImageData: vi.fn() }
-  return {
+  return fromAny<HTMLCanvasElement, unknown>({
     width: 0,
     height: 0,
     getContext: vi.fn(() => ctx2d)
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 function spyOnCreateElement(nullCtx = false) {

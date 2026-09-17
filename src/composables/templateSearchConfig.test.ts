@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { SearchResult } from 'minisearch'
@@ -283,7 +284,7 @@ describe('searchTemplates', () => {
 
 describe('rankByRelevanceThenUsage', () => {
   const hit = (id: string, score: number, usage: number): SearchResult =>
-    ({ id, score, usage }) as unknown as SearchResult
+    fromAny<SearchResult, unknown>({ id, score, usage })
 
   const curatedHit = (
     id: string,
@@ -291,7 +292,7 @@ describe('rankByRelevanceThenUsage', () => {
     usage: number,
     searchRank: number
   ): SearchResult =>
-    ({ id, score, usage, searchRank }) as unknown as SearchResult
+    fromAny<SearchResult, unknown>({ id, score, usage, searchRank })
 
   it('produces a stable order for an intransitive cluster', () => {
     // These scores and usages cycle under a pairwise relative-band compare

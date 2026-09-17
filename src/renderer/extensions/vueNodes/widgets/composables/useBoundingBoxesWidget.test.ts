@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,9 +9,12 @@ import { useBoundingBoxesWidget } from './useBoundingBoxesWidget'
 const widgetOptions = { serialize: true, hideInPanel: true }
 
 function mockNode() {
-  return { addWidget: vi.fn(() => ({})) } as unknown as LGraphNode & {
-    addWidget: ReturnType<typeof vi.fn>
-  }
+  return fromAny<
+    LGraphNode & {
+      addWidget: ReturnType<typeof vi.fn>
+    },
+    unknown
+  >({ addWidget: vi.fn(() => ({})) })
 }
 
 describe('useBoundingBoxesWidget', () => {

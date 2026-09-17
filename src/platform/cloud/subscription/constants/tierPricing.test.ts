@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
@@ -45,7 +46,9 @@ describe('toTierKey', () => {
   it.for([[['FREE']], [{}], [null], [undefined], [42]])(
     'returns null for the non-string value %s',
     ([value]) => {
-      expect(toTierKey(value as unknown as IngestSubscriptionTier)).toBeNull()
+      expect(
+        toTierKey(fromAny<IngestSubscriptionTier, unknown>(value))
+      ).toBeNull()
     }
   )
 })
@@ -81,9 +84,9 @@ describe('isEnterprisePlanSlug', () => {
 
 describe('isUnknownTier', () => {
   it('flags only tiers outside the catalog and the workspace-level set', () => {
-    expect(isUnknownTier('GALACTIC' as unknown as IngestSubscriptionTier)).toBe(
-      true
-    )
+    expect(
+      isUnknownTier(fromAny<IngestSubscriptionTier, unknown>('GALACTIC'))
+    ).toBe(true)
     expect(isUnknownTier('PRO')).toBe(false)
     expect(isUnknownTier('TEAM')).toBe(false)
     expect(isUnknownTier('ENTERPRISE')).toBe(false)
@@ -96,7 +99,7 @@ describe('isSalesManagedTier', () => {
   it('covers Enterprise and unrecognised tiers, nothing else', () => {
     expect(isSalesManagedTier('ENTERPRISE')).toBe(true)
     expect(
-      isSalesManagedTier('GALACTIC' as unknown as IngestSubscriptionTier)
+      isSalesManagedTier(fromAny<IngestSubscriptionTier, unknown>('GALACTIC'))
     ).toBe(true)
     expect(isSalesManagedTier('PRO')).toBe(false)
     expect(isSalesManagedTier('TEAM')).toBe(false)

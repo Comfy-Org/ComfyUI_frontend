@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
@@ -20,7 +21,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const ctx = {
+const ctx = fromAny<CanvasRenderingContext2D, unknown>({
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -40,13 +41,13 @@ const ctx = {
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0
-} as unknown as CanvasRenderingContext2D
+})
 
 function makeCanvas(): HTMLCanvasElement {
   const el = document.createElement('canvas')
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
   Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
-  el.getContext = (() => ctx) as unknown as HTMLCanvasElement['getContext']
+  el.getContext = fromAny<HTMLCanvasElement['getContext'], unknown>(() => ctx)
   el.getBoundingClientRect = () => ({
     left: 0,
     top: 0,
@@ -95,7 +96,7 @@ const pe = (
   clientY: number,
   over: Partial<PointerEvent> = {}
 ) =>
-  ({
+  fromAny<PointerEvent, unknown>({
     button: 0,
     clientX,
     clientY,
@@ -104,7 +105,7 @@ const pe = (
     preventDefault: () => {},
     stopPropagation: () => {},
     ...over
-  }) as unknown as PointerEvent
+  })
 
 const flush = async () => {
   await Promise.resolve()
@@ -230,11 +231,13 @@ describe('useBoundingBoxes region editing', () => {
 
   it('deletes the active region on Delete', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    c.onCanvasKeyDown(
+      fromAny<KeyboardEvent, unknown>({
+        key: 'Delete',
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      })
+    )
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
   })

@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -125,7 +125,7 @@ describe('display label behavior', () => {
 
   it('falls back to value when label function returns undefined', () => {
     const getOptionLabel = (v?: string | null) => {
-      if (v === 'hash789.png') return undefined as unknown as string
+      if (v === 'hash789.png') return fromAny<string, unknown>(undefined)
       return `Labeled: ${v}`
     }
     const { dropdownItems } = useWidgetSelectItems(

@@ -63,10 +63,12 @@ interface TypeAssertion extends Node {
 }
 
 interface RuleFixer {
+  insertTextBefore(node: Node, text: string): unknown
   replaceText(node: Node, text: string): unknown
 }
 
 interface RuleContext {
+  readonly filename: string
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
     getText(node: Node): string
@@ -171,8 +173,39 @@ export const noUnknownDoubleAssertion = {
   meta: { fixable: 'code' },
   create(context: RuleContext) {
     let fromAny: string | undefined
+    let program: Node
+    const withoutHelper: TypeAssertion[] = []
+
+    const replacement = (node: TypeAssertion) => {
+      const inner = node.expression as TypeAssertion
+      return `fromAny<${context.sourceCode.getText(node.typeAnnotation)}, unknown>(${context.sourceCode.getText(inner.expression)})`
+    }
 
     return {
+      Program(node: Node) {
+        program = node
+      },
+      'Program:exit'() {
+        if (
+          fromAny ||
+          withoutHelper.length === 0 ||
+          !/(?:\.test\.|\.spec\.)/.test(context.filename) ||
+          context.filename.includes('/browser_tests/')
+        ) {
+          return
+        }
+
+        context.report({
+          node: withoutHelper[0],
+          message: DOUBLE_ASSERTION_MESSAGE,
+          fix: (fixer: RuleFixer) => [
+            fixer.insertTextBefore(
+              program,
+              "import { fromAny } from '@total-typescript/shoehorn'\n"
+            )
+          ]
+        })
+      },
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== '@total-typescript/shoehorn') return
         fromAny = importedLocalName(node, 'fromAny')
@@ -182,13 +215,18 @@ export const noUnknownDoubleAssertion = {
         const inner = node.expression as TypeAssertion
         if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
 
-        const helper = fromAny
-        const fix = helper
-          ? (fixer: RuleFixer) =>
-              fixer.replaceText(
-                node,
-                `${helper}<${context.sourceCode.getText(node.typeAnnotation)}${helper === fromAny ? ', unknown' : ''}>(${context.sourceCode.getText(inner.expression)})`
-              )
+        if (!fromAny) {
+          withoutHelper.push(node)
+          if (
+            !/(?:\.test\.|\.spec\.)/.test(context.filename) ||
+            !context.filename.includes('/browser_tests/')
+          ) {
+            return
+          }
+        }
+
+        const fix = fromAny
+          ? (fixer: RuleFixer) => fixer.replaceText(node, replacement(node))
           : undefined
 
         context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })

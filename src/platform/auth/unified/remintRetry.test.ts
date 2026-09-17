@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
@@ -337,7 +338,9 @@ describe('attachUnifiedRemintInterceptor', () => {
 
   function makeClient(statuses: number[]) {
     const adapter = makeAdapter(statuses)
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({
+      adapter: fromAny<AxiosAdapter, unknown>(adapter)
+    })
     attachUnifiedRemintInterceptor(client)
     return { client, adapter }
   }
@@ -485,7 +488,9 @@ describe('attachUnifiedRemintInterceptor', () => {
         response
       )
     })
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({
+      adapter: fromAny<AxiosAdapter, unknown>(adapter)
+    })
     attachUnifiedRemintInterceptor(client)
     mockRemint.mockResolvedValue('tokenB')
 

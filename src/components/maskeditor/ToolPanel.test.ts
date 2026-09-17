@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -31,7 +32,7 @@ const mockToolManager = vi.hoisted(() => ({
 const renderPanel = () =>
   render(ToolPanel, {
     global: { plugins: [i18n] },
-    props: { toolManager: mockToolManager as unknown as ToolManager }
+    props: { toolManager: fromAny<ToolManager, unknown>(mockToolManager) }
   })
 
 const getToolButton = (tool: Tools): HTMLElement => {

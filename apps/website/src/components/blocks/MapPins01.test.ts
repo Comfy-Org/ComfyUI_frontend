@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import type * as Leaflet from 'leaflet'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -128,7 +129,7 @@ vi.mock(import('leaflet'), () => {
   const popup = () => {
     const record = {
       latLng: undefined as unknown,
-      content: undefined as unknown as HTMLElement,
+      content: fromAny<HTMLElement, unknown>(undefined),
       setLatLng(latLng: unknown) {
         record.latLng = latLng
         return record
@@ -155,7 +156,7 @@ vi.mock(import('leaflet'), () => {
   }
   // The fake covers only the surface MapPins01 touches, so it cannot satisfy
   // leaflet's full module type without this widening.
-  return { default: fake } as unknown as typeof Leaflet
+  return fromAny<typeof Leaflet, unknown>({ default: fake })
 })
 
 // One pixel per degree: the first two pins sit 10px apart (clustered), the

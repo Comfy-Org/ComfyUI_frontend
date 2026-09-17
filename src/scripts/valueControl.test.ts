@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -12,46 +13,46 @@ const makeNumberWidget = (
   value: number,
   options: Partial<IBaseWidget['options']> = {}
 ): IBaseWidget =>
-  ({
+  fromAny<IBaseWidget, unknown>({
     type: 'number',
     name: 'seed',
     value,
     options
-  }) as unknown as IBaseWidget
+  })
 
 const makeComboWidget = (
   value: string | number,
   values: (string | number)[]
 ): IBaseWidget =>
-  ({
+  fromAny<IBaseWidget, unknown>({
     type: 'combo',
     name: 'choice',
     value,
     options: { values }
-  }) as unknown as IBaseWidget
+  })
 
 describe('isValueControlWidget', () => {
   it('returns true for a marked widget with both lifecycle hooks', () => {
-    const widget = {
+    const widget = fromAny<IBaseWidget, unknown>({
       [IS_CONTROL_WIDGET]: true,
       beforeQueued: () => {},
       afterQueued: () => {}
-    } as unknown as IBaseWidget
+    })
     expect(isValueControlWidget(widget)).toBe(true)
   })
 
   it('returns false when the marker symbol is missing', () => {
-    const widget = {
+    const widget = fromAny<IBaseWidget, unknown>({
       beforeQueued: () => {},
       afterQueued: () => {}
-    } as unknown as IBaseWidget
+    })
     expect(isValueControlWidget(widget)).toBe(false)
   })
 
   it('returns false when lifecycle hooks are missing', () => {
-    const widget = {
+    const widget = fromAny<IBaseWidget, unknown>({
       [IS_CONTROL_WIDGET]: true
-    } as unknown as IBaseWidget
+    })
     expect(isValueControlWidget(widget)).toBe(false)
   })
 })
@@ -90,12 +91,12 @@ describe('computeNextControlledValue (number)', () => {
   })
 
   it('returns undefined when target value is not numeric', () => {
-    const widget = {
+    const widget = fromAny<IBaseWidget, unknown>({
       type: 'number',
       name: 'seed',
       value: 'not a number',
       options: {}
-    } as unknown as IBaseWidget
+    })
     expect(computeNextControlledValue(widget, 'increment')).toBeUndefined()
   })
 })

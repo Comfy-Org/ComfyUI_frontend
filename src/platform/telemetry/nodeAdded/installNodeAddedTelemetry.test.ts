@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -15,15 +16,15 @@ vi.mock<unknown>(import('..'), () => ({
 }))
 
 function fakeGraph(): LGraph {
-  return {
+  return fromAny<LGraph, unknown>({
     onNodeAdded: undefined,
     events: new CustomEventTarget<LGraphEventMap>()
-  } as unknown as LGraph
+  })
 }
 
 function addNode(graph: LGraph, type: string) {
   graph.events.dispatch('node:added', {
-    node: { type } as unknown as LGraphNode
+    node: fromAny<LGraphNode, unknown>({ type })
   })
 }
 

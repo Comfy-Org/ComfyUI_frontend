@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
@@ -49,13 +50,13 @@ function createMockTexture(
   height = 512
 ): GPUTexture & { _view: GPUTextureView } {
   const view = {} as GPUTextureView
-  return {
+  return fromAny<GPUTexture & { _view: GPUTextureView }, unknown>({
     width,
     height,
     createView: vi.fn(() => view),
     destroy: vi.fn(),
     _view: view
-  } as unknown as GPUTexture & { _view: GPUTextureView }
+  })
 }
 
 function createMockDevice() {
@@ -74,11 +75,10 @@ function createMockDevice() {
     createRenderPipeline: vi.fn(() => ({
       _id: `pipeline-${pipelineCounter++}`
     })),
-    createComputePipeline: vi.fn(
-      () =>
-        ({
-          getBindGroupLayout: vi.fn(() => ({}))
-        }) as unknown as GPUComputePipeline
+    createComputePipeline: vi.fn(() =>
+      fromAny<GPUComputePipeline, unknown>({
+        getBindGroupLayout: vi.fn(() => ({}))
+      })
     ),
     createTexture: vi.fn((desc: { size: number[] }) =>
       createMockTexture(desc.size[0], desc.size[1])
@@ -90,9 +90,12 @@ function createMockDevice() {
     },
     _encoder: encoder
   }
-  return device as unknown as GPUDevice & {
-    _encoder: ReturnType<typeof createMockEncoder>
-  }
+  return fromAny<
+    GPUDevice & {
+      _encoder: ReturnType<typeof createMockEncoder>
+    },
+    unknown
+  >(device)
 }
 
 describe('GPUBrushRenderer', () => {
@@ -349,9 +352,9 @@ describe('GPUBrushRenderer', () => {
   })
 
   describe('blitToCanvas', () => {
-    const mockCtx = {
+    const mockCtx = fromAny<GPUCanvasContext, unknown>({
       getCurrentTexture: vi.fn(() => createMockTexture())
-    } as unknown as GPUCanvasContext
+    })
 
     const settings = {
       opacity: 1,
@@ -425,9 +428,9 @@ describe('GPUBrushRenderer', () => {
 
   describe('clearPreview', () => {
     it('submits a clear render pass', () => {
-      const mockCtx = {
+      const mockCtx = fromAny<GPUCanvasContext, unknown>({
         getCurrentTexture: vi.fn(() => createMockTexture())
-      } as unknown as GPUCanvasContext
+      })
 
       renderer.clearPreview(mockCtx)
 

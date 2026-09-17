@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -102,9 +103,11 @@ function renderLoad3D(options: RenderOptions = {}) {
   return {
     ...render(Load3D, {
       props: {
-        widget: (options.widget ?? {
-          node: MOCK_NODE
-        }) as unknown as ComponentWidget<string[]>,
+        widget: fromAny<ComponentWidget<string[]>, unknown>(
+          options.widget ?? {
+            node: MOCK_NODE
+          }
+        ),
         nodeId: options.nodeId
       },
       global: {

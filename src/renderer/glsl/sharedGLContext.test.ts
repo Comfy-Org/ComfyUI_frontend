@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
@@ -38,7 +39,7 @@ describe('acquireSharedGL', () => {
         getContext(contextId: string) {
           if (contextId !== 'webgl2') return null
           getContextCalls++
-          return mockGL as unknown as WebGL2RenderingContext
+          return fromAny<WebGL2RenderingContext, unknown>(mockGL)
         }
       }
     )
@@ -113,7 +114,7 @@ describe('acquireSharedGL', () => {
 
   it('returns null when webgl2 is unavailable', () => {
     const savedGL = mockGL
-    mockGL = null as unknown as MockGL
+    mockGL = fromAny<MockGL, unknown>(null)
     expect(acquireSharedGL()).toBeNull()
     mockGL = savedGL
   })

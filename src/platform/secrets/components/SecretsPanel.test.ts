@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -59,8 +60,9 @@ interface CapturedConfirmOptions {
 }
 
 function capturedOptions(): CapturedConfirmOptions {
-  return mockShowConfirmDialog.mock
-    .calls[0][0] as unknown as CapturedConfirmOptions
+  return fromAny<CapturedConfirmOptions, unknown>(
+    mockShowConfirmDialog.mock.calls[0][0]
+  )
 }
 
 const i18n = createI18n({

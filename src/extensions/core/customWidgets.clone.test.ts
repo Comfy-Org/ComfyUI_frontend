@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -47,7 +48,7 @@ describe('CustomCombo copy/paste', () => {
   it('preserves combo options and selected value through clone and paste', () => {
     const graph = new LGraph()
     type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
+    const appWithRootGraph = fromAny<AppWithRootGraph, unknown>(app)
     const previousRootGraph = appWithRootGraph.rootGraphInternal
     appWithRootGraph.rootGraphInternal = graph
 
