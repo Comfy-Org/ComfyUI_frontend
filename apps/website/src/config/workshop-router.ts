@@ -282,6 +282,33 @@ async function attempt(
   })
 }
 
+function recoverInterruptedRequest(
+  error: unknown,
+  state: RunProgress,
+  context: AttemptContext
+): ActiveRun {
+  context.options.signal.throwIfAborted()
+  const failure =
+    error instanceof WorkshopRouterError
+      ? error
+      : new WorkshopRouterError(
+          error instanceof TypeError ? 'network' : 'client',
+          state.requestId
+        )
+  if (
+    context.signal.aborted ||
+    failure.reason !== 'network' ||
+    state.networkRecoveries >= NETWORK_RECOVERIES
+  )
+    throw error
+  return {
+    ...state,
+    phase: 'request',
+    requestId: failure.requestId ?? state.requestId,
+    networkRecoveries: state.networkRecoveries + 1
+  }
+}
+
 export async function runWorkshopRouter(options: RouterRunOptions): Promise<{
   readonly outputs: RunOutput[]
   readonly requestId: string | null
@@ -315,26 +342,7 @@ export async function runWorkshopRouter(options: RouterRunOptions): Promise<{
       try {
         state = await attempt(state, context)
       } catch (error) {
-        options.signal.throwIfAborted()
-        const network =
-          error instanceof WorkshopRouterError
-            ? error.reason === 'network'
-            : error instanceof TypeError
-        if (
-          !context.signal.aborted &&
-          network &&
-          state.networkRecoveries < NETWORK_RECOVERIES
-        ) {
-          state = {
-            ...state,
-            phase: 'request',
-            requestId:
-              error instanceof WorkshopRouterError
-                ? (error.requestId ?? state.requestId)
-                : state.requestId,
-            networkRecoveries: state.networkRecoveries + 1
-          }
-        } else throw error
+        state = recoverInterruptedRequest(error, state, context)
       }
     }
     return {

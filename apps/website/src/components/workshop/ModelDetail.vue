@@ -63,10 +63,9 @@ import {
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
-  workshopHttpStatus,
+  workshopFailureAnalytics,
   workshopFieldErrorCodes,
-  workshopModelAnalytics,
-  workshopRouterErrorType
+  workshopModelAnalytics
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
@@ -511,7 +510,14 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   pendingRequest = undefined
   requestId.value = result.requestId
   const [output, ...attachments] = result.outputs
-  if (!output) throw new WorkshopRouterError('response', result.requestId)
+  if (!output)
+    throw new WorkshopRouterError(
+      'response',
+      result.requestId,
+      {},
+      undefined,
+      'response'
+    )
   const { retained, discarded } = retainRunHistory([
     { output, attachments },
     ...runs.value
@@ -544,9 +550,6 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     error instanceof WorkshopRouterError
       ? error
       : new WorkshopRouterError('client')
-  const httpStatus = workshopHttpStatus(failure.response?.status)
-  const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
-  const fieldErrorCodes = workshopFieldErrorCodes(failure.fieldErrors)
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -558,15 +561,8 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     properties: {
       ...attempt.analytics,
       status: 'failed',
-      reason: failure.reason,
       duration_ms: Date.now() - attempt.startedAt,
-      request_id: failure.requestId ?? undefined,
-      ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
-      ...(routerErrorType === undefined
-        ? {}
-        : { router_error_type: routerErrorType }),
-      ...(failure.stage ? { failure_stage: failure.stage } : {}),
-      ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
+      ...workshopFailureAnalytics(failure)
     }
   })
 }

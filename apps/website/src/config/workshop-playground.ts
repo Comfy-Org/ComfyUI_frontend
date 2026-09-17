@@ -139,9 +139,10 @@ const URL_UPLOAD_ACCEPT: Record<
 export function urlUploadField(
   field: FieldSchema
 ): Extract<FieldSchema, { kind: 'file' }> | undefined {
+  if (!field.presentation) return undefined
   const media =
-    field.presentation?.urlUpload ??
-    (field.presentation?.imageSource === 'url' ? 'image' : undefined)
+    field.presentation.urlUpload ??
+    (field.presentation.imageSource === 'url' ? 'image' : undefined)
   if (!media || field.kind !== 'text' || field.valueType === 'json')
     return undefined
   return {
@@ -150,7 +151,7 @@ export function urlUploadField(
     label: field.label,
     required: field.required,
     accept: URL_UPLOAD_ACCEPT[media],
-    maxBytes: field.presentation?.maxUploadBytes ?? MAX_UPLOAD_BYTES
+    maxBytes: field.presentation.maxUploadBytes ?? MAX_UPLOAD_BYTES
   }
 }
 

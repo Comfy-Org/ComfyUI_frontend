@@ -5,15 +5,67 @@ import { chromium } from '@playwright/test'
 import { build } from 'vite'
 
 import { isWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
+import type { WorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
-import type { createWorkshopUrlUploader } from '../src/config/workshop-url-upload'
+import type { runWorkshopUploadProbe } from './workshop-upload-probe'
 
 declare global {
   interface Window {
     WorkshopUploadProbe: {
-      createWorkshopUrlUploader: typeof createWorkshopUrlUploader
+      runWorkshopUploadProbe: typeof runWorkshopUploadProbe
     }
   }
+}
+
+function probeOrigin(value: string): URL {
+  const origin = new URL(value)
+  if (
+    !['http:', 'https:'].includes(origin.protocol) ||
+    origin.username ||
+    origin.password
+  )
+    throw new Error('Expected an HTTP(S) origin without credentials')
+  return origin
+}
+
+function probeSettings(value: string | undefined) {
+  const environment = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
+  const token = process.env.COMFY_API_KEY
+  if (!token || !isWorkshopCloudEnv(environment) || !value)
+    throw new Error(
+      'Set COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV and --origin explicitly'
+    )
+  return { environment, token, origin: probeOrigin(value) }
+}
+
+async function uploadProbeBundle(
+  environment: WorkshopCloudEnv
+): Promise<string> {
+  const bundle = await build({
+    configFile: false,
+    logLevel: 'silent',
+    define: {
+      'import.meta.env.PUBLIC_WORKSHOP_CLOUD_ENV': JSON.stringify(environment)
+    },
+    build: {
+      write: false,
+      lib: {
+        entry: fileURLToPath(
+          new URL('./workshop-upload-probe.ts', import.meta.url)
+        ),
+        name: 'WorkshopUploadProbe',
+        formats: ['iife']
+      }
+    }
+  })
+  const chunks = (Array.isArray(bundle) ? bundle : [bundle]).flatMap(
+    (result) => ('output' in result ? result.output : [])
+  )
+  const entry = chunks
+    .filter((chunk) => chunk.type === 'chunk')
+    .find((chunk) => chunk.isEntry)
+  if (!entry) throw new Error('Upload probe bundle is missing')
+  return entry.code
 }
 
 async function main() {
@@ -26,42 +78,8 @@ async function main() {
     )
     return
   }
-  const environment = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
-  const token = process.env.COMFY_API_KEY
-  if (!token || !isWorkshopCloudEnv(environment) || !values.origin)
-    throw new Error(
-      'Set COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV and --origin explicitly'
-    )
-  const origin = new URL(values.origin)
-  if (
-    !['http:', 'https:'].includes(origin.protocol) ||
-    origin.username ||
-    origin.password
-  )
-    throw new Error('Expected an HTTP(S) origin without credentials')
-  const bundle = await build({
-    configFile: false,
-    logLevel: 'silent',
-    define: {
-      'import.meta.env.PUBLIC_WORKSHOP_CLOUD_ENV': JSON.stringify(environment)
-    },
-    build: {
-      write: false,
-      lib: {
-        entry: fileURLToPath(
-          new URL('../src/config/workshop-url-upload.ts', import.meta.url)
-        ),
-        name: 'WorkshopUploadProbe',
-        formats: ['iife']
-      }
-    }
-  })
-  const chunks = (Array.isArray(bundle) ? bundle : [bundle]).flatMap(
-    (result) => ('output' in result ? result.output : [])
-  )
-  const entry = chunks.find((chunk) => chunk.type === 'chunk' && chunk.isEntry)
-  if (!entry || entry.type !== 'chunk')
-    throw new Error('Upload probe bundle is missing')
+  const { environment, token, origin } = probeSettings(values.origin)
+  const bundle = await uploadProbeBundle(environment)
   const browser = await chromium.launch({ headless: true })
   try {
     const page = await browser.newPage()
@@ -73,7 +91,7 @@ async function main() {
       })
     )
     await page.goto(probeUrl)
-    await page.addScriptTag({ content: entry.code })
+    await page.addScriptTag({ content: bundle })
     const result = await page.evaluate(async (token) => {
       const canvas = document.createElement('canvas')
       canvas.width = canvas.height = 1
@@ -88,33 +106,7 @@ async function main() {
       const file = new File([blob], 'workshop-upload-probe.png', {
         type: 'image/png'
       })
-      try {
-        const url =
-          await window.WorkshopUploadProbe.createWorkshopUrlUploader()(
-            file,
-            token,
-            'browser-upload-probe',
-            AbortSignal.timeout(30_000)
-          )
-        const image = new Image()
-        image.crossOrigin = 'anonymous'
-        image.src = url
-        await image.decode()
-        return {
-          passed: image.naturalWidth === 1 && image.naturalHeight === 1,
-          stage: 'decode',
-          bytes: file.size
-        }
-      } catch (error) {
-        const stage =
-          error &&
-          typeof error === 'object' &&
-          'stage' in error &&
-          typeof error.stage === 'string'
-            ? error.stage
-            : 'decode'
-        return { passed: false, stage, bytes: file.size }
-      }
+      return window.WorkshopUploadProbe.runWorkshopUploadProbe(file, token)
     }, token)
     process.stdout.write(
       `${JSON.stringify({ checkedAt: new Date().toISOString(), environment, router: WORKSHOP_ROUTER_BASE_URL, origin: origin.origin, ...result })}\n`

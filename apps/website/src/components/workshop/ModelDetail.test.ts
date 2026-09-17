@@ -457,6 +457,34 @@ describe('ModelDetail', () => {
     ).not.toContain('Private provider response')
   })
 
+  it('reports empty output as a response-stage failure with its request ID', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: []
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'An image'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'response',
+          failure_stage: 'response',
+          request_id: routerResult.requestId
+        })
+      })
+    )
+    expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
+  })
+
   it('omits an unrecognized Router error header from analytics', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
