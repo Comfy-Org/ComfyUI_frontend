@@ -52,7 +52,7 @@ function createMockNode(
     output_node: false,
     api_node: false,
     nodeSource: getNodeSource(
-      overrides.python_module,
+      overrides.python_module ?? 'nodes',
       overrides.essentials_category
     ),
     ...overrides
@@ -65,7 +65,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

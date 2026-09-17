@@ -60,14 +60,14 @@ function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
 describe('SubgraphConversion', () => {
   it('returns empty-selection without mutating the graph', () => {
     const rootGraph = createTestRootGraph()
-    const before = rootGraph.serialize()
+    const before = JSON.stringify(rootGraph.serialize())
     const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
 
     expect(rootGraph.convertToSubgraph(new Set())).toEqual({
       kind: 'empty-selection'
     })
     expect(beforeChange).not.toHaveBeenCalled()
-    expect(rootGraph.serialize()).toEqual(before)
+    expect(JSON.stringify(rootGraph.serialize())).toBe(before)
   })
 
   it('returns the converted subgraph and node on success', () => {

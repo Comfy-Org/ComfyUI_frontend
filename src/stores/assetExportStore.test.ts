@@ -97,6 +97,52 @@ describe('useAssetExportStore', () => {
     expect(store.finishedExports).toHaveLength(0)
   })
 
+  it.for([
+    { name: 'missing', response: undefined },
+    {
+      name: 'failed',
+      response: taskResponse({ status: 'failed', result: undefined })
+    }
+  ])(
+    'keeps newer metadata when a $name poll resolves',
+    async ({ response }) => {
+      const store = useAssetExportStore()
+      let resolveTask: ((task: TaskResponse | undefined) => void) | undefined
+      const request = new Promise<TaskResponse | undefined>((resolve) => {
+        resolveTask = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(request)
+      dispatchExport()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      dispatchExport({
+        export_name: 'new-export.zip',
+        assets_total: 7,
+        assets_attempted: 3,
+        assets_failed: 1,
+        bytes_total: 2700,
+        bytes_processed: 730,
+        progress: 0.27
+      })
+      assert(resolveTask)
+      resolveTask(response)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.finishedExports).toMatchObject([
+        {
+          exportName: 'new-export.zip',
+          assetsTotal: 7,
+          assetsAttempted: 3,
+          assetsFailed: 1,
+          bytesTotal: 2700,
+          progress: 0.27,
+          status: 'failed'
+        }
+      ])
+    }
+  )
+
   it('marks a missing stale task as failed and stops polling it', async () => {
     const store = useAssetExportStore()
     const taskId = 'task-123'
