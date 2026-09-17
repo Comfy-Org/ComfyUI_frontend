@@ -179,10 +179,10 @@ jobs:
           NAME: ${{ steps.pkg.outputs.name }}
         run: pnpm --filter "$NAME" run --if-present build
 
-      - name: Smoke-test the packed tarball
-        env:
-          NAME: ${{ steps.pkg.outputs.name }}
-        run: pnpm --filter "$NAME" run --if-present smoke:pack
+      # One shared script packs every publishable package and imports each
+      # entry from a clean consumer, whichever package this run publishes.
+      - name: Smoke-test the packed tarballs
+        run: pnpm --filter @comfyorg/account-core run smoke:pack
 
       - name: Check if version already on npm
         id: check_npm
