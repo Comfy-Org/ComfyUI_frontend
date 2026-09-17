@@ -35,19 +35,6 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
 )
 
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signOut: vi.fn()
-}))
-
 function renderComponent(promptMounted = computed(() => false)) {
   const billing = useBillingContext()
   billing.isFreeTier = computed(() => true)

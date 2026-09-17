@@ -1,11 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import type { Auth } from 'firebase/auth'
-import {
-  initializeAuth,
-  onAuthStateChanged,
-  onIdTokenChanged
-} from 'firebase/auth'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -48,12 +42,11 @@ vi.mock(import('./workspaceApiUrl'), () => ({
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 import { workspaceApi } from './workspaceApi'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
