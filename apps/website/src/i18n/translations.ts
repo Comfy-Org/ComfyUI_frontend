@@ -9097,14 +9097,6 @@ Enterprise`
     en: 'Standard network storage, 1 TB and above',
     'zh-CN': '网络存储——标准，1 TB 及以上'
   },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
-  'platform.pricing.storage.containerDisk': {
-    en: 'Container disk',
-    'zh-CN': '容器磁盘'
-  },
   'platform.pricing.storage.networkTitle': {
     en: 'Network storage',
     'zh-CN': '网络存储'
@@ -9117,18 +9109,13 @@ Enterprise`
     en: 'Standard, 1 TB and above',
     'zh-CN': '标准，1 TB 及以上'
   },
-  'platform.pricing.storage.sub.highPerformance': {
-    en: 'High performance',
-    'zh-CN': '高性能'
-  },
-  'platform.pricing.storage.sub.containerDisk': {
-    en: 'Per-worker local filesystem',
-    'zh-CN': '每个工作节点的本地文件系统'
-  },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
-    'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+    en: "Models live on persistent network storage shared across a deployment's workers.",
+    'zh-CN': '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。'
+  },
+  'platform.pricing.betaNote': {
+    en: 'Pricing and GPU availability may change during the beta.',
+    'zh-CN': '测试期间价格与 GPU 供应情况可能变动。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',

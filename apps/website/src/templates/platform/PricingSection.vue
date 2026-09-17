@@ -42,16 +42,6 @@ const storageRates = [
     key: 'standardOver1tb',
     price: '$0.065/GB/mo',
     credits: '13.72/GB/mo'
-  },
-  {
-    key: 'highPerformance',
-    price: '$0.182/GB/mo',
-    credits: '38.40/GB/mo'
-  },
-  {
-    key: 'containerDisk',
-    price: '$0.13/GB/mo',
-    credits: '27.43/GB/mo'
   }
 ] as const
 
@@ -136,11 +126,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
           >
             <div>
               <p class="text-sm text-primary-warm-white">
-                {{
-                  rate.key === 'containerDisk'
-                    ? t('platform.pricing.storage.containerDisk', locale)
-                    : t('platform.pricing.storage.networkTitle', locale)
-                }}
+                {{ t('platform.pricing.storage.networkTitle', locale) }}
               </p>
               <p class="mt-0.5 text-xs text-primary-warm-gray">
                 {{ t(`platform.pricing.storage.sub.${rate.key}`, locale) }}
@@ -246,11 +232,7 @@ const mobileStorageRows = storageRates.map((rate) => ({
                 <tr v-for="rate in storageRates" :key="rate.key">
                   <td class="max-w-56 px-2 py-3.5">
                     <p class="text-sm text-primary-warm-white">
-                      {{
-                        rate.key === 'containerDisk'
-                          ? t('platform.pricing.storage.containerDisk', locale)
-                          : t('platform.pricing.storage.networkTitle', locale)
-                      }}
+                      {{ t('platform.pricing.storage.networkTitle', locale) }}
                     </p>
                     <p class="mt-0.5 text-xs text-primary-warm-gray">
                       {{
@@ -284,5 +266,11 @@ const mobileStorageRows = storageRates.map((rate) => ({
         </article>
       </div>
     </div>
+
+    <p
+      class="mx-auto mt-4 max-w-6xl px-5 text-xs/relaxed text-primary-warm-gray lg:px-8"
+    >
+      {{ t('platform.pricing.betaNote', locale) }}
+    </p>
   </section>
 </template>
