@@ -193,7 +193,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
-      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.page
+        .locator('.p-dialog-mask')
+        .filter({ has: panel.header })
+        .click({ position: { x: 10, y: 10 } })
 
       // Verify the filter selection panel is hidden
       await expect(panel.header).toBeHidden()
