@@ -1,31 +1,15 @@
 import { vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-
 import type * as real from '../litegraphUtil'
 
+export {
+  isImageNode,
+  isVideoNode,
+  isLGraphNode,
+  isLGraphGroup
+} from '../litegraphUtil'
+
 export const createNode = vi.fn<typeof real.createNode>(async () => null)
-export const isImageNode: typeof real.isImageNode = (
-  node
-): node is LGraphNode & {
-  imgs: HTMLImageElement[] | undefined
-} =>
-  !!node &&
-  (node.previewMediaType === 'image' ||
-    (node.previewMediaType !== 'video' && !!node.imgs?.length))
-export const isVideoNode: typeof real.isVideoNode = (
-  node
-): node is LGraphNode & {
-  videoContainer: HTMLElement | undefined
-  imgs: HTMLVideoElement[] | undefined
-} => !!node && (node.previewMediaType === 'video' || !!node.videoContainer)
-export const isLGraphNode: typeof real.isLGraphNode = (
-  item
-): item is LGraphNode => item instanceof LGraphNode
-export const isLGraphGroup: typeof real.isLGraphGroup = (
-  item
-): item is LGraphGroup => item instanceof LGraphGroup
 export const isAnimatedOutput = vi.fn<typeof real.isAnimatedOutput>(() => false)
 export const isVideoOutput = vi.fn<typeof real.isVideoOutput>(() => false)
 export const isAudioNode = vi.fn<typeof real.isAudioNode>(() => false)
