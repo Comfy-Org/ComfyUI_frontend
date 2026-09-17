@@ -101,6 +101,15 @@ describe('hostedBillingRoute', () => {
     })
   })
 
+  it('stays on the provider when the cloud base URL will not parse', () => {
+    cloudBaseUrl.value = 'not-a-url'
+    vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+
+    expect(hostedBillingRoute('billing_web', 'pricing')).toEqual({
+      kind: 'provider'
+    })
+  })
+
   it('stays on the provider for a backend outside the known families', () => {
     cloudBaseUrl.value = 'https://cloud.example.com'
     vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')

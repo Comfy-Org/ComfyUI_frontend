@@ -49,15 +49,28 @@ const BILLING_ENVIRONMENT_BY_DEPLOY_ENV: Readonly<
   'test-v2': 'test'
 }
 
+function hostnameOf(url: string): string | undefined {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * The family the session was minted against, not the label on this build: a
  * developer running the frontend locally still talks to a deployed backend,
- * so the cloud base URL classifies the trip and `window.location` cannot.
+ * so the cloud base URL classifies the trip and `window.location` cannot. A
+ * base URL that will not parse classifies nothing, so it fails closed like any
+ * other unresolved environment rather than throwing through the caller.
  */
 function hostBillingEnvironment(
   cloudBaseUrl = getComfyCloudBaseUrl()
 ): BillingEnvironment | undefined {
-  const deployEnv = resolveDeployEnv(new URL(cloudBaseUrl).hostname)
+  const hostname = hostnameOf(cloudBaseUrl)
+  if (hostname === undefined) return undefined
+
+  const deployEnv = resolveDeployEnv(hostname)
   return deployEnv === undefined
     ? undefined
     : BILLING_ENVIRONMENT_BY_DEPLOY_ENV[deployEnv]

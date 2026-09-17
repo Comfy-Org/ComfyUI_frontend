@@ -108,9 +108,11 @@ export type PaymentPortalResult =
  * add to a price or hand to a currency formatter — and the generated *type*
  * for the same field is a `number`. Money on this route is bounded to cents
  * well inside the JavaScript-safe range, so the cents are read as numbers, the
- * way `capabilities` reads `revision`.
+ * way `capabilities` reads `revision` — as whole units of currency that
+ * survive arithmetic, since these amounts are displayed as prices and
+ * confirmed as charges.
  */
-const cents = z.number()
+const cents = z.number().int().safe()
 
 const PlanInfoSchema = zPreviewPlanInfo.extend({
   credits_cents: cents,

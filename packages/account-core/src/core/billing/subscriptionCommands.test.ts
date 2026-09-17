@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi
+} from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
@@ -26,6 +34,7 @@ import type {
   BillingStatusReader,
   BillingStatusSnapshot
 } from './status.js'
+import type { SubscriptionPreview } from './subscriptionCommands.js'
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
@@ -726,6 +735,110 @@ describe('createBillingCommands', () => {
         httpStatus: 200
       })
     })
+
+    const QUOTE_CENT_FIELDS = [
+      'amount_due_cents',
+      'cost_next_period_cents',
+      'cost_today_cents',
+      'credits_next_period_cents',
+      'credits_today_cents',
+      'renewal_amount_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview)[]
+
+    const PLAN_CENT_FIELDS = [
+      'credits_cents',
+      'price_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
+
+    const SEAT_CENT_FIELDS = [
+      'total_cost_cents',
+      'total_credits_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview['new_plan']['seat_summary'])[]
+
+    // Compile-time pins: an amount a regen adds fails the package typecheck
+    // until it reaches a row below.
+    expectTypeOf<(typeof QUOTE_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof SubscriptionPreview, `${string}_cents`>
+    >()
+    expectTypeOf<(typeof PLAN_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof SubscriptionPreview['new_plan'], `${string}_cents`>
+    >()
+    expectTypeOf<(typeof SEAT_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<
+        keyof SubscriptionPreview['new_plan']['seat_summary'],
+        `${string}_cents`
+      >
+    >()
+
+    const rejectsQuote = async (patch: object) => {
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [http(200, { ...QUOTE_BODY, ...patch })] }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+    }
+
+    const FRACTION_OF_A_CENT = 1500.5
+
+    it.for(QUOTE_CENT_FIELDS)('refuses a fraction of a cent at %s', (field) =>
+      rejectsQuote({ [field]: FRACTION_OF_A_CENT })
+    )
+
+    it.for(PLAN_CENT_FIELDS)(
+      'refuses a fraction of a cent at new_plan.%s',
+      (field) =>
+        rejectsQuote({
+          new_plan: { ...PREVIEW_PLAN, [field]: FRACTION_OF_A_CENT }
+        })
+    )
+
+    it.for(PLAN_CENT_FIELDS)(
+      'refuses a fraction of a cent at current_plan.%s',
+      (field) =>
+        rejectsQuote({
+          current_plan: { ...PREVIEW_PLAN, [field]: FRACTION_OF_A_CENT }
+        })
+    )
+
+    it.for(SEAT_CENT_FIELDS)(
+      'refuses a fraction of a cent at new_plan.seat_summary.%s',
+      (field) =>
+        rejectsQuote({
+          new_plan: {
+            ...PREVIEW_PLAN,
+            seat_summary: {
+              ...PREVIEW_PLAN.seat_summary,
+              [field]: FRACTION_OF_A_CENT
+            }
+          }
+        })
+    )
+
+    it('refuses a fraction of a cent off a discount', () =>
+      rejectsQuote({
+        discounts: [
+          {
+            amount_off_cents: FRACTION_OF_A_CENT,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            name: 'Launch offer'
+          }
+        ]
+      }))
+
+    it.for([
+      ['past the safe integers', Number.MAX_SAFE_INTEGER + 2],
+      ['with no finite value at all', Number.POSITIVE_INFINITY]
+    ] as const)('refuses an amount %s', ([, cents]) =>
+      rejectsQuote({ cost_today_cents: cents })
+    )
 
     it('forwards the caller signal and timeout, releasing an abandoned read as transient', async () => {
       const controller = new AbortController()
