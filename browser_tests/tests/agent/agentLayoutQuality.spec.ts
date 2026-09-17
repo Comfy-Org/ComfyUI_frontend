@@ -11,8 +11,8 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
  * a width derived from label text at 14px x 0.6 per glyph, 20px slot and widget
  * rows. The model is the thing that was wrong. It placed nodes correctly against a
  * picture the browser does not draw, which is why `cascade_pos` resolved collisions
- * that users then reported as overlapping nodes (FE-1653, and Jo's September 2026
- * QA pass).
+ * that users then reported as overlapping nodes, in both user reports and an
+ * internal QA pass.
  *
  * A test that measures rendered boxes cannot make that mistake. It reads
  * `boundingBox()` off the node elements the renderer actually laid out, so a drift
@@ -22,10 +22,10 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
  * The recordings carry the positions the CLI computed, so replay exercises exactly
  * that seam without needing a live agent.
  *
- * Christian, 2026-09-17: "the issue happens when the agent batches graph edits into
- * apply_ops. When the agent does serial / sequential graph edits, it looks better to
- * the user". Production traces agree the batched path is the common one (~87% of
- * node creation), so `agent-rec-batched-ops` is the case that matters and
+ * The reported shape is that batching into `apply_ops` is what goes wrong: serial,
+ * sequential graph edits look right to users and are only slower. Production traces
+ * agree the batched path is the common one (~87% of node creation), so
+ * `agent-rec-batched-ops` is the case that matters and
  * `agent-rec-three-sequential-adds` is the comparison it has to match.
  */
 
@@ -152,8 +152,8 @@ test.describe('Agent layout quality', { tag: '@cloud' }, () => {
       const viewport = page.viewportSize()
       expect(viewport).not.toBeNull()
 
-      // Jo's third report was "the agent is building super far away from the
-      // user's viewpoint" -- distinct from overlap, because nodes can be spaced
+      // A separate report is that the agent builds far outside the user's
+      // viewport -- distinct from overlap, because nodes can be spaced
       // perfectly and still be somewhere the user is not looking. A node the
       // renderer placed entirely outside the viewport is that failure, and it is
       // invisible to any assertion about the boxes' relationship to each other.
