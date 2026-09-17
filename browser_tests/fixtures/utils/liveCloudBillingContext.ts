@@ -1,5 +1,5 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Page, Route } from '@playwright/test'
 
 import { LiveCloudOnboarding } from '@e2e/fixtures/components/LiveCloudOnboarding'
 import { LiveCloudBillingSession } from '@e2e/fixtures/helpers/LiveCloudBillingSession'
@@ -53,20 +53,24 @@ export async function installLiveCloudBillingRouting(
       return
     }
     if (isCloudProxyRequest) {
-      try {
-        const response = await route.fetch({
-          url: targetUrl.href,
-          maxRedirects: 0
-        })
-        await route.fulfill({ response })
-      } catch {
-        if (request.frame().page().isClosed()) return
-        throw new Error(`Cloud proxy request failed: ${url.pathname}`)
-      }
+      await forwardCloudRequest(route, targetUrl)
       return
     }
     await route.fallback()
   })
+}
+
+async function forwardCloudRequest(route: Route, targetUrl: URL) {
+  try {
+    const response = await route.fetch({
+      url: targetUrl.href,
+      maxRedirects: 0
+    })
+    await route.fulfill({ response })
+  } catch {
+    if (route.request().frame().page().isClosed()) return
+    throw new Error(`Cloud proxy request failed: ${targetUrl.pathname}`)
+  }
 }
 
 export async function signInToLiveCloud(

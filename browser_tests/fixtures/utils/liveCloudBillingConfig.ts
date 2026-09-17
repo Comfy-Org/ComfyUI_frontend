@@ -56,6 +56,8 @@ export const liveCloudBillingConfigSchema = z
           })
       }
     }
+  })
+  .superRefine((config, ctx) => {
     if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
     const frontend = new URL(config.PLAYWRIGHT_TEST_URL)
     const local =

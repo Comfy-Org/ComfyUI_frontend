@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 export class LiveCloudOnboarding {
   constructor(private readonly page: Page) {}
@@ -31,30 +31,7 @@ export class LiveCloudOnboarding {
         exact: true
       })
       for (let step = 0; step < 20; step++) {
-        const option = this.page
-          .getByRole('button', { pressed: false })
-          .and(this.page.locator(':not([id$="-other"])'))
-          .first()
-        const text = this.page.getByRole('textbox')
-        await expect(option.or(text)).toBeVisible()
-        const control = (await option.isVisible()) ? option : text
-        const id = await control.getAttribute('id')
-        if (!id) throw new Error('Cloud survey control has no ID')
-        const answered = this.page.locator(`[id=${JSON.stringify(id)}]`)
-        if (await option.isVisible()) await control.click()
-        else await control.fill('Automated billing E2E')
-        await expect
-          .poll(
-            async () =>
-              !(await answered.isVisible()) ||
-              ((await next.isVisible()) && (await next.isEnabled())) ||
-              ((await submit.isVisible()) && (await submit.isEnabled()))
-          )
-          .toBe(true)
-        if ((await submit.isVisible()) && (await submit.isEnabled())) break
-        if ((await next.isVisible()) && (await next.isEnabled()))
-          await next.click()
-        await expect(answered).toBeHidden()
+        if (await this.answerSurveyQuestion(next, submit)) break
       }
       await expect(
         submit,
@@ -72,5 +49,32 @@ export class LiveCloudOnboarding {
       await expect(survey).toBeHidden()
     }
     await expect(canvas).toBeVisible()
+  }
+
+  private async answerSurveyQuestion(next: Locator, submit: Locator) {
+    const option = this.page
+      .getByRole('button', { pressed: false })
+      .and(this.page.locator(':not([id$="-other"])'))
+      .first()
+    const text = this.page.getByRole('textbox')
+    await expect(option.or(text)).toBeVisible()
+    const control = (await option.isVisible()) ? option : text
+    const id = await control.getAttribute('id')
+    if (!id) throw new Error('Cloud survey control has no ID')
+    const answered = this.page.locator(`[id=${JSON.stringify(id)}]`)
+    if (await option.isVisible()) await control.click()
+    else await control.fill('Automated billing E2E')
+    await expect
+      .poll(
+        async () =>
+          !(await answered.isVisible()) ||
+          ((await next.isVisible()) && (await next.isEnabled())) ||
+          ((await submit.isVisible()) && (await submit.isEnabled()))
+      )
+      .toBe(true)
+    if ((await submit.isVisible()) && (await submit.isEnabled())) return true
+    if ((await next.isVisible()) && (await next.isEnabled())) await next.click()
+    await expect(answered).toBeHidden()
+    return false
   }
 }

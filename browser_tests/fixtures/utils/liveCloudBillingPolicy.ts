@@ -64,14 +64,7 @@ export function isLiveCloudMutationAllowed(
     url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
     url.pathname === '/api/settings'
   ) {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      Object.keys(data).length === 1 &&
-      'onboarding_survey' in data &&
-      typeof data.onboarding_survey === 'object' &&
-      data.onboarding_survey !== null
-    )
+    return isOnboardingSurveyUpdate(data)
   }
   if (
     config.allowAccountCreation &&
@@ -82,27 +75,10 @@ export function isLiveCloudMutationAllowed(
     return true
   if (
     config.allowPayments &&
-    config.PLAYWRIGHT_SETUP_API_URL !== 'https://cloud.comfy.org'
-  ) {
-    if (
-      url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
-      url.pathname === '/api/billing/payment-portal'
-    )
-      return true
-    if (
-      url.origin === 'https://checkout.comfy.org' &&
-      url.pathname === '/ajax/metrics_batch'
-    )
-      return true
-    if (
-      url.origin === 'https://api.stripe.com' &&
-      (url.pathname === '/v1/payment_methods' ||
-        /^\/v1\/payment_pages\/cs_test_[A-Za-z0-9]+\/confirm$/.test(
-          url.pathname
-        ))
-    )
-      return true
-  }
+    config.PLAYWRIGHT_SETUP_API_URL !== 'https://cloud.comfy.org' &&
+    isPaymentPostAllowed(url, config.PLAYWRIGHT_SETUP_API_URL)
+  )
+    return true
   if (url.origin === 'https://identitytoolkit.googleapis.com') {
     return ['/v1/accounts:signInWithPassword', '/v1/accounts:lookup'].includes(
       url.pathname
@@ -127,6 +103,32 @@ export function isLiveCloudMutationAllowed(
       '/api/settings/Comfy.InstalledVersion',
       '/api/settings/Comfy.OnboardingCoachmarks.Seen'
     ].includes(url.pathname)
+  )
+}
+
+function isOnboardingSurveyUpdate(data: unknown): boolean {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    Object.keys(data).length === 1 &&
+    'onboarding_survey' in data &&
+    typeof data.onboarding_survey === 'object' &&
+    data.onboarding_survey !== null
+  )
+}
+
+function isPaymentPostAllowed(url: URL, backend: string): boolean {
+  if (
+    url.origin === 'https://checkout.comfy.org' &&
+    url.pathname === '/ajax/metrics_batch'
+  )
+    return true
+  if (url.origin === backend && url.pathname === '/api/billing/payment-portal')
+    return true
+  return (
+    url.origin === 'https://api.stripe.com' &&
+    (url.pathname === '/v1/payment_methods' ||
+      /^\/v1\/payment_pages\/cs_test_[A-Za-z0-9]+\/confirm$/.test(url.pathname))
   )
 }
 
