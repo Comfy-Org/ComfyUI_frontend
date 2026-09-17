@@ -8,9 +8,9 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { useMediaQuery } from '@vueuse/core'
+import { onClickOutside, useMediaQuery } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -51,6 +51,11 @@ const order = defineModel<CatalogueOrder>('order', { required: true })
 // listing does it.
 const isPhone = useMediaQuery('(width < 40rem)')
 const open = ref(false)
+const filters = useTemplateRef('filters')
+
+onClickOutside(filters, () => {
+  if (!isPhone.value) open.value = false
+})
 
 watchEffect((onCleanup) => {
   if (!open.value || !isPhone.value) return
@@ -65,8 +70,9 @@ const orderLabel = computed(
     orders[0].label
 )
 
-const chosenIn = (group: FacetSheetGroup) =>
-  group.options.find((option) => group.selected.includes(option.value))
+const chosenCount = computed(
+  () => groups.filter((group) => group.selected.length > 0).length
+)
 
 const control =
   'inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:h-10 max-sm:rounded-xl'
@@ -91,20 +97,41 @@ const sheetLabels = computed(() => ({
     class="flex flex-wrap items-center gap-2"
     data-testid="catalogue-controls"
   >
-    <button
-      type="button"
-      :class="
-        cn(control, 'sm:hidden', filtersOn && 'text-primary-comfy-yellow')
-      "
-      :aria-expanded="open"
-      data-testid="catalogue-filter-toggle"
-      @click="open = !open"
-    >
-      <ListFilter class="size-4 shrink-0" aria-hidden="true" />
-      <span class="max-sm:hidden">
-        {{ t('workshop.v2.filter.label', locale) }}
-      </span>
-    </button>
+    <div ref="filters" class="relative">
+      <button
+        type="button"
+        :class="cn(control, filtersOn && 'text-primary-comfy-yellow')"
+        :aria-expanded="open"
+        data-testid="catalogue-filter-toggle"
+        @click="open = !open"
+      >
+        <ListFilter class="size-4 shrink-0" aria-hidden="true" />
+        <span class="max-sm:hidden">
+          {{ t('workshop.v2.filter.label', locale) }}
+        </span>
+        <span
+          v-if="chosenCount > 0"
+          class="rounded-full bg-primary-comfy-yellow px-1.5 text-2xs/5 font-bold text-primary-comfy-ink tabular-nums"
+        >
+          {{ chosenCount }}
+        </span>
+      </button>
+
+      <div
+        v-if="open && !isPhone"
+        class="absolute inset-e-0 top-full z-50 mt-2 flex max-h-[70vh] scrollbar-thin w-80 flex-col gap-4 overflow-y-auto rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-5 shadow-lg"
+        data-testid="catalogue-filter-panel"
+      >
+        <FacetSheet
+          :groups
+          :labels="sheetLabels"
+          :result-count="resultCount"
+          @toggle="(group, value) => emit('pick', group, value)"
+          @clear-all="emit('clear')"
+          @close="open = false"
+        />
+      </div>
+    </div>
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger
@@ -140,58 +167,6 @@ const sheetLabels = computed(() => ({
               "
             >
               {{ t(option.label, locale) }}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
-
-    <!-- On a wide toolbar each facet is its own button, so what is narrowing
-      the grid is readable without opening anything. -->
-    <DropdownMenuRoot v-for="group in groups" :key="group.key">
-      <DropdownMenuTrigger
-        :class="
-          cn(
-            control,
-            'group max-sm:hidden',
-            chosenIn(group) && 'text-primary-comfy-yellow'
-          )
-        "
-        :data-testid="`catalogue-facet-${group.key}`"
-      >
-        {{ chosenIn(group)?.label ?? group.label }}
-        <ChevronDown
-          class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
-          aria-hidden="true"
-        />
-      </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          align="end"
-          :side-offset="8"
-          class="z-50 max-h-80 scrollbar-thin w-60 overflow-y-auto rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-2 shadow-lg"
-        >
-          <DropdownMenuRadioGroup
-            :model-value="chosenIn(group)?.value ?? group.options[0]?.value"
-            @update:model-value="emit('pick', group.key, String($event))"
-          >
-            <DropdownMenuRadioItem
-              v-for="option in group.options"
-              :key="option.value"
-              :value="option.value"
-              :class="
-                cn(
-                  menuItem,
-                  'justify-between gap-3',
-                  group.selected.includes(option.value) &&
-                    'bg-transparency-white-t8 text-content-bright'
-                )
-              "
-            >
-              <span class="min-w-0 truncate">{{ option.label }}</span>
-              <span class="text-2xs tabular-nums opacity-70">
-                {{ option.count }}
-              </span>
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>

@@ -1,4 +1,6 @@
 ---
+import { ChevronLeft } from '@lucide/vue'
+
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
 import { useCaseFor } from '../../../config/models-catalogue'
@@ -6,10 +8,7 @@ import { workshopModels } from '../../../config/workshop-browse-content'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
-import {
-  getModelGroupPage,
-  listModelGroups
-} from '../../../lib/hub/model-page'
+import { getModelGroupPage, listModelGroups } from '../../../lib/hub/model-page'
 import {
   customNodeNamesFrom,
   pricedOperations,
@@ -42,13 +41,9 @@ const runnable = operationRows.flatMap((row) => {
 })
 
 const needsCustomNodes = customNodeNamesFrom(hubTemplateDetails)
-const ownViews = relatedCardViews(
-  operationsFromWorkflows,
-  workshopModels,
-  needsCustomNodes
-)
-const useViews = relatedCardViews(
-  uses.slice(0, 8),
+const madeWith = [...operationsFromWorkflows, ...uses]
+const madeWithViews = relatedCardViews(
+  madeWith.slice(0, 8),
   workshopModels,
   needsCustomNodes
 )
@@ -71,88 +66,60 @@ const sectionTitle =
       href="/playground/"
       class="mb-8 inline-flex items-center gap-2 text-sm text-content-muted transition-colors hover:text-content-bright"
     >
+      <ChevronLeft class="size-4" aria-hidden="true" />
       {t('workshop.v2.workflow.back')}
     </a>
 
-    <header class="mb-12 flex flex-col gap-4">
-      <ul class="flex flex-wrap items-center gap-2" data-testid="model-kind">
-        <li><span class={pill}>{t('workshop.v2.kind.model')}</span></li>
-        {price && (
-          <li>
-            <span class={pill} data-testid="model-price">
-              {price}
-            </span>
-          </li>
-        )}
-      </ul>
+    <header class="mb-12 flex flex-col gap-3">
       <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
         {name}
       </h1>
-      {
-        provider && (
-          <p class="text-sm text-content-secondary" data-testid="model-provider">
-            {t('workshop.workflow.by').replace('{author}', provider)}
-          </p>
-        )
-      }
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <ul class="flex flex-wrap items-center gap-2" data-testid="model-kind">
+          <li><span class={pill}>{t('workshop.v2.kind.model')}</span></li>
+          {price && <li>
+            <span class={pill} data-testid="model-price">
+              {price}
+            </span>
+          </li>}
+        </ul>
+        {provider && <p
+          class="text-sm text-content-secondary"
+          data-testid="model-provider"
+        >
+          {t('workshop.workflow.by').replace('{author}', provider)}
+        </p>}
+      </div>
     </header>
 
-    {
-      runnable.length > 0 ? (
-        <section class="mb-16">
-          <ModelRun operations={runnable} client:load />
-        </section>
-      ) : (
-        <section class="mb-16" data-testid="model-unrunnable">
-          <p class="text-sm text-content-muted">
-            {t('workshop.v2.model.noRun')}
-          </p>
-        </section>
-      )
-    }
+    {runnable.length > 0 ? (
+      <section class="mb-16">
+        <ModelRun operations={runnable} client:load />
+      </section>
+    ) : (
+      <section class="mb-16" data-testid="model-unrunnable">
+        <p class="text-sm text-content-muted">
+          {t('workshop.v2.model.noRun')}
+        </p>
+      </section>
+    )}
 
-    {
-      operationsFromWorkflows.length > 0 && (
-        <section class="mb-16" data-testid="model-own-workflows">
-          <h2 class={sectionTitle}>{t('workshop.v2.model.ownWorkflows')}</h2>
-          <p class="mt-2 max-w-xl text-sm text-content-muted">
-            {t('workshop.v2.model.ownWorkflowsNote')}
-          </p>
-          <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {ownViews.map((view) => (
-              <li>
-                <CatalogueCard view={view} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
-
-    {
-      uses.length > 0 && (
-        <section data-testid="model-uses">
-          <h2 class={sectionTitle}>{t('workshop.v2.model.workflows')}</h2>
-          <p class="mt-2 max-w-xl text-sm text-content-muted">
-            {t('workshop.v2.model.usesNote')}
-          </p>
-          <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {useViews.map((view) => (
-              <li>
-                <CatalogueCard view={view} />
-              </li>
-            ))}
-          </ul>
-          {uses.length > 8 && (
-            <a
-              href={`/playground/?model=${encodeURIComponent(name)}`}
-              class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
-            >
-              {t('workshop.v2.loadMore')}
-            </a>
-          )}
-        </section>
-      )
-    }
+    {madeWith.length > 0 && <section data-testid="model-workflows">
+      <h2 class={sectionTitle}>{t('workshop.v2.model.workflows')}</h2>
+      <p class="mt-2 max-w-xl text-sm text-content-muted">
+        {t('workshop.v2.model.workflowsNote')}
+      </p>
+      <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {madeWithViews.map((view) => <li>
+          <CatalogueCard view={view} />
+        </li>)}
+      </ul>
+      {madeWith.length > 8 && <a
+        href={`/playground/?model=${encodeURIComponent(name)}`}
+        class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
+      >
+        {t('workshop.v2.loadMore')}
+      </a>}
+    </section>}
   </main>
 </BaseLayout>

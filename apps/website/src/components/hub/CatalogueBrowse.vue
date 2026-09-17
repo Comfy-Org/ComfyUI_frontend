@@ -375,6 +375,8 @@ const heading = computed(() =>
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
+      <CatalogueTypeFilter v-model="type" :counts :locale />
+
       <div class="relative min-w-56 flex-1 sm:max-w-sm">
         <Search
           class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
@@ -389,8 +391,6 @@ const heading = computed(() =>
           class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         />
       </div>
-
-      <CatalogueTypeFilter v-model="type" :counts :locale />
 
       <CatalogueControls
         v-model:order="order"

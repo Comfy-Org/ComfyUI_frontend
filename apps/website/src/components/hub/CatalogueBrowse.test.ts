@@ -169,10 +169,8 @@ describe('CatalogueBrowse', () => {
 
   it('keeps only what this site can run', async () => {
     await at('?useCase=generate-images')
-    await userEvent.click(screen.getByTestId('catalogue-facet-needs'))
-    await userEvent.click(
-      await screen.findByRole('menuitemradio', { name: /runs here/i })
-    )
+    await userEvent.click(screen.getByTestId('catalogue-filter-toggle'))
+    await userEvent.click(await screen.findByTestId('filter-needs-runsHere'))
     expect(shown()).toEqual(['Flux'])
   })
 

@@ -10619,25 +10619,17 @@ Enterprise`
     'zh-CN':
       '注册表按操作逐条列出该模型。这里它们合并为一张卡片，操作是一个选项。'
   },
-  'workshop.v2.model.ownWorkflows': {
-    en: "This model's own workflows",
-    'zh-CN': '该模型自带的工作流'
-  },
-  'workshop.v2.model.ownWorkflowsNote': {
-    en: 'Shipped with the model, and named after it.',
-    'zh-CN': '它们以该模型命名，因此在此展示，而非与其并列于网格中。'
-  },
-  'workshop.v2.model.usesNote': {
-    en: 'Built on this model, with their own purpose.',
-    'zh-CN': '基于它构建，拥有各自的名称与用途。'
-  },
   'workshop.v2.model.openModel': {
     en: 'Open the model page',
     'zh-CN': '打开模型页面'
   },
   'workshop.v2.model.workflows': {
-    en: 'Workflows that use this model',
-    'zh-CN': '使用此模型的工作流'
+    en: 'Made with this model',
+    'zh-CN': '用此模型做的'
+  },
+  'workshop.v2.model.workflowsNote': {
+    en: 'Workflows and apps that run on it.',
+    'zh-CN': '基于它运行的工作流与应用。'
   },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
