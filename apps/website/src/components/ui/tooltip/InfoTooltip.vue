@@ -8,18 +8,22 @@ import {
   TooltipRoot,
   TooltipTrigger
 } from 'reka-ui'
+import { ref } from 'vue'
 
 const { text, label } = defineProps<{ text: string; label: string }>()
+
+const open = ref(false)
 </script>
 
 <template>
   <TooltipProvider :delay-duration="150">
-    <TooltipRoot>
+    <TooltipRoot v-model:open="open" disable-closing-trigger>
       <TooltipTrigger
         type="button"
         :aria-label="label"
         class="inline-flex cursor-help rounded-full text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-canvas focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         data-testid="info-tooltip"
+        @click.stop="open = true"
       >
         <Info class="size-4" aria-hidden="true" />
       </TooltipTrigger>
