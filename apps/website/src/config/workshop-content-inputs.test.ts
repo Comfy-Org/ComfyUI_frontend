@@ -493,7 +493,7 @@ describe('use-case input contracts', () => {
     expect(urlUploadField(input)?.accept).toContain('image/png')
 
     const file = new File(['portrait'], 'portrait.png', { type: 'image/png' })
-    const upload = vi.fn(async () => image)
+    const upload = vi.fn<WorkshopUrlEncoder>(async () => image)
     const body = await request(
       slug,
       {
@@ -503,6 +503,7 @@ describe('use-case input contracts', () => {
     )
 
     expect(upload).toHaveBeenCalledTimes(1)
+    expect(upload).toHaveBeenCalledWith(file, expect.any(AbortSignal))
     expect(body).toHaveProperty('image', image)
   })
 
@@ -517,7 +518,7 @@ describe('use-case input contracts', () => {
     expect(urlUploadField(input)?.accept).toContain('image/png')
 
     const file = new File(['portrait'], 'portrait.png', { type: 'image/png' })
-    const upload = vi.fn(async () => image)
+    const upload = vi.fn<WorkshopUrlEncoder>(async () => image)
     const body = await contractRequest(
       id,
       {
@@ -527,6 +528,7 @@ describe('use-case input contracts', () => {
     )
 
     expect(upload).toHaveBeenCalledTimes(1)
+    expect(upload).toHaveBeenCalledWith(file, expect.any(AbortSignal))
     expect(body).toHaveProperty('image', image)
   })
 
