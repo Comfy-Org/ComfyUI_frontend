@@ -1039,7 +1039,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
       graph.remove(orphan, { preserveCanonicalState: true })
     ).toThrow('cleanup failed')
 
-    expect(graph.getNodeById(orphan.id)).toBe(orphan)
+    expect(graph._nodes).not.toContain(orphan)
     expect(modelStore.missingModelCandidates).toHaveLength(1)
   })
 

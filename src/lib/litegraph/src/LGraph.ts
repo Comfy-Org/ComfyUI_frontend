@@ -250,6 +250,24 @@ export interface GraphRemoveOptions {
   replacement?: boolean
 }
 
+/** Runs the node's `onRemoved` hook and captures, rather than propagates, what it throws. */
+function captureRemovedHookFailure(
+  node: LGraphNode
+): { error: unknown } | undefined {
+  try {
+    node.onRemoved?.()
+    return undefined
+  } catch (error) {
+    return { error }
+  }
+}
+
+function rethrowRemovedHookFailure(
+  failure: { error: unknown } | undefined
+): void {
+  if (failure) throw failure.error
+}
+
 /**
  * Child definitions still live according to the canonical node records: each
  * record's type id is mapped through `rootGraph.subgraphs`. Used when another
@@ -1564,8 +1582,9 @@ export class LGraph
       )
     }
 
-    // callback
-    node.onRemoved?.()
+    // callback; a throwing hook is rethrown once the graph has finished
+    // detaching the node, so no removal ends half-way
+    const removedHookFailure = captureRemovedHookFailure(node)
     if (!preserveReplacement) clearNodeOwnedStoreState(node)
 
     const order = node.order
@@ -1614,6 +1633,7 @@ export class LGraph
     this.change()
 
     this.updateExecutionOrder()
+    rethrowRemovedHookFailure(removedHookFailure)
   }
 
   /**

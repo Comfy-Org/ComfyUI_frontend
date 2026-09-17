@@ -451,9 +451,8 @@ function rollbackMaterialize(
 }
 
 /**
- * Take the successor back out of the graph. Its own lifecycle hook may throw
- * again here; the node then leaves by membership alone so the incumbent can
- * still be put back.
+ * Take the successor back out of the graph. The graph finishes detaching it
+ * even when its lifecycle hook throws; the error only needs reporting.
  * @returns the cleanup error, if any
  */
 function detachFailedSuccessor(
@@ -468,10 +467,6 @@ function detachFailedSuccessor(
     }
     return undefined
   } catch (error) {
-    const index = graph._nodes.indexOf(node)
-    if (index !== -1) graph._nodes.splice(index, 1)
-    if (graph._nodes_by_id[node.id] === node) delete graph._nodes_by_id[node.id]
-    node.graph = null
     return error
   }
 }

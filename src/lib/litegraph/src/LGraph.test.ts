@@ -1168,6 +1168,25 @@ describe('node:before-removed event', () => {
     }
   )
 
+  it('finishes detaching a node whose onRemoved throws, then rethrows', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.onRemoved = () => {
+      throw new Error('extension cleanup failed')
+    }
+    const removed = vi.fn()
+    graph.events.addEventListener('node:removed', removed)
+
+    expect(() => graph.remove(node)).toThrow('extension cleanup failed')
+
+    expect(graph._nodes).not.toContain(node)
+    expect(graph.getNodeById(node.id)).toBeNull()
+    expect(node.graph).toBeNull()
+    expect(node._graphScope).toBeUndefined()
+    expect(removed).toHaveBeenCalledOnce()
+  })
+
   it('reports canonical preservation for an owning node removed with the option', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

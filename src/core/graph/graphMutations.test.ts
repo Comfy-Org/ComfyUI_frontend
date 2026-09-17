@@ -510,6 +510,27 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('binds a positional reconcile through a widget the same batch introduced', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.setWidget(toNodeId(1), 'model', 'a')
+        batch.reconcileNode({ ...node(1), widgets_values: [4, 'b'] })
+      })
+    ).toBe(true)
+
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets('root', toNodeId(1))
+        .map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'seed', value: 4 },
+      { name: 'model', value: 'b' }
+    ])
+  })
+
   it('reconciles against the preceding draft state within one batch', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 4 }), context)

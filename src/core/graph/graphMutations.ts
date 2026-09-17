@@ -172,7 +172,6 @@ interface PrepareDraft {
   scope: GraphScope
   nodes: Map<string, NodeState>
   links: Map<LinkId, LinkTopology>
-  widgets: Map<string, Set<string>>
   /** Serialisable widget names per node, in slot order, as the batch sees them. */
   slotOrders: Map<string, string[]>
 }
@@ -521,14 +520,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    const widgets = new Map<string, Set<string>>()
     const slotOrders = new Map<string, string[]>()
     for (const node of nodes.values()) {
       const stored = widgetStore.getNodeWidgets(scope.rootGraphId, node.id)
-      widgets.set(
-        nodeKey(node.id),
-        new Set(stored.map((widget) => widget.name))
-      )
       slotOrders.set(
         nodeKey(node.id),
         stored
@@ -538,7 +532,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           .map((widget) => widget.name)
       )
     }
-    return { scope, nodes, links, widgets, slotOrders }
+    return { scope, nodes, links, slotOrders }
   }
 
   function prepareMutation(
@@ -615,7 +609,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       'addNode requires a payload id and type'
     )
     if (payloadError) return payloadError
-    const { scope, nodes, widgets, slotOrders } = draft
+    const { scope, nodes, slotOrders } = draft
     const key = nodeKey(toNodeId(mutation.payload.id))
     const existing = nodes.get(key)
     const node = prepareNode(mutation.payload, scope, existing)
@@ -626,7 +620,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       return `node id ${key} is already registered`
     }
     nodes.set(key, node.state)
-    widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
     slotOrders.set(
       key,
       node.widgets.map(({ name }) => name)
@@ -651,7 +644,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       'reconcileNodeFields requires a payload id and type'
     )
     if (payloadError) return payloadError
-    const { scope, nodes, widgets, slotOrders } = draft
+    const { scope, nodes, slotOrders } = draft
     const key = nodeKey(toNodeId(mutation.payload.id))
     const existing = nodes.get(key)
     const node = prepareNode(mutation.payload, scope, existing)
@@ -664,7 +657,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const validationError = validateNodeUpsert(scope, node, key)
     if (validationError) return validationError
     nodes.set(key, node.state)
-    widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
     slotOrders.set(
       key,
       node.widgets.map(({ name }) => name)
@@ -725,7 +717,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     draft: PrepareDraft,
     mutation: QueuedOf<'setWidget'>
   ): PreparedMutation | string {
-    const { scope, nodes, widgets } = draft
+    const { scope, nodes, slotOrders } = draft
     const key = nodeKey(mutation.nodeId)
     if (!nodes.has(key)) return `node ${key} does not exist`
     if (
@@ -733,7 +725,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     ) {
       return `node ${key} has an invalid widget name`
     }
-    widgets.get(key)?.add(mutation.name)
+    const slotOrder = slotOrders.get(key) ?? []
+    if (!slotOrder.includes(mutation.name)) {
+      slotOrders.set(key, [...slotOrder, mutation.name])
+    }
     return {
       kind: mutation.kind,
       nodeId: mutation.nodeId,
@@ -854,7 +849,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     draft: PrepareDraft,
     mutation: QueuedOf<'removeMissing'>
   ): PreparedMutation | string {
-    const { nodes, links, widgets } = draft
+    const { nodes, links } = draft
     const retainedNodeIds = new Set(mutation.retainedNodeIds.map(nodeKey))
     const retainedLinkIds = new Set<LinkId>()
     for (const value of mutation.retainedLinkIds) {
@@ -868,7 +863,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       .filter((id) => !retainedNodeIds.has(nodeKey(id)))
     for (const id of nodeIds) {
       nodes.delete(nodeKey(id))
-      widgets.delete(nodeKey(id))
       draft.slotOrders.delete(nodeKey(id))
       removeIncidentLinks(nodes, links, id)
     }
@@ -913,7 +907,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     draft: PrepareDraft,
     mutation: QueuedOf<'deleteNode'>
   ): PreparedMutation | string {
-    const { scope, nodes, links, widgets } = draft
+    const { scope, nodes, links } = draft
     const incumbent = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
     if (incumbent && incumbent.graphId !== scope.owningGraphId) {
       return `node id ${mutation.nodeId} belongs to graph ${incumbent.graphId}`
@@ -925,7 +919,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     )
     if (typeof removedLinkIds === 'string') return removedLinkIds
     nodes.delete(nodeKey(mutation.nodeId))
-    widgets.delete(nodeKey(mutation.nodeId))
     draft.slotOrders.delete(nodeKey(mutation.nodeId))
     removeIncidentLinks(nodes, links, mutation.nodeId)
     for (const id of removedLinkIds) removeSimulatedLink(nodes, links, id)
@@ -935,7 +928,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function prepareClear(draft: PrepareDraft): PreparedMutation {
     const nodeIds = [...draft.nodes.values()].map(({ id }) => id)
     draft.nodes.clear()
-    draft.widgets.clear()
     draft.slotOrders.clear()
     draft.links.clear()
     return { kind: 'clearSemanticGraph', nodeIds }
