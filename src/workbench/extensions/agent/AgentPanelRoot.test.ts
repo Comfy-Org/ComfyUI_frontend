@@ -189,6 +189,8 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: { value: true },
@@ -451,26 +453,36 @@ describe('AgentPanelRoot first-use experience', () => {
 })
 
 describe('AgentPanelRoot onboarding', () => {
-  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+  const SCOPED_KEY = 'Comfy.AgentPanel.onboarded.account-a.workspace-a'
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(SCOPED_KEY)
+  })
+
+  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+    localStorage.removeItem(SCOPED_KEY)
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
     expect(canvasStore.linearMode).toBe(true)
 
     canvasStore.linearMode = false
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
-    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(SCOPED_KEY)
     render(
       defineComponent({
         setup: () => () =>
@@ -519,7 +531,7 @@ describe('AgentPanelRoot onboarding', () => {
     }
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
     const composer = screen.getByRole('textbox')
     await userEvent.click(composer)
     expect(composer).toHaveFocus()
