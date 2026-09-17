@@ -101,6 +101,14 @@ describe('SlotContextMenu', () => {
     expect(screen.queryByText('No compatible nodes')).not.toBeInTheDocument()
   })
 
+  it('keeps the popup anchor out of ordinary pointer hit testing', () => {
+    renderMenu()
+
+    expect(screen.getByTestId('slot-context-menu-anchor')).toHaveStyle({
+      pointerEvents: 'none'
+    })
+  })
+
   it('moves the rendered popup when the canvas camera changes', async () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       function (this: HTMLElement) {

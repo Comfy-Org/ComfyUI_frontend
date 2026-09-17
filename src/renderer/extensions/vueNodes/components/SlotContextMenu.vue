@@ -74,7 +74,8 @@ const screenPosition = ref({ x: 0, y: 0 })
 
 const anchorStyle = computed(() => ({
   left: `${screenPosition.value.x}px`,
-  top: `${screenPosition.value.y}px`
+  top: `${screenPosition.value.y}px`,
+  pointerEvents: 'none'
 }))
 
 function updateAnchorPosition() {
