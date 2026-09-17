@@ -491,6 +491,33 @@ describe('applyLiveWidgetValue', () => {
     })
   })
 
+  it('restores an edit to another node when the callback later throws', () => {
+    const { graph, widget } = graphWithWidget()
+    const otherNode = new LGraphNode('Other')
+    otherNode.id = toNodeId(8)
+    const otherWidget = otherNode.addWidget('text', 'other', 'before', null)
+    graph.add(otherNode)
+    widget.callback = () => {
+      otherWidget.value = 'callback edit'
+      throw new Error('callback failed')
+    }
+
+    withMintWiring(graph, (minted) => {
+      expect(
+        applyLiveWidgetValue(
+          graph,
+          rootScope,
+          toNodeId(7),
+          'value',
+          'after',
+          remoteContext
+        )
+      ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
+      expect(otherWidget.value).toBe('before')
+      expect(minted).toEqual([])
+    })
+  })
+
   it('resolves nodes from the owning subgraph instead of the root graph', () => {
     const graph = new LGraph()
     graph.id = 'root'

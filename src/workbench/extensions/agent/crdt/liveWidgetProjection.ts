@@ -7,6 +7,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 import { runMintPortsBuffered } from './mintPortWiring'
@@ -147,6 +148,32 @@ function restoreWidgets(
   return rollbackError
 }
 
+function recordWidgetChanges(
+  widgetStore: ReturnType<typeof useWidgetValueStore>
+) {
+  const previousValues = new Map<WidgetId, WidgetValue>()
+  const stop = widgetStore.onValueChange(({ widgetId, oldValue }) => {
+    if (!previousValues.has(widgetId)) previousValues.set(widgetId, oldValue)
+  })
+  return { previousValues, stop }
+}
+
+function restoreRecordedWidgets(
+  widgetStore: ReturnType<typeof useWidgetValueStore>,
+  previousValues: ReadonlyMap<WidgetId, WidgetValue>,
+  context: RemoteMutationContext
+): unknown {
+  let rollbackError: unknown
+  for (const [id, value] of previousValues) {
+    try {
+      widgetStore.setValue(id, value, context)
+    } catch (error) {
+      rollbackError ??= error
+    }
+  }
+  return rollbackError
+}
+
 export function applyLiveWidgetValue(
   rootGraph: LGraph | undefined,
   scope: GraphScope,
@@ -173,6 +200,7 @@ export function applyLiveWidgetValue(
   const previousValue = widget.value
   const widgetStore = useWidgetValueStore()
   const snapshots = snapshotWidgets(node)
+  const recorded = recordWidgetChanges(widgetStore)
   try {
     runMintPortsBuffered(() => {
       try {
@@ -187,8 +215,14 @@ export function applyLiveWidgetValue(
           snapshots,
           context
         )
-        if (rollbackError) {
-          reportError(rollbackError, {
+        const recordedRollbackError = restoreRecordedWidgets(
+          widgetStore,
+          recorded.previousValues,
+          context
+        )
+        const cause = rollbackError ?? recordedRollbackError
+        if (cause) {
+          reportError(cause, {
             errorType: 'agent_live_widget_projection_rollback_failed',
             context: { nodeId, name, scope }
           })
@@ -202,6 +236,8 @@ export function applyLiveWidgetValue(
       context: { nodeId, name, scope }
     })
     return { status: 'rolledBack', resolvedValue: previousValue }
+  } finally {
+    recorded.stop()
   }
   const resolvedValue = widget.value
   return { status: 'applied', resolvedValue }

@@ -6,6 +6,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -15,6 +16,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
@@ -329,7 +331,8 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    node.configure(withNamedWidgetValues(serialised, widgets))
+    replayUpdatedWidgetCallbacks(node, serialised, widgets)
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
@@ -339,6 +342,37 @@ function materialize(
     })
   }
   return true
+}
+
+function replayUpdatedWidgetCallbacks(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): void {
+  const values = namedWidgetValues(serialised)
+  if (!values) return
+  const canonicalByName = new Map(
+    widgets.flatMap((state) => (state.name ? [[state.name, state]] : []))
+  )
+  for (const [name, previousValue] of Object.entries(values)) {
+    const state = canonicalByName.get(name)
+    if (!state || Object.is(previousValue, state.value)) continue
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (!widget) continue
+    widget.callback?.(state.value)
+    node.onWidgetChanged?.(name, state.value, previousValue, widget)
+  }
+}
+
+function namedWidgetValues(
+  serialised: ISerialisedNode
+): Record<string, WidgetValue> | undefined {
+  const values = serialised.widgets_values_named ?? serialised.widgets_values
+  if (!values || Array.isArray(values) || typeof values !== 'object') return
+  const entries = Object.entries(values)
+  return entries.every(([, value]) => isWidgetValue(value))
+    ? Object.fromEntries(entries)
+    : undefined
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
@@ -355,14 +389,19 @@ function missingNode(state: NodeState): LGraphNode {
  * Op-layer serialisations carry widget values keyed by name; `configure()`
  * only reads name-keyed values from `widgets_values_named`.
  */
-function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  const values = serialised.widgets_values
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    serialised.widgets_values_named !== undefined
-  ) {
-    return serialised
+function withNamedWidgetValues(
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): ISerialisedNode {
+  const namedValues = namedWidgetValues(serialised)
+  if (!namedValues) return serialised
+  return {
+    ...serialised,
+    widgets_values_named: {
+      ...namedValues,
+      ...Object.fromEntries(
+        widgets.map((widget) => [widget.name ?? '', widget.value])
+      )
+    }
   }
-  return { ...serialised, widgets_values_named: values }
 }
