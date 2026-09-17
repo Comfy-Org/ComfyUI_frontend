@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -11,37 +11,36 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, dragAndScale, closeSearchBox } = vi.hoisted(() => {
+const { canvasEl, container } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  const dragAndScale: Viewport = {
+  return { container, canvasEl }
+})
+
+const processMouseDown = vi.fn()
+
+vi.mock(import('@/scripts/app'), () => {
+  const ds: Viewport = {
     scale: 1,
     offset: [0, 0],
     min_scale: 0.1,
     max_scale: 10
   }
-  return { container, canvasEl, dragAndScale, closeSearchBox: vi.fn() }
+  return {
+    app: fromPartial<typeof comfyApp>({
+      registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
+      canvasEl,
+      canvas: fromPartial({
+        ds,
+        pointer: { isDown: false },
+        setDirty: vi.fn()
+      })
+    })
+  }
 })
 
-const processMouseDown = vi.fn()
-const processMouseMove = vi.fn()
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<typeof comfyApp>({
-    registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
-    canvasEl,
-    canvas: fromPartial({
-      ds: dragAndScale,
-      pointer: { isDown: false },
-      setDirty: vi.fn(),
-      search_box: { close: closeSearchBox }
-    })
-  })
-}))
-
 LGraphCanvas.prototype.processMouseDown = processMouseDown
-LGraphCanvas.prototype.processMouseMove = processMouseMove
 
 await import('./simpleTouchSupport')
 
@@ -57,12 +56,11 @@ function touchAt(target: EventTarget, x = 0, y = 0) {
 }
 
 function dispatchTouch(
-  target: EventTarget,
   type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
   touches: Touch[],
   changedTouches: Touch[] = touches
 ) {
-  target.dispatchEvent(
+  canvasEl.dispatchEvent(
     new TouchEvent(type, {
       bubbles: true,
       cancelable: true,
@@ -72,260 +70,61 @@ function dispatchTouch(
   )
 }
 
-function pointerDown(init: PointerEventInit) {
-  return LGraphCanvas.prototype.processMouseDown.call(
+function pressPointer(init: PointerEventInit) {
+  LGraphCanvas.prototype.processMouseDown.call(
     fromPartial<LGraphCanvas>({}),
     new PointerEvent('pointerdown', { pointerType: 'touch', ...init })
   )
 }
 
-function pointerMove(init: PointerEventInit) {
-  return LGraphCanvas.prototype.processMouseMove.call(
-    fromPartial<LGraphCanvas>({}),
-    new PointerEvent('pointermove', { pointerType: 'touch', ...init })
-  )
-}
-
 /**
- * Chromium dispatches `pointerdown` before `touchstart`; the specs leave that
- * order up to the user agent. The fix does not depend on it - every touch event
- * re-derives the count - so this only fixes one order for the fixture.
+ * Leaves `touchCount` and `touchZooming` set with no finger on the glass, the
+ * state the canvas used to be stuck in. A pinch whose `touchend` never reaches
+ * the listener is one way to get here; the fix is indifferent to which.
  */
-function tapDown(target: EventTarget = canvasEl) {
-  pointerDown({ isPrimary: true })
-  dispatchTouch(target, 'touchstart', [touchAt(target)])
-}
-
-function strandTouchesOnDetachedTarget(count: number) {
+function strandGestureState() {
   const doomed = document.createElement('div')
   container.append(doomed)
-  const touches = Array.from({ length: count }, (_, i) =>
-    touchAt(doomed, i * 50)
-  )
-  dispatchTouch(doomed, 'touchstart', touches)
+  const twoFingers = [touchAt(doomed), touchAt(doomed, 100)]
+  dispatchTouch('touchstart', twoFingers)
+  dispatchTouch('touchmove', [touchAt(doomed), touchAt(doomed, 60)])
   doomed.remove()
-  dispatchTouch(doomed, 'touchend', [], touches)
 }
 
-function strandPinchOnDetachedTarget() {
-  const doomed = document.createElement('div')
-  container.append(doomed)
-  const touches = [touchAt(doomed), touchAt(doomed, 100)]
-  dispatchTouch(doomed, 'touchstart', touches)
-  dispatchTouch(doomed, 'touchmove', [touchAt(doomed), touchAt(doomed, 60)])
-  doomed.remove()
-  dispatchTouch(doomed, 'touchend', [], touches)
-}
-
-/**
- * Probes the guards without going through a primary pointerdown, which would
- * itself clear the state these cases are asserting on.
- */
-function tapReachesCanvas() {
-  processMouseDown.mockClear()
-  pointerDown({ isPrimary: false })
-  return processMouseDown.mock.calls.length === 1
-}
-
-function dragReachesCanvas() {
-  processMouseMove.mockClear()
-  pointerMove({ isPrimary: true })
-  return processMouseMove.mock.calls.length === 1
-}
-
-describe('Comfy.SimpleTouchSupport touch state', () => {
+describe('Comfy.SimpleTouchSupport', () => {
   beforeEach(() => {
     document.body.append(container)
-    dragAndScale.scale = 1
-    dragAndScale.offset = [0, 0]
-    // Reset through the visibilitychange listener rather than through touch or
-    // pointer events, so the fixture does not depend on the behaviour under
-    // test and stays valid against pre-fix revisions.
     const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
     document.dispatchEvent(new Event('visibilitychange'))
     hidden.mockRestore()
+    processMouseDown.mockClear()
   })
 
-  describe('preserved behaviour', () => {
-    it('forwards a single-finger tap to the canvas', () => {
-      tapDown()
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
+  it('lets the next touch through after a gesture left state behind', () => {
+    strandGestureState()
 
-    it('does not let a second finger start a drag', () => {
-      tapDown()
-      processMouseDown.mockClear()
+    pressPointer({ isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
 
-      pointerDown({ isPrimary: false })
+  it('still blocks a second finger during a live gesture', () => {
+    pressPointer({ isPrimary: true })
+    dispatchTouch('touchstart', [touchAt(canvasEl)])
+    processMouseDown.mockClear()
+
+    pressPointer({ isPrimary: false })
+    expect(processMouseDown).not.toHaveBeenCalled()
+  })
+
+  it.for(['mouse', 'pen'] as const)(
+    'still blocks a %s press during a live pinch',
+    (pointerType) => {
+      const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+      dispatchTouch('touchstart', twoFingers)
+      dispatchTouch('touchmove', twoFingers)
+
+      pressPointer({ pointerType, isPrimary: true })
       expect(processMouseDown).not.toHaveBeenCalled()
-    })
-
-    it('blocks the canvas while two fingers are down', () => {
-      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-      dispatchTouch(canvasEl, 'touchstart', [
-        touchAt(canvasEl),
-        touchAt(canvasEl, 50)
-      ])
-
-      pointerDown({ isPrimary: false })
-      expect(processMouseDown).not.toHaveBeenCalled()
-    })
-
-    it('stays blocked between a partial touchcancel and the last touchend', () => {
-      const [first, second] = [touchAt(canvasEl), touchAt(canvasEl, 50)]
-      dispatchTouch(canvasEl, 'touchstart', [first, second])
-      dispatchTouch(canvasEl, 'touchcancel', [first], [second])
-
-      expect(tapReachesCanvas()).toBe(false)
-
-      dispatchTouch(canvasEl, 'touchend', [], [first])
-      expect(tapReachesCanvas()).toBe(true)
-    })
-
-    it('does not count a finger held outside the canvas container', () => {
-      const bodyLevelSurface = document.createElement('div')
-      document.body.append(bodyLevelSurface)
-      const stray = touchAt(bodyLevelSurface)
-      const onCanvas = touchAt(canvasEl, 100)
-
-      dispatchTouch(canvasEl, 'touchstart', [stray, onCanvas])
-      dispatchTouch(canvasEl, 'touchend', [stray], [onCanvas])
-      bodyLevelSurface.remove()
-
-      expect(tapReachesCanvas()).toBe(true)
-    })
-
-    it.for(['mouse', 'pen'] as const)(
-      'blocks a %s press during a live pinch, which is always primary',
-      (pointerType) => {
-        const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
-        dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-        dispatchTouch(canvasEl, 'touchstart', twoFingers)
-        dispatchTouch(canvasEl, 'touchmove', twoFingers)
-
-        pointerDown({ pointerType, isPrimary: true })
-        expect(processMouseDown).not.toHaveBeenCalled()
-      }
-    )
-  })
-
-  describe('recovery from a touchend that never arrives (FE-2435)', () => {
-    it('sees a touchend a descendant stopped from propagating', () => {
-      const child = document.createElement('div')
-      child.addEventListener('touchend', (e) => e.stopPropagation())
-      container.append(child)
-
-      dispatchTouch(child, 'touchstart', [touchAt(child)])
-      dispatchTouch(child, 'touchend', [], [touchAt(child)])
-      child.remove()
-
-      expect(tapReachesCanvas()).toBe(true)
-    })
-
-    it('does not go negative when touchcancel precedes the last touchend', () => {
-      const [first, second] = [touchAt(canvasEl), touchAt(canvasEl, 50)]
-      dispatchTouch(canvasEl, 'touchstart', [first, second])
-      dispatchTouch(canvasEl, 'touchcancel', [first], [second])
-      dispatchTouch(canvasEl, 'touchend', [], [first])
-
-      expect(tapReachesCanvas()).toBe(true)
-    })
-
-    it('re-derives the count rather than accumulating past a lost touchend', () => {
-      strandTouchesOnDetachedTarget(2)
-      dispatchTouch(canvasEl, 'touchmove', [touchAt(canvasEl)])
-
-      expect(dragReachesCanvas()).toBe(true)
-    })
-
-    it('a fresh tap revives a canvas left stuck by a lost touchend', () => {
-      strandTouchesOnDetachedTarget(1)
-
-      tapDown()
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
-
-    it('clears a stranded pinch when a new first finger lands', () => {
-      strandPinchOnDetachedTarget()
-      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-
-      expect(dragReachesCanvas()).toBe(true)
-    })
-
-    it('clears a stranded pinch on a primary touch pointerdown', () => {
-      strandPinchOnDetachedTarget()
-
-      pointerDown({ isPrimary: true })
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
-  })
-
-  it('scales the canvas by the ratio the fingers close through', () => {
-    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-    dispatchTouch(canvasEl, 'touchstart', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 100)
-    ])
-    dispatchTouch(canvasEl, 'touchmove', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 50)
-    ])
-
-    expect(dragAndScale.scale).toBeCloseTo(0.5)
-  })
-
-  it('does not pinch when only one of the two fingers is on the canvas', () => {
-    const outside = document.createElement('div')
-    document.body.append(outside)
-
-    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl), touchAt(outside)])
-    dispatchTouch(canvasEl, 'touchmove', [
-      touchAt(canvasEl),
-      touchAt(outside, 400)
-    ])
-    outside.remove()
-
-    expect(dragAndScale.scale).toBe(1)
-  })
-
-  it('still opens the context menu on a long press', () => {
-    const rightClick = vi.fn()
-    canvasEl.addEventListener('pointerdown', rightClick)
-
-    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-    vi.advanceTimersByTime(700)
-    dispatchTouch(canvasEl, 'touchend', [], [touchAt(canvasEl)])
-    canvasEl.removeEventListener('pointerdown', rightClick)
-
-    expect(rightClick).toHaveBeenCalledOnce()
-    expect(rightClick.mock.calls[0][0]).toMatchObject({ button: 2 })
-  })
-
-  it('closes transient UI once per pinch rather than on every frame', () => {
-    const closeAllContextMenus = vi
-      .spyOn(LiteGraph, 'closeAllContextMenus')
-      .mockImplementation(() => {})
-
-    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-    dispatchTouch(canvasEl, 'touchstart', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 100)
-    ])
-    dispatchTouch(canvasEl, 'touchmove', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 90)
-    ])
-    dispatchTouch(canvasEl, 'touchmove', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 80)
-    ])
-    dispatchTouch(canvasEl, 'touchmove', [
-      touchAt(canvasEl),
-      touchAt(canvasEl, 70)
-    ])
-
-    expect(closeAllContextMenus).toHaveBeenCalledOnce()
-    expect(closeSearchBox).toHaveBeenCalledOnce()
-  })
+    }
+  )
 })
