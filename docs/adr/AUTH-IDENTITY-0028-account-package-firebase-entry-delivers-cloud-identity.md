@@ -61,8 +61,11 @@ is not a contract to build on.
    calls `useWorkspaceAuthStore()`), which holds only because the SDK
    delivers a new observer's first emission asynchronously, after
    persistence resolves; a synchronous identity source in its place would
-   re-enter a half-built store, leaving the client unsubscribed and every
-   mint waiting its ceiling.
+   re-enter a half-built store: built workspace-first it throws a boot-time
+   `TypeError` from `authStore`'s listener against the half-assigned store,
+   built auth-first it leaves the client unsubscribed and every mint waiting
+   its ceiling. The "store construction order" test in `authStore.test.ts`
+   pins the working microtask order.
 4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
    subscription: identity is bound to the session client for the store's
    lifetime. With `unified_cloud_auth` off the port stays subscribed but

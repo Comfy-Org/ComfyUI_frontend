@@ -160,15 +160,18 @@ describe('useWorkshopSession over the real session client', () => {
   it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
     const fetchSpy = okFetch()
     vi.stubGlobal('fetch', fetchSpy)
-    const { session, flag, phases } = await boot(true)
+    const { session, flag, phases, client } = await boot(true)
     await vi.waitFor(() => expect(h.deliver).toBeDefined())
 
     flag.value = false
     h.deliver?.(user)
     await vi.waitFor(() => expect(h.deliver).toBeUndefined())
-    await fetchSpy.mock.results[0]?.value
     await new Promise((resolve) => setTimeout(resolve))
 
+    expect(
+      client.getSnapshot().phase,
+      'the delivery landed on the client, so the flag-off deactivate delivered null'
+    ).toBe('signed-out')
     expect(
       phases,
       'a begin resumed by the flag-off deactivate must not subscribe the host'
@@ -193,13 +196,18 @@ describe('useWorkshopSession over the real session client', () => {
         expiresAt: Date.parse(expires_at)
       })
     )
-    vi.stubGlobal('fetch', okFetch())
+    const fetchSpy = okFetch()
+    vi.stubGlobal('fetch', fetchSpy)
     await boot(true)
 
     await firebaseAnswers(user)
     await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve))
 
+    expect(
+      fetchSpy,
+      'the seeded credential was served from cache, so the boot never minted'
+    ).not.toHaveBeenCalled()
     expect(
       sessionStorage.getItem(STORAGE_KEY),
       'the failed attempt signs the client out, so the retry re-mints instead of reviving this credential'
