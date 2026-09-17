@@ -157,6 +157,7 @@ export function useSubscriptionCheckout(
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const subscriptionRail = useSubscriptionRail()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -203,7 +204,7 @@ export function useSubscriptionCheckout(
   const activeCheckoutActionUrl = computed(
     () =>
       activeCheckoutOperation.value?.actionUrl ??
-      useSubscriptionRail()?.subscriptionActionUrl ??
+      subscriptionRail?.subscriptionActionUrl ??
       null
   )
   // The server says whether the operation is parked; the client no longer

@@ -198,14 +198,34 @@ function renderComponent(
 /**
  * A blank tab the handler can disown and navigate. happy-dom's own child
  * window exposes `opener` read-only and fetches whatever `location` is set to.
+ * The two writes are recorded in order: `opener` is no longer writable once
+ * the tab has left this origin, so disowning after navigating throws in a
+ * browser while both orders would satisfy plain properties.
  */
-function stubHostedTab(): Window {
-  const tab: Window = Object.create(window)
-  Object.defineProperty(tab, 'opener', { value: window, writable: true })
-  Object.defineProperty(tab, 'location', {
-    value: { href: 'about:blank' },
-    writable: true
+function stubHostedTab(): Window & { readonly writes: readonly string[] } {
+  const writes: string[] = []
+  let opener: Window | null = window
+  let href = 'about:blank'
+  const tab = Object.create(window) as Window & { writes: string[] }
+  Object.defineProperty(tab, 'opener', {
+    get: () => opener,
+    set: (value: Window | null) => {
+      writes.push('disown')
+      opener = value
+    }
   })
+  Object.defineProperty(tab, 'location', {
+    get: () => ({
+      get href() {
+        return href
+      },
+      set href(value: string) {
+        writes.push('navigate')
+        href = value
+      }
+    })
+  })
+  Object.defineProperty(tab, 'writes', { get: () => writes })
   return tab
 }
 
@@ -357,6 +377,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(open).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith('', '_blank')
+    expect(tab.writes).toEqual(['disown', 'navigate'])
     expect(tab.opener).toBeNull()
     expect(tab.location.href).toBe(
       'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
