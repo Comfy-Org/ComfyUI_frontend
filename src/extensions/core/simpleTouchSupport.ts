@@ -47,9 +47,6 @@ app.registerExtension({
 
             touchDist = getMultiTouchPos(e)
             app.canvas.pointer.isDown = false
-
-            LiteGraph.closeAllContextMenus(window)
-            app.canvas.search_box?.close()
           }
         }
       },
@@ -128,6 +125,11 @@ app.registerExtension({
         if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer.isDown = false
+
+          if (!touchZooming) {
+            LiteGraph.closeAllContextMenus(window)
+            app.canvas.search_box?.close()
+          }
           touchZooming = true
 
           const newTouchDist = getMultiTouchPos(e)
@@ -180,11 +182,12 @@ app.registerExtension({
 })
 
 /**
- * A primary touch pointer is the only finger on the screen, so state surviving
- * here belongs to a gesture whose `touchend` never arrived.
+ * A primary pointer goes down with no other pointer active, so state surviving
+ * here belongs to a gesture whose `touchend` never arrived. Mouse and pen count
+ * too: on a touch laptop they are the way back from a stuck touch gesture.
  */
 function discardStaleTouchState(e: PointerEvent) {
-  if (e.pointerType !== 'touch' || !e.isPrimary) return
+  if (!e.isPrimary) return
   touchCount = 0
   touchZooming = false
 }
