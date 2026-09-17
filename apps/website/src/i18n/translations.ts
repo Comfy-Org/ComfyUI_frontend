@@ -1890,9 +1890,9 @@ Enterprise`
     en: 'Kling',
     'zh-CN': 'Kling'
   },
-  'cloud.aiModels.card.blackForestLabs': {
-    en: 'Black Forest Labs',
-    'zh-CN': 'Black Forest Labs'
+  'cloud.aiModels.card.flux3': {
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
   },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
@@ -8780,6 +8780,10 @@ Enterprise`
     en: 'Change the provider. Keep everything else.',
     'zh-CN': '更换供应商，其余代码不变。'
   },
+  'platform.router.code.providerLabel': {
+    en: 'Provider',
+    'zh-CN': '供应商'
+  },
   'platform.router.section1.heading': {
     en: 'Integrate once. Add models as you go.',
     'zh-CN': '集成一次，模型随时添加。'
@@ -8835,6 +8839,11 @@ Enterprise`
     en: 'Run a ComfyUI workflow from the same SDK. Just like models.',
     'zh-CN': '用同一个 SDK 运行 ComfyUI 工作流，就像调用模型一样。'
   },
+  'platform.router.roadmap.1.details': {
+    en: 'Workflows run today through the Comfy API on the Developer Platform. Router support brings them behind the same key, the same job surface, and the same credits as every model call, so a pipeline you build in ComfyUI ships to your app as one request.',
+    'zh-CN':
+      '工作流目前通过开发者平台上的 Comfy API 运行。Router 支持将把它们纳入同一个密钥、同一个任务接口和同一份积分，你在 ComfyUI 中构建的流水线只需一次请求即可接入你的应用。'
+  },
   'platform.router.roadmap.2.title': {
     en: 'Routing strategies',
     'zh-CN': '路由策略'
@@ -8842,6 +8851,11 @@ Enterprise`
   'platform.router.roadmap.2.description': {
     en: 'Name the policy: reliable, fast_start, fast_finish, or lowest_cost.',
     'zh-CN': '指定策略：reliable、fast_start、fast_finish 或 lowest_cost。'
+  },
+  'platform.router.roadmap.2.details': {
+    en: 'Name the outcome you want instead of a provider. Comfy picks a route that fits the policy, and every job still reports the provider that ran it. Ordered fallback arrives alongside: a backup list Comfy uses only when a retry is known to be safe.',
+    'zh-CN':
+      '不再指定供应商，而是指定你想要的结果。Comfy 会选择符合策略的路由，每个任务仍会报告实际执行的供应商。有序回退也将同步推出：仅在确认可安全重试时才启用备用列表。'
   },
   'platform.router.roadmap.3.title': {
     en: 'Route by use case',
@@ -8851,6 +8865,19 @@ Enterprise`
     en: 'Request an upscale, a background removal, or an animation, and Comfy picks a model or workflow that can do it.',
     'zh-CN':
       '请求一次放大、抠图或动画生成，Comfy 会自动选择能完成任务的模型或工作流。'
+  },
+  'platform.router.roadmap.3.details': {
+    en: 'Describe the task instead of the model. Comfy matches it to a model or workflow that can do it, on a provider that is up, so new models slot in without a change on your side.',
+    'zh-CN':
+      '描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。'
+  },
+  'platform.router.roadmap.readMore': {
+    en: 'Read more',
+    'zh-CN': '展开'
+  },
+  'platform.router.roadmap.readLess': {
+    en: 'Show less',
+    'zh-CN': '收起'
   },
   'platform.router.roadmap.learnMore': {
     en: 'LEARN MORE',

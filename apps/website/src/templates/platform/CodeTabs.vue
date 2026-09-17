@@ -11,16 +11,13 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-
-/**
- * A segment is either static code, or a set of values the tab cycles
- * through in lockstep with every other cycling segment (index-synced, so a
- * model id and its matching prompt/filename change together).
- */
-type CodeSegment = string | { values: string[]; highlight?: boolean }
+import type { CodeLang } from '../../lib/highlight'
+import type { CodeSegment } from './codeTokens'
+import { tokenizeSegments } from './codeTokens'
 
 export interface CodeTab {
   name: string
+  lang: CodeLang
   segments: CodeSegment[]
   wrap?: boolean
 }
@@ -30,7 +27,8 @@ const CYCLE_INTERVAL_MS = 3000
 const {
   tabs,
   label,
-  contentClass = 'bg-primary-comfy-ink'
+  contentClass = 'bg-primary-comfy-ink',
+  selectedIndex
 } = defineProps<{
   tabs: Record<string, CodeTab>
   label: string
@@ -39,6 +37,8 @@ const {
   triggerClass?: string
   copyLabel?: string
   copiedLabel?: string
+  /** Pins every cycling segment to this value index instead of cycling. */
+  selectedIndex?: number
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -86,6 +86,7 @@ const { pause, resume } = useIntervalFn(
 watchEffect(() => {
   if (
     hasCycle.value &&
+    selectedIndex === undefined &&
     visible.value &&
     documentVisibility.value === 'visible' &&
     !prefersReducedMotion()
@@ -95,7 +96,12 @@ watchEffect(() => {
 })
 
 function cycleValue(values: string[]): string {
-  return values[cycleIndex.value % values.length]
+  return values[(selectedIndex ?? cycleIndex.value) % values.length]
+}
+
+// The crossfade only runs when the key changes; a pinned value patches in place.
+function crossfadeKey(value: string): string | undefined {
+  return selectedIndex === undefined ? value : undefined
 }
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
@@ -107,6 +113,15 @@ function codeText(tab: CodeTab): string {
     )
     .join('')
 }
+
+const groupsByTab = computed(() =>
+  Object.fromEntries(
+    Object.entries(tabs).map(([tabId, tab]) => [
+      tabId,
+      tokenizeSegments(tab.segments, tab.lang, cycleValue)
+    ])
+  )
+)
 </script>
 
 <template>
@@ -116,29 +131,32 @@ function codeText(tab: CodeTab): string {
     activation-mode="manual"
     class="block"
   >
-    <TabsList
-      :aria-label="label"
-      :class="
-        cn(
-          'scrollbar-none flex w-full max-w-full overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto',
-          listClass
-        )
-      "
-    >
-      <TabsTrigger
-        v-for="(tab, tabId) in tabs"
-        :key="tabId"
-        :value="tabId"
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <TabsList
+        :aria-label="label"
         :class="
           cn(
-            'flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider',
-            triggerClass
+            'scrollbar-none flex w-full max-w-full overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto',
+            listClass
           )
         "
       >
-        <span class="ppformula-text-center">{{ tab.name }}</span>
-      </TabsTrigger>
-    </TabsList>
+        <TabsTrigger
+          v-for="(tab, tabId) in tabs"
+          :key="tabId"
+          :value="tabId"
+          :class="
+            cn(
+              'flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-secondary-mauve data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider',
+              triggerClass
+            )
+          "
+        >
+          <span class="ppformula-text-center">{{ tab.name }}</span>
+        </TabsTrigger>
+      </TabsList>
+      <slot name="controls" />
+    </div>
 
     <TabsContent
       v-for="(tab, tabId) in tabs"
@@ -166,18 +184,28 @@ function codeText(tab: CodeTab): string {
         "
         :style="{ '--code-panel-h': codePanelHeight }"
       ><code><template
-          v-for="(segment, index) in tab.segments"
+          v-for="(group, index) in groupsByTab[tabId]"
           :key="index"
         ><Transition
-            v-if="typeof segment !== 'string'"
+            v-if="group.kind === 'cycle'"
             name="crossfade"
             mode="out-in"
           ><span
-              :key="cycleValue(segment.values)"
-              :class="cn(segment.highlight && 'text-primary-comfy-yellow')"
-            >{{ cycleValue(segment.values) }}</span></Transition><template
+              :key="crossfadeKey(group.value)"
+              :class="cn(group.highlight && 'text-primary-comfy-yellow')"
+            ><template v-if="group.highlight">{{ group.value }}</template><template
+                v-else
+              ><span
+                  v-for="(token, tokenIndex) in group.tokens"
+                  :key="tokenIndex"
+                  :style="{ color: token.color }"
+                >{{ token.content }}</span></template></span></Transition><template
             v-else
-          >{{ segment }}</template></template></code></pre>
+          ><span
+              v-for="(token, tokenIndex) in group.tokens"
+              :key="tokenIndex"
+              :style="{ color: token.color }"
+            >{{ token.content }}</span></template></template></code></pre>
     </TabsContent>
   </TabsRoot>
 </template>
