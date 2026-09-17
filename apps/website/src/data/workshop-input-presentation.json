@@ -1179,7 +1179,7 @@
         "help": ""
       },
       "resolution": {
-        "options": ["480p", "720p"],
+        "options": ["480p", "720p", "1080p", "4k"],
         "default": "720p"
       },
       "ratio": {
@@ -1445,11 +1445,22 @@
         "control": "text-area"
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1K", "2K", "4K"],
-        "default": "2K"
+        "options": [
+          "4K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "4096x4096"
+        ],
+        "default": "2048x2048"
       },
       "sequential_image_generation": {
         "fixed": "disabled"
@@ -1481,11 +1492,22 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["2K", "4K"],
-        "default": "2K"
+        "options": [
+          "4K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "4096x4096"
+        ],
+        "default": "2048x2048"
       }
     },
     "byteplus/seedream-5-0-260128": {
@@ -1508,11 +1530,22 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["2K", "3K"],
-        "default": "2K"
+        "options": [
+          "3K",
+          "2048x2048",
+          "2560x1440",
+          "1440x2560",
+          "2304x1728",
+          "1728x2304",
+          "2496x1664",
+          "1664x2496",
+          "3136x1344",
+          "3072x3072"
+        ],
+        "default": "2048x2048"
       }
     },
     "byteplus/seedream-5-0-pro-260628": {
@@ -1535,11 +1568,18 @@
         "control": "toggle"
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1K", "2K"],
-        "default": "1K"
+        "options": [
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "1920x1080",
+          "1080x1920",
+          "2048x2048"
+        ],
+        "default": "1024x1024"
       }
     },
     "elevenlabs/eleven_sfx_v2": {
@@ -1624,6 +1664,11 @@
       }
     },
     "freepik/ai-image-upscaler-precision-v2": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the image to upscale.",
+        "urlUpload": "image"
+      },
       "ultra_detail": {
         "label": "Fine detail",
         "help": "Adjust how much intricate detail to add.",
@@ -1631,7 +1676,19 @@
         "control": "slider"
       }
     },
+    "freepik/ai-skin-enhancer-creative": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      }
+    },
     "freepik/ai-skin-enhancer-faithful": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "skin_detail": {
         "label": "Skin detail",
         "help": "Adjust the amount of skin texture enhancement.",
@@ -1640,6 +1697,11 @@
       }
     },
     "freepik/ai-skin-enhancer-flexible": {
+      "image": {
+        "label": "Source image",
+        "help": "Choose the portrait to enhance.",
+        "urlUpload": "image"
+      },
       "optimized_for": {
         "label": "Enhancement target",
         "help": "Choose which aspect of the image to improve.",
@@ -1733,7 +1795,7 @@
           "pt-PT": "Portuguese (Portugal)",
           "es-ES": "Spanish (Spain)",
           "es-MX": "Spanish (Mexico)",
-          "tr-TR": "Turkish (Türkiye)",
+          "tr-TR": "Turkish (T\u00fcrkiye)",
           "vi-VN": "Vietnamese (Vietnam)"
         }
       },
@@ -2387,10 +2449,20 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
       }
     },
@@ -2399,10 +2471,20 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
       }
     },
@@ -2411,10 +2493,20 @@
         "hidden": true
       },
       "size": {
-        "label": "Resolution",
+        "label": "Image size",
         "help": "",
         "advanced": false,
-        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "options": [
+          "auto",
+          "1024x1024",
+          "1536x1024",
+          "1024x1536",
+          "2048x2048",
+          "2048x1152",
+          "1152x2048",
+          "3840x2160",
+          "2160x3840"
+        ],
         "default": "1024x1024"
       }
     },
