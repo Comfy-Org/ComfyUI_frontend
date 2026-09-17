@@ -398,6 +398,18 @@ describe('useBillingSdkStore subscription commands', () => {
     value: { phase: 'succeeded', operation: settledOperation('succeeded') }
   } as const
 
+  // A subscribe the server activated on the spot, so the projection's
+  // `requiredPayment` reads off a status the fixture states rather than off a
+  // field it happens to omit.
+  const SETTLED_SUBSCRIBE = {
+    status: 'ok',
+    value: {
+      phase: 'succeeded',
+      operation: settledOperation('succeeded', 'subscription'),
+      issuedStatus: 'subscribed'
+    }
+  } as const
+
   const ROUTE_MISSING = {
     status: 'error',
     code: 'NOT_FOUND',
@@ -482,7 +494,9 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 
   it('reconciles the subscription after a plan change settles', async () => {
-    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(SETTLED)
+    vi.mocked(harness.sdk.commands.subscribe).mockResolvedValue(
+      SETTLED_SUBSCRIBE
+    )
 
     await expect(
       useBillingSdkStore().subscribe({ plan_slug: 'pro-yearly' })
@@ -491,7 +505,7 @@ describe('useBillingSdkStore subscription commands', () => {
       value: {
         billing_op_id: 'op-1',
         status: 'subscribed',
-        requiredPayment: true
+        requiredPayment: false
       }
     })
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
@@ -559,6 +573,35 @@ describe('useBillingSdkStore subscription commands', () => {
 
     expect(openPage).toHaveBeenCalledTimes(2)
     expect(store.subscriptionActionUrl).toBe('https://pay.example/second')
+  })
+
+  it('does not re-offer a hosted page this operation already offered', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/second' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+
+    expect(openPage).toHaveBeenCalledTimes(2)
+  })
+
+  it('offers nothing for a hosted page that is not https', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'javascript:alert(document.cookie)' })
+    )
+
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBeNull()
   })
 
   it('offers nothing once the subscribe has settled', () => {
