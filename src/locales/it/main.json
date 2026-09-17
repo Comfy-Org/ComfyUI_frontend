@@ -419,9 +419,9 @@
       "contactSupport": "Per eliminare il tuo account, contatta {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Esiste già un account con questo indirizzo email, ma utilizza un metodo di accesso diverso. Accedi con il metodo usato originariamente.",
+      "auth/account-exists-with-different-credential": "Non è stato possibile accedere con questo metodo. Prova un altro metodo di accesso oppure reimposta la password per continuare.",
       "auth/cancelled-popup-request": "Un'altra finestra di accesso era già aperta, quindi questa è stata annullata. Riprova.",
-      "auth/email-already-in-use": "Esiste già un account con questa email. Prova ad accedere.",
+      "auth/email-already-in-use": "Non è stato possibile creare un account con questa email. Prova invece ad accedere o a reimpostare la password.",
       "auth/invalid-credential": "Credenziali di accesso non valide. Controlla email e password.",
       "auth/invalid-email": "Per favore inserisci un indirizzo email valido.",
       "auth/network-request-failed": "Errore di rete. Controlla la connessione e riprova.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "La finestra di accesso si è chiusa prima del completamento dell'accesso. Riprova.",
       "auth/too-many-requests": "Troppi tentativi di accesso. Attendi un momento e riprova.",
       "auth/user-disabled": "Questo account è stato disabilitato. Contatta il supporto.",
-      "auth/user-not-found": "Credenziali di accesso non valide. Controlla l'e-mail e la password.",
       "auth/weak-password": "La password è troppo debole. Usa una password più sicura di almeno 6 caratteri.",
-      "auth/wrong-password": "Credenziali di accesso non valide. Controlla l'e-mail e la password.",
       "generic": "Si è verificato un errore durante l'accesso. Per favore riprova.",
       "signupBlocked": "Non siamo riusciti a creare il tuo account in questo momento. Per favore riprova più tardi. Se il problema persiste, scrivi a support@comfy.org."
     },

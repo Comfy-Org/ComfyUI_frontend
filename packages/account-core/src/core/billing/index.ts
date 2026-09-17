@@ -102,6 +102,7 @@ export type {
   PendingBillingOperation
 } from './operationState.js'
 export {
+  isBlockedOnCustomerPhase,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl

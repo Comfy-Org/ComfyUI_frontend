@@ -70,51 +70,6 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
   return { kind: 'auth', code: error.code }
 }
 
-/**
- * English source copy for auth failures, extracted verbatim from the cloud
- * app's shipped strings (src/locales/en/main.json, auth.errors.*) so hosts
- * never invent independently worded copy for the same failure. Keyed by the
- * Firebase code, plus the two named fallbacks. `AUTH_ERROR_COPY` carries the
- * same table per shipped locale; `authErrorMessage` resolves one failure.
- *
- * `auth/user-not-found` and `auth/wrong-password` are the one deliberate
- * exception: both collapse to the generic invalid-credentials line here
- * regardless of what a host's own locale files say, so a sign-in attempt
- * can never be used to tell whether an email has an account.
- */
-export const AUTH_ERROR_MESSAGES: AuthErrorCopy = {
-  'auth/invalid-email': 'Please enter a valid email address.',
-  'auth/user-disabled':
-    'This account has been disabled. Please contact support.',
-  'auth/user-not-found':
-    'Invalid login credentials. Please check your email and password.',
-  'auth/wrong-password':
-    'Invalid login credentials. Please check your email and password.',
-  'auth/email-already-in-use':
-    'An account with this email already exists. Try signing in instead.',
-  'auth/weak-password':
-    'Password is too weak. Please use a stronger password with at least 6 characters.',
-  'auth/too-many-requests':
-    'Too many login attempts. Please wait a moment and try again.',
-  'auth/operation-not-allowed':
-    'This sign-in method is not currently supported.',
-  'auth/invalid-credential':
-    'Invalid login credentials. Please check your email and password.',
-  'auth/network-request-failed':
-    'Network error. Please check your connection and try again.',
-  'auth/popup-closed-by-user':
-    'The sign-in window closed before sign-in finished. Please try again.',
-  'auth/cancelled-popup-request':
-    'Another sign-in window was already open, so this one was cancelled. Please try again.',
-  'auth/popup-blocked':
-    'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
-  'auth/account-exists-with-different-credential':
-    'An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.',
-  generic: 'Something went wrong while signing you in. Please try again.',
-  signupBlocked:
-    "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
-}
-
 export type AuthToastSeverity = 'error' | 'warn'
 
 /**
@@ -128,121 +83,34 @@ export function severityForAuthError(
   return classification.kind === 'popup-dismissed' ? 'warn' : 'error'
 }
 
-/** The locales both hosts ship auth copy for; each table mirrors src/locales/<locale>/main.json. */
-export type AuthCopyLocale = 'en' | 'zh-CN' | 'ja'
-
-export const AUTH_ERROR_COPY: Readonly<Record<AuthCopyLocale, AuthErrorCopy>> =
-  {
-    en: AUTH_ERROR_MESSAGES,
-    'zh-CN': {
-      'auth/invalid-email': '请输入有效的电子邮件地址。',
-      'auth/user-disabled': '此账户已被禁用。请联系客服。',
-      'auth/user-not-found': '登录凭据无效。请检查您的邮箱和密码。',
-      'auth/wrong-password': '登录凭据无效。请检查您的邮箱和密码。',
-      'auth/email-already-in-use': '已存在使用此电子邮件的账户。请尝试登录。',
-      'auth/weak-password': '密码强度太弱。请使用至少6个字符的更强密码。',
-      'auth/too-many-requests': '登录尝试次数过多。请稍等片刻再试。',
-      'auth/operation-not-allowed': '此登录方法目前不受支持。',
-      'auth/invalid-credential': '登录凭据无效。请检查您的邮箱和密码。',
-      'auth/network-request-failed': '网络错误。请检查您的连接并重试。',
-      'auth/popup-closed-by-user': '登录完成前登录窗口已关闭。请重试。',
-      'auth/cancelled-popup-request':
-        '另一个登录窗口已打开，因此此窗口已取消。请重试。',
-      'auth/popup-blocked':
-        '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。',
-      'auth/account-exists-with-different-credential':
-        '已存在使用此电子邮件地址的账户，但其使用了其他登录方式。请使用您最初的登录方式登录。',
-      generic: '登录时出现问题，请重试。',
-      signupBlocked:
-        '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。'
-    },
-    ja: {
-      'auth/invalid-email': '有効なメールアドレスを入力してください。',
-      'auth/user-disabled':
-        'このアカウントは無効化されています。サポートまでご連絡ください。',
-      'auth/user-not-found':
-        'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
-      'auth/wrong-password':
-        'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
-      'auth/email-already-in-use':
-        'このメールアドレスのアカウントは既に存在します。代わりにサインインをお試しください。',
-      'auth/weak-password':
-        'パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。',
-      'auth/too-many-requests':
-        'ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。',
-      'auth/operation-not-allowed':
-        'このサインイン方法は現在サポートされていません。',
-      'auth/invalid-credential':
-        'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
-      'auth/network-request-failed':
-        'ネットワークエラー。接続を確認してからもう一度お試しください。',
-      'auth/popup-closed-by-user':
-        'サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。',
-      'auth/cancelled-popup-request':
-        '別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。',
-      'auth/popup-blocked':
-        'ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。',
-      'auth/account-exists-with-different-credential':
-        'このメールアドレスのアカウントはすでに存在しますが、別のサインイン方法を使用しています。最初に使用した方法でサインインしてください。',
-      generic: 'サインイン中に問題が発生しました。もう一度お試しください。',
-      signupBlocked:
-        '現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。'
-    }
-  }
-
-/** toastMessages.unauthorizedDomain; `{domain}` and `{email}` are the host's own values. */
-export const UNAUTHORIZED_DOMAIN_MESSAGES: Readonly<
-  Record<AuthCopyLocale, string>
-> = {
-  en: 'Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.',
-  'zh-CN':
-    '您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。',
-  ja: 'あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。'
-}
-
-/** g.error / g.warning: the summaries the cloud app's auth toasts carry. */
-export const AUTH_TOAST_SUMMARIES: Readonly<
-  Record<AuthCopyLocale, Readonly<Record<AuthToastSeverity, string>>>
-> = {
-  en: { error: 'Error', warn: 'Warning' },
-  'zh-CN': { error: '错误', warn: '警告' },
-  ja: { error: 'エラー', warn: '警告' }
-}
-
-export function unauthorizedDomainMessage(
-  values: { domain: string; email: string },
-  locale: AuthCopyLocale = 'en'
-): string {
-  return UNAUTHORIZED_DOMAIN_MESSAGES[locale]
-    .replace('{domain}', values.domain)
-    .replace('{email}', values.email)
-}
-
-/** One locale's auth error table: Firebase codes plus the two fallbacks every table must carry. */
+/**
+ * A host's auth error table: Firebase codes mapped to that host's copy, plus
+ * the two fallbacks every table must carry. Hosts build this from their own
+ * i18n; the package ships no strings of its own.
+ */
 export type AuthErrorCopy = Readonly<Record<string, string>> & {
   readonly generic: string
   readonly signupBlocked: string
 }
 
-/**
- * The detail copy for a classified failure: a code the table knows gets its
- * own line, anything else the generic line, a blocked sign-up its named
- * copy. Hosts pass a shipped locale or their own table (the cloud app hands
- * in its vue-i18n strings). Unauthorized domains need the host's domain and
- * support address, so hosts call `unauthorizedDomainMessage` for that kind.
- */
 /** Resolved to the invalid-credential line whatever table is in play. */
 const ENUMERATION_NEUTRAL_CODES: ReadonlySet<string> = new Set([
   'auth/user-not-found',
   'auth/wrong-password'
 ])
 
+/**
+ * The detail copy for a classified failure, resolved against the host copy:
+ * a code the table knows gets its own line, anything else the generic line, a
+ * blocked sign-up its named copy. The user-not-found / wrong-password pair
+ * collapses to the invalid-credential line so a sign-in attempt can never
+ * reveal whether an email has an account. Unauthorized domains need the
+ * host's domain and support address, which the host interpolates itself.
+ */
 export function authErrorMessage(
   classification: AuthErrorClassification,
-  copySource: AuthCopyLocale | AuthErrorCopy = 'en'
+  copy: AuthErrorCopy
 ): string {
-  const copy =
-    typeof copySource === 'string' ? AUTH_ERROR_COPY[copySource] : copySource
   switch (classification.kind) {
     case 'signup-blocked':
       return copy.signupBlocked
