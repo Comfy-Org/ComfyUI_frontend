@@ -172,7 +172,7 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
-            'packages/account/vitest.config.ts',
+            'packages/account-core/vitest.config.ts',
             'packages/account-ui/vitest.config.ts',
             'packages/billing-contract/vitest.config.ts',
             'packages/design-system/vitest.config.ts',

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SubscriptionPreview } from '@comfyorg/account/billing'
+import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 

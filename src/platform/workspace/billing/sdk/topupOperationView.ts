@@ -9,8 +9,8 @@ import type {
   BillingOperationState,
   TopupFailure,
   TopupResult
-} from '@comfyorg/account/billing'
-import { unwrapServerCode } from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
+import { unwrapServerCode } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
 import type {

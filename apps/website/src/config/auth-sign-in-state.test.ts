@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AUTH_ERROR_COPY,
   AUTH_ERROR_MESSAGES
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
 
 import type { AuthSignInState } from './auth-sign-in-state'
 import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
