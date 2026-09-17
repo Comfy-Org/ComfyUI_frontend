@@ -82,14 +82,30 @@ function sitemapAlternates(): Map<string, Alternate[]> | null {
 }
 
 const files = htmlFiles(DIST)
-const pages = new Map<string, Alternate[]>(
-  files.map((file) => [
-    routeOf(file),
-    alternatesIn(readFileSync(file, 'utf-8'))
-  ])
-)
+const pages = new Map<string, Alternate[]>()
+/**
+ * Routes whose page names ITSELF as the canonical.
+ *
+ * Since the i18n fallback landed, a /ja/ page existing no longer means Japanese
+ * is published there: the fallback builds one for every route. A page pointing
+ * at the English original is declaring itself not the original. Reading that
+ * from the built HTML keeps the audit independent of the emitter — it compares
+ * two statements the site makes rather than trusting the config that made them.
+ */
+const selfCanonical = new Set<string>()
+
+for (const file of files) {
+  const route = routeOf(file)
+  const html = readFileSync(file, 'utf-8')
+  pages.set(route, alternatesIn(html))
+
+  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1]
+  if (canonical && new URL(canonical).pathname === route) {
+    selfCanonical.add(route)
+  }
+}
 const sitemap = sitemapAlternates()
-const errors = auditBuiltSite({ pages, sitemap, origin: ORIGIN })
+const errors = auditBuiltSite({ pages, sitemap, selfCanonical, origin: ORIGIN })
 
 const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 // The repo's lint config allows console.warn and console.error only, and this
