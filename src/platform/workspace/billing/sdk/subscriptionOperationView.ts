@@ -140,7 +140,7 @@ export function projectSubscribeResult(
   if (result.status === 'error') return projectFailure(result)
   const { phase, operation } = result.value
   if (phase !== 'succeeded' || operation === undefined) {
-    return { status: 'error', error: new Error(`phase: ${phase}`) }
+    return projectUnsuccessfulSettle(result.value)
   }
   return {
     status: 'ok',

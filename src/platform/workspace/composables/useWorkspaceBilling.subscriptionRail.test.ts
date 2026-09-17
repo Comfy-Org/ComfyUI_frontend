@@ -431,8 +431,11 @@ describe('subscribe on the billing SDK rail', () => {
       }
     })
 
-    await expect(setupBilling().subscribe('pro-monthly')).rejects.toThrow(
-      'phase: timed_out'
+    await expect(setupBilling().subscribe('pro-monthly')).rejects.toMatchObject(
+      {
+        message: "We couldn't update your subscription. Please try again.",
+        code: 'timed_out'
+      }
     )
     expect(workspaceApi.subscribe).not.toHaveBeenCalled()
   })
