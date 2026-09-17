@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
@@ -12,7 +12,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId';
+import type { NodeId } from '@/types/nodeId';
 import { widgetId } from '@/types/widgetId'
 
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
@@ -261,6 +262,42 @@ describe('reconcileAgentAdapters', () => {
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
       expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(
         ThrowsOnConfigureNode
+      )
+    })
+
+    it('disposes the successor it built when a lifecycle hook re-enters reconciliation', () => {
+      let reentrantResult: NodeId[] | undefined
+      class ReentersOnAddedNode extends LGraphNode {
+        constructor() {
+          super('reenters-on-added')
+        }
+
+        override onAdded(graph: LGraph): void {
+          reentrantResult = reconcileAgentAdapters(graph)
+        }
+      }
+      LiteGraph.registerNodeType('reenters-on-added', ReentersOnAddedNode)
+      const graph = new LGraph()
+      seedAgentAddedNode(graph, 1, 'reenters-on-added')
+      seedAgentAddedNode(graph, 2, 'throws-on-configure')
+      const onRemoved = vi.spyOn(ThrowsOnConfigureNode.prototype, 'onRemoved')
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1), toNodeId(2)])
+
+      // The inner pass built a successor for record 2 that the graph refused
+      // to adopt; nobody else holds it, so the materializer must dispose it.
+      // The outer pass then attaches a fresh one, which must stay untouched.
+      expect(reentrantResult).toEqual([])
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(
+        ThrowsOnConfigureNode
+      )
+      expect(onRemoved).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        'reconcileAgentAdapters re-entered from a node lifecycle hook',
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_reentrant',
+          context: { graphId: graph.id, nodeId: '2' }
+        })
       )
     })
   })
