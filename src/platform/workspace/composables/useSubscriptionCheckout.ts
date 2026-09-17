@@ -34,6 +34,7 @@ import type {
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -200,7 +201,10 @@ export function useSubscriptionCheckout(
       : undefined
   })
   const activeCheckoutActionUrl = computed(
-    () => activeCheckoutOperation.value?.actionUrl ?? null
+    () =>
+      activeCheckoutOperation.value?.actionUrl ??
+      useSubscriptionRail()?.subscriptionActionUrl ??
+      null
   )
   // The server says whether the operation is parked; the client no longer
   // guesses. Only awaiting_payment_method offers this recovery — an operation

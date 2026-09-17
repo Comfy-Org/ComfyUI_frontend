@@ -514,9 +514,9 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
-  it('opens the hosted payment page once for a subscribe parked on the customer', () => {
+  it('warns once and keeps a blocked payment page reachable however long it polls', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
-    useBillingSdkStore()
+    const store = useBillingSdkStore()
     const toasts = useToastStore()
 
     harness.publish(
@@ -528,6 +528,13 @@ describe('useBillingSdkStore subscription commands', () => {
         customerActionSeen: true
       })
     )
+    harness.publish(
+      pendingSubscription({
+        actionUrl: 'https://pay.example/op-1',
+        customerActionSeen: true,
+        authenticationState: 'requires_action'
+      })
+    )
 
     expect(openPage).toHaveBeenCalledExactlyOnceWith(
       'https://pay.example/op-1',
@@ -536,6 +543,34 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(toasts.messagesToAdd).toEqual([
       expect.objectContaining({ severity: 'warn' })
     ])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
+  it('offers the next hosted page the same subscribe moves to', () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/first' })
+    )
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/second' })
+    )
+
+    expect(openPage).toHaveBeenCalledTimes(2)
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/second')
+  })
+
+  it('offers nothing once the subscribe has settled', () => {
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+    )
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    expect(store.subscriptionActionUrl).toBeNull()
   })
 
   it('drives the in-page challenge a subscribe raises, as it does for a top-up', async () => {

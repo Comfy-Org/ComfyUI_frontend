@@ -76,7 +76,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
   const drivenChallenges = new Set<string>()
-  const openedActions = new Set<string>()
+  const offeredActions = new Map<string, string>()
   const progressToasts = new Map<
     string,
     { kind: ProgressKind; message: ToastMessage }
@@ -121,6 +121,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   )
   const topupActionOperation = computed(() =>
     topupViews.value.find(needsCustomerAttention)
+  )
+
+  const subscriptionActionUrl = computed(
+    () =>
+      operations.value.flatMap((state) =>
+        state.kind === 'subscription' && state.phase === 'pending'
+          ? (state.actionUrl ?? [])
+          : []
+      )[0] ?? null
   )
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
@@ -194,10 +203,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     openHostedAction(state)
   }
 
+  // One offer per hosted step, not per poll: the open runs off the lifecycle
+  // rather than a click, so a browser that blocked the first one blocks every
+  // retry and each retry would repeat the warning. A step the customer still
+  // owes stays on `subscriptionActionUrl` for the checkout to put behind a
+  // button of their own.
   function openHostedAction(state: PendingBillingOperation) {
-    if (state.actionUrl === undefined || openedActions.has(state.id)) return
-    openedActions.add(state.id)
-    if (window.open(state.actionUrl, '_blank')) return
+    const { id, actionUrl } = state
+    if (actionUrl === undefined || offeredActions.get(id) === actionUrl) return
+    offeredActions.set(id, actionUrl)
+    if (window.open(actionUrl, '_blank')) return
     toastStore.add({
       severity: 'warn',
       summary: t('g.warning'),
@@ -358,6 +373,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   return {
     isAddingCredits,
     topupActionOperation,
+    subscriptionActionUrl,
     createTopup,
     subscribe,
     previewSubscribe,

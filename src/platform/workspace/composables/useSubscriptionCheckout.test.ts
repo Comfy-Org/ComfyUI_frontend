@@ -205,7 +205,8 @@ const {
   mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription,
-  mockBillingStatus
+  mockBillingStatus,
+  mockSubscriptionRail
 } = vi.hoisted(() => {
   return {
     mockSubscribe: vi.fn(),
@@ -246,7 +247,10 @@ const {
         isCancelled: boolean
       } | null
     },
-    mockBillingStatus: { value: null as BillingStatus | null }
+    mockBillingStatus: { value: null as BillingStatus | null },
+    mockSubscriptionRail: {
+      value: null as { subscriptionActionUrl: string | null } | null
+    }
   }
 })
 
@@ -374,6 +378,11 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionRail'),
+  () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
+)
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -539,6 +548,7 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
+    mockSubscriptionRail.value = null
     vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
     sessionStorage.clear()
     clearCheckoutJourney()
@@ -3090,6 +3100,28 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ confirmReactivation: true })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+  })
+
+  describe('hosted payment step on the SDK rail', () => {
+    it('re-offers the hosted page the rail opened for itself', async () => {
+      mockSubscriptionRail.value = {
+        subscriptionActionUrl: 'https://pay.example/op-3'
+      }
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+    })
+
+    it('offers nothing while the rail is parked on no hosted page', async () => {
+      mockSubscriptionRail.value = { subscriptionActionUrl: null }
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBeNull()
     })
   })
 

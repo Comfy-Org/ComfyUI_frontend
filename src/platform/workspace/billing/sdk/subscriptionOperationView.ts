@@ -51,6 +51,12 @@ export type SubscriptionRailOutcome<T = void> =
  * already reads.
  */
 export interface SubscriptionRail {
+  /**
+   * The hosted step a subscribe on this rail is parked on, or null. The rail
+   * opens it once itself, so this is what the checkout puts behind a button
+   * when the browser blocked that open.
+   */
+  readonly subscriptionActionUrl: string | null
   subscribe: (
     input: SubscribeInput
   ) => Promise<SubscriptionRailOutcome<SettledSubscribeResponse>>
