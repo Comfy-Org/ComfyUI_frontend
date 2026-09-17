@@ -1483,7 +1483,10 @@ describe('Load3d', () => {
       expect(source(12, 34)).toBe(ndc)
       expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
 
+      const configurationCleanup = vi.fn()
+      load3d.setConfigurationCleanup(configurationCleanup)
       load3d.remove()
+      expect(configurationCleanup).toHaveBeenCalledOnce()
     })
   })
 })
