@@ -1251,10 +1251,56 @@ describe('node:before-removed event', () => {
     expect(second.onRemoved).toHaveBeenCalledOnce()
   })
 
-  it('reports canonical preservation for an owning node removed with the option', () => {
+  it('reports no canonical preservation for an owning node with nothing to preserve for', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'value', 7, () => {})
+    graph.add(node)
+    const beforeRemoved = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    // The option was requested, but no successor or re-created record claims
+    // the node's canonical state, so the node-owned store state is cleared.
+    // The event reports that outcome, not the requested option.
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor: undefined,
+      preserveCanonicalState: false
+    })
+    expect(
+      useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'value'))
+    ).toBeUndefined()
+  })
+
+  it('reports no canonical preservation when the canonical record was deleted', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
+    useNodeDataStore().deleteNode(graphScopeOf(graph), node._state)
+    const beforeRemoved = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor: undefined,
+      preserveCanonicalState: false
+    })
+    expect(graph._nodes).not.toContain(node)
+  })
+
+  it('reports canonical preservation when the canonical record was re-created', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const nodeStore = useNodeDataStore()
+    const scope = graphScopeOf(graph)
+    nodeStore.deleteNode(scope, node._state)
+    const recreated = { ...node._state }
+    nodeStore.registerNode(scope, recreated)
     const beforeRemoved = vi.fn()
     graph.events.addEventListener('node:before-removed', beforeRemoved)
 
@@ -1265,6 +1311,28 @@ describe('node:before-removed event', () => {
       successor: undefined,
       preserveCanonicalState: true
     })
+    const survivor = nodeStore.getNode(graph.id, node.id)
+    expect(survivor).toEqual(recreated)
+    expect(survivor).not.toBe(node._state)
+  })
+
+  it('finishes detaching a node when a node:before-removed listener throws, then rethrows', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    graph.events.addEventListener('node:before-removed', () => {
+      throw new Error('listener failed')
+    })
+    const removed = vi.fn()
+    graph.events.addEventListener('node:removed', removed)
+
+    expect(() => graph.remove(node)).toThrow('listener failed')
+
+    expect(graph._nodes).not.toContain(node)
+    expect(graph.getNodeById(node.id)).toBeNull()
+    expect(node.graph).toBeNull()
+    expect(node._graphScope).toBeUndefined()
+    expect(removed).toHaveBeenCalledOnce()
   })
 
   it('does not fire node:before-removed for a node not in the graph', () => {

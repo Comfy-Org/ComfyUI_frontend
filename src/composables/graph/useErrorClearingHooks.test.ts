@@ -1022,6 +1022,19 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(modelStore.missingModelCandidates).toHaveLength(1)
   })
 
+  it('removes errors when the canonical record was deleted despite the preserve option', () => {
+    const graph = new LGraph()
+    const orphan = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(orphan)
+    useNodeDataStore().deleteNode(graphScopeOf(graph), orphan._state)
+    const modelStore = seedMissingModel(graph, orphan)
+
+    graph.remove(orphan, { preserveCanonicalState: true })
+
+    expect(graph._nodes).not.toContain(orphan)
+    expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
   it('retains errors when a canonical removal throws in onRemoved', () => {
     const graph = new LGraph()
     const orphan = new LGraphNode('CheckpointLoaderSimple')

@@ -396,6 +396,39 @@ describe('reconcileAgentAdapters', () => {
       ).toEqual([20, 4])
     })
 
+    it('fills a positional slot whose widget name shadows an Object.prototype key', () => {
+      class PrototypeNamedWidgetNode extends LGraphNode {
+        constructor() {
+          super('prototype-named-widget-node')
+          this.serialize_widgets = true
+          this.addWidget('number', 'constructor', 0, () => {})
+          this.addWidget('number', 'seed', 0, () => {})
+        }
+      }
+      const graph = new LGraph()
+      remoteMutations(graphScopeOf(graph)).addNode(
+        {
+          ...nodePayload(1, 'prototype-named-widget-node'),
+          widgets_values: [11, 4],
+          widgets_values_named: { seed: 4 }
+        },
+        REMOTE
+      )
+
+      LiteGraph.registerNodeType(
+        'prototype-named-widget-node',
+        PrototypeNamedWidgetNode
+      )
+      try {
+        reconcileAgentAdapters(graph)
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+        ).toEqual([11, 4])
+      } finally {
+        LiteGraph.unregisterNodeType('prototype-named-widget-node')
+      }
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
