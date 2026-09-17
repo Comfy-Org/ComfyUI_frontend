@@ -2,11 +2,12 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { UPLOAD_SKIPPED_ERROR, useUpload } from '@/composables/useUpload'
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -22,6 +23,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
+  const { loading, uploadBatch } = useUpload()
 
   function updateSelectedItems(selectedItems: Set<string>) {
     const id =
@@ -35,46 +37,35 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
-  async function uploadFile(
-    file: File,
-    isPasted: boolean = false,
-    formFields: Partial<{ type: ResultItemType }> = {}
-  ) {
-    const body = new FormData()
-    body.append('image', file)
-    if (isPasted) body.append('subfolder', 'pasted')
-    else {
-      const subfolder = toValue(options.uploadSubfolder)
-      if (subfolder) body.append('subfolder', subfolder)
-    }
-    if (formFields.type) body.append('type', formFields.type)
+  async function uploadFiles(files: File[]): Promise<string[] | null> {
+    const folder = toValue(options.uploadFolder) ?? 'input'
+    const subfolder = toValue(options.uploadSubfolder) ?? undefined
 
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
+    const results = await uploadBatch(
+      files.map((file) => ({ source: file })),
+      { subfolder, type: folder }
+    )
 
-    if (resp.status !== 200) {
-      toastStore.addAlert(resp.status + ' - ' + resp.statusText)
+    const skipped = results.some((r) => r.error === UPLOAD_SKIPPED_ERROR)
+    if (skipped) {
+      toastStore.addAlert(t('g.uploadAlreadyInProgress'))
       return null
     }
 
-    const data = await resp.json()
+    const uploadedPaths: string[] = []
+    for (const result of results) {
+      if (!result.success) {
+        toastStore.addAlert(result.error ?? t('toastMessages.uploadFailed'))
+        continue
+      }
+      uploadedPaths.push(result.path)
+    }
 
-    if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+    if (uploadedPaths.length > 0 && folder === 'input') {
       await useAssetsStore().inputAssets.invalidate()
     }
 
-    return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
-  }
-
-  async function uploadFiles(files: File[]): Promise<string[]> {
-    const folder = toValue(options.uploadFolder) ?? 'input'
-    const uploadPromises = files.map((file) =>
-      uploadFile(file, false, { type: folder })
-    )
-    const results = await Promise.all(uploadPromises)
-    return results.filter((path): path is string => path !== null)
+    return uploadedPaths
   }
 
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
@@ -83,8 +74,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
       const uploadedPaths = await uploadFiles(files)
 
+      if (uploadedPaths === null) return
+
       if (uploadedPaths.length === 0) {
-        toastStore.addAlert('File upload failed')
+        toastStore.addAlert(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -110,6 +103,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   return {
     updateSelectedItems,
-    handleFilesUpdate
+    handleFilesUpdate,
+    loading
   }
 }
