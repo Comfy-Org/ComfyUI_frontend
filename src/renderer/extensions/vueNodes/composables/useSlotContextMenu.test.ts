@@ -29,7 +29,12 @@ vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   }
 }))
 
-import { connectSlots, findCompatibleTargets } from './useSlotContextMenu'
+import {
+  canRenameSlot,
+  connectSlots,
+  findCompatibleTargets,
+  renameSlot
+} from './useSlotContextMenu'
 
 function createMockNode(overrides: Record<string, unknown> = {}) {
   return {
@@ -289,6 +294,85 @@ describe('findCompatibleTargets', () => {
       isInput: true
     })
     expect(result).toEqual([])
+  })
+})
+
+describe('slot renaming', () => {
+  beforeEach(() => {
+    mockCanvas.graph = mockGraph
+  })
+
+  it.for([
+    {
+      name: 'rejects a name-locked output',
+      isInput: false,
+      slot: { label: 'Locked output', nameLocked: true },
+      expected: false
+    },
+    {
+      name: 'rejects a widget input without a link property',
+      isInput: true,
+      slot: { label: 'Widget input', widget: { name: 'seed' } },
+      expected: false
+    },
+    {
+      name: 'allows an unlocked regular input',
+      isInput: true,
+      slot: { label: 'Regular input', link: null },
+      expected: true
+    }
+  ])('$name', ({ isInput, slot, expected }) => {
+    const node = createMockNode({
+      getInputInfo: vi.fn(() => slot),
+      getOutputInfo: vi.fn(() => slot)
+    })
+    mockGraph.getNodeById.mockReturnValue(node)
+
+    expect(
+      canRenameSlot({ nodeId: toNodeId('1'), slotIndex: 2, isInput })
+    ).toBe(expected)
+  })
+
+  it.for([
+    {
+      name: 'ignores a whitespace-only label',
+      currentLabel: 'Original input',
+      newLabel: ' \t ',
+      expectedLabel: 'Original input'
+    },
+    {
+      name: 'ignores a padded label equal to the current label',
+      currentLabel: 'Original input',
+      newLabel: '  Original input\n',
+      expectedLabel: 'Original input'
+    }
+  ])('$name', ({ currentLabel, newLabel, expectedLabel }) => {
+    const slot = { label: currentLabel, link: null }
+    const node = createMockNode({ getInputInfo: vi.fn(() => slot) })
+    mockGraph.getNodeById.mockReturnValue(node)
+
+    renameSlot({ nodeId: toNodeId('1'), slotIndex: 2, isInput: true }, newLabel)
+
+    expect(slot.label).toBe(expectedLabel)
+    expect(mockGraph.beforeChange).not.toHaveBeenCalled()
+    expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+    expect(mockGraph.afterChange).not.toHaveBeenCalled()
+  })
+
+  it('trims and applies a valid output rename', () => {
+    const slot = { label: 'Original output', links: [] }
+    const node = createMockNode({ getOutputInfo: vi.fn(() => slot) })
+    mockGraph.getNodeById.mockReturnValue(node)
+
+    renameSlot(
+      { nodeId: toNodeId('1'), slotIndex: 3, isInput: false },
+      '  Renamed output  '
+    )
+
+    expect(slot.label).toBe('Renamed output')
+    expect(mockGraph.beforeChange).toHaveBeenCalledOnce()
+    expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(mockGraph.afterChange).toHaveBeenCalledOnce()
   })
 })
 
