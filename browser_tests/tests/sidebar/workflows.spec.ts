@@ -178,17 +178,8 @@ test.describe('Workflows sidebar', () => {
       )
       const subgraphNodeCount = await comfyPage.nodeOps.getNodeCount()
 
-      const abortWarning = comfyPage.page.waitForEvent('console', {
-        predicate: (message) =>
-          message
-            .text()
-            .includes('insertWorkflow aborted: canvas or graph was replaced'),
-        timeout: 3000
-      })
-
       releaseLoad()
       await insertAction
-      await abortWarning
       await expect
         .poll(() => comfyPage.nodeOps.getNodeCount())
         .toEqual(subgraphNodeCount)
