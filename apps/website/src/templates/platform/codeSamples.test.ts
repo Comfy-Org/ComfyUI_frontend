@@ -12,6 +12,7 @@ describe('routerCodeTabs', () => {
       )
 
       expect(providerSegment).toEqual({ values: providers, highlight: true })
+      expect(tab.lang).toBeDefined()
     }
   })
 })
