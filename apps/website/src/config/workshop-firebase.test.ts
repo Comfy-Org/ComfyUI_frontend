@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -39,10 +40,9 @@ describe('provisionCustomer', () => {
 
     await provisionCustomer(user, { fetchImpl })
 
-    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
-      string,
-      RequestInit
-    ]
+    const [url, init] = fromAny<[string, RequestInit], unknown>(
+      fetchImpl.mock.calls[0]
+    )
     expect(url).toMatch(/\/customers$/)
     expect(init.headers).toMatchObject({ Authorization: 'Bearer jwt' })
     expect(JSON.parse(String(init.body))).toEqual({
@@ -67,7 +67,9 @@ describe('provisionCustomer', () => {
 
     await provisionCustomer(user, { fetchImpl })
 
-    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    const [, init] = fromAny<[string, RequestInit], unknown>(
+      fetchImpl.mock.calls[0]
+    )
     expect(
       init.signal,
       'a provisioning POST without an abort signal hangs sign-in forever'
@@ -82,7 +84,9 @@ describe('provisionCustomer', () => {
       fetchImpl
     })
 
-    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    const [, init] = fromAny<[string, RequestInit], unknown>(
+      fetchImpl.mock.calls[0]
+    )
     expect(JSON.parse(String(init.body))).toEqual({
       signup_source: 'comfy-workshop',
       turnstile_token: 'cf-token'
@@ -153,9 +157,11 @@ describe('social sign-in provisioning boundary', () => {
       vi.fn(async () => new Response(null, { status: 500 }))
     )
 
-    const failure = await provisionWorkshopCustomer({
-      user
-    } as unknown as UserCredential).catch((error) => error)
+    const failure = await provisionWorkshopCustomer(
+      fromAny<UserCredential, unknown>({
+        user
+      })
+    ).catch((error) => error)
 
     expect(
       isWorkshopProvisioningError(failure),

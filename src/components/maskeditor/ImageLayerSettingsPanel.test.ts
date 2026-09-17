@@ -1,4 +1,5 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access -- layer rows have unlabeled checkboxes and the blend-mode select has no role-friendly label */
+import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -190,9 +191,9 @@ describe('ImageLayerSettingsPanel', () => {
       mockStore.activeLayer = 'rgb'
 
       renderPanel({
-        toolManager: {
+        toolManager: fromAny<ToolManager, unknown>({
           setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
+        })
       })
 
       const [maskBtn] = screen.getAllByRole('button', {

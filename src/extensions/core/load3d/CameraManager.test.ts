@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -103,7 +104,7 @@ describe('CameraManager', () => {
     it('rebinds the controls object and target after switching', () => {
       const controls = makeControlsStub()
       controls.target.set(5, 6, 7)
-      manager.setControls(controls as unknown as OrbitControls)
+      manager.setControls(fromAny<OrbitControls, unknown>(controls))
 
       manager.toggleCamera('orthographic')
 
@@ -137,7 +138,7 @@ describe('CameraManager', () => {
     it('captures and restores position, target, zoom, and type', () => {
       const controls = makeControlsStub()
       controls.target.set(2, 3, 4)
-      manager.setControls(controls as unknown as OrbitControls)
+      manager.setControls(fromAny<OrbitControls, unknown>(controls))
       manager.perspectiveCamera.position.set(7, 8, 9)
       manager.perspectiveCamera.zoom = 2
 
@@ -202,7 +203,7 @@ describe('CameraManager', () => {
   describe('setControls', () => {
     it('emits cameraChanged when the controls fire their end event', () => {
       const controls = makeControlsStub()
-      manager.setControls(controls as unknown as OrbitControls)
+      manager.setControls(fromAny<OrbitControls, unknown>(controls))
       events.emitEvent.mockClear()
 
       controls.fire('end')
@@ -240,7 +241,7 @@ describe('CameraManager', () => {
   describe('setupForModel', () => {
     it('positions both cameras based on the model size and centers controls on the target', () => {
       const controls = makeControlsStub()
-      manager.setControls(controls as unknown as OrbitControls)
+      manager.setControls(fromAny<OrbitControls, unknown>(controls))
 
       const size = new THREE.Vector3(2, 4, 2)
       manager.setupForModel(size)

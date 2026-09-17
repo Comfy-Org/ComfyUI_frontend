@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -50,7 +51,7 @@ it('replaces SVG tiles with a drawn canvas once its texture loads', async () => 
     fill: vi.fn()
   } satisfies Partial<CanvasRenderingContext2D>
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-    context as unknown as CanvasRenderingContext2D
+    fromAny<CanvasRenderingContext2D, unknown>(context)
   )
   const { unmount } = render(ServerlessIsometricStudy)
   expect(context.fill).not.toHaveBeenCalled()

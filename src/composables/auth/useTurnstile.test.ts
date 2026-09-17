@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTurnstile } from '@/composables/auth/useTurnstile'
@@ -56,7 +57,7 @@ describe('useTurnstile', () => {
 
     it('clamps an unknown remote-config value to off', () => {
       remoteConfig.value = {
-        signup_turnstile: 'bogus' as unknown as 'shadow'
+        signup_turnstile: fromAny<'shadow', unknown>('bogus')
       }
 
       expect(useTurnstile().mode.value).toBe('off')

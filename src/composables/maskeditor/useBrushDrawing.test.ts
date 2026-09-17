@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
@@ -73,18 +74,18 @@ function makePointerEvent(
   y: number,
   opts: { buttons?: number; shiftKey?: boolean } = {}
 ): PointerEvent {
-  return {
+  return fromAny<PointerEvent, unknown>({
     offsetX: x,
     offsetY: y,
     buttons: opts.buttons ?? 1,
     shiftKey: opts.shiftKey ?? false,
     preventDefault: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function makeMockCtx(): CanvasRenderingContext2D {
   const gradient = { addColorStop: vi.fn() }
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     beginPath: vi.fn(),
     fill: vi.fn(),
     rect: vi.fn(),
@@ -93,7 +94,7 @@ function makeMockCtx(): CanvasRenderingContext2D {
     drawImage: vi.fn(),
     createRadialGradient: vi.fn(() => gradient),
     globalCompositeOperation: 'source-over'
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 let scope: EffectScope | null = null
@@ -116,12 +117,12 @@ beforeEach(() => {
     .spyOn(mockStoreDef.canvasHistory, 'saveState')
     .mockImplementation(() => {})
   const mockCtx = makeMockCtx()
-  const mockCanvas = {
+  const mockCanvas = fromAny<HTMLCanvasElement, unknown>({
     getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
     width: 200,
     height: 200,
     style: { opacity: '' }
-  } as unknown as HTMLCanvasElement
+  })
 
   mockStoreDef.maskCanvas = mockCanvas
   mockStoreDef.maskCtx = mockCtx
@@ -199,7 +200,7 @@ describe('startDrawing shift+click', () => {
     await startDrawing(makePointerEvent(50, 50))
     await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
     expect(
-      (mockStoreDef.maskCtx as unknown as ReturnType<typeof makeMockCtx>)
+      fromAny<ReturnType<typeof makeMockCtx>, unknown>(mockStoreDef.maskCtx)
         .beginPath
     ).toHaveBeenCalled()
   })
@@ -253,12 +254,12 @@ describe('handleDrawing', () => {
 describe('drawEnd canvas visibility', () => {
   it('restores rgb canvas opacity when activeLayer is rgb', async () => {
     mockStoreDef.activeLayer = 'rgb'
-    const mockRgbCanvas = {
+    const mockRgbCanvas = fromAny<HTMLCanvasElement, unknown>({
       getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
       width: 200,
       height: 200,
       style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    })
     mockStoreDef.rgbCanvas = mockRgbCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
@@ -268,9 +269,9 @@ describe('drawEnd canvas visibility', () => {
 
   it('restores preview canvas opacity to 1 after drawEnd', async () => {
     const gpu = useGPUResources()
-    const mockPreviewCanvas = {
+    const mockPreviewCanvas = fromAny<HTMLCanvasElement, unknown>({
       style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    })
     gpu.previewCanvas.value = mockPreviewCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
@@ -306,12 +307,12 @@ describe('drawEnd', () => {
 
   it('restores mask canvas opacity after drawing on mask layer', async () => {
     mockStoreDef.activeLayer = 'mask'
-    const mockMaskCanvas = {
+    const mockMaskCanvas = fromAny<HTMLCanvasElement, unknown>({
       getContext: vi.fn().mockImplementation(() => mockStoreDef.maskCtx),
       width: 200,
       height: 200,
       style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    })
     mockStoreDef.maskCanvas = mockMaskCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))

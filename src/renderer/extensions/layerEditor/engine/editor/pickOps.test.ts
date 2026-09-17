@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { ContentStore } from '../content'
@@ -34,7 +35,7 @@ function mkText(
   w: number,
   h: number
 ): SceneNode {
-  return {
+  return fromAny<SceneNode, unknown>({
     id,
     kind: 'text',
     name: id,
@@ -44,15 +45,15 @@ function mkText(
     transform: { x, y, w, h, rotation: 0 },
     locks: { content: false, position: false, visibility: false },
     text: 'hi'
-  } as unknown as SceneNode
+  })
 }
 
 function fakeContent(
   canvases: Partial<Record<string, HTMLCanvasElement>>
 ): ContentStore {
-  return {
+  return fromAny<ContentStore, unknown>({
     get: (id: string) => (canvases[id] ? { canvas: canvases[id] } : undefined)
-  } as unknown as ContentStore
+  })
 }
 
 function fakeCanvas(
@@ -60,7 +61,7 @@ function fakeCanvas(
   h: number,
   alphaAt: (x: number, y: number) => number
 ): HTMLCanvasElement {
-  return {
+  return fromAny<HTMLCanvasElement, unknown>({
     width: w,
     height: h,
     getContext: () => ({
@@ -68,7 +69,7 @@ function fakeCanvas(
         data: [0, 0, 0, Math.round(alphaAt(x, y) * 255)]
       })
     })
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 describe('layerOpacityAt', () => {
@@ -82,7 +83,7 @@ describe('layerOpacityAt', () => {
   it('scales a group pick by the group opacity', () => {
     const child = mkRaster('a', 0, 0, 100, 100)
     const content = fakeContent({ a: fakeCanvas(10, 10, () => 1) })
-    const group = {
+    const group = fromAny<SceneNode, unknown>({
       id: 'g',
       kind: 'group',
       name: 'g',
@@ -93,7 +94,7 @@ describe('layerOpacityAt', () => {
       locks: { content: false, position: false, visibility: false },
       children: [child],
       passThrough: false
-    } as unknown as SceneNode
+    })
     expect(layerOpacityAt(group, { x: 50, y: 50 }, content)).toBeCloseTo(0.2)
     expect(pickLayerAt([group], { x: 50, y: 50 }, content)).toBeNull()
   })
@@ -128,7 +129,7 @@ describe('layerOpacityAt', () => {
   })
   it('groups take the max over children', () => {
     const canvas = fakeCanvas(100, 100, () => 0.5)
-    const group = {
+    const group = fromAny<SceneNode, unknown>({
       id: 'g',
       kind: 'group',
       name: 'g',
@@ -139,7 +140,7 @@ describe('layerOpacityAt', () => {
       locks: { content: false, position: false, visibility: false },
       children: [mkRaster('a', 0, 0, 100, 100)],
       passThrough: false
-    } as unknown as SceneNode
+    })
     expect(
       layerOpacityAt(group, { x: 50, y: 50 }, fakeContent({ a: canvas }))
     ).toBeCloseTo(0.5, 2)

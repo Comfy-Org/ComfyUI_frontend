@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
@@ -97,7 +97,7 @@ describe('ComfyApp.getNodeDefs', () => {
     'tolerates a node-def response of %j',
     async ([response]) => {
       vi.mocked(api.getNodeDefs).mockResolvedValue(
-        response as unknown as Record<string, ComfyNodeDefV1>
+        fromAny<Record<string, ComfyNodeDefV1>, unknown>(response)
       )
 
       await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
@@ -128,13 +128,15 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('discards malformed entries inside an otherwise valid response', async () => {
-    vi.mocked(api.getNodeDefs).mockResolvedValue({
-      TestNode: nodeDef({ display_name: 'Good Node' }),
-      NullEntry: null,
-      NumericCategory: { name: 'NumericCategory', category: 1 },
-      NamelessEntry: { category: 'test' },
-      StringEntry: 'nope'
-    } as unknown as Record<string, ComfyNodeDefV1>)
+    vi.mocked(api.getNodeDefs).mockResolvedValue(
+      fromAny<Record<string, ComfyNodeDefV1>, unknown>({
+        TestNode: nodeDef({ display_name: 'Good Node' }),
+        NullEntry: null,
+        NumericCategory: { name: 'NumericCategory', category: 1 },
+        NamelessEntry: { category: 'test' },
+        StringEntry: 'nope'
+      })
+    )
 
     const result = await comfyApp.getNodeDefs()
 

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
@@ -166,7 +167,7 @@ describe('useGLSLRenderer', () => {
         }
         getContext(contextId: string) {
           return contextId === 'webgl2'
-            ? (mockGL as unknown as WebGL2RenderingContext)
+            ? fromAny<WebGL2RenderingContext, unknown>(mockGL)
             : null
         }
         convertToBlob() {
@@ -190,7 +191,7 @@ describe('useGLSLRenderer', () => {
 
     it('returns false when getContext returns null (non-webgl2)', () => {
       const savedGL = mockGL
-      mockGL = null as unknown as MockGL
+      mockGL = fromAny<MockGL, unknown>(null)
       renderer = useGLSLRenderer()
       expect(renderer.init(256, 256)).toBe(false)
       mockGL = savedGL

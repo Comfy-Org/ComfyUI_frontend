@@ -1,7 +1,7 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -103,7 +103,7 @@ const i18n = createI18n({
 })
 
 function renderEditor(mode: 'images' | 'compositor') {
-  const node = { id: toNodeId(1) } as unknown as LGraphNode
+  const node = fromAny<LGraphNode, unknown>({ id: toNodeId(1) })
   render(TopBarHeader, { global: { plugins: [i18n] } })
   return render(LayerEditorContent, {
     props: { node, mode },

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -43,7 +44,7 @@ beforeEach(() => {
 })
 
 describe('useCompositorEditor', () => {
-  const node = { id: toNodeId(1) } as unknown as LGraphNode
+  const node = fromAny<LGraphNode, unknown>({ id: toNodeId(1) })
 
   beforeEach(() => {
     clearCompositorLayers(node)

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -71,7 +72,7 @@ function claimTab() {
   }
   const open = vi
     .spyOn(window, 'open')
-    .mockReturnValue(tab as unknown as Window)
+    .mockReturnValue(fromAny<Window, unknown>(tab))
   onTestFinished(() => {
     open.mockRestore()
   })

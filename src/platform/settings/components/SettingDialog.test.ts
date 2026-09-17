@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -9,13 +10,13 @@ import type { NavGroupData } from '@/types/navTypes'
 import SettingDialog from './SettingDialog.vue'
 
 const settingUiMocks = vi.hoisted(() => ({
-  navGroups: null as unknown as Ref<NavGroupData[]>
+  navGroups: fromAny<Ref<NavGroupData[]>, unknown>(null)
 }))
 const searchMocks = vi.hoisted(() => ({
-  inSearch: null as unknown as Ref<boolean>,
-  matchedNavItemKeys: null as unknown as Ref<Set<string>>,
-  searchQuery: null as unknown as Ref<string>,
-  searchResultsCategories: null as unknown as Ref<Set<string>>
+  inSearch: fromAny<Ref<boolean>, unknown>(null),
+  matchedNavItemKeys: fromAny<Ref<Set<string>>, unknown>(null),
+  searchQuery: fromAny<Ref<string>, unknown>(null),
+  searchResultsCategories: fromAny<Ref<Set<string>>, unknown>(null)
 }))
 
 vi.mock<unknown>(

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -36,9 +37,9 @@ function makeNode(id: number | string): LGraphNode {
 }
 
 function makeLoad3d(): Load3d {
-  return {
+  return fromAny<Load3d, unknown>({
     remove: vi.fn()
-  } as unknown as Load3d
+  })
 }
 
 function makeViewer(overrides: Record<string, unknown> = {}) {
@@ -276,12 +277,12 @@ describe('load3dService', () => {
 
     it('toggles the camera through the opposite type and back, then updates controls', () => {
       const controls = { update: vi.fn() }
-      const load3d = {
+      const load3d = fromAny<Load3d, unknown>({
         handleResize: vi.fn(),
         getCurrentCameraType: vi.fn().mockReturnValue('perspective'),
         toggleCamera: vi.fn(),
         getControlsManager: vi.fn().mockReturnValue({ controls })
-      } as unknown as Load3d
+      })
 
       useLoad3dService().handleViewportRefresh(load3d)
 
@@ -293,12 +294,12 @@ describe('load3dService', () => {
 
     it('toggles in the reverse direction when starting from orthographic', () => {
       const controls = { update: vi.fn() }
-      const load3d = {
+      const load3d = fromAny<Load3d, unknown>({
         handleResize: vi.fn(),
         getCurrentCameraType: vi.fn().mockReturnValue('orthographic'),
         toggleCamera: vi.fn(),
         getControlsManager: vi.fn().mockReturnValue({ controls })
-      } as unknown as Load3d
+      })
 
       useLoad3dService().handleViewportRefresh(load3d)
 
@@ -342,7 +343,7 @@ describe('load3dService', () => {
       } = overrides
       const ambient = { intensity: 0.5 }
       const main = { intensity: lightsIntensity }
-      return {
+      return fromAny<Load3d, unknown>({
         modelManager: { currentModel, originalURL },
         getGizmoManager: () => ({
           isEnabled: () => gizmoEnabled,
@@ -375,7 +376,7 @@ describe('load3dService', () => {
         }),
         getLightingManager: () => ({ lights: [ambient, main] }),
         getCameraManager: () => ({ perspectiveCamera: { fov } })
-      } as unknown as Load3d
+      })
     }
 
     type TargetState = {
@@ -433,14 +434,14 @@ describe('load3dService', () => {
         detach: vi.fn(),
         setupForModel: vi.fn()
       }
-      const target = {
+      const target = fromAny<Load3d, unknown>({
         getGizmoManager: () => gizmoManager,
         getModelManager: () => modelManager,
         getSceneManager: () => ({
-          scene: {
+          scene: fromAny<THREE.Scene, unknown>({
             add: sceneAdd,
             remove: sceneRemove
-          } as unknown as THREE.Scene
+          })
         }),
         loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
         setMaterialMode: vi.fn(),
@@ -455,7 +456,7 @@ describe('load3dService', () => {
         setBackgroundImage: vi.fn().mockResolvedValue(undefined),
         setLightIntensity: vi.fn(),
         setFOV: vi.fn()
-      } as unknown as Load3d
+      })
       const state: TargetState = {
         modelManager,
         gizmoManager,

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
@@ -70,7 +71,7 @@ describe('useTrimPlayback', () => {
     scope = effectScope()
     const playback = scope.run(() =>
       useTrimPlayback({
-        videoRef: ref(video) as unknown as Ref<HTMLVideoElement | null>,
+        videoRef: fromAny<Ref<HTMLVideoElement | null>, unknown>(ref(video)),
         frameMax: ref(frameMax),
         startFrame,
         endFrame,

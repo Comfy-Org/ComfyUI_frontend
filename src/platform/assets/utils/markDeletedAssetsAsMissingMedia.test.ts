@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -18,7 +19,7 @@ vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
 function makeGraph(nodes: unknown[]): LGraph {
-  return { nodes } as unknown as LGraph
+  return fromAny<LGraph, unknown>({ nodes })
 }
 
 describe('FE-230 markDeletedAssetsAsMissingMedia', () => {

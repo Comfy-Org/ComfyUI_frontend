@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { components } from '@/types/comfyRegistryTypes'
@@ -22,11 +23,11 @@ const createPack = (
 const createStore = (
   installed: Record<string, string | undefined>
 ): ComfyManagerStore =>
-  ({
+  fromAny<ComfyManagerStore, unknown>({
     isPackInstalled: (id: string | undefined) =>
       id !== undefined && id in installed,
     getInstalledPackVersion: (id: string) => installed[id]
-  }) as unknown as ComfyManagerStore
+  })
 
 describe('isNightlyVersion', () => {
   it('is true for a non-semver git hash version', () => {

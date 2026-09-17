@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
@@ -56,7 +57,7 @@ function makeSession() {
   }
 }
 
-const node = { id: toNodeId(3) } as unknown as LGraphNode
+const node = fromAny<LGraphNode, unknown>({ id: toNodeId(3) })
 const fallbackName = (i: number) => `Layer ${i + 1}`
 
 describe('loadCompositorSession', () => {
@@ -76,7 +77,7 @@ describe('loadCompositorSession', () => {
     const session = makeSession()
 
     await loadCompositorSession(
-      session as unknown as LayerEditorSession,
+      fromAny<LayerEditorSession, unknown>(session),
       node,
       fallbackName
     )
@@ -96,7 +97,7 @@ describe('loadCompositorSession', () => {
     const session = makeSession()
 
     await loadCompositorSession(
-      session as unknown as LayerEditorSession,
+      fromAny<LayerEditorSession, unknown>(session),
       node,
       fallbackName
     )
@@ -114,7 +115,7 @@ describe('loadCompositorSession', () => {
     const session = makeSession()
 
     await loadCompositorSession(
-      session as unknown as LayerEditorSession,
+      fromAny<LayerEditorSession, unknown>(session),
       node,
       fallbackName
     )
@@ -129,7 +130,7 @@ describe('loadCompositorSession', () => {
     const session = makeSession()
 
     await loadCompositorSession(
-      session as unknown as LayerEditorSession,
+      fromAny<LayerEditorSession, unknown>(session),
       node,
       fallbackName
     )
@@ -146,7 +147,7 @@ describe('loadCompositorSession', () => {
     const session = makeSession()
 
     await loadCompositorSession(
-      session as unknown as LayerEditorSession,
+      fromAny<LayerEditorSession, unknown>(session),
       node,
       fallbackName
     )

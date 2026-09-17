@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Document } from './engine/document'
@@ -15,11 +16,11 @@ import {
 import type { PsdExportDeps } from './psdExport'
 
 function fakeCanvas(w = 8, h = 8): HTMLCanvasElement {
-  return {
+  return fromAny<HTMLCanvasElement, unknown>({
     width: w,
     height: h,
     tag: Math.random()
-  } as unknown as HTMLCanvasElement
+  })
 }
 
 let idSeq = 0
@@ -266,7 +267,7 @@ describe('placed leaf rasterization', () => {
     ) {
       if (kind !== '2d') return null
       const noop = () => {}
-      return {
+      return fromAny<CanvasRenderingContext2D, unknown>({
         canvas: this,
         fillStyle: '',
         fillRect: noop,
@@ -276,7 +277,7 @@ describe('placed leaf rasterization', () => {
         clearRect: noop,
         save: noop,
         restore: noop
-      } as unknown as CanvasRenderingContext2D
+      })
     } as typeof HTMLCanvasElement.prototype.getContext
   })
 

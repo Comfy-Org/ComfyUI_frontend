@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -27,11 +28,11 @@ type NodeShape = {
 }
 
 const nodeWithImage = (overrides: NodeShape = {}): LGraphNode =>
-  ({
+  fromAny<LGraphNode, unknown>({
     imgs: [new Image()],
     previewMediaType: undefined,
     ...overrides
-  }) as unknown as LGraphNode
+  })
 
 describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>

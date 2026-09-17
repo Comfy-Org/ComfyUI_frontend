@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -104,7 +105,7 @@ class MockResizeObserver {
 
 // `node` only flows into mocked `loader.loadFromNode`, so a typed sentinel
 // with a stable identity is enough — we never read its fields.
-const fakeNode = { id: 1, title: 'test-node' } as unknown as LGraphNode
+const fakeNode = fromAny<LGraphNode, unknown>({ id: 1, title: 'test-node' })
 
 const renderContent = () =>
   render(MaskEditorContent, { props: { node: fakeNode } })
@@ -129,8 +130,9 @@ describe('MaskEditorContent', () => {
   })
 
   afterEach(() => {
-    globalThis.ResizeObserver =
-      originalResizeObserver as unknown as typeof ResizeObserver
+    globalThis.ResizeObserver = fromAny<typeof ResizeObserver, unknown>(
+      originalResizeObserver
+    )
   })
 
   describe('mount', () => {

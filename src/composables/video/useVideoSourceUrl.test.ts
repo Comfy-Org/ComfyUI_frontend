@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, watch } from 'vue'
@@ -22,7 +22,7 @@ vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
 }))
 
 function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 'node',
     graph: { rootGraph: { id: 'graph' } },
     inputs: [],
@@ -30,7 +30,7 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
     isSubgraphNode: () => false,
     getInputLink: () => null,
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function mountSource(node: LGraphNode) {
@@ -92,8 +92,9 @@ describe('useVideoSourceUrl', () => {
 
     connected = true
     outputStore.nodeOutputs['upstream'] = { images: [{ filename: 'out.mp4' }] }
-    const fireConnectionsChange =
-      node.onConnectionsChange as unknown as () => void
+    const fireConnectionsChange = fromAny<() => void, unknown>(
+      node.onConnectionsChange
+    )
     fireConnectionsChange()
     await nextTick()
 

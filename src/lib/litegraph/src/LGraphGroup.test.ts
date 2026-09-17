@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -20,7 +21,7 @@ import { test } from './__fixtures__/testExtensions'
 vi.mock(import('@/utils/colorUtil'), { spy: true })
 
 function createMockContext() {
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     beginPath: vi.fn(),
     rect: vi.fn(),
     fill: vi.fn(),
@@ -34,7 +35,7 @@ function createMockContext() {
     globalAlpha: 1,
     textAlign: 'left' as CanvasTextAlign,
     textBaseline: 'alphabetic' as CanvasTextBaseline
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas

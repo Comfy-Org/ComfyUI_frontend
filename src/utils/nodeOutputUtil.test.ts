@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
@@ -27,10 +28,10 @@ describe(isInputPreviewOutput, () => {
   })
 
   it('rejects a non-array images payload', () => {
-    const malformedOutput = { images: { length: 1 } } as unknown as Pick<
-      NodeExecutionOutput,
-      'images'
-    >
+    const malformedOutput = fromAny<
+      Pick<NodeExecutionOutput, 'images'>,
+      unknown
+    >({ images: { length: 1 } })
 
     expect(isInputPreviewOutput(malformedOutput)).toBe(false)
   })

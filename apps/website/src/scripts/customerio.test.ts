@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
@@ -32,8 +33,9 @@ vi.mock(import('@customerio/cdp-analytics-browser'), () => {
     load: hoisted.mockLoad
   } satisfies MockAnalyticsBrowser
   return {
-    AnalyticsBrowser:
-      analyticsBrowser as unknown as typeof CustomerioSdk.AnalyticsBrowser
+    AnalyticsBrowser: fromAny<typeof CustomerioSdk.AnalyticsBrowser, unknown>(
+      analyticsBrowser
+    )
   }
 })
 

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -52,9 +53,12 @@ describe('useStringWidget (multiline)', () => {
 
     // The real DOMWidget value setter delegates to options.setValue
     // (domWidget.ts). Invoke the actual closure the composable registered.
-    const addDOMWidget = node.addDOMWidget as unknown as {
-      mock: { calls: unknown[][] }
-    }
+    const addDOMWidget = fromAny<
+      {
+        mock: { calls: unknown[][] }
+      },
+      unknown
+    >(node.addDOMWidget)
     const options = addDOMWidget.mock.calls[0][3] as {
       setValue: (v: string) => void
     }

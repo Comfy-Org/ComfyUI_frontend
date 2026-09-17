@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { Compositor } from '../compositor'
@@ -31,7 +32,7 @@ function root(children: RasterData[]): GroupData {
   }
 }
 
-const ev = { pressure: 0.5, shiftKey: false } as unknown as PointerEvent
+const ev = fromAny<PointerEvent, unknown>({ pressure: 0.5, shiftKey: false })
 
 interface Harness {
   ctx: ToolContext
@@ -130,7 +131,7 @@ describe('SelectTool — pure select + move, no handles', () => {
       version: 2,
       width: 200,
       height: 200,
-      root: root([group as unknown as RasterData]),
+      root: root([fromAny<RasterData, unknown>(group)]),
       channels: []
     }
     const h = harness(doc, content)
@@ -187,7 +188,10 @@ describe('SelectTool — picking and modified clicks', () => {
 
   it('shift-click toggles membership without moving anything', () => {
     const { h, a, b, tool } = pickSetup()
-    const shiftEv = { pressure: 0.5, shiftKey: true } as unknown as PointerEvent
+    const shiftEv = fromAny<PointerEvent, unknown>({
+      pressure: 0.5,
+      shiftKey: true
+    })
     h.ctx.setSelectedNodes([a.id])
     tool.onButtonPress(shiftEv, { x: 130, y: 20 })
     expect(h.ctx.selectedNodeIds()).toEqual([a.id, b.id])
@@ -268,9 +272,9 @@ describe('TransformTool — explicit session with apply/cancel', () => {
     tool.onButtonRelease(ev, { x: 200, y: 150 })
     expect(raster.transform).toMatchObject({ w: 200, h: 150 })
     expect(h.history.canUndo()).toBe(false)
-    expect((tool as unknown as { isDirty(): boolean }).isDirty()).toBe(true)
+    expect(fromAny<{ isDirty(): boolean }, unknown>(tool).isDirty()).toBe(true)
 
-    expect((tool as unknown as { apply(): boolean }).apply()).toBe(true)
+    expect(fromAny<{ apply(): boolean }, unknown>(tool).apply()).toBe(true)
     expect(h.history.canUndo()).toBe(true)
     h.history.undo()
     expect(raster.transform).toMatchObject({ w: 100, h: 100 })
@@ -278,7 +282,10 @@ describe('TransformTool — explicit session with apply/cancel', () => {
 
   it('shift-resize keeps the aspect ratio', () => {
     const { raster, tool } = setup()
-    const evShift = { pressure: 0.5, shiftKey: true } as unknown as PointerEvent
+    const evShift = fromAny<PointerEvent, unknown>({
+      pressure: 0.5,
+      shiftKey: true
+    })
     tool.onButtonPress(evShift, { x: 100, y: 100 })
     tool.onMotion(evShift, { x: 300, y: 120 })
     tool.onButtonRelease(evShift, { x: 300, y: 120 })
@@ -291,7 +298,7 @@ describe('TransformTool — explicit session with apply/cancel', () => {
     tool.onButtonPress(ev, { x: 100, y: 100 })
     tool.onMotion(ev, { x: 200, y: 150 })
     tool.onButtonRelease(ev, { x: 200, y: 150 })
-    expect((tool as unknown as { cancel(): boolean }).cancel()).toBe(true)
+    expect(fromAny<{ cancel(): boolean }, unknown>(tool).cancel()).toBe(true)
     expect(raster.transform).toMatchObject({ x: 0, y: 0, w: 100, h: 100 })
     expect(h.history.canUndo()).toBe(false)
   })
@@ -316,7 +323,7 @@ describe('TransformTool — explicit session with apply/cancel', () => {
       version: 2,
       width: 200,
       height: 200,
-      root: root([group as unknown as RasterData]),
+      root: root([fromAny<RasterData, unknown>(group)]),
       channels: []
     }
     const h = harness(doc, content)
@@ -362,7 +369,7 @@ describe('TransformTool — unified gizmo over a multi-layer selection', () => {
     expect(a.transform).toMatchObject({ x: 10, y: 10 })
     expect(b.transform).toMatchObject({ x: 110, y: 10 })
 
-    expect((tool as unknown as { apply(): boolean }).apply()).toBe(true)
+    expect(fromAny<{ apply(): boolean }, unknown>(tool).apply()).toBe(true)
     expect(h.history.canUndo()).toBe(true)
     h.history.undo()
     expect(a.transform).toMatchObject({ x: 0, y: 0 })
@@ -381,7 +388,10 @@ describe('TransformTool — unified gizmo over a multi-layer selection', () => {
 
   it('Shift constrains the group scale to uniform', () => {
     const { a, b, tool } = setup()
-    const evShift = { pressure: 0.5, shiftKey: true } as unknown as PointerEvent
+    const evShift = fromAny<PointerEvent, unknown>({
+      pressure: 0.5,
+      shiftKey: true
+    })
     tool.onButtonPress(evShift, { x: 150, y: 25 })
     tool.onMotion(evShift, { x: 300, y: 25 })
     tool.onButtonRelease(evShift, { x: 300, y: 25 })
@@ -426,7 +436,7 @@ describe('TransformTool — unified gizmo over a multi-layer selection', () => {
     tool.onButtonPress(ev, rot)
     tool.onMotion(ev, { x: 124, y: 25 })
     tool.onButtonRelease(ev, { x: 124, y: 25 })
-    expect((tool as unknown as { apply(): boolean }).apply()).toBe(true)
+    expect(fromAny<{ apply(): boolean }, unknown>(tool).apply()).toBe(true)
     h.history.undo()
     expect(a.transform).toMatchObject({ x: 0, y: 0, rotation: 0 })
     expect(b.transform).toMatchObject({ x: 100, y: 0, rotation: 0 })
@@ -465,11 +475,11 @@ describe('TransformTool — guide snapping', () => {
 
   it('Alt bypasses guide snapping', () => {
     const { raster, tool } = setup([{ axis: 'x', pos: 100 }])
-    const altEv = {
+    const altEv = fromAny<PointerEvent, unknown>({
       pressure: 0.5,
       shiftKey: false,
       altKey: true
-    } as unknown as PointerEvent
+    })
     tool.onButtonPress(altEv, { x: 25, y: 25 })
     tool.onMotion(altEv, { x: 72, y: 25 })
     expect(raster.transform.x).toBeCloseTo(47, 6)

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -256,7 +257,9 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
   it('does not clobber unrelated drag state when called with no ghost in flight', () => {
     const fakeAutoPan = { stop: vi.fn() }
     canvas.isDragging = true
-    canvas['_autoPan'] = fakeAutoPan as unknown as (typeof canvas)['_autoPan']
+    canvas['_autoPan'] = fromAny<(typeof canvas)['_autoPan'], unknown>(
+      fakeAutoPan
+    )
 
     canvas.finalizeGhostPlacement(true)
 

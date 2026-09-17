@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -1426,7 +1427,7 @@ describe('node:before-removed event', () => {
     const laterCallback = vi.fn()
     const canvasClear = vi.fn()
     graph.list_of_graphcanvas = [
-      { clear: canvasClear, setDirty: vi.fn() } as unknown as LGraphCanvas
+      fromAny<LGraphCanvas, unknown>({ clear: canvasClear, setDirty: vi.fn() })
     ]
     source.onRemoved = () => {
       throw failure

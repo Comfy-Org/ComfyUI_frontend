@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
@@ -1586,15 +1587,17 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '',
-        'cube.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+          '',
+          'cube.glb'
+        ])
+      )
 
-      const modelWidget = {
+      const modelWidget = fromAny<IWidget, unknown>({
         name: 'model_file',
         value: 'cube.glb [output]'
-      } as unknown as IWidget
+      })
       mockNode.widgets = [modelWidget]
 
       const { handler } = await getModelReadyHandler()
@@ -1613,12 +1616,14 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '3d',
-        'ComfyUI_00110.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+          '3d',
+          'ComfyUI_00110.glb'
+        ])
+      )
       mockNode.widgets = [
-        { name: 'viewport_state', value: {} } as unknown as IWidget
+        fromAny<IWidget, unknown>({ name: 'viewport_state', value: {} })
       ]
       mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
 
@@ -1639,11 +1644,15 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '3d',
-        'ComfyUI_00110.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
-      mockNode.widgets = [{ name: 'image', value: '' } as unknown as IWidget]
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+          '3d',
+          'ComfyUI_00110.glb'
+        ])
+      )
+      mockNode.widgets = [
+        fromAny<IWidget, unknown>({ name: 'image', value: '' })
+      ]
       mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
 
       const { handler } = await getModelReadyHandler()
@@ -1661,7 +1670,7 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       mockNode.widgets = [
-        { name: 'model_file', value: '' } as unknown as IWidget
+        fromAny<IWidget, unknown>({ name: 'model_file', value: '' })
       ]
 
       const { handler } = await getModelReadyHandler()
@@ -1676,15 +1685,17 @@ describe('useLoad3d', () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
-      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
-        '',
-        'broken.glb'
-      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
+        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+          '',
+          'broken.glb'
+        ])
+      )
       vi.mocked(mockLoad3d.captureThumbnail!).mockRejectedValue(
         new Error('webgl context lost')
       )
       mockNode.widgets = [
-        { name: 'model_file', value: 'broken.glb' } as unknown as IWidget
+        fromAny<IWidget, unknown>({ name: 'model_file', value: 'broken.glb' })
       ]
 
       const { handler } = await getModelReadyHandler()

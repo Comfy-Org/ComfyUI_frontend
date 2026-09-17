@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -5,7 +6,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, computed } from 'vue'
@@ -153,8 +153,9 @@ function dropRun(workflow: unknown) {
 }
 
 function setViewportWidth(width: number) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
+  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
+    window
+  ).happyDOM
   if (!happyDOM)
     throw new Error('window.happyDOM is unavailable to set viewport')
   happyDOM.setViewport({ width })

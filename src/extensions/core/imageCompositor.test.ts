@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -29,17 +29,17 @@ vi.mock(import('@/services/extensionService'), () => ({
 }))
 
 const nodeId = toNodeId(11)
-const cacheNode = { id: nodeId } as unknown as LGraphNode
+const cacheNode = fromAny<LGraphNode, unknown>({ id: nodeId })
 
 function makeNode() {
   const savedValue = { layers: [] }
-  const compositorWidget = {
+  const compositorWidget = fromAny<IBaseWidget, unknown>({
     name: 'compositor',
     value: savedValue
-  } as unknown as IBaseWidget
+  })
   const priorOnExecuted = vi.fn()
   const priorOnRemoved = vi.fn()
-  const node = {
+  const node = fromAny<LGraphNode, unknown>({
     id: nodeId,
     size: [100, 100],
     setSize: vi.fn(),
@@ -51,7 +51,7 @@ function makeNode() {
       rootGraph: { id: 'test-graph' },
       setDirtyCanvas: vi.fn()
     }
-  } as unknown as LGraphNode
+  })
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
 

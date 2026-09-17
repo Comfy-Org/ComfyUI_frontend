@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: null } }))
@@ -10,9 +11,12 @@ import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
-const mutableApi = api as unknown as {
-  socket: { readyState: number; send: (frame: string) => void } | null
-}
+const mutableApi = fromAny<
+  {
+    socket: { readyState: number; send: (frame: string) => void } | null
+  },
+  unknown
+>(api)
 
 describe('apiTransport.send', () => {
   beforeEach(() => {

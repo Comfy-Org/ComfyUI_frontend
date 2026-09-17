@@ -52,10 +52,6 @@ import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 import { useImagePreviewWidget } from './useImagePreviewWidget'
 
-// TODO(PR #11394): The CanvasRenderingContext2D / LGraphNode surface is too
-// large to migrate to shoehorn fromPartial here without dragging in mountains
-// of unused properties. Leave the `as unknown as` casts in these factories;
-// migrate when the SUT is refactored to depend on a smaller render port.
 function createMockCtx(): CanvasRenderingContext2D {
   const transform = new DOMMatrix()
   return fromAny<CanvasRenderingContext2D, unknown>({

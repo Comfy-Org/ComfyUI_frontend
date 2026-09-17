@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -92,7 +93,10 @@ describe('useChartWidget', () => {
 
   it('throws when the input spec is not a chart spec', () => {
     const { node } = createMockNode()
-    const inputSpec = { type: 'STRING', name: 'chart' } as unknown as InputSpec
+    const inputSpec = fromAny<InputSpec, unknown>({
+      type: 'STRING',
+      name: 'chart'
+    })
 
     expect(() => useChartWidget()(node, inputSpec)).toThrow(
       'Invalid input spec for chart widget'
