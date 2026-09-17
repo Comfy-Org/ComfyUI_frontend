@@ -29,7 +29,9 @@ export function replayIdentityPort(
   const observers = new Set<IdentityObserver>()
   const register = (observer: IdentityObserver): (() => void) => {
     observers.add(observer)
-    const replay = () => observer(currentUser())
+    const replay = () => {
+      if (observers.has(observer)) observer(currentUser())
+    }
     if (deliver === 'sync') replay()
     else queueMicrotask(replay)
     return () => observers.delete(observer)
