@@ -532,7 +532,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     getSnapshot,
     subscribe(listener) {
       listeners.add(listener)
-      listener(getSnapshot())
+      // The immediate replay runs host code; if it throws, drop the listener
+      // so a failed subscribe leaves nothing behind to publish to.
+      try {
+        listener(getSnapshot())
+      } catch (error) {
+        listeners.delete(listener)
+        throw error
+      }
       return () => listeners.delete(listener)
     },
     getToken() {
