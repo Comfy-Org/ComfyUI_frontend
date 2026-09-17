@@ -18,10 +18,14 @@ The package already spans both halves of the account layer. Its export map
 splits `./auth/*` from `./billing`, its description names "the shared
 operation lifecycle, payment projection and sign-in pieces", and three
 consumers — the cloud app, `apps/website` and `apps/billing-web` — import
-from both. That arrangement is real but undocumented: `docs/` contains no
-mention of the package. What stands in for a boundary is the header comment
-on `packages/account-ui/src/billing/index.ts`, which draws the line to
-exclude the provider SDK:
+from both. A fourth is pending and is why the boundary is a distribution
+question rather than only a layout one: the Platform product consumes these
+packages from npm rather than from this workspace, so whatever the package
+exports becomes an external contract. That arrangement is real but
+undocumented: `docs/` contains no mention of the package. What stands in for
+a boundary is the header comment on
+`packages/account-ui/src/billing/index.ts`, which draws the line to exclude
+the provider SDK:
 
 > routing, windows, dialogs, the payment provider's SDK, and styling all
 > stay with the host.
@@ -31,10 +35,11 @@ as a static mock with `checkout-enabled` false. The working flow is
 `src/platform/workspace/components/UnifiedStripePaymentSelector.vue` — 383
 lines that mount Stripe Elements, call `createConfirmationToken`, and hand
 the token to `subscribe` for the lifecycle to drive through 3DS. That file
-lives in the cloud app, and `apps/billing-web` cannot import it: its only
-Vite alias is `@` onto its own `src`. Hosted checkout is therefore a choice
-between promoting that component into the shared package and writing a
-second one.
+lives in the cloud app, which is the private root package
+`@comfyorg/comfyui-frontend`: it declares no entry points and nothing depends
+on it, so no specifier exists for `apps/billing-web` to import it by. Hosted
+checkout is therefore a choice between promoting that component into a
+workspace package and writing a second one.
 
 ADR-AUTH-BILLING-0032 already rules out the second option for a neighbouring
 case. Its rule 4 says further billing surfaces — naming embedded checkout —
