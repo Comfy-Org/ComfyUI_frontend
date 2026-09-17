@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -350,23 +351,87 @@ function isAttachedToAGraph(node: LGraphNode): boolean {
 }
 
 /**
- * Copies every own field of a record; `restoreRecord` puts them back in place.
- *
- * Shallow on purpose. Adoption replaces the nested `properties`, `flags`,
- * `inputs` and widget-option references with the successor's own containers
- * before `configure` runs, so a hook that mutates those in place touches the
- * successor's objects, never the incumbent's. Rollback therefore only has to
- * restore the top-level references, which this snapshot captures.
+ * A slot instance plus a copy of its own enumerable fields. Slots are class
+ * instances with live back-references (`_node`, widget refs) and store-backed
+ * link views, so rollback keeps the instance and restores its fields in place
+ * rather than cloning it.
  */
-function snapshotRecord(record: NodeState): NodeState {
-  return { ...toRaw(record) }
+interface SlotSnapshot<TSlot extends object> {
+  slot: TSlot
+  fields: Record<string, unknown>
 }
 
-function restoreRecord(record: NodeState, snapshot: NodeState): void {
-  for (const key of Object.keys(record)) {
-    if (!(key in snapshot)) delete record[key as keyof NodeState]
+interface RecordSnapshot {
+  /** Top-level own fields, by reference. */
+  fields: NodeState
+  /** Deep copies of the JSON-ish containers hooks mutate in place. */
+  properties: NodeState['properties']
+  flags: NodeState['flags']
+  lastSerialization: NodeState['lastSerialization']
+  inputs: SlotSnapshot<INodeInputSlot>[]
+  outputs: SlotSnapshot<INodeOutputSlot>[]
+}
+
+function snapshotSlots<TSlot extends object>(
+  slots: readonly TSlot[]
+): SlotSnapshot<TSlot>[] {
+  return slots.map((slot) => ({
+    slot,
+    fields: { ...(toRaw(slot) as Record<string, unknown>) }
+  }))
+}
+
+/**
+ * Captures a record by value; `restoreRecord` puts it back in place.
+ *
+ * The top level is copied by reference, but `properties`, `flags`,
+ * `lastSerialization` and the slot arrays are captured by value. During the
+ * detach stage the incumbent still owns the canonical record, so a hook that
+ * mutates `this.properties.x.y` or `this.flags.collapsed` writes straight
+ * into the record's nested containers; restoring only the top-level
+ * references would keep those writes. Slot sub-objects (`widget`, `pos`) are
+ * captured by reference: rollback restores which slots exist and each slot's
+ * own fields, not deeper structure.
+ */
+function snapshotRecord(record: NodeState): RecordSnapshot {
+  const raw = toRaw(record)
+  return {
+    fields: { ...raw },
+    properties: cloneDeep(toRaw(raw.properties)),
+    flags: { ...toRaw(raw.flags) },
+    lastSerialization: cloneDeep(toRaw(raw.lastSerialization)),
+    inputs: snapshotSlots(toRaw(raw.inputs)),
+    outputs: snapshotSlots(toRaw(raw.outputs))
   }
-  Object.assign(record, snapshot)
+}
+
+/** Makes `target`'s own enumerable fields equal to `source`'s, in place. */
+function restoreOwnFields(target: object, source: object): void {
+  for (const key of Object.keys(target)) {
+    if (!Object.hasOwn(source, key))
+      delete (target as Record<string, unknown>)[key]
+  }
+  Object.assign(target, source)
+}
+
+function restoreSlots<TSlot extends object>(
+  slots: TSlot[],
+  snapshots: SlotSnapshot<TSlot>[]
+): void {
+  slots.splice(0, slots.length, ...snapshots.map((snapshot) => snapshot.slot))
+  for (const { slot, fields } of snapshots) restoreOwnFields(slot, fields)
+}
+
+function restoreRecord(record: NodeState, snapshot: RecordSnapshot): void {
+  // Top-level references first, so the containers below are the originals.
+  restoreOwnFields(record, snapshot.fields)
+  restoreOwnFields(record.properties, snapshot.properties)
+  restoreOwnFields(record.flags, snapshot.flags)
+  if (record.lastSerialization && snapshot.lastSerialization) {
+    restoreOwnFields(record.lastSerialization, snapshot.lastSerialization)
+  }
+  restoreSlots(record.inputs, snapshot.inputs)
+  restoreSlots(record.outputs, snapshot.outputs)
 }
 
 function snapshotTrackedWidgets(
@@ -492,18 +557,32 @@ function runtimeOptional<T>(value: T): T | undefined {
   return value
 }
 
-function fireNodeRemovalLifecycle(node: LGraphNode): void {
+/**
+ * Fires one node's removal lifecycle. With `failures`, each effect is its own
+ * failure boundary: a throwing `onRemoved` does not skip that node's store
+ * cleanup or the owning graph's `onNodeRemoved`.
+ */
+function fireNodeRemovalLifecycle(
+  node: LGraphNode,
+  failures?: LifecycleFailures
+): void {
   const graph: LGraph | null = node.graph
-  graph?.events.dispatch('node:before-removed', { node })
-  node.onRemoved?.()
-  clearNodeOwnedStoreState(node)
-  graph?.onNodeRemoved?.(node)
+  const effects = [
+    () => graph?.events.dispatch('node:before-removed', { node }),
+    () => node.onRemoved?.(),
+    () => clearNodeOwnedStoreState(node),
+    () => graph?.onNodeRemoved?.(node)
+  ]
+  for (const effect of effects) {
+    if (failures) failures.run(effect)
+    else effect()
+  }
 }
 
 /**
- * With `failures`, every node still receives its lifecycle after an earlier
- * one throws (a released subgraph's interior); without it the first throw
- * propagates at once (`clear()`).
+ * With `failures`, every node (and every effect within a node) still runs
+ * after an earlier one throws (a released subgraph's interior); without it
+ * the first throw propagates at once (`clear()`).
  */
 function fireNodeRemovalLifecycles(
   nodes: LGraphNode[],
@@ -512,10 +591,7 @@ function fireNodeRemovalLifecycles(
   const pending = nodes.filter((node) => !nodesBeingRemoved.has(node))
   for (const node of pending) nodesBeingRemoved.add(node)
   try {
-    for (const node of pending) {
-      if (failures) failures.run(() => fireNodeRemovalLifecycle(node))
-      else fireNodeRemovalLifecycle(node)
-    }
+    for (const node of pending) fireNodeRemovalLifecycle(node, failures)
   } finally {
     for (const node of pending) nodesBeingRemoved.delete(node)
   }
