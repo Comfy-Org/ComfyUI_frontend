@@ -29,7 +29,6 @@ function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
 
 afterEach(() => {
   apps.splice(0).forEach((app) => app.unmount())
-  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
 })
 
 describe('useAssetBrowser', () => {

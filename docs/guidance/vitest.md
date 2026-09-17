@@ -67,8 +67,10 @@ the mock function, so every test that touches the mock cleans up after itself:
 ```ts
 import { onTestFinished, vi } from 'vitest'
 
-function defaultFlags() {
-  return { assetsEnabled: false, maxUploadSize: 0 }
+type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
+
+function defaultFlags(): FeatureFlags {
+  return { assetsEnabled: false, hostedBillingDestination: 'stripe' }
 }
 
 const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
@@ -77,7 +79,9 @@ const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
 }
 
 export const useFeatureFlags = vi.fn(() => {
-  onTestFinished(() => Object.assign(featureFlags.flags, defaultFlags()))
+  onTestFinished(() => {
+    Object.assign(featureFlags.flags, defaultFlags())
+  })
   return featureFlags
 })
 ```

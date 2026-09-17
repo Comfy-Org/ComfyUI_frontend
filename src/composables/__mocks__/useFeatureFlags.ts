@@ -1,12 +1,14 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, watchEffect } from 'vue'
 
 import type { useFeatureFlags as realUseFeatureFlags } from '../useFeatureFlags'
 
 export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
-const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
-  flags: reactive({
+type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
+
+function defaultFlags(): FeatureFlags {
+  return {
     supportsPreviewMetadata: false,
     maxUploadSize: 0,
     supportsManagerV4: false,
@@ -40,8 +42,17 @@ const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
     supportsModelTypeTags: false,
     onboardingTourEnabled: false,
     assetsEnabled: false
-  }),
+  }
+}
+
+const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
+  flags: reactive(defaultFlags()),
   featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
 }
 
-export const useFeatureFlags = vi.fn(() => featureFlags)
+export const useFeatureFlags = vi.fn(() => {
+  onTestFinished(() => {
+    Object.assign(featureFlags.flags, defaultFlags())
+  })
+  return featureFlags
+})
