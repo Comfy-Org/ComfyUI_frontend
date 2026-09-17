@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,11 +64,9 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
-    vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue(
-      {
-        id: 'user-ada'
-      }
-    )
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: 'user-ada'
+    }))
     globalThis.ResizeObserver = NoopResizeObserver
     mockWorkspaceRole.value = 'owner'
   })

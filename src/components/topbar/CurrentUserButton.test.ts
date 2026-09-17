@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -83,16 +83,12 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
-    vi.spyOn(useCurrentUser().userPhotoUrl, 'value', 'get').mockReturnValue(
-      'https://example.com/avatar.jpg'
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
     )
-    vi.spyOn(useCurrentUser().userDisplayName, 'value', 'get').mockReturnValue(
-      'Test User'
-    )
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'test@example.com'
-    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
     useTeamWorkspaceStore().initState = 'uninitialized'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })

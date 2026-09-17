@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,9 +51,9 @@ const shellLayout: ShellLayoutMetadata = {
 }
 
 beforeEach(() => {
-  vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue({
+  useCurrentUser().resolvedUserInfo = computed(() => ({
     id: 'existing-user'
-  })
+  }))
   useWorkflowStore().activeWorkflow = fromPartial({
     isModified: mocks.workflowIsModified
   })

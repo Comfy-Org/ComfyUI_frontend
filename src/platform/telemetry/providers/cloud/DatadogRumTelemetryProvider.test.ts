@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -36,12 +37,10 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 beforeEach(() => {
-  vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue({
+  useCurrentUser().resolvedUserInfo = computed(() => ({
     id: 'restored-user'
-  })
-  vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-    'restored@example.com'
-  )
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
 const workflowExecutionIntent = {
@@ -70,10 +69,8 @@ describe('DatadogRumTelemetryProvider', () => {
   })
 
   it('does not identify an unresolved user or send email without an account ID', () => {
-    vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue(
-      null
-    )
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(null)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ email: 'unresolved@example.com' })

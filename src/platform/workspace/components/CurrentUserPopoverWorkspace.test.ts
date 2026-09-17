@@ -199,15 +199,9 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    vi.spyOn(useCurrentUser().userDisplayName, 'value', 'get').mockReturnValue(
-      'Liz'
-    )
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'liz@example.com'
-    )
-    vi.spyOn(useCurrentUser().userPhotoUrl, 'value', 'get').mockReturnValue(
-      null
-    )
+    useCurrentUser().userDisplayName = computed(() => 'Liz')
+    useCurrentUser().userEmail = computed(() => 'liz@example.com')
+    useCurrentUser().userPhotoUrl = computed(() => null)
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true

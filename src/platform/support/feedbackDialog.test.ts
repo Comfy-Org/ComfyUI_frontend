@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -38,9 +39,7 @@ describe('openFeedbackDialog', () => {
   })
 
   it('includes the logged-in user email as a hidden field', () => {
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'user@example.com'
-    )
+    useCurrentUser().userEmail = computed(() => 'user@example.com')
 
     openFeedbackDialog('action-bar')
 

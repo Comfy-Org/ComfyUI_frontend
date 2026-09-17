@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -208,7 +209,7 @@ describe('legacy /login through the cloud-login guard', () => {
   })
 
   it('forwards a signed-in visitor past the login view', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
     vi.mocked(useCurrentUser).mockClear()
 
     const to = await completeNavigation('/login')
@@ -218,7 +219,7 @@ describe('legacy /login through the cloud-login guard', () => {
   })
 
   it('honours switchAccount through the redirect, leaving the guard inert', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
     vi.mocked(useCurrentUser).mockClear()
 
     const to = await completeNavigation('/login?switchAccount=true')
@@ -323,13 +324,13 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('redirects a signed-in visitor away from the auth page', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     expect(await runGuard(route, {})).toEqual({ name: 'cloud-user-check' })
   })
 
   it('sends a signed-in visitor straight to consent mid-OAuth', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
 
     expect(await runGuard(route, {})).toEqual({
@@ -343,7 +344,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('honours ?switchAccount for a signed-in visitor', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     expect(
       await runGuard(route, { switchAccount: '1' }),
@@ -352,7 +353,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('does not mint a session cookie when it lets the visitor through', async () => {
-    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     await runGuard(route, { switchAccount: '1' })
 

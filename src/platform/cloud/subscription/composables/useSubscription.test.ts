@@ -1,7 +1,7 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -210,9 +210,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -229,9 +227,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -246,9 +242,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -272,9 +266,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -314,9 +306,7 @@ describe('useSubscription', () => {
 
       mockGetBillingStatus.mockResolvedValue(mockStatus)
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -578,9 +568,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -625,9 +613,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -668,9 +654,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -703,9 +687,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -717,9 +699,7 @@ describe('useSubscription', () => {
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       const visibilityStateSpy = vi
         .spyOn(document, 'visibilityState', 'get')
         .mockReturnValue('visible')
@@ -785,9 +765,7 @@ describe('useSubscription', () => {
 
     it('does not clear pending attempts before auth initialization resolves', async () => {
       Object.assign(useAuthStore(), { isInitialized: false })
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        false
-      )
+      useCurrentUser().isLoggedIn = computed(() => false)
 
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -821,9 +799,7 @@ describe('useSubscription', () => {
         })
       )
 
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        false
-      )
+      useCurrentUser().isLoggedIn = computed(() => false)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -867,9 +843,7 @@ describe('useSubscription', () => {
   describe('non-cloud environments', () => {
     it('should not fetch subscription status when not on cloud', async () => {
       mockIsCloud.value = false
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       useSubscriptionWithScope()
 
@@ -947,9 +921,7 @@ describe('useSubscription', () => {
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
         false
       )
@@ -975,9 +947,7 @@ describe('useSubscription', () => {
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -1009,9 +979,7 @@ describe('useSubscription', () => {
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,

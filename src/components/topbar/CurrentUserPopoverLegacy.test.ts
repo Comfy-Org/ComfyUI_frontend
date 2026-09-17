@@ -119,15 +119,11 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.spyOn(useCurrentUser().userPhotoUrl, 'value', 'get').mockReturnValue(
-      'https://example.com/avatar.jpg'
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
     )
-    vi.spyOn(useCurrentUser().userDisplayName, 'value', 'get').mockReturnValue(
-      'Test User'
-    )
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'test@example.com'
-    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()

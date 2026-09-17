@@ -4,7 +4,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -206,9 +206,7 @@ describe('useSettingUI', () => {
 
   describe('workspace panels', () => {
     beforeEach(() => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useFeatureFlags().flags).userSecretsEnabled = true
     })
 
@@ -293,9 +291,7 @@ describe('useSettingUI', () => {
       groups.flatMap((group) => group.items.map((item) => item.id))
 
     beforeEach(() => {
-      vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-        true
-      )
+      useCurrentUser().isLoggedIn = computed(() => true)
       env.state.isCloud = true
       vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     })

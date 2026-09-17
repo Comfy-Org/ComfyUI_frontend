@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
@@ -10,7 +10,7 @@ function createWatchHandle(): ReturnType<
   return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
 }
 
-const currentUser: ReturnType<typeof realUseCurrentUser> = {
+const defaults: ReturnType<typeof realUseCurrentUser> = {
   loading: false,
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
@@ -28,4 +28,11 @@ const currentUser: ReturnType<typeof realUseCurrentUser> = {
   onUserLogout: vi.fn()
 }
 
-export const useCurrentUser = vi.fn(() => currentUser)
+const currentUser = { ...defaults }
+
+export const useCurrentUser = vi.fn(() => {
+  onTestFinished(() => {
+    Object.assign(currentUser, defaults)
+  })
+  return currentUser
+})

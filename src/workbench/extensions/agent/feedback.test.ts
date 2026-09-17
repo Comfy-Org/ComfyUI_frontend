@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -45,9 +46,7 @@ describe('openFeedbackDialog (agent)', () => {
 
   it('opens the approved agent form with bounded context when Agent is enabled', () => {
     useAgentPanelStore().enabled = true
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'alpha@example.com'
-    )
+    useCurrentUser().userEmail = computed(() => 'alpha@example.com')
     const conversation = useAgentConversationStore()
     conversation.setThreadId('thread-264')
     conversation.recordUser(toTurnId('turn-private'), 'private prompt', [
@@ -85,8 +84,8 @@ describe('openFeedbackDialog (agent)', () => {
 
   it('escapes delimiters so an email cannot introduce an extra hidden field', () => {
     useAgentPanelStore().enabled = true
-    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
-      'alpha,graph=private@example.com'
+    useCurrentUser().userEmail = computed(
+      () => 'alpha,graph=private@example.com'
     )
 
     openFeedbackDialog('agent-panel')

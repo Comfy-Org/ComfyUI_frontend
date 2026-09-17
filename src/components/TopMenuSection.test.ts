@@ -199,9 +199,7 @@ describe('TopMenuSection', () => {
 
     describe('when user is logged in', () => {
       it('should display CurrentUserButton and not display LoginButton', () => {
-        vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
-          true
-        )
+        useCurrentUser().isLoggedIn = computed(() => true)
         const { container } = createLegacyTabBarWrapper()
         expect(
           container.querySelector('current-user-button-stub')
