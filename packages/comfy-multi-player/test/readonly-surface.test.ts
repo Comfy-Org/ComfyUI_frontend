@@ -716,6 +716,7 @@ describe("read-only surface — classification", () => {
    */
   const OP_LAYER_AND_TYPES: readonly string[] = [
     "applyOps",
+    "inspectOps",
     "project",
     "mint",
     "migrate",
