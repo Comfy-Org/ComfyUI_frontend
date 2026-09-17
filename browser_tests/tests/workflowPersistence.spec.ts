@@ -1211,59 +1211,58 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
   })
 
-  test('Splitter panel sizes persist correctly in localStorage', async ({
-    comfyPage
-  }) => {
-    test.info().annotations.push({
-      type: 'regression',
-      description:
-        'Commits 91f197d9d + a1b7e57bc — splitter panel size drift on reload'
+  test.describe('Stored splitter sizes', () => {
+    test.use({
+      initialLocalStorage: {
+        'Comfy.Splitter.MainSplitter': JSON.stringify([30, 70])
+      }
     })
 
-    await comfyPage.page.evaluate(() => {
-      localStorage.setItem(
-        'Comfy.Splitter.MainSplitter',
-        JSON.stringify([30, 70])
-      )
+    test('Splitter panel sizes persist correctly in localStorage', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'Commits 91f197d9d + a1b7e57bc — splitter panel size drift on reload'
+      })
+
+      await comfyPage.nextFrame()
+
+      const getSplitterSizes = () =>
+        comfyPage.page.evaluate(() => {
+          const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
+          return raw ? (JSON.parse(raw) as number[]) : null
+        })
+
+      await expect
+        .poll(async () => {
+          const sizes = await getSplitterSizes()
+          if (!Array.isArray(sizes)) return 'not an array'
+          for (const size of sizes) {
+            if (typeof size !== 'number') return `non-number entry: ${size}`
+            if (size < 0) return `negative size: ${size}`
+            if (Number.isNaN(size)) return `NaN entry`
+          }
+          return 'ok'
+        })
+        .toBe('ok')
+
+      await expect
+        .poll(async () => {
+          const sizes = await getSplitterSizes()
+          if (!sizes) return 0
+          return sizes.reduce((a, b) => a + b, 0)
+        })
+        .toBeGreaterThan(90)
+
+      await expect
+        .poll(async () => {
+          const sizes = await getSplitterSizes()
+          if (!sizes) return Infinity
+          return sizes.reduce((a, b) => a + b, 0)
+        })
+        .toBeLessThanOrEqual(101)
     })
-
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: false })
-    await comfyPage.nextFrame()
-
-    const getSplitterSizes = () =>
-      comfyPage.page.evaluate(() => {
-        const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
-        return raw ? (JSON.parse(raw) as number[]) : null
-      })
-
-    await expect
-      .poll(async () => {
-        const sizes = await getSplitterSizes()
-        if (!Array.isArray(sizes)) return 'not an array'
-        for (const size of sizes) {
-          if (typeof size !== 'number') return `non-number entry: ${size}`
-          if (size < 0) return `negative size: ${size}`
-          if (Number.isNaN(size)) return `NaN entry`
-        }
-        return 'ok'
-      })
-      .toBe('ok')
-
-    await expect
-      .poll(async () => {
-        const sizes = await getSplitterSizes()
-        if (!sizes) return 0
-        return sizes.reduce((a, b) => a + b, 0)
-      })
-      .toBeGreaterThan(90)
-
-    await expect
-      .poll(async () => {
-        const sizes = await getSplitterSizes()
-        if (!sizes) return Infinity
-        return sizes.reduce((a, b) => a + b, 0)
-      })
-      .toBeLessThanOrEqual(101)
   })
 })

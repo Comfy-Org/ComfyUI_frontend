@@ -1,25 +1,12 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { NodeTemplatesManageDialog } from '@e2e/fixtures/components/NodeTemplatesManageDialog'
 import { DefaultGraphNewMenuPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
-import type { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
-
-const TEMPLATES_FILE = 'comfy.templates.json'
 
 export class NodeTemplatesHelper {
   public readonly manageDialog: NodeTemplatesManageDialog
 
-  constructor(
-    private readonly comfyPage: ComfyPage,
-    private readonly userData: UserDataHelper
-  ) {
+  constructor(private readonly comfyPage: ComfyPage) {
     this.manageDialog = new NodeTemplatesManageDialog(comfyPage.page)
-  }
-
-  /**
-   * Delete the per-user template store server-side.
-   */
-  async reset(): Promise<void> {
-    await this.userData.delete(TEMPLATES_FILE)
   }
 
   private async openCanvasMenu(): Promise<void> {
