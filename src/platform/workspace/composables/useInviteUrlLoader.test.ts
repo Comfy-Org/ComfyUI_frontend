@@ -1,3 +1,4 @@
+import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,6 +41,19 @@ vi.mock<unknown>(import('vue-router'), () => ({
   }),
   useRouter: () => ({
     replace: mockRouterReplace
+  })
+}))
+
+const mockShowInviteLinkInvalidDialog = vi.hoisted(() =>
+  vi.fn<() => Promise<void>>()
+)
+const mockShowInviteWrongAccountDialog = vi.hoisted(() =>
+  vi.fn<(props: { inviteToken: string }) => Promise<void>>()
+)
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
+  useDialogService: () => ({
+    showInviteLinkInvalidDialog: mockShowInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog: mockShowInviteWrongAccountDialog
   })
 }))
 
@@ -157,6 +171,73 @@ describe('useInviteUrlLoader', () => {
         group: 'invite-accepted',
         closable: true
       })
+    })
+
+    it('shows the invalid-link dialog instead of a toast on 404', async () => {
+      mockRouteQuery.value = { invite: 'dead-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError('Invite not found or expired', 404, 'NOT_FOUND')
+      )
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(mockShowInviteLinkInvalidDialog).toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    })
+
+    it('shows the wrong-account dialog with the token on 403', async () => {
+      mockRouteQuery.value = { invite: 'other-account-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError(
+          'Email does not match invite',
+          403,
+          'ACCESS_DENIED'
+        )
+      )
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(mockShowInviteLinkInvalidDialog).not.toHaveBeenCalled()
+      expect(mockShowInviteWrongAccountDialog).toHaveBeenCalledWith({
+        inviteToken: 'other-account-token'
+      })
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('keeps the toast for a 404 without a parsed API code', async () => {
+      mockRouteQuery.value = { invite: 'waf-blocked' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError('Forbidden', 404, undefined)
+      )
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(mockShowInviteLinkInvalidDialog).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('falls back to the toast when the dialog chunk fails to load', async () => {
+      mockRouteQuery.value = { invite: 'dead-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockRejectedValue(
+        new WorkspaceApiError('Invite not found or expired', 404, 'NOT_FOUND')
+      )
+      mockShowInviteLinkInvalidDialog.mockRejectedValue(
+        new Error('failed to fetch dynamically imported module')
+      )
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await expect(loadInviteFromUrl()).resolves.toBeUndefined()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      mockShowInviteLinkInvalidDialog.mockReset()
     })
 
     it('shows error toast when invite acceptance fails', async () => {

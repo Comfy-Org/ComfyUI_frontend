@@ -8,7 +8,10 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useDialogService } from '@/services/dialogService'
 
+import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /**
@@ -26,6 +29,7 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
+  const dialogService = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
@@ -94,15 +98,48 @@ export function useInviteUrlLoader() {
         closable: true
       })
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspace.inviteFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
+      await presentAcceptFailure(error, inviteParam)
     } finally {
+      // showDialog resolves immediately, so this clears the preserved token
+      // while a landing dialog is still open — Switch account re-stashes it
+      // itself before signing out.
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
     }
+  }
+
+  /**
+   * A parsed `code` marks a genuine API ErrorResponse; infra responses (WAF,
+   * proxy, CDN) carry none and fall through to the toast. On this endpoint
+   * each status has exactly one contract meaning: 404 covers expired /
+   * revoked / rotated-by-resend alike (the BE cannot distinguish them), 403
+   * is an email mismatch.
+   */
+  async function presentAcceptFailure(error: unknown, inviteToken: string) {
+    const status =
+      error instanceof WorkspaceApiError && error.code !== undefined
+        ? error.status
+        : undefined
+    try {
+      if (status === 404) {
+        await dialogService.showInviteLinkInvalidDialog()
+        return
+      }
+      if (status === 403) {
+        await dialogService.showInviteWrongAccountDialog({ inviteToken })
+        return
+      }
+    } catch (dialogError) {
+      reportError(dialogError, {
+        errorType: 'error_showing_invite_landing_dialog'
+      })
+    }
+    reportError(error, { errorType: 'error_accepting_workspace_invite' })
+    toast.add({
+      severity: 'error',
+      summary: t('workspace.inviteFailed'),
+      detail: error instanceof Error ? error.message : t('g.unknownError')
+    })
   }
 
   return {
