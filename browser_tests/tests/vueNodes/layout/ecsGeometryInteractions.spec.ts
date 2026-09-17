@@ -608,7 +608,7 @@ test.describe(
           .toBe(saved.parentId ?? null)
       })
 
-      test(`deleting a rerouted link target preserves a valid floating chain in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
+      test(`deleting rerouted endpoints preserves then prunes the floating chain in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
         comfyPage
       }) => {
         test.slow()
@@ -711,6 +711,45 @@ test.describe(
           await comfyPage.workflow.reloadAndWaitForApp()
           await expect.poll(readState).toEqual(expectedState)
         })
+
+        await test.step('delete the remaining endpoint and reload the pruned chain', async () => {
+          const source = await comfyPage.nodeOps.getNodeRefById('4')
+          await source.click('title')
+          const timestamp = Date.now()
+          await comfyPage.keyboard.delete()
+          await expect.poll(readState).toEqual({
+            nodeExists: false,
+            link: null,
+            rerouteLinkIds: [],
+            floatingLink: null,
+            rerouteFloatingLinkIds: []
+          })
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(
+                (rerouteId) => window.app!.graph.reroutes.has(rerouteId),
+                stateIds.rerouteId
+              )
+            )
+            .toBe(false)
+          await comfyPage.workflow.waitForDraftIndexUpdatedSince(timestamp)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect.poll(readState).toEqual({
+            nodeExists: false,
+            link: null,
+            rerouteLinkIds: [],
+            floatingLink: null,
+            rerouteFloatingLinkIds: []
+          })
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(
+                (rerouteId) => window.app!.graph.reroutes.has(rerouteId),
+                stateIds.rerouteId
+              )
+            )
+            .toBe(false)
+        })
       })
 
       test(`recovers from empty link search and malformed clipboard in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
@@ -767,6 +806,78 @@ test.describe(
             y: expect.closeTo(afterLinkSearchPosition.y + 30, -1)
           })
         await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+      })
+    }
+
+    for (const vueNodesEnabled of [false, true]) {
+      test(`Send to Back reverses overlap selection in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await fitToViewInstant(comfyPage)
+        const overlap = await comfyPage.page.evaluate(
+          (nodeIds) => {
+            const graph = window.app!.graph
+            const canvas = window.app!.canvas
+            const lower = graph.getNodeById(nodeIds[0])
+            const upper = graph.getNodeById(nodeIds[1])
+            if (!(lower && upper))
+              throw new Error('Overlap nodes are unavailable')
+            lower.title = 'Lower overlap node'
+            upper.title = 'Upper overlap node'
+            upper.pos = [...lower.pos]
+            canvas.bringToFront(upper)
+            canvas.deselectAllNodes()
+            canvas.setDirty(true, true)
+            const [x, y] = window.app!.canvasPosToClientPos([
+              lower.pos[0] + 40,
+              lower.pos[1] + 14
+            ])
+            return { x, y }
+          },
+          [toNodeId('6'), toNodeId('7')] as const
+        )
+        await comfyPage.nextFrame()
+
+        await comfyPage.page.mouse.click(overlap.x, overlap.y)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              Object.keys(window.app!.canvas.selected_nodes)
+            )
+          )
+          .toEqual(['7'])
+        const before = await comfyPage.page.screenshot({
+          clip: { x: overlap.x - 40, y: overlap.y - 14, width: 180, height: 70 }
+        })
+
+        await comfyPage.page.evaluate((nodeId) => {
+          const graph = window.app!.graph
+          const node = graph.getNodeById(nodeId)
+          if (!node) throw new Error('Upper overlap node is unavailable')
+          window.app!.canvas.sendToBack(node)
+          window.app!.canvas.deselectAllNodes()
+          window.app!.canvas.setDirty(true, true)
+        }, toNodeId('7'))
+        await comfyPage.nextFrame()
+        await comfyPage.page.mouse.click(overlap.x, overlap.y)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              Object.keys(window.app!.canvas.selected_nodes)
+            )
+          )
+          .toEqual(['6'])
+        const after = await comfyPage.page.screenshot({
+          clip: { x: overlap.x - 40, y: overlap.y - 14, width: 180, height: 70 }
+        })
+        expect(after.equals(before), 'Send to Back changes overlap paint').toBe(
+          false
+        )
       })
     }
 
