@@ -1886,9 +1886,13 @@ Enterprise`
     en: 'GPT Image 2',
     'zh-CN': 'GPT Image 2'
   },
-  'cloud.aiModels.card.kling': {
-    en: 'Kling',
-    'zh-CN': 'Kling'
+  'cloud.aiModels.card.chatgptImages25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'cloud.aiModels.card.klingAi30': {
+    en: 'KlingAI 3.0',
+    'zh-CN': 'KlingAI 3.0'
   },
   'cloud.aiModels.card.flux3': {
     en: 'Flux 3',
