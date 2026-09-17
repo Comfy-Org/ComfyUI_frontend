@@ -29,7 +29,8 @@ import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * `POST /billing/subscribe`, so the recorded requests are what separate them:
  * only the SDK transport sends an `Idempotency-Key`, and only on the write —
  * the quote is a read the backend happens to shape as a POST, so it carries
- * none on either rail.
+ * none on either rail. What separates the two quotes is the transport that
+ * issued them: the SDK runs on `fetch`, the workspace client on axios' XHR.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -217,6 +218,27 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
+/**
+ * Which transport issued a request, and so which rail served it: the SDK's
+ * runs on `fetch`, the legacy workspace client on axios' XHR adapter. The
+ * quote carries no idempotency key on either rail, so this is what tells the
+ * two quotes apart.
+ */
+function transport(request: Request): string {
+  return request.resourceType()
+}
+
+/**
+ * The `?pricing=` deep link quotes the plan as the dialog opens, from the same
+ * `onMounted` that assigns `window.app`, so the rail has to be chosen before
+ * the page loads rather than after it.
+ */
+async function enableSdkRail(page: Page) {
+  await new FeatureFlagHelper(page).seedServerFlags({
+    billing_sdk_subscription_enabled: true
+  })
+}
+
 async function openCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -243,6 +265,8 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
     expect(idempotencyKey(routes.subscribeRequests[0])).toBeUndefined()
     expect(routes.previewRequests.length).toBeGreaterThan(0)
     expect(idempotencyKey(routes.previewRequests[0])).toBeUndefined()
+    expect(transport(routes.previewRequests[0])).toBe('xhr')
+    expect(transport(routes.subscribeRequests[0])).toBe('xhr')
   })
 
   test('issues through the SDK transport while the rail is on', async ({
@@ -250,10 +274,8 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)
+    await enableSdkRail(page)
     await openCreatorUpgrade(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
 
     await confirmButton(page).click()
 
@@ -266,8 +288,12 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
       plan_slug: 'creator-annual',
       idempotency_key: idempotencyKey(issued)
     })
-    // The quote is a read; the SDK sends no key for it on either rail.
-    expect(idempotencyKey(routes.previewRequests.at(-1)!)).toBeUndefined()
+    expect(transport(issued)).toBe('fetch')
+    // The quote is a read the SDK sends no key for, so the transport is what
+    // shows the rail served it.
+    const quote = routes.previewRequests.at(-1)!
+    expect(transport(quote)).toBe('fetch')
+    expect(idempotencyKey(quote)).toBeUndefined()
   })
 
   test('falls back to the legacy call when the SDK route answers 404', async ({
@@ -275,10 +301,8 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)
+    await enableSdkRail(page)
     await openCreatorUpgrade(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
     routes.respondNotFound()
 
     await confirmButton(page).click()
@@ -288,5 +312,7 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
     const [sdkAttempt, legacyAttempt] = routes.subscribeRequests
     expect(idempotencyKey(sdkAttempt)).toBeTruthy()
     expect(idempotencyKey(legacyAttempt)).toBeUndefined()
+    expect(transport(sdkAttempt)).toBe('fetch')
+    expect(transport(legacyAttempt)).toBe('xhr')
   })
 })
