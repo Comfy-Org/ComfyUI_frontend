@@ -26,7 +26,11 @@
       @update:open="onFilterDialogOpenChange"
     >
       <DialogPortal>
-        <DialogOverlay v-reka-z-index />
+        <DialogOverlay
+          v-reka-z-index
+          data-testid="node-search-filter-overlay"
+          @pointerdown.self.stop="filterVisible = false"
+        />
         <DialogContent
           v-reka-z-index
           class="min-w-96"
