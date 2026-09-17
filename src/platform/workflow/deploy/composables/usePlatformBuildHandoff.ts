@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -65,11 +65,13 @@ export function usePlatformBuildHandoff() {
   }
 
   /**
-   * Call from the click handler: the tab opens on the gesture itself, then
-   * lands where the workflow is once the save and lookup have finished.
+   * Call from the click handler: in a browser the tab opens on the gesture
+   * itself, then lands where the workflow is once the save and lookup have
+   * finished. Desktop hands every new window to the system browser, so it
+   * gets the resolved link in one go.
    */
   async function open(): Promise<void> {
-    const tab = window.open('', '_blank')
+    const tab = isDesktop ? null : window.open('', '_blank')
     const url = await resolveUrl()
     if (tab) tab.location.href = url
     else window.open(url, '_blank', 'noopener')
