@@ -263,17 +263,13 @@
     "routerId": "openai/gpt-image-2",
     "options": { "mode": "generate" }
   },
-  "openai--gpt-image-2--edit-images": {
-    "routerId": "openai/gpt-image-2",
-    "options": { "mode": "edit" }
-  },
   "openai--gpt-image-2.5-flare--generate-images": {
     "routerId": "openai/gpt-image-2.5-flare",
     "options": { "mode": "generate" }
   },
   "openai--gpt-image-2.5-flare--edit-images": {
     "routerId": "openai/gpt-image-2.5-flare",
-    "options": { "mode": "edit" }
+    "unavailableReason": "The current Router route exposes image generation only; it has no image or mask inputs for editing."
   },
   "openai--gpt-image-2.5-sunburst--generate-images": {
     "routerId": "openai/gpt-image-2.5-sunburst",
@@ -281,7 +277,7 @@
   },
   "openai--gpt-image-2.5-sunburst--edit-images": {
     "routerId": "openai/gpt-image-2.5-sunburst",
-    "options": { "mode": "edit" }
+    "unavailableReason": "The current Router route exposes image generation only; it has no image or mask inputs for editing."
   },
   "byteplus--seedance-2-text-to-video--generate-videos": {
     "routerId": "byteplus/dreamina-seedance-2-0-260128",

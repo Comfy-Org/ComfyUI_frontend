@@ -432,7 +432,7 @@ accepted parameter combination succeeds in a live paid request.
 
 ### Live API-key smoke check — September 9
 
-One production request was authorized for testing, using `COMFY_KEY` only in
+One production request was authorized for testing, using `COMFY_API_KEY` only in
 a local process, never in browser code, generated snippets or a committed file.
 Production `GET /customers/balance` authenticated (200) and returned zero total,
 effective, prepaid and cloud-credit balances. The live FLUX 2 Pro input schema

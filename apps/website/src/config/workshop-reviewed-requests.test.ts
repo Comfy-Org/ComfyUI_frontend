@@ -27,8 +27,8 @@ function image(name = 'source.png') {
 }
 
 describe('reviewed model request regressions', () => {
-  it('sends GPT Image source images as Router media entries', () => {
-    expect(
+  it('rejects unsupported GPT Image edit media', () => {
+    expect(() =>
       prepareWorkshopRequestCallback(
         { kind: 'callback', callback: 'gpt-image', options: {} },
         {
@@ -38,10 +38,7 @@ describe('reviewed model request regressions', () => {
           }
         }
       )
-    ).toEqual({
-      prompt: 'Restyle this image',
-      medias: [{ role: 'image', value: 'data:image/png;base64,AAH/Ig==' }]
-    })
+    ).toThrow('Router request failed: validation')
   })
 
   it('preserves reference image order beyond the originally hardcoded three inputs', () => {
