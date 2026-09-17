@@ -125,13 +125,38 @@ const SECURETOKEN_REPLY: Reply = {
   }
 }
 
-function builtInReply(
-  scenario: CloudScenario,
-  request: RecordedRequest
-): Reply {
-  const { method, path } = request
-  if (method === 'POST' && path === '/auth/token') {
-    return {
+type ScenarioReply = (scenario: CloudScenario) => Reply
+
+const NO_SUCH_ROUTE: Reply = {
+  status: 404,
+  body: { code: 'NOT_FOUND', message: 'no such route' }
+}
+
+const OPERATION_PATH = /^\/billing\/ops\/([^/]+)$/
+
+const GET_REPLIES = new Map<string, ScenarioReply>([
+  ['/billing/status', (scenario) => ({ body: scenario.status })],
+  ['/billing/balance', (scenario) => ({ body: scenario.balance })],
+  ['/billing/plans', (scenario) => ({ body: scenario.plans })],
+  [
+    '/billing/payment-methods',
+    (scenario) => ({ body: scenario.paymentMethods })
+  ],
+  [
+    '/billing/capabilities',
+    (scenario) => ({
+      body: scenario.capabilities,
+      headers: {
+        'x-capability-revision': String(scenario.capabilities.revision)
+      }
+    })
+  ]
+])
+
+const POST_REPLIES = new Map<string, ScenarioReply>([
+  [
+    '/auth/token',
+    () => ({
       body: {
         token: 'e2e-workspace-jwt',
         expires_at: inAnHour(),
@@ -143,39 +168,45 @@ function builtInReply(
           type: 'personal'
         }
       }
-    }
-  }
-  if (method === 'GET') {
-    if (path === '/billing/status') return { body: scenario.status }
-    if (path === '/billing/balance') return { body: scenario.balance }
-    if (path === '/billing/plans') return { body: scenario.plans }
-    if (path === '/billing/payment-methods')
-      return { body: scenario.paymentMethods }
-    if (path === '/billing/capabilities') {
-      return {
-        body: scenario.capabilities,
-        headers: {
-          'x-capability-revision': String(scenario.capabilities.revision)
-        }
-      }
-    }
-    const operation = /^\/billing\/ops\/([^/]+)$/.exec(path)
-    if (operation) {
-      const id = decodeURIComponent(operation[1])
-      return { body: scenario.operations[id] ?? succeededOperation(id) }
-    }
-  }
-  if (method === 'POST') {
-    if (path === '/billing/preview-subscribe') return { body: scenario.preview }
-    if (path === '/billing/subscribe')
-      return { body: { billing_op_id: 'op_subscribe', status: 'subscribed' } }
-    if (path === '/billing/subscription/cancel')
-      return { body: { billing_op_id: 'op_cancel', cancel_at: inAnHour() } }
-    if (path === '/billing/subscription/resubscribe')
-      return { body: { billing_op_id: 'op_resubscribe', status: 'active' } }
-    if (path === '/billing/payment-portal') return { body: { url: PORTAL_URL } }
-  }
-  return { status: 404, body: { code: 'NOT_FOUND', message: 'no such route' } }
+    })
+  ],
+  ['/billing/preview-subscribe', (scenario) => ({ body: scenario.preview })],
+  [
+    '/billing/subscribe',
+    () => ({ body: { billing_op_id: 'op_subscribe', status: 'subscribed' } })
+  ],
+  [
+    '/billing/subscription/cancel',
+    () => ({ body: { billing_op_id: 'op_cancel', cancel_at: inAnHour() } })
+  ],
+  [
+    '/billing/subscription/resubscribe',
+    () => ({ body: { billing_op_id: 'op_resubscribe', status: 'active' } })
+  ],
+  ['/billing/payment-portal', () => ({ body: { url: PORTAL_URL } })]
+])
+
+function builtInGetReply(
+  scenario: CloudScenario,
+  path: string
+): Reply | undefined {
+  const known = GET_REPLIES.get(path)
+  if (known) return known(scenario)
+  const operation = OPERATION_PATH.exec(path)
+  if (!operation) return undefined
+  const id = decodeURIComponent(operation[1])
+  return { body: scenario.operations[id] ?? succeededOperation(id) }
+}
+
+function builtInReply(
+  scenario: CloudScenario,
+  request: RecordedRequest
+): Reply {
+  const { method, path } = request
+  if (method === 'GET') return builtInGetReply(scenario, path) ?? NO_SUCH_ROUTE
+  if (method === 'POST')
+    return POST_REPLIES.get(path)?.(scenario) ?? NO_SUCH_ROUTE
+  return NO_SUCH_ROUTE
 }
 
 export async function installMockCloud(
