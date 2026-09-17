@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  credential as makeCredential,
+  memoryStorage
+} from './__fixtures__/sessionFakes.js'
+import {
   createCredentialCache,
   decodeAdopted,
   decodeCached,
@@ -8,22 +12,6 @@ import {
   selectFreshCredential
 } from './credentialCache.js'
 import type { AccountCredential } from './sessionContracts.js'
-import { memoryStorage } from './__fixtures__/sessionFakes.js'
-
-function makeCredential(
-  token: string,
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token,
-    expiresAt: 1_000_000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
 
 const credential = makeCredential('cached-jwt')
 

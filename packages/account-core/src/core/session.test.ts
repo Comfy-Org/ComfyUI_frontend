@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EXCHANGE_URL,
   jsonResponse,
+  makeClient,
   manualIdentity,
   memoryStorage,
   mintBody,
@@ -11,10 +12,8 @@ import {
 } from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
-  AccountIdentity,
   AccountUser,
   CredentialStorage,
-  SessionClientOptions,
   SessionErrorCode
 } from './session.js'
 import {
@@ -23,18 +22,6 @@ import {
   isCredentialFresh,
   isPermanentSessionError
 } from './session.js'
-
-function makeClient(
-  overrides: Partial<SessionClientOptions> = {},
-  identity?: AccountIdentity
-) {
-  const storage = memoryStorage()
-  const client = createSessionClient(
-    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
-    identity
-  )
-  return { client, storage }
-}
 
 function seedCache(
   storage: CredentialStorage,

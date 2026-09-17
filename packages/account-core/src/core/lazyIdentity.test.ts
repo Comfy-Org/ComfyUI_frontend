@@ -36,8 +36,10 @@ function innerIdentity() {
 
 function leakyIdentity() {
   const callbacks = new Set<(user: AccountUser | null) => void>()
+  let subscriptions = 0
   const identity = createTestIdentity<AccountUser>({
     onUserChanged: (callback) => {
+      subscriptions += 1
       callbacks.add(callback)
       return () => undefined
     }
@@ -46,6 +48,7 @@ function leakyIdentity() {
     identity,
     fire: (user: AccountUser | null) =>
       callbacks.forEach((callback) => callback(user)),
+    subscriptions: () => subscriptions,
     whenSubscribed: () =>
       vi.waitFor(() => expect(callbacks.size).toBeGreaterThan(0))
   }
@@ -430,9 +433,7 @@ describe('createLazyIdentity', () => {
     await first
     port.deactivate()
     const second = port.activate()
-    await vi.waitFor(() => expect(leaky.fire).toBeDefined())
-    await Promise.resolve()
-    await Promise.resolve()
+    await vi.waitFor(() => expect(leaky.subscriptions()).toBe(2))
 
     leaky.fire(bob)
     await second
