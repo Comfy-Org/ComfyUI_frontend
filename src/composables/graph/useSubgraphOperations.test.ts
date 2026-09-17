@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -59,6 +60,13 @@ describe('useSubgraphOperations', () => {
     })
     expect(revokeSubgraphPreviews).not.toHaveBeenCalled()
     expect(captureCanvasState).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to unpack the selected subgraph.'
+      }
+    ])
   })
 
   it('updates previews and history only for successful unpacks', () => {
