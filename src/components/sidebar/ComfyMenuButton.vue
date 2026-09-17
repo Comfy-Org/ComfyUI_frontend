@@ -73,6 +73,7 @@
         v-else
         v-bind="props.action"
         class="flex cursor-pointer items-center justify-between px-4 py-2"
+        data-testid="nodes-2-toggle-item"
         @click.stop="toggleNodes2"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>

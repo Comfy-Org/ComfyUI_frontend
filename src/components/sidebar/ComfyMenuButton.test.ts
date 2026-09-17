@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- the menu trigger is an unlabelled div with no role */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -38,6 +37,7 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
     }
   })
 
+  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the menu trigger is an unlabelled div with no role
   const trigger = container.querySelector('.comfy-menu-button-wrapper')
   if (!(trigger instanceof HTMLElement)) {
     throw new Error('Expected the menu trigger to be rendered')
@@ -47,55 +47,48 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
   return {
     user,
     settingStore,
-    row: screen.getByText(NODES_2_LABEL),
+    row: screen.getByTestId('nodes-2-toggle-item'),
+    label: screen.getByText(NODES_2_LABEL),
     toggle: screen.getByRole('switch', { name: NODES_2_LABEL })
   }
 }
 
 describe('ComfyMenuButton', () => {
-  it('enables Nodes 2.0 when the row label is clicked', async () => {
-    const { user, settingStore, row, toggle } = await openMenu()
+  describe.for([
+    { target: 'row', description: 'anywhere on the row' },
+    { target: 'label', description: 'the row label' },
+    { target: 'toggle', description: 'the switch itself' }
+  ] as const)('clicking $description', ({ target }) => {
+    it('enables Nodes 2.0 while it is disabled', async () => {
+      const menu = await openMenu()
 
-    await user.click(row)
+      await menu.user.click(menu[target])
 
-    expect(settingStore.set).toHaveBeenCalledExactlyOnceWith(
-      'Comfy.VueNodes.Enabled',
-      true
-    )
-    expect(toggle).toBeChecked()
-  })
-
-  it('disables Nodes 2.0 when the row label is clicked while enabled', async () => {
-    const { user, settingStore, row, toggle } = await openMenu({
-      vueNodesEnabled: true
+      expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+      expect(menu.toggle).toBeChecked()
     })
 
-    await user.click(row)
+    it('disables Nodes 2.0 while it is enabled', async () => {
+      const menu = await openMenu({ vueNodesEnabled: true })
 
-    expect(settingStore.set).toHaveBeenCalledExactlyOnceWith(
-      'Comfy.VueNodes.Enabled',
-      false
-    )
-    expect(toggle).not.toBeChecked()
-  })
+      await menu.user.click(menu[target])
 
-  it('toggles once when the switch itself is clicked', async () => {
-    const { user, settingStore, toggle } = await openMenu()
+      expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
+        'Comfy.VueNodes.Enabled',
+        false
+      )
+      expect(menu.toggle).not.toBeChecked()
+    })
 
-    await user.click(toggle)
+    it('keeps the menu open so the change can be reverted', async () => {
+      const menu = await openMenu()
 
-    expect(settingStore.set).toHaveBeenCalledExactlyOnceWith(
-      'Comfy.VueNodes.Enabled',
-      true
-    )
-    expect(toggle).toBeChecked()
-  })
+      await menu.user.click(menu[target])
 
-  it('keeps the menu open after toggling so the change can be reverted', async () => {
-    const { user, row, toggle } = await openMenu()
-
-    await user.click(row)
-
-    expect(toggle).toBeVisible()
+      expect(menu.toggle).toBeVisible()
+    })
   })
 })
