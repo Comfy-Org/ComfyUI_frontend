@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -44,13 +45,15 @@ const kindIconClass = computed(() =>
     />
     <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
     <span class="max-w-32 truncate">{{ name }}</span>
-    <button
+    <Button
       type="button"
+      variant="muted-textonly"
+      size="unset"
       :aria-label="$t('agent.remove')"
-      class="flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 text-muted-foreground transition-colors hover:text-base-foreground"
+      class="size-3.5 shrink-0"
       @click="emit('remove')"
     >
       <span class="icon-[lucide--x] size-3.5 shrink-0" />
-    </button>
+    </Button>
   </span>
 </template>

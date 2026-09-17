@@ -11,6 +11,7 @@ import { computed, nextTick, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
@@ -125,14 +126,16 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="t('agent.backToPreviousChat')"
-            class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            class="size-6 shrink-0"
             @click="emit('back')"
           >
             <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
       <h2 class="m-0 text-xs font-normal text-muted-foreground">
@@ -176,16 +179,18 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
             />
           </div>
           <template v-else>
-            <button
+            <Button
               type="button"
-              class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-xs text-muted-foreground"
+              variant="muted-textonly"
+              size="unset"
+              class="min-w-0 flex-1 justify-start text-left text-xs font-normal"
               @click="pick(session)"
             >
               <span class="icon-[lucide--circle-check] size-4 shrink-0" />
               <span class="truncate">{{
                 session.title.trim() || t('agent.untitledChat')
               }}</span>
-            </button>
+            </Button>
             <AccessibleTooltip
               :label="t('agent.copyMarkdown')"
               :skip-delay-duration="0"
@@ -193,22 +198,28 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
               :collision-padding="8"
             >
               <template #trigger>
-                <button
+                <Button
                   type="button"
-                  class="flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  class="shrink-0"
                   :aria-label="t('agent.copyMarkdown')"
                   @click="emit('copyMarkdown', session.id)"
                 >
                   <span class="icon-[lucide--copy] size-3.5" />
-                </button>
+                </Button>
               </template>
             </AccessibleTooltip>
             <DropdownMenuRoot>
-              <DropdownMenuTrigger
-                :aria-label="t('agent.chatOptions')"
-                class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-              >
-                <span class="icon-[lucide--chevron-down] size-3" />
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  class="size-6 shrink-0"
+                  :aria-label="t('agent.chatOptions')"
+                >
+                  <span class="icon-[lucide--chevron-down] size-3" />
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent
