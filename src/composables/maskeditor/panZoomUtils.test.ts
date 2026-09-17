@@ -76,11 +76,11 @@ describe('panZoomUtils', () => {
       expect(getWheelZoomFactor(100)).toBeCloseTo(0.9)
     })
 
-    it('scales small deltas instead of applying a full wheel step', () => {
-      expect(getWheelZoomFactor(-1)).toBeGreaterThan(1)
-      expect(getWheelZoomFactor(-1)).toBeLessThan(1.1)
-      expect(getWheelZoomFactor(1)).toBeLessThan(1)
-      expect(getWheelZoomFactor(1)).toBeGreaterThan(0.9)
+    it('scales small deltas proportionally to their magnitude', () => {
+      expect(getWheelZoomFactor(-1)).toBeCloseTo(1.000953556, 6)
+      expect(getWheelZoomFactor(-10)).toBeCloseTo(1.009576583, 6)
+      expect(getWheelZoomFactor(1)).toBeCloseTo(0.99894695, 6)
+      expect(getWheelZoomFactor(10)).toBeCloseTo(0.989519258, 6)
     })
 
     it('returns 1 for zero deltaY', () => {
@@ -338,7 +338,7 @@ describe('panZoomUtils', () => {
       expect(result.panOffset.y).toBeGreaterThan(0)
     })
 
-    it('centers horizontally for height-constrained images', () => {
+    it('centers horizontally for height-constrained fit', () => {
       const result = calculateFitView({
         rootWidth: 1200,
         rootHeight: 800,
