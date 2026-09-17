@@ -15,9 +15,9 @@ import type { UserCredential } from 'firebase/auth'
 import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
 
 import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
-import { useGenerationGuard } from '@comfyorg/account-core/vue/useGenerationGuard'
-import type { RegionGateStatus } from '@comfyorg/account-core/vue/regionGate'
-import { useRegionGate } from '@comfyorg/account-core/vue/regionGate'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
+import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import type {
