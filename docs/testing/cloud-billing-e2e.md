@@ -82,3 +82,11 @@ Traces start after permanent-account sign-in and contain authenticated network
 traffic. Keep reports private. Disposable accounts require no reusable credentials.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because Staging disables the embedded-checkout saved-card API.
+
+## Checkout completion and decline recovery
+
+PR #17543 depends only on #17481. Run `--project=cloud-live-disposable` for
+checkout completion, decline, and decline recovery. Decline assertions belong to
+this PR. Each test gets a new sandbox account and verifies authoritative operation,
+subscription, balance, and saved-card state through the real hosted billing portal.
+A decline must preserve the prior Free state and balance.
