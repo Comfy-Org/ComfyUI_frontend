@@ -66,7 +66,8 @@ export type {
   SessionResult
 } from './sessionContracts.js'
 export { isPermanentSessionError } from './sessionContracts.js'
-export { type CredentialStorage, isCredentialFresh } from './credentialCache.js'
+export type { CredentialStorage } from './credentialCache.js'
+export { isCredentialFresh } from './credentialCache.js'
 
 /**
  * The session error codes, keys only. Hosts own the copy (the cloud app's
@@ -331,8 +332,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): MintDispatch {
     const target = options.workspaceId ?? clientOptions.workspaceId
     return mints.dispatch(user.uid, target, forced, () => {
-      commit({ type: 'mint-started' })
-      return { mintId: state.mintSequence, response: mint(user, options) }
+      const { mintSequence } = commit({ type: 'mint-started' }).state
+      return { mintId: mintSequence, response: mint(user, options) }
     })
   }
 
@@ -408,11 +409,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           commitPermanentFailure: (failure) => {
             commit({ type: 'mint-rejected', origin: 'scheduler', failure })
           },
-          commitExpired: (expiring) => {
-            const previous = state
-            const next = commit({ type: 'credential-expired', expiring })
-            return next.state === previous ? undefined : next.state.failure
-          },
+          commitExpired: (expiring) =>
+            state.credential === expiring
+              ? commit({ type: 'credential-expired', expiring }).state.failure
+              : undefined,
           parseAdopted: decodeAdopted,
           commitAdopted: (session) => {
             commit({ type: 'credential-adopted', session })

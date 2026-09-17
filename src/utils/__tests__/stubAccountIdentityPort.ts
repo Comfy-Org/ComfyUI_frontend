@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { Auth } from 'firebase/auth'
+import type { Auth, User } from 'firebase/auth'
 import {
   initializeAuth,
   onAuthStateChanged,
@@ -9,13 +9,17 @@ import { vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
+export type IdentityObserver = (user: User | null) => void
+
 /**
- * Keeps the session client's construction-time port subscription off
- * Firebase. Pair with module-scope `vi.mock(import('firebase/auth'))` in the
- * suite; hoisting keeps it there.
+ * Silences the session client's construction-time port subscription: the spy
+ * keeps the identity's lazy auth resolver from reaching `firebase/app`; the
+ * suite's `firebase/auth` automock already silences `onAuthStateChanged`.
+ * Call after the suite's `firebase/auth` stubs and before the first
+ * `useWorkspaceAuthStore()`.
  */
-export function stubAccountIdentityPort() {
-  return vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+export function stubAccountIdentityPort(): void {
+  vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
 }
 
 /**
@@ -26,4 +30,27 @@ export function stubFirebaseAuthHarness() {
   vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
   vi.mocked(onAuthStateChanged).mockReturnValue(() => {})
   vi.mocked(onIdTokenChanged).mockReturnValue(() => {})
+}
+
+/**
+ * Fakes the auth-state registration behind the identity port: every observer
+ * joins `observers` and is replayed with `currentUser()` on registration.
+ * Firebase resolves persistence before its first emission, so 'microtask' is
+ * the SDK's timing; 'sync' exists to prove what does not depend on it.
+ */
+export function replayIdentityPort(
+  currentUser: () => User | null,
+  deliver: 'microtask' | 'sync' = 'microtask'
+) {
+  const observers = new Set<IdentityObserver>()
+  const register = (observer: IdentityObserver): (() => void) => {
+    observers.add(observer)
+    const replay = () => observer(currentUser())
+    if (deliver === 'sync') replay()
+    else queueMicrotask(replay)
+    return () => observers.delete(observer)
+  }
+  const emit = (user: User | null): void =>
+    observers.forEach((observer) => observer(user))
+  return { observers, register, emit }
 }

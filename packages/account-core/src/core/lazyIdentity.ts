@@ -7,12 +7,23 @@ import type { AccountIdentity } from './identity.js'
 import { brandIdentity } from './identity.js'
 import type { AccountUser } from './sessionContracts.js'
 
+/**
+ * Single-owner: one driver calls `activate()` and `deactivate()`; a second
+ * consumer would share and tear down the same activation.
+ */
 export interface LazyIdentity<
   TUser extends AccountUser
 > extends AccountIdentity<TUser> {
-  /** Resolves once the loaded identity has delivered its current user. */
+  /**
+   * Resolves once the loaded identity has delivered its current user, or at
+   * once when `deactivate()` interrupts the activation; the caller re-checks
+   * its own liveness after the await.
+   */
   activate: () => Promise<void>
-  /** Unsubscribes the real identity, signing subscribers out if it had delivered. */
+  /**
+   * Unsubscribes the real identity, signing subscribers out if it had
+   * delivered a signed-in user.
+   */
   deactivate: () => void
 }
 

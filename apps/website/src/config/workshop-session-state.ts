@@ -51,6 +51,7 @@ let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
   running = false
+  // deactivate() publishes a signed-out frame; the host must be unsubscribed first.
   stopSnapshot?.()
   stopSnapshot = undefined
   workshopIdentity.deactivate()
@@ -87,7 +88,7 @@ const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
  * every authenticated snapshot, restored with one targeted re-mint on the
  * first snapshot after a reload, and dropped if that restore is refused.
  */
-const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+export const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
 
 const zRememberedWorkspace = z.object({
   uid: z.string(),

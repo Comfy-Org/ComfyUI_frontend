@@ -1,29 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { credential, deferred } from './__fixtures__/sessionFakes.js'
 import type { InFlightMint } from './mintCoordinator.js'
 import { canJoin, createMintCoordinator } from './mintCoordinator.js'
 import type { AccountCredential, SessionResult } from './sessionContracts.js'
-
-function credential(
-  token: string,
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token,
-    expiresAt: 1_000_000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
-
-function deferred() {
-  let resolve!: (result: SessionResult) => void
-  const promise = new Promise<SessionResult>((r) => (resolve = r))
-  return { promise, resolve }
-}
 
 const ok = (session: AccountCredential): SessionResult => ({
   status: 'ok',
@@ -111,7 +91,7 @@ describe('canJoin', () => {
 describe('createMintCoordinator', () => {
   it('lets a second caller join the running mint instead of starting its own', async () => {
     const mints = createMintCoordinator()
-    const first = deferred()
+    const first = deferred<SessionResult>()
     const start = vi.fn(() => ({ mintId: 1, response: first.promise }))
 
     const owner = mints.dispatch('uid-1', undefined, false, start)
@@ -125,7 +105,7 @@ describe('createMintCoordinator', () => {
 
   it('starts a fresh mint once the running one has settled', async () => {
     const mints = createMintCoordinator()
-    const first = deferred()
+    const first = deferred<SessionResult>()
     let mintId = 0
     const start = vi.fn(() => ({
       mintId: (mintId += 1),
@@ -142,8 +122,8 @@ describe('createMintCoordinator', () => {
 
   it('an older mint settling does not clear a newer forced mint', async () => {
     const mints = createMintCoordinator()
-    const older = deferred()
-    const forced = deferred()
+    const older = deferred<SessionResult>()
+    const forced = deferred<SessionResult>()
     const start = vi
       .fn<() => { mintId: number; response: Promise<SessionResult> }>()
       .mockReturnValueOnce({ mintId: 1, response: older.promise })
@@ -163,7 +143,10 @@ describe('createMintCoordinator', () => {
 
   it('abandon makes the next caller start its own mint', () => {
     const mints = createMintCoordinator()
-    const start = vi.fn(() => ({ mintId: 1, response: deferred().promise }))
+    const start = vi.fn(() => ({
+      mintId: 1,
+      response: deferred<SessionResult>().promise
+    }))
     mints.dispatch('uid-1', undefined, false, start)
 
     mints.abandon()
