@@ -3,14 +3,16 @@ import type { BillingResult } from '@comfyorg/account-core/billing'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
+  BillingPlansResponse,
   BillingStatusResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 
-/** The two reads a rail serves, in the shape the host's billing state holds. */
+/** The reads a rail serves, in the shape the host's billing state holds. */
 export interface BillingReadRail {
   readStatus: () => Promise<BillingResult<BillingStatusResponse>>
   readBalance: () => Promise<BillingResult<BillingBalanceResponse>>
+  readPlans: () => Promise<BillingResult<BillingPlansResponse>>
 }
 
 /**
