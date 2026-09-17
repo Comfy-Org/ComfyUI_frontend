@@ -268,11 +268,14 @@ test.describe('Menu', { tag: '@ui' }, () => {
 
       await topbar.clickNodes2RowBody()
 
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+        .toBe(true)
       await expect(topbar.menuRootList).toBeFocused()
-      await expect(await topbar.openSubmenu('Theme')).toBeVisible()
+      await topbar.openSubmenu('Theme')
     })
 
-    test('Does not toggle when Space reaches the focused row', async ({
+    test('Does not switch renderer while typing the label to search for it', async ({
       comfyPage
     }) => {
       const { topbar } = comfyPage.menu

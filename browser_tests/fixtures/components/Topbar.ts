@@ -191,9 +191,9 @@ export class Topbar {
   }
 
   /**
-   * Click the gap between the Nodes 2.0 label and its switch — the part of the
-   * row that was inert before it became a click target. A plain click on the
-   * row lands on the label instead and proves nothing.
+   * Click the gap between the Nodes 2.0 label and its switch. The row's centre
+   * sits a few pixels from the label's right edge, so an unpositioned click
+   * stops covering the formerly inert gap as soon as the label's width shifts.
    */
   async clickNodes2RowBody(): Promise<void> {
     const label = this.nodes2ToggleItem.locator('.p-menubar-item-label')
@@ -211,10 +211,12 @@ export class Topbar {
     if (toggleBox.x - gapStart < 4) {
       throw new Error('The Nodes 2.0 row has no gap between label and switch')
     }
-    await this.page.mouse.click(
-      (gapStart + toggleBox.x) / 2,
-      rowBox.y + rowBox.height / 2
-    )
+    await this.nodes2ToggleItem.click({
+      position: {
+        x: (gapStart + toggleBox.x) / 2 - rowBox.x,
+        y: rowBox.height / 2
+      }
+    })
   }
 
   async getFocusedMenuItemLabel(): Promise<string | null> {
