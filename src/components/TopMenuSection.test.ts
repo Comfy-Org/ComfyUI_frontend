@@ -184,7 +184,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    useCurrentUser().isLoggedIn = computed(() => false)
     mockData.setShowConflictRedDot(false)
   })
 
@@ -200,7 +199,9 @@ describe('TopMenuSection', () => {
 
     describe('when user is logged in', () => {
       it('should display CurrentUserButton and not display LoginButton', () => {
-        useCurrentUser().isLoggedIn = computed(() => true)
+        vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(
+          true
+        )
         const { container } = createLegacyTabBarWrapper()
         expect(
           container.querySelector('current-user-button-stub')

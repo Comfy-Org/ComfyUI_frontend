@@ -2,7 +2,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
-import { computed, createApp, defineComponent } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
@@ -187,7 +187,6 @@ function createDeferred() {
 }
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => false)
   Object.assign(useDialogStore(), { dialogStack: [] })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)
@@ -274,7 +273,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
   it('does not capture share auth attribution for authenticated users', async () => {
     mockQueryParams = { share: 'share-id-1' }
-    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
     })

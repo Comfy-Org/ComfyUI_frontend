@@ -255,11 +255,13 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => true)
-  useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
-  useCurrentUser().resolvedUserInfo = computed(() => ({
+  vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
+  vi.spyOn(useCurrentUser().userDisplayName, 'value', 'get').mockReturnValue(
+    'Jo Rivera'
+  )
+  vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue({
     id: 'account-a'
-  }))
+  })
   Object.assign(useAgentConsentStore(), { accepted: true })
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -37,7 +37,6 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  useCurrentUser().isLoggedIn = computed(() => false)
   vi.mocked(useFeatureFlags().flags).partnerRunGateEnabled = true
 })
 
@@ -65,7 +64,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('resolves none without partner nodes', () => {
-    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
     const { gate } = setup()
     expect(gate.value).toBe('none')
   })
@@ -78,7 +77,7 @@ describe('usePartnerNodesRunGate', () => {
 
   it('resolves none when signed in', () => {
     state.hasPartnerNodes.value = true
-    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
     const { gate } = setup()
     expect(gate.value).toBe('none')
   })
@@ -99,7 +98,9 @@ describe('usePartnerNodesRunGate', () => {
   it('flips to sign-in when the user signs out mid-session', async () => {
     state.hasPartnerNodes.value = true
     const loggedIn = ref(true)
-    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockImplementation(
+      () => loggedIn.value
+    )
     const { gate } = setup()
     expect(gate.value).toBe('none')
 
@@ -130,7 +131,7 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('reports nothing while the gate stays open', async () => {
-    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
     state.hasPartnerNodes.value = true
     setup()
     await nextTick()
@@ -140,7 +141,9 @@ describe('usePartnerNodesRunGate', () => {
 
   it('does not gate while auth is still resolving, then follows the outcome', async () => {
     const loggedIn = ref(false)
-    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockImplementation(
+      () => loggedIn.value
+    )
     state.hasPartnerNodes.value = true
     useAuthStore().isInitialized = false
     const { gate } = setup()
@@ -209,7 +212,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
 
   it('allows partner nodes once the user is signed in', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockReturnValue(true)
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 })

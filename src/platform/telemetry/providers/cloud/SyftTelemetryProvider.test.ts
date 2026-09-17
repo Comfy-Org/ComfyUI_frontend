@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
 
 import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -140,7 +139,9 @@ describe('SyftTelemetryProvider', () => {
   it('replays at most once but still allows a later manual retry', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const appendChild = mockScriptAppend()
-    useCurrentUser().userEmail = computed(() => 'restored@example.com')
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'restored@example.com'
+    )
     const SyftTelemetryProvider = await importProvider()
     const provider = new SyftTelemetryProvider()
 
@@ -339,7 +340,9 @@ describe('SyftTelemetryProvider', () => {
   it('identifies restored sessions from the current user store', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
-    useCurrentUser().userEmail = computed(() => 'Restored@Example.com')
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'Restored@Example.com'
+    )
     vi.mocked(useCurrentUser).mockClear()
     const SyftTelemetryProvider = await importProvider()
 
@@ -355,7 +358,9 @@ describe('SyftTelemetryProvider', () => {
 
   it('does not immediately re-identify the same email after auth tracking', async () => {
     const syft = installSyftSpy()
-    useCurrentUser().userEmail = computed(() => 'new@example.com')
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'new@example.com'
+    )
     const SyftTelemetryProvider = await importProvider()
     const provider = new SyftTelemetryProvider()
 

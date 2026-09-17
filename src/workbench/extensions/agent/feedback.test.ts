@@ -1,4 +1,3 @@
-import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,7 +30,6 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
-    useCurrentUser().userEmail = computed(() => undefined)
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')
   })
@@ -47,7 +45,9 @@ describe('openFeedbackDialog (agent)', () => {
 
   it('opens the approved agent form with bounded context when Agent is enabled', () => {
     useAgentPanelStore().enabled = true
-    useCurrentUser().userEmail = computed(() => 'alpha@example.com')
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'alpha@example.com'
+    )
     const conversation = useAgentConversationStore()
     conversation.setThreadId('thread-264')
     conversation.recordUser(toTurnId('turn-private'), 'private prompt', [
@@ -85,8 +85,8 @@ describe('openFeedbackDialog (agent)', () => {
 
   it('escapes delimiters so an email cannot introduce an extra hidden field', () => {
     useAgentPanelStore().enabled = true
-    useCurrentUser().userEmail = computed(
-      () => 'alpha,graph=private@example.com'
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'alpha,graph=private@example.com'
     )
 
     openFeedbackDialog('agent-panel')

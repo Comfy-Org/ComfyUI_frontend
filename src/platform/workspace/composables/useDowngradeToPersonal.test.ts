@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
@@ -130,7 +130,7 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
-  useCurrentUser().userEmail = computed(() => null)
+  vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(null)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )
@@ -198,7 +198,9 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('falls back to protecting owners and the current user when the flag is absent', () => {
-      useCurrentUser().userEmail = computed(() => 'me@example.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'me@example.com'
+      )
       mockMembers.value = [
         createMember({
           id: 'owner',

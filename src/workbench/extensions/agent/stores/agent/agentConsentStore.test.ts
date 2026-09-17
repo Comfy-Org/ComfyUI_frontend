@@ -1,6 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -37,7 +37,9 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
+    vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue(
+      { id: 'account-a' }
+    )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     useTeamWorkspaceStore().isSwitching = false
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
@@ -114,7 +116,11 @@ describe('agentConsentStore', () => {
 
   it('discards a load that resolves after the account changes', async () => {
     const identity = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    vi.spyOn(
+      useCurrentUser().resolvedUserInfo,
+      'value',
+      'get'
+    ).mockImplementation(() => ({ id: identity.value }))
     let finishLoad = (_value: GlobalSetting | undefined): void => {}
     accountApi.get.mockImplementationOnce(
       () =>
@@ -135,7 +141,11 @@ describe('agentConsentStore', () => {
 
   it('discards a confirmed write result after the account changes', async () => {
     const identity = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    vi.spyOn(
+      useCurrentUser().resolvedUserInfo,
+      'value',
+      'get'
+    ).mockImplementation(() => ({ id: identity.value }))
     let finishSave = (_value: GlobalSetting): void => {}
     accountApi.set.mockImplementationOnce(
       () =>
@@ -205,7 +215,9 @@ describe('agentConsentStore', () => {
   })
 
   it('fails closed without an authenticated account', async () => {
-    useCurrentUser().resolvedUserInfo = computed(() => null)
+    vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue(
+      null
+    )
     const store = useAgentConsentStore()
 
     await expect(store.load()).rejects.toThrow(

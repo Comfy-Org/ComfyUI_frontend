@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, createApp, defineComponent } from 'vue'
+import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -466,9 +466,15 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    useCurrentUser().userPhotoUrl = computed(() => null)
-    useCurrentUser().userEmail = computed(() => 'owner@example.com')
-    useCurrentUser().userDisplayName = computed(() => 'Owner User')
+    vi.spyOn(useCurrentUser().userPhotoUrl, 'value', 'get').mockReturnValue(
+      null
+    )
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'owner@example.com'
+    )
+    vi.spyOn(useCurrentUser().userDisplayName, 'value', 'get').mockReturnValue(
+      'Owner User'
+    )
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(

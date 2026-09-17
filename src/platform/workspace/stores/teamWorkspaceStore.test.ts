@@ -1,4 +1,3 @@
-import { computed } from 'vue'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -134,8 +133,8 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
-  useCurrentUser().userEmail = computed(() => null)
-  useCurrentUser().isApiKeyLogin = computed(() => false)
+  vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(null)
+
   Object.assign(useWorkspaceAuthStore(), {
     currentWorkspace: null,
     workspaceToken: null,
@@ -455,7 +454,9 @@ describe('useTeamWorkspaceStore', () => {
 
   describe('initialize with an API-key session', () => {
     beforeEach(() => {
-      useCurrentUser().isApiKeyLogin = computed(() => true)
+      vi.spyOn(useCurrentUser().isApiKeyLogin, 'value', 'get').mockReturnValue(
+        true
+      )
       mockWorkspaceApi.getCurrentWorkspace.mockResolvedValue({
         id: 'ws-api-key',
         name: 'Key Workspace',
@@ -1720,19 +1721,25 @@ describe('useTeamWorkspaceStore', () => {
     const promotedSelf = { ...ownerSelf, is_original_owner: false }
 
     it('is true when the self-row is the original owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'owner@test.com'
+      )
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('matches the self-row by email case-insensitively', async () => {
-      useCurrentUser().userEmail = computed(() => 'OWNER@TEST.COM')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'OWNER@TEST.COM'
+      )
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('is false when the self-row is a promoted (non-creator) owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'owner@test.com'
+      )
       const creator = {
         id: 'creator',
         name: 'Creator',
@@ -1746,14 +1753,18 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('infers the earliest owner as the original owner when no member is flagged', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'owner@test.com'
+      )
       const { is_original_owner: _omitted, ...ownerWithoutFlag } = ownerSelf
       const store = await loadTeamWithMembers([ownerWithoutFlag])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('is false when the self-row is a plain member', async () => {
-      useCurrentUser().userEmail = computed(() => 'member@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'member@test.com'
+      )
       const plainMember = {
         id: 'plain-member',
         name: 'Plain Member',
@@ -1766,13 +1777,17 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('is false when no member row matches the current user', async () => {
-      useCurrentUser().userEmail = computed(() => 'someone-else@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'someone-else@test.com'
+      )
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(false)
     })
 
     it('fails closed when members are not loaded', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'owner@test.com'
+      )
       vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
         true
       )
@@ -1787,13 +1802,15 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('fails closed when the current user email is unknown', async () => {
-      useCurrentUser().userEmail = computed(() => null)
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(null)
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(false)
     })
 
     it('recomputes reactively when the self-row arrives after an empty read', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
+      vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+        'owner@test.com'
+      )
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [ownerSelf],
         pagination: { offset: 0, limit: 50, total: 1 }

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -55,7 +55,9 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
+    vi.spyOn(useCurrentUser().resolvedUserInfo, 'value', 'get').mockReturnValue(
+      { id: 'user-a' }
+    )
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)
     mockRequestAssetUploadUrl.mockResolvedValue({
@@ -86,8 +88,11 @@ describe('useComfyHubProfileGate', () => {
 
     it('reuses cached profile state per user', async () => {
       const resolvedUserInfo = ref({ id: 'user-a' })
-      useCurrentUser().resolvedUserInfo = computed(() => resolvedUserInfo.value)
-      const gate = useComfyHubProfileGate()
+      vi.spyOn(
+        useCurrentUser().resolvedUserInfo,
+        'value',
+        'get'
+      ).mockImplementation(() => resolvedUserInfo.value)
       await gate.fetchProfile()
       await gate.fetchProfile()
       expect(mockGetMyProfile).toHaveBeenCalledTimes(1)

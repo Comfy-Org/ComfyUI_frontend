@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
@@ -27,10 +26,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 describe('openFeedbackDialog', () => {
-  beforeEach(() => {
-    useCurrentUser().userEmail = computed(() => undefined)
-  })
-
   it('opens the feedback form tagged with distribution and source', () => {
     openFeedbackDialog('action-bar')
 
@@ -43,7 +38,9 @@ describe('openFeedbackDialog', () => {
   })
 
   it('includes the logged-in user email as a hidden field', () => {
-    useCurrentUser().userEmail = computed(() => 'user@example.com')
+    vi.spyOn(useCurrentUser().userEmail, 'value', 'get').mockReturnValue(
+      'user@example.com'
+    )
 
     openFeedbackDialog('action-bar')
 
