@@ -1,0 +1,141 @@
+name: 'CI: Publishable Packages Pack Check'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'packages/account-core/**'
+      - 'packages/billing-contract/**'
+      - 'packages/ingest-types/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pack-contents:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [account-core, billing-contract, ingest-types]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Typecheck
+        run: pnpm -C packages/${{ matrix.package }} typecheck
+
+      - name: Build package
+        run: pnpm -C packages/${{ matrix.package }} build
+
+      - name: Verify packed tarball only contains compiled dist output
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNEXPECTED=$(
+            pnpm -C packages/${{ matrix.package }} pack --dry-run --json |
+              jq -r '
+                .files[].path
+                | select(
+                    . != "package.json"
+                    and . != "LICENSE"
+                    and . != "README.md"
+                    and (startswith("dist/") | not)
+                  )
+              '
+          )
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error title=Unexpected files in tarball::Packed tarball contains files outside dist:" >&2
+            echo "$UNEXPECTED" >&2
+            exit 1
+          fi
+          echo 'Packed tarball contains only expected files.'
+
+      - name: Verify published manifest resolves to dist and pins real versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK_DIR="$RUNNER_TEMP/${{ matrix.package }}-pack"
+          rm -rf "$PACK_DIR"
+          mkdir -p "$PACK_DIR"
+          pnpm -C packages/${{ matrix.package }} pack --pack-destination "$PACK_DIR"
+          TARBALL=$(find "$PACK_DIR" -maxdepth 1 -name '*.tgz' | head -n 1)
+          if [ -z "$TARBALL" ]; then
+            echo "::error title=Pack failed::No tarball produced in $PACK_DIR" >&2
+            exit 1
+          fi
+          MANIFEST=$(tar -xzOf "$TARBALL" package/package.json)
+          NON_DIST_EXPORTS=$(
+            printf '%s' "$MANIFEST" |
+              jq -r '
+                [
+                  .exports
+                  | ..
+                  | strings
+                  | select(. != "./package.json" and (startswith("./dist/") | not))
+                ]
+                | join(", ")
+              '
+          )
+          if [ -n "$NON_DIST_EXPORTS" ]; then
+            echo "::error title=Exports escape dist::Published exports must resolve to compiled dist output, got: $NON_DIST_EXPORTS" >&2
+            exit 1
+          fi
+          PACKED_FILES=$(tar -tzf "$TARBALL" | sed -n 's#^package/##p')
+          MISSING_TARGETS=''
+          while IFS= read -r TARGET; do
+            [ -n "$TARGET" ] || continue
+            PATTERN=${TARGET#./}
+            FOUND=''
+            while IFS= read -r PACKED; do
+              # Unquoted: pattern exports like ./dist/* must glob-match.
+              case "$PACKED" in
+                $PATTERN)
+                  FOUND=yes
+                  break
+                  ;;
+              esac
+            done <<< "$PACKED_FILES"
+            if [ -z "$FOUND" ]; then
+              MISSING_TARGETS="${MISSING_TARGETS}${TARGET}"$'\n'
+            fi
+          done <<< "$(printf '%s' "$MANIFEST" | jq -r '[.exports | .. | strings] | unique[]')"
+          if [ -n "$MISSING_TARGETS" ]; then
+            echo "::error title=Exports missing from tarball::Published exports point at files the tarball does not contain:" >&2
+            printf '%s' "$MISSING_TARGETS" >&2
+            echo "Packed files:" >&2
+            printf '%s\n' "$PACKED_FILES" >&2
+            exit 1
+          fi
+          UNRESOLVED=$(
+            printf '%s' "$MANIFEST" |
+              jq -r '
+                (.dependencies // {}) + (.peerDependencies // {})
+                | to_entries[]
+                | select(.value | test("^(catalog:|workspace:)"))
+                | "\(.key)@\(.value)"
+              '
+          )
+          if [ -n "$UNRESOLVED" ]; then
+            echo "::error title=Unresolved workspace specifiers::Published manifest must not contain catalog:/workspace: ranges:" >&2
+            echo "$UNRESOLVED" >&2
+            exit 1
+          fi
+          echo 'Published manifest resolves to dist with real dependency ranges.'
+
+  smoke-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Install the packed tarballs into a clean consumer and import every entry
+        run: pnpm --filter @comfyorg/account-core smoke:pack
