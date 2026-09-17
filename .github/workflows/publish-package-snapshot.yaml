@@ -1,0 +1,117 @@
+name: Publish Package Snapshot
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+
+concurrency:
+  group: publish-package-snapshot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  publish_snapshot:
+    name: Publish PR Snapshots to npm
+    # Forks never receive NPM_TOKEN, so a snapshot can only come from a branch
+    # in this repository.
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'publish-snapshot') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'publish-snapshot')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - name: Checkout pull request merge commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Publish a snapshot of every changed package
+        id: snapshot
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIST_TAG="pr-${PR_NUMBER}"
+          SNAPSHOT_VERSION="0.0.0-pr-${PR_NUMBER}-${HEAD_SHA:0:7}"
+          INSTALL_LINES=$(mktemp)
+          # ingest-types first: the other packages resolve it through a
+          # workspace range that npm rewrites at pack time.
+          for PACKAGE in ingest-types billing-contract account-core; do
+            PACKAGE_JSON="packages/$PACKAGE/package.json"
+            if [ ! -f "$PACKAGE_JSON" ]; then
+              continue
+            fi
+            if git diff --quiet HEAD^1 HEAD -- "packages/$PACKAGE"; then
+              continue
+            fi
+            if [ "$(node -p "String(require('./$PACKAGE_JSON').private === true)")" = "true" ]; then
+              echo "::notice title=Snapshot skipped::packages/$PACKAGE still sets \"private\": true, so no snapshot was published."
+              continue
+            fi
+            NAME=$(node -p "require('./$PACKAGE_JSON').name")
+            node -e '
+              const fs = require("node:fs")
+              const [file, version] = process.argv.slice(1)
+              const manifest = JSON.parse(fs.readFileSync(file, "utf8"))
+              manifest.version = version
+              fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`)
+            ' "$PACKAGE_JSON" "$SNAPSHOT_VERSION"
+            pnpm --filter "$NAME" run --if-present build
+            pnpm --filter "$NAME" run --if-present smoke:pack
+            pnpm -C "packages/$PACKAGE" publish \
+              --access public \
+              --tag "$DIST_TAG" \
+              --no-git-checks \
+              --ignore-scripts \
+              --provenance
+            echo "- \`npm i ${NAME}@${DIST_TAG}\` (\`${SNAPSHOT_VERSION}\`)" >> "$INSTALL_LINES"
+          done
+          if [ ! -s "$INSTALL_LINES" ]; then
+            echo "::notice title=No snapshot published::No publishable package changed in this pull request."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          COMMENT_FILE="$RUNNER_TEMP/snapshot-comment.md"
+          {
+            echo "Snapshot packages published for this pull request:"
+            echo ""
+            cat "$INSTALL_LINES"
+            echo ""
+          } > "$COMMENT_FILE"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+          echo "comment_file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Restore snapshot versions
+        if: always()
+        run: git checkout -- packages
+
+      - name: Comment the install lines on the pull request
+        if: steps.snapshot.outputs.published == 'true'
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: package-snapshots
+          section-content-file: ${{ steps.snapshot.outputs.comment_file }}
+          token: ${{ github.token }}
