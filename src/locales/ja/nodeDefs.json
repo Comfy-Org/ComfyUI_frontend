@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "ループ終了",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "有効にすると各反復の output_value を返し、無効の場合は最後の反復のみを返します。"
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "次の反復のために End Loop から Start Loop へ送り返される値です。"
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "End Loop が返す値です。accumulate に応じて、最後の反復またはすべての反復を返します。"
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "各反復で実行する必要がある出力を接続します。それらの値は返されません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "最後の反復の output_value、または accumulate が有効な場合は反復全体で蓄積された値です。"
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Epsilon Scaling",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Google の Gemini モデルでテキスト応答を生成します。テキストプロンプトと、必要に応じて 1 つ以上の画像、音声クリップ、動画、またはファイルをマルチモーダルコンテキストとして指定します。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "応答の生成に使用する Gemini モデルです。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "GoogleのGemini Omni Flashモデルを使い、テキストプロンプトから音声付き動画を生成します。参照画像や動画を指定して、結果をガイドまたは編集することも可能です。希望する長さ（3～10秒）やアスペクト比（16:9または9:16）はプロンプト内で直接指定してください。",
     "display_name": "Google Gemini Omni（動画）",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "リストから項目を取得",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "テキスト",
         "tooltip": "テキストキャプションのリスト。"
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Pruna ビデオモデルを使用して画像を動画にアニメーション化します。任意で最後のフレーム、生成されたサウンド、または音声トラックを指定できます。",
+    "display_name": "Pruna P-Video-2 Image to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_draft": {
+        "name": "下書き"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "プロンプトを強化"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Pruna動画モデルを使用してテキストプロンプトから動画を生成します。生成したサウンド、または動画を駆動するオーディオトラックを任意で使用できます。",
+    "display_name": "Pruna P-Video-2 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_draft": {
+        "name": "下書き"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "プロンプトを強化"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[レシピ]\n\nhidream: long clip-l、long clip-g、t5xxl、llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "ループ開始",
+    "inputs": {
+      "cache_iterations": {
+        "name": "反復結果をキャッシュ",
+        "tooltip": "以前の実行で変更されなかった反復結果を再利用します。無効にすると、すべての反復を再度実行します。"
+      },
+      "initial_iteration_value": {
+        "name": "初期反復値",
+        "tooltip": "最初の反復で現在の反復値として公開される値。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "ループの反復モード。"
+      },
+      "mode_num_iterations": {
+        "name": "反復回数"
+      },
+      "parent_iteration": {
+        "name": "親の反復",
+        "tooltip": "外側の「ループ開始」の反復インデックスを接続して、このループをネストします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "反復インデックス",
+        "tooltip": "現在のループ反復のインデックス。"
+      },
+      "1": {
+        "name": "最初かどうか",
+        "tooltip": "ループの最初の反復時に真になります。"
+      },
+      "2": {
+        "name": "最後かどうか",
+        "tooltip": "ループの最後の反復中は True です。"
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "List モード使用時のリスト内の現在の項目です。Simple および For モードでは None です。"
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "現在の反復のループ引き継ぎ値です。最初の反復では initial_iteration_value、その後の各反復では End Loop の next_iteration_value になります。"
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "比較",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "画像から、クリーンなトポロジーを持つローポリゴン3Dモデルを、三角形メッシュ（GLB）または四角形主体メッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2: 画像からモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ設定されます。"
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "正面図に加え、左面図、背面図、右面図のうち1～3枚から、クリーンなトポロジーを持つローポリゴン3Dモデルを、三角形メッシュ（GLB）または四角形主体メッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2: マルチビューからモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "テクスチャ"
+      },
+      "model_texture_alignment": {
+        "name": "テクスチャ位置合わせ"
+      },
+      "model_texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "クアッドが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "クアッドが有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "テキストプロンプトから、クリーンなトポロジーを持つ低ポリゴン3Dモデルを、三角形メッシュ（GLB）またはクアッド主体のメッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2：テキストからモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "自動サイズ"
+      },
+      "model_compress_geometry": {
+        "name": "ジオメトリを圧縮"
+      },
+      "model_export_uv": {
+        "name": "UVをエクスポート"
+      },
+      "model_face_limit": {
+        "name": "面数上限"
+      },
+      "model_image_seed": {
+        "name": "画像シード"
+      },
+      "model_model_seed": {
+        "name": "モデルシード"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quad": {
+        "name": "クアッド"
+      },
+      "model_texture": {
+        "name": "テクスチャ"
+      },
+      "model_texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "クアッドが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "クアッドが有効な場合にのみ出力されます。"
       }
     }
   },

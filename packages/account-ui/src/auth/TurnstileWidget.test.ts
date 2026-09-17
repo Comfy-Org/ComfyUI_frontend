@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import type { TurnstileApi, TurnstileRenderOptions } from '../turnstileScript'
+import type {
+  TurnstileApi,
+  TurnstileRenderOptions
+} from '@comfyorg/account-core/turnstileScript'
 import TurnstileWidget from './TurnstileWidget.vue'
 
 /** A controllable Cloudflare Turnstile global whose render() captures options. */
