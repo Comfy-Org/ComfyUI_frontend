@@ -1,4 +1,5 @@
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
+import { delay } from 'es-toolkit'
 import type { Ref, ShallowRef } from 'vue'
 import { ref } from 'vue'
 import { z } from 'zod'
@@ -133,7 +134,7 @@ interface StoredSession {
   ownerUid: string
 }
 
-const REFRESH_MAX_RETRIES = 3
+const REFRESH_ATTEMPT_MAX_RETRIES = 3
 const REFRESH_BASE_DELAY_MS = 1000
 
 function refreshBackoffMs(attempt: number): number {
@@ -310,6 +311,7 @@ export function createLegacyWorkspaceTokenRail({
     )
     const ownerUid = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
     if (!workspaceJson || !token || !expiresAtStr || !ownerUid) return null
+    if (!isCurrentUser(ownerUid)) return null
 
     const parseResult = WorkspaceIdentitySchema.safeParse(
       JSON.parse(workspaceJson)
@@ -324,19 +326,14 @@ export function createLegacyWorkspaceTokenRail({
     }
   }
 
-  function isRestorableSession({
-    expiresAt,
-    ownerUid
-  }: StoredSession): boolean {
-    return (
-      isCurrentUser(ownerUid) && !isNaN(expiresAt) && expiresAt > Date.now()
-    )
+  function isUnexpiredSession({ expiresAt }: StoredSession): boolean {
+    return !isNaN(expiresAt) && expiresAt > Date.now()
   }
 
   function initializeFromSession(): boolean {
     try {
       const session = readStoredSession()
-      if (!session || !isRestorableSession(session)) {
+      if (!session || !isUnexpiredSession(session)) {
         clearSessionStorage()
         return false
       }
@@ -505,17 +502,6 @@ export function createLegacyWorkspaceTokenRail({
     console.warn('Workspace auth recovery failed:', err)
   }
 
-  /**
-   * Resolve a valid workspace token, minting one if needed. Coalesces a burst of
-   * callers onto a single in-flight mint, backs off after failure, and returns
-   * null so callers fail closed rather than downgrade to the personal identity.
-   */
-  function recoveryTargetWorkspaceId(
-    preferredWorkspaceId?: string
-  ): string | undefined {
-    return preferredWorkspaceId ?? currentWorkspace.value?.id
-  }
-
   async function canRecheckAfterInFlightSwitch(
     inFlight: Promise<void>,
     ownerUid: string,
@@ -535,8 +521,9 @@ export function createLegacyWorkspaceTokenRail({
 
   async function recoverWorkspaceToken(
     ownerUid: string,
-    targetWorkspaceId: string
+    targetWorkspaceId: string | undefined
   ): Promise<string | null> {
+    if (!canStartRecoveryMint(targetWorkspaceId)) return null
     try {
       await switchWorkspace(targetWorkspaceId)
     } catch (err) {
@@ -554,12 +541,17 @@ export function createLegacyWorkspaceTokenRail({
     return null
   }
 
+  /**
+   * Resolve a valid workspace token, minting one if needed. Coalesces a burst of
+   * callers onto a single in-flight mint, backs off after failure, and returns
+   * null so callers fail closed rather than downgrade to the personal identity.
+   */
   async function ensureWorkspaceToken(
     preferredWorkspaceId?: string
   ): Promise<string | null> {
     const ownerUid = currentUserUid()
     if (!ownerUid) return null
-    const targetWorkspaceId = recoveryTargetWorkspaceId(preferredWorkspaceId)
+    const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id
 
     for (;;) {
       if (!isCurrentUser(ownerUid)) return null
@@ -577,7 +569,6 @@ export function createLegacyWorkspaceTokenRail({
       if (!mayRecheck) return null
     }
 
-    if (!canStartRecoveryMint(targetWorkspaceId)) return null
     return recoverWorkspaceToken(ownerUid, targetWorkspaceId)
   }
 
@@ -604,18 +595,18 @@ export function createLegacyWorkspaceTokenRail({
     attempt: number,
     err: unknown
   ): Promise<void> {
-    const delay = refreshBackoffMs(attempt)
+    const delayMs = refreshBackoffMs(attempt)
     console.warn(
-      `Token refresh failed (attempt ${attempt + 1}/${REFRESH_MAX_RETRIES + 1}), retrying in ${delay}ms:`,
+      `Token refresh failed (attempt ${attempt + 1}/${REFRESH_ATTEMPT_MAX_RETRIES + 1}), retrying in ${delayMs}ms:`,
       err
     )
-    await new Promise((resolve) => setTimeout(resolve, delay))
+    await delay(delayMs)
   }
 
   function preserveTokenAfterExhaustedRefresh(err: unknown): void {
     error.value = null
     const retryScheduled = scheduleTokenRefreshRetry(
-      refreshBackoffMs(REFRESH_MAX_RETRIES)
+      refreshBackoffMs(REFRESH_ATTEMPT_MAX_RETRIES)
     )
     console.warn(
       retryScheduled
@@ -649,7 +640,7 @@ export function createLegacyWorkspaceTokenRail({
     // not leave a stale error visible on the new workspace's context.
     error.value = null
 
-    for (let attempt = 0; attempt <= REFRESH_MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= REFRESH_ATTEMPT_MAX_RETRIES; attempt++) {
       if (isStaleWorkspaceRequest(capturedRequestId)) {
         console.warn(
           'Aborting stale token refresh: workspace context changed during refresh'
@@ -665,11 +656,15 @@ export function createLegacyWorkspaceTokenRail({
           endRefreshOnPermanentError(err, workspaceId, capturedRequestId)
           return
         }
-        if (isTransientAuthError(err) && attempt < REFRESH_MAX_RETRIES) {
+        if (
+          isTransientAuthError(err) &&
+          attempt < REFRESH_ATTEMPT_MAX_RETRIES
+        ) {
           await waitForRefreshBackoff(attempt, err)
           continue
         }
         settleExhaustedRefresh(err, capturedRequestId)
+        return
       }
     }
   }
