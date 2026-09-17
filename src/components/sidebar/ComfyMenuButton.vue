@@ -9,6 +9,7 @@
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
+    data-testid="comfy-menu-button"
     @click="onLogoMenuClick($event)"
   >
     <div class="grid place-items-center-safe gap-0.5">
@@ -69,9 +70,11 @@
         </span>
         <i v-if="item.items" class="pi pi-angle-right ml-auto" />
       </a>
+      <!-- tabindex dropped: a focusable row takes click focus off the
+           menubar, which disables hover submenus and arrow-key navigation -->
       <div
         v-else
-        v-bind="props.action"
+        v-bind="{ ...props.action, tabindex: undefined }"
         class="flex cursor-pointer items-center justify-between px-4 py-2"
         data-testid="nodes-2-toggle-item"
         @click.stop="toggleNodes2"

@@ -15,7 +15,7 @@ const NODES_2_LABEL = 'Nodes 2.0'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: { en: { g: { beta: 'BETA' } } }
 })
 
 async function openMenu({ vueNodesEnabled = false } = {}) {
@@ -30,19 +30,14 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
     if (key === 'Comfy.VueNodes.Enabled') enabled.value = Boolean(value)
   })
 
-  const { container } = render(ComfyMenuButton, {
+  render(ComfyMenuButton, {
     global: {
       plugins: [i18n],
       directives: { tooltip: () => {} }
     }
   })
 
-  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the menu trigger is an unlabelled div with no role
-  const trigger = container.querySelector('.comfy-menu-button-wrapper')
-  if (!(trigger instanceof HTMLElement)) {
-    throw new Error('Expected the menu trigger to be rendered')
-  }
-  await user.click(trigger)
+  await user.click(screen.getByTestId('comfy-menu-button'))
 
   return {
     user,
@@ -90,5 +85,19 @@ describe('ComfyMenuButton', () => {
 
       expect(menu.toggle).toBeVisible()
     })
+  })
+
+  it('does not take focus off the menu when the row is clicked, so hover submenus and arrow keys keep working', async () => {
+    const { user, row } = await openMenu()
+
+    await user.click(row)
+
+    expect(row).not.toHaveFocus()
+  })
+
+  it('does not advertise Nodes 2.0 as beta', async () => {
+    await openMenu()
+
+    expect(screen.queryByText('BETA')).not.toBeInTheDocument()
   })
 })
