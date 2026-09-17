@@ -246,8 +246,6 @@ test.describe('Menu', { tag: '@ui' }, () => {
   })
 
   test.describe('Nodes 2.0 toggle', () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': false } })
-
     test('Toggles from a click anywhere on the row', async ({ comfyPage }) => {
       const { topbar } = comfyPage.menu
       await topbar.openTopbarMenu()
