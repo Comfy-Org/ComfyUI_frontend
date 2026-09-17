@@ -219,8 +219,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             // pre-init logout handling would defeat the simplification.
             currentUser.onUserLogout(() => {
               this.posthog?.reset(true)
-              // reset(true) wipes super properties; restore desktop entry
-              // attribution for the rest of the SPA session.
               this.registerDesktopEntryProps()
             })
           })
