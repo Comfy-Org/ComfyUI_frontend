@@ -145,7 +145,7 @@ const fill = computed(() =>
         decoding="async"
       />
       <div
-        class="pointer-events-none absolute inset-0 bg-linear-to-t from-page via-page/85 to-page/20 sm:bg-linear-to-r sm:via-page/80 sm:to-transparent"
+        class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
         aria-hidden="true"
       />
 

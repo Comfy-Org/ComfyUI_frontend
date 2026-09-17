@@ -1,8 +1,10 @@
+import { useDialogService } from '@/services/dialogService'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, ref } from 'vue'
+import { h, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -13,7 +15,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const mockShowSettingsDialog = vi.fn()
-const mockShowTopUpCreditsDialog = vi.fn()
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
@@ -25,6 +26,19 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
 
 const originalWindowOpen = window.open
 beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
+    tier: computed(() => mockTier.value),
+    subscription: computed(() => mockSubscription.value),
+    balance: computed(() => mockBalance.value),
+    isLoading: mockIsLoading,
+    isTeamPlan: computed(() => mockIsTeamPlan.value)
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   window.open = vi.fn()
 })
 
@@ -42,11 +56,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  }))
-}))
+vi.mock(import('@/services/dialogService'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -65,7 +75,6 @@ function makeSubscription(
   }
 }
 
-const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
 const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
@@ -75,17 +84,7 @@ const mockIsTeamPlan = ref(false)
 const mockCanTopUp = ref(true)
 const mockCanSubscribeSelfServe = ref(false)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    tier: mockTier,
-    subscription: mockSubscription,
-    balance: mockBalance,
-    isLoading: mockIsLoading,
-    isTeamPlan: mockIsTeamPlan,
-    fetchBalance: mockFetchBalance
-  }))
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingCapabilities'),
@@ -110,20 +109,7 @@ vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: vi.fn(() => ({
-    buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
-    docsPaths: {
-      partnerNodesPricing: '/tutorials/partner-nodes/pricing'
-    }
-  }))
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAddApiCreditButtonClicked: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
@@ -178,7 +164,7 @@ describe('CurrentUserPopoverLegacy', () => {
   it('fetches the balance through the billing facade on mount', () => {
     renderComponent()
 
-    expect(mockFetchBalance).toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalled()
   })
 
   describe('subscription tier badge', () => {
@@ -293,7 +279,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

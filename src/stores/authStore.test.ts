@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -6,6 +7,8 @@ import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -29,12 +32,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
     isCloud: true,
     isDesktop: false,
     DISTRIBUTION: 'cloud'
-  }
-}))
-
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    unifiedCloudAuthEnabled: false
   }
 }))
 
@@ -94,12 +91,7 @@ vi.mock(import('vuefire'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-const mockTrackAuth = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAuth: mockTrackAuth
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 let mockResetSocket: Mock
 
@@ -109,11 +101,7 @@ vi.mock<unknown>(
   import('@/platform/distribution/types'),
   () => mockDistributionTypes
 )
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 // Mock apiKeyAuthStore
 
@@ -135,13 +123,6 @@ describe('useAuthStore', () => {
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
-
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
-
-    // Setup dialog service mock
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
@@ -228,7 +209,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       idTokenCallback(mockUser) // initial event (always skipped)
       idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
@@ -356,7 +337,7 @@ describe('useAuthStore', () => {
 
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
 
       await useWorkspaceAuthStore().mintAtLogin()
@@ -592,11 +573,9 @@ describe('useAuthStore', () => {
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-      expect(
-        mockFetch.mock.calls.some(([url]) =>
-          String(url).endsWith('/customers/credit')
-        )
-      ).toBe(false)
+      expect(mockFetch.mock.calls.map(([url]) => url)).not.toContainEqual(
+        expect.stringMatching(/\/customers\/credit$/)
+      )
     })
 
     it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
@@ -1260,12 +1239,14 @@ describe('useAuthStore', () => {
 
       // Should call the error dialog instead of throwing
       const token = await store.getIdToken()
-      const dialogService = useDialogService()
 
-      expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
-        title: i18n.global.t('errorDialog.defaultTitle'),
-        reportType: 'authenticationError'
-      })
+      expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
+        authError,
+        {
+          title: i18n.global.t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        }
+      )
       expect(token).toBeUndefined()
     })
   })
@@ -1535,7 +1516,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1552,7 +1533,7 @@ describe('useAuthStore', () => {
 
           await store[method]({ isNewUser: true })
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: true })
           )
         }
@@ -1569,7 +1550,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1582,7 +1563,7 @@ describe('useAuthStore', () => {
 
           await store[method]()
 
-          expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith(
             expect.objectContaining({ is_new_user: false })
           )
         }
@@ -1633,7 +1614,7 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1648,7 +1629,7 @@ describe('useAuthStore', () => {
 
       await store.login('test@example.com', 'password')
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
         user_id: 'test-user-id',
@@ -1663,7 +1644,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGoogle()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -1678,7 +1659,7 @@ describe('useAuthStore', () => {
 
       await store.loginWithGithub()
 
-      expect(mockTrackAuth).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackAuth).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
         user_id: 'test-user-id',
@@ -2364,11 +2345,6 @@ describe('useAuthStore in local/desktop distribution', () => {
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.stubGlobal('fetch', mockFetch)
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
-
-    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showErrorDialog: vi.fn()
-    })
 
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
       mockAuth as Partial<

@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import {
-  type Load3dCachedOutput,
   getLoad3dOutputCache,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
@@ -11,6 +10,7 @@ import {
   setLoad3dOutputCache,
   useLoad3d
 } from '@/composables/useLoad3d'
+import type { Load3dCachedOutput } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -31,7 +31,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -93,9 +96,9 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       )
     )
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        load3d.loadModel(modelUrl)
+        await load3d.loadModel(modelUrl)
       } catch (error) {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
@@ -504,7 +507,7 @@ function applyPreview3DOutput(
       silentOnNotFound: true
     })
 
-    if (bgImagePath) load3d.setBackgroundImage(bgImagePath)
+    if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
     if (extrinsics && intrinsics) {
       const targetGeneration = load3d.currentLoadGeneration
@@ -655,9 +658,7 @@ useExtensionService().registerExtension({
 
           config.configure(settings)
 
-          if (bgImagePath) {
-            load3d.setBackgroundImage(bgImagePath)
-          }
+          if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
           if (filePath && extrinsics && intrinsics) {
             // configure(settings) above triggered loadModel for this
