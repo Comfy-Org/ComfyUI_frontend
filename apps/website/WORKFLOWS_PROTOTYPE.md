@@ -1,6 +1,6 @@
 # Workshop Phase 2: workflow prototype
 
-Review entry: `/models/workflows/`. Twenty-two outcome-led workflow pages extend the
+Review entry: `/models/workflows/`. Twenty-four outcome-led workflow pages extend the
 existing Models catalog. Primary action: run with editable inputs on the page.
 Secondary action: open the original template in the Cloud canvas. The prototype
 has no marketplace, clone fees, creator earnings, ratings, or publishing tools.
@@ -17,7 +17,7 @@ card rows, with matching banner dimensions, card proportions, and typography.
 The shortlist combines popular editing/animation templates with concrete product
 photography use cases. Cards within each shelf are also ordered by full-period
 distinct template starters, using the same window and filters. These are start
-attempts, not successful runs. Shelf sizes are 4 character workflows, 6 product
+attempts, not successful runs. Shelf sizes are 6 character workflows, 6 product
 workflows, 6 upscaling/restoration workflows, and 6 photo-editing workflows.
 The filter reuses the Models component: multi-select, search, clear, keyboard
 dismissal, and a mobile bottom sheet. The category
@@ -77,10 +77,13 @@ be retrieved as an output asset. Bria's canvas Painter and Flux inpainting's
 alpha-mask connection are adapted to a separate `LoadImageMask` input. Both pages
 require a same-size black-and-white mask upload (white edits, black preserves),
 with validation before any upload or submission. They have no default mask.
+The reference-sheet export omits the prompt switch’s unenhanced input. Its
+`on_false` input is restored from the original prompt default and exposed as the
+editable scene instruction; prompt enhancement remains disabled as in the source.
 
-All 22 artifacts pass structural validation against live Cloud definitions.
+All 24 artifacts pass structural validation against live Cloud definitions.
 The validator reports union-type edge warnings in virtual try-on, character
-replacement, image upscaling, and archival restoration. The archival template
+replacement, image upscaling, archival restoration, and reference-sheet animation. The archival template
 also retains an unused audio-decode node that the backend prunes.
 Structural validation is not proof that model availability or every run succeeds.
 

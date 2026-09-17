@@ -217,6 +217,52 @@ export const workflows: CuratedWorkflow[] = [
     ]
   },
   {
+    slug: 'make-character-sing',
+    template: 'templates-wan2_1_infinitetalk_music',
+    title: 'Make your character sing',
+    description:
+      'Bring a character to life with a song or rap recording. Match mouth movements and performance to your audio.',
+    category: 'Animate characters',
+    fields: [
+      { node: '284', input: 'image', label: 'Your character', kind: 'image' },
+      {
+        node: '125',
+        input: 'audio',
+        label: 'Song or rap recording',
+        kind: 'audio'
+      },
+      {
+        node: '330:332',
+        input: 'positive_prompt',
+        label: 'Describe the performance',
+        kind: 'text'
+      }
+    ]
+  },
+  {
+    slug: 'animate-reference-sheet',
+    template: 'template_ltx2_3_ic_lora_ingredients',
+    title: 'Animate a scene from a reference sheet',
+    description:
+      'Keep characters, props, and settings consistent with a reference sheet while directing the action in a short clip.',
+    category: 'Animate characters',
+    fields: [
+      {
+        node: '724',
+        input: 'image',
+        label: 'Character, props, and setting reference sheet',
+        kind: 'image',
+        help: 'Upload one composite image showing the characters, props, and setting you want in the scene.'
+      },
+      {
+        node: '129:211',
+        input: 'on_false',
+        label: 'Describe the reference sheet and action',
+        kind: 'text'
+      }
+    ]
+  },
+  {
     slug: 'extend-image',
     template: 'flux_fill_outpaint_example',
     title: 'Extend an image’s borders',

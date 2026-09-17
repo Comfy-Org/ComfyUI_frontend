@@ -192,5 +192,21 @@
       "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_topaz_illustration_upscale-1.webp",
       "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/utility_topaz_illustration_upscale-2.webp"
     ]
+  },
+  {
+    "name": "templates-wan2_1_infinitetalk_music",
+    "models": ["Wan2.1 InfiniteTalk"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/templates-wan2_1_infinitetalk_music-1.webp"
+    ]
+  },
+  {
+    "name": "template_ltx2_3_ic_lora_ingredients",
+    "models": ["LTX-2.3"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/template_ltx2_3_ic_lora_ingredients-1.webp"
+    ]
   }
 ]

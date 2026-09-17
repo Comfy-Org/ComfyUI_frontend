@@ -1,0 +1,425 @@
+{
+  "68": {
+    "inputs": {
+      "filename_prefix": "video/ltx2.3_ic_lora",
+      "format": "auto",
+      "video": ["129:122", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "129:101": {
+    "inputs": {
+      "batch_size": 25,
+      "frames_number": ["129:710", 2],
+      "frame_rate": ["129:114", 0],
+      "audio_vae": ["129:126", 0]
+    },
+    "class_type": "LTXVEmptyLatentAudio",
+    "_meta": {
+      "title": "LTXV Empty Latent Audio"
+    }
+  },
+  "129:106": {
+    "inputs": {
+      "positive": ["129:115", 0],
+      "negative": ["129:115", 1],
+      "latent": ["129:121", 0]
+    },
+    "class_type": "LTXVCropGuides",
+    "_meta": {
+      "title": "LTXVCropGuides"
+    }
+  },
+  "129:108": {
+    "inputs": {
+      "batch_size": 1,
+      "width": ["129:113", 0],
+      "height": ["129:98", 0],
+      "length": ["129:710", 2]
+    },
+    "class_type": "EmptyLTXVLatentVideo",
+    "_meta": {
+      "title": "EmptyLTXVLatentVideo"
+    }
+  },
+  "129:109": {
+    "inputs": {
+      "positive": ["129:128", 0],
+      "negative": ["129:112", 0],
+      "frame_rate": ["129:123", 0]
+    },
+    "class_type": "LTXVConditioning",
+    "_meta": {
+      "title": "LTXVConditioning"
+    }
+  },
+  "129:114": {
+    "inputs": {
+      "value": ["716", 0]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Frame Rate(int)"
+    }
+  },
+  "129:115": {
+    "inputs": {
+      "frame_idx": 0,
+      "strength": 1,
+      "positive": ["129:109", 0],
+      "negative": ["129:109", 1],
+      "vae": ["129:127", 2],
+      "latent": ["129:198", 0],
+      "image": ["722", 0],
+      "iclora_parameters": ["129:196", 0]
+    },
+    "class_type": "LTXVAddGuide",
+    "_meta": {
+      "title": "LTXVAddGuide"
+    }
+  },
+  "129:119": {
+    "inputs": {
+      "video_latent": ["129:115", 2],
+      "audio_latent": ["129:101", 0]
+    },
+    "class_type": "LTXVConcatAVLatent",
+    "_meta": {
+      "title": "Concat AV Latent"
+    }
+  },
+  "129:123": {
+    "inputs": {
+      "expression": "a",
+      "values.a": ["129:114", 0]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "129:113": {
+    "inputs": {
+      "value": ["721", 0]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "129:98": {
+    "inputs": {
+      "value": ["721", 1]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "height"
+    }
+  },
+  "129:112": {
+    "inputs": {
+      "text": "blurry, out of focus, overexposed, underexposed, low contrast, washed out colors, excessive noise, grainy texture, poor lighting, flickering, motion blur, distorted proportions, unnatural skin tones, deformed facial features, asymmetrical face, missing facial features, extra limbs, disfigured hands, wrong hand count, artifacts around text, unreadable text on shirt or hat, incorrect lettering on cap (\u201cPNTR\u201d), incorrect t-shirt slogan (\u201cJUST DO IT\u201d), missing microphone, misplaced microphone, inconsistent perspective, camera shake, incorrect depth of field, background too sharp, background clutter, distracting reflections, harsh shadows, inconsistent lighting direction, color banding, cartoonish rendering, 3D CGI look, unrealistic materials, uncanny valley effect, incorrect ethnicity, wrong gender, exaggerated expressions, smiling, laughing, exaggerated sadness, wrong gaze direction, eyes looking at camera, mismatched lip sync, silent or muted audio, distorted voice, robotic voice, echo, background noise, off-sync audio, missing sniff sounds, incorrect dialogue, added dialogue, repetitive speech, jittery movement, awkward pauses, incorrect timing, unnatural transitions, inconsistent framing, tilted camera, missing door or shelves, missing shallow depth of field, flat lighting, inconsistent tone, cinematic oversaturation, stylized filters, or AI artifacts.",
+      "clip": ["129:103", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "129:122": {
+    "inputs": {
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": ["129:105", 0],
+      "fps": ["129:123", 0],
+      "audio": ["129:107", 0]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "129:105": {
+    "inputs": {
+      "tile_size": 768,
+      "overlap": 64,
+      "temporal_size": 4096,
+      "temporal_overlap": 64,
+      "samples": ["129:106", 2],
+      "vae": ["129:127", 2]
+    },
+    "class_type": "VAEDecodeTiled",
+    "_meta": {
+      "title": "VAE Decode (Tiled)"
+    }
+  },
+  "129:107": {
+    "inputs": {
+      "samples": ["129:121", 1],
+      "audio_vae": ["129:126", 0]
+    },
+    "class_type": "LTXVAudioVAEDecode",
+    "_meta": {
+      "title": "LTXV Audio VAE Decode"
+    }
+  },
+  "129:121": {
+    "inputs": {
+      "av_latent": ["129:704", 0]
+    },
+    "class_type": "LTXVSeparateAVLatent",
+    "_meta": {
+      "title": "Separate AV Latent"
+    }
+  },
+  "129:128": {
+    "inputs": {
+      "text": ["129:211", 0],
+      "clip": ["129:103", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "129:127": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-distilled-fp8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "129:126": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-distilled-fp8.safetensors"
+    },
+    "class_type": "LTXVAudioVAELoader",
+    "_meta": {
+      "title": "Load LTXV Audio VAE"
+    }
+  },
+  "129:103": {
+    "inputs": {
+      "text_encoder": "gemma_3_12B_it_fp4_mixed.safetensors",
+      "ckpt_name": "ltx-2.3-22b-distilled-fp8.safetensors",
+      "device": "default"
+    },
+    "class_type": "LTXAVTextEncoderLoader",
+    "_meta": {
+      "title": "Load LTXV Audio Text Encoder"
+    }
+  },
+  "129:195": {
+    "inputs": {
+      "lora_name": "ltx-2.3-22b-ic-lora-ingredients-0.9.safetensors",
+      "strength_model": 1,
+      "model": ["129:127", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "129:196": {
+    "inputs": {
+      "iclora_model": ["129:195", 0]
+    },
+    "class_type": "GetICLoRAParameters",
+    "_meta": {
+      "title": "Get IC-LoRA Parameters"
+    }
+  },
+  "129:198": {
+    "inputs": {
+      "strength": 1,
+      "vae": ["129:127", 2],
+      "image": ["712", 0],
+      "latent": ["129:108", 0],
+      "bypass": ["129:711", 0]
+    },
+    "class_type": "LTXVImgToVideoInplace",
+    "_meta": {
+      "title": "LTXVImgToVideoInplace"
+    }
+  },
+  "129:208": {
+    "inputs": {
+      "lora_name": "gemma-3-12b-it-abliterated_lora_rank64_bf16.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": ["129:127", 0],
+      "clip": ["129:103", 0]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "129:209": {
+    "inputs": {
+      "prompt": "### Reference Sheet Description **Top Row Left (Character):** An anthropomorphic bipedal German Shepherd news anchor with realistic brown, tan, and black fur, a calm professional expression, and thin round copper-bronze framed glasses. He is shown in close-up portraits and full-body front, three-quarter, side, and back views standing upright like a person, with a humanoid torso and limbs and a long bushy German Shepherd tail. He wears a vibrant long-sleeve button-down shirt with an abstract multicolored pink-purple-turquoise-yellow woven pattern, dark charcoal dress pants, and dark leather dress shoes. **Top Row Right (Prop):** A professional black studio condenser microphone on a short circular desk stand shown from multiple angles, plus black over-the-ear wireless earpieces / headsets for broadcast cues. **Middle Row Right (Prop):** A flat product view of the same vibrant long-sleeve multicolored patterned button-down shirt, clearly showing the abstract pink, purple, turquoise, and yellow woven texture. **Bottom Row (Setting):** A wide shot of a high-end professional news studio with a large curved dark teal anchor desk in the foreground, a massive digital backdrop screen displaying bold white \"NEWS\" lettering over soft blue-green abstract graphics, and polished cinematic broadcast lighting with studio fixtures visible around the set.\n\n### Target Description A cozy, cinematic scene inside a high-end professional news studio. The camera begins on a wide establishing shot of the large curved dark teal anchor desk and the soft-focus blue-green \"NEWS\" backdrop, then smoothly pushes in to a steady medium shot of the anthropomorphic bipedal German Shepherd news anchor seated behind the desk. He has realistic brown-tan-black fur, thin round copper-bronze glasses, and a calm professional expression. He wears the vibrant long-sleeve multicolored pink-purple-turquoise-yellow patterned button-down shirt with dark charcoal dress pants. His paw-like hands rest on the desk near the black studio condenser microphone. The studio is bathed in polished cinematic broadcast light from the backdrop and overhead fixtures. His initial expression is focused and composed, then he leans slightly toward the microphone, softens into a confident on-air smile, and speaks clearly to camera: \"Good evening, and welcome to tonight's top stories.\" He pauses briefly, glances down at the desk, then looks back up and continues: \"Here's what you need to know.\" The background \"NEWS\" screen and studio lights remain softly detailed behind him, emphasizing his face, glasses, and colorful shirt under the clean broadcast lighting.",
+      "max_length": 2048,
+      "sampling_mode": "on",
+      "thinking": false,
+      "use_default_template": true,
+      "clip": ["129:208", 1],
+      "image": ["712", 0],
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 64,
+      "sampling_mode.top_p": 0.95,
+      "sampling_mode.min_p": 0.05,
+      "sampling_mode.repetition_penalty": 1.05,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 0
+    },
+    "class_type": "TextGenerateLTX2Prompt",
+    "_meta": {
+      "title": "Generate LTX2 Prompt"
+    }
+  },
+  "129:211": {
+    "inputs": {
+      "switch": ["129:212", 0],
+      "on_true": ["129:209", 0],
+      "on_false": "### Reference Sheet Description **Top Row Left (Character):** An anthropomorphic bipedal German Shepherd news anchor with realistic brown, tan, and black fur, a calm professional expression, and thin round copper-bronze framed glasses. He is shown in close-up portraits and full-body front, three-quarter, side, and back views standing upright like a person, with a humanoid torso and limbs and a long bushy German Shepherd tail. He wears a vibrant long-sleeve button-down shirt with an abstract multicolored pink-purple-turquoise-yellow woven pattern, dark charcoal dress pants, and dark leather dress shoes. **Top Row Right (Prop):** A professional black studio condenser microphone on a short circular desk stand shown from multiple angles, plus black over-the-ear wireless earpieces / headsets for broadcast cues. **Middle Row Right (Prop):** A flat product view of the same vibrant long-sleeve multicolored patterned button-down shirt, clearly showing the abstract pink, purple, turquoise, and yellow woven texture. **Bottom Row (Setting):** A wide shot of a high-end professional news studio with a large curved dark teal anchor desk in the foreground, a massive digital backdrop screen displaying bold white \"NEWS\" lettering over soft blue-green abstract graphics, and polished cinematic broadcast lighting with studio fixtures visible around the set.\n\n### Target Description A cozy, cinematic scene inside a high-end professional news studio. The camera begins on a wide establishing shot of the large curved dark teal anchor desk and the soft-focus blue-green \"NEWS\" backdrop, then smoothly pushes in to a steady medium shot of the anthropomorphic bipedal German Shepherd news anchor seated behind the desk. He has realistic brown-tan-black fur, thin round copper-bronze glasses, and a calm professional expression. He wears the vibrant long-sleeve multicolored pink-purple-turquoise-yellow patterned button-down shirt with dark charcoal dress pants. His paw-like hands rest on the desk near the black studio condenser microphone. The studio is bathed in polished cinematic broadcast light from the backdrop and overhead fixtures. His initial expression is focused and composed, then he leans slightly toward the microphone, softens into a confident on-air smile, and speaks clearly to camera: \"Good evening, and welcome to tonight's top stories.\" He pauses briefly, glances down at the desk, then looks back up and continues: \"Here's what you need to know.\" The background \"NEWS\" screen and studio lights remain softly detailed behind him, emphasizing his face, glasses, and colorful shirt under the clean broadcast lighting."
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "If/Else Switch"
+    }
+  },
+  "129:212": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean (Enable Prompt Enhance)"
+    }
+  },
+  "129:704": {
+    "inputs": {
+      "seed": 288370150520961,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "linear_quadratic",
+      "denoise": 1,
+      "model": ["129:195", 0],
+      "positive": ["129:115", 0],
+      "negative": ["129:115", 1],
+      "latent_image": ["129:119", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "129:710": {
+    "inputs": {
+      "image": ["722", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "129:711": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean"
+    }
+  },
+  "709": {
+    "inputs": {
+      "image": ["724", 0],
+      "amount": ["717", 1]
+    },
+    "class_type": "RepeatImageBatch",
+    "_meta": {
+      "title": "Repeat Image Batch"
+    }
+  },
+  "712": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1,
+      "color": 0
+    },
+    "class_type": "EmptyImage",
+    "_meta": {
+      "title": "Empty Image"
+    }
+  },
+  "715": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (duration)"
+    }
+  },
+  "716": {
+    "inputs": {
+      "value": 25
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (fps)"
+    }
+  },
+  "717": {
+    "inputs": {
+      "expression": "a * b",
+      "values.a": ["715", 0],
+      "values.b": ["716", 0]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "721": {
+    "inputs": {
+      "image": ["722", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "722": {
+    "inputs": {
+      "target_width": 1280,
+      "target_height": 720,
+      "padding_color": "black",
+      "interpolation": "lanczos",
+      "image": ["709", 0]
+    },
+    "class_type": "ResizeAndPadImage",
+    "_meta": {
+      "title": "Resize And Pad Image (Size)"
+    }
+  },
+  "724": {
+    "inputs": {
+      "image": "german_shepherd_news_anchor_ref.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  }
+}
