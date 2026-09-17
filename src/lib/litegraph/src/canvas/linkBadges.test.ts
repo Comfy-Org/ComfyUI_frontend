@@ -201,6 +201,57 @@ describe('link badge frame layout', () => {
   })
 
   it.for([
+    {
+      name: 'another node',
+      originId: 6,
+      targetId: 7,
+      startPos: [100, 100],
+      endPos: [600, 300]
+    },
+    {
+      name: 'the opposite side of the same node',
+      originId: 6,
+      targetId: 4,
+      startPos: [600, 300],
+      endPos: [190, 100]
+    }
+  ] satisfies {
+    name: string
+    originId: number
+    targetId: number
+    startPos: Point
+    endPos: Point
+  }[])('keeps overlapping badges from $name separately hittable', (other) => {
+    const host = document.createElement('canvas')
+    layoutHiddenLinkBadges(host, createContext(), [
+      {
+        link: createLink(1),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 200],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(
+          toLinkId(2),
+          'MODEL',
+          other.originId,
+          0,
+          other.targetId,
+          0
+        ),
+        presentation: { hidden: true },
+        startPos: other.startPos,
+        endPos: other.endPos,
+        color: BADGE_COLOR
+      }
+    ])
+
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(2))
+  })
+
+  it.for([
     { name: 'visible', visibleArea: VISIBLE_AREA, paintCount: 2 },
     {
       name: 'output-only visible',

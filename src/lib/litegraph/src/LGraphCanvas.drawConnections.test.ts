@@ -882,6 +882,10 @@ describe('drawConnections hidden links', () => {
 
     canvas.setGraph(graph)
     expect(canvas.dirty_bgcanvas).toBe(true)
+    const [clientX, clientY] = outputBadgePoint(link)
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', { clientX, clientY, isPrimary: false })
+    )
     canvas.drawConnections(createMockCtx())
 
     expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
@@ -901,6 +905,25 @@ describe('drawConnections hidden links', () => {
 
     expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
     expect(canvas.dirty_bgcanvas).toBe(true)
+  })
+
+  it('rebuilds badge hit areas after a same-graph reset without a reveal', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    canvas.dirty_bgcanvas = false
+
+    canvas.setGraph(graph)
+
+    expect(canvas.dirty_bgcanvas).toBe(true)
+    expect(
+      queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))
+    ).toBeUndefined()
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
   })
 
   it('clears slot-owned reveals and badge hit areas when the graph changes', () => {
