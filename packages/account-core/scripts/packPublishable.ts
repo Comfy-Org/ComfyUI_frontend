@@ -6,10 +6,7 @@
 import { execFileSync } from 'node:child_process'
 import { z } from 'zod'
 
-import type {
-  PublishableViolation,
-  PublishedManifest
-} from './publishableTarball'
+import type { PackedPackage, PublishableViolation } from './publishableTarball'
 import {
   findPublishableViolations,
   zPublishedManifest
@@ -20,14 +17,12 @@ const zPackResult = z.object({
   files: z.array(z.object({ path: z.string() }))
 })
 
-export interface PackedPublishable {
+export interface PackedPublishable extends PackedPackage {
   filename: string
-  files: string[]
-  manifest: PublishedManifest
   violations: PublishableViolation[]
 }
 
-function run(command: string, args: string[], cwd: string): string {
+export function run(command: string, args: string[], cwd: string): string {
   return execFileSync(command, args, {
     cwd,
     encoding: 'utf8',
@@ -35,7 +30,11 @@ function run(command: string, args: string[], cwd: string): string {
   })
 }
 
-function parseJson<T>(schema: z.ZodType<T>, text: string, origin: string): T {
+export function parseJson<T>(
+  schema: z.ZodType<T>,
+  text: string,
+  origin: string
+): T {
   const result = schema.safeParse(JSON.parse(text))
   if (!result.success) throw new Error(`${origin}: ${result.error.message}`)
   return result.data

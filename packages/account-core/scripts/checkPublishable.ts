@@ -1,8 +1,8 @@
 /**
  * Per-package CI entry point for the publishable rules:
  * `pnpm -C packages/account-core run check:pack <package directory>`.
- * The smoke test applies the same rules across the workspace closure it packs;
- * this checks one package without installing anything.
+ * The smoke test applies the same rules to every tarball it installs; this
+ * checks one package without installing anything.
  */
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'

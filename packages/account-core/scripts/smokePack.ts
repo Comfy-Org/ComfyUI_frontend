@@ -8,9 +8,7 @@
  * or an extensionless relative import in the emitted ESM first fails.
  *
  * Tarball shape itself is not decided here: `publishableTarball.ts` owns those
- * rules, and CI runs them per package through `checkPublishable.ts`. This
- * script additionally applies them to the workspace closure it pins as npm
- * `overrides`, which the per-package CI matrix never packs.
+ * rules, and CI runs them per package through `checkPublishable.ts`.
  *
  * None of them is on npm yet, so each is also pinned through npm `overrides`;
  * drop an entry from PUBLISHED_PACKAGES once it resolves from the registry.
@@ -31,7 +29,7 @@ import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 
 import type { PackedPublishable } from './packPublishable'
-import { packPublishable } from './packPublishable'
+import { packPublishable, parseJson, run } from './packPublishable'
 import type { PublishedManifest } from './publishableTarball'
 import { formatViolations } from './publishableTarball'
 
@@ -49,20 +47,9 @@ const keep = process.argv.includes('--keep')
 
 const PUBLISHED_PACKAGES = ['account-core', 'billing-contract', 'ingest-types']
 
-function run(command: string, args: string[], cwd: string): string {
-  return execFileSync(command, args, {
-    cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'inherit']
-  })
-}
-
 function readWorkspaceManifest(dir: string): WorkspaceManifest {
   const path = join(dir, 'package.json')
-  const result = zWorkspaceManifest.safeParse(
-    JSON.parse(readFileSync(path, 'utf8'))
-  )
-  return result.success ? result.data : fail(`${path}: ${result.error.message}`)
+  return parseJson(zWorkspaceManifest, readFileSync(path, 'utf8'), path)
 }
 
 function workspacePackageDirs(): Map<string, string> {
