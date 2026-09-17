@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AccountCredential, AccountUser } from './sessionContracts.js'
+import { credential, testUser } from './__fixtures__/sessionFakes.js'
 import type {
   MintAttempt,
   MintVerdict,
@@ -14,25 +14,6 @@ import {
   scheduledMintHolds,
   transition
 } from './sessionState.js'
-
-function testUser(uid: string): AccountUser {
-  return { uid, getIdToken: async () => 'id-token' }
-}
-
-function credential(
-  token: string,
-  overrides: Partial<AccountCredential> = {}
-): AccountCredential {
-  return {
-    token,
-    expiresAt: 1_000_000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  }
-}
 
 const user = testUser('uid-1')
 const otherUser = testUser('uid-2')
