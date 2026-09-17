@@ -419,9 +419,9 @@
       "contactSupport": "Para excluir sua conta, entre em contato com {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Já existe uma conta com este endereço de e-mail, mas ela usa um método de login diferente. Faça login da mesma forma que fez originalmente.",
+      "auth/account-exists-with-different-credential": "Não foi possível fazer seu login com este método. Tente outra opção de login ou redefina sua senha para continuar.",
       "auth/cancelled-popup-request": "Outra janela de login já estava aberta, então esta foi cancelada. Tente novamente.",
-      "auth/email-already-in-use": "Já existe uma conta com este e-mail. Tente fazer login.",
+      "auth/email-already-in-use": "Não foi possível criar uma conta com este e-mail. Em vez disso, tente fazer login ou redefinir sua senha.",
       "auth/invalid-credential": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "auth/invalid-email": "Por favor, insira um endereço de e-mail válido.",
       "auth/network-request-failed": "Erro de rede. Verifique sua conexão e tente novamente.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "A janela de login foi fechada antes da conclusão do login. Tente novamente.",
       "auth/too-many-requests": "Muitas tentativas de login. Aguarde um momento e tente novamente.",
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
-      "auth/user-not-found": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
-      "auth/wrong-password": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "generic": "Algo deu errado ao fazer login. Por favor, tente novamente.",
       "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support@comfy.org."
     },
