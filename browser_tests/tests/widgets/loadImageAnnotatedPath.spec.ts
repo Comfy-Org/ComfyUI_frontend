@@ -4,11 +4,15 @@
  * the output directory instead of asking for the annotation as part of the
  * filename under `type=input`, which 404s and renders "Image failed to load".
  */
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe(
   'Load Image annotated widget value',
@@ -29,7 +33,7 @@ test.describe(
     test(
       'renders a Generated asset after drag and workflow restore',
       { tag: '@slow' },
-      async ({ comfyPage }) => {
+      async ({ comfyPage, getWebSocket }) => {
         test.setTimeout(30_000)
         await comfyPage.assets.mockOutputHistory([
           createMockJob({
@@ -85,6 +89,24 @@ test.describe(
             return node
           })
 
+        const previewImage = loadImageNode.imagePreview.locator('img')
+        const imageLoadError = loadImageNode.root.getByTestId(
+          TestIds.errors.imageLoadError
+        )
+        async function expectPreviewLoaded() {
+          await expect(loadImageNode.imagePreview).toBeVisible()
+          await expect(previewImage).toBeVisible()
+          await expect(imageLoadError).toBeHidden()
+          await expect
+            .poll(() =>
+              previewImage.evaluate(
+                (image: HTMLImageElement) =>
+                  image.complete && image.naturalWidth > 0
+              )
+            )
+            .toBe(true)
+        }
+
         await test.step('Save and restore the workflow', async () => {
           await comfyPage.menu.topbar.saveWorkflow('annotated-widget-output')
 
@@ -97,21 +119,32 @@ test.describe(
         })
 
         await test.step('Render the restored output preview', async () => {
-          const previewImage = loadImageNode.imagePreview.locator('img')
-          const imageLoadError = loadImageNode.root.getByTestId(
-            TestIds.errors.imageLoadError
-          )
-          await expect(loadImageNode.imagePreview).toBeVisible()
-          await expect(previewImage).toBeVisible()
-          await expect(imageLoadError).toBeHidden()
-          await expect
-            .poll(() =>
-              previewImage.evaluate(
-                (image: HTMLImageElement) =>
-                  image.complete && image.naturalWidth > 0
-              )
-            )
-            .toBe(true)
+          await expectPreviewLoaded()
+        })
+
+        await test.step('Keep the preview through execution and restore', async () => {
+          const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+          const jobId = await execution.run({
+            triggerPrompt: () => comfyPage.runButton.click()
+          })
+          execution.executed(jobId, '10', {
+            images: [
+              {
+                filename: 'generated.png',
+                subfolder: 'runs/2026',
+                type: 'output'
+              }
+            ]
+          })
+          await comfyPage.nextFrame()
+          await expectPreviewLoaded()
+
+          const workflowsTab = comfyPage.menu.workflowsTab
+          await workflowsTab.switchToWorkflow('Unsaved Workflow')
+          await comfyPage.workflow.waitForWorkflowIdle()
+          await workflowsTab.switchToWorkflow('annotated-widget-output')
+          await comfyPage.workflow.waitForWorkflowIdle()
+          await expectPreviewLoaded()
         })
       }
     )
