@@ -3530,7 +3530,7 @@ describe('useWorkspaceAuthStore', () => {
       await store.switchWorkspace('workspace-123')
       expect(workspaceToken.value).toBe('workspace-token-abc')
 
-      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.advanceTimersByTime(expiresInMs - 5 * 60 * 1000)
 
       await vi.waitFor(() => {
@@ -3562,7 +3562,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceToken.value).toBe('workspace-token-abc')
 
       vi.setSystemTime(Date.now() + expiresInMs + 1)
-      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       const recovered = store.ensureWorkspaceToken('workspace-123')
 
       await expect(recovered).resolves.toBeNull()
