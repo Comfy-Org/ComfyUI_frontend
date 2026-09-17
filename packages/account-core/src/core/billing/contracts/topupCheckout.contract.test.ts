@@ -14,13 +14,10 @@ const MINIMUM_AMOUNT_CENTS = 500
 const MAXIMUM_AMOUNT_CENTS = 473_900
 const RETURN_URL = 'https://app.comfy.org/billing/return'
 
-function checkoutRequest(
-  overrides: Partial<CheckoutRequestBody> = {}
-): CheckoutRequestBody {
+function checkoutRequest(): CheckoutRequestBody {
   return {
     amount_cents: BigInt(MINIMUM_AMOUNT_CENTS),
-    return_url: RETURN_URL,
-    ...overrides
+    return_url: RETURN_URL
   }
 }
 
@@ -53,7 +50,11 @@ const INVALID_REQUESTS = [
     field: 'return_url',
     body: { amount_cents: MINIMUM_AMOUNT_CENTS, return_url: 'not-a-url' }
   }
-] as const
+] as const satisfies readonly {
+  rejected: string
+  field: keyof CheckoutRequestBody
+  body: Partial<Record<keyof CheckoutRequestBody, unknown>>
+}[]
 
 // Compile-time pins: a regen that moves these fails the package typecheck.
 

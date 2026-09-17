@@ -37,6 +37,17 @@ const SUBSCRIPTION_STATUSES = [
   'canceled'
 ] as const satisfies readonly NonNullable<Status['subscription_status']>[]
 
+/** Every tier the status can report; eligibility reads only 'FREE' as unpaid. */
+const SUBSCRIPTION_TIERS = [
+  'FREE',
+  'STANDARD',
+  'CREATOR',
+  'PRO',
+  'FOUNDERS_EDITION',
+  'TEAM',
+  'ENTERPRISE'
+] as const satisfies readonly NonNullable<Status['subscription_tier']>[]
+
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
 // The tables above are exhaustive, so a new member reaches an `it.for` row.
@@ -50,14 +61,7 @@ expectTypeOf<Status['subscription_status']>().toEqualTypeOf<
   (typeof SUBSCRIPTION_STATUSES)[number] | undefined
 >()
 expectTypeOf<Status['subscription_tier']>().toEqualTypeOf<
-  | 'FREE'
-  | 'STANDARD'
-  | 'CREATOR'
-  | 'PRO'
-  | 'FOUNDERS_EDITION'
-  | 'TEAM'
-  | 'ENTERPRISE'
-  | undefined
+  (typeof SUBSCRIPTION_TIERS)[number] | undefined
 >()
 expectTypeOf<Status['is_active']>().toEqualTypeOf<boolean>()
 // The pending operation the lifecycle reattaches to, and the continuations it
@@ -111,8 +115,8 @@ describe('billing status contract', () => {
     }
   )
 
-  it('keeps FREE in the tier set eligibility reads as unpaid', () => {
-    const body = statusBody({ subscription_tier: 'FREE' })
+  it.for(SUBSCRIPTION_TIERS)('accepts the %s tier', (subscription_tier) => {
+    const body = statusBody({ subscription_tier })
 
     expect(zBillingStatusResponse.safeParse(body)).toMatchObject({
       success: true

@@ -69,6 +69,11 @@ const INT64_MAX = 9223372036854775807n
 
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
+// The money table above is exhaustive, so a seventh amount reaches both the
+// coercion rows and the int64 rows.
+expectTypeOf<(typeof MONEY_FIELDS)[number]>().toEqualTypeOf<
+  Extract<keyof PreviewResponseBody, `${string}_cents`>
+>()
 // The plan slug is the only required request field.
 expectTypeOf<PreviewRequest>().toEqualTypeOf<{
   plan_slug: string

@@ -5,11 +5,10 @@ import type { z } from 'zod'
 type ErrorBody = z.input<typeof zErrorResponse>
 type ErrorResponse = z.infer<typeof zErrorResponse>
 
-function errorBody(overrides: Partial<ErrorBody> = {}): ErrorBody {
+function errorBody(): ErrorBody {
   return {
     code: 'NO_PAYMENT_METHOD',
-    message: 'The workspace has no payment method on file.',
-    ...overrides
+    message: 'The workspace has no payment method on file.'
   }
 }
 

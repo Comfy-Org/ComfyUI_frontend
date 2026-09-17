@@ -11,11 +11,10 @@ type TopupResponseBody = z.input<typeof zCreateTopupResponse>
 type TopupResponse = z.infer<typeof zCreateTopupResponse>
 
 const MINIMUM_AMOUNT_CENTS = 500
+const INT64_MAX = 9223372036854775807n
 
-function topupRequest(
-  overrides: Partial<TopupRequestBody> = {}
-): TopupRequestBody {
-  return { amount_cents: BigInt(MINIMUM_AMOUNT_CENTS), ...overrides }
+function topupRequest(): TopupRequestBody {
+  return { amount_cents: BigInt(MINIMUM_AMOUNT_CENTS) }
 }
 
 function topupResponse(
@@ -74,6 +73,36 @@ describe('topup contract', () => {
     expect(
       zCreateTopupRequest.safeParse({ amount_cents: MINIMUM_AMOUNT_CENTS })
     ).toMatchObject({ success: true })
+  })
+
+  it('rejects an amount past the int64 ceiling the command reports as invalid', () => {
+    expect(
+      zCreateTopupRequest.safeParse({ amount_cents: INT64_MAX })
+    ).toMatchObject({ success: true })
+    expect(
+      zCreateTopupRequest.safeParse({ amount_cents: INT64_MAX + 1n }).success
+    ).toBe(false)
+  })
+
+  it('coerces the JSON number the wire carries for the response amount', () => {
+    const parsed = zCreateTopupResponse.safeParse({
+      ...topupResponse(),
+      amount_cents: MINIMUM_AMOUNT_CENTS
+    })
+
+    expect(parsed.success && parsed.data.amount_cents).toBe(
+      BigInt(MINIMUM_AMOUNT_CENTS)
+    )
+  })
+
+  it('bounds the response amount to the int64 range', () => {
+    const parseAmount = (amount_cents: bigint) =>
+      zCreateTopupResponse.safeParse({ ...topupResponse(), amount_cents })
+
+    expect(parseAmount(INT64_MAX)).toMatchObject({ success: true })
+    expect(parseAmount(-INT64_MAX - 1n)).toMatchObject({ success: true })
+    expect(parseAmount(INT64_MAX + 1n).success).toBe(false)
+    expect(parseAmount(-INT64_MAX - 2n).success).toBe(false)
   })
 
   it.for(TOPUP_STATUSES)(
