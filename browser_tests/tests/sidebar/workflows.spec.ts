@@ -145,6 +145,59 @@ test.describe('Workflows sidebar', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toEqual(1)
   })
 
+  test('Does not insert into a subgraph entered while the source loads', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      'workflow1.json': 'nodes/single_ksampler.json'
+    })
+
+    const tab = comfyPage.menu.workflowsTab
+    await tab.open()
+    await comfyPage.command.executeCommand('Comfy.LoadDefaultWorkflow')
+
+    let releaseLoad!: () => void
+    const loadBlocked = new Promise<void>((resolve) => {
+      releaseLoad = resolve
+    })
+    const workflowRoute = /\/api\/userdata\/workflows%2Fworkflow1\.json$/
+    await comfyPage.page.route(workflowRoute, async (route) => {
+      await loadBlocked
+      await route.continue()
+    })
+
+    try {
+      const sourceRequest = comfyPage.page.waitForRequest(workflowRoute)
+      const insertAction = tab.insertWorkflow(tab.getPersistedItem('workflow1'))
+      await sourceRequest
+
+      const subgraphNode =
+        await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
+      await comfyPage.subgraph.enterSubgraphWithFallback(
+        String(subgraphNode.id)
+      )
+      const subgraphNodeCount = await comfyPage.nodeOps.getNodeCount()
+
+      const abortWarning = comfyPage.page.waitForEvent('console', {
+        predicate: (message) =>
+          message
+            .text()
+            .includes('insertWorkflow aborted: canvas or graph was replaced'),
+        timeout: 3000
+      })
+
+      releaseLoad()
+      await insertAction
+      await abortWarning
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toEqual(subgraphNodeCount)
+    } finally {
+      releaseLoad()
+      await comfyPage.page.unroute(workflowRoute)
+    }
+  })
+
   test('Can rename nested workflow from opened workflow item', async ({
     comfyPage
   }) => {
