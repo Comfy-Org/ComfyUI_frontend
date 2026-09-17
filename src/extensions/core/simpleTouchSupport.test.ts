@@ -5,14 +5,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
-const {
-  canvasEl,
-  container,
-  dragAndScale,
-  closeSearchBox,
-  processMouseDown,
-  processMouseMove
-} = vi.hoisted(() => {
+const { canvasEl, container, dragAndScale, closeSearchBox } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
@@ -25,11 +18,12 @@ const {
       min_scale: 0.1,
       max_scale: 10
     },
-    closeSearchBox: vi.fn(),
-    processMouseDown: vi.fn(),
-    processMouseMove: vi.fn()
+    closeSearchBox: vi.fn()
   }
 })
+
+const processMouseDown = vi.fn()
+const processMouseMove = vi.fn()
 
 vi.mock(import('@/scripts/app'), () => ({
   app: fromPartial<typeof comfyApp>({
@@ -95,6 +89,22 @@ function strandTouchesOnDetachedTarget(count: number) {
   dispatchTouch(doomed, 'touchend', [], touches)
 }
 
+/**
+ * Probes the guards without going through a primary pointerdown, which would
+ * itself clear the state these cases are asserting on.
+ */
+const tapReachesCanvas = () => {
+  processMouseDown.mockClear()
+  pointerDown({ isPrimary: false })
+  return processMouseDown.mock.calls.length === 1
+}
+
+const dragReachesCanvas = () => {
+  processMouseMove.mockClear()
+  pointerMove({ isPrimary: true })
+  return processMouseMove.mock.calls.length === 1
+}
+
 describe('Comfy.SimpleTouchSupport touch state', () => {
   beforeEach(() => {
     document.body.append(container)
@@ -135,14 +145,7 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
   })
 
   describe('recovery from a touchend that never arrives (FE-2435)', () => {
-    it('recovers when the touch target detached mid-gesture', () => {
-      strandTouchesOnDetachedTarget(1)
-
-      tapDown()
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
-
-    it('recovers when a descendant stops touchend from propagating', () => {
+    it('sees a touchend a descendant stopped from propagating', () => {
       const child = document.createElement('div')
       child.addEventListener('touchend', (e) => e.stopPropagation())
       container.append(child)
@@ -151,32 +154,36 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       dispatchTouch(child, 'touchend', [], [touchAt(child)])
       child.remove()
 
-      tapDown()
-      expect(processMouseDown).toHaveBeenCalledOnce()
+      expect(tapReachesCanvas()).toBe(true)
     })
 
-    it('keeps pointermove alive after a lost two-finger touchend', () => {
+    it('does not go negative when touchcancel precedes the last touchend', () => {
+      const [first, second] = [touchAt(canvasEl), touchAt(canvasEl, 50)]
+      dispatchTouch(canvasEl, 'touchstart', [first, second])
+      dispatchTouch(canvasEl, 'touchcancel', [first], [second])
+      dispatchTouch(canvasEl, 'touchend', [], [first])
+
+      expect(tapReachesCanvas()).toBe(true)
+    })
+
+    it('re-derives the count rather than accumulating past a lost touchend', () => {
       strandTouchesOnDetachedTarget(2)
+      dispatchTouch(canvasEl, 'touchmove', [touchAt(canvasEl)])
+
+      expect(dragReachesCanvas()).toBe(true)
+    })
+
+    it('a fresh tap revives a canvas left stuck by a lost touchend', () => {
+      strandTouchesOnDetachedTarget(1)
 
       tapDown()
-      pointerMove({ isPrimary: true })
-      expect(processMouseMove).toHaveBeenCalledOnce()
+      expect(processMouseDown).toHaveBeenCalledOnce()
     })
 
     it('lets a mouse recover a stuck touch gesture on a hybrid device', () => {
       strandTouchesOnDetachedTarget(2)
 
       pointerDown({ pointerType: 'mouse', isPrimary: true })
-      expect(processMouseDown).toHaveBeenCalledOnce()
-    })
-
-    it('re-derives the count from touches rather than accumulating', () => {
-      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-      dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
-      dispatchTouch(canvasEl, 'touchend', [], [touchAt(canvasEl)])
-
-      pointerDown({ isPrimary: true })
       expect(processMouseDown).toHaveBeenCalledOnce()
     })
   })
