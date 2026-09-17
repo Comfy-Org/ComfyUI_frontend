@@ -356,26 +356,6 @@
     },
     {
       "files": [
-        "src/extensions/core/agentPanel.test.ts",
-        "src/extensions/core/electronAdapter.ts",
-        "src/extensions/core/groupOptions.test.ts",
-        "src/extensions/core/load3d.ts",
-        "src/extensions/core/nodeTemplates.ts",
-        "src/extensions/core/webcamCapture.ts",
-        "src/extensions/core/widgetInputs.test.ts",
-        "src/scripts/api.ts",
-        "src/scripts/app.test.ts",
-        "src/scripts/app.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/settings.ts"
-      ],
-      "rules": {
-        "typescript/no-floating-promises": "off"
-      }
-    },
-    {
-      "files": [
         "src/extensions/core/agentPanel.ts",
         "src/extensions/core/clipspace.ts",
         "src/extensions/core/cloudFeedbackTopbarButton.test.ts",

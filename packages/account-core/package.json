@@ -2,7 +2,7 @@
   "name": "@comfyorg/account-core",
   "version": "1.0.0-alpha.0",
   "private": true,
-  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, the package-owned Firebase identity entry, and an optional Vue subpath for the shared sign-in pieces",
+  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, plus the package-owned Firebase identity entry. It has no view layer and no Vue dependency; the composables and unstyled components ship from @comfyorg/account-ui",
   "keywords": [],
   "license": "MIT",
   "type": "module",
@@ -13,13 +13,6 @@
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./web": "./src/web/crossTabRefresh.ts",
-    "./vue/PasswordRules": "./src/vue/PasswordRules.vue",
-    "./vue/SocialAuthButtons": "./src/vue/SocialAuthButtons.vue",
-    "./vue/TurnstileWidget": "./src/vue/TurnstileWidget.vue",
-    "./vue/regionGate": "./src/vue/regionGate.ts",
-    "./vue/turnstileGate": "./src/vue/turnstileGate.ts",
-    "./vue/lifecycleScope": "./src/vue/lifecycleScope.ts",
-    "./vue/useGenerationGuard": "./src/vue/useGenerationGuard.ts",
     "./testing": "./src/testing.ts",
     "./customerRecovery": "./src/core/customerRecovery.ts",
     "./signInSchemas": "./src/signInSchemas.ts",
@@ -34,39 +27,22 @@
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@comfyorg/tailwind-utils": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@testing-library/user-event": "catalog:",
-    "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "@vueuse/core": "catalog:",
     "firebase": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "vue": "catalog:",
-    "vue-tsc": "catalog:"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@vueuse/core": "^14.4.0",
-    "firebase": "^11.6.0",
-    "vue": "^3.5.40"
-  },
-  "peerDependenciesMeta": {
-    "@vueuse/core": {
-      "optional": true
-    },
-    "vue": {
-      "optional": true
-    }
+    "firebase": "^11.6.0"
   }
 }

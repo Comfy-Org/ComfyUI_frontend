@@ -21,7 +21,7 @@ import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import { isPermanentSessionError } from '@comfyorg/account-core/session'
-import { createLifecycleScope } from '@comfyorg/account-core/vue/lifecycleScope'
+import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
