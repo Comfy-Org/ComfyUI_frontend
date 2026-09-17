@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -60,12 +61,13 @@ interface SemanticLayoutMutationPort {
 
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
-  reconcileNode(payload: SemanticNodePayload): void
   /**
-   * For a node of the same type, resyncs scalar fields while preserving slots,
-   * widgets, and layout. A missing node or type mismatch is added or replaced
-   * from the full payload.
+   * For a node of the same type, resyncs fields and slots and patches widget
+   * values onto the registered widgets. A missing node or type mismatch is
+   * added or replaced from the full payload.
    */
+  reconcileNode(payload: SemanticNodePayload): void
+  /** Like `reconcileNode`, but the live node keeps its slot list. */
   reconcileNodeFields(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
   connect(link: SemanticLinkPayload): void
@@ -125,17 +127,37 @@ type QueuedMutation =
     }
   | { kind: 'clearSemanticGraph' }
 
+/**
+ * The `widgets_values` of a doc node entry. cmp stores catalog nodes by
+ * widget name and frontend-only nodes positionally; a serialized node that
+ * declares no widgets omits the key altogether.
+ */
+type WidgetValuePayload =
+  | { kind: 'omitted' }
+  | { kind: 'positional'; values: readonly WidgetValue[] }
+  | { kind: 'named'; values: ReadonlyMap<string, WidgetValue> }
+
+interface PlaceholderWidget {
+  name: string
+  value: WidgetValue
+  type: string
+}
+
 interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
-  widgets: Array<{ name: string; value: WidgetValue; type: string }>
+  widgets: WidgetValuePayload
 }
 
 type PreparedMutation =
   | { kind: 'addNode'; node: PreparedNode }
   | { kind: 'reconcileNode'; node: PreparedNode }
   | { kind: 'replaceNode'; node: PreparedNode }
-  | { kind: 'reconcileNodeFields'; state: NodeState }
+  | {
+      kind: 'reconcileNodeFields'
+      state: NodeState
+      widgets: WidgetValuePayload
+    }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
   | {
       kind: 'connect'
@@ -225,21 +247,64 @@ function widgetType(value: unknown): string {
   }
 }
 
-function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
-  const values = payload.widgets_values
-  if (Array.isArray(values)) {
-    return values.map((value, index) => ({
-      name: String(index),
-      value: structuredClone(value) as WidgetValue,
-      type: widgetType(value)
-    }))
+function cloneWidgetValue(value: unknown): WidgetValue {
+  switch (typeof value) {
+    case 'string':
+    case 'number':
+    case 'boolean':
+    case 'undefined':
+      return value
+    case 'object':
+      return structuredClone(value)
+    default:
+      return null
   }
-  if (!isRecord(values)) return []
-  return Object.entries(values).map(([name, value]) => ({
-    name,
-    value: structuredClone(value) as WidgetValue,
-    type: widgetType(value)
-  }))
+}
+
+function parseWidgetValues(value: unknown): WidgetValuePayload {
+  if (Array.isArray(value)) {
+    return { kind: 'positional', values: value.map(cloneWidgetValue) }
+  }
+  if (isRecord(value)) {
+    return {
+      kind: 'named',
+      values: new Map(
+        Object.entries(value).map(([name, entry]) => [
+          name,
+          cloneWidgetValue(entry)
+        ])
+      )
+    }
+  }
+  return { kind: 'omitted' }
+}
+
+/** Store records for a node no live widget has registered yet. */
+function placeholderWidgets(
+  widgets: WidgetValuePayload
+): readonly PlaceholderWidget[] {
+  switch (widgets.kind) {
+    case 'omitted':
+      return []
+    case 'positional':
+      return widgets.values.map((value, index) => ({
+        name: String(index),
+        value,
+        type: widgetType(value)
+      }))
+    case 'named':
+      return [...widgets.values].map(([name, value]) => ({
+        name,
+        value,
+        type: widgetType(value)
+      }))
+  }
+}
+
+function registeredTitle(type: string): string | undefined {
+  return Object.hasOwn(LiteGraph.registered_node_types, type)
+    ? LiteGraph.registered_node_types[type].title
+    : undefined
 }
 
 function prepareNode(
@@ -256,9 +321,9 @@ function prepareNode(
     graphId: scope.owningGraphId,
     type: payload.type,
     title:
-      typeof payload.title === 'string' && payload.title.length > 0
-        ? payload.title
-        : payload.type,
+      (typeof payload.title === 'string' && payload.title) ||
+      registeredTitle(payload.type) ||
+      payload.type,
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
@@ -280,7 +345,7 @@ function prepareNode(
   }
   return {
     state,
-    widgets: widgetEntries(payload),
+    widgets: parseWidgetValues(payload.widgets_values),
     layout: {
       position: { x, y },
       size: { width, height }
@@ -400,18 +465,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    const widgets = new Map<string, Set<string>>()
-    for (const node of nodes.values()) {
-      widgets.set(
-        nodeKey(node.id),
-        new Set(
-          widgetStore
-            .getNodeWidgets(scope.rootGraphId, node.id)
-            .map((widget) => widget.name)
-        )
-      )
-    }
-
     const validateNodeUpsert = (
       node: PreparedNode,
       key: string
@@ -421,8 +474,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         return `node id ${key} belongs to graph ${incumbent.graphId}`
       }
       if (
-        node.widgets.some(
-          ({ name }) =>
+        node.widgets.kind === 'named' &&
+        [...node.widgets.values.keys()].some(
+          (name) =>
             !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
         )
       ) {
@@ -456,7 +510,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             return `node id ${key} is already registered`
           }
           nodes.set(key, node.state)
-          widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
           prepared.push({
             kind:
               mutation.kind === 'reconcileNode' &&
@@ -484,7 +537,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
             nodes.set(key, node.state)
-            widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
             prepared.push({
               kind: existing ? 'replaceNode' : 'addNode',
               node
@@ -493,7 +545,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             node.state.inputs = existing.inputs
             node.state.outputs = existing.outputs
             nodes.set(key, node.state)
-            prepared.push({ kind: mutation.kind, state: node.state })
+            prepared.push({
+              kind: mutation.kind,
+              state: node.state,
+              widgets: node.widgets
+            })
           }
           break
         }
@@ -507,12 +563,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return `node ${key} has an invalid widget name`
           }
-          widgets.get(key)?.add(mutation.name)
           prepared.push({
             kind: mutation.kind,
             nodeId: mutation.nodeId,
             name: mutation.name,
-            value: structuredClone(mutation.value) as WidgetValue
+            value: cloneWidgetValue(mutation.value)
           })
           break
         }
@@ -606,7 +661,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             .filter((id) => !retainedNodeIds.has(nodeKey(id)))
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
-            widgets.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
           }
           const linkIds = [...links.keys()].filter(
@@ -657,7 +711,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             removedLinkIds.push(id)
           }
           nodes.delete(nodeKey(mutation.nodeId))
-          widgets.delete(nodeKey(mutation.nodeId))
           removeIncidentLinks(nodes, links, mutation.nodeId)
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
@@ -672,7 +725,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         case 'clearSemanticGraph': {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
           nodes.clear()
-          widgets.clear()
           links.clear()
           prepared.push({ kind: mutation.kind, nodeIds })
           break
@@ -730,6 +782,84 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
+  function registerPlaceholder(
+    scope: GraphScope,
+    nodeId: NodeId,
+    widget: PlaceholderWidget,
+    context: RemoteMutationContext
+  ): void {
+    widgetStore.registerWidget(
+      widgetId(scope.rootGraphId, nodeId, widget.name),
+      {
+        name: widget.name,
+        type: widget.type,
+        value: widget.value,
+        options: {},
+        label: widget.name
+      },
+      {},
+      undefined,
+      context
+    )
+  }
+
+  function setWidgetValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): void {
+    const id = widgetId(scope.rootGraphId, nodeId, name)
+    if (widgetStore.getWidget(id)) {
+      widgetStore.setValue(id, value, context)
+    } else {
+      registerPlaceholder(
+        scope,
+        nodeId,
+        { name, value, type: widgetType(value) },
+        context
+      )
+    }
+  }
+
+  /**
+   * A doc entry for a node that is already live is a value patch: the live
+   * widgets keep their registered type, options, and state identity, and a
+   * value the payload omits keeps its current value. Positional values bind
+   * to the serialized widgets in order, the same order `LGraphNode.serialize`
+   * wrote them in.
+   */
+  function applyWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    widgets: WidgetValuePayload,
+    context: RemoteMutationContext
+  ): void {
+    switch (widgets.kind) {
+      case 'omitted':
+        return
+      case 'named':
+        for (const [name, value] of widgets.values) {
+          setWidgetValue(scope, nodeId, name, value, context)
+        }
+        return
+      case 'positional': {
+        const serialized = widgetStore
+          .getNodeWidgets(scope.rootGraphId, nodeId)
+          .filter((widget) => widget.serialize !== false)
+          .slice(0, widgets.values.length)
+        for (const [index, widget] of serialized.entries()) {
+          widgetStore.setValue(
+            widgetId(scope.rootGraphId, nodeId, widget.name),
+            widgets.values[index],
+            context
+          )
+        }
+      }
+    }
+  }
+
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
@@ -755,37 +885,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
-          } else {
-            nodeStore.registerNode(scope, mutation.node.state, context)
-          }
-          for (const widget of mutation.node.widgets) {
-            widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
-              {
-                name: widget.name,
-                type: widget.type,
-                value: widget.value,
-                options: {},
-                label: widget.name
-              },
-              {},
-              undefined,
-              context
-            )
-          }
-          if (!existing) {
-            deps.layout.createNode(
+            applyWidgetValues(
               scope,
               mutation.node.state.id,
-              mutation.node.layout,
+              mutation.node.widgets,
               context
             )
+            break
           }
+          nodeStore.registerNode(scope, mutation.node.state, context)
+          for (const widget of placeholderWidgets(mutation.node.widgets)) {
+            registerPlaceholder(scope, mutation.node.state.id, widget, context)
+          }
+          deps.layout.createNode(
+            scope,
+            mutation.node.state.id,
+            mutation.node.layout,
+            context
+          )
           break
         }
         case 'reconcileNodeFields': {
@@ -795,27 +912,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.state,
             context
           )
+          applyWidgetValues(scope, mutation.state.id, mutation.widgets, context)
           break
         }
         case 'setWidget': {
-          const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-          if (!widgetStore.getWidget(id)) {
-            widgetStore.registerWidget(
-              id,
-              {
-                name: mutation.name,
-                type: widgetType(mutation.value),
-                value: mutation.value,
-                options: {},
-                label: mutation.name
-              },
-              {},
-              undefined,
-              context
-            )
-          } else {
-            widgetStore.setValue(id, mutation.value, context)
-          }
+          setWidgetValue(
+            scope,
+            mutation.nodeId,
+            mutation.name,
+            mutation.value,
+            context
+          )
           break
         }
         case 'connect': {
