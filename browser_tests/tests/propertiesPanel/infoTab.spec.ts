@@ -59,16 +59,24 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
     }
   }
 
-  test(
+  const dynamicComboTest = test.extend({
+    page: async ({ page }, use) => {
+      const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+        page,
+        addAdvancedDynamicComboInput
+      )
+      try {
+        await use(page)
+      } finally {
+        await unrouteObjectInfo()
+      }
+    }
+  })
+
+  dynamicComboTest(
     'lists a dynamic combo option advanced input with its tooltip',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
-        comfyPage.page,
-        addAdvancedDynamicComboInput
-      )
-      // Reload so the node definition store boots from the patched object_info.
-      await comfyPage.workflow.reloadAndWaitForApp()
       await comfyPage.workflow.loadWorkflow('inputs/string_input')
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
@@ -85,21 +93,17 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
       await comfyPage.nodeOps.selectNodes([NODE_TITLE])
       await panel.switchToTab('Info')
 
-      try {
-        await expect(
-          panel.contentArea.getByRole('cell', {
-            name: NESTED_ADVANCED_INPUT_NAME
-          })
-        ).toBeVisible()
-        await expect(
-          panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
-        ).toBeVisible()
-        await expect(panel.contentArea).toHaveScreenshot(
-          'info-tab-dynamic-combo-advanced-input.png'
-        )
-      } finally {
-        await unrouteObjectInfo()
-      }
+      await expect(
+        panel.contentArea.getByRole('cell', {
+          name: NESTED_ADVANCED_INPUT_NAME
+        })
+      ).toBeVisible()
+      await expect(
+        panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
+      ).toBeVisible()
+      await expect(panel.contentArea).toHaveScreenshot(
+        'info-tab-dynamic-combo-advanced-input.png'
+      )
     }
   )
 })
