@@ -4,15 +4,7 @@ import type { User } from 'firebase/auth'
 
 import type { AccountUser, SessionClient } from '@comfyorg/account-core/session'
 
-const h = vi.hoisted(() => ({
-  captureSucceeded: vi.fn(),
-  captureFailed: vi.fn()
-}))
-
-vi.mock<unknown>(import('../scripts/posthog'), () => ({
-  captureAuthRefreshSucceeded: h.captureSucceeded,
-  captureAuthRefreshFailed: h.captureFailed
-}))
+vi.mock(import('../scripts/posthog'))
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
 
@@ -47,9 +39,11 @@ function statusFetch(status: number) {
 async function importFresh() {
   vi.resetModules()
   const mod = await import('./workshop-account')
+  const telemetry = await import('../scripts/posthog')
   return {
     client: mod.workshopSessionClient,
-    startTelemetry: mod.subscribeAuthRefreshTelemetry
+    startTelemetry: mod.subscribeAuthRefreshTelemetry,
+    telemetry
   }
 }
 
@@ -121,54 +115,58 @@ describe('auth refresh telemetry', () => {
 
   it('reports one succeeded outcome per minted token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const { client, startTelemetry } = await importFresh()
+    const { client, startTelemetry, telemetry } = await importFresh()
     onTestFinished(startTelemetry())
     const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
 
-    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
-    expect(h.captureFailed).not.toHaveBeenCalled()
+    await vi.waitFor(() =>
+      expect(telemetry.captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
+    )
+    expect(telemetry.captureAuthRefreshFailed).not.toHaveBeenCalled()
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const { client, startTelemetry } = await importFresh()
+    const { client, startTelemetry, telemetry } = await importFresh()
     onTestFinished(startTelemetry())
     const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
-    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
+    await vi.waitFor(() =>
+      expect(telemetry.captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
+    )
     fire(testFirebaseUser())
     await vi.waitFor(() =>
       expect(client.getSnapshot().phase).toBe('authenticated')
     )
 
     expect(
-      h.captureSucceeded,
+      telemetry.captureAuthRefreshSucceeded,
       'a cached read is not a new refresh outcome'
     ).toHaveBeenCalledOnce()
   })
 
   it('reports a permanent failure outcome', async () => {
     vi.stubGlobal('fetch', statusFetch(403))
-    const { client, startTelemetry } = await importFresh()
+    const { client, startTelemetry, telemetry } = await importFresh()
     onTestFinished(startTelemetry())
     const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
 
     await vi.waitFor(() =>
-      expect(h.captureFailed).toHaveBeenCalledExactlyOnceWith(
-        'permanent_failure'
-      )
+      expect(
+        telemetry.captureAuthRefreshFailed
+      ).toHaveBeenCalledExactlyOnceWith('permanent_failure')
     )
-    expect(h.captureSucceeded).not.toHaveBeenCalled()
+    expect(telemetry.captureAuthRefreshSucceeded).not.toHaveBeenCalled()
   })
 
   it('stays silent on a transient failure', async () => {
     vi.stubGlobal('fetch', statusFetch(503))
-    const { client, startTelemetry } = await importFresh()
+    const { client, startTelemetry, telemetry } = await importFresh()
     onTestFinished(startTelemetry())
     const fire = await attachManualPort(client)
 
@@ -176,9 +174,9 @@ describe('auth refresh telemetry', () => {
 
     await vi.waitFor(() => expect(client.getSnapshot().phase).toBe('error'))
     expect(
-      h.captureFailed,
+      telemetry.captureAuthRefreshFailed,
       'valid-on-read has no retry machinery, so transient outcomes are cloud-only vocabulary'
     ).not.toHaveBeenCalled()
-    expect(h.captureSucceeded).not.toHaveBeenCalled()
+    expect(telemetry.captureAuthRefreshSucceeded).not.toHaveBeenCalled()
   })
 })

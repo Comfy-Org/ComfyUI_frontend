@@ -5,17 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import {
-  createMockCanvas,
-  createMockPositionable
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
@@ -87,11 +84,7 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  isLGraphNode: vi.fn(() => true),
-  isImageNode: vi.fn(() => false),
-  isLoad3dNode: vi.fn(() => false)
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
@@ -210,21 +203,21 @@ describe('SelectionToolbox', () => {
 
     it('should show info button only for single selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(container.querySelector('.info-button')).toBeTruthy()
 
       // Multiple node selection - render in separate test scope
       canvasStore.selectedItems = [
-        createMockPositionable(),
-        createMockPositionable()
+        new LGraphNode('Test Node'),
+        new LGraphNode('Test Node')
       ]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.info-button')).toBeFalsy()
     })
 
     it('should not show info button when node definition is not found', () => {
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
       const { container } = renderComponent()
       expect(container.querySelector('.info-button')).toBeFalsy()
@@ -235,7 +228,7 @@ describe('SelectionToolbox', () => {
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': true
       })
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
 
       const { container } = renderComponent()
 
@@ -247,7 +240,7 @@ describe('SelectionToolbox', () => {
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': false
       })
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
 
       const { container } = renderComponent()
 
@@ -259,7 +252,7 @@ describe('SelectionToolbox', () => {
         'Comfy.UseNewMenu': 'Top',
         'Comfy.NodeLibrary.NewDesign': false
       })
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
 
       const { container } = renderComponent()
 
@@ -268,7 +261,7 @@ describe('SelectionToolbox', () => {
 
     it('should show color picker for all selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(
         container.querySelector('[data-testid="color-picker-button"]')
@@ -276,8 +269,8 @@ describe('SelectionToolbox', () => {
 
       // Multiple node selection
       canvasStore.selectedItems = [
-        createMockPositionable(),
-        createMockPositionable()
+        new LGraphNode('Test Node'),
+        new LGraphNode('Test Node')
       ]
       const { container: container2 } = renderComponent()
       expect(
@@ -287,14 +280,14 @@ describe('SelectionToolbox', () => {
 
     it('should show frame nodes only for multiple selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(container.querySelector('.frame-nodes')).toBeFalsy()
 
       // Multiple node selection
       canvasStore.selectedItems = [
-        createMockPositionable(),
-        createMockPositionable()
+        new LGraphNode('Test Node'),
+        new LGraphNode('Test Node')
       ]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.frame-nodes')).toBeTruthy()
@@ -302,7 +295,7 @@ describe('SelectionToolbox', () => {
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(
         container.querySelector('[data-testid="bypass-button"]')
@@ -310,8 +303,8 @@ describe('SelectionToolbox', () => {
 
       // Multiple node selection
       canvasStore.selectedItems = [
-        createMockPositionable(),
-        createMockPositionable()
+        new LGraphNode('Test Node'),
+        new LGraphNode('Test Node')
       ]
       const { container: container2 } = renderComponent()
       expect(
@@ -320,7 +313,7 @@ describe('SelectionToolbox', () => {
     })
 
     it('should show common buttons for all selections', () => {
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
 
       expect(
@@ -335,33 +328,30 @@ describe('SelectionToolbox', () => {
     })
 
     it('should show mask editor only for single image nodes', () => {
-      const isImageNodeSpy = vi.spyOn(litegraphUtil, 'isImageNode')
+      const imageNode = new LGraphNode('Test Node')
+      imageNode.previewMediaType = 'image'
 
       // Single image node
-      isImageNodeSpy.mockReturnValue(true)
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [imageNode]
       const { container } = renderComponent()
       expect(container.querySelector('.mask-editor-button')).toBeTruthy()
 
       // Single non-image node
-      isImageNodeSpy.mockReturnValue(false)
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.mask-editor-button')).toBeFalsy()
     })
 
     it('should show Color picker button only for single Load3D nodes', () => {
-      const isLoad3dNodeSpy = vi.spyOn(litegraphUtil, 'isLoad3dNode')
-
       // Single Load3D node
-      isLoad3dNodeSpy.mockReturnValue(true)
-      canvasStore.selectedItems = [createMockPositionable()]
+      vi.mocked(litegraphUtil.isLoad3dNode).mockReturnValue(true)
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(container.querySelector('.load-3d-viewer-button')).toBeTruthy()
 
       // Single non-Load3D node
-      isLoad3dNodeSpy.mockReturnValue(false)
-      canvasStore.selectedItems = [createMockPositionable()]
+      vi.mocked(litegraphUtil.isLoad3dNode).mockReturnValue(false)
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.load-3d-viewer-button')).toBeFalsy()
     })
@@ -375,14 +365,14 @@ describe('SelectionToolbox', () => {
       filterOutputNodesSpy.mockReturnValue([
         { type: 'SaveImage' }
       ] as LGraphNode[])
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
       expect(container.querySelector('.execute-button')).toBeTruthy()
 
       // Without output node selected
       isOutputNodeSpy.mockReturnValue(false)
       filterOutputNodesSpy.mockReturnValue([])
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container: container2 } = renderComponent()
       expect(container2.querySelector('.execute-button')).toBeFalsy()
 
@@ -396,7 +386,7 @@ describe('SelectionToolbox', () => {
   describe('Divider Visibility Logic', () => {
     it('should show dividers between button groups when both groups have buttons', () => {
       // Setup single node to show info + other buttons
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
 
       const dividers = container.querySelectorAll('.vertical-divider')
@@ -434,7 +424,7 @@ describe('SelectionToolbox', () => {
         invokeExtensionsAsync: vi.fn()
       } as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
 
       expect(container.querySelector('.extension-command-button')).toBeTruthy()
@@ -444,7 +434,7 @@ describe('SelectionToolbox', () => {
       const mockExtensionService = vi.mocked(useExtensionService)
       mockExtensionService.mockReturnValue(createMockExtensionService())
 
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
 
       expect(container.querySelector('.extension-command-button')).toBeFalsy()
@@ -469,7 +459,7 @@ describe('SelectionToolbox', () => {
       const mockExtensionService = vi.mocked(useExtensionService)
       mockExtensionService.mockReturnValue(createMockExtensionService())
 
-      canvasStore.selectedItems = [createMockPositionable()]
+      canvasStore.selectedItems = [new LGraphNode('Test Node')]
       const { container } = renderComponent()
 
       const panel = container.querySelector('[data-testid="selection-toolbox"]')
