@@ -62,6 +62,7 @@ import type {
   Stripe,
   StripeAddressElement,
   StripeElements,
+  StripeError,
   StripePaymentElement
 } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -69,7 +70,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import type {
   StripePaymentCopy,
-  StripePaymentPhase
+  StripePaymentPhase,
+  StripeSubmitPhase
 } from './stripePaymentPhase'
 
 const {
@@ -125,12 +127,25 @@ const submitDisabled = computed(
   () => !stripeElements.value || !canSubmit || verificationPending
 )
 
+const submitBlocked = computed(
+  () => submitDisabled.value || isSubmitting.value || isLoading
+)
+
 function failElementInit(): void {
   configurationError.value = copy.unavailable
   reportPhase({
     phase: 'payment_element_failed',
     element: 'payment',
     element_phase: 'init'
+  })
+}
+
+function failSubmit(submitPhase: StripeSubmitPhase, error?: StripeError): void {
+  configurationError.value = error?.message ?? copy.genericError
+  reportPhase({
+    phase: 'payment_submit_failed',
+    submit_phase: submitPhase,
+    ...(error?.code && { error_code: error.code })
   })
 }
 
@@ -301,15 +316,7 @@ onBeforeUnmount(() => {
 })
 
 async function submit() {
-  if (
-    isSubmitting.value ||
-    isLoading ||
-    verificationPending ||
-    !canSubmit ||
-    !stripeElements.value ||
-    !stripe
-  )
-    return
+  if (submitBlocked.value || !stripeElements.value || !stripe) return
   isSubmitting.value = true
   emit('submittingChange', true)
   configurationError.value = ''
@@ -321,41 +328,23 @@ async function submit() {
     try {
       submitResult = await stripeElements.value.submit()
     } catch {
-      configurationError.value = copy.genericError
-      reportPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'validation'
-      })
+      failSubmit('validation')
       return
     }
     if (submitResult.error) {
-      configurationError.value = submitResult.error.message ?? copy.genericError
-      reportPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'validation',
-        ...(submitResult.error.code && { error_code: submitResult.error.code })
-      })
+      failSubmit('validation', submitResult.error)
       return
     }
     const result = await stripe.createConfirmationToken({
       elements: stripeElements.value
     })
     if (result.error) {
-      configurationError.value = result.error.message ?? copy.genericError
-      reportPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'token_creation',
-        ...(result.error.code && { error_code: result.error.code })
-      })
+      failSubmit('token_creation', result.error)
       return
     }
     emit('confirm', result.confirmationToken.id)
   } catch {
-    configurationError.value = copy.genericError
-    reportPhase({
-      phase: 'payment_submit_failed',
-      submit_phase: 'token_creation'
-    })
+    failSubmit('token_creation')
   } finally {
     isSubmitting.value = false
     emit('submittingChange', false)
