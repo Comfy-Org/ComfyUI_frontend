@@ -99,6 +99,11 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/telemetry'))
 
+// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
+}))
+
 let scope: ReturnType<typeof effectScope> | undefined
 
 function setupBilling() {
@@ -924,8 +929,32 @@ describe('useWorkspaceBilling', () => {
         )
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
+
+        mockWorkspaceApi.getBillingStatus.mockClear()
+        document.dispatchEvent(new Event('visibilitychange'))
+        expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       }
     )
+
+    it('clears a failure from the previous attempt when the hosted route opens', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => window)
+      )
+      localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+      mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
+        new Error('portal down')
+      )
+
+      const billing = setupBilling()
+      await expect(billing.manageSubscription()).rejects.toThrow('portal down')
+      expect(billing.error.value).toBe('portal down')
+
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+      await billing.manageSubscription()
+
+      expect(billing.error.value).toBeNull()
+    })
 
     it('opens the portal URL the SDK rail returns while the server says stripe', async () => {
       const openSpy = vi.fn(() => window)

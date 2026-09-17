@@ -150,6 +150,11 @@ vi.mock<unknown>(import('@/config/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
 }))
 
+// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
+}))
+
 const WorkspaceSwitcherPopoverStub = defineComponent({
   emits: ['select', 'create'],
   template: `
