@@ -26,6 +26,9 @@
       class="min-w-96"
       dismissable-mask
       modal
+      @keydown.esc.stop="
+        !$event.isComposing && (nodeSearchFilterVisible = false)
+      "
       @hide="reFocusInput"
     >
       <template #header>
