@@ -59,6 +59,7 @@ interface ValidationErrorSurface {
   error: NodeValidationError
 }
 
+// undefined means no verdict yet; null or [] means a verified empty result.
 interface MissingResourceCandidates {
   models?: MissingModelCandidate[] | null
   media?: MissingMediaCandidate[] | null
