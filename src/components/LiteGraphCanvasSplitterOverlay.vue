@@ -67,7 +67,7 @@
             <slot name="topmenu" :sidebar-panel-visible />
 
             <Splitter
-              class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
+              class="splitter-overlay-bottom pointer-events-none mx-(--comfy-canvas-gutter) mb-(--comfy-canvas-gutter) flex-1 border-none bg-transparent"
               layout="vertical"
               :pt:gutter="
                 cn(
