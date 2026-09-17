@@ -11,9 +11,10 @@ export interface IdentityPort<TUser extends AccountUser = AccountUser> {
 }
 
 /**
- * Only the package's own identity entry (and the `./testing` seam) can mint
- * an identity the session client accepts. A host cannot hand in its own
- * provider: the symbol lives in a module the exports map never exposes.
+ * The brand is a compile-time gate only: `createSessionClient` rejects an
+ * unbranded port in the type system, and no runtime check remains. The
+ * package's own identity entries mint it, and `./testing` deliberately
+ * re-exports the minter as `createTestIdentity` so a suite can brand a fake.
  */
 export const identityBrand: unique symbol = Symbol(
   '@comfyorg/account-core identity'

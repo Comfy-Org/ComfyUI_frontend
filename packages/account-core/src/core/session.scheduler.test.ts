@@ -3,21 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   AccountCredential,
   AccountIdentity,
-  AccountUser,
   CrossTabRefreshPort,
   ScheduledRefreshReport,
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
 import {
+  EXCHANGE_URL,
+  NINETY_MINUTES_MS,
   manualIdentity,
   memoryStorage,
-  mintResponse
+  mintResponse,
+  testUser
 } from './__fixtures__/sessionFakes.js'
 import { createSessionClient } from './session.js'
-
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-const NINETY_MINUTES_MS = 90 * 60 * 1000
 const DEFAULT_BUFFER_MS = 5 * 60 * 1000
 
 function makeClient(
@@ -33,10 +32,6 @@ function makeClient(
     },
     identity
   )
-}
-
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
 }
 
 beforeEach(() => {

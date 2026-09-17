@@ -84,8 +84,12 @@ const ComfyUIPreset = definePreset(Aura, {
 })
 
 const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
-firebaseIdentity.initialize()
-phaseFirebase.stop()
+// Throws unless remote config has settled; the awaited remote-config phase above guarantees it has.
+try {
+  firebaseIdentity.initialize()
+} finally {
+  phaseFirebase.stop()
+}
 
 const app = createApp(App)
 const pinia = createPinia()

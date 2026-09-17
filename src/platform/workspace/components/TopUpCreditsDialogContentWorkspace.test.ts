@@ -1,11 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { Auth } from 'firebase/auth'
-import {
-  initializeAuth,
-  onAuthStateChanged,
-  onIdTokenChanged
-} from 'firebase/auth'
-
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -32,6 +24,7 @@ import type { BillingOperation } from '@/platform/workspace/composables/billingO
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
@@ -178,9 +171,7 @@ async function clickAddCredits() {
 }
 
 beforeEach(() => {
-  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
-  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 beforeEach(() => {

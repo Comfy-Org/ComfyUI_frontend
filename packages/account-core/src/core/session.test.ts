@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  EXCHANGE_URL,
   jsonResponse,
+  makeClient,
   manualIdentity,
   memoryStorage,
   mintBody,
-  okFetch
+  okFetch,
+  testUser
 } from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
-  AccountIdentity,
   AccountUser,
   CredentialStorage,
-  SessionClientOptions,
   SessionErrorCode
 } from './session.js'
 import {
@@ -21,24 +22,6 @@ import {
   isCredentialFresh,
   isPermanentSessionError
 } from './session.js'
-
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-
-function makeClient(
-  overrides: Partial<SessionClientOptions> = {},
-  identity?: AccountIdentity
-) {
-  const storage = memoryStorage()
-  const client = createSessionClient(
-    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
-    identity
-  )
-  return { client, storage }
-}
-
-function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => idToken) }
-}
 
 function seedCache(
   storage: CredentialStorage,
@@ -683,7 +666,7 @@ describe('clearStoredCredential', () => {
     expect(storage.raw()).toBeNull()
     expect(
       client.getToken(),
-      'storage is the reload cache, not the session; ending the session is invalidate() or detach'
+      'storage is the reload cache, not the session; ending the session is invalidate() or dispose()'
     ).toBe('workspace-jwt')
   })
 })
