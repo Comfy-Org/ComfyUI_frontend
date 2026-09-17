@@ -382,7 +382,7 @@ describe('reconcileAgentAdapters', () => {
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)
       mutations.addNode(
-        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        { ...nodePayload(1, 'widget-node'), widgets_values: {} },
         REMOTE
       )
       mutations.setWidget(toNodeId(1), 'value', 9, REMOTE)

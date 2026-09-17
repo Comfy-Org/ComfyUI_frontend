@@ -354,9 +354,11 @@ function replayUpdatedWidgetCallbacks(
   const canonicalByName = new Map(
     widgets.flatMap((state) => (state.name ? [[state.name, state]] : []))
   )
-  for (const [name, previousValue] of Object.entries(values)) {
-    const state = canonicalByName.get(name)
-    if (!state || Object.is(previousValue, state.value)) continue
+  for (const [name, state] of canonicalByName) {
+    const previousValue = values[name]
+    if (Object.hasOwn(values, name) && Object.is(previousValue, state.value)) {
+      continue
+    }
     const widget = node.widgets?.find((candidate) => candidate.name === name)
     if (!widget) continue
     widget.callback?.(state.value)
