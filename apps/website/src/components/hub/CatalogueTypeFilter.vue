@@ -5,11 +5,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { TypeFilter } from '../../lib/hub/browse-entry'
 
-const { counts, locale = 'en' } = defineProps<{
-  /** What choosing each type would return, not how many exist in the abstract. */
-  counts: Readonly<Record<TypeFilter, number>>
-  locale?: Locale
-}>()
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const type = defineModel<TypeFilter>({ required: true })
 
@@ -35,7 +31,7 @@ const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
       type="button"
       :class="
         cn(
-          'inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-2.5',
+          'inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-2.5',
           type === option.value
             ? 'bg-primary-warm-white text-page'
             : 'text-content-secondary hover:text-content-bright'
@@ -47,9 +43,6 @@ const TYPES: readonly { value: TypeFilter; label: TranslationKey }[] = [
       @click="type = option.value"
     >
       {{ t(option.label, locale) }}
-      <span class="text-2xs tabular-nums opacity-70 max-sm:hidden">
-        {{ counts[option.value] }}
-      </span>
     </button>
   </div>
 </template>

@@ -102,8 +102,8 @@ const usesTheModel = (entry: BrowseEntry, name: string) =>
   name === '' ||
   entry.models.some((model) => normalize(model) === normalize(name))
 
-// Everything but the type, so the type counts can say what choosing each one
-// would return rather than how many exist in the abstract.
+// Everything but the type, so a facet count says what choosing it would return
+// and the curated rows read the whole use case rather than one kind of it.
 const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
   const text = query.value.trim().toLowerCase()
   return [
@@ -127,16 +127,6 @@ const isType = (entry: BrowseEntry, filter: TypeFilter) =>
   filter === 'all' ||
   entry.kind === filter ||
   (filter === 'workflow' && entry.kind === 'app')
-
-const countOf = (value: TypeFilter) =>
-  beforeType.value.filter((entry) => isType(entry, value)).length
-
-const counts = computed(() => ({
-  all: countOf('all'),
-  model: countOf('model'),
-  workflow: countOf('workflow'),
-  app: countOf('app')
-}))
 
 const matched = computed(() =>
   beforeType.value.filter((entry) => isType(entry, type.value))
@@ -333,7 +323,7 @@ const heading = computed(() =>
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
-      <CatalogueTypeFilter v-model="type" :counts :locale />
+      <CatalogueTypeFilter v-model="type" :locale />
 
       <!-- The type says what is in the list; the search and the controls narrow
         and order what it chose, so they group together away from it. -->
