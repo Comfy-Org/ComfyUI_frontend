@@ -5,7 +5,8 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
-  getPromotedWidgetCount
+  getPromotedWidgetCount,
+  setPromotedHostWidgetValue
 } from '@e2e/fixtures/utils/promotedWidgets'
 
 async function expectPromotedWidgetNamesToContain(
@@ -91,6 +92,8 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
         test('Promoted widget connected to the subgraph input is interactive on the host', async ({
           comfyPage
         }) => {
@@ -113,11 +116,14 @@ test.describe(
 
         test(
           'Promoted advanced widget remains visible when global advanced widgets are disabled',
-          { tag: ['@node'] },
+          { tag: ['@node', '@slow'] },
           async ({ comfyPage }) => {
             const settingId = 'Comfy.Node.AlwaysShowAdvancedWidgets'
             const settingName = 'Always show advanced widgets on all nodes'
             const parentValue = '2.25'
+
+            test.setTimeout(120_000)
+            await comfyPage.workflow.setupWorkflowsDirectory({})
 
             await test.step('Verify the named global setting is disabled', async () => {
               await comfyPage.settings.setSetting(settingId, false)
@@ -180,8 +186,68 @@ test.describe(
               await expect(promotedWidget).toBeVisible()
               const promotedInput = promotedWidget.getByRole('spinbutton')
               await promotedInput.fill(parentValue)
+              await promotedInput.press('Tab')
               await expect(promotedInput).toHaveValue(parentValue)
             })
+
+            const host = await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            const identity = await comfyPage.subgraph.getHostIdentity(host)
+            await comfyPage.subgraph.expectPromotedWidget(host, 'max_shift', {
+              ...identity,
+              label: 'max_shift',
+              value: Number(parentValue)
+            })
+
+            const workflowName = 'vue-advanced-promoted-host-value'
+            await comfyPage.workflow.saveWorkflow(workflowName)
+            await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+              workflowName
+            )
+
+            const restored =
+              await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            await comfyPage.subgraph.expectPromotedWidget(
+              restored,
+              'max_shift',
+              {
+                ...identity,
+                label: 'max_shift',
+                value: Number(parentValue)
+              }
+            )
+
+            await comfyPage.menu.topbar.setVueNodesEnabled(false)
+            await fitToViewInstant(comfyPage, { zoom: 1 })
+            const liteGraphWidget = await restored.getWidgetByName('max_shift')
+            expect(await liteGraphWidget.getValue()).toBe(Number(parentValue))
+            expect(
+              await setPromotedHostWidgetValue(
+                comfyPage,
+                restored.id,
+                'max_shift',
+                '2.5',
+                { useSetValue: true }
+              )
+            ).toBe('2.5')
+            await comfyPage.menu.topbar.setVueNodesEnabled(true)
+
+            const restoredInput = comfyPage.vueNodes
+              .getNodeLocator(subgraphNodeId)
+              .getByLabel('max_shift', { exact: true })
+              .getByRole('spinbutton')
+            await expect(restoredInput).toBeVisible()
+            await restoredInput.fill('2.75')
+            await restoredInput.press('Tab')
+            await expect(restoredInput).toHaveValue('2.75')
+            await comfyPage.subgraph.expectPromotedWidget(
+              restored,
+              'max_shift',
+              {
+                ...identity,
+                label: 'max_shift',
+                value: 2.75
+              }
+            )
           }
         )
 
