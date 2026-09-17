@@ -1,0 +1,259 @@
+<script setup lang="ts">
+/**
+ * The hosted checkout: the server's quote on the left, the shared Stripe form
+ * on the right, and `commands.subscribe` in between. Every payment state
+ * after the card is submitted comes from the lifecycle's projection, so this
+ * page renders what the SDK says and never keeps a payment state of its own.
+ * A hosted continuation redirects this tab and comes back on `/v1/result`.
+ */
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import {
+  CheckoutSteps,
+  useCheckout,
+  usePreviewSubscribe
+} from '@comfyorg/account-ui/billing'
+import type { StripePaymentCopy } from '@comfyorg/account-ui/billing/stripe'
+import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
+import {
+  billingIntentPath,
+  buildBillingEntryUrl,
+  buildReturnUrl
+} from '@comfyorg/billing-contract'
+
+import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
+import HostedSurface from '@/components/HostedSurface.vue'
+import { useHostedCopy } from '@/composables/useHostedCopy'
+import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { useBillingEntry } from '@/entry/billingEntry'
+import { createStripeChallengePort } from '@/session/stripeChallengePort'
+
+const { t } = useI18n()
+const { coded } = useHostedCopy()
+const route = useRoute()
+const router = useRouter()
+const { entry } = useBillingEntry()
+
+const planSlug = computed(() => entry.value?.plan)
+
+const { preview, loading, failure, quote } = usePreviewSubscribe()
+
+const challengePort =
+  STRIPE_PUBLISHABLE_KEY === undefined
+    ? undefined
+    : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+
+const checkout = useCheckout({
+  openUrl: (url) => window.location.assign(url),
+  navigationMode: 'redirect',
+  challengePort
+})
+
+onMounted(() => {
+  if (planSlug.value !== undefined) void quote({ planSlug: planSlug.value })
+})
+
+const paymentCopy = computed<StripePaymentCopy>(() => ({
+  paymentMethod: t('checkout.paymentMethod'),
+  methodChoice: t('checkout.methodChoice'),
+  billingAddress: t('checkout.billingAddress'),
+  alipayRenewalNote: t('checkout.alipayRenewalNote'),
+  unavailable: t('checkout.unavailable'),
+  genericError: t('checkout.genericError')
+}))
+
+const summary = computed(() => {
+  const quoted = preview.value
+  if (!quoted) return undefined
+  return {
+    planName: t('hosted.plan.name', {
+      tier: coded('tier', quoted.new_plan.tier),
+      duration: coded('duration', quoted.new_plan.duration)
+    }),
+    priceCents: quoted.new_plan.price_cents,
+    amountDueCents: quoted.amount_due_cents ?? quoted.cost_today_cents,
+    creditsCents: quoted.new_plan.credits_cents,
+    billingCycle: cycleOf(quoted)
+  }
+})
+
+function cycleOf(quoted: SubscriptionPreview): 'monthly' | 'yearly' {
+  return quoted.new_plan.duration === 'MONTHLY' ? 'monthly' : 'yearly'
+}
+
+const amountCents = computed(
+  () => preview.value?.amount_due_cents ?? preview.value?.cost_today_cents ?? 0
+)
+
+const returnLink = computed(() => {
+  const arrival = entry.value
+  if (!arrival) return undefined
+  const url = buildReturnUrl({
+    target: arrival.returnTo,
+    environment: BILLING_WEB_ENV,
+    result:
+      checkout.projection.value.step === 'success' ? 'success' : undefined,
+    reference: checkout.projection.value.operationId
+  })
+  return url?.href
+})
+
+/** Where a hosted payment step sends the customer back: this origin, same request. */
+function resultUrl(): string | undefined {
+  const arrival = entry.value
+  if (!arrival) return undefined
+  const built = buildBillingEntryUrl({
+    billingOrigin: window.location.origin,
+    intent: 'result',
+    product: arrival.product,
+    returnTo: arrival.returnTo,
+    ...(arrival.plan === undefined ? {} : { plan: arrival.plan })
+  })
+  return built.status === 'ok' ? built.url.href : undefined
+}
+
+function confirm(confirmationToken: string) {
+  const quoted = preview.value
+  if (planSlug.value === undefined || !quoted) return
+  const returnUrl = resultUrl()
+  void checkout.subscribe({
+    plan_slug: planSlug.value,
+    confirmation_token: confirmationToken,
+    ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
+    ...(quoted.quote_version === undefined
+      ? {}
+      : { quote_version: quoted.quote_version }),
+    ...(returnUrl === undefined ? {} : { return_url: returnUrl })
+  })
+}
+
+function back() {
+  void router.push({
+    path: billingIntentPath('subscription'),
+    query: route.query
+  })
+}
+
+function close() {
+  const href = returnLink.value
+  if (href === undefined) back()
+  else window.location.assign(href)
+}
+
+const subscriptionPath = computed(() => ({
+  path: billingIntentPath('subscription'),
+  query: route.query
+}))
+</script>
+
+<template>
+  <HostedSurface v-if="planSlug === undefined">
+    <section
+      class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+    >
+      <h2 class="m-0 text-base font-semibold text-base-foreground">
+        {{ t('checkout.noPlanTitle') }}
+      </h2>
+      <p class="mt-2 mb-0 text-sm text-muted-foreground">
+        {{ t('checkout.noPlanBody') }}
+      </p>
+      <RouterLink
+        :to="subscriptionPath"
+        class="mt-4 inline-block text-sm text-base-foreground underline underline-offset-4"
+      >
+        {{ t('checkout.choosePlan') }}
+      </RouterLink>
+    </section>
+  </HostedSurface>
+
+  <main
+    v-else
+    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+  >
+    <section class="mx-auto flex min-h-full max-w-7xl items-center">
+      <p v-if="loading && !summary" class="m-0 text-sm text-muted-foreground">
+        {{ t('hosted.loading') }}
+      </p>
+      <section
+        v-else-if="failure"
+        class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+      >
+        <p class="m-0 text-sm text-destructive-background">
+          {{ coded('failure', failure.code) }}
+        </p>
+        <button
+          type="button"
+          class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
+          @click="back"
+        >
+          {{ t('checkout.back') }}
+        </button>
+      </section>
+      <EmbeddedCheckout
+        v-else-if="summary"
+        v-bind="summary"
+        :phase="
+          checkout.projection.value.step === 'success' ? 'success' : 'payment'
+        "
+        @back="back"
+        @close="close"
+      >
+        <template #form>
+          <CheckoutSteps
+            v-if="checkout.operation.value"
+            :projection="checkout.projection.value"
+            root-class="flex flex-col gap-3"
+            header-class="m-0 text-base font-semibold text-base-foreground"
+            body-class="m-0 text-sm text-muted-foreground"
+            reason-class="m-0 text-sm text-destructive-background"
+            safety-class="m-0 text-sm text-muted-foreground"
+            actions-class="mt-2 flex gap-2"
+            action-class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+            @retry="checkout.reset()"
+            @cancel="checkout.cancel()"
+            @continue-verification="checkout.continueVerification()"
+          />
+          <StripePaymentForm
+            v-else
+            :publishable-key="STRIPE_PUBLISHABLE_KEY ?? ''"
+            :amount-cents="amountCents"
+            :currency="preview?.currency ?? 'usd'"
+            :copy="paymentCopy"
+            :payment-method-configuration-id="
+              preview?.payment_method_configuration_id ?? ''
+            "
+            :is-loading="checkout.submitting.value"
+            :can-submit="preview?.allowed ?? false"
+            @confirm="confirm"
+          >
+            <template #submit="{ disabled, loading: submitting }">
+              <button
+                type="submit"
+                :disabled="disabled || submitting"
+                class="h-12 w-full cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {{ t('checkout.payAndSubscribe') }}
+              </button>
+            </template>
+          </StripePaymentForm>
+        </template>
+        <template #done>
+          <a
+            v-if="returnLink"
+            :href="returnLink"
+            class="mt-10 flex h-12 w-full items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+          >
+            {{
+              t('checkout.returnToProduct', {
+                product: coded('product', entry?.product)
+              })
+            }}
+          </a>
+        </template>
+      </EmbeddedCheckout>
+    </section>
+  </main>
+</template>

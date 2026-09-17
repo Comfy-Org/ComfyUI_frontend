@@ -2,18 +2,25 @@
  * A `BillingClient` whose readers and commands answer from canned core
  * results. The hosted surfaces only project what the composables expose, so a
  * scripted client is enough here; the composables themselves are covered
- * against a real core in `@comfyorg/account-ui`.
+ * against a real core in `@comfyorg/account-ui`. Operations a command or a
+ * recovery produces are published to lifecycle subscribers the way the real
+ * lifecycle would, so a view's projection over them is exercised for real.
  */
 import { vi } from 'vitest'
 
 import type {
+  BillingDeclineReason,
+  BillingOperationState,
   BillingPlansData,
   BillingResult,
   PaymentMethodsSnapshot,
+  PaymentPortalResult,
   PlansSnapshot,
   PreviewSubscribeResult,
   SavedPaymentMethod,
-  SubscriptionPreview
+  SubscriptionCommandResult,
+  SubscriptionPreview,
+  TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
@@ -36,6 +43,10 @@ export interface FakeBillingClientOptions {
   readonly paymentMethods?: BillingResult<readonly SavedPaymentMethod[]>
   readonly preview?: PreviewSubscribeResult
   readonly portalUrl?: string
+  /** Overrides `portalUrl` when the portal itself should answer with a failure. */
+  readonly portal?: PaymentPortalResult
+  readonly subscribe?: SubscriptionCommandResult
+  readonly recover?: BillingResult<BillingOperationState | undefined>
 }
 
 export interface FakeBillingClient {
@@ -47,6 +58,10 @@ export interface FakeBillingClient {
   readonly invalidatePaymentMethods: () => void
   readonly previewSubscribe: BillingClient['commands']['previewSubscribe']
   readonly openPaymentPortal: BillingClient['commands']['openPaymentPortal']
+  readonly subscribe: BillingClient['commands']['subscribe']
+  readonly recover: BillingClient['lifecycle']['recover']
+  /** Publishes an operation as the lifecycle would after a poll. */
+  readonly publishOperation: (state: BillingOperationState) => void
 }
 
 export function createFakeBillingClient(
@@ -59,8 +74,19 @@ export function createFakeBillingClient(
     },
     paymentMethods = { status: 'ok', value: [] },
     preview = { status: 'error', code: 'REQUEST_FAILED' },
-    portalUrl = 'https://billing.stripe.test/session'
+    portalUrl = 'https://billing.stripe.test/session',
+    portal: portalOutcome = { status: 'ok', value: { url: portalUrl } },
+    subscribe: subscribeOutcome = { status: 'error', code: 'REQUEST_FAILED' },
+    recover: recoverOutcome = { status: 'ok', value: undefined }
   } = options
+
+  const operations = new Map<string, BillingOperationState>()
+  const listeners = new Set<(state: BillingOperationState) => void>()
+
+  function publishOperation(state: BillingOperationState) {
+    operations.set(state.id, state)
+    for (const listener of listeners) listener(state)
+  }
 
   const readPlans = vi.fn(async () =>
     plans.status === 'ok'
@@ -84,15 +110,24 @@ export function createFakeBillingClient(
   )
   const invalidatePaymentMethods = vi.fn(() => {})
   const previewSubscribe = vi.fn(async () => preview)
-  const openPaymentPortal = vi.fn(async () => ({
-    status: 'ok' as const,
-    value: { url: portalUrl }
-  }))
+  const openPaymentPortal = vi.fn(async () => portalOutcome)
+  const subscribe = vi.fn(async () => {
+    if (subscribeOutcome.status === 'ok' && subscribeOutcome.value.operation) {
+      publishOperation(subscribeOutcome.value.operation)
+    }
+    return subscribeOutcome
+  })
+  const recover = vi.fn(async () => {
+    if (recoverOutcome.status === 'ok' && recoverOutcome.value) {
+      publishOperation(recoverOutcome.value)
+    }
+    return recoverOutcome
+  })
 
   const client: BillingClient = {
     lifecycle: {
       begin: unusedByHostedSurfaces('lifecycle.begin'),
-      recover: unusedByHostedSurfaces('lifecycle.recover'),
+      recover,
       wake: unusedByHostedSurfaces('lifecycle.wake'),
       switchPresentation: unusedByHostedSurfaces(
         'lifecycle.switchPresentation'
@@ -103,9 +138,12 @@ export function createFakeBillingClient(
       reportChallengeSettled: unusedByHostedSurfaces(
         'lifecycle.reportChallengeSettled'
       ),
-      get: unusedByHostedSurfaces('lifecycle.get'),
-      getSnapshot: () => [],
-      subscribe: () => () => {},
+      get: (id) => operations.get(id),
+      getSnapshot: () => [...operations.values()],
+      subscribe: (listener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      },
       settled: unusedByHostedSurfaces('lifecycle.settled'),
       dispose: () => {}
     },
@@ -143,7 +181,7 @@ export function createFakeBillingClient(
       )
     },
     commands: {
-      subscribe: unusedByHostedSurfaces('commands.subscribe'),
+      subscribe,
       previewSubscribe,
       resubscribe: unusedByHostedSurfaces('commands.resubscribe'),
       cancelSubscription: unusedByHostedSurfaces('commands.cancelSubscription'),
@@ -157,7 +195,10 @@ export function createFakeBillingClient(
     readPaymentMethods,
     invalidatePaymentMethods,
     previewSubscribe,
-    openPaymentPortal
+    openPaymentPortal,
+    subscribe,
+    recover,
+    publishOperation
   }
 }
 
@@ -206,5 +247,42 @@ export function planOf(
     slug: 'creator_monthly',
     tier: 'CREATOR',
     ...overrides
+  }
+}
+
+/** The identity every operation the fake publishes shares: this scope, embedded. */
+function operationIdentity(id: string) {
+  return {
+    id,
+    kind: 'subscription',
+    scope: SCOPE,
+    observedAt: READ_AT,
+    attemptStartedAt: READ_AT,
+    presentation: 'embedded'
+  } as const
+}
+
+export function succeededOperation(id = 'op_1'): TerminalBillingOperation {
+  return { ...operationIdentity(id), phase: 'succeeded' }
+}
+
+/** Pending with no continuation on offer: the lifecycle is still polling it. */
+export function pendingOperation(id = 'op_1'): BillingOperationState {
+  return {
+    ...operationIdentity(id),
+    phase: 'pending',
+    customerActionSeen: false
+  }
+}
+
+export function failedOperation(
+  declineReason: BillingDeclineReason,
+  id = 'op_1'
+): TerminalBillingOperation {
+  return {
+    ...operationIdentity(id),
+    phase: 'failed',
+    declineReason,
+    retryable: true
   }
 }

@@ -969,6 +969,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
+      '@stripe/stripe-js':
+        specifier: 'catalog:'
+        version: 9.12.1
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
