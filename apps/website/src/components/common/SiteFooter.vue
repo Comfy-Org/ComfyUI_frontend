@@ -41,7 +41,12 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
       { label: t('nav.comfyAgent', locale), href: routes.agent },
-      { label: t('nav.comfyCli', locale), href: routes.cli },
+      { label: t('nav.comfyCli', locale), href: routes.cli }
+    ]
+  },
+  {
+    title: t('footer.models', locale),
+    links: [
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
@@ -200,8 +205,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
           </div>
         </div>
 
-        <!-- Desktop: 3-col, Company+Contact merged -->
-        <div class="hidden grid-cols-3 gap-12 lg:grid">
+        <!-- Desktop: 4-col, Company+Contact merged -->
+        <div class="hidden grid-cols-4 gap-12 lg:grid">
           <FooterLinkColumn
             v-for="column in topColumns"
             :key="column.title"
