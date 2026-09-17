@@ -1,6 +1,6 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
@@ -630,6 +630,47 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.floatingLinks.size).toBe(1)
     expect(graph.reroutes.size).toBe(1)
     expect(graph.reroutes.values().next().value!.floating).not.toBeUndefined()
+  })
+
+  test('removes a rerouted floating chain after both endpoint nodes are removed', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const graph = new LGraph(linkedNodesGraph)
+    const connectedLink = graph.links.values().next().value!
+    const reroute = graph.createReroute([0, 0], connectedLink)
+    assert(reroute)
+    const originId = connectedLink.origin_id
+    const target = graph.getNodeById(connectedLink.target_id)!
+
+    graph.remove(target)
+
+    const [floatingLink] = graph.floatingLinks.values()
+    expect(floatingLink).toMatchObject({
+      origin_id: originId,
+      target_id: UNASSIGNED_NODE_ID,
+      parentId: reroute.id
+    })
+    expect(graph.reroutes.get(reroute.id)?.floatingLinkIds).toEqual(
+      new Set([floatingLink.id])
+    )
+
+    const serialised = graph.asSerialisable()
+    graph.id = createUuidv4()
+    const restored = new LGraph(serialised)
+    const restoredOrigin = restored.getNodeById(originId)!
+    expect(restored.floatingLinks.get(floatingLink.id)).toMatchObject({
+      origin_id: originId,
+      target_id: UNASSIGNED_NODE_ID,
+      parentId: reroute.id
+    })
+
+    restored.remove(restoredOrigin)
+
+    expect(restored.floatingLinks.has(floatingLink.id)).toBe(false)
+    expect(restored.reroutes.has(reroute.id)).toBe(false)
+    expect(restored.asSerialisable().floatingLinks).toBeUndefined()
+    expect(restored.asSerialisable().reroutes).toBeUndefined()
   })
 
   test('Create floating reroute when one side of link is removed', ({
