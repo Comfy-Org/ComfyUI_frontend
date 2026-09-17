@@ -564,9 +564,11 @@ const zNodeInputValue = z.union([
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: z.object({
-    title: z.string()
-  })
+  _meta: z
+    .object({
+      title: z.string()
+    })
+    .optional()
 })
 
 export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
