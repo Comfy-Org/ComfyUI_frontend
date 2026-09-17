@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -266,6 +267,17 @@ export function useSubscriptionCheckout(
     return subscription.value?.isCancelled ?? false
   }
 
+  // An absent `requires_reactivation_confirmation` means the server did not
+  // decide, so fall back to the subscription's own state rather than assuming
+  // a cancellation the user may never have had.
+  function previewRequiresReactivation(
+    preview: PreviewSubscribeResponse | null | undefined
+  ): boolean {
+    return (
+      preview?.requires_reactivation_confirmation ?? isSubscriptionCancelled()
+    )
+  }
+
   function hasQuoteIdentity(
     preview: PreviewSubscribeResponse
   ): preview is PreviewSubscribeResponse & {
@@ -279,8 +291,7 @@ export function useSubscriptionCheckout(
     if (!preview.allowed) return false
     previewData.value = preview
     if (embeddedCheckoutEnabled) {
-      reactivationRequired.value =
-        preview.requires_reactivation_confirmation ?? true
+      reactivationRequired.value = previewRequiresReactivation(preview)
     }
     quoteIsCurrent.value = true
 
@@ -304,7 +315,7 @@ export function useSubscriptionCheckout(
 
   function requiresReactivationConfirmation(): boolean {
     if (embeddedCheckoutEnabled) {
-      return previewData.value?.requires_reactivation_confirmation ?? true
+      return previewRequiresReactivation(previewData.value)
     }
     return isSubscriptionCancelled() || reactivationRequired.value
   }
@@ -601,7 +612,8 @@ export function useSubscriptionCheckout(
     }
 
     const amountChanged =
-      freshPreview.cost_today_cents !== previewData.value?.cost_today_cents
+      !previewData.value ||
+      amountDueTodayChanged(previewData.value, freshPreview)
     installPreview(freshPreview)
     toast.add({
       severity: 'error',
@@ -615,10 +627,12 @@ export function useSubscriptionCheckout(
     return true
   }
 
+  // Resolves `true` when the checkout stays blocked, `false` when the refresh
+  // cleared the block and the caller may continue.
   async function refreshPreviewOnReactivationBlock(
     planSlug: string,
     options?: PreviewSubscribeOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
     let freshPreview: PreviewSubscribeResponse | null = null
     try {
       freshPreview = await previewSubscribe(
@@ -628,7 +642,7 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const recovery = await recoverOutstandingPayment(error)
       if (recovery === 'failed') resetToPricing()
-      if (recovery) return
+      if (recovery) return true
       // Treated the same as an incapable preview below.
     }
     if (
@@ -638,7 +652,30 @@ export function useSubscriptionCheckout(
       installPreview(freshPreview)
       reactivationRequired.value = true
       notifyReactivationConfirmationRequired()
-      return
+      return true
+    }
+    // A first subscription has no prior plan to reactivate, so a valid
+    // new_subscription quote answers the block rather than failing it.
+    if (
+      freshPreview?.allowed &&
+      freshPreview.transition_type === 'new_subscription' &&
+      !isSubscriptionCancelled() &&
+      !previewRequiresReactivation(freshPreview)
+    ) {
+      // No installed quote means no amount the user has already seen; drop the
+      // `!!` and the empty-preview case this branch exists for compares a real
+      // amount against `undefined` and blocks again.
+      const amountChanged =
+        !!previewData.value &&
+        amountDueTodayChanged(previewData.value, freshPreview)
+      installPreview(freshPreview)
+      if (!amountChanged) return false
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('subscription.preview.reactivation.amountChanged')
+      })
+      return true
     }
     reactivationRequired.value = false
     resetToPricing()
@@ -647,6 +684,7 @@ export function useSubscriptionCheckout(
       summary: t('g.error'),
       detail: t('subscription.preview.reactivation.unavailable')
     })
+    return true
   }
 
   function canSelectTierPlan(): boolean {
@@ -1012,8 +1050,7 @@ export function useSubscriptionCheckout(
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
-        await refreshPreviewOnReactivationBlock(planSlug)
-        return
+        if (await refreshPreviewOnReactivationBlock(planSlug)) return
       }
       const attemptStartedAt = trackSubscriptionStarted({
         tier: tierKey,
@@ -1070,8 +1107,10 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug)
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug))
+      ) {
         return
       }
       trackSubscriptionFailure(
@@ -1535,10 +1574,10 @@ export function useSubscriptionCheckout(
     try {
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
-        await refreshPreviewOnReactivationBlock(planSlug, {
+        const blocked = await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id
         })
-        return
+        if (blocked) return
       }
       const attemptStartedAt = trackSubscriptionStarted({
         tier: 'team',
@@ -1599,10 +1638,12 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug, {
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id
-        })
+        }))
+      ) {
         return
       }
       trackSubscriptionFailure(

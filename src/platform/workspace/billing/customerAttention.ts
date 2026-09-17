@@ -1,4 +1,4 @@
-import { isBlockedOnCustomerPhase } from '@comfyorg/account/billing'
+import { isBlockedOnCustomerPhase } from '@comfyorg/account-core/billing'
 
 import type {
   BillingAuthenticationState,
