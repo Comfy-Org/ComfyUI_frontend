@@ -170,13 +170,11 @@ export const noUnsafeErrorAssertion = {
 export const noUnknownDoubleAssertion = {
   meta: { fixable: 'code' },
   create(context: RuleContext) {
-    let fromPartial: string | undefined
     let fromAny: string | undefined
 
     return {
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== '@total-typescript/shoehorn') return
-        fromPartial = importedLocalName(node, 'fromPartial')
         fromAny = importedLocalName(node, 'fromAny')
       },
       TSAsExpression(node: TypeAssertion) {
@@ -184,10 +182,7 @@ export const noUnknownDoubleAssertion = {
         const inner = node.expression as TypeAssertion
         if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
 
-        const isLiteralFixture =
-          inner.expression.type === 'ObjectExpression' ||
-          inner.expression.type === 'ArrayExpression'
-        const helper = isLiteralFixture ? (fromPartial ?? fromAny) : fromAny
+        const helper = fromAny
         const fix = helper
           ? (fixer: RuleFixer) =>
               fixer.replaceText(
