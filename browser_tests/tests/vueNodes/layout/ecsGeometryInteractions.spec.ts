@@ -838,20 +838,13 @@ test.describe(
         )
         await comfyPage.nextFrame()
         const lower = await comfyPage.nodeOps.getNodeRefById('6')
-        const overlap = await comfyPage.canvasOps.toAbsolute(
-          await lower.getTitlePosition()
-        )
-        const { width } = await lower.getSize()
-        const upperTitle = { x: overlap.x - width / 4, y: overlap.y }
+        const overlapPosition = await lower.getTitlePosition()
+        const overlap = await comfyPage.canvasOps.toAbsolute(overlapPosition)
 
-        await comfyPage.page.mouse.click(upperTitle.x, upperTitle.y)
+        await comfyPage.canvasOps.mouseClickAt(overlapPosition)
         await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() =>
-              Object.keys(window.app!.canvas.selected_nodes)
-            )
-          )
-          .toEqual(['7'])
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([toNodeId('7')])
         await comfyPage.page.evaluate(() => {
           window.app!.canvas.deselectAllNodes()
           window.app!.canvas.setDirty(true, true)
@@ -867,6 +860,7 @@ test.describe(
           if (!node) throw new Error('Upper overlap node is unavailable')
           window.app!.canvas.sendToBack(node)
           window.app!.canvas.deselectAllNodes()
+          window.app!.canvas.pointer.eLastDown = undefined
           window.app!.canvas.setDirty(true, true)
         }, toNodeId('7'))
         await comfyPage.nextFrame()
@@ -878,14 +872,10 @@ test.describe(
           'Send to Back changes overlap paint without a selection highlight'
         ).toBe(false)
 
-        await comfyPage.page.mouse.click(overlap.x, overlap.y)
+        await comfyPage.canvasOps.mouseClickAt(overlapPosition)
         await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() =>
-              Object.keys(window.app!.canvas.selected_nodes)
-            )
-          )
-          .toEqual(['6'])
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([toNodeId('6')])
       })
     }
 
