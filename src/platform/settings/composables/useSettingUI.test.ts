@@ -92,8 +92,6 @@ function useSettingUI(
 
 beforeEach(() => {
   useCurrentUser().isLoggedIn = computed(() => false)
-  vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
-  vi.mocked(useFeatureFlags().flags).userSecretsEnabled = false
   vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
     () => {
       return env.state.partnerNodeGovernanceStatus

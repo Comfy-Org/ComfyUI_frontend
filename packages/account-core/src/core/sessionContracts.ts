@@ -93,7 +93,7 @@ export interface MintHandle {
  * lease and performs the proactive refresh; the others adopt its published
  * credential and mint for themselves only when the leader goes quiet past
  * their jittered fallback. Real hosts wrap Web Locks + BroadcastChannel
- * (`createWebCrossTabRefreshPort` from `@comfyorg/account/web`); tests pass
+ * (`createWebCrossTabRefreshPort` from `@comfyorg/account-core/web`); tests pass
  * fakes.
  */
 export interface CrossTabRefreshPort {

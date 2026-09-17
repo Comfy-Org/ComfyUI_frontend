@@ -12,7 +12,7 @@
  */
 import { z } from 'zod'
 
-import type { SessionClient } from '@comfyorg/account/session'
+import type { SessionClient } from '@comfyorg/account-core/session'
 
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
