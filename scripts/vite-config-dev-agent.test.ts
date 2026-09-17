@@ -22,6 +22,7 @@ async function importConfig(
         DEV_AGENT_SESSION_TOKEN: 'test-session-token',
         DEV_AGENT_URL: devAgentUrl,
         VITE_AGENT_STANDALONE: undefined,
+        VITE_REMOTE_DEV: undefined,
         ...overrides
       }
     }
@@ -58,6 +59,14 @@ describe('dev agent comfy credential', () => {
     expect(stdout).toBe(
       '{"headers":{"Authorization":"Bearer test-session-token","X-Comfy-Token":"comfyui-test-key"}}'
     )
+  })
+
+  it('refuses to bind all interfaces while holding a comfy credential', async () => {
+    const { stdout } = await importConfig('http://127.0.0.1:8095', {
+      DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
+      VITE_REMOTE_DEV: 'true'
+    })
+    expect(stdout).not.toContain('0.0.0.0')
   })
 
   it('omits the comfy header when the token is unset', async () => {
