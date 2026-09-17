@@ -104,10 +104,17 @@ The decisions inside those workflows:
 
 ### Versioning policy
 
-- The packages stay on `1.0.0-alpha.N` published to `next` until the Phase 7
-  host proof: Platform installs from the registry in a clean non-workspace
-  checkout and `billing-web` runs a live top-up against it. `1.0.0` on
-  `latest` is that proof's reward, not its precondition.
+- The hand-written packages — `account-core`, `billing-contract`, and
+  `account-ui` when it joins — stay on `1.0.0-alpha.N` published to `next`
+  until the Phase 7 host proof: Platform installs from the registry in a clean
+  non-workspace checkout and `billing-web` runs a live top-up against it.
+  `1.0.0` on `latest` is that proof's reward, not its precondition.
+- `ingest-types` is outside that gate. It is a generated, runtime-free mirror
+  of Cloud's ingest schemas, it is already at `1.0.0`, and its version is
+  written by the regeneration bot in the Cloud repository rather than by
+  anyone here — a prerelease line nothing in this repository can maintain. It
+  ships `latest` from `1.0.x` once its `private` latch comes off together with
+  the other two in the publish-readiness follow-up.
 - For the generated contract in `ingest-types`, a field or an endpoint being
   added is a minor; a field being removed, renamed, or changing meaning is a
   major. A human makes that call on the regeneration PR, because only a human
