@@ -16,7 +16,7 @@ import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
   vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(false)
-  vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+  vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(true)
 })
 
 const i18n = createI18n({

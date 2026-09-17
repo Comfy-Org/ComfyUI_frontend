@@ -52,12 +52,12 @@ export type TaskResponse = z.infer<typeof zTaskResponse>
 export type TaskId = string
 
 function createTaskService() {
-  async function getTask(taskId: TaskId): Promise<TaskResponse> {
+  async function getTask(taskId: TaskId): Promise<TaskResponse | undefined> {
     const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`)
 
     if (!res.ok) {
       if (res.status === 404) {
-        throw new Error(`Task not found: ${taskId}`)
+        return undefined
       }
       throw new Error(`Failed to get task ${taskId}: ${res.status}`)
     }

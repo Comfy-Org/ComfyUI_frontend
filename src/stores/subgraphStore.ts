@@ -377,27 +377,36 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       life: 4000
     })
   }
-  async function editBlueprint(nodeType: string) {
+  async function editBlueprint(nodeType: string): Promise<boolean> {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    if (!(name in subgraphCache))
-      //As loading is blocked on in startup, this can likely be changed to invalid type
-      throw new Error('not yet loaded')
-    useWorkflowStore().attachWorkflow(subgraphCache[name])
-    await useWorkflowService().openWorkflow(subgraphCache[name])
+    if (!(name in subgraphCache)) {
+      console.error(`Cannot edit missing subgraph blueprint: ${nodeType}`)
+      return false
+    }
+    const blueprint = subgraphCache[name]
+    useWorkflowStore().attachWorkflow(blueprint)
+    await useWorkflowService().openWorkflow(blueprint)
     const canvas = useCanvasStore().getCanvas()
     if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
       canvas.setGraph(canvas.graph.nodes[0].subgraph)
+    return true
   }
-  function getBlueprint(nodeType: string): ComfyWorkflowJSON {
+  function getBlueprint(nodeType: string): ComfyWorkflowJSON | undefined {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    if (!(name in subgraphCache))
-      //As loading is blocked on in startup, this can likely be changed to invalid type
-      throw new Error('not yet loaded')
-    return structuredClone(subgraphCache[name].changeTracker.initialState)
+    if (!(name in subgraphCache)) {
+      console.error(`Cannot find subgraph blueprint: ${nodeType}`)
+      return
+    }
+    const blueprint = subgraphCache[name]
+    return structuredClone(blueprint.changeTracker.initialState)
   }
-  async function deleteBlueprint(nodeType: string) {
+  async function deleteBlueprint(nodeType: string): Promise<boolean> {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    if (!(name in subgraphCache)) throw new Error('not yet loaded')
+    if (!(name in subgraphCache)) {
+      console.error(`Cannot delete missing subgraph blueprint: ${nodeType}`)
+      return false
+    }
+    const blueprint = subgraphCache[name]
 
     if (isGlobalBlueprint(name)) {
       useToastStore().add({
@@ -405,7 +414,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         summary: t('subgraphStore.cannotDeleteGlobal'),
         life: 4000
       })
-      return
+      return false
     }
 
     if (
@@ -416,11 +425,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         itemList: [name]
       }))
     )
-      return
+      return false
 
-    await subgraphCache[name].delete()
+    await blueprint.delete()
     delete subgraphCache[name]
     subgraphDefCache.value.delete(name)
+    return true
   }
   function isSubgraphBlueprint(
     workflow: unknown
