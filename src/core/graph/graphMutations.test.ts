@@ -405,9 +405,31 @@ describe('graphMutations', () => {
     expect(createLayout).toHaveBeenCalledOnce()
   })
 
-  it('preserves the display title and widget presentation while reconciling values', () => {
+  it.for([
+    { kind: 'omitted', override: {} },
+    { kind: 'empty', override: { title: '' } }
+  ])(
+    'keeps the incumbent display title when the payload title is $kind',
+    ({ override }) => {
+      const graph = mutations()
+      graph.addNode({ ...node(1), title: 'Nano Banana 2' }, context)
+      const { title: _title, ...payload } = node(1)
+
+      expect(
+        graph.batch(context, (batch) =>
+          batch.reconcileNode({ ...payload, ...override })
+        )
+      ).toBe(true)
+
+      expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
+        'Nano Banana 2'
+      )
+    }
+  )
+
+  it('preserves widget identity and presentation while reconciling values', () => {
     const graph = mutations()
-    graph.addNode({ ...node(1), title: 'Nano Banana 2' }, context)
+    graph.addNode(node(1), context)
     const store = useWidgetValueStore()
     const id = widgetId('root', toNodeId(1), 'model.resolution')
     const widget = store.registerWidget(
@@ -432,14 +454,12 @@ describe('graphMutations', () => {
     const onChange = vi.fn()
     const dispose = store.onValueChange(onChange)
 
-    const { title: _title, ...payload } = node(1, { 'model.resolution': '2K' })
-    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
-      true
-    )
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode(node(1, { 'model.resolution': '2K' }))
+      )
+    ).toBe(true)
 
-    expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
-      'Nano Banana 2'
-    )
     expect(store.getWidget(id)).toBe(widget)
     expect(store.getWidget(id)).toMatchObject({
       value: '2K',
@@ -490,73 +510,84 @@ describe('graphMutations', () => {
     ])
   })
 
-  it('binds saved values by name when the saved positional order differs from the widget order', () => {
-    const graph = mutations()
-    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+  it.for([{ named: 1 }, { named: ['seed'] }])(
+    'drops a named record that is not record-shaped: $named',
+    ({ named }) => {
+      const graph = mutations()
+      graph.addNode(node(1, { seed: 4 }), context)
 
-    expect(
-      graph.batch(context, (batch) =>
-        batch.reconcileNode({
-          ...node(1),
-          widgets_values: [4, 20],
-          widgets_values_named: { seed: 4, steps: 20 }
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [4],
+            widgets_values_named: named
+          })
+          batch.setWidget(toNodeId(1), 'seed', 7)
         })
-      )
-    ).toBe(true)
+      ).toBe(true)
 
-    expect(
-      useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
-    ).toMatchObject([
-      { name: 'steps', value: 20 },
-      { name: 'seed', value: 4 }
-    ])
-  })
+      expect(
+        useNodeDataStore().getNode('root', toNodeId(1))?.lastSerialization
+      ).not.toHaveProperty('widgets_values_named')
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+          ?.value
+      ).toBe(7)
+    }
+  )
 
-  it('keeps positional slots that a partial named record does not name', () => {
-    const graph = mutations()
-    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+  it.for([
+    {
+      shape: 'positional order differs from the widget order',
+      widgets_values: [4, 20],
+      widgets_values_named: { seed: 4, steps: 20 },
+      expected: [
+        { name: 'steps', value: 20 },
+        { name: 'seed', value: 4 }
+      ]
+    },
+    {
+      shape: 'partial named record',
+      widgets_values: [21, 5],
+      widgets_values_named: { steps: 21 },
+      expected: [
+        { name: 'steps', value: 21 },
+        { name: 'seed', value: 5 }
+      ]
+    },
+    {
+      shape: 'named record with obsolete keys',
+      widgets_values: [21, 5],
+      widgets_values_named: { steps: 21, obsolete: 99 },
+      expected: [
+        { name: 'steps', value: 21 },
+        { name: 'seed', value: 5 }
+      ]
+    }
+  ])(
+    'binds saved values by name and positional slots by order: $shape',
+    ({ widgets_values, widgets_values_named, expected }) => {
+      const graph = mutations()
+      graph.addNode(node(1, { steps: 20, seed: 4 }), context)
 
-    expect(
-      graph.batch(context, (batch) =>
-        batch.reconcileNode({
-          ...node(1),
-          widgets_values: [21, 5],
-          widgets_values_named: { steps: 21 }
-        })
-      )
-    ).toBe(true)
+      expect(
+        graph.batch(context, (batch) =>
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values,
+            widgets_values_named
+          })
+        )
+      ).toBe(true)
 
-    expect(
-      useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
-    ).toMatchObject([
-      { name: 'steps', value: 21 },
-      { name: 'seed', value: 5 }
-    ])
-  })
-
-  it('keeps positional slots the named record does not name even when it carries extra keys', () => {
-    const graph = mutations()
-    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
-
-    expect(
-      graph.batch(context, (batch) =>
-        batch.reconcileNode({
-          ...node(1),
-          widgets_values: [21, 5],
-          widgets_values_named: { steps: 21, obsolete: 99 }
-        })
-      )
-    ).toBe(true)
-
-    expect(
-      useWidgetValueStore()
-        .getNodeWidgets('root', toNodeId(1))
-        .map(({ name, value }) => ({ name, value }))
-    ).toEqual([
-      { name: 'steps', value: 21 },
-      { name: 'seed', value: 5 }
-    ])
-  })
+      expect(
+        useWidgetValueStore()
+          .getNodeWidgets('root', toNodeId(1))
+          .map(({ name, value }) => ({ name, value }))
+      ).toEqual(expected)
+    }
+  )
 
   it('restores positional Markdown values to the existing serializable widget', () => {
     const graph = mutations()
@@ -765,69 +796,62 @@ describe('graphMutations', () => {
     ).toEqual(['in', 'steps'])
   })
 
-  it.for(['named', 'positional'])(
-    'rebuilds widgets on type change: %s',
-    (format) => {
-      const graph = mutations()
-      graph.addNode(node(1), context)
-      const incumbent = useNodeDataStore().getNode('root', toNodeId(1))
-      const store = useWidgetValueStore()
-      const seedId = widgetId('root', toNodeId(1), 'seed')
-      const seed = store.registerWidget(
-        seedId,
-        {
-          name: 'seed',
-          type: 'combo',
-          value: '1K',
-          options: { values: ['1K', '2K'] }
-        },
-        { isDOMWidget: true }
+  it.for([
+    { format: 'named', widgets_values: { seed: 7 }, name: 'seed' },
+    { format: 'positional', widgets_values: [7], name: '0' }
+  ])('rebuilds widgets on type change: $format', ({ widgets_values, name }) => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const incumbent = useNodeDataStore().getNode('root', toNodeId(1))
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+    const seed = store.registerWidget(
+      seedId,
+      {
+        name: 'seed',
+        type: 'combo',
+        value: '1K',
+        options: { values: ['1K', '2K'] }
+      },
+      { isDOMWidget: true }
+    )
+    const controlId = widgetId('root', toNodeId(1), 'upload')
+    store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const hiddenId = widgetId('root', toNodeId(1), 'edit')
+    store.registerWidget(hiddenId, {
+      type: 'text',
+      value: 'stale',
+      options: {},
+      serialize: false
+    })
+
+    const { title: _title, ...payload } = node(1)
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({ ...payload, type: 'Type2', widgets_values })
       )
-      const controlId = widgetId('root', toNodeId(1), 'upload')
-      store.registerWidget(controlId, {
-        type: 'button',
-        value: null,
-        options: {}
-      })
-      const hiddenId = widgetId('root', toNodeId(1), 'edit')
-      store.registerWidget(hiddenId, {
-        type: 'text',
-        value: 'stale',
-        options: {},
-        serialize: false
-      })
+    ).toBe(true)
 
-      const { title: _title, ...payload } = node(1, { seed: 7 })
-      expect(
-        graph.batch(context, (batch) =>
-          batch.reconcileNode({
-            ...payload,
-            type: 'Type2',
-            widgets_values: format === 'named' ? { seed: 7 } : [7]
-          })
-        )
-      ).toBe(true)
-
-      const state = useNodeDataStore().getNode('root', toNodeId(1))
-      expect(state).not.toBe(incumbent)
-      expect(state).toMatchObject({ type: 'Type2', title: 'Type2' })
-      const name = format === 'named' ? 'seed' : '0'
-      const replacement = store.getWidget(widgetId('root', toNodeId(1), name))
-      expect(replacement).not.toBe(seed)
-      expect(replacement).toMatchObject({
-        name,
-        type: 'number',
-        value: 7,
-        options: {}
-      })
-      expect(store.getWidgetRenderState(seedId)?.isDOMWidget).toBeFalsy()
-      expect(store.getWidget(controlId)).toBeUndefined()
-      expect(store.getWidget(hiddenId)).toBeUndefined()
-      expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([replacement])
-      if (format === 'positional')
-        expect(store.getWidget(seedId)).toBeUndefined()
-    }
-  )
+    const state = useNodeDataStore().getNode('root', toNodeId(1))
+    expect(state).not.toBe(incumbent)
+    expect(state).toMatchObject({ type: 'Type2', title: 'Type2' })
+    const replacement = store.getWidget(widgetId('root', toNodeId(1), name))
+    expect(replacement).not.toBe(seed)
+    expect(replacement).toMatchObject({
+      name,
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    expect(store.getWidgetRenderState(seedId)?.isDOMWidget).toBeFalsy()
+    expect(store.getWidget(controlId)).toBeUndefined()
+    expect(store.getWidget(hiddenId)).toBeUndefined()
+    expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([replacement])
+  })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()

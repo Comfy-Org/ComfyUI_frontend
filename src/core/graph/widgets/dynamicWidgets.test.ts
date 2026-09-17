@@ -3,6 +3,7 @@ import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
@@ -295,6 +296,70 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  describe('reconcileAutogrowInputs', () => {
+    test('leaves a node without autogrow metadata alone', () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      node.addInput('plain', '*')
+      connectInput(node, 0, graph)
+
+      reconcileAutogrowInputs(node)
+
+      expect(node.inputs.map(({ name }) => name)).toEqual(['plain'])
+    })
+
+    test('grows a group whose last input is already connected', () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, { input: inputsSpec, prefix: 'test' })
+      connectInput(node, 0, graph)
+      connectInput(node, 1, graph)
+      node.removeInput(2)
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.test0',
+        '0.test1'
+      ])
+
+      reconcileAutogrowInputs(node)
+
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.test0',
+        '0.test1',
+        '0.test2'
+      ])
+      reconcileAutogrowInputs(node)
+      expect(node.inputs).toHaveLength(3)
+    })
+
+    test('grows only the connected group when several groups exist', () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, { input: inputsSpec, prefix: 'a' })
+      addAutogrow(node, { input: inputsSpec, prefix: 'b' })
+      connectInput(node, 1, graph)
+      node.removeInput(2)
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.a0',
+        '0.a1',
+        '2.b0',
+        '2.b1'
+      ])
+
+      reconcileAutogrowInputs(node)
+
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.a0',
+        '0.a1',
+        '0.a2',
+        '2.b0',
+        '2.b1'
+      ])
+    })
+  })
+
   test('Autogrow compaction never emits a negative input slot', async () => {
     const graph = new LGraph()
     const node = testNode()

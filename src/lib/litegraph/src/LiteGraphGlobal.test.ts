@@ -44,6 +44,29 @@ describe('LiteGraph.subscribeNodeTypeRegistered', () => {
       stop()
       LiteGraph.registerNodeType('subscribed-type', RegisteredNode)
       expect(listener).toHaveBeenCalledTimes(1)
+      expect(legacy).toHaveBeenCalledTimes(2)
+    } finally {
+      stop()
+      LiteGraph.onNodeTypeRegistered = previous
+      LiteGraph.unregisterNodeType('subscribed-type')
+    }
+  })
+
+  it('notifies subscribers even when the legacy callback throws', () => {
+    const listener = vi.fn()
+    const previous = LiteGraph.onNodeTypeRegistered
+    const stop = LiteGraph.subscribeNodeTypeRegistered(listener)
+    try {
+      LiteGraph.onNodeTypeRegistered = () => {
+        throw new Error('legacy failed')
+      }
+      expect(() =>
+        LiteGraph.registerNodeType('subscribed-type', RegisteredNode)
+      ).toThrow('legacy failed')
+      expect(LiteGraph.registered_node_types['subscribed-type']).toBe(
+        RegisteredNode
+      )
+      expect(listener).toHaveBeenCalledWith('subscribed-type', RegisteredNode)
     } finally {
       stop()
       LiteGraph.onNodeTypeRegistered = previous

@@ -1127,6 +1127,40 @@ describe('node:before-removed event', () => {
     })
   })
 
+  it.for([
+    { options: { replacement: true } },
+    { options: { preserveCanonicalState: true, replacement: true } }
+  ])(
+    'a replacement removal preserves canonical state: $options',
+    ({ options }) => {
+      const graph = new LGraph()
+      const origin = new LGraphNode('origin')
+      origin.addOutput('out', '*')
+      const node = new LGraphNode('replaced')
+      node.addInput('in', '*')
+      node.addWidget('number', 'value', 7, () => {})
+      graph.add(origin)
+      graph.add(node)
+      const link = origin.connect(0, node, 0)
+      const scope = graphScopeOf(graph)
+      const state = node._state
+
+      graph.remove(node, options)
+
+      expect(graph._nodes).not.toContain(node)
+      expect(node.graph).toBeNull()
+      expect(useNodeDataStore().getNode(graph.id, node.id)).toBe(state)
+      expect(useLinkStore().getInputSlotLink(scope, node.id, 0)?.id).toBe(
+        link?.id
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'value'))
+          ?.value
+      ).toBe(7)
+      expect(layoutStore.getNodeLayout(graph.id, node.id)).toBeDefined()
+    }
+  )
+
   it('does not fire node:before-removed for a node not in the graph', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

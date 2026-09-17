@@ -382,7 +382,11 @@ function restoreCanonical(
   widgets: WidgetStateInit[],
   orphan: LGraphNode | undefined
 ): void {
-  useNodeDataStore().registerNode(scope, state)
+  if (orphan && graph._nodes.includes(orphan)) {
+    graph._nodes_by_id[orphan.id] = orphan
+  } else if (orphan) {
+    reattachIncumbent(graph, scope, state, orphan)
+  }
   const widgetStore = useWidgetValueStore()
   for (const widget of widgets) {
     widgetStore.registerWidget(
@@ -390,7 +394,27 @@ function restoreCanonical(
       widget
     )
   }
-  if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
+}
+
+/**
+ * Put the detached incumbent back exactly as the failed replacement found it:
+ * live in the graph, with the canonical record still `state`. `add()` can only
+ * register the incumbent's own state, so a non-owning incumbent takes the id
+ * slot first and hands the record back afterwards.
+ */
+function reattachIncumbent(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  state: NodeState,
+  incumbent: LGraphNode
+): void {
+  const nodeStore = useNodeDataStore()
+  const ownsRecord = nodeStore.ownsNode(scope, incumbent._state)
+  if (!ownsRecord) nodeStore.deleteNode(scope, state)
+  graph.add(incumbent)
+  if (ownsRecord) return
+  nodeStore.deleteNode(scope, incumbent._state)
+  nodeStore.registerNode(scope, state)
 }
 
 function rollbackMaterialize(
@@ -403,17 +427,22 @@ function rollbackMaterialize(
   cause: unknown,
   errorType = 'agent_node_materialize_add_failed'
 ): false {
+  const nodeStore = useNodeDataStore()
+  nodeStore.deleteNode(scope, node._state)
+  nodeStore.registerNode(scope, state)
   let cleanupCause: unknown
   let cleanupFailed = false
   try {
-    if (graph._nodes_by_id[node.id] === node) graph.remove(node)
-    else node.onRemoved?.()
+    if (graph._nodes_by_id[node.id] === node) {
+      graph.remove(node, { preserveCanonicalState: true })
+    } else {
+      node.onRemoved?.()
+    }
+    restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
   } catch (error) {
     cleanupCause = error
     cleanupFailed = true
   }
-  useNodeDataStore().deleteNode(scope, node._state)
-  restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
   reportError(cause, {
     errorType,
     context: { graphId: graph.id, nodeId: String(state.id) }
@@ -461,8 +490,9 @@ function applyStoredValues(
 ): void {
   for (const widget of node.widgets ?? []) {
     if (widget.serialize === false || widget.type === 'button') continue
-    const stored = storedValues.get(widget.name)
-    if (stored !== undefined) widget.value = stored
+    if (storedValues.has(widget.name)) {
+      widget.value = storedValues.get(widget.name)
+    }
   }
 }
 
@@ -480,13 +510,18 @@ function dropPlaceholderMirrors(
   }
 }
 
-/** Same placeholder `LGraph.configure()` builds for an unregistered type. */
+/**
+ * Same placeholder `LGraph.configure()` builds for an unregistered type. The
+ * record it registers replaces the canonical one, so the serialisation moves
+ * with it: that is what re-serialises the node and rebinds it later.
+ */
 function missingNode(state: NodeState): LGraphNode {
   const node = new LGraphNode(
     state.title || state.type || 'Missing Node',
     state.type
   )
   node.has_errors = true
+  node.last_serialization = state.lastSerialization
   return node
 }
 

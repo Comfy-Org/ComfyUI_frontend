@@ -18,7 +18,8 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -50,6 +51,11 @@ function deliverUpdate(host: Y.Doc, workflowId: string, seq = 1) {
   )
 }
 
+const WIDGET_TYPES = {
+  'test/widgetNode': { widget_order: ['text_widget'] },
+  'test/lateNode': { widget_order: ['late_widget'] }
+}
+
 function snapshot(
   workflowId: string,
   { nodes, links }: Pick<ReturnType<LGraph['serialize']>, 'nodes' | 'links'>
@@ -59,7 +65,7 @@ function snapshot(
       nodes: nodes.map((node) => ({ ...node, flags: { ...node.flags } })),
       links
     },
-    { types: { 'test/widgetNode': { widget_order: ['text_widget'] } } }
+    { types: WIDGET_TYPES }
   )
   onTestFinished(() => host.destroy())
   deliverUpdate(host, workflowId)
@@ -99,101 +105,206 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     vi.spyOn(apiTransport, 'send').mockReturnValue(true)
   })
 
-  it.for(['same', 'different', 'empty', 'new-type'] as const)(
-    'preserves the loaded graph until the first %s document arrives',
-    async (content) => {
-      const { graph, workflowId } = mountFollower()
-      const widgetConstructor = graph.value._nodes[0].constructor
-      workflowId.value = null
-      await nextTick()
+  /**
+   * Loads a second workflow into the follower's graph the way a tab switch
+   * does: the loaded nodes stay untouched through the subscribe handshake and
+   * only the first authoritative document is allowed to change them.
+   */
+  async function loadSecondWorkflow(retainedType: 'widget' | 'plain') {
+    const { graph, workflowId } = mountFollower()
+    const widgetConstructor = graph.value._nodes[0].constructor
+    workflowId.value = null
+    await nextTick()
 
-      const target = new LGraph()
-      const retained =
-        content === 'new-type'
-          ? createTestNode(target, ['number'], ['number'])
-          : createTestWidgetNode(target)
-      const removed = createTestWidgetNode(target)
-      retained.title = 'Loaded workflow'
-      retained.pos = [123, 456]
-      retained.onRemoved = vi.fn()
-      if (content !== 'new-type') retained.widgets![0].value = 'local value'
-      retained.connect(0, removed, 0)
-      const loaded = pick(target.serialize(), ['nodes', 'links'])
-      graph.value = target
-      await nextTick()
+    const target = new LGraph()
+    const retained =
+      retainedType === 'plain'
+        ? createTestNode(target, ['number'], ['number'])
+        : createTestWidgetNode(target)
+    const removed = createTestWidgetNode(target)
+    retained.title = 'Loaded workflow'
+    retained.pos = [123, 456]
+    retained.onRemoved = vi.fn()
+    if (retainedType === 'widget') retained.widgets![0].value = 'local value'
+    retained.connect(0, removed, 0)
+    const loaded = pick(target.serialize(), ['nodes', 'links'])
+    graph.value = target
+    await nextTick()
 
-      workflowId.value = 'wf-b'
-      await nextTick()
+    workflowId.value = 'wf-b'
+    await nextTick()
 
-      expect(target._nodes[0]).toBe(retained)
-      expect(target._nodes[1]).toBe(removed)
-      expect(target.serialize()).toMatchObject(loaded)
-      const scope = graphScopeOf(target)
-      expect(
-        useNodeDataStore().getGraphNodesFor(
-          scope.rootGraphId,
-          scope.owningGraphId
-        )[0]
-      ).toBe(retained._state)
+    expect(target._nodes[0]).toBe(retained)
+    expect(target._nodes[1]).toBe(removed)
+    expect(target.serialize()).toMatchObject(loaded)
+    const scope = graphScopeOf(target)
+    expect(
+      useNodeDataStore().getGraphNodesFor(
+        scope.rootGraphId,
+        scope.owningGraphId
+      )[0]
+    ).toBe(retained._state)
 
-      deliver(
-        docSubscribedFrame({
-          workflow_id: 'wf-b',
-          ok: false,
-          code: 'not_found'
-        })
-      )
-      vi.advanceTimersByTime(500)
-      deliver(docSubscribedFrame({ workflow_id: 'wf-b' }))
-      expect(target.serialize()).toMatchObject(loaded)
-
-      const changed = { ...loaded.nodes[0], title: 'Host workflow' }
-      if (content === 'new-type') {
-        changed.type = removed.type
-        changed.widgets_values = ['host value']
-      }
-      const authoritative =
-        content === 'same'
-          ? loaded
-          : {
-              nodes: content === 'empty' ? [] : [changed],
-              links: []
-            }
-      const host = snapshot('wf-b', authoritative)
-
-      expect(target._nodes.map(({ id }) => id)).toEqual(
-        authoritative.nodes.map(({ id }) => toNodeId(id))
-      )
-      expect(target.serialize().links).toEqual(authoritative.links)
-      if (content === 'empty') return
-      const live = target._nodes[0]
-      if (content === 'new-type') {
-        expect(live).not.toBe(retained)
-        expect(live.constructor).toBe(widgetConstructor)
-        expect(retained.graph).toBeNull()
-        expect(retained.onRemoved).toHaveBeenCalledOnce()
-      } else {
-        expect(live).toBe(retained)
-      }
-      expect(live.title).toBe(authoritative.nodes[0].title)
-      expect(live.widgets![0]).toMatchObject({
-        name: 'text_widget',
-        type: 'text',
-        value: content === 'new-type' ? 'host value' : 'local value'
+    deliver(
+      docSubscribedFrame({
+        workflow_id: 'wf-b',
+        ok: false,
+        code: 'not_found'
       })
+    )
+    vi.advanceTimersByTime(500)
+    deliver(docSubscribedFrame({ workflow_id: 'wf-b' }))
+    expect(target.serialize()).toMatchObject(loaded)
 
-      const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
-      assert(widgets instanceof Y.Map, 'missing widgets')
-      widgets.set('text_widget', 'remote value')
-      deliverUpdate(host, 'wf-b', 2)
-      expect(
-        useWidgetValueStore().getWidget(
-          widgetId(scope.rootGraphId, retained.id, 'text_widget')
-        )
-      ).toMatchObject({ value: 'remote value' })
-      expect(live.widgets![0].value).toBe('remote value')
+    return { target, retained, removed, loaded, scope, widgetConstructor }
+  }
+
+  function expectAuthoritativeTopology(
+    target: LGraph,
+    authoritative: Pick<ReturnType<LGraph['serialize']>, 'nodes' | 'links'>
+  ) {
+    expect(target._nodes.map(({ id }) => id)).toEqual(
+      authoritative.nodes.map(({ id }) => toNodeId(id))
+    )
+    expect(target.serialize().links).toEqual(authoritative.links)
+  }
+
+  function expectRemoteValueFlows(
+    host: Y.Doc,
+    live: LGraphNode,
+    scope: ReturnType<typeof graphScopeOf>
+  ) {
+    const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
+    assert(widgets instanceof Y.Map, 'missing widgets')
+    widgets.set('text_widget', 'remote value')
+    deliverUpdate(host, 'wf-b', 2)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(scope.rootGraphId, live.id, 'text_widget')
+      )
+    ).toMatchObject({ value: 'remote value' })
+    expect(live.widgets![0].value).toBe('remote value')
+  }
+
+  it('keeps the loaded nodes when the first document matches them', async () => {
+    const { target, retained, loaded, scope } =
+      await loadSecondWorkflow('widget')
+
+    const host = snapshot('wf-b', loaded)
+
+    expectAuthoritativeTopology(target, loaded)
+    expect(target._nodes[0]).toBe(retained)
+    expect(retained.title).toBe(loaded.nodes[0].title)
+    expect(retained.widgets![0]).toMatchObject({
+      name: 'text_widget',
+      type: 'text',
+      value: 'local value'
+    })
+    expectRemoteValueFlows(host, retained, scope)
+  })
+
+  it('reconciles the loaded node in place when the first document differs', async () => {
+    const { target, retained, loaded, scope } =
+      await loadSecondWorkflow('widget')
+    const authoritative = {
+      nodes: [{ ...loaded.nodes[0], title: 'Host workflow' }],
+      links: []
     }
-  )
+
+    const host = snapshot('wf-b', authoritative)
+
+    expectAuthoritativeTopology(target, authoritative)
+    expect(target._nodes[0]).toBe(retained)
+    expect(retained.title).toBe('Host workflow')
+    expect(retained.widgets![0]).toMatchObject({
+      name: 'text_widget',
+      type: 'text',
+      value: 'local value'
+    })
+    expectRemoteValueFlows(host, retained, scope)
+  })
+
+  it('clears the loaded nodes when the first document is empty', async () => {
+    const { target } = await loadSecondWorkflow('widget')
+
+    snapshot('wf-b', { nodes: [], links: [] })
+
+    expect(target._nodes).toEqual([])
+    expect(target.serialize().links).toEqual([])
+  })
+
+  it('replaces the loaded node when the first document changes its type', async () => {
+    const { target, retained, removed, loaded, scope, widgetConstructor } =
+      await loadSecondWorkflow('plain')
+    const authoritative = {
+      nodes: [
+        {
+          ...loaded.nodes[0],
+          title: 'Host workflow',
+          type: removed.type,
+          widgets_values: ['host value']
+        }
+      ],
+      links: []
+    }
+
+    const host = snapshot('wf-b', authoritative)
+
+    expectAuthoritativeTopology(target, authoritative)
+    const live = target._nodes[0]
+    expect(live).not.toBe(retained)
+    expect(live.constructor).toBe(widgetConstructor)
+    expect(retained.graph).toBeNull()
+    expect(retained.onRemoved).toHaveBeenCalledOnce()
+    expect(live.title).toBe('Host workflow')
+    expect(live.widgets![0]).toMatchObject({
+      name: 'text_widget',
+      type: 'text',
+      value: 'host value'
+    })
+    expectRemoteValueFlows(host, live, scope)
+  })
+
+  it('materializes a placeholder into the real node once its type registers', () => {
+    class LateNode extends LGraphNode {
+      constructor(title: string) {
+        super(title)
+        this.addInput('in', 'number')
+        this.addWidget('text', 'late_widget', '', () => {})
+        this.serialize_widgets = true
+      }
+    }
+    const { graph } = mountFollower()
+    const authoring = new LGraph()
+    const origin = createTestWidgetNode(authoring)
+    const late = new LateNode('Late')
+    late.type = 'test/lateNode'
+    authoring.add(late)
+    late.widgets![0].value = 'late value'
+    const link = origin.connect(0, late, 0) as LLink
+    const authoritative = pick(authoring.serialize(), ['nodes', 'links'])
+    expect(
+      Object.hasOwn(LiteGraph.registered_node_types, 'test/lateNode')
+    ).toBe(false)
+
+    deliver(docResetFrame({ workflow_id: 'wf-a', seq: 2 }))
+    snapshot('wf-a', authoritative)
+
+    const placeholder = graph.value.getNodeById(late.id)
+    expect(placeholder?.constructor).toBe(LGraphNode)
+    expect(placeholder?.has_errors).toBe(true)
+
+    LiteGraph.registerNodeType('test/lateNode', LateNode)
+
+    const live = graph.value.getNodeById(late.id)
+    expect(live).toBeInstanceOf(LateNode)
+    expect(live?.widgets?.[0]).toMatchObject({
+      name: 'late_widget',
+      value: 'late value'
+    })
+    expect(live?.inputs[0]?.link).toBe(link.id)
+    expect(live?.getInputLink(0)?.origin_id).toBe(origin.id)
+  })
 
   it('clears live nodes immediately on an explicit document reset', () => {
     const { graph } = mountFollower()

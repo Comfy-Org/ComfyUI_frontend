@@ -303,7 +303,7 @@ function syncSerializedWidgetValue(
   const named = serialised.widgets_values_named
   const clone = structuredClone(value) as WidgetValue
   if (isRecord(values)) values[name] = clone
-  if (named) named[name] = clone
+  if (isRecord(named)) named[name] = clone
 }
 
 function reconcileInputSlots(
@@ -350,6 +350,15 @@ function nodeAppearance(
   }
 }
 
+/** Remote payloads are open data: a named record counts only when record-shaped. */
+function serialisationOf(payload: SemanticNodePayload): ISerialisedNode {
+  const serialised = structuredClone(payload) as unknown as ISerialisedNode
+  if (!isRecord(payload.widgets_values_named)) {
+    delete serialised.widgets_values_named
+  }
+  return serialised
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -372,7 +381,7 @@ function prepareNode(
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: serialisationOf(payload),
     ...nodeAppearance(payload)
   }
   return {

@@ -1,5 +1,4 @@
 import { isEqual } from 'es-toolkit'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -518,25 +517,19 @@ export function findUsedSubgraphIds(
   return usedSubgraphIds
 }
 
+/** The subgraph instances one graph level still holds live. */
+export type LiveSubgraphResolver = (graph: GraphOrSubgraph) => Subgraph[]
+
 function findLiveSubgraphIds(
   rootGraph: LGraph,
-  removedNode: SubgraphNode,
-  preserveCanonicalState: boolean
+  liveSubgraphs: LiveSubgraphResolver
 ): Set<SubgraphId> {
   const liveIds = new Set<SubgraphId>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
-  const nodeStore = useNodeDataStore()
 
   while (toVisit.length > 0) {
     const graph = toVisit.shift()!
-    const subgraphs = preserveCanonicalState
-      ? nodeStore
-          .getGraphNodesFor(rootGraph.id, graph.id)
-          .flatMap((state) => rootGraph.subgraphs.get(state.type) ?? [])
-      : graph._nodes.flatMap((node) =>
-          node !== removedNode && node.isSubgraphNode() ? [node.subgraph] : []
-        )
-    for (const subgraph of subgraphs) {
+    for (const subgraph of liveSubgraphs(graph)) {
       if (liveIds.has(subgraph.id)) continue
       liveIds.add(subgraph.id)
       toVisit.push(subgraph)
@@ -566,13 +559,12 @@ function collectSubgraphsPostOrder(
 export function findReleasableSubgraphs(
   rootGraph: LGraph,
   removedNode: SubgraphNode,
-  preserveCanonicalState = false
+  liveSubgraphs: LiveSubgraphResolver = (graph) =>
+    graph._nodes.flatMap((node) =>
+      node !== removedNode && node.isSubgraphNode() ? [node.subgraph] : []
+    )
 ): Subgraph[] {
-  const liveIds = findLiveSubgraphIds(
-    rootGraph,
-    removedNode,
-    preserveCanonicalState
-  )
+  const liveIds = findLiveSubgraphIds(rootGraph, liveSubgraphs)
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))

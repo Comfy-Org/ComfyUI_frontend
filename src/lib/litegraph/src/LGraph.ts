@@ -155,6 +155,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
+import type { LiveSubgraphResolver } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -243,9 +244,27 @@ export interface GraphRemoveOptions {
   /**
    * The caller replaces this node's adapter for the same canonical record:
    * links, widget values and execution order stay untouched for the
-   * successor, whether or not this node still owns the record.
+   * successor, whether or not this node still owns the record. Implies
+   * {@link preserveCanonicalState}.
    */
   replacement?: boolean
+}
+
+/**
+ * Subgraph instances the canonical records still hold. A removal whose stores
+ * another authority already reconciled cannot read liveness off the nodes
+ * that happen to be attached.
+ */
+function canonicalSubgraphResolver(
+  rootGraph: LGraph,
+  preserveCanonicalState: boolean | undefined
+): LiveSubgraphResolver | undefined {
+  if (!preserveCanonicalState) return undefined
+  const nodeStore = useNodeDataStore()
+  return (graph) =>
+    nodeStore
+      .getGraphNodesFor(rootGraph.id, graph.id)
+      .flatMap((state) => rootGraph.subgraphs.get(state.type) ?? [])
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1456,13 +1475,16 @@ export class LGraph
 
     if (nodesBeingRemoved.has(node)) return
 
+    const replacement = !!options.replacement
+    const preserveCanonicalState =
+      !!options.preserveCanonicalState || replacement
     // not found
-    if (this._nodes_by_id[node.id] == null && !options.preserveCanonicalState) {
+    if (this._nodes_by_id[node.id] == null && !preserveCanonicalState) {
       console.warn('LiteGraph: node not found', node)
       return
     }
     // cannot be removed
-    if (node.ignore_remove && !options.preserveCanonicalState) {
+    if (node.ignore_remove && !preserveCanonicalState) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1474,7 +1496,9 @@ export class LGraph
 
     nodesBeingRemoved.add(node)
     try {
-      this.batchVersionUpdates(() => this.removeNode(node, options))
+      this.batchVersionUpdates(() =>
+        this.removeNode(node, { preserveCanonicalState, replacement })
+      )
     } finally {
       nodesBeingRemoved.delete(node)
     }
@@ -1531,7 +1555,10 @@ export class LGraph
         findReleasableSubgraphs(
           this.rootGraph,
           node,
-          options.preserveCanonicalState
+          canonicalSubgraphResolver(
+            this.rootGraph,
+            options.preserveCanonicalState
+          )
         )
       )
     }
