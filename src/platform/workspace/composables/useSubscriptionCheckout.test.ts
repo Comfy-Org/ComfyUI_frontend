@@ -384,6 +384,15 @@ vi.mock<unknown>(
   () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
 )
 
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as { readPaymentMethods: ReturnType<typeof vi.fn> } | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
+
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -496,6 +505,7 @@ describe('useSubscriptionCheckout', () => {
     mockFetchStatus.mockReset()
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
+    railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
     })
@@ -758,6 +768,26 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+    })
+
+    it('selects the default saved payment method read on the SDK rail', async () => {
+      const readPaymentMethods = vi.fn().mockResolvedValue({
+        status: 'ok',
+        value: [
+          { type: 'card', id: 'pm_first', is_default: false },
+          { type: 'alipay', id: 'pm_default', is_default: true }
+        ]
+      })
+      railState.rail = { readPaymentMethods }
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+      expect(mockListSavedPaymentMethods).not.toHaveBeenCalled()
     })
 
     it('collects a new method when the backend has no default', async () => {
