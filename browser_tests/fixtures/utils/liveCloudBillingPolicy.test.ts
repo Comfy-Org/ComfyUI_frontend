@@ -358,6 +358,7 @@ describe('Disposable payment permissions', () => {
   it.for([
     'https://identitytoolkit.googleapis.com/v1/accounts:signUp',
     'https://api.stripe.com/v1/payment_methods',
+    'https://checkout.comfy.org/ajax/metrics_batch',
     'https://api.stripe.com/v1/payment_pages/cs_test_example/confirm'
   ])('allows %s only for opted-in sandbox tests', (url) => {
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(false)

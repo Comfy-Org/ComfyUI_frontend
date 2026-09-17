@@ -2,7 +2,7 @@ import {
   zBillingBalanceResponse,
   zBillingOpStatusResponse,
   zBillingStatusResponse,
-  zListSavedPaymentMethodsResponse,
+  zPaymentPortalResponse,
   zPreviewSubscribeResponse,
   zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
@@ -167,11 +167,10 @@ export class LiveCloudCheckout {
             .amount_micros
       )
       .toBe(expectedBalance)
-    const methods = await session.read(
-      '/api/billing/payment-methods',
-      zListSavedPaymentMethodsResponse
+    const paymentMethodCount = await this.verifySavedPaymentMethods(
+      session,
+      expectedPaymentMethodCount
     )
-    expect(methods).toHaveLength(expectedPaymentMethodCount)
     await testInfo.attach('checkout-completion.json', {
       body: JSON.stringify({
         operationId,
@@ -179,7 +178,7 @@ export class LiveCloudCheckout {
         grantCents: Number(preview.credits_today_cents),
         balanceBeforeCents,
         balanceAfterCents: expectedBalance,
-        paymentMethodCount: methods.length
+        paymentMethodCount
       }),
       contentType: 'application/json'
     })
@@ -189,8 +188,25 @@ export class LiveCloudCheckout {
       operationId,
       planSlug: preview.new_plan.slug,
       grantCents: Number(preview.credits_today_cents),
-      paymentMethodCount: methods.length
+      paymentMethodCount
     }
+  }
+
+  async verifySavedPaymentMethods(
+    session: LiveCloudBillingSession,
+    expectedCount: number
+  ) {
+    const portal = await session.post(
+      '/api/billing/payment-portal',
+      { return_url: this.frontend },
+      zPaymentPortalResponse
+    )
+    expect(new URL(portal.url).origin).toBe('https://checkout.comfy.org')
+    await this.page.goto(portal.url)
+    await expect(this.page.getByText(/^Payment methods?$/)).toBeVisible()
+    const cards = this.page.getByText(/•••• \d{4}$/)
+    await expect(cards).toHaveCount(expectedCount)
+    return await cards.count()
   }
 
   async startCheckout(action = this.subscribe.or(this.resumePayment)) {

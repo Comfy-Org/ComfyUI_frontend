@@ -90,6 +90,11 @@ export function isLiveCloudMutationAllowed(
     )
       return true
     if (
+      url.origin === 'https://checkout.comfy.org' &&
+      url.pathname === '/ajax/metrics_batch'
+    )
+      return true
+    if (
       url.origin === 'https://api.stripe.com' &&
       (url.pathname === '/v1/payment_methods' ||
         /^\/v1\/payment_pages\/cs_test_[A-Za-z0-9]+\/confirm$/.test(
