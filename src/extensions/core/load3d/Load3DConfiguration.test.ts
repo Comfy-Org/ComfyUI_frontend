@@ -19,6 +19,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/scripts/api'), () => ({
@@ -83,7 +84,7 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
   return new Load3DConfiguration(load3d, properties) as unknown as WithPrivate
 }
 
-function stubSettings(values: Record<string, unknown>) {
+function stubSettings(values: Partial<Settings>) {
   vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
