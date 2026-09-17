@@ -1,0 +1,147 @@
+import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
+
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+
+import {
+  failedOperation,
+  serverCode,
+  settledOperation
+} from './billingSdkTestUtils'
+import {
+  projectPaymentPortalResult,
+  projectSubscriptionResult
+} from './subscriptionOperationView'
+
+describe('projectSubscriptionResult', () => {
+  it('reports a settled command as done', () => {
+    const result: SubscriptionCommandResult = {
+      status: 'ok',
+      value: { phase: 'succeeded', operation: settledOperation('succeeded') }
+    }
+
+    expect(projectSubscriptionResult(result)).toEqual({
+      status: 'ok',
+      value: undefined
+    })
+  })
+
+  it('reports a request the server refused as already satisfied', () => {
+    expect(
+      projectSubscriptionResult({ status: 'ok', value: { phase: 'succeeded' } })
+    ).toEqual({ status: 'ok', value: undefined })
+  })
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation(),
+      detail:
+        'Your bank declined this payment. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'failed',
+      operation: { ...failedOperation(), declineReason: 'insufficient_funds' },
+      detail:
+        'This payment method has insufficient funds. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out'),
+      detail: "We couldn't update your subscription. Please try again."
+    },
+    {
+      phase: 'reconciliation_needed',
+      operation: settledOperation('reconciliation_needed'),
+      detail: "We couldn't update your subscription. Please try again."
+    }
+  ] as const)(
+    'reports a $phase operation as a sentence for the customer',
+    ({ phase, operation, detail }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      expect(outcome).toMatchObject({ status: 'error' })
+      expect(
+        outcome.status === 'error' ? outcome.error : undefined
+      ).toMatchObject({ message: detail, code: phase })
+    }
+  )
+
+  it('hands a missing route back so the caller keeps its legacy path', () => {
+    expect(
+      projectSubscriptionResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
+    ).toEqual({ status: 'unavailable' })
+  })
+
+  it.for([
+    [
+      { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      { status: 503, code: 'REQUEST_FAILED', message: 'REQUEST_FAILED (503)' }
+    ],
+    [
+      {
+        status: 'error',
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverCode: serverCode('SUBSCRIPTION_LOCKED')
+      },
+      { status: 409, code: 'SUBSCRIPTION_LOCKED', message: 'CONFLICT (409)' }
+    ],
+    [
+      { status: 'error', code: 'SUPERSEDED' },
+      { status: undefined, code: 'SUPERSEDED', message: 'SUPERSEDED' }
+    ]
+  ] as const)('surfaces %o as a workspace error', ([failure, expected]) => {
+    const outcome = projectSubscriptionResult(failure)
+
+    expect(outcome.status).toBe('error')
+    const error = outcome.status === 'error' ? outcome.error : undefined
+    expect(error).toBeInstanceOf(WorkspaceApiError)
+    expect(error).toMatchObject(expected)
+  })
+})
+
+describe('projectPaymentPortalResult', () => {
+  it('hands back the portal URL the host opens', () => {
+    expect(
+      projectPaymentPortalResult({
+        status: 'ok',
+        value: { url: 'https://portal.example/session' }
+      })
+    ).toEqual({ status: 'ok', value: 'https://portal.example/session' })
+  })
+
+  it('hands a missing route back so the caller keeps its legacy path', () => {
+    expect(
+      projectPaymentPortalResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
+    ).toEqual({ status: 'unavailable' })
+  })
+
+  it('surfaces a refusal as a workspace error', () => {
+    const outcome = projectPaymentPortalResult({
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      httpStatus: 403
+    })
+
+    expect(outcome.status).toBe('error')
+    expect(
+      outcome.status === 'error' ? outcome.error : undefined
+    ).toMatchObject({
+      status: 403,
+      code: 'ACCESS_DENIED',
+      message: 'ACCESS_DENIED (403)'
+    })
+  })
+})
