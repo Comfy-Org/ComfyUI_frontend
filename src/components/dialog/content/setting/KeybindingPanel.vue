@@ -81,155 +81,22 @@
               </TableRow>
             </TableHeader>
             <TableBody>
-              <template
+              <KeybindingCommandRows
                 v-for="commandData in visibleCommands"
                 :key="commandData.id"
-              >
-                <TableRow
-                  tabindex="0"
-                  :data-state="
-                    selectedCommandData?.id === commandData.id
-                      ? 'selected'
-                      : undefined
-                  "
-                  @click="handleRowClick($event, commandData)"
-                  @dblclick="handleRowDblClick(commandData)"
-                  @contextmenu="handleRowContextMenu(commandData)"
-                  @keydown="handleRowKeydown($event, commandData)"
-                >
-                  <TableCell class="p-1">
-                    <div
-                      class="flex min-w-0 items-center gap-1 truncate"
-                      :class="commandData.keybindings.length < 2 && 'pl-5'"
-                      :title="commandData.id"
-                    >
-                      <i
-                        v-if="commandData.keybindings.length >= 2"
-                        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform"
-                        :class="
-                          expandedCommandIds.has(commandData.id) && 'rotate-90'
-                        "
-                      />
-                      <i
-                        v-if="
-                          commandData.keybindings.some(
-                            (b: KeybindingImpl) => b.combo.isBrowserReserved
-                          )
-                        "
-                        v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-                        class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-                      />
-                      {{ commandData.label }}
-                    </div>
-                  </TableCell>
-                  <TableCell class="p-1">
-                    <KeybindingList
-                      :keybindings="commandData.keybindings"
-                      :is-modified="commandData.isModified"
-                    />
-                  </TableCell>
-                  <TableCell class="p-1">
-                    <span class="block truncate" :title="commandData.source">{{
-                      commandData.source || '-'
-                    }}</span>
-                  </TableCell>
-                  <TableCell class="p-1 whitespace-nowrap">
-                    <div
-                      class="actions flex flex-row justify-end whitespace-nowrap"
-                    >
-                      <Button
-                        v-if="commandData.keybindings.length === 1"
-                        v-tooltip="$t('g.edit')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.edit')"
-                        @click="
-                          editKeybinding(
-                            commandData,
-                            commandData.keybindings[0]
-                          )
-                        "
-                      >
-                        <i class="icon-[lucide--pencil]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.addNewKeybinding')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.addNewKeybinding')"
-                        @click="addKeybinding(commandData)"
-                      >
-                        <i class="icon-[lucide--plus]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.reset')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.reset')"
-                        :disabled="!commandData.isModified"
-                        @click="resetKeybinding(commandData)"
-                      >
-                        <i class="icon-[lucide--rotate-ccw]" />
-                      </Button>
-                      <Button
-                        v-tooltip="$t('g.delete')"
-                        variant="textonly"
-                        size="icon"
-                        :aria-label="$t('g.delete')"
-                        :disabled="commandData.keybindings.length === 0"
-                        @click="handleRemoveKeybindingFromMenu(commandData)"
-                      >
-                        <i class="icon-[lucide--trash-2]" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-                <TableRow v-if="expandedCommandIds.has(commandData.id)">
-                  <TableCell colspan="4" class="p-0">
-                    <div
-                      class="pl-4"
-                      data-testid="keybinding-expansion-content"
-                    >
-                      <div
-                        v-for="(binding, idx) in commandData.keybindings"
-                        :key="binding.combo.serialize()"
-                        data-testid="keybinding-expansion-binding"
-                        class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
-                      >
-                        <div class="flex items-center gap-4">
-                          <span class="text-muted-foreground">{{
-                            commandData.label
-                          }}</span>
-                          <KeyComboDisplay
-                            :key-combo="binding.combo"
-                            :is-modified="commandData.isModified"
-                          />
-                        </div>
-                        <div class="flex flex-row">
-                          <Button
-                            v-tooltip="$t('g.edit')"
-                            variant="textonly"
-                            size="icon"
-                            :aria-label="$t('g.edit')"
-                            @click="editKeybinding(commandData, binding)"
-                          >
-                            <i class="icon-[lucide--pencil]" />
-                          </Button>
-                          <Button
-                            v-tooltip="$t('g.removeKeybinding')"
-                            variant="textonly"
-                            size="icon"
-                            :aria-label="$t('g.removeKeybinding')"
-                            @click="removeSingleKeybinding(commandData, idx)"
-                          >
-                            <i class="icon-[lucide--trash-2]" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </template>
+                :command="commandData"
+                :expanded="expandedCommandIds.has(commandData.id)"
+                :selected="selectedCommandData?.id === commandData.id"
+                @row-click="handleRowClick($event, commandData)"
+                @row-dblclick="handleRowDblClick(commandData)"
+                @row-contextmenu="handleRowContextMenu(commandData)"
+                @row-keydown="handleRowKeydown($event, commandData)"
+                @edit="editKeybinding(commandData, $event)"
+                @add="addKeybinding(commandData)"
+                @reset="resetKeybinding(commandData)"
+                @remove="handleRemoveKeybindingFromMenu(commandData)"
+                @remove-single="removeSingleKeybinding(commandData, $event)"
+              />
             </TableBody>
           </Table>
           <Pagination
@@ -322,7 +189,6 @@ import Pagination from '@/components/ui/pagination/Pagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
@@ -339,9 +205,9 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import KeybindingList from './keybinding/KeybindingList.vue'
+import KeybindingCommandRows from './keybinding/KeybindingCommandRows.vue'
+import type { KeybindingCommand } from './keybinding/keybindingCommandTypes'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
-import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const searchQuery = ref('')
 
@@ -434,15 +300,7 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 
 // Keybinding table logic
-interface ICommandData {
-  id: string
-  keybindings: KeybindingImpl[]
-  label: string
-  source?: string
-  isModified: boolean
-}
-
-const commandsData = computed<ICommandData[]>(() => {
+const commandsData = computed<KeybindingCommand[]>(() => {
   return Object.values(commandStore.commands).map((command) => ({
     id: command.id,
     label: t(
@@ -503,12 +361,15 @@ watch(searchQuery, () => {
   expandedCommandIds.value.clear()
 })
 
-const selectedCommandData = ref<ICommandData | null>(null)
+const selectedCommandData = ref<KeybindingCommand | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
-const contextMenuTarget = ref<ICommandData | null>(null)
+const contextMenuTarget = ref<KeybindingCommand | null>(null)
 
-function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
+function editKeybinding(
+  commandData: KeybindingCommand,
+  binding: KeybindingImpl
+) {
   editKeybindingDialog.show({
     commandId: commandData.id,
     commandLabel: commandData.label,
@@ -518,7 +379,7 @@ function editKeybinding(commandData: ICommandData, binding: KeybindingImpl) {
   })
 }
 
-function addKeybinding(commandData: ICommandData) {
+function addKeybinding(commandData: KeybindingCommand) {
   editKeybindingDialog.show({
     commandId: commandData.id,
     commandLabel: commandData.label,
@@ -527,14 +388,14 @@ function addKeybinding(commandData: ICommandData) {
   })
 }
 
-function handleRowClick(event: MouseEvent, commandData: ICommandData) {
+function handleRowClick(event: MouseEvent, commandData: KeybindingCommand) {
   const target = event.target
   if (!(target instanceof HTMLElement)) return
   if (target.closest('.actions')) return
   activateRow(commandData)
 }
 
-function activateRow(commandData: ICommandData) {
+function activateRow(commandData: KeybindingCommand) {
   selectedCommandData.value = commandData
   if (
     commandData.keybindings.length >= 2 ||
@@ -544,7 +405,10 @@ function activateRow(commandData: ICommandData) {
   }
 }
 
-function handleRowKeydown(event: KeyboardEvent, commandData: ICommandData) {
+function handleRowKeydown(
+  event: KeyboardEvent,
+  commandData: KeybindingCommand
+) {
   if (event.target !== event.currentTarget) return
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
@@ -552,7 +416,7 @@ function handleRowKeydown(event: KeyboardEvent, commandData: ICommandData) {
   }
 }
 
-function handleRowDblClick(commandData: ICommandData) {
+function handleRowDblClick(commandData: KeybindingCommand) {
   if (commandData.keybindings.length === 0) {
     addKeybinding(commandData)
   } else if (commandData.keybindings.length === 1) {
@@ -560,7 +424,7 @@ function handleRowDblClick(commandData: ICommandData) {
   }
 }
 
-function handleRowContextMenu(commandData: ICommandData) {
+function handleRowContextMenu(commandData: KeybindingCommand) {
   selectedCommandData.value = commandData
   contextMenuTarget.value = commandData
 }
@@ -570,7 +434,7 @@ function clearContextMenuTarget() {
 }
 
 async function removeSingleKeybinding(
-  commandData: ICommandData,
+  commandData: KeybindingCommand,
   index: number
 ) {
   const binding = commandData.keybindings[index]
@@ -583,7 +447,7 @@ async function removeSingleKeybinding(
   }
 }
 
-function handleRemoveAllKeybindings(commandData: ICommandData) {
+function handleRemoveAllKeybindings(commandData: KeybindingCommand) {
   const dialog = showConfirmDialog({
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
@@ -600,7 +464,7 @@ function handleRemoveAllKeybindings(commandData: ICommandData) {
   })
 }
 
-function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
+function handleRemoveKeybindingFromMenu(commandData: KeybindingCommand) {
   if (commandData.keybindings.length >= 2) {
     handleRemoveAllKeybindings(commandData)
   } else {
@@ -641,7 +505,7 @@ function ctxRemoveKeybinding() {
   }
 }
 
-async function resetKeybinding(commandData: ICommandData) {
+async function resetKeybinding(commandData: KeybindingCommand) {
   if (keybindingStore.resetKeybindingForCommand(commandData.id)) {
     expandedCommandIds.value.delete(commandData.id)
     await keybindingService.persistUserKeybindings()

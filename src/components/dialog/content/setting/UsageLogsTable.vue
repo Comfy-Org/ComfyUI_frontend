@@ -31,34 +31,7 @@
             </Badge>
           </TableCell>
           <TableCell>
-            <div class="event-details">
-              <template v-if="event.event_type === EventType.CREDIT_ADDED">
-                <div class="font-semibold text-green-500">
-                  {{ $t('credits.added') }} ${{
-                    customerEventService.formatAmount(getEventAmount(event))
-                  }}
-                </div>
-              </template>
-
-              <template
-                v-else-if="event.event_type === EventType.ACCOUNT_CREATED"
-              >
-                <div>{{ $t('credits.accountInitialized') }}</div>
-              </template>
-
-              <template
-                v-else-if="event.event_type === EventType.API_USAGE_COMPLETED"
-              >
-                <div class="flex flex-col gap-1">
-                  <div class="font-semibold">
-                    {{ event.params?.api_name || 'API' }}
-                  </div>
-                  <div class="text-sm text-smoke-400">
-                    {{ $t('credits.model') }}: {{ event.params?.model || '-' }}
-                  </div>
-                </div>
-              </template>
-            </div>
+            <UsageLogEventDetails :event />
           </TableCell>
           <TableCell>
             {{ customerEventService.formatDate(event.createdAt ?? '') }}
@@ -111,10 +84,9 @@ import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
-import {
-  EventType,
-  useCustomerEventsService
-} from '@/services/customerEventsService'
+import { useCustomerEventsService } from '@/services/customerEventsService'
+
+import UsageLogEventDetails from './UsageLogEventDetails.vue'
 
 const { t } = useI18n()
 
@@ -142,11 +114,6 @@ const tooltipContentMap = computed(() => {
   })
   return map
 })
-
-function getEventAmount(event: AuditLog): number | undefined {
-  const amount = event.params?.amount
-  return typeof amount === 'number' ? amount : undefined
-}
 
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.
