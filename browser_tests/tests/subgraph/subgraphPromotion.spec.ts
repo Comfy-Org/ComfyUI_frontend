@@ -123,6 +123,8 @@ test.describe(
 
             test.setTimeout(120_000)
             await comfyPage.workflow.setupWorkflowsDirectory({})
+            await comfyPage.nodeOps.clearGraph()
+            await comfyPage.nodeOps.waitForGraphNodes(0)
 
             await test.step('Verify the named global setting is disabled', async () => {
               await comfyPage.settings.setSetting(settingId, false)
