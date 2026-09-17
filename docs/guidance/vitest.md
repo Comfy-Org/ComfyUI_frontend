@@ -24,7 +24,8 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - Use `vi.hoisted()` only for bindings needed by a hoisted mock factory.
   Keep mutable scenario state inside the test that uses it.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
-  environment variables before each test. Do not repeat that cleanup in test
+  environment variables before each test, and shared mocks restore their own
+  reactive state with `onTestFinished`. Do not repeat that cleanup in test
   lifecycle hooks.
 - Install `vi.stubGlobal()` and `vi.spyOn()` calls in `beforeEach` or in the
   test that needs them. Module-scope stubs and spies are removed before the
@@ -40,30 +41,105 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   state, or duplicate spies.
 - Type each complete default from the real function's return type. Preserve
   async and cancellation behavior. Pass the default implementation to
-  `vi.fn<typeof realFn>` instead of setting it in `beforeEach`.
-- For composables, return fresh state from each call. If repeated calls must
-  share a result, create it in the test and pin it with
-  `vi.mocked(useX).mockReturnValue(result)`.
+  `vi.fn<typeof realFn>` instead of setting it in `beforeEach`; `mockReset`
+  restores that implementation before every test.
+- A composable mock returns one stable object, so a test can configure it
+  and then create the consumer that reads it. Never replace a field that
+  holds a `ref`, `computed`, or object: a consumer that already destructured
+  it keeps the old one. Because that object is shared by every test in the
+  file, tests that configure it must not run with `test.concurrent`.
+- Until an older mock that builds a fresh object per call (`useBillingContext`)
+  is converted, pin it in the test with
+  `vi.mocked(useX).mockReturnValue(useX())` before configuring the result.
 - Do not use `mock.results` or other call history as a cache. Keep shared
   result identity explicit in the test that needs it.
-- Assign writable fields directly. To override a readonly field on a
-  configurable mock object, use `vi.spyOn(flags, 'flagName', 'get')`. Vitest
-  also supports plain data properties; it installs a temporary getter and
-  restores the original property with the spy. Use `mockReturnValue` for a
-  fixed value or `mockImplementation` to read changing test state.
 - Override only the field the test needs. Do not rebuild a full result with
   nested spreads or add hooks that repeat the shared defaults.
 
-For example, configure a live flag inside the test before creating its consumer:
+#### Mock state that `mockReset` does not touch
+
+`mockReset` restores `vi.fn` implementations and call history, not plain
+fields, `reactive()` objects, or `ref` values. A test that writes
+`useFeatureFlags().flags.assetsEnabled = true` leaks it into every later test
+unless the mock restores it. Register the restore with `onTestFinished` inside
+the mock function, so every test that touches the mock cleans up after itself:
 
 ```ts
-const enabled = ref(false)
-const featureFlags = useFeatureFlags()
-vi.mocked(useFeatureFlags).mockReturnValue(featureFlags)
-vi.spyOn(featureFlags.flags, 'billingControlEnabled', 'get').mockImplementation(
-  () => enabled.value
-)
+import { onTestFinished, vi } from 'vitest'
+
+type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
+
+const defaultFlags: FeatureFlags = {
+  assetsEnabled: false,
+  hostedBillingDestination: 'stripe'
+}
+
+const featureFlags: ReturnType<typeof realUseFeatureFlags> = {
+  flags: reactive({ ...defaultFlags }),
+  featureFlag: vi.fn((_, defaultValue) => computed(() => defaultValue))
+}
+
+export const useFeatureFlags = vi.fn(() => {
+  onTestFinished(() => {
+    Object.assign(featureFlags.flags, defaultFlags)
+  })
+  return featureFlags
+})
 ```
+
+Restore in place (`Object.assign(reactiveObject, defaults)`,
+`someRef.value = default`) so consumer `computed`s are notified. Do not call
+`beforeEach` inside a mock module: it binds to the file being collected, so a
+cached module (`isolate: false`) registers no hook for later files, and a
+re-import after `vi.resetModules()` registers a duplicate.
+
+`onTestFinished` throws `Hook onTestFinished() can only be called inside a
+test` when the mock is called at `describe` scope or in `beforeAll`. That is
+intended: configure mock state in `beforeEach` or in the test, where the
+cleanup can be attached to the test that dirtied it.
+
+#### Reactive fields: match the real contract
+
+- Writable (`flags.x`, `enableAppBuilder`): back it with `reactive()` or
+  `ref` and assign it in the test. When the contract types it `readonly`,
+  write through `vi.mocked(useFeatureFlags().flags).x = true`.
+- Derived with a real mutator (`mode` set by `setMode`): derive every
+  `computed` from one private source and implement the mutator against it, so
+  related fields cannot disagree. Tests call the mutator; the mock restores
+  the source:
+
+  ```ts
+  const mode = ref<AppMode>('graph')
+  const appMode: ReturnType<typeof realUseAppMode> = {
+    mode: computed(() => mode.value),
+    isArrangeMode: computed(() => mode.value === 'builder:arrange'),
+    setMode: vi.fn((next) => {
+      mode.value = next
+    })
+  }
+  export const useAppMode = vi.fn(() => {
+    onTestFinished(() => {
+      mode.value = 'graph'
+    })
+    return appMode
+  })
+  ```
+
+- Derived with no mutator (`isLoggedIn`, `canTopUp`): spy on the getter in
+  the test; `restoreMocks` removes it. Use `mockReturnValue` for a fixed
+  value. When the value changes mid-test, read a `ref` inside
+  `mockImplementation`, because Vue does not track a spy's fixed return and
+  a consumer `computed` caches the first read:
+
+  ```ts
+  const loggedIn = ref(false)
+  vi.spyOn(useCurrentUser().isLoggedIn, 'value', 'get').mockImplementation(
+    () => loggedIn.value
+  )
+  ```
+
+Never assign `useCurrentUser().isLoggedIn = computed(() => true)`: it leaks,
+and a consumer created earlier keeps the old computed.
 
 ## No Real Network
 

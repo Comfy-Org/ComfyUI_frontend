@@ -242,7 +242,6 @@ describe('useCoreCommands', () => {
   const mockSubgraph = createMockSubgraph()!
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     mockWorkflowStore = useWorkflowStore()
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>

@@ -6,9 +6,9 @@ import {
   TURNSTILE_MESSAGES,
   isTurnstileEnabled
 } from '@comfyorg/account-core/turnstile'
-import PasswordRules from '@comfyorg/account-core/vue/PasswordRules'
-import TurnstileWidget from '@comfyorg/account-core/vue/TurnstileWidget'
-import { useTurnstileGate } from '@comfyorg/account-core/vue/turnstileGate'
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import TurnstileWidget from '@comfyorg/account-ui/auth/TurnstileWidget'
+import { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
