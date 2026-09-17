@@ -30,11 +30,18 @@ test.describe(
       await comfyPage.page.getByText('Rename slot', { exact: true }).click()
 
       await expect(sourceNode.root.getByText('RENAMED_LATENT')).toBeVisible()
+      await sourceNode.getSlot('RENAMED_LATENT').click({ button: 'right' })
+      await expect(
+        comfyPage.page.getByText('Rename slot', { exact: true })
+      ).toBeVisible()
+      await comfyPage.page.keyboard.press('Escape')
+      const beforeMove = await source.getPosition()
       await sourceNode.header.dragTo(sourceNode.header, {
         sourcePosition: { x: 60, y: 12 },
         targetPosition: { x: 180, y: 92 }
       })
       await comfyPage.nextFrame()
+      await expect.poll(() => source.getPosition()).not.toEqual(beforeMove)
 
       await sourceNode.getSlot('RENAMED_LATENT').click({ button: 'right' })
       await comfyPage.page
