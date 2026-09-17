@@ -1251,6 +1251,33 @@ describe('node:before-removed event', () => {
     expect(second.onRemoved).toHaveBeenCalledOnce()
   })
 
+  it('runs every removal effect for an interior node whose onRemoved throws', () => {
+    // The failure boundary is one effect, not one node: a throwing
+    // `onRemoved` must not skip that node's store cleanup or the owning
+    // graph's `onNodeRemoved`.
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, nodeCount: 2 })
+    const [first, second] = subgraph.nodes
+    first.addWidget('number', 'value', 7, () => {})
+    first.onRemoved = () => {
+      throw new Error('interior cleanup failed')
+    }
+    const graphRemoved = vi.fn()
+    subgraph.onNodeRemoved = graphRemoved
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    const widgetStore = useWidgetValueStore()
+    expect(widgetStore.getNodeWidgetIds(graph.id, first.id)).toHaveLength(1)
+
+    expect(() => graph.remove(host)).toThrow('interior cleanup failed')
+
+    expect(graphRemoved.mock.calls.map(([node]) => node)).toEqual([
+      first,
+      second
+    ])
+    expect(widgetStore.getNodeWidgetIds(graph.id, first.id)).toEqual([])
+  })
+
   it('reports no canonical preservation for an owning node with nothing to preserve for', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

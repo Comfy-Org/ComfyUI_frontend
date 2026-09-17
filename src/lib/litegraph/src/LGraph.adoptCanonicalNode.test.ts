@@ -456,6 +456,58 @@ describe('LGraph.adoptCanonicalNode', () => {
       expectDetachedSuccessor(successor)
     })
 
+    it('restores nested record data the incumbent onRemoved mutated before throwing', () => {
+      // During the detach stage the incumbent still owns the canonical
+      // record, so its hooks write straight into the record's nested
+      // containers. Rollback must restore those by value, not just the
+      // top-level references, and the record must keep its identity.
+      const { graph, incumbent, record } = graphWithOwnedIncumbent()
+      incumbent.properties.nested = { value: 'before', list: [1, 2] }
+      incumbent.flags.collapsed = false
+      incumbent.inputs[0].label = 'before'
+      incumbent.outputs[0].name = 'out'
+      const recordBefore = JSON.parse(JSON.stringify(toRaw(record)))
+      const propertiesBefore = toRaw(record).properties
+      const inputsBefore = toRaw(record).inputs
+      const firstInput = incumbent.inputs[0]
+      incumbent.onRemoved = function (this: LGraphNode) {
+        const nested = this.properties.nested as {
+          value: string
+          list: number[]
+        }
+        nested.value = 'after'
+        nested.list.push(3)
+        this.properties.added = true
+        this.flags.collapsed = true
+        this.inputs[0].label = 'after'
+        this.outputs[0].name = 'renamed'
+        this.addOutput('extra', '*')
+        throw new Error('onRemoved exploded')
+      }
+      const successor = new BNode()
+
+      const result = graph.adoptCanonicalNode(record, successor, {
+        incumbent
+      })
+
+      expect(result.status).toBe('failed')
+      if (result.status !== 'failed') return
+      expect(result.stage).toBe('detach')
+      expect(result.rollbackFailures).toEqual([])
+      expect(JSON.parse(JSON.stringify(toRaw(record)))).toEqual(recordBefore)
+      expect(toRaw(incumbent._state)).toBe(toRaw(record))
+      expect(toRaw(record).properties).toBe(propertiesBefore)
+      expect(toRaw(record).inputs).toBe(inputsBefore)
+      expect(incumbent.inputs[0]).toBe(firstInput)
+      expect(incumbent.properties.nested).toEqual({
+        value: 'before',
+        list: [1, 2]
+      })
+      expect(incumbent.flags.collapsed).toBe(false)
+      expect(incumbent.inputs[0].label).toBe('before')
+      expect(incumbent.outputs.map((output) => output.name)).toEqual(['out'])
+    })
+
     it('keeps a detached record and its widget values on failure', () => {
       const { graph, record } = graphWithDetachedRecord()
       const versionBefore = graph._version
