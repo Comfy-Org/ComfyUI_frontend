@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
