@@ -8,6 +8,7 @@ import type { ComfyExtension } from '@/types/comfy'
 const {
   canvasEl,
   container,
+  dragAndScale,
   closeSearchBox,
   processMouseDown,
   processMouseMove
@@ -18,6 +19,12 @@ const {
   return {
     container,
     canvasEl,
+    dragAndScale: {
+      scale: 1,
+      offset: [0, 0] as [number, number],
+      min_scale: 0.1,
+      max_scale: 10
+    },
     closeSearchBox: vi.fn(),
     processMouseDown: vi.fn(),
     processMouseMove: vi.fn()
@@ -29,7 +36,7 @@ vi.mock(import('@/scripts/app'), () => ({
     registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
     canvasEl,
     canvas: fromPartial({
-      ds: { scale: 1, offset: [0, 0], min_scale: 0.1, max_scale: 10 },
+      ds: dragAndScale,
       pointer: { isDown: false },
       setDirty: vi.fn(),
       search_box: { close: closeSearchBox }
@@ -91,6 +98,8 @@ function strandTouchesOnDetachedTarget(count: number) {
 describe('Comfy.SimpleTouchSupport touch state', () => {
   beforeEach(() => {
     document.body.append(container)
+    dragAndScale.scale = 1
+    dragAndScale.offset = [0, 0]
     // Reset through the visibilitychange listener rather than through touch or
     // pointer events, so the fixture does not depend on the behaviour under
     // test and stays valid against pre-fix revisions.
