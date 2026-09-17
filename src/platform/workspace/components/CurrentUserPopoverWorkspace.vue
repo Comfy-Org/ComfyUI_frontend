@@ -392,11 +392,22 @@ const handleOpenWorkspaceSettings = () => {
   emit('close')
 }
 
+/**
+ * `noopener` returns a null handle even on success, so the blocked tab and the
+ * opened one are told apart by opening a blank tab and disowning it by hand
+ * before it leaves `about:blank`.
+ */
+const openDisownedTab = (url: URL): boolean => {
+  const tab = window.open('', '_blank')
+  if (!tab) return false
+  tab.opener = null
+  tab.location.href = url.href
+  return true
+}
+
 const handleOpenPlansAndPricing = () => {
   const route = hostedBillingRoute(flags.hostedBillingDestination, 'pricing')
-  if (route.kind === 'billing_web') {
-    window.open(route.url.href, '_blank', 'noopener,noreferrer')
-  } else {
+  if (route.kind !== 'billing_web' || !openDisownedTab(route.url)) {
     subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   }
   emit('close')

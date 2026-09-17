@@ -201,6 +201,20 @@ function renderComponent(
   })
 }
 
+/**
+ * A blank tab the handler can disown and navigate. happy-dom's own child
+ * window exposes `opener` read-only and fetches whatever `location` is set to.
+ */
+function stubHostedTab(): Window {
+  const tab: Window = Object.create(window)
+  Object.defineProperty(tab, 'opener', { value: window, writable: true })
+  Object.defineProperty(tab, 'location', {
+    value: { href: 'about:blank' },
+    writable: true
+  })
+  return tab
+}
+
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
     state.isCloud = true
@@ -339,6 +353,25 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('opens hosted billing alone when its feature flag is enabled', async () => {
     const user = userEvent.setup()
+    const tab = stubHostedTab()
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    state.canOpenPricingSurface = true
+    state.hostedBillingDestination = 'billing_web'
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('', '_blank')
+    expect(tab.opener).toBeNull()
+    expect(tab.location.href).toBe(
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
+    )
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
+    const user = userEvent.setup()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     state.canOpenPricingSurface = true
     state.hostedBillingDestination = 'billing_web'
@@ -347,12 +380,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).toHaveBeenCalledOnce()
-    expect(open).toHaveBeenCalledWith(
-      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace',
-      '_blank',
-      'noopener,noreferrer'
-    )
-    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
   })
 
   it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
