@@ -7,12 +7,6 @@ test.describe(
   'Large workflow readiness',
   { tag: ['@workflow', '@smoke'] },
   () => {
-    test.use({
-      initialSettings: {
-        'Comfy.Canvas.MouseWheelScroll': 'zoom'
-      }
-    })
-
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
     })
@@ -70,7 +64,8 @@ test.describe(
           .not.toEqual(initialOffset)
 
         const initialScale = await comfyPage.canvasOps.getScale()
-        await comfyPage.canvasOps.zoom(-100)
+        await comfyPage.canvas.hover()
+        await comfyPage.page.mouse.wheel(0, -100)
         await expect
           .poll(() => comfyPage.canvasOps.getScale())
           .toBeGreaterThan(initialScale)
