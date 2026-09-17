@@ -87,7 +87,6 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = false
     mockBookmarkStore = useWorkflowBookmarkStore()
     mockWorkflowStore = useWorkflowStore()
     mockCommandStore = useCommandStore()

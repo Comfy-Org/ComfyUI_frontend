@@ -1,6 +1,6 @@
 /**
  * The hosted billing origin's own session: one session client from
- * `@comfyorg/account`, bound to the env-selected Cloud origin, with the
+ * `@comfyorg/account-core`, bound to the env-selected Cloud origin, with the
  * Firebase identity of this origin attached.
  *
  * The credential cache sits in sessionStorage so a token survives a reload
@@ -16,8 +16,11 @@
 import type { User } from 'firebase/auth'
 import { computed, shallowRef } from 'vue'
 
-import type { SessionClient, SessionSnapshot } from '@comfyorg/account/session'
-import { createSessionClient } from '@comfyorg/account/session'
+import type {
+  SessionClient,
+  SessionSnapshot
+} from '@comfyorg/account-core/session'
+import { createSessionClient } from '@comfyorg/account-core/session'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebIdentity } from '@/config/firebase'

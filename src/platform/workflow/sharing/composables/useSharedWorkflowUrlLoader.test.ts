@@ -43,13 +43,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    mode: { value: 'graph' },
-    isAppMode: { value: false }
-  })
-}))
-
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
