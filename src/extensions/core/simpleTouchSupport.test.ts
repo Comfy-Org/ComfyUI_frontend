@@ -194,6 +194,33 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
     })
   })
 
+  it('scales the canvas by the ratio the fingers close through', () => {
+    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
+    dispatchTouch(canvasEl, 'touchstart', [
+      touchAt(canvasEl),
+      touchAt(canvasEl, 100)
+    ])
+    dispatchTouch(canvasEl, 'touchmove', [
+      touchAt(canvasEl),
+      touchAt(canvasEl, 50)
+    ])
+
+    expect(dragAndScale.scale).toBeCloseTo(0.5)
+  })
+
+  it('still opens the context menu on a long press', () => {
+    const rightClick = vi.fn()
+    canvasEl.addEventListener('pointerdown', rightClick)
+
+    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
+    vi.advanceTimersByTime(700)
+    dispatchTouch(canvasEl, 'touchend', [], [touchAt(canvasEl)])
+    canvasEl.removeEventListener('pointerdown', rightClick)
+
+    expect(rightClick).toHaveBeenCalledOnce()
+    expect(rightClick.mock.calls[0][0]).toMatchObject({ button: 2 })
+  })
+
   it('closes transient UI once per pinch rather than on every frame', () => {
     const closeAllContextMenus = vi
       .spyOn(LiteGraph, 'closeAllContextMenus')
