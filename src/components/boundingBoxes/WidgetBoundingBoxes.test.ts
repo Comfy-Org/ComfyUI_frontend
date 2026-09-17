@@ -14,8 +14,12 @@ const { appState } = vi.hoisted(() => {
   return { appState }
 })
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => appState.node } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    canvas: { graph: { getNodeById: () => appState.node } },
+    nodeOutputs: {},
+    nodePreviewImages: {}
+  }
 }))
 
 const i18n = createI18n({

@@ -8,11 +8,10 @@ export function useHasBlockingError() {
 
   return computed(() => {
     if (executionErrorStore.lastPromptError) return true
+    const executionError = executionErrorStore.lastExecutionError
     if (
-      executionErrorStore.lastExecutionError &&
-      tryNormalizeNodeExecutionId(
-        executionErrorStore.lastExecutionError.node_id
-      )
+      executionError?.node_id != null &&
+      tryNormalizeNodeExecutionId(executionError.node_id)
     ) {
       return true
     }

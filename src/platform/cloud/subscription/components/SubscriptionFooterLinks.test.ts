@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,40 +6,37 @@ import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
 const state = vi.hoisted(() => ({
   isCloud: true,
-  manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
 }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return state.isCloud
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    manageSubscription: state.manageSubscription
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: vi.fn(() => 'https://docs.comfy.org/partner-nodes'),
     docsPaths: { partnerNodesPricing: 'partner-nodes' }
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionActions',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionActions'),
   () => ({
     useSubscriptionActions: () => ({
       isLoadingSupport: ref(false),
@@ -66,6 +64,7 @@ const i18n = createI18n({
 function renderComponent(
   props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
 ) {
+  mockBillingContext()
   return render(SubscriptionFooterLinks, {
     props,
     global: {
@@ -134,7 +133,7 @@ describe('SubscriptionFooterLinks', () => {
 
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
 
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('hides Invoice history from local users without billing permission', () => {
@@ -144,7 +143,7 @@ describe('SubscriptionFooterLinks', () => {
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
-    expect(state.manageSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
   })
 
   it('opens the platform usage page', async () => {

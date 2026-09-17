@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -8,18 +7,7 @@ import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-const { appModeState } = vi.hoisted(() => ({
-  appModeState: {} as { isAppMode: Ref<boolean> }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    isAppMode: appModeState.isAppMode,
-    setMode: vi.fn()
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       ds: {
@@ -54,7 +42,6 @@ describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
-    appModeState.isAppMode = ref(false)
     store = useCanvasStore()
   })
 

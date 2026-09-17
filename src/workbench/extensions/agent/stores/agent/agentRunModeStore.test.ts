@@ -1,10 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 import { useAgentRunModeStore } from './agentRunModeStore'
 
@@ -19,7 +18,6 @@ describe('agentRunModeStore', () => {
   beforeEach(() => {
     localStorage.clear()
     fetchApi.mockReset()
-    setActivePinia(createPinia())
   })
 
   it('uses the safe fallback when loading gets 404 with invalid local state', async () => {

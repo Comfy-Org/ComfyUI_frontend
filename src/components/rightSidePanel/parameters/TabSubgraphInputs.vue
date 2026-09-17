@@ -12,6 +12,10 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
@@ -75,7 +79,13 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
+      .filter((widget) =>
+        isWidgetVisibleOnSurface(
+          widget.visibility ?? deriveWidgetVisibility(widget),
+          'panel',
+          { showAdvanced: true }
+        )
+      )
       .map((widget) => ({ node: interiorNode, widget }))
   })
 

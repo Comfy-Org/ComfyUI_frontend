@@ -3,8 +3,10 @@ import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
-import * as featureFlagsModule from '@/composables/useFeatureFlags'
-import * as authStoreModule from '@/stores/authStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useAuthStore } from '@/stores/authStore'
+
+vi.mock(import('firebase/auth'))
 
 import {
   partnerRunGateBlocksAutoQueue,
@@ -19,7 +21,7 @@ const state = vi.hoisted(
     }
 )
 
-vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
+vi.mock(import('@/composables/node/usePartnerNodesInGraph'), async () => {
   const { computed } = await import('vue')
   return {
     usePartnerNodesInGraph: () => ({
@@ -30,7 +32,7 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', async () => {
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
   const { computed, ref } = await import('vue')
   const loggedIn = ref(false)
   return {
@@ -43,47 +45,20 @@ vi.mock('@/composables/auth/useCurrentUser', async () => {
   }
 })
 
-vi.mock('@/stores/authStore', async () => {
-  const { ref } = await import('vue')
-  const initialized = ref(true)
-  return {
-    useAuthStore: () => ({
-      get isInitialized() {
-        return initialized.value
-      }
-    }),
-    __setAuthResolved: (value: boolean) => {
-      initialized.value = value
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/composables/useFeatureFlags', async () => {
-  const { reactive } = await import('vue')
-  const flags = reactive({ partnerRunGateEnabled: true })
-  return {
-    useFeatureFlags: () => ({ flags }),
-    __setPartnerRunGateEnabled: (value: boolean) => {
-      flags.partnerRunGateEnabled = value
-    }
-  }
+beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).partnerRunGateEnabled = true
 })
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
   __setLoggedIn: (value: boolean) => void
 }
-const { __setAuthResolved } = authStoreModule as typeof authStoreModule & {
-  __setAuthResolved: (value: boolean) => void
-}
-const { __setPartnerRunGateEnabled } =
-  featureFlagsModule as typeof featureFlagsModule & {
-    __setPartnerRunGateEnabled: (value: boolean) => void
-  }
 
 let scope: EffectScope
 
@@ -97,8 +72,7 @@ describe('usePartnerNodesRunGate', () => {
     state.hasPartnerNodes = ref(false)
     state.partnerNodes = ref([])
     __setLoggedIn(false)
-    __setAuthResolved(true)
-    __setPartnerRunGateEnabled(true)
+    useAuthStore().isInitialized = true
   })
 
   afterEach(() => {
@@ -180,14 +154,14 @@ describe('usePartnerNodesRunGate', () => {
 
   it('does not gate while auth is still resolving, then follows the outcome', async () => {
     state.hasPartnerNodes.value = true
-    __setAuthResolved(false)
+    useAuthStore().isInitialized = false
     const { gate } = setup()
     expect(gate.value, 'unresolved auth must never read as signed-out').toBe(
       'none'
     )
 
     __setLoggedIn(true)
-    __setAuthResolved(true)
+    useAuthStore().isInitialized = true
     await nextTick()
     expect(gate.value, 'a signed-in resolution keeps the gate open').toBe(
       'none'
@@ -199,12 +173,13 @@ describe('usePartnerNodesRunGate', () => {
   })
 
   it('stays inert when the feature flag is off, even for a gated graph', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerRunGateEnabled = false
+
     state.hasPartnerNodes.value = true
-    __setPartnerRunGateEnabled(false)
     const { gate } = setup()
     expect(gate.value).toBe('none')
 
-    __setPartnerRunGateEnabled(true)
+    vi.mocked(useFeatureFlags().flags).partnerRunGateEnabled = true
     await nextTick()
     expect(gate.value, 'flag flips back on without a reload').toBe('sign-in')
   })
@@ -214,8 +189,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   beforeEach(() => {
     state.partnerNodes = ref([])
     __setLoggedIn(false)
-    __setAuthResolved(true)
-    __setPartnerRunGateEnabled(true)
+    useAuthStore().isInitialized = true
   })
 
   it('blocks a signed-out local graph that contains partner nodes', () => {
@@ -232,13 +206,13 @@ describe('partnerRunGateBlocksAutoQueue', () => {
 
   it('never blocks while auth is still resolving', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    __setAuthResolved(false)
+    useAuthStore().isInitialized = false
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 
   it('never blocks while the feature flag is off', () => {
+    vi.mocked(useFeatureFlags().flags).partnerRunGateEnabled = false
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    __setPartnerRunGateEnabled(false)
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 

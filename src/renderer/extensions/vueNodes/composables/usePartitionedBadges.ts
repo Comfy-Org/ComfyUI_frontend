@@ -29,9 +29,11 @@ export function usePartitionedBadges(nodeData: NodeState) {
   const nodeDefStore = useNodeDefStore()
 
   return computed(() => {
-    const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
+    const rootGraph = canvasStore.currentGraph?.rootGraph
+    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
+    const nodeDef = node ? nodeDefStore.fromLGraphNode(node) : null
     const showComfyLogo =
-      !!nodeDef?.isCoreNode &&
+      nodeDef?.isCoreNode === true &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
     const isComfyCloudNode =
@@ -41,8 +43,6 @@ export function usePartitionedBadges(nodeData: NodeState) {
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
-    const rootGraph = canvasStore.currentGraph?.rootGraph
-    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
     for (const row of node ? nodeBadges(node) : []) {
       if (row.kind === 'credits') {
         const [required, rest] = splitAroundFirstSpace(row.text)

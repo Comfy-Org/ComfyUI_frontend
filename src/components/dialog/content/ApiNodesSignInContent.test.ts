@@ -4,22 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import ApiNodesSignInContent from './ApiNodesSignInContent.vue'
-
-const hoisted = vi.hoisted(() => ({
-  nodeDefsByName: {} as Record<string, { display_name?: string }>
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
-}))
 
 const buildDocsUrl = vi.hoisted(() =>
   vi.fn((path: string) => `https://docs.comfy.org${path}`)
 )
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({ buildDocsUrl })
 }))
 
@@ -47,12 +40,19 @@ function renderContent(props: {
 
 describe('ApiNodesSignInContent', () => {
   beforeEach(() => {
-    hoisted.nodeDefsByName = {}
+    useNodeDefStore().nodeDefsByName = {}
   })
 
   it('lists partner nodes with display names, falling back to raw names', () => {
-    hoisted.nodeDefsByName = {
-      PartnerA: { display_name: 'Partner A' }
+    useNodeDefStore().nodeDefsByName = {
+      PartnerA: new ComfyNodeDefImpl({
+        name: 'PartnerA',
+        display_name: 'Partner A',
+        category: '',
+        python_module: '',
+        description: '',
+        output_node: false
+      })
     }
     renderContent({ apiNodeNames: ['PartnerA', 'UnknownNode'] })
 

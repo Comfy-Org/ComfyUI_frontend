@@ -158,8 +158,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Snapshot rewrites fail the test command, so validate its JSON report.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
@@ -505,6 +507,11 @@ jobs:
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}
+          # The action requires `body`/`body-path` even when only editing an
+          # existing comment's reactions; re-supply the same body the
+          # "Add Starting Reaction" step wrote.
+          body: |
+            Updating Playwright Expectations
           reactions: +1
           reactions-edit-mode: replace
 

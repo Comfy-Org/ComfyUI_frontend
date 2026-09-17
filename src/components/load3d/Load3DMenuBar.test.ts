@@ -1,5 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  createSharedComposable,
+  useDocumentVisibility,
+  useElementSize,
+  useStorage
+} from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
@@ -17,16 +24,23 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) })
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedTopBarWidth = ref(0)
+  vi.mocked(createSharedComposable).mockImplementation(
+    (composable) => composable
+  )
+  vi.mocked(useDocumentVisibility).mockImplementation(() => ref('visible'))
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedTopBarWidth,
+      height: ref(40)
+    })
+  )
+  vi.mocked(useStorage).mockImplementation((_key, defaultValue) =>
+    ref(defaultValue)
+  )
 })
 
 const i18n = createI18n({
@@ -281,5 +295,29 @@ describe('Load3DMenuBar', () => {
     expect(
       screen.queryByRole('button', { name: 'Show grid' })
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the animation strip only when the model has animations', async () => {
+    const { rerender } = renderMenuBar()
+    expect(
+      screen.queryByTestId('load3d-animation-strip')
+    ).not.toBeInTheDocument()
+
+    await rerender({ animations: [{ name: 'idle', index: 0 }] })
+
+    expect(screen.getByTestId('load3d-animation-strip')).toBeInTheDocument()
+  })
+
+  it('forwards play toggles from the animation strip', async () => {
+    const onUpdatePlaying = vi.fn()
+    const { user } = renderMenuBar({
+      animations: [{ name: 'idle', index: 0 }],
+      playing: false,
+      'onUpdate:playing': onUpdatePlaying
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Play' }))
+
+    expect(onUpdatePlaying).toHaveBeenCalledWith(true)
   })
 })

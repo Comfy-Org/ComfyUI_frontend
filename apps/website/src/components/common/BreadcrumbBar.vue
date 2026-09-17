@@ -15,7 +15,7 @@ const {
 <template>
   <nav
     :aria-label="label"
-    class="max-w-9xl mx-auto flex items-center justify-between gap-4 px-6 py-3 lg:px-20"
+    class="mx-auto flex max-w-9xl items-center justify-between gap-4 px-6 py-3 lg:px-20"
   >
     <ol
       class="flex flex-wrap items-center gap-2 text-xs tracking-wide text-primary-warm-gray uppercase"

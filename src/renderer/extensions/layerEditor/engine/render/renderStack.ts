@@ -167,7 +167,7 @@ function renderPreviewTexture(
     }
   }
   const prevVersion = entry
-    ? Number(/^v(\d+)\|/.exec(entry.stamp)?.[1] ?? NaN)
+    ? Number(/^v(\d+)\|/.exec(entry.stamp)?.at(1) ?? NaN)
     : NaN
   const partial =
     entry &&
@@ -184,7 +184,7 @@ function renderPreviewTexture(
         transform,
         region.w,
         region.h,
-        canvas ?? undefined,
+        canvas,
         r,
         true
       )

@@ -13,6 +13,7 @@ const hoisted = vi.hoisted(() => {
   const resolvedUserInfo = { value: null as { id: string } | null }
   return {
     analytics,
+    reportError: vi.fn(),
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
     userEmail: { value: null as string | null },
@@ -40,12 +41,16 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: hoisted.reportError
+}))
+
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: hoisted.userEmail,
     resolvedUserInfo: hoisted.resolvedUserInfo,
@@ -90,6 +95,7 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.analytics.track.mockResolvedValue(undefined)
     hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
+    hoisted.reportError.mockClear()
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
     window.__CONFIG__ = {}
@@ -155,7 +161,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('continues tracking events and page views when the in-app plugin fails to register', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const registrationError = new Error('in-app setup failed')
     hoisted.analytics.register.mockRejectedValue(registrationError)
     const provider = createProvider()
@@ -171,10 +176,9 @@ describe('CustomerIoTelemetryProvider', () => {
       SOURCE
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to initialize Customer.io in-app plugin:',
-      registrationError
-    )
+    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      errorType: 'customerio_in_app_plugin_registration_failure'
+    })
 
     provider.trackAddApiCreditButtonClicked()
     await vi.waitFor(() =>

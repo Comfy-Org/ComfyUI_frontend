@@ -59,7 +59,7 @@ function createMockNode(
     onExecutionStart: options.callback,
     graph: options.graph
   }) satisfies Partial<LGraphNode>
-  options.graph?.nodes?.push(node)
+  options.graph?.nodes.push(node)
   return node
 }
 

@@ -1,11 +1,15 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import type { CurveData } from './types'
+import WidgetCurve from './WidgetCurve.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -25,7 +29,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -35,17 +39,6 @@ vi.mock('@/composables/useUpstreamValue', async () => {
     singleValueExtractor: () => () => undefined
   }
 })
-
-const outputsHolder = vi.hoisted(() => ({
-  nodeOutputs: {} as Record<string, unknown>
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => outputsHolder
-}))
-
-import WidgetCurve from './WidgetCurve.vue'
-import type { CurveData } from './types'
 
 const CurveEditorStub = defineComponent({
   name: 'CurveEditor',
@@ -144,7 +137,7 @@ function renderWidget(
 describe('WidgetCurve', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
-    outputsHolder.nodeOutputs = {}
+    useNodeOutputStore().nodeOutputs = {}
   })
 
   describe('Point forwarding', () => {

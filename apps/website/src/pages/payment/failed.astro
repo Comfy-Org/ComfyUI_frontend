@@ -10,3 +10,10 @@ import PaymentStatusSection from '../../components/payment/PaymentStatusSection.
 >
   <PaymentStatusSection status="failed" />
 </BaseLayout>
+
+<script>
+  if (window.opener) {
+    window.opener.focus()
+    window.close()
+  }
+</script>

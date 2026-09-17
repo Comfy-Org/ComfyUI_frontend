@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -30,6 +30,10 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 describe('WidgetSelectDefault', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+  })
+
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
@@ -72,7 +76,7 @@ describe('WidgetSelectDefault', () => {
   }
 
   const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+    screen.queryAllByRole('option').map((option) => option.textContent.trim())
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -361,7 +365,7 @@ describe('WidgetSelectDefault', () => {
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
-      expect(trigger.textContent?.trim()).toBe('')
+      expect(trigger.textContent.trim()).toBe('')
     })
 
     it('selects the first option when the value is undefined', () => {
@@ -379,7 +383,7 @@ describe('WidgetSelectDefault', () => {
 
       const options = screen.getAllByRole('option')
       expect(options).toHaveLength(2)
-      expect(options.map((option) => option.textContent?.trim())).toEqual(
+      expect(options.map((option) => option.textContent.trim())).toEqual(
         expect.arrayContaining(['a', 'b'])
       )
       for (const option of options) {

@@ -435,7 +435,10 @@ function handleTitleCancel() {
     <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
+        <TabGlobalParameters
+          v-if="activeTab === 'parameters'"
+          :key="workflowKey"
+        />
         <TabNodes v-else-if="activeTab === 'nodes'" :key="workflowKey" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
