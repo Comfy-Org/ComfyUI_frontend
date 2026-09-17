@@ -26,10 +26,22 @@ app.registerExtension({
       }
     }
 
+    /**
+     * `e.touches` spans the whole document, so a finger on a toast or a
+     * body-level menu would otherwise count against the canvas. Detached
+     * targets drop out here too - that is the case that stranded the count.
+     */
+    function countTouchesOnCanvas(e: TouchEvent) {
+      const root = app.canvasEl.parentElement
+      return Array.from(e.touches).filter(
+        (touch) => touch.target instanceof Node && root?.contains(touch.target)
+      ).length
+    }
+
     app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount = e.touches.length
+        touchCount = countTouchesOnCanvas(e)
 
         lastTouch = null
         lastScale = null
@@ -56,7 +68,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchCount = e.touches.length
+        touchCount = countTouchesOnCanvas(e)
 
         if (e.touches.length !== 1) touchZooming = false
         if (touchTime && !e.touches.length) {
@@ -111,7 +123,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        touchCount = e.touches.length
+        touchCount = countTouchesOnCanvas(e)
 
         // make a threshold for touchmove to prevent clear touchTime for long press
         if (touchTime && lastTouch && e.touches.length === 1) {

@@ -143,6 +143,19 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       expect(processMouseDown).not.toHaveBeenCalled()
     })
 
+    it('ignores a finger held outside the canvas container', () => {
+      const bodyLevelSurface = document.createElement('div')
+      document.body.append(bodyLevelSurface)
+      const stray = touchAt(bodyLevelSurface)
+      const onCanvas = touchAt(canvasEl, 100)
+
+      dispatchTouch(canvasEl, 'touchstart', [stray, onCanvas])
+      dispatchTouch(canvasEl, 'touchend', [stray], [onCanvas])
+      bodyLevelSurface.remove()
+
+      expect(tapReachesCanvas()).toBe(true)
+    })
+
     it.for(['mouse', 'pen'] as const)(
       'blocks a %s press during a live pinch, which is always primary',
       (pointerType) => {
