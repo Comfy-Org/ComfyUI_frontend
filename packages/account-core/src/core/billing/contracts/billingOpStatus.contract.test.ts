@@ -38,7 +38,7 @@ describe('billing operation status contract', () => {
     })
   })
 
-  it('rejects a start time the reducer could not order the operation by', () => {
+  it('requires a datetime start time, so a malformed one fails the whole poll', () => {
     expect(
       zBillingOpStatusResponse.safeParse(
         opStatusBody({ started_at: 'not-a-date' })

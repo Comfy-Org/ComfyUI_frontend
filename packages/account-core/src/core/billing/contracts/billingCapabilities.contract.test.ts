@@ -89,12 +89,6 @@ describe('billing capabilities contract', () => {
 
   it('dates the snapshot with a string the reader paces freshness from', () => {
     expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
-
-    const parsed = zBillingCapabilitiesResponse.safeParse(capabilitiesBody())
-
-    expect(
-      parsed.success && Number.isNaN(Date.parse(parsed.data.expires_at))
-    ).toBe(false)
   })
 
   it('requires a datetime expiry, which the reader re-decodes leniently as a plain string', () => {

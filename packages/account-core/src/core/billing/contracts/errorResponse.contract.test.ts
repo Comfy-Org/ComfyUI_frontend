@@ -24,7 +24,7 @@ describe('billing error body contract', () => {
     expectTypeOf<ErrorResponse['code']>().toEqualTypeOf<string>()
   })
 
-  it('withholds the code from a body missing its message', () => {
+  it('rejects a body without a message', () => {
     expect(
       zErrorResponse.safeParse({ code: 'NO_PAYMENT_METHOD' }).success
     ).toBe(false)

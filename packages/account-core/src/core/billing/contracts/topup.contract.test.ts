@@ -81,7 +81,7 @@ describe('topup contract', () => {
   })
 
   it.for(TOPUP_STATUSES)(
-    'adopts the operation regardless of the %s status',
+    'carries the operation id alongside the %s status',
     (status) => {
       const parsed = zCreateTopupResponse.safeParse(topupResponse({ status }))
 

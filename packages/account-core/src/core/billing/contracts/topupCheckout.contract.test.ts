@@ -90,12 +90,25 @@ describe('hosted topup checkout contract', () => {
     expect(paths).toContain(field)
   })
 
-  it('returns the hosted page the command still re-checks for https itself', () => {
+  it('requires the hosted page url', () => {
     expectTypeOf<CheckoutResponse['checkout_url']>().toEqualTypeOf<string>()
     expect(
       zCreateTopupCheckoutResponse.safeParse(checkoutResponse())
     ).toMatchObject({ success: true })
     expect(zCreateTopupCheckoutResponse.safeParse({}).success).toBe(false)
+  })
+
+  it('validates the hosted page as a url but not as https, which the command re-checks itself', () => {
+    expect(
+      zCreateTopupCheckoutResponse.safeParse(
+        checkoutResponse({ checkout_url: 'http://host' })
+      )
+    ).toMatchObject({ success: true })
+    expect(
+      zCreateTopupCheckoutResponse.safeParse(
+        checkoutResponse({ checkout_url: 'not-a-url' })
+      ).success
+    ).toBe(false)
   })
 
   it('leaves the provider session id optional, so the host correlates only when it is sent', () => {

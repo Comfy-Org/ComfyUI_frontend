@@ -16,12 +16,17 @@ describe('payment portal contract', () => {
     })
   })
 
-  it('requires the url, which the command still re-checks for https itself', () => {
+  it('requires the url', () => {
     expectTypeOf<Portal['url']>().toEqualTypeOf<string>()
     expect(zPaymentPortalResponse.safeParse({}).success).toBe(false)
+  })
+
+  it('validates the url no further than a string, so the command checks the scheme itself', () => {
     expect(
       zPaymentPortalResponse.safeParse(portalResponse({ url: 'http://host' }))
-        .success
-    ).toBe(true)
+    ).toMatchObject({ success: true })
+    expect(
+      zPaymentPortalResponse.safeParse(portalResponse({ url: 'not-a-url' }))
+    ).toMatchObject({ success: true })
   })
 })

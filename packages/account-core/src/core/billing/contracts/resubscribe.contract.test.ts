@@ -36,7 +36,7 @@ describe('resubscribe contract', () => {
   })
 
   it.for(RESUBSCRIBE_STATUSES)(
-    'adopts the operation regardless of the %s status',
+    'carries the operation id alongside the %s status',
     (status) => {
       const parsed = zResubscribeResponse.safeParse(
         resubscribeResponse({ status })
