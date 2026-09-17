@@ -302,11 +302,13 @@ describe('Autogrow', () => {
       const node = testNode()
       graph.add(node)
       node.addInput('plain', '*')
-      connectInput(node, 0, graph)
+      const link = connectInput(node, 0, graph)
 
       reconcileAutogrowInputs(node)
 
       expect(node.inputs.map(({ name }) => name)).toEqual(['plain'])
+      expect(node.inputs[0].link).toBe(link.id)
+      expect(node.getInputLink(0)).toBe(link)
     })
 
     test('grows a group whose last input is already connected', () => {

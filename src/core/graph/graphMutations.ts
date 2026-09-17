@@ -173,6 +173,8 @@ interface PrepareDraft {
   nodes: Map<string, NodeState>
   links: Map<LinkId, LinkTopology>
   widgets: Map<string, Set<string>>
+  /** Serialisable widget names per node, in slot order, as the batch sees them. */
+  slotOrders: Map<string, string[]>
 }
 
 interface ConnectSlots {
@@ -520,17 +522,23 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
     const widgets = new Map<string, Set<string>>()
+    const slotOrders = new Map<string, string[]>()
     for (const node of nodes.values()) {
+      const stored = widgetStore.getNodeWidgets(scope.rootGraphId, node.id)
       widgets.set(
         nodeKey(node.id),
-        new Set(
-          widgetStore
-            .getNodeWidgets(scope.rootGraphId, node.id)
-            .map((widget) => widget.name)
-        )
+        new Set(stored.map((widget) => widget.name))
+      )
+      slotOrders.set(
+        nodeKey(node.id),
+        stored
+          .filter(
+            (widget) => widget.serialize !== false && widget.type !== 'button'
+          )
+          .map((widget) => widget.name)
       )
     }
-    return { scope, nodes, links, widgets }
+    return { scope, nodes, links, widgets, slotOrders }
   }
 
   function prepareMutation(
@@ -607,11 +615,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       'addNode requires a payload id and type'
     )
     if (payloadError) return payloadError
-    const { scope, nodes, widgets } = draft
+    const { scope, nodes, widgets, slotOrders } = draft
     const key = nodeKey(toNodeId(mutation.payload.id))
     const existing = nodes.get(key)
     const node = prepareNode(mutation.payload, scope, existing)
-    bindReconciledNode(scope, node, mutation)
+    bindReconciledNode(node, mutation, existing, slotOrders.get(key) ?? [])
     const validationError = validateNodeUpsert(scope, node, key)
     if (validationError) return validationError
     if (mutation.kind === 'addNode' && nodes.has(key)) {
@@ -619,6 +627,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
     nodes.set(key, node.state)
     widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
+    slotOrders.set(
+      key,
+      node.widgets.map(({ name }) => name)
+    )
     const replaced =
       mutation.kind === 'reconcileNode' &&
       existing !== undefined &&
@@ -639,7 +651,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       'reconcileNodeFields requires a payload id and type'
     )
     if (payloadError) return payloadError
-    const { scope, nodes, widgets } = draft
+    const { scope, nodes, widgets, slotOrders } = draft
     const key = nodeKey(toNodeId(mutation.payload.id))
     const existing = nodes.get(key)
     const node = prepareNode(mutation.payload, scope, existing)
@@ -653,15 +665,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (validationError) return validationError
     nodes.set(key, node.state)
     widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
+    slotOrders.set(
+      key,
+      node.widgets.map(({ name }) => name)
+    )
     return { kind: existing ? 'replaceNode' : 'addNode', node }
   }
 
+  /**
+   * The incumbent is the preceding state in this batch (seeded from the
+   * store), so equivalent operations converge whether they arrive in one
+   * batch or two.
+   */
   function bindReconciledNode(
-    scope: GraphScope,
     node: PreparedNode,
-    mutation: QueuedOf<'addNode' | 'reconcileNode'>
+    mutation: QueuedOf<'addNode' | 'reconcileNode'>,
+    incumbent: NodeState | undefined,
+    slotOrder: readonly string[]
   ): void {
-    const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
     if (
       mutation.kind !== 'reconcileNode' ||
       !incumbent ||
@@ -670,7 +691,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       return
     const { title, widgets_values, widgets_values_named } = mutation.payload
     if (Array.isArray(widgets_values)) {
-      bindWidgetsBySlot(scope, node, widgets_values_named)
+      bindWidgetsBySlot(node, widgets_values_named, slotOrder)
     }
     if (typeof title !== 'string' || !title) node.state.title = incumbent.title
     node.state.inputs = reconcileInputSlots(
@@ -685,23 +706,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * keeps its positional value.
    */
   function bindWidgetsBySlot(
-    scope: GraphScope,
     node: PreparedNode,
-    widgetsValuesNamed: unknown
+    widgetsValuesNamed: unknown,
+    slotOrder: readonly string[]
   ): void {
-    const serializable = widgetStore
-      .getNodeWidgets(scope.rootGraphId, node.state.id)
-      .filter(
-        (widget) => widget.serialize !== false && widget.type !== 'button'
-      )
     const named = isRecord(widgetsValuesNamed) ? widgetsValuesNamed : {}
     node.widgets.forEach((widget, index) => {
-      const slot = serializable.at(index)
-      if (!slot) return
-      widget.name = slot.name
-      if (!(slot.name in named)) return
-      widget.value = structuredClone(named[slot.name]) as WidgetValue
-      widget.type = widgetType(named[slot.name])
+      const slotName = slotOrder.at(index)
+      if (slotName === undefined) return
+      widget.name = slotName
+      if (!(slotName in named)) return
+      widget.value = structuredClone(named[slotName]) as WidgetValue
+      widget.type = widgetType(named[slotName])
     })
   }
 
@@ -853,6 +869,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     for (const id of nodeIds) {
       nodes.delete(nodeKey(id))
       widgets.delete(nodeKey(id))
+      draft.slotOrders.delete(nodeKey(id))
       removeIncidentLinks(nodes, links, id)
     }
     const linkIds = [...links.keys()].filter((id) => !retainedLinkIds.has(id))
@@ -909,6 +926,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (typeof removedLinkIds === 'string') return removedLinkIds
     nodes.delete(nodeKey(mutation.nodeId))
     widgets.delete(nodeKey(mutation.nodeId))
+    draft.slotOrders.delete(nodeKey(mutation.nodeId))
     removeIncidentLinks(nodes, links, mutation.nodeId)
     for (const id of removedLinkIds) removeSimulatedLink(nodes, links, id)
     return { kind: mutation.kind, nodeId: mutation.nodeId, removedLinkIds }
@@ -918,6 +936,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const nodeIds = [...draft.nodes.values()].map(({ id }) => id)
     draft.nodes.clear()
     draft.widgets.clear()
+    draft.slotOrders.clear()
     draft.links.clear()
     return { kind: 'clearSemanticGraph', nodeIds }
   }

@@ -18,7 +18,7 @@ import type { reportError as reportErrorFn } from '@/platform/telemetry/reportEr
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
@@ -808,7 +808,10 @@ describe('useAgentCrdtFollower', () => {
     // The materializer is module-mocked, so the composable only has to hand
     // the same live graph through.
     const { fakeDefinitions } = definitionsState
-    const liveGraph = new LGraph()
+    let liveGraph: LGraph
+    beforeEach(() => {
+      liveGraph = new LGraph()
+    })
 
     function placeholderGraph(type: string): LGraph {
       const graph = new LGraph()
@@ -978,10 +981,9 @@ describe('useAgentCrdtFollower', () => {
 
     it('does not deep-copy definitions for a frame when all are registered', () => {
       const registeredGraph = new LGraph()
-      createTestSubgraph({
-        rootGraph: registeredGraph,
-        id: fakeDefinitions[0].id
-      })
+      registeredGraph.createSubgraph(
+        createTestSubgraphData({ id: fakeDefinitions[0].id })
+      )
       const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })

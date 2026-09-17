@@ -430,30 +430,50 @@ function rollbackMaterialize(
   const nodeStore = useNodeDataStore()
   nodeStore.deleteNode(scope, node._state)
   nodeStore.registerNode(scope, state)
-  let cleanupCause: unknown
-  let cleanupFailed = false
+  const failures = [detachFailedSuccessor(graph, node)]
+  try {
+    restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
+  } catch (error) {
+    failures.push(error)
+  }
+  reportError(cause, {
+    errorType,
+    context: { graphId: graph.id, nodeId: String(state.id) }
+  })
+  for (const failure of failures) {
+    if (failure === undefined) continue
+    reportError(failure, {
+      errorType: 'agent_node_materialize_rollback_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+  }
+  return false
+}
+
+/**
+ * Take the successor back out of the graph. Its own lifecycle hook may throw
+ * again here; the node then leaves by membership alone so the incumbent can
+ * still be put back.
+ * @returns the cleanup error, if any
+ */
+function detachFailedSuccessor(
+  graph: MaterializableGraph,
+  node: LGraphNode
+): unknown {
   try {
     if (graph._nodes_by_id[node.id] === node) {
       graph.remove(node, { preserveCanonicalState: true })
     } else {
       node.onRemoved?.()
     }
-    restoreCanonical(graph, scope, state, snapshot.widgets, orphan)
+    return undefined
   } catch (error) {
-    cleanupCause = error
-    cleanupFailed = true
+    const index = graph._nodes.indexOf(node)
+    if (index !== -1) graph._nodes.splice(index, 1)
+    if (graph._nodes_by_id[node.id] === node) delete graph._nodes_by_id[node.id]
+    node.graph = null
+    return error
   }
-  reportError(cause, {
-    errorType,
-    context: { graphId: graph.id, nodeId: String(state.id) }
-  })
-  if (cleanupFailed) {
-    reportError(cleanupCause, {
-      errorType: 'agent_node_materialize_rollback_failed',
-      context: { graphId: graph.id, nodeId: String(state.id) }
-    })
-  }
-  return false
 }
 
 function configureAdapter(

@@ -19,7 +19,6 @@ import {
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -105,10 +104,16 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     vi.spyOn(apiTransport, 'send').mockReturnValue(true)
   })
 
+  function firstWidget(node: LGraphNode) {
+    const widget = node.widgets?.[0]
+    assert(widget, 'missing widget')
+    return widget
+  }
+
   /**
-   * Loads a second workflow into the follower's graph the way a tab switch
-   * does: the loaded nodes stay untouched through the subscribe handshake and
-   * only the first authoritative document is allowed to change them.
+   * Arranges a tab switch: a second workflow is loaded into the follower's
+   * graph, the follower retargets to it and completes the subscribe handshake
+   * (one not_found retry). No assertions here; the named tests own them.
    */
   async function loadSecondWorkflow(retainedType: 'widget' | 'plain') {
     const { graph, workflowId } = mountFollower()
@@ -125,7 +130,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     retained.title = 'Loaded workflow'
     retained.pos = [123, 456]
     retained.onRemoved = vi.fn()
-    if (retainedType === 'widget') retained.widgets![0].value = 'local value'
+    if (retainedType === 'widget') firstWidget(retained).value = 'local value'
     retained.connect(0, removed, 0)
     const loaded = pick(target.serialize(), ['nodes', 'links'])
     graph.value = target
@@ -133,18 +138,6 @@ describe('useAgentCrdtFollower graph catch-up', () => {
 
     workflowId.value = 'wf-b'
     await nextTick()
-
-    expect(target._nodes[0]).toBe(retained)
-    expect(target._nodes[1]).toBe(removed)
-    expect(target.serialize()).toMatchObject(loaded)
-    const scope = graphScopeOf(target)
-    expect(
-      useNodeDataStore().getGraphNodesFor(
-        scope.rootGraphId,
-        scope.owningGraphId
-      )[0]
-    ).toBe(retained._state)
-
     deliver(
       docSubscribedFrame({
         workflow_id: 'wf-b',
@@ -154,8 +147,8 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     )
     vi.advanceTimersByTime(500)
     deliver(docSubscribedFrame({ workflow_id: 'wf-b' }))
-    expect(target.serialize()).toMatchObject(loaded)
 
+    const scope = graphScopeOf(target)
     return { target, retained, removed, loaded, scope, widgetConstructor }
   }
 
@@ -183,8 +176,23 @@ describe('useAgentCrdtFollower graph catch-up', () => {
         widgetId(scope.rootGraphId, live.id, 'text_widget')
       )
     ).toMatchObject({ value: 'remote value' })
-    expect(live.widgets![0].value).toBe('remote value')
+    expect(firstWidget(live).value).toBe('remote value')
   }
+
+  it('keeps the loaded graph and its records through the subscribe handshake', async () => {
+    const { target, retained, removed, loaded, scope } =
+      await loadSecondWorkflow('widget')
+
+    expect(target._nodes[0]).toBe(retained)
+    expect(target._nodes[1]).toBe(removed)
+    expect(target.serialize()).toMatchObject(loaded)
+    expect(
+      useNodeDataStore().getGraphNodesFor(
+        scope.rootGraphId,
+        scope.owningGraphId
+      )[0]
+    ).toBe(retained._state)
+  })
 
   it('keeps the loaded nodes when the first document matches them', async () => {
     const { target, retained, loaded, scope } =
@@ -195,7 +203,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     expectAuthoritativeTopology(target, loaded)
     expect(target._nodes[0]).toBe(retained)
     expect(retained.title).toBe(loaded.nodes[0].title)
-    expect(retained.widgets![0]).toMatchObject({
+    expect(firstWidget(retained)).toMatchObject({
       name: 'text_widget',
       type: 'text',
       value: 'local value'
@@ -216,7 +224,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     expectAuthoritativeTopology(target, authoritative)
     expect(target._nodes[0]).toBe(retained)
     expect(retained.title).toBe('Host workflow')
-    expect(retained.widgets![0]).toMatchObject({
+    expect(firstWidget(retained)).toMatchObject({
       name: 'text_widget',
       type: 'text',
       value: 'local value'
@@ -257,7 +265,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     expect(retained.graph).toBeNull()
     expect(retained.onRemoved).toHaveBeenCalledOnce()
     expect(live.title).toBe('Host workflow')
-    expect(live.widgets![0]).toMatchObject({
+    expect(firstWidget(live)).toMatchObject({
       name: 'text_widget',
       type: 'text',
       value: 'host value'
@@ -280,8 +288,9 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     const late = new LateNode('Late')
     late.type = 'test/lateNode'
     authoring.add(late)
-    late.widgets![0].value = 'late value'
-    const link = origin.connect(0, late, 0) as LLink
+    firstWidget(late).value = 'late value'
+    const link = origin.connect(0, late, 0)
+    assert(link, 'missing link')
     const authoritative = pick(authoring.serialize(), ['nodes', 'links'])
     expect(
       Object.hasOwn(LiteGraph.registered_node_types, 'test/lateNode')

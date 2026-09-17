@@ -510,6 +510,37 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('reconciles against the preceding draft state within one batch', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+    const { title: _title, ...untitled } = node(1)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          type: 'Type2',
+          title: 'Custom Type 2',
+          widgets_values: { model: 'a' }
+        })
+        batch.reconcileNode({
+          ...untitled,
+          type: 'Type2',
+          widgets_values: ['b']
+        })
+      })
+    ).toBe(true)
+
+    expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
+      'Custom Type 2'
+    )
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets('root', toNodeId(1))
+        .map(({ name, value }) => ({ name, value }))
+    ).toEqual([{ name: 'model', value: 'b' }])
+  })
+
   it.for([{ named: 1 }, { named: ['seed'] }])(
     'drops a named record that is not record-shaped: $named',
     ({ named }) => {

@@ -1144,9 +1144,16 @@ describe('node:before-removed event', () => {
       const link = origin.connect(0, node, 0)
       const scope = graphScopeOf(graph)
       const state = node._state
+      const beforeRemoved = vi.fn()
+      graph.events.addEventListener('node:before-removed', beforeRemoved)
 
       graph.remove(node, options)
 
+      expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+        node,
+        successor: undefined,
+        preserveCanonicalState: true
+      })
       expect(graph._nodes).not.toContain(node)
       expect(node.graph).toBeNull()
       expect(useNodeDataStore().getNode(graph.id, node.id)).toBe(state)
@@ -1160,6 +1167,22 @@ describe('node:before-removed event', () => {
       expect(layoutStore.getNodeLayout(graph.id, node.id)).toBeDefined()
     }
   )
+
+  it('reports canonical preservation for an owning node removed with the option', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const beforeRemoved = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemoved)
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor: undefined,
+      preserveCanonicalState: true
+    })
+  })
 
   it('does not fire node:before-removed for a node not in the graph', () => {
     const graph = new LGraph()

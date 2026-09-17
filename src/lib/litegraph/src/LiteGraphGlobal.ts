@@ -51,24 +51,6 @@ type NodeTypeRegisteredListener = (
   base_class: typeof LGraphNode
 ) => void
 
-const nodeTypeRegisteredListeners = new Set<NodeTypeRegisteredListener>()
-
-function notifyNodeTypeRegistered(
-  type: string,
-  base_class: typeof LGraphNode
-): void {
-  for (const listener of nodeTypeRegisteredListeners) {
-    try {
-      listener(type, base_class)
-    } catch (error) {
-      console.error(
-        `[LiteGraph] nodeTypeRegistered listener failed for "${type}"`,
-        error
-      )
-    }
-  }
-}
-
 export class LiteGraphGlobal {
   // Enums
   SlotShape = SlotShape
@@ -432,20 +414,34 @@ export class LiteGraphGlobal {
   }
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
+  readonly #nodeTypeRegisteredListeners = new Set<NodeTypeRegisteredListener>()
 
   /**
-   * Subscribe to node type registrations. Listeners run after the legacy
-   * `onNodeTypeRegistered` callback, even when that callback throws, and each
-   * one is isolated, so a throwing listener neither aborts the registration
-   * nor starves the others.
+   * Subscribe to this registry's node type registrations. Listeners run after
+   * the legacy `onNodeTypeRegistered` callback, even when that callback
+   * throws, and each one is isolated, so a throwing listener neither aborts
+   * the registration nor starves the others.
    * @returns unsubscribe
    */
   subscribeNodeTypeRegistered(
     listener: NodeTypeRegisteredListener
   ): () => void {
-    nodeTypeRegisteredListeners.add(listener)
+    this.#nodeTypeRegisteredListeners.add(listener)
     return () => {
-      nodeTypeRegisteredListeners.delete(listener)
+      this.#nodeTypeRegisteredListeners.delete(listener)
+    }
+  }
+
+  #notifyNodeTypeRegistered(type: string, base_class: typeof LGraphNode): void {
+    for (const listener of this.#nodeTypeRegisteredListeners) {
+      try {
+        listener(type, base_class)
+      } catch (error) {
+        console.error(
+          `[LiteGraph] nodeTypeRegistered listener failed for "${type}"`,
+          error
+        )
+      }
     }
   }
   onNodeTypeReplaced?(
@@ -488,7 +484,7 @@ export class LiteGraphGlobal {
     try {
       this.onNodeTypeRegistered?.(type, base_class)
     } finally {
-      notifyNodeTypeRegistered(type, base_class)
+      this.#notifyNodeTypeRegistered(type, base_class)
     }
     if (prev) this.onNodeTypeReplaced?.(type, base_class, prev)
 

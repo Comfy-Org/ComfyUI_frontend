@@ -251,9 +251,10 @@ export interface GraphRemoveOptions {
 }
 
 /**
- * Subgraph instances the canonical records still hold. A removal whose stores
- * another authority already reconciled cannot read liveness off the nodes
- * that happen to be attached.
+ * Child definitions still live according to the canonical node records: each
+ * record's type id is mapped through `rootGraph.subgraphs`. Used when another
+ * authority reconciled the stores before this removal, where the default
+ * resolver (the nodes still attached to each graph) would be stale.
  */
 function canonicalSubgraphResolver(
   rootGraph: LGraph,
@@ -1526,7 +1527,7 @@ export class LGraph
     this.events.dispatch('node:before-removed', {
       node,
       successor,
-      preserveCanonicalState: !!preserveReplacement
+      preserveCanonicalState: !!options.preserveCanonicalState
     })
 
     if (!preserveReplacement) {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 
 class RegisteredNode extends LGraphNode {}
 
@@ -49,6 +50,28 @@ describe('LiteGraph.subscribeNodeTypeRegistered', () => {
       stop()
       LiteGraph.onNodeTypeRegistered = previous
       LiteGraph.unregisterNodeType('subscribed-type')
+    }
+  })
+
+  it('keeps subscriptions on the registry instance that registered them', () => {
+    const first = new LiteGraphGlobal()
+    const second = new LiteGraphGlobal()
+    const listener = vi.fn()
+    const stop = first.subscribeNodeTypeRegistered(listener)
+    try {
+      second.registerNodeType('subscribed-type', RegisteredNode)
+      expect(listener).not.toHaveBeenCalled()
+      expect(
+        Object.hasOwn(first.registered_node_types, 'subscribed-type')
+      ).toBe(false)
+
+      first.registerNodeType('subscribed-type', RegisteredNode)
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        'subscribed-type',
+        RegisteredNode
+      )
+    } finally {
+      stop()
     }
   })
 
