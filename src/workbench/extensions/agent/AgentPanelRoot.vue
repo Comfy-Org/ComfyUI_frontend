@@ -208,6 +208,7 @@ const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
   const mutations = createGraphMutations({
+    isSubgraphType: (type) => app.rootGraph.subgraphs.has(type),
     getScope() {
       const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
       return rootGraphId

@@ -144,6 +144,8 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 async function mockAgentBoot(
   page: Page,
   {
+    agentObjectInfo,
+    agentSettings,
     agentConsentAccepted,
     agentConsentSave,
     agentConsentWrites,
@@ -196,9 +198,13 @@ async function mockAgentBoot(
     features: agentFeatures(agentFlagEnabled),
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...agentSettings
     }
   })
+  await page.route('**/api/object_info', (route) =>
+    route.fulfill(jsonRoute(agentObjectInfo))
+  )
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
   await page.route('**/api/userdata**', (route) => {
@@ -350,6 +356,8 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  agentObjectInfo: Record<string, unknown>
+  agentSettings: Record<string, unknown>
   agentConsentAccepted: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
@@ -362,6 +370,8 @@ type AgentFixtures = {
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  agentObjectInfo: [{}, { option: true }],
+  agentSettings: [{}, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
@@ -378,6 +388,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   crdtDebugEnabled: [false, { option: true }],
   page: async (
     {
+      agentObjectInfo,
+      agentSettings,
       agentConsentAccepted,
       agentConsentSave,
       agentConsentWrites,
@@ -391,6 +403,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     use
   ) => {
     await mockAgentBoot(page, {
+      agentObjectInfo,
+      agentSettings,
       agentConsentAccepted,
       agentConsentSave,
       agentConsentWrites,

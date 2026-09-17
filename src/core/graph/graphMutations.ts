@@ -103,6 +103,7 @@ export interface GraphMutations {
 
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
+  isSubgraphType?(type: string): boolean
   layout: SemanticLayoutMutationPort
 }
 
@@ -242,6 +243,12 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+function hasTitle(
+  payload: SemanticNodePayload
+): payload is SemanticNodePayload & { title: string } {
+  return typeof payload.title === 'string'
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -255,16 +262,16 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title:
-      typeof payload.title === 'string' && payload.title.length > 0
-        ? payload.title
-        : payload.type,
+    title: hasTitle(payload) ? payload.title : payload.type,
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: {
+      ...structuredClone(payload),
+      title: hasTitle(payload) ? payload.title : payload.type
+    } as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
     ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
     ...(typeof payload.color === 'string' && { color: payload.color }),
@@ -388,6 +395,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     return false
   }
 
+  function preserveSubgraphTitle(
+    node: PreparedNode,
+    payload: SemanticNodePayload,
+    existing: NodeState | undefined
+  ): void {
+    if (
+      !existing ||
+      existing.type !== payload.type ||
+      hasTitle(payload) ||
+      !deps.isSubgraphType?.(payload.type)
+    ) {
+      return
+    }
+    node.state.title = existing.title
+    if (node.state.lastSerialization) {
+      node.state.lastSerialization.title = existing.title
+    }
+  }
+
   function prepare(
     scope: GraphScope,
     queued: readonly QueuedMutation[]
@@ -452,6 +478,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const existing = nodes.get(key)
           const validationError = validateNodeUpsert(node, key)
           if (validationError) return validationError
+          if (mutation.kind === 'reconcileNode') {
+            preserveSubgraphTitle(node, mutation.payload, existing)
+          }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
@@ -480,6 +509,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const key = nodeKey(toNodeId(mutation.payload.id))
           const existing = nodes.get(key)
           const node = prepareNode(mutation.payload, scope, existing)
+          preserveSubgraphTitle(node, mutation.payload, existing)
           if (!existing || existing.type !== node.state.type) {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
@@ -749,6 +779,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             existing = undefined
           }
           if (mutation.kind === 'reconcileNode' && existing) {
+            for (const input of existing.inputs) {
+              if (
+                '_listenerController' in input &&
+                input._listenerController instanceof AbortController
+              ) {
+                input._listenerController.abort()
+              }
+            }
             nodeStore.updateNode(
               scope,
               mutation.node.state.id,
