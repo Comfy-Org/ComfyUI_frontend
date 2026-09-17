@@ -201,11 +201,12 @@ test.describe(
 
       await expect.poll(() => nodeZIndex(a.root)).toBe(before)
       await press.disposeAsync()
+      await comfyPage.nextFrame()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
         'data-node-id',
         '1'
       )
-      await expect.poll(() => nodeZIndex(a.root)).toBe(before)
+      expect(await nodeZIndex(a.root)).toBe(before)
     })
 
     test('Space release preserves a previously locked canvas', async ({
