@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -76,7 +77,6 @@ describe('useWidgetSelectActions', () => {
 
   describe('handleFilesUpdate', () => {
     it('uploads file and updates modelValue', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -111,7 +111,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('adds uploaded path to widget values array', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -141,7 +140,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('calls widget callback after upload', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -171,7 +169,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('shows alert toast on upload failure', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 500,
