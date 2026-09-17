@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import { DEFAULT_BUFFER_MS } from './refreshScheduler.js'
 import {
   NINETY_MINUTES_MS,
-  makeClient,
   manualIdentity,
   mintResponse,
   testUser
@@ -14,8 +15,6 @@ import type {
   SessionClientOptions,
   SessionSnapshot
 } from './session.js'
-
-const DEFAULT_BUFFER_MS = 5 * 60 * 1000
 
 function schedulerClient(overrides: Partial<SessionClientOptions> = {}) {
   return makeClient({ refreshScheduler: {}, ...overrides }).client

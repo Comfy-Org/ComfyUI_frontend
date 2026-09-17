@@ -6,13 +6,10 @@ import { vi } from 'vitest'
 
 import { createTestIdentity } from '../../testing.js'
 import type {
-  AccountIdentity,
   AccountCredential,
   AccountUser,
-  CredentialStorage,
-  SessionClientOptions
+  CredentialStorage
 } from '../session.js'
-import { createSessionClient } from '../session.js'
 
 export const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
 export const NINETY_MINUTES_MS = 90 * 60 * 1000
@@ -31,18 +28,6 @@ export function memoryStorage(): CredentialStorage & {
     },
     raw: () => value
   }
-}
-
-export function makeClient(
-  overrides: Partial<SessionClientOptions> = {},
-  identity?: AccountIdentity
-) {
-  const storage = memoryStorage()
-  const client = createSessionClient(
-    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
-    identity
-  )
-  return { client, storage }
 }
 
 export function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
@@ -93,7 +78,7 @@ export function okFetch(token = 'workspace-jwt') {
 }
 
 export function mintResponse(token: string) {
-  return new Response(JSON.stringify(mintBody({ token })), { status: 200 })
+  return jsonResponse(200, mintBody({ token }))
 }
 
 export function manualIdentity() {
