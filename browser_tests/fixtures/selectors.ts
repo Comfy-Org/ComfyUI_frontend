@@ -100,7 +100,6 @@ export const TestIds = {
     manageDialog: 'manage-node-templates-dialog'
   },
   topbar: {
-    comfyMenuButton: 'comfy-menu-button',
     nodes2ToggleItem: 'nodes-2-toggle-item',
     queueButton: 'queue-button',
     queueButtonIcon: 'queue-button-icon',
