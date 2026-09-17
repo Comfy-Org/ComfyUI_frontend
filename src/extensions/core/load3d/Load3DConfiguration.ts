@@ -218,6 +218,7 @@ class Load3DConfiguration {
         // listener was registered; `onValueChange` has no per-widget scope,
         // so detect staleness here and detach rather than leaking forever.
         if (!widgetValueStore.getWidget(modelWidget.widgetId ?? widgetId)) {
+          remoteModelUpdateSubscribed.delete(modelWidget)
           unsubscribe()
           return
         }

@@ -1025,4 +1025,40 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
 
     expect(widgetValueStoreMock.listeners.size).toBe(0)
   })
+
+  it('subscribes again when the same widget is re-registered', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-6'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-6', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    widgetValueStoreMock.widgets.delete('widget-6')
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-6',
+      value: 'ignored.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+    widgetValueStoreMock.widgets.set('widget-6', modelWidget)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    vi.mocked(load3d.loadModel).mockClear()
+
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-6',
+      value: 'restored.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+    await flush()
+
+    expect(widgetValueStoreMock.listeners.size).toBe(1)
+    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
+    expect(modelWidget.value).toBe('restored.glb')
+  })
 })
