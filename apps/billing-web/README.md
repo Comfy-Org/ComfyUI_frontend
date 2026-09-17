@@ -178,3 +178,27 @@ request to `comfy-billing-web-preview-pr-<N>.vercel.app`. Ingest's non-prod
 `CORS_ORIGIN` and `TOPUP_CHECKOUT_RETURN_HOSTS` sentinels are derived from
 those three hostname shapes, so renaming the project or the team is a breaking
 change for the Cloud overlays, not a dashboard-only edit.
+
+## Security headers
+
+`vercel.json` sends `X-Robots-Tag: noindex`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`
+on every response: billing is opened as its own tab and is never embedded.
+
+A Content Security Policy is sent as `Content-Security-Policy-Report-Only`
+while the hosted checkout is verified on previews. Report-only means a
+violation is logged in the browser console and blocks nothing, so a missing
+origin surfaces during review instead of as a payment that silently fails in
+production. The allowlist names what the app actually loads:
+
+| Directive     | Origins                                                                                                  | For                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `script-src`  | `js.stripe.com`, `challenges.cloudflare.com`, `apis.google.com`                                          | Stripe.js, Turnstile, the Firebase popup sign-in helper |
+| `connect-src` | the three Cloud origins, `api.stripe.com`, the Firebase identity and token endpoints                     | billing reads and commands, Elements, sign-in           |
+| `frame-src`   | `js.stripe.com`, `hooks.stripe.com`, `challenges.cloudflare.com`, `*.firebaseapp.com`, `apis.google.com` | Elements, 3DS, Turnstile, the Firebase auth iframe      |
+| `style-src`   | `'self' 'unsafe-inline'`                                                                                 | Vue-managed inline styles                               |
+
+Promote it to `Content-Security-Policy` once a preview has completed sign-in
+(email and Google), a card checkout with a 3DS challenge, and a portal
+round-trip with no violation in the console. Anything the console reports on
+that pass is an origin to add, not a reason to loosen a directive.
