@@ -851,6 +851,11 @@ test.describe(
             )
           )
           .toEqual(['7'])
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.deselectAllNodes()
+          window.app!.canvas.setDirty(true, true)
+        })
+        await comfyPage.nextFrame()
         const before = await comfyPage.page.screenshot({
           clip: { x: overlap.x - 40, y: overlap.y - 14, width: 180, height: 70 }
         })
@@ -864,6 +869,14 @@ test.describe(
           window.app!.canvas.setDirty(true, true)
         }, toNodeId('7'))
         await comfyPage.nextFrame()
+        const after = await comfyPage.page.screenshot({
+          clip: { x: overlap.x - 40, y: overlap.y - 14, width: 180, height: 70 }
+        })
+        expect(
+          after.equals(before),
+          'Send to Back changes overlap paint without a selection highlight'
+        ).toBe(false)
+
         await comfyPage.page.mouse.click(overlap.x, overlap.y)
         await expect
           .poll(() =>
@@ -872,12 +885,6 @@ test.describe(
             )
           )
           .toEqual(['6'])
-        const after = await comfyPage.page.screenshot({
-          clip: { x: overlap.x - 40, y: overlap.y - 14, width: 180, height: 70 }
-        })
-        expect(after.equals(before), 'Send to Back changes overlap paint').toBe(
-          false
-        )
       })
     }
 
