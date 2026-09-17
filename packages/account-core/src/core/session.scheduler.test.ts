@@ -17,7 +17,7 @@ import {
   testUser
 } from './__fixtures__/sessionFakes.js'
 import { createSessionClient } from './session.js'
-const DEFAULT_BUFFER_MS = 5 * 60 * 1000
+import { DEFAULT_BUFFER_MS } from './refreshScheduler.js'
 
 function makeClient(
   overrides: Partial<SessionClientOptions> = {},

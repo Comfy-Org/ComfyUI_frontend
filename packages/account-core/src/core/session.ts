@@ -486,7 +486,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const unsubscribe = port.onUserChanged((next) => {
       if (!active) return
       commit({ type: 'identity-changed', user: next })
-      // A listener may dispose the client inside that publish.
+      // A listener may dispose the client or deliver a newer user inside
+      // that publish; either makes state.user no longer this delivery's.
       if (next && autoMint && state.user === next) {
         void refreshWith(ensureCore, next)
       }
