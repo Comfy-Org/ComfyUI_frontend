@@ -14,6 +14,7 @@ export interface ErrorCardData {
   id: string
   title: string
   nodeId?: NodeExecutionId
+  rawNodeId?: string
   nodeTitle?: string
   graphNodeId?: string
   errors: ErrorItem[]

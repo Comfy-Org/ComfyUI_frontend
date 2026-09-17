@@ -181,15 +181,17 @@ describe('missingModelPipeline', () => {
   })
 
   it.for([
-    { isCloud: true, outcome: 'verified' },
-    { isCloud: true, outcome: 'failed' },
-    { isCloud: true, outcome: 'aborted' },
-    { isCloud: false, outcome: 'verified' },
-    { isCloud: false, outcome: 'failed' },
-    { isCloud: false, outcome: 'aborted' }
+    { isCloud: true, outcome: 'verified', resolvedMissing: true },
+    { isCloud: true, outcome: 'verified', resolvedMissing: false },
+    { isCloud: true, outcome: 'failed', resolvedMissing: undefined },
+    { isCloud: true, outcome: 'aborted', resolvedMissing: undefined },
+    { isCloud: false, outcome: 'verified', resolvedMissing: true },
+    { isCloud: false, outcome: 'verified', resolvedMissing: false },
+    { isCloud: false, outcome: 'failed', resolvedMissing: undefined },
+    { isCloud: false, outcome: 'aborted', resolvedMissing: undefined }
   ] as const)(
-    'reports verification completion without waiting in the load: cloud=$isCloud, $outcome',
-    async ({ isCloud, outcome }) => {
+    'reports verification completion without waiting in the load: cloud=$isCloud, $outcome, missing=$resolvedMissing',
+    async ({ isCloud, outcome, resolvedMissing }) => {
       mockHandles.distribution.isCloud = isCloud
       mockHandles.hasPendingVerification.mockReturnValue(true)
       const candidate: MissingModelCandidate = {
@@ -214,6 +216,7 @@ describe('missingModelPipeline', () => {
         async () => {
           await pending
           if (outcome === 'failed') throw new Error('asset service unavailable')
+          candidate.isMissing = resolvedMissing
         }
       )
       const controller = new AbortController()
@@ -235,7 +238,9 @@ describe('missingModelPipeline', () => {
       await vi.runAllTimersAsync()
 
       if (outcome === 'verified')
-        expect(onVerified).toHaveBeenCalledWith([candidate])
+        expect(onVerified).toHaveBeenCalledWith([
+          { ...candidate, isMissing: resolvedMissing }
+        ])
       else expect(onVerified).not.toHaveBeenCalled()
       if (outcome === 'failed') {
         expect(useToastStore().add).toHaveBeenCalledWith(

@@ -699,7 +699,56 @@ describe('useErrorGroups', () => {
         title: 'KSampler'
       })
       expect(executionGroup.cards[0].nodeId).toBeUndefined()
+      expect(groups.errorNodeCount.value).toBe(1)
     })
+
+    it('counts an unlocated node once across validation and runtime errors', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        'not::a-node': nodeError([
+          validationError('required_input_missing', 'clip')
+        ])
+      })
+      store.recordExecutionError({
+        prompt_id: 'test-prompt',
+        timestamp: Date.now(),
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Execution failed',
+        traceback: []
+      })
+      await nextTick()
+
+      expect(groups.errorNodeCount.value).toBe(1)
+    })
+
+    it.for([null, undefined])(
+      'excludes prompt and runtime errors without a node ID from affected nodes: %s',
+      async (nodeId) => {
+        const { store, groups } = createErrorGroups()
+        store.recordPromptError({
+          type: 'prompt_no_outputs',
+          message: 'No outputs',
+          details: ''
+        })
+        store.recordExecutionError({
+          prompt_id: 'test-prompt',
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'KSampler',
+          executed: [],
+          exception_type: 'RuntimeError',
+          exception_message: 'Execution failed',
+          traceback: []
+        })
+        await nextTick()
+
+        expect(groups.allErrorGroups.value).toHaveLength(2)
+        expect(groups.errorNodeCount.value).toBe(0)
+      }
+    )
 
     it('renders an unnormalisable matching model error as an unlocated card', async () => {
       vi.mocked(getExecutionIdByNode).mockReturnValue(

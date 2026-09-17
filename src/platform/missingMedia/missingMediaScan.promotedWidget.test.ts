@@ -238,14 +238,22 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
     const hostCandidate = [
       expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
     ]
-    if (!keepsHost) {
-      expect
-        .soft(
-          scanAllMediaCandidates(graph, false),
-          `${caseName}: active baseline`
-        )
-        .toEqual(hostCandidate)
-    }
+    expect
+      .soft(
+        scanAllMediaCandidates(graph, false),
+        `${caseName}: active baseline`
+      )
+      .toEqual([
+        expect.objectContaining({
+          nodeId: '65',
+          widgetName: 'outer_image',
+          promotedSources: [
+            { executionId: '65:42', widgetName: 'image' },
+            { executionId: '65:43', widgetName: 'image' },
+            { executionId: '65:44', widgetName: 'image' }
+          ]
+        })
+      ])
     for (const index of consumerIndexes) {
       sourceNodes[index].mode = mode
     }

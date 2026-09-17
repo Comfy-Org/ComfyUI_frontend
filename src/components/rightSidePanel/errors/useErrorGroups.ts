@@ -376,7 +376,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     groupsMap: Map<string, GroupEntry>,
     cardId: string,
     classType: string,
-    error: CataloguedErrorItem
+    error: CataloguedErrorItem,
+    rawNodeId?: string
   ) {
     const cards = getOrCreateGroup(
       groupsMap,
@@ -388,6 +389,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!cards.has(cardId)) {
       cards.set(cardId, {
         id: cardId,
+        rawNodeId,
         title: classType,
         errors: []
       })
@@ -473,7 +475,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
             groupsMap,
             `node-${rawNodeId}`,
             nodeError.class_type,
-            cataloguedError
+            cataloguedError,
+            rawNodeId
           )
           continue
         }
@@ -527,7 +530,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         groupsMap,
         `exec-${error.node_id}`,
         error.node_type,
-        cataloguedError
+        cataloguedError,
+        error.node_id == null ? undefined : String(error.node_id)
       )
     }
   }
@@ -1000,7 +1004,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const errorNodeCount = computed(() => {
     const executionNodeIds = allErrorGroups.value
       .flatMap((group) => (group.type === 'execution' ? group.cards : []))
-      .map((card) => card.nodeId)
+      .map((card) => card.nodeId ?? card.rawNodeId)
       .filter((nodeId) => nodeId != null)
     return new Set([...executionNodeIds, ...assetNodeIdsWithError.value]).size
   })

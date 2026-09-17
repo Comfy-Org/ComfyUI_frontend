@@ -45,17 +45,38 @@ async function startPendingWorkflowLoadMediaVerification(
 
 describe('runMissingMediaPipeline', () => {
   it.for([
-    { outcome: 'verified', completed: true, failed: false },
-    { outcome: 'failed', completed: false, failed: true },
-    { outcome: 'aborted', completed: false, failed: false }
+    {
+      outcome: 'verified missing',
+      completed: true,
+      failed: false,
+      resolvedMissing: true
+    },
+    {
+      outcome: 'verified present',
+      completed: true,
+      failed: false,
+      resolvedMissing: false
+    },
+    {
+      outcome: 'failed',
+      completed: false,
+      failed: true,
+      resolvedMissing: undefined
+    },
+    {
+      outcome: 'aborted',
+      completed: false,
+      failed: false,
+      resolvedMissing: undefined
+    }
   ])(
     'reports verification completion only for a successful scan: $outcome',
-    async ({ outcome, completed, failed }) => {
+    async ({ outcome, completed, failed, resolvedMissing }) => {
       const {
         rootGraph,
         hosts: [host]
       } = createPromotedMediaRuntime()
-      const candidate = {
+      const candidate: MissingMediaCandidate = {
         ...createPromotedMissingMediaCandidate(host),
         isMissing: undefined
       }
@@ -70,6 +91,7 @@ describe('runMissingMediaPipeline', () => {
         async () => {
           await pending
           if (outcome === 'failed') throw new Error('asset service unavailable')
+          candidate.isMissing = resolvedMissing
         }
       )
       const onVerified = vi.fn()
@@ -80,7 +102,9 @@ describe('runMissingMediaPipeline', () => {
       finishVerification()
       await vi.runAllTimersAsync()
 
-      expect(onVerified.mock.calls).toEqual(completed ? [[[candidate]]] : [])
+      expect(onVerified.mock.calls).toEqual(
+        completed ? [[[{ ...candidate, isMissing: resolvedMissing }]]] : []
+      )
       expect(vi.mocked(useToastStore().add).mock.calls).toEqual(
         failed
           ? [
