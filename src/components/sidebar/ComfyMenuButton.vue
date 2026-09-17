@@ -71,11 +71,11 @@
       </a>
       <div
         v-else
-        class="flex items-center justify-between px-4 py-2"
-        @click.stop="handleNodes2ToggleClick"
+        v-bind="props.action"
+        class="flex cursor-pointer items-center justify-between px-4 py-2"
+        @click.stop="toggleNodes2"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
         <Switch
           :model-value="nodes2Enabled"
           class="ml-4"
@@ -90,7 +90,6 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
@@ -307,16 +306,16 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
   )
 }
 
-const handleNodes2ToggleClick = () => {
-  return false
-}
-
 const onNodes2ToggleChange = async (value: boolean) => {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
   telemetry?.trackUiButtonClicked({
     button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`,
     element_group: 'sidebar'
   })
+}
+
+const toggleNodes2 = async () => {
+  await onNodes2ToggleChange(!nodes2Enabled.value)
 }
 </script>
 
