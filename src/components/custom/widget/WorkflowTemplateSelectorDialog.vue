@@ -893,13 +893,16 @@ watch(
 
 // Methods
 const onLoadWorkflow = async (template: TemplateInfo) => {
-  const loaded = await loadWorkflowTemplate(
+  await loadWorkflowTemplate(
     template.name,
-    getEffectiveSourceModule(template)
+    getEffectiveSourceModule(template),
+    {
+      onGraphLoadSettled: (loaded) => {
+        templateWasSelected.value = loaded
+        onClose()
+      }
+    }
   )
-  if (!loaded) return
-  templateWasSelected.value = true
-  onClose()
 }
 
 const pageTitle = computed(() => {

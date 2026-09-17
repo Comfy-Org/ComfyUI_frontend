@@ -591,13 +591,17 @@ describe('useTemplateWorkflows', () => {
     const loader = useTemplateWorkflows()
     const component = apps.pop()
     if (!component) throw new Error('Missing loader component')
-    const result = loader.loadWorkflowTemplate('template1', 'default')
+    const onGraphLoadSettled = vi.fn()
+    const result = loader.loadWorkflowTemplate('template1', 'default', {
+      onGraphLoadSettled
+    })
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     component.unmount()
     templateJson.resolve(Response.json({ workflow: 'data' }))
     expect(await result).toBe(false)
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(loader.loadingTemplateId.value).toBeNull()
+    expect(onGraphLoadSettled).not.toHaveBeenCalled()
   })
 
   it.for(['default', 'custom-module'])(
@@ -655,7 +659,10 @@ describe('useTemplateWorkflows', () => {
           : Promise.resolve(Response.json({ workflow: 'data' }))
       )
       const loader = useTemplateWorkflows()
-      const first = loader.loadWorkflowTemplate('template1', 'default')
+      const onGraphLoadSettled = vi.fn()
+      const first = loader.loadWorkflowTemplate('template1', 'default', {
+        onGraphLoadSettled
+      })
       await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
       const nextLoader = separateLoader ? useTemplateWorkflows() : loader
       expect(
@@ -663,6 +670,7 @@ describe('useTemplateWorkflows', () => {
       ).toBe(true)
       templateJson.resolve(Response.json({ workflow: 'data' }))
       expect(await first).toBe(false)
+      expect(onGraphLoadSettled).not.toHaveBeenCalled()
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
       expect(
         useToastStore().messagesToAdd.filter(
