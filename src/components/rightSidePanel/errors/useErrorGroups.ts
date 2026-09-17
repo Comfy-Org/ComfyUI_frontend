@@ -831,20 +831,28 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return executionNodeId ? isAssetErrorInSelection(executionNodeId) : false
   }
 
-  /** Model groups narrowed to the selection, for emphasis derivation only. */
-  const missingModelGroupsForSelection = computed(() => {
+  const missingModelCandidatesForSelection = computed(() => {
     if (!hasSelection.value) return []
     const candidates = missingModelStore.visibleMissingModelCandidates
     if (!candidates?.length) return []
-    const matched = candidates.filter(
+    return candidates.filter(
       (c) =>
         (c.nodeId != null && isAssetCandidateInSelection(c.nodeId)) ||
         (c.sourceExecutionId != null &&
-          isAssetCandidateInSelection(c.sourceExecutionId))
+          isAssetCandidateInSelection(c.sourceExecutionId)) ||
+        c.promotedSources?.some((source) =>
+          isAssetCandidateInSelection(source.executionId)
+        )
     )
-    if (!matched.length) return []
-    return groupMissingModelCandidates(matched, isCloud)
   })
+
+  /** Model groups narrowed to the selection, for emphasis derivation only. */
+  const missingModelGroupsForSelection = computed(() =>
+    groupMissingModelCandidates(
+      missingModelCandidatesForSelection.value,
+      isCloud
+    )
+  )
 
   /** Media groups narrowed to the selection, for emphasis derivation only. */
   const missingMediaGroupsForSelection = computed(() => {
@@ -973,9 +981,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
    */
   const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
     if (!hasSelection.value) return new Set()
-    return new Set(
+    const matched = new Set(
       assetNodeIdsWithError.value.filter(isAssetCandidateInSelection)
     )
+    for (const candidate of missingModelCandidatesForSelection.value) {
+      if (candidate.nodeId != null) matched.add(String(candidate.nodeId))
+    }
+    return matched
   })
 
   const selectionMatchedGroupKeys = computed<Set<string>>(() => {

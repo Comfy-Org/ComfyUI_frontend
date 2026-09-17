@@ -13,6 +13,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import {
   nodeError,
@@ -1741,6 +1742,53 @@ describe('useErrorGroups', () => {
   })
 
   describe('selection emphasis', () => {
+    it.for([
+      { selectedId: '65', matched: true },
+      { selectedId: '42', matched: true },
+      { selectedId: '43', matched: true },
+      { selectedId: '99', matched: false }
+    ])(
+      'tracks model selection emphasis for node $selectedId: $matched',
+      async ({ selectedId, matched }) => {
+        const { store, groups } = createErrorGroups()
+        vi.mocked(isLGraphNode).mockReturnValue(true)
+        vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+          fromAny<LGraphNode, unknown>({ id: nodeId.split(':').at(-1) })
+        )
+        const canvasStore = useCanvasStore()
+        canvasStore.selectedItems = fromAny<
+          typeof canvasStore.selectedItems,
+          unknown
+        >([{ id: selectedId }])
+        store.surfaceMissingModels([
+          {
+            ...makeModel('missing.safetensors', { nodeId: '65' }),
+            sourceExecutionId: createNodeExecutionId([65, 42]),
+            promotedSources: [
+              {
+                executionId: createNodeExecutionId([65, 43]),
+                widgetName: 'ckpt_name'
+              }
+            ]
+          }
+        ])
+        await nextTick()
+
+        expect(
+          groups.selectionMatchedGroupKeys.value.has('missing_model')
+        ).toBe(matched)
+        expect(groups.selectionMatchedAssetNodeIds.value).toEqual(
+          new Set(matched ? ['65'] : [])
+        )
+        expect(groups.selectionErrorCount.value).toBe(matched ? 1 : 0)
+        expect(
+          groups.filteredGroups.value.find(
+            (group) => group.type === 'missing_model'
+          )?.count
+        ).toBe(1)
+      }
+    )
+
     it('never marks workflow-level prompt errors as matched by a selection', async () => {
       const { store, groups } = createErrorGroups()
       const canvasStore = useCanvasStore()
