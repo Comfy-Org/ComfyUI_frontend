@@ -819,7 +819,7 @@ test.describe(
           vueNodesEnabled
         )
         await fitToViewInstant(comfyPage)
-        const overlap = await comfyPage.page.evaluate(
+        await comfyPage.page.evaluate(
           (nodeIds) => {
             const graph = window.app!.graph
             const canvas = window.app!.canvas
@@ -833,17 +833,18 @@ test.describe(
             canvas.bringToFront(upper)
             canvas.deselectAllNodes()
             canvas.setDirty(true, true)
-            const [x, y] = window.app!.canvasPosToClientPos([
-              lower.pos[0] + 40,
-              lower.pos[1] + 14
-            ])
-            return { x, y }
           },
           [toNodeId('6'), toNodeId('7')] as const
         )
         await comfyPage.nextFrame()
+        const lower = await comfyPage.nodeOps.getNodeRefById('6')
+        const overlap = await comfyPage.canvasOps.toAbsolute(
+          await lower.getTitlePosition()
+        )
+        const { width } = await lower.getSize()
+        const upperTitle = { x: overlap.x - width / 4, y: overlap.y }
 
-        await comfyPage.page.mouse.click(overlap.x, overlap.y)
+        await comfyPage.page.mouse.click(upperTitle.x, upperTitle.y)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() =>
