@@ -395,7 +395,13 @@ function main(): void {
     log(`installing into ${consumerDir}`)
     run(
       'npm',
-      ['install', '--no-audit', '--no-fund', '--loglevel=error'],
+      [
+        'install',
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+        '--loglevel=error'
+      ],
       consumerDir
     )
 

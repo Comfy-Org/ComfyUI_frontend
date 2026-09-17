@@ -136,6 +136,8 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - name: Install the packed tarballs into a clean consumer and import every entry
         run: pnpm --filter @comfyorg/account-core smoke:pack
