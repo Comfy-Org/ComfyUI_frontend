@@ -59,7 +59,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
               .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
               .toEqual([toNodeId(2)])
             await host.clickContextMenuOption('Unpack Subgraph')
-            await host.expectExists(true)
+            await expect.poll(() => host.exists()).toBe(true)
             await expect
               .poll(() =>
                 comfyPage.page.evaluate(() =>
