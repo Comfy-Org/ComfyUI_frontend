@@ -27,6 +27,12 @@ export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
  */
 export type BillingPresentation = 'embedded' | 'hosted'
 
+/**
+ * Which origin serves a hosted presentation: the provider page behind the
+ * server's `action_url`, or the hosted billing app.
+ */
+export type HostedBillingDestination = 'stripe' | 'billing_web'
+
 export type BillingDeclineReason = NonNullable<
   BillingOpStatus['decline_reason']
 >
@@ -51,11 +57,17 @@ export function isBlockedOnCustomerPhase(
   )
 }
 
-export interface BillingOperationIdentity {
+export type BillingPresentationState =
+  | { readonly presentation: 'embedded'; readonly hostedDestination?: never }
+  | {
+      readonly presentation: 'hosted'
+      readonly hostedDestination: HostedBillingDestination
+    }
+
+export type BillingOperationIdentity = BillingPresentationState & {
   readonly id: string
   readonly kind: BillingOperationKind
   readonly scope: BillingScope
-  readonly presentation: BillingPresentation
   /** When this tab began observing the operation; the poll budget counts from here. */
   readonly observedAt: number
   /** When the attempt began, before the command was issued; telemetry durations count from here. */
@@ -73,7 +85,7 @@ export interface EmbeddedChallenge {
   readonly status: 'required' | 'in_progress' | 'completed' | 'failed'
 }
 
-export interface PendingBillingOperation extends BillingOperationIdentity {
+export type PendingBillingOperation = BillingOperationIdentity & {
   readonly phase: 'pending'
   /** The hosted continuation the server currently offers; https only. */
   readonly actionUrl?: string
@@ -87,7 +99,7 @@ export interface PendingBillingOperation extends BillingOperationIdentity {
   readonly customerActionSeen: boolean
 }
 
-export interface FailedBillingOperation extends BillingOperationIdentity {
+export type FailedBillingOperation = BillingOperationIdentity & {
   readonly phase: 'failed'
   readonly declineReason: BillingDeclineReason
   readonly recoveryAction?: BillingRecoveryAction
@@ -115,7 +127,12 @@ export type BillingOperationEvent =
   | { readonly type: 'lost' }
   | {
       readonly type: 'presentation_switched'
-      readonly presentation: BillingPresentation
+      readonly presentation: 'hosted'
+      readonly hostedDestination: HostedBillingDestination
+    }
+  | {
+      readonly type: 'presentation_switched'
+      readonly presentation: 'embedded'
     }
   | { readonly type: 'challenge_started' }
   | {
@@ -141,14 +158,22 @@ export function validateActionUrl(
   }
 }
 
+function presentationOf(
+  state: BillingOperationState
+): BillingPresentationState {
+  return state.presentation === 'hosted'
+    ? { presentation: 'hosted', hostedDestination: state.hostedDestination }
+    : { presentation: 'embedded' }
+}
+
 function identityOf(state: BillingOperationState): BillingOperationIdentity {
   return {
     id: state.id,
     kind: state.kind,
     scope: state.scope,
-    presentation: state.presentation,
     observedAt: state.observedAt,
-    attemptStartedAt: state.attemptStartedAt
+    attemptStartedAt: state.attemptStartedAt,
+    ...presentationOf(state)
   }
 }
 
@@ -306,19 +331,25 @@ export function reduceBillingOperation(
       return withPhase(state, 'superseded')
     case 'lost':
       return withPhase(state, 'reconciliation_needed')
-    case 'presentation_switched':
+    case 'presentation_switched': {
       if (event.presentation === state.presentation) return state
       // The challenge record survives a hosted switch so a rollback keeps the
       // client secret; a failed challenge becomes required again on return.
+      const { presentation, hostedDestination, ...rest } = state
       return event.presentation === 'hosted'
-        ? { ...state, presentation: 'hosted' }
+        ? {
+            ...rest,
+            presentation: 'hosted',
+            hostedDestination: event.hostedDestination
+          }
         : {
-            ...state,
+            ...rest,
             presentation: 'embedded',
             ...(state.challenge?.status === 'failed'
               ? { challenge: { ...state.challenge, status: 'required' } }
               : {})
           }
+    }
     case 'challenge_started':
       return state.challenge?.status === 'required'
         ? { ...state, challenge: { ...state.challenge, status: 'in_progress' } }
