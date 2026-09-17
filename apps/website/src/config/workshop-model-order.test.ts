@@ -71,6 +71,23 @@ describe('the stored model order', () => {
     ).toBe(reviewedRolePages.length)
   })
 
+  it('keeps missing audited pages in place so published pages compact around them', () => {
+    const imageEditors = [
+      'vertexai--gemini-nano-banana-2--edit-images',
+      'vertexai--gemini-3-pro-image--edit-images',
+      'byteplus--seedream-5-pro--edit-images',
+      'xai--grok-imagine-image-edit--edit-images',
+      'openai--gpt-image-2--edit-images',
+      'xai--grok-imagine-image-2.0-edit--edit-images'
+    ]
+
+    const firstRank = modelOrderRank.get(imageEditors[0])
+    expect(firstRank).toBeTypeOf('number')
+    expect(imageEditors.map((slug) => modelOrderRank.get(slug))).toEqual(
+      [...imageEditors.keys()].map((offset) => (firstRank ?? -1) + offset)
+    )
+  })
+
   it.for([[], [''], ['   ']])('refuses an empty order: %j', (slugs) => {
     expect(
       workshopModelOrderSchema.safeParse({

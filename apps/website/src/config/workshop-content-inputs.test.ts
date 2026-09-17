@@ -3,6 +3,8 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { workshopModels } from './workshop-browse-content'
+import { workshopContract } from './workshop-contract-catalog'
+import { formForContract } from './workshop-contract'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -39,6 +41,31 @@ async function request(
       ...defaultValues(schemaForModel(page), page.defaults),
       ...values
     },
+    new AbortController().signal,
+    undefined,
+    upload
+  )
+}
+
+function genericContract(id: string) {
+  const execution = workshopContract(id)
+  if (!execution) throw new Error(`Missing contract: ${id}`)
+  const fields = schemaForModel({
+    fields: [],
+    form: formForContract(execution)
+  })
+  return { execution, fields }
+}
+
+async function contractRequest(
+  id: string,
+  values: FormValues = {},
+  upload?: WorkshopUrlEncoder
+) {
+  const { execution, fields } = genericContract(id)
+  return prepareWorkshopRouterInput(
+    execution,
+    { ...defaultValues(fields), ...values },
     new AbortController().signal,
     undefined,
     upload
@@ -469,6 +496,30 @@ describe('use-case input contracts', () => {
     const upload = vi.fn(async () => image)
     const body = await request(
       slug,
+      {
+        image: { file, name: file.name, type: file.type, size: file.size }
+      },
+      upload
+    )
+
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(body).toHaveProperty('image', image)
+  })
+
+  it.for([
+    'freepik/ai-skin-enhancer-faithful',
+    'freepik/ai-skin-enhancer-flexible'
+  ])('uploads the Magnific source image for contract %s', async (id) => {
+    const { fields } = genericContract(id)
+    const input = fields.find((field) => field.name === 'image')
+    assert(input)
+    expect(input.label).toBe('Source image')
+    expect(urlUploadField(input)?.accept).toContain('image/png')
+
+    const file = new File(['portrait'], 'portrait.png', { type: 'image/png' })
+    const upload = vi.fn(async () => image)
+    const body = await contractRequest(
+      id,
       {
         image: { file, name: file.name, type: file.type, size: file.size }
       },
