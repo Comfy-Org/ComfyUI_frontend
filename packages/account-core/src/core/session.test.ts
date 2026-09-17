@@ -1596,14 +1596,13 @@ describe('session error code vocabulary', () => {
 
 describe('subscribe', () => {
   it('drops a listener whose immediate replay throws, so a later commit never calls it', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
+    const { client } = makeClient({ fetchImpl: okFetch() }, identity.port)
     const flaky = vi.fn(() => {
       if (flaky.mock.calls.length === 1) throw new Error('listener exploded')
     })
     expect(() => client.subscribe(flaky)).toThrow('listener exploded')
 
-    client.attachIdentity(identity.port)
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
 
