@@ -496,6 +496,7 @@ function addAutogrowGroup(
     )) {
       const link = inputLinks.get(existingInput)
       if (link && !inputLinks.has(newInput)) inputLinks.set(newInput, link)
+      if (existingInput.label) newInput.label = existingInput.label
     }
   }
 
@@ -675,15 +676,6 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       }
     }
   )
-  // Restore renamed labels after configure (autogrow recreates inputs fresh)
-  node.onConfigure = useChainCallback(node.onConfigure, (data) => {
-    if (!data.inputs) return
-    for (const serializedInput of data.inputs) {
-      if (!serializedInput.label) continue
-      const match = node.inputs.find((inp) => inp.name === serializedInput.name)
-      if (match) match.label = serializedInput.label
-    }
-  })
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   withComfyAutogrow(node)

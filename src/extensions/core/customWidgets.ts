@@ -159,7 +159,9 @@ function onBranchSelectorCreated(this: LGraphNode) {
 
   this.widgets?.pop()
   const labels = computed(() =>
-    this.inputs.slice(0, -2).map((inp) => inp.label || inp.localized_name)
+    this.inputs
+      .filter((i) => i.name.startsWith('autogrow.') && i.link)
+      .map((inp) => inp.label || inp.localized_name)
   )
 
   const comboWidget = this.addWidget('combo', 'branch', 'branch0', () => {}, {
@@ -179,16 +181,22 @@ function onBranchSelectorCreated(this: LGraphNode) {
     y: 0
   })
 
-  const stopWatch = watch(labels, () => {
+  function onLabelUpdate() {
     if (app.configuringGraph) return
-    names_widget.value = labels.value
 
+    names_widget.value = labels.value
     if (labels.value.includes(`${comboWidget.value}`)) return
 
     comboWidget.value = labels.value[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
+  }
+
+  let stopWatch: () => void
+  this.onAdded = useChainCallback(this.onAdded, () => {
+    stopWatch?.()
+    stopWatch = watch(labels, onLabelUpdate, { immediate: true })
   })
-  this.onRemoved = useChainCallback(this.onRemoved, stopWatch)
+  this.onRemoved = useChainCallback(this.onRemoved, () => stopWatch?.())
 }
 
 function onCustomIntCreated(this: LGraphNode) {
