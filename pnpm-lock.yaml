@@ -497,9 +497,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.8.1
-      '@comfyorg/account':
+      '@comfyorg/account-core':
         specifier: workspace:*
-        version: link:packages/account
+        version: link:packages/account-core
       '@comfyorg/comfy-multi-player':
         specifier: 0.2.1
         version: 0.2.1
@@ -948,9 +948,9 @@ importers:
 
   apps/billing-web:
     dependencies:
-      '@comfyorg/account':
+      '@comfyorg/account-core':
         specifier: workspace:*
-        version: link:../../packages/account
+        version: link:../../packages/account-core
       '@comfyorg/account-ui':
         specifier: workspace:*
         version: link:../../packages/account-ui
@@ -1030,9 +1030,9 @@ importers:
       '@astrojs/sitemap':
         specifier: 'catalog:'
         version: 3.7.3
-      '@comfyorg/account':
+      '@comfyorg/account-core':
         specifier: workspace:*
-        version: link:../../packages/account
+        version: link:../../packages/account-core
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
@@ -1197,7 +1197,7 @@ importers:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
 
-  packages/account:
+  packages/account-core:
     dependencies:
       '@comfyorg/ingest-types':
         specifier: workspace:*
@@ -1251,9 +1251,9 @@ importers:
 
   packages/account-ui:
     dependencies:
-      '@comfyorg/account':
+      '@comfyorg/account-core':
         specifier: workspace:*
-        version: link:../account
+        version: link:../account-core
     devDependencies:
       '@testing-library/user-event':
         specifier: 'catalog:'

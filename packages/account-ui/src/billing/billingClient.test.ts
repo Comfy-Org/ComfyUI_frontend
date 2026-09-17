@@ -1,4 +1,4 @@
-import type { BillingResult } from '@comfyorg/account/billing'
+import type { BillingResult } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NOW, createBillingHarness } from './__fixtures__/billingHarness'

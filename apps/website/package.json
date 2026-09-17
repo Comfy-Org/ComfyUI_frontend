@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
-    "@comfyorg/account": "workspace:*",
+    "@comfyorg/account-core": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",

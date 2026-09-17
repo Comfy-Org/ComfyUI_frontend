@@ -664,7 +664,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     attachIdentity(identity, attachOptions) {
       if (!isAccountIdentity(identity)) {
         throw new Error(
-          'attachIdentity needs the identity from @comfyorg/account/firebase (or /testing)'
+          'attachIdentity needs the identity from @comfyorg/account-core/firebase (or /testing)'
         )
       }
       detachCurrent?.()

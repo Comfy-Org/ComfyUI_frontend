@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
 
-import type { AccountUser, SessionClient } from '@comfyorg/account/session'
+import type { AccountUser, SessionClient } from '@comfyorg/account-core/session'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
@@ -105,7 +105,8 @@ describe('workshop session storage adapter', () => {
 
 describe('auth refresh telemetry', () => {
   async function attachManualPort(client: SessionClient<User>) {
-    const { createTestIdentity } = await import('@comfyorg/account/testing')
+    const { createTestIdentity } =
+      await import('@comfyorg/account-core/testing')
     let deliver: ((user: User | null) => void) | undefined
     client.attachIdentity(
       createTestIdentity<User>({

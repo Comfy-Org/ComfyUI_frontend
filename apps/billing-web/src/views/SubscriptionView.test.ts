@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 
-import type { BillingPlansData } from '@comfyorg/account/billing'
+import type { BillingPlansData } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
