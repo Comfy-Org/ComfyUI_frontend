@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -231,52 +231,52 @@ const splitAttachments = computed(() => {
       v-if="readableText"
       class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AccessibleTooltip
+      <Tooltip
         v-if="editable && (text || workflowReferences.length)"
-        :label="t('g.edit')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
+        :config="t('g.edit')"
+        side="top"
+        :delay-duration="300"
+        :ignore-non-keyboard-focus="false"
+        disable-closing-trigger
         :collision-padding="8"
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.edit')"
-            class="size-6 rounded-lg"
-            @click="emit('edit', { text, workflowReferences })"
-          >
-            <span class="icon-[lucide--pencil] size-3" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
-      <AccessibleTooltip
-        :label="copied ? t('agent.copied') : t('agent.copy')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
+        <Button
+          type="button"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="t('g.edit')"
+          class="size-6 rounded-lg"
+          @click="emit('edit', { text, workflowReferences })"
+        >
+          <span class="icon-[lucide--pencil] size-3" />
+        </Button>
+      </Tooltip>
+      <Tooltip
+        :config="copied ? t('agent.copied') : t('agent.copy')"
+        side="top"
+        :delay-duration="300"
+        :ignore-non-keyboard-focus="false"
+        disable-closing-trigger
         :collision-padding="8"
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="size-6 rounded-lg"
-            @click="copyMessage"
-          >
-            <span
-              :class="
-                cn(
-                  'size-3',
-                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-                )
-              "
-            />
-          </Button>
-        </template>
-      </AccessibleTooltip>
+        <Button
+          type="button"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+          class="size-6 rounded-lg"
+          @click="copyMessage"
+        >
+          <span
+            :class="
+              cn(
+                'size-3',
+                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+              )
+            "
+          />
+        </Button>
+      </Tooltip>
     </div>
   </div>
 </template>

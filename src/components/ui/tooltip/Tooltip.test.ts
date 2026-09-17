@@ -24,6 +24,26 @@ function renderTooltip(
 }
 
 describe('Tooltip', () => {
+  it('suppresses a disabled tooltip without disabling its trigger', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(Tooltip, {
+      props: { config: 'Stop the current run', disabled: true },
+      slots: { default: '<button>Stop</button>' }
+    })
+    const trigger = screen.getByRole('button', { name: 'Stop' })
+
+    await user.tab()
+    expect(trigger).toBeEnabled()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await user.tab()
+    await rerender({ disabled: false })
+    await user.tab()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Stop the current run'
+    )
+  })
+
   it('opens after the configured hover delay', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

@@ -14,6 +14,13 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import InputSlot from './InputSlot.vue'
 
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'),
+  () => ({
+    useSlotLinkReveal: () => ({ revealLinks: vi.fn(), unrevealLinks: vi.fn() })
+  })
+)
+
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
 }))

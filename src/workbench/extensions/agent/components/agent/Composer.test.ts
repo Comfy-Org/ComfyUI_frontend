@@ -243,9 +243,7 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Send')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
@@ -313,9 +311,7 @@ describe('Composer', () => {
     mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.hover(stop)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
 
   it('emits stop on Escape while running and ignores Enter', async () => {
@@ -343,9 +339,7 @@ describe('Composer', () => {
   it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
     const submitting = mount({ submitting: true })
     await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
     submitting.unmount()
 
     const { emitted } = mount({ streaming: true })
@@ -409,8 +403,7 @@ describe('Composer', () => {
     })
     render(Host, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: tooltipDirectiveStub }
+        plugins: [i18n]
       }
     })
     const box = screen.getByRole('textbox')

@@ -283,68 +283,66 @@ defineExpose({
       >
         {{ t('agent.reference') }}
       </div>
-      <AccessibleTooltip
+      <Tooltip
         v-for="(match, index) in mentionMatches"
         :key="`${match.kind}:${match.id}`"
-        :label="nodeReferenceDisabledReason ?? ''"
+        :config="nodeReferenceDisabledReason ?? ''"
         :disabled="!isNodeReferenceDisabled(match)"
-        :skip-delay-duration="0"
-        disable-hoverable-content
+        side="top"
+        :delay-duration="300"
+        :ignore-non-keyboard-focus="false"
+        disable-closing-trigger
         :collision-padding="8"
       >
-        <template #trigger>
-          <div
-            :id="`agent-reference-item-${index}`"
-            :aria-disabled="isMentionDisabled(match) || undefined"
-            :aria-description="
-              isNodeReferenceDisabled(match)
-                ? nodeReferenceDisabledReason
-                : undefined
-            "
-            role="menuitem"
-            :data-active="index === mentionActive"
-            :class="
-              cn(
-                'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-                index === mentionActive && 'bg-secondary-background-hover'
-              )
-            "
-            @mouseenter="highlightMention(index)"
-            @click="pickMention(match)"
+        <div
+          :id="`agent-reference-item-${index}`"
+          :aria-disabled="isMentionDisabled(match) || undefined"
+          :aria-description="
+            isNodeReferenceDisabled(match)
+              ? nodeReferenceDisabledReason
+              : undefined
+          "
+          role="menuitem"
+          :data-active="index === mentionActive"
+          :class="
+            cn(
+              'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+              index === mentionActive && 'bg-secondary-background-hover'
+            )
+          "
+          @mouseenter="highlightMention(index)"
+          @click="pickMention(match)"
+        >
+          <span
+            v-if="match.kind === 'section' && match.id === 'nodes'"
+            class="icon-[comfy--node] size-3.5 shrink-0"
+          />
+          <span
+            v-else-if="match.kind === 'section' && match.id === 'workflows'"
+            class="icon-[comfy--workflow] size-3.5 shrink-0"
+          />
+          <span
+            v-else-if="match.kind === 'back'"
+            class="icon-[lucide--chevron-left] size-4 shrink-0"
+          />
+          <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+          <span
+            v-if="match.kind === 'workflow' && match.workflow.id === undefined"
+            class="text-xs text-muted-foreground"
+            >{{ t('agent.unsavedWorkflow') }}</span
           >
-            <span
-              v-if="match.kind === 'section' && match.id === 'nodes'"
-              class="icon-[comfy--node] size-3.5 shrink-0"
-            />
-            <span
-              v-else-if="match.kind === 'section' && match.id === 'workflows'"
-              class="icon-[comfy--workflow] size-3.5 shrink-0"
-            />
-            <span
-              v-else-if="match.kind === 'back'"
-              class="icon-[lucide--chevron-left] size-4 shrink-0"
-            />
-            <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
-            <span
-              v-if="
-                match.kind === 'workflow' && match.workflow.id === undefined
-              "
-              class="text-xs text-muted-foreground"
-              >{{ t('agent.unsavedWorkflow') }}</span
-            >
-            <span
-              v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
-              :class="cn(duplicateIdClass, 'ml-auto')"
-            >
-              #{{ match.node.id }}
-            </span>
-            <span
-              v-if="match.kind === 'section'"
-              class="icon-[lucide--chevron-right] size-4 shrink-0"
-            />
-          </div>
-        </template>
-      </AccessibleTooltip>
+          <span
+            v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
+            :class="cn(duplicateIdClass, 'ml-auto')"
+          >
+            #{{ match.node.id }}
+          </span>
+          <span
+            v-if="match.kind === 'section'"
+            class="icon-[lucide--chevron-right] size-4 shrink-0"
+          />
+        </div>
+      </Tooltip>
       <div
         v-if="!mentionHasResults"
         role="status"
@@ -489,6 +487,7 @@ defineExpose({
               side="top"
               :delay-duration="300"
               :ignore-non-keyboard-focus="false"
+              disable-closing-trigger
               :collision-padding="8"
             >
               <Button
@@ -541,6 +540,7 @@ defineExpose({
                 side="top"
                 :delay-duration="300"
                 :ignore-non-keyboard-focus="false"
+                disable-closing-trigger
                 :collision-padding="8"
               >
                 <DropdownMenuItem
@@ -641,6 +641,7 @@ defineExpose({
             side="top"
             :delay-duration="300"
             :ignore-non-keyboard-focus="false"
+            disable-closing-trigger
             :collision-padding="8"
           >
             <Button

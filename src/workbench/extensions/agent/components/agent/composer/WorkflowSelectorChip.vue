@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import type { ActiveTab } from '../../../types/activeTab'
@@ -113,55 +113,53 @@ function onSearchKeydown(event: KeyboardEvent): void {
     class="flex w-full items-center justify-between gap-1.5"
   >
     <DropdownMenuRoot :open @update:open="onOpenChange">
-      <AccessibleTooltip
-        :label="workflowTooltipText"
-        side="top"
-        align="start"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :disable-closing-trigger="false"
-        :collision-padding="8"
-      >
-        <template #trigger>
-          <DropdownMenuTrigger as-child>
-            <Button
-              type="button"
-              :variant="current ? 'textonly' : 'outline'"
-              size="unset"
-              :disabled
-              :aria-label="t('agent.switchWorkflow')"
-              :class="
-                cn(
-                  'group h-7 min-w-0 gap-2 px-2.5 text-xs/4 font-normal',
-                  current && 'flex-1'
-                )
-              "
+      <DropdownMenuTrigger as-child>
+        <Tooltip
+          :config="workflowTooltipText"
+          side="top"
+          align="start"
+          :delay-duration="300"
+          :ignore-non-keyboard-focus="false"
+          :disable-closing-trigger="false"
+          :collision-padding="8"
+        >
+          <Button
+            type="button"
+            :variant="current ? 'textonly' : 'outline'"
+            size="unset"
+            :disabled
+            :aria-label="t('agent.switchWorkflow')"
+            :class="
+              cn(
+                'group h-7 min-w-0 gap-2 px-2.5 text-xs/4 font-normal',
+                current && 'flex-1'
+              )
+            "
+          >
+            <span
+              v-if="tabActivity.editingTabPath === current?.path"
+              role="img"
+              :aria-label="t('g.agentWorking')"
+              class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+            />
+            <span
+              v-else
+              data-testid="workflow-selector-icon"
+              class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+            />
+            <span class="min-w-0 truncate">{{
+              current?.name ?? t('agent.selectWorkflowForAgent')
+            }}</span>
+            <span
+              v-if="current?.isPersisted === false || current?.modified"
+              data-testid="unsaved-dot"
+              class="flex size-3.5 shrink-0 items-center justify-center"
             >
-              <span
-                v-if="tabActivity.editingTabPath === current?.path"
-                role="img"
-                :aria-label="t('g.agentWorking')"
-                class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
-              />
-              <span
-                v-else
-                data-testid="workflow-selector-icon"
-                class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
-              />
-              <span class="min-w-0 truncate">{{
-                current?.name ?? t('agent.selectWorkflowForAgent')
-              }}</span>
-              <span
-                v-if="current?.isPersisted === false || current?.modified"
-                data-testid="unsaved-dot"
-                class="flex size-3.5 shrink-0 items-center justify-center"
-              >
-                <span class="size-[7px] rounded-full bg-base-foreground" />
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-        </template>
-      </AccessibleTooltip>
+              <span class="size-[7px] rounded-full bg-base-foreground" />
+            </span>
+          </Button>
+        </Tooltip>
+      </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent
           side="top"

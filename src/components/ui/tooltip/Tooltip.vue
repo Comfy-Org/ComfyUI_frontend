@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
+import type {
+  TooltipContentProps,
+  TooltipRootEmits,
+  TooltipRootProps
+} from 'reka-ui'
 import { TooltipRoot } from 'reka-ui'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -19,19 +23,22 @@ const {
   config,
   side = 'right',
   sideOffset = 6,
+  align,
+  collisionPadding,
   contentClass,
   openOnClick = false,
   suppressDescription = false,
   ...rootProps
 } = defineProps<
-  TooltipRootProps & {
-    config: TooltipValue
-    side?: TooltipSide
-    sideOffset?: number
-    contentClass?: string
-    openOnClick?: boolean
-    suppressDescription?: boolean
-  }
+  TooltipRootProps &
+    Pick<TooltipContentProps, 'align' | 'collisionPadding'> & {
+      config: TooltipValue
+      side?: TooltipSide
+      sideOffset?: number
+      contentClass?: string
+      openOnClick?: boolean
+      suppressDescription?: boolean
+    }
 >()
 const emit = defineEmits<TooltipRootEmits>()
 
@@ -139,6 +146,8 @@ onBeforeUnmount(() => {
         :open
         :side
         :side-offset
+        :align
+        :collision-padding
         :class="contentClass ?? normalizedConfig?.contentClass"
         :aria-label="
           suppressDescription || $attrs['aria-label'] === text ? ' ' : undefined
