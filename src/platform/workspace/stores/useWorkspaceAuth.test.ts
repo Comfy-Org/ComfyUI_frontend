@@ -24,6 +24,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -32,13 +33,14 @@ vi.mock(import('firebase/auth'), { spy: true })
  * `value` moves the store's user AND fires the port, the way a real
  * auth-state event reaches both; `deliver` fires the port alone.
  */
-const portListeners = new Set<(user: User | null) => void>()
 const portUser = (user: { uid: string } | null): User | null =>
   user &&
   ({
     ...user,
     getIdToken: () => useAuthStore().getIdToken()
   } as Partial<User> as User)
+const port = replayIdentityPort(() => portUser(useAuthStore().currentUser))
+const portListeners = port.observers
 const mockCurrentUser = {
   listeners: portListeners,
   get value(): { uid: string } | null {
@@ -46,10 +48,10 @@ const mockCurrentUser = {
   },
   set value(user: { uid: string } | null) {
     Object.assign(useAuthStore(), { currentUser: user })
-    portListeners.forEach((listener) => listener(portUser(user)))
+    port.emit(portUser(user))
   },
   deliver(user: { uid: string } | null) {
-    portListeners.forEach((listener) => listener(portUser(user)))
+    port.emit(portUser(user))
   }
 }
 
@@ -123,11 +125,7 @@ beforeEach(() => {
 beforeEach(() => {
   portListeners.clear()
   vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
-    (listener) => {
-      portListeners.add(listener)
-      listener(portUser(useAuthStore().currentUser))
-      return () => portListeners.delete(listener)
-    }
+    port.register
   )
   vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
   vi.mocked(useAuthStore().notifyTokenRefreshed).mockImplementation(() => {})
@@ -2055,6 +2053,32 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBeNull()
     })
 
+    it('a port that delivers synchronously inside onUserChanged still leaves the store subscribed and minting for that user', async () => {
+      const syncPort = replayIdentityPort(
+        () => portUser(useAuthStore().currentUser),
+        'sync'
+      )
+      vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
+        syncPort.register
+      )
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      expect(syncPort.observers.size, 'the port stays subscribed').toBe(1)
+      await expect(store.mintAtLogin()).resolves.toBe(true)
+      expect(store.getUnifiedToken()).toBe('unified-token-1')
+    })
+
     it('mints the personal default once into the dormant unifiedToken slot when flag ON', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
@@ -2856,6 +2880,14 @@ describe('useWorkspaceAuthStore', () => {
       ).toBeUndefined()
       mockFetch.mockClear()
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      const mintAfterDestroy = store.mintAtLogin()
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(
+        mintAfterDestroy,
+        'destroy detaches identity with no path back, so a mint waits the settle ceiling and fails closed'
+      ).resolves.toBe(false)
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
