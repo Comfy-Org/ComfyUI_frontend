@@ -12,53 +12,55 @@ app.registerExtension({
     let touchTime: Date | null = null
     let lastTouch: { clientX: number; clientY: number } | null = null
     let lastScale: number | null = null
-    function getMultiTouchPos(e: TouchEvent) {
+    function getMultiTouchPos(touches: Touch[]) {
       return Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY
       )
     }
 
-    function getMultiTouchCenter(e: TouchEvent) {
+    function getMultiTouchCenter(touches: Touch[]) {
       return {
-        clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
+        clientX: (touches[0].clientX + touches[1].clientX) / 2,
+        clientY: (touches[0].clientY + touches[1].clientY) / 2
       }
     }
 
     /**
-     * Counts live contacts instead of accumulating deltas, which is what let
-     * the old count drift. Touches whose target has detached drop out here -
-     * they are the ones whose `touchend` never reaches this listener. Scoped to
-     * the container because `e.touches` spans the whole document.
+     * The live contacts this extension owns. Reading them per event instead of
+     * accumulating deltas is what stops the count drifting. `e.touches` spans
+     * the whole document, so a finger on a toast or a body-level menu is
+     * filtered out here, as is one whose target has detached - the case whose
+     * `touchend` never reaches this listener.
      */
-    function countTouchesInCanvasContainer(e: TouchEvent) {
+    function canvasTouches(e: TouchEvent) {
       const root = app.canvasEl.parentElement
       return Array.from(e.touches).filter(
         (touch) => touch.target instanceof Node && root?.contains(touch.target)
-      ).length
+      )
     }
 
     app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount = countTouchesInCanvasContainer(e)
+        const touches = canvasTouches(e)
+        touchCount = touches.length
 
         lastTouch = null
         lastScale = null
-        if (e.touches.length === 1) {
+        if (touches.length === 1) {
           touchZooming = false
           // Store start time for press+hold for context menu
           touchTime = new Date()
-          lastTouch = e.touches[0]
+          lastTouch = touches[0]
         } else {
           touchTime = null
-          if (e.touches.length === 2) {
+          if (touches.length === 2) {
             // Store center pos for zoom
             lastScale = app.canvas.ds.scale
-            lastTouch = getMultiTouchCenter(e)
+            lastTouch = getMultiTouchCenter(touches)
 
-            touchDist = getMultiTouchPos(e)
+            touchDist = getMultiTouchPos(touches)
             app.canvas.pointer.isDown = false
           }
         }
@@ -69,10 +71,11 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchCount = countTouchesInCanvasContainer(e)
+        const touches = canvasTouches(e)
+        touchCount = touches.length
 
-        if (e.touches.length !== 1) touchZooming = false
-        if (touchTime && !e.touches.length) {
+        if (touches.length !== 1) touchZooming = false
+        if (touchTime && !touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
               const touch = {
@@ -97,8 +100,7 @@ app.registerExtension({
       true
     )
 
-    const resetTouchState = () => {
-      touchCount = 0
+    const clearGestureState = () => {
       touchZooming = false
       touchTime = null
       lastTouch = null
@@ -110,83 +112,99 @@ app.registerExtension({
     // This prevents touchCount from getting stuck when touchend events are missed
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        resetTouchState()
+        touchCount = 0
+        clearGestureState()
       }
     })
 
-    // Also handle touchcancel which fires when touch is interrupted
+    // A cancel abandons the gesture, but iOS cancels touches individually, so
+    // the fingers left in `e.touches` are still down and still have to count.
     app.canvasEl.parentElement?.addEventListener(
       'touchcancel',
-      resetTouchState,
+      (e: TouchEvent) => {
+        touchCount = canvasTouches(e).length
+        clearGestureState()
+      },
       true
     )
+
+    // make a threshold for touchmove to prevent clear touchTime for long press
+    function cancelLongPressOnDrift(touches: Touch[]) {
+      if (!touchTime || !lastTouch || touches.length !== 1) return
+
+      const onlyTouch = touches[0]
+      const deltaX = onlyTouch.clientX - lastTouch.clientX
+      const deltaY = onlyTouch.clientY - lastTouch.clientY
+      if (deltaX * deltaX + deltaY * deltaY > 30) {
+        touchTime = null
+      }
+    }
+
+    function applyPinchZoom(e: TouchEvent, touches: Touch[]) {
+      e.preventDefault() // Prevent browser from zooming when two textareas are touched
+      app.canvas.pointer.isDown = false
+
+      if (!touchZooming) {
+        LiteGraph.closeAllContextMenus(window)
+        app.canvas.search_box?.close()
+      }
+      touchZooming = true
+
+      const newTouchDist = getMultiTouchPos(touches)
+
+      const center = getMultiTouchCenter(touches)
+
+      const anchor = lastTouch
+      if (lastScale === null || touchDist === null || anchor === null) return
+      let scale = (lastScale * newTouchDist) / touchDist
+
+      const newX = (center.clientX - anchor.clientX) / scale
+      const newY = (center.clientY - anchor.clientY) / scale
+
+      // Code from LiteGraph
+      if (scale < app.canvas.ds.min_scale) {
+        scale = app.canvas.ds.min_scale
+      } else if (scale > app.canvas.ds.max_scale) {
+        scale = app.canvas.ds.max_scale
+      }
+
+      const oldScale = app.canvas.ds.scale
+
+      app.canvas.ds.scale = scale
+
+      // Code from LiteGraph
+      if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
+        app.canvas.ds.scale = 1
+      }
+
+      const newScale = app.canvas.ds.scale
+
+      const convertScaleToOffset = (scale: number) => [
+        center.clientX / scale - app.canvas.ds.offset[0],
+        center.clientY / scale - app.canvas.ds.offset[1]
+      ]
+      const oldCenter = convertScaleToOffset(oldScale)
+      const newCenter = convertScaleToOffset(newScale)
+
+      app.canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
+      app.canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]
+
+      anchor.clientX = center.clientX
+      anchor.clientY = center.clientY
+
+      app.canvas.setDirty(true, true)
+    }
 
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        touchCount = countTouchesInCanvasContainer(e)
+        const touches = canvasTouches(e)
+        touchCount = touches.length
 
-        // make a threshold for touchmove to prevent clear touchTime for long press
-        if (touchTime && lastTouch && e.touches.length === 1) {
-          const onlyTouch = e.touches[0]
-          const deltaX = onlyTouch.clientX - lastTouch.clientX
-          const deltaY = onlyTouch.clientY - lastTouch.clientY
-          if (deltaX * deltaX + deltaY * deltaY > 30) {
-            touchTime = null
-          }
-        }
-        if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
-          e.preventDefault() // Prevent browser from zooming when two textareas are touched
-          app.canvas.pointer.isDown = false
+        cancelLongPressOnDrift(touches)
 
-          if (!touchZooming) {
-            LiteGraph.closeAllContextMenus(window)
-            app.canvas.search_box?.close()
-          }
-          touchZooming = true
-
-          const newTouchDist = getMultiTouchPos(e)
-
-          const center = getMultiTouchCenter(e)
-
-          if (lastScale === null || touchDist === null) return
-          let scale = (lastScale * newTouchDist) / touchDist
-
-          const newX = (center.clientX - lastTouch.clientX) / scale
-          const newY = (center.clientY - lastTouch.clientY) / scale
-
-          // Code from LiteGraph
-          if (scale < app.canvas.ds.min_scale) {
-            scale = app.canvas.ds.min_scale
-          } else if (scale > app.canvas.ds.max_scale) {
-            scale = app.canvas.ds.max_scale
-          }
-
-          const oldScale = app.canvas.ds.scale
-
-          app.canvas.ds.scale = scale
-
-          // Code from LiteGraph
-          if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
-            app.canvas.ds.scale = 1
-          }
-
-          const newScale = app.canvas.ds.scale
-
-          const convertScaleToOffset = (scale: number) => [
-            center.clientX / scale - app.canvas.ds.offset[0],
-            center.clientY / scale - app.canvas.ds.offset[1]
-          ]
-          const oldCenter = convertScaleToOffset(oldScale)
-          const newCenter = convertScaleToOffset(newScale)
-
-          app.canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
-          app.canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]
-
-          lastTouch.clientX = center.clientX
-          lastTouch.clientY = center.clientY
-
-          app.canvas.setDirty(true, true)
+        if (touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
+          applyPinchZoom(e, touches)
         }
       },
       true
@@ -195,10 +213,11 @@ app.registerExtension({
 })
 
 /**
- * A primary *touch* pointer is the only finger on the screen, so state
- * surviving here belongs to a gesture whose `touchend` never arrived. Mouse and
- * pen are primary regardless of how many fingers are down, so they must not
- * clear state that a live gesture still owns.
+ * Only ever called on `pointerdown`. A touch pointer is primary only when no
+ * other touch pointer was active as it went down, so it starts a fresh
+ * sequence and anything still set belongs to a gesture whose `touchend` never
+ * arrived. Mouse and pen carry their own primary flag regardless of how many
+ * fingers are down, so they must not clear state a live gesture still owns.
  */
 function discardStaleTouchState(e: PointerEvent) {
   if (e.pointerType !== 'touch' || !e.isPrimary) return

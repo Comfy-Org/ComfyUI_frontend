@@ -1,25 +1,27 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
+
+type Viewport = Pick<
+  DragAndScale,
+  'scale' | 'offset' | 'min_scale' | 'max_scale'
+>
 
 const { canvasEl, container, dragAndScale, closeSearchBox } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  return {
-    container,
-    canvasEl,
-    dragAndScale: {
-      scale: 1,
-      offset: [0, 0] as [number, number],
-      min_scale: 0.1,
-      max_scale: 10
-    },
-    closeSearchBox: vi.fn()
+  const dragAndScale: Viewport = {
+    scale: 1,
+    offset: [0, 0],
+    min_scale: 0.1,
+    max_scale: 10
   }
+  return { container, canvasEl, dragAndScale, closeSearchBox: vi.fn() }
 })
 
 const processMouseDown = vi.fn()
@@ -43,8 +45,16 @@ LGraphCanvas.prototype.processMouseMove = processMouseMove
 
 await import('./simpleTouchSupport')
 
-const touchAt = (target: EventTarget, x = 0, y = 0) =>
-  fromPartial<Touch>({ clientX: x, clientY: y, target })
+let nextTouchId = 0
+
+function touchAt(target: EventTarget, x = 0, y = 0) {
+  return new Touch({
+    identifier: nextTouchId++,
+    target,
+    clientX: x,
+    clientY: y
+  })
+}
 
 function dispatchTouch(
   target: EventTarget,
@@ -52,27 +62,35 @@ function dispatchTouch(
   touches: Touch[],
   changedTouches: Touch[] = touches
 ) {
-  const event = new Event(type, { bubbles: true, cancelable: true })
-  Object.defineProperties(event, {
-    touches: { value: touches },
-    changedTouches: { value: changedTouches }
-  })
-  target.dispatchEvent(event)
+  target.dispatchEvent(
+    new TouchEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      touches,
+      changedTouches
+    })
+  )
 }
 
-const pointerDown = (init: PointerEventInit) =>
-  LGraphCanvas.prototype.processMouseDown.call(
+function pointerDown(init: PointerEventInit) {
+  return LGraphCanvas.prototype.processMouseDown.call(
     fromPartial<LGraphCanvas>({}),
     new PointerEvent('pointerdown', { pointerType: 'touch', ...init })
   )
+}
 
-const pointerMove = (init: PointerEventInit) =>
-  LGraphCanvas.prototype.processMouseMove.call(
+function pointerMove(init: PointerEventInit) {
+  return LGraphCanvas.prototype.processMouseMove.call(
     fromPartial<LGraphCanvas>({}),
     new PointerEvent('pointermove', { pointerType: 'touch', ...init })
   )
+}
 
-/** Mirrors the real order for touch input: pointerdown precedes touchstart. */
+/**
+ * Chromium dispatches `pointerdown` before `touchstart`; the specs leave that
+ * order up to the user agent. The fix does not depend on it - every touch event
+ * re-derives the count - so this only fixes one order for the fixture.
+ */
 function tapDown(target: EventTarget = canvasEl) {
   pointerDown({ isPrimary: true })
   dispatchTouch(target, 'touchstart', [touchAt(target)])
@@ -103,13 +121,13 @@ function strandPinchOnDetachedTarget() {
  * Probes the guards without going through a primary pointerdown, which would
  * itself clear the state these cases are asserting on.
  */
-const tapReachesCanvas = () => {
+function tapReachesCanvas() {
   processMouseDown.mockClear()
   pointerDown({ isPrimary: false })
   return processMouseDown.mock.calls.length === 1
 }
 
-const dragReachesCanvas = () => {
+function dragReachesCanvas() {
   processMouseMove.mockClear()
   pointerMove({ isPrimary: true })
   return processMouseMove.mock.calls.length === 1
@@ -151,6 +169,17 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
 
       pointerDown({ isPrimary: false })
       expect(processMouseDown).not.toHaveBeenCalled()
+    })
+
+    it('stays blocked between a partial touchcancel and the last touchend', () => {
+      const [first, second] = [touchAt(canvasEl), touchAt(canvasEl, 50)]
+      dispatchTouch(canvasEl, 'touchstart', [first, second])
+      dispatchTouch(canvasEl, 'touchcancel', [first], [second])
+
+      expect(tapReachesCanvas()).toBe(false)
+
+      dispatchTouch(canvasEl, 'touchend', [], [first])
+      expect(tapReachesCanvas()).toBe(true)
     })
 
     it('does not count a finger held outside the canvas container', () => {
@@ -245,6 +274,21 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
     expect(dragAndScale.scale).toBeCloseTo(0.5)
   })
 
+  it('does not pinch when only one of the two fingers is on the canvas', () => {
+    const outside = document.createElement('div')
+    document.body.append(outside)
+
+    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl)])
+    dispatchTouch(canvasEl, 'touchstart', [touchAt(canvasEl), touchAt(outside)])
+    dispatchTouch(canvasEl, 'touchmove', [
+      touchAt(canvasEl),
+      touchAt(outside, 400)
+    ])
+    outside.remove()
+
+    expect(dragAndScale.scale).toBe(1)
+  })
+
   it('still opens the context menu on a long press', () => {
     const rightClick = vi.fn()
     canvasEl.addEventListener('pointerdown', rightClick)
@@ -268,12 +312,18 @@ describe('Comfy.SimpleTouchSupport touch state', () => {
       touchAt(canvasEl),
       touchAt(canvasEl, 100)
     ])
-    for (const gap of [90, 80, 70]) {
-      dispatchTouch(canvasEl, 'touchmove', [
-        touchAt(canvasEl),
-        touchAt(canvasEl, gap)
-      ])
-    }
+    dispatchTouch(canvasEl, 'touchmove', [
+      touchAt(canvasEl),
+      touchAt(canvasEl, 90)
+    ])
+    dispatchTouch(canvasEl, 'touchmove', [
+      touchAt(canvasEl),
+      touchAt(canvasEl, 80)
+    ])
+    dispatchTouch(canvasEl, 'touchmove', [
+      touchAt(canvasEl),
+      touchAt(canvasEl, 70)
+    ])
 
     expect(closeAllContextMenus).toHaveBeenCalledOnce()
     expect(closeSearchBox).toHaveBeenCalledOnce()
