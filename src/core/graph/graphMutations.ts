@@ -58,6 +58,22 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): LiveWidgetMutationResult
+  rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
@@ -104,6 +120,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -155,6 +172,22 @@ type PreparedMutation =
       removedLinkIds: readonly LinkId[]
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
+
+type PreparedNodeMutation = Extract<
+  PreparedMutation,
+  { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
+>
+type PreparedConnectMutation = Extract<PreparedMutation, { kind: 'connect' }>
+
+function isPreparedNodeMutation(
+  mutation: PreparedMutation
+): mutation is PreparedNodeMutation {
+  return (
+    mutation.kind === 'addNode' ||
+    mutation.kind === 'reconcileNode' ||
+    mutation.kind === 'replaceNode'
+  )
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -730,183 +763,274 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
+  function commitNodeState(
+    scope: GraphScope,
+    mutation: PreparedNodeMutation,
+    context: RemoteMutationContext
+  ): boolean {
+    let existing = nodeStore.getNode(scope.rootGraphId, mutation.node.state.id)
+    if (mutation.kind === 'replaceNode' && existing) {
+      deleteNode(scope, existing.id, [], context)
+      existing = undefined
+    }
+    if (mutation.kind === 'reconcileNode' && existing) {
+      nodeStore.updateNode(
+        scope,
+        mutation.node.state.id,
+        mutation.node.state,
+        context
+      )
+    } else {
+      nodeStore.registerNode(scope, mutation.node.state, context)
+    }
+    return Boolean(existing)
+  }
+
+  function commitNodeWidgets(
+    scope: GraphScope,
+    mutation: PreparedNodeMutation,
+    context: RemoteMutationContext
+  ): void {
+    const incomingWidgetIds = new Set(
+      mutation.node.widgets.map((widget) =>
+        widgetId(scope.rootGraphId, mutation.node.state.id, widget.name)
+      )
+    )
+    for (const widget of mutation.node.widgets) {
+      const id = widgetId(
+        scope.rootGraphId,
+        mutation.node.state.id,
+        widget.name
+      )
+      const projected = deps.liveWidgets?.setValue(
+        scope,
+        mutation.node.state.id,
+        widget.name,
+        widget.value,
+        context
+      )
+      const resolvedValue =
+        projected && projected.status !== 'skipped'
+          ? projected.resolvedValue
+          : widget.value
+      widgetStore.registerWidget(
+        id,
+        {
+          name: widget.name,
+          type: widget.type,
+          value: resolvedValue,
+          options: {},
+          label: widget.name
+        },
+        {},
+        undefined,
+        context
+      )
+      if (mutation.kind === 'reconcileNode') {
+        widgetStore.setValue(id, resolvedValue, context)
+        deps.liveWidgets?.rebind?.(scope, mutation.node.state.id, widget.name)
+      }
+    }
+    if (mutation.kind === 'reconcileNode') {
+      for (const id of widgetStore.getNodeWidgetIds(
+        scope.rootGraphId,
+        mutation.node.state.id
+      )) {
+        if (!incomingWidgetIds.has(id)) widgetStore.deleteWidget(id)
+      }
+    }
+  }
+
+  function commitNode(
+    scope: GraphScope,
+    mutation: PreparedNodeMutation,
+    context: RemoteMutationContext
+  ): void {
+    const hadExistingNode = commitNodeState(scope, mutation, context)
+    commitNodeWidgets(scope, mutation, context)
+    if (!hadExistingNode) {
+      deps.layout.createNode(
+        scope,
+        mutation.node.state.id,
+        mutation.node.layout,
+        context
+      )
+    }
+  }
+
+  function commitWidget(
+    scope: GraphScope,
+    mutation: Extract<PreparedMutation, { kind: 'setWidget' }>,
+    context: RemoteMutationContext
+  ): void {
+    const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
+    const projected = deps.liveWidgets?.setValue(
+      scope,
+      mutation.nodeId,
+      mutation.name,
+      mutation.value,
+      context
+    )
+    const resolvedValue =
+      projected && projected.status !== 'skipped'
+        ? projected.resolvedValue
+        : mutation.value
+    if (!widgetStore.getWidget(id)) {
+      widgetStore.registerWidget(
+        id,
+        {
+          name: mutation.name,
+          type: widgetType(mutation.value),
+          value: resolvedValue,
+          options: {},
+          label: mutation.name
+        },
+        {},
+        undefined,
+        context
+      )
+    } else {
+      widgetStore.setValue(id, resolvedValue, context)
+    }
+  }
+
+  function commitConnection(
+    scope: GraphScope,
+    mutation: PreparedConnectMutation,
+    context: RemoteMutationContext
+  ): void {
+    const existing = linkStore.getTopology(
+      scope.rootGraphId,
+      mutation.topology.id
+    )
+    const presentation = existing
+      ? linkPresentationStore.getPresentation(scope, existing.id)
+      : undefined
+    if (existing) removeLink(scope, existing, context)
+    const occupant = linkStore.getInputSlotLink(
+      scope,
+      mutation.topology.targetNodeId,
+      mutation.topology.targetSlot
+    )
+    const replacement = linkStore.replaceLink(
+      scope,
+      occupant,
+      mutation.topology,
+      context
+    )
+    if (!replacement) return
+    if (occupant) {
+      detachLinkSlots(scope, occupant, context)
+      linkPresentationStore.take(scope, occupant.id)
+    }
+    if (presentation) {
+      linkPresentationStore.patch(scope, replacement.id, presentation)
+    }
+
+    commitConnectionSlots(scope, mutation, context)
+  }
+
+  function commitConnectionSlots(
+    scope: GraphScope,
+    mutation: PreparedConnectMutation,
+    context: RemoteMutationContext
+  ): void {
+    const endpointNodes = new Map(
+      nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map((node) => [nodeKey(node.id), node])
+    )
+    const origin = endpointNodes.get(nodeKey(mutation.topology.originNodeId))
+    const target = endpointNodes.get(nodeKey(mutation.topology.targetNodeId))
+    if (origin && mutation.originOutputs) {
+      nodeStore.updateNodeSlots(
+        scope,
+        origin.id,
+        { inputs: origin.inputs, outputs: mutation.originOutputs },
+        context
+      )
+    }
+    if (target && mutation.targetInputs) {
+      nodeStore.updateNodeSlots(
+        scope,
+        target.id,
+        { inputs: mutation.targetInputs, outputs: target.outputs },
+        context
+      )
+    }
+  }
+
+  function commitRemovedLinks(
+    scope: GraphScope,
+    linkIds: readonly LinkId[],
+    context: RemoteMutationContext
+  ): void {
+    for (const id of linkIds) {
+      const topology = linkStore.getTopology(scope.rootGraphId, id)
+      if (topology) removeLink(scope, topology, context)
+    }
+  }
+
+  function commitClear(
+    scope: GraphScope,
+    nodeIds: readonly NodeId[],
+    context: RemoteMutationContext
+  ): void {
+    for (const nodeId of nodeIds) {
+      widgetStore.clearNode(scope.rootGraphId, nodeId, context)
+    }
+    deps.layout.deleteNodes(scope, nodeIds, context)
+    linkStore.clearOwner(scope, context)
+    linkPresentationStore.clearOwner(scope)
+    nodeStore.clearOwner(scope, context)
+  }
+
+  function commitNonNodeMutation(
+    scope: GraphScope,
+    mutation: Exclude<PreparedMutation, PreparedNodeMutation>,
+    context: RemoteMutationContext
+  ): void {
+    switch (mutation.kind) {
+      case 'reconcileNodeFields':
+        nodeStore.updateNodeFields(
+          scope,
+          mutation.state.id,
+          mutation.state,
+          context
+        )
+        break
+      case 'setWidget':
+        commitWidget(scope, mutation, context)
+        break
+      case 'connect':
+        commitConnection(scope, mutation, context)
+        break
+      case 'removeMissing':
+        commitRemovedLinks(scope, mutation.linkIds, context)
+        for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+        break
+      case 'removeLinks':
+        commitRemovedLinks(scope, mutation.linkIds, context)
+        break
+      case 'deleteNode':
+        deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+        break
+      case 'clearSemanticGraph':
+        commitClear(scope, mutation.nodeIds, context)
+        break
+    }
+  }
+
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
     context: RemoteMutationContext
   ): void {
     for (const mutation of prepared) {
-      switch (mutation.kind) {
-        case 'addNode':
-        case 'reconcileNode':
-        case 'replaceNode': {
-          let existing = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.node.state.id
-          )
-          if (mutation.kind === 'replaceNode' && existing) {
-            deleteNode(scope, existing.id, [], context)
-            existing = undefined
-          }
-          if (mutation.kind === 'reconcileNode' && existing) {
-            nodeStore.updateNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.state,
-              context
-            )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
-          } else {
-            nodeStore.registerNode(scope, mutation.node.state, context)
-          }
-          for (const widget of mutation.node.widgets) {
-            widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
-              {
-                name: widget.name,
-                type: widget.type,
-                value: widget.value,
-                options: {},
-                label: widget.name
-              },
-              {},
-              undefined,
-              context
-            )
-          }
-          if (!existing) {
-            deps.layout.createNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.layout,
-              context
-            )
-          }
-          break
-        }
-        case 'reconcileNodeFields': {
-          nodeStore.updateNodeFields(
-            scope,
-            mutation.state.id,
-            mutation.state,
-            context
-          )
-          break
-        }
-        case 'setWidget': {
-          const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-          if (!widgetStore.getWidget(id)) {
-            widgetStore.registerWidget(
-              id,
-              {
-                name: mutation.name,
-                type: widgetType(mutation.value),
-                value: mutation.value,
-                options: {},
-                label: mutation.name
-              },
-              {},
-              undefined,
-              context
-            )
-          } else {
-            widgetStore.setValue(id, mutation.value, context)
-          }
-          break
-        }
-        case 'connect': {
-          const existing = linkStore.getTopology(
-            scope.rootGraphId,
-            mutation.topology.id
-          )
-          const presentation = existing
-            ? linkPresentationStore.getPresentation(scope, existing.id)
-            : undefined
-          if (existing) removeLink(scope, existing, context)
-          const occupant = linkStore.getInputSlotLink(
-            scope,
-            mutation.topology.targetNodeId,
-            mutation.topology.targetSlot
-          )
-          const replacement = linkStore.replaceLink(
-            scope,
-            occupant,
-            mutation.topology,
-            context
-          )
-          if (!replacement) break
-          if (occupant) {
-            detachLinkSlots(scope, occupant, context)
-            linkPresentationStore.take(scope, occupant.id)
-          }
-          if (presentation) {
-            linkPresentationStore.patch(scope, replacement.id, presentation)
-          }
-
-          const endpointNodes = new Map(
-            nodeStore
-              .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-              .map((node) => [nodeKey(node.id), node])
-          )
-          const origin = endpointNodes.get(
-            nodeKey(mutation.topology.originNodeId)
-          )
-          const target = endpointNodes.get(
-            nodeKey(mutation.topology.targetNodeId)
-          )
-          if (origin && mutation.originOutputs) {
-            nodeStore.updateNodeSlots(
-              scope,
-              origin.id,
-              {
-                inputs: origin.inputs,
-                outputs: mutation.originOutputs
-              },
-              context
-            )
-          }
-          if (target && mutation.targetInputs) {
-            nodeStore.updateNodeSlots(
-              scope,
-              target.id,
-              {
-                inputs: mutation.targetInputs,
-                outputs: target.outputs
-              },
-              context
-            )
-          }
-          break
-        }
-        case 'removeMissing':
-          for (const id of mutation.linkIds) {
-            const topology = linkStore.getTopology(scope.rootGraphId, id)
-            if (topology) removeLink(scope, topology, context)
-          }
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
-          break
-        case 'removeLinks':
-          for (const id of mutation.linkIds) {
-            const topology = linkStore.getTopology(scope.rootGraphId, id)
-            if (topology) removeLink(scope, topology, context)
-          }
-          break
-        case 'deleteNode':
-          deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
-          break
-        case 'clearSemanticGraph':
-          for (const nodeId of mutation.nodeIds) {
-            widgetStore.clearNode(scope.rootGraphId, nodeId, context)
-          }
-          deps.layout.deleteNodes(scope, mutation.nodeIds, context)
-          linkStore.clearOwner(scope, context)
-          linkPresentationStore.clearOwner(scope)
-          nodeStore.clearOwner(scope, context)
-          break
+      if (isPreparedNodeMutation(mutation)) {
+        commitNode(scope, mutation, context)
+      } else {
+        commitNonNodeMutation(scope, mutation, context)
       }
     }
   }
