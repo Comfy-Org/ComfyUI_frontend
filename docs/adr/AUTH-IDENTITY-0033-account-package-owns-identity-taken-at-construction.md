@@ -88,9 +88,9 @@ suites is unchanged across the stack.
 - **Big-bang rewrite.** Unshippable without the flag as a safety net.
 - **Package owns Firebase, host keeps identity authority.** Leaves the
   dual source of truth the TDD exists to remove.
-- **Keep `isAccountIdentity` as defense in depth.** It guarded hand-rolled
-  Pinia ports, which no longer have an entry point; the brand type is the
-  contract.
+- **Keep `isAccountIdentity` as defense in depth.** It guarded unbranded ports
+  pushed in through `attachIdentity`, which no longer exists; the brand type is
+  the contract, and `./testing` is the one deliberate way to mint it.
 
 ## Consequences
 

@@ -177,6 +177,30 @@ describe('dispose', () => {
     expect(storage.raw()).toBeNull()
   })
 
+  it('mints once, for the newer user, when a listener delivers a second user during the publish', async () => {
+    const fetchImpl = okFetch()
+    const { client, identity } = makeClient({ fetchImpl, refreshScheduler: {} })
+    const first = testUser('uid-a', 'id-token-a')
+    const second = testUser('uid-b', 'id-token-b')
+    let reentered = false
+    client.subscribe((snapshot) => {
+      if (snapshot.user?.uid === 'uid-a' && !reentered) {
+        reentered = true
+        identity.fire(second)
+      }
+    })
+
+    identity.fire(first)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      first.getIdToken,
+      'the superseded first delivery must not mint'
+    ).not.toHaveBeenCalled()
+    expect(second.getIdToken).toHaveBeenCalledOnce()
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
   it('still serves an explicit-user mint after dispose, like a detach, without publishing it', async () => {
     const { client, storage, identity } = makeClient({ fetchImpl: okFetch() })
     identity.fire(testUser())
