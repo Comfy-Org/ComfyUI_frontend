@@ -1239,6 +1239,21 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     expect(refreshed?.image).toBe('threed/scene-3.png [temp]')
   })
 
+  it('still resolves when every capture dirties the scene again', async () => {
+    const { node, load3d, serialize, useLoad3dModule } = await setup()
+    load3d.captureScene.mockImplementation(async () => {
+      useLoad3dModule.markLoad3dSceneDirty(node)
+      return { scene: 'scene-data', mask: 'mask-data', normal: 'normal-data' }
+    })
+
+    const result = await serialize()
+
+    expect(result?.image).toBe('threed/scene-7.png [temp]')
+    expect(load3d.captureScene).toHaveBeenCalledTimes(3)
+    expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(true)
+    expect(useLoad3dModule.getLoad3dOutputCache(node)).toBeUndefined()
+  })
+
   it('returns null when no load3d instance is registered for the node', async () => {
     const widgets: FakeWidget[] = [
       { name: 'model_file', value: 'm.glb' },

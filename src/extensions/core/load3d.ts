@@ -41,6 +41,10 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
+
+/** Extra captures allowed when the scene changes mid-capture. */
+const MAX_STALE_CAPTURE_RETRIES = 2
+
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
@@ -425,7 +429,7 @@ useExtensionService().registerExtension({
             return null
           }
 
-          for (;;) {
+          for (let attempt = 0; ; attempt++) {
             if (!isLoad3dSceneDirty(node)) {
               const cached = getLoad3dOutputCache(node)
               if (cached) return cached
@@ -477,9 +481,16 @@ useExtensionService().registerExtension({
               returnVal.recording = `threed/${recording.name} [temp]`
             }
 
-            if (!setLoad3dOutputCache(node, returnVal, sceneRevision)) continue
+            if (setLoad3dOutputCache(node, returnVal, sceneRevision)) {
+              return returnVal
+            }
 
-            return returnVal
+            // The scene moved while we captured. Retry a bounded number of
+            // times; a capture that raced a change is still a real capture
+            // of a recent scene, and queueing must never stall on a
+            // revision that keeps moving. The node stays dirty so the next
+            // queue re-captures.
+            if (attempt >= MAX_STALE_CAPTURE_RETRIES) return returnVal
           }
         }
       }
