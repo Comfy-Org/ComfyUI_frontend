@@ -188,6 +188,12 @@ function isSlotRecord(
   )
 }
 
+function hasSafeSlots(value: unknown): boolean {
+  return (
+    value === undefined || (Array.isArray(value) && value.every(isSlotRecord))
+  )
+}
+
 /**
  * A supplied input slot whose record has no `link` key carries no link
  * information (as opposed to `link: null`, which means unlinked). Such slots
@@ -437,6 +443,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return 'addNode requires a payload id and type'
           }
+          if (
+            !hasSafeSlots(mutation.payload.inputs) ||
+            !hasSafeSlots(mutation.payload.outputs)
+          ) {
+            return `node ${mutation.payload.id} has malformed slots`
+          }
           const node = prepareNode(
             mutation.payload,
             scope,
@@ -472,6 +484,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const key = nodeKey(toNodeId(mutation.payload.id))
           const existing = nodes.get(key)
+          if (
+            (!existing || existing.type !== mutation.payload.type) &&
+            (!hasSafeSlots(mutation.payload.inputs) ||
+              !hasSafeSlots(mutation.payload.outputs))
+          ) {
+            return `node ${key} has malformed slots`
+          }
           const node = prepareNode(mutation.payload, scope, existing)
           if (!existing || existing.type !== node.state.type) {
             const validationError = validateNodeUpsert(node, key)

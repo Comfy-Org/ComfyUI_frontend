@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 import {
@@ -289,6 +289,26 @@ describe('contextMenuConverter', () => {
   })
 
   describe('convertContextMenuToOptions', () => {
+    it('captures a dynamic submenu without leaving a context menu mounted', () => {
+      const before = document.querySelectorAll('.litecontextmenu').length
+      const result = convertContextMenuToOptions(
+        [
+          {
+            content: 'Dynamic',
+            has_submenu: true,
+            callback: (_value, _options, event) => {
+              new LiteGraph.ContextMenu([{ content: 'Child' }], { event })
+            }
+          }
+        ],
+        undefined,
+        false
+      )
+
+      expect(result[0].submenu?.[0].label).toBe('Child')
+      expect(document.querySelectorAll('.litecontextmenu')).toHaveLength(before)
+    })
+
     it('should convert empty array to empty result', () => {
       const result = convertContextMenuToOptions([])
       expect(result).toEqual([])

@@ -200,7 +200,7 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         type: n.type,
         mode: n.mode,
         collapsed: !!n.flags.collapsed,
-        widgets: n.widgets.length,
+        widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
