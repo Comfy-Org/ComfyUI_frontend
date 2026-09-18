@@ -1,10 +1,13 @@
+import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, ref } from 'vue'
+import { computed, createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -257,13 +260,8 @@ describe('sortPendingInvites', () => {
 const mockToastAdd = vi.fn()
 const mockResendInvite =
   vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
-const mockShowRemoveMemberDialog = vi.fn()
-const mockShowRevokeInviteDialog = vi.fn()
-const mockShowChangeMemberRoleDialog = vi.fn()
-const mockShowSetMemberCreditLimitDialog = vi.fn()
+
 const mockShowSubscriptionDialog = vi.fn()
-const mockShowInviteMemberDialog = vi.fn()
-const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
   mockMaxSeats,
@@ -410,13 +408,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userPhotoUrl: ref(null),
-    userEmail: ref('owner@example.com'),
-    userDisplayName: ref('Owner User')
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -453,34 +445,17 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showRemoveMemberDialog: mockShowRemoveMemberDialog,
-    showRevokeInviteDialog: mockShowRevokeInviteDialog,
-    showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
-    showSetMemberCreditLimitDialog: mockShowSetMemberCreditLimitDialog,
-    showInviteMemberDialog: mockShowInviteMemberDialog,
-    showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
-const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return mockBillingControlEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
   const apps: App<Element>[] = []
   let pinia: Pinia
 
   beforeEach(() => {
+    useCurrentUser().userPhotoUrl = computed(() => null)
+    useCurrentUser().userEmail = computed(() => 'owner@example.com')
+    useCurrentUser().userDisplayName = computed(() => 'Owner User')
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
@@ -490,7 +465,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    mockBillingControlEnabled.value = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -731,7 +706,9 @@ describe('useMembersPanel', () => {
     it('calls showRevokeInviteDialog', async () => {
       const panel = await setup()
       panel.handleRevokeInvite(createInvite({ id: 'inv-42' }))
-      expect(mockShowRevokeInviteDialog).toHaveBeenCalledWith('inv-42')
+      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+        'inv-42'
+      )
     })
   })
 
@@ -739,7 +716,9 @@ describe('useMembersPanel', () => {
     it('calls showRemoveMemberDialog', async () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
-      expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-7')
+      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+        'mem-7'
+      )
     })
   })
 
@@ -750,7 +729,9 @@ describe('useMembersPanel', () => {
         createMember({ id: 'mem-7', name: 'Jane', role: 'member' }),
         'owner'
       )
-      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith({
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).toHaveBeenCalledWith({
         memberId: 'mem-7',
         memberName: 'Jane',
         targetRole: 'owner'
@@ -763,7 +744,9 @@ describe('useMembersPanel', () => {
         createMember({ id: 'own-2', name: 'Jane', role: 'owner' }),
         'member'
       )
-      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith({
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).toHaveBeenCalledWith({
         memberId: 'own-2',
         memberName: 'Jane',
         targetRole: 'member'
@@ -773,7 +756,9 @@ describe('useMembersPanel', () => {
     it('is a no-op when the member already has the target role', async () => {
       const panel = await setup()
       panel.handleChangeRole(createMember({ role: 'member' }), 'member')
-      expect(mockShowChangeMemberRoleDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -818,7 +803,9 @@ describe('useMembersPanel', () => {
         item: ownerItem
       })
 
-      expect(mockShowChangeMemberRoleDialog).toHaveBeenCalledWith(
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).toHaveBeenCalledWith(
         expect.objectContaining({ memberId: 'mem-9', targetRole: 'owner' })
       )
     })
@@ -833,7 +820,9 @@ describe('useMembersPanel', () => {
         item: removeItem
       })
 
-      expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-9')
+      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+        'mem-9'
+      )
     })
 
     it('opens the credit-limit dialog with the member usage and cap', async () => {
@@ -851,7 +840,9 @@ describe('useMembersPanel', () => {
         item: limitItem
       })
 
-      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+      expect(
+        useDialogService().showSetMemberCreditLimitDialog
+      ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
         creditsUsed: 645,
@@ -869,7 +860,9 @@ describe('useMembersPanel', () => {
         item: limitItem
       })
 
-      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+      expect(
+        useDialogService().showSetMemberCreditLimitDialog
+      ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
         creditsUsed: undefined,
@@ -896,7 +889,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -908,7 +901,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       setOriginalOwner()
       const panel = await setup()
 
@@ -988,8 +981,10 @@ describe('useMembersPanel', () => {
     it('opens the invite dialog on an active team plan', async () => {
       const panel = await setup()
       panel.handleInviteMember()
-      expect(mockShowInviteMemberDialog).toHaveBeenCalled()
-      expect(mockShowInviteMemberUpsellDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(
+        useDialogService().showInviteMemberUpsellDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('opens the upsell dialog when not on a team plan', async () => {
@@ -997,8 +992,8 @@ describe('useMembersPanel', () => {
       mockMaxSeats.value = 1
       const panel = await setup()
       panel.handleInviteMember()
-      expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
-      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberUpsellDialog).toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
     it('disables the invite button at the backend member limit', async () => {
@@ -1009,7 +1004,7 @@ describe('useMembersPanel', () => {
         'workspacePanel.inviteLimitReached'
       )
       panel.handleInviteMember()
-      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
     it('keeps the invite button enabled below the member cap', async () => {
@@ -1052,7 +1047,7 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(true)
       expect(panel.permissions.value.canInviteMembers).toBe(false)
       panel.handleInviteMember()
-      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
     it('enables invite for a Team-plan owner over personal defaults', async () => {
@@ -1082,8 +1077,8 @@ describe('useMembersPanel', () => {
       panel.handleInviteMember()
 
       expect(mockResendInvite).not.toHaveBeenCalled()
-      expect(mockShowRevokeInviteDialog).not.toHaveBeenCalled()
-      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
     it('hides member management when the server denies seat changes', async () => {
@@ -1095,8 +1090,10 @@ describe('useMembersPanel', () => {
       panel.handleRemoveMember(member)
       panel.handleChangeRole(member, 'owner')
 
-      expect(mockShowRemoveMemberDialog).not.toHaveBeenCalled()
-      expect(mockShowChangeMemberRoleDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showChangeMemberRoleDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('keeps invite disabled while billing is initializing', async () => {
@@ -1104,8 +1101,10 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
-      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
-      expect(mockShowInviteMemberUpsellDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showInviteMemberUpsellDialog
+      ).not.toHaveBeenCalled()
     })
   })
 })

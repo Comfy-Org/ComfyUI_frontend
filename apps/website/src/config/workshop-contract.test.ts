@@ -8,8 +8,7 @@ import {
 import packedContracts from '../content/workshop-router-contracts.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import rawBindings from '../data/workshop-router-bindings.json'
-import { workshopModels } from './models-catalogue'
-import { routerContentBySlug } from './workshop-browse-content'
+import { workshopModels, routerContentBySlug } from './workshop-browse-content'
 import {
   formForContract,
   workshopContractRecordSchema,

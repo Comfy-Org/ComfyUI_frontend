@@ -13,7 +13,7 @@ const getGizmoConfig = (page: Page) =>
     return modelConfig?.gizmo
   }, toNodeId(1))
 
-test.describe('Load3D Gizmo Controls', () => {
+test.describe('Load3D Gizmo Controls', { tag: '@vue-nodes' }, () => {
   test(
     'Gizmo category appears in the controls menu',
     { tag: '@smoke' },

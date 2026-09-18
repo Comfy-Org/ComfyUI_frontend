@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as VueUse from '@vueuse/core'
+import { useRafFn } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -8,14 +8,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
-const rafCallbacks: Array<() => void> = []
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useRafFn: (cb: () => void) => {
-    rafCallbacks.push(cb)
-    return { pause: vi.fn(), resume: vi.fn() }
-  }
-}))
+type RafCallback = Parameters<typeof useRafFn>[0]
+
+const rafCallbacks: RafCallback[] = []
+vi.mock(import('@vueuse/core'), { spy: true })
 
 function createPanelEl() {
   const panel = document.createElement('div')
@@ -43,10 +39,19 @@ function dragRectangle(eDown: [number, number], eMove: [number, number]) {
       eMove: { safeOffsetX: eMove[0], safeOffsetY: eMove[1] }
     }
   })
-  rafCallbacks[rafCallbacks.length - 1]()
+  rafCallbacks[rafCallbacks.length - 1](
+    fromPartial({ delta: 0, timestamp: performance.now() })
+  )
 }
 
 describe('SelectionRectangle', () => {
+  beforeEach(() => {
+    vi.mocked(useRafFn).mockImplementation((cb) => {
+      rafCallbacks.push(cb)
+      return fromPartial({ pause: vi.fn(), resume: vi.fn() })
+    })
+  })
+
   afterEach(() => {
     rafCallbacks.length = 0
     useCanvasStore().canvas = null

@@ -291,4 +291,29 @@ describe('Agent workflow resolution', () => {
       { id: 'updated', name: 'Current' }
     ])
   })
+
+  it('rejects a stale binding that points a cloud id at a differently named saved tab', async () => {
+    const portrait = workflow('workflows/portrait.json', 'Portrait')
+    const { resolver, bindings, workflows } = setup(
+      [portrait],
+      [
+        { id: 'cloud-zimage', name: 'image_z_image_turbo' },
+        { id: 'cloud-portrait', name: 'Portrait' }
+      ]
+    )
+    bindings.bind('cloud-zimage', 'workflows/portrait.json')
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.cloudIdFor(portrait)).toBe('cloud-portrait')
+    expect(resolver.boundOrOpenWorkflowFor('cloud-zimage')).toBeNull()
+    expect(resolver.storedWorkflowFor('cloud-zimage')).toBeNull()
+    expect(resolver.openWorkflowFor('cloud-zimage')).toBeNull()
+    expect(resolver.boundOrOpenWorkflowFor('cloud-portrait')).toBe(
+      workflows.openWorkflows[0]
+    )
+    expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'cloud-portrait', name: 'Portrait' },
+      { id: 'cloud-zimage', name: 'image_z_image_turbo' }
+    ])
+  })
 })
