@@ -30,6 +30,7 @@ async function apiProxyHeaders(
       cwd: process.cwd(),
       env: {
         ...process.env,
+        VITE_REMOTE_DEV: 'false',
         DEV_SERVER_COMFYUI_URL: 'https://nightly.example.com/',
         DEV_SERVER_CF_ACCESS_CLIENT_ID: '',
         DEV_SERVER_CF_ACCESS_CLIENT_SECRET: '',
@@ -52,6 +53,7 @@ async function apiProxySecure(
       cwd: process.cwd(),
       env: {
         ...process.env,
+        VITE_REMOTE_DEV: 'false',
         DEV_SERVER_COMFYUI_URL: 'https://nightly.example.com/',
         DISTRIBUTION: 'cloud',
         DEV_SERVER_CF_ACCESS_CLIENT_ID: '',
