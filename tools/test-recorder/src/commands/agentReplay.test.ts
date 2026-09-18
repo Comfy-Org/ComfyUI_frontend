@@ -89,6 +89,23 @@ describe('specExists', () => {
       rmSync(root, { recursive: true, force: true })
     }
   })
+
+  it('checks an absolute spec against itself, not under the root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'agent-replay-spec-'))
+    try {
+      writeFileSync(join(root, 'a.spec.ts'), '')
+      expect(specExists(join(root, 'a.spec.ts'), '/nowhere')).toBe(true)
+      expect(specExists(join(root, 'b.spec.ts'), '/nowhere')).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a backslash path on no disk, the separator Windows writes', () => {
+    expect(
+      specExists('browser_tests\\tests\\agent\\gone.spec.ts', '/nowhere')
+    ).toBe(false)
+  })
 })
 
 describe('runAgentReplay', () => {

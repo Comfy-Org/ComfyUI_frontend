@@ -1,6 +1,6 @@
 import type { SpawnSyncOptions } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 
 import { confirm, isCancel, select } from '@clack/prompts'
 import type { ConfirmOptions, SelectOptions } from '@clack/prompts'
@@ -59,7 +59,8 @@ export function specExists(
   spec: string,
   root: string = process.cwd()
 ): boolean {
-  return !spec.includes('/') || existsSync(join(root, spec))
+  if (!spec.includes('/') && !spec.includes('\\')) return true
+  return existsSync(isAbsolute(spec) ? spec : join(root, spec))
 }
 
 export function agentReplayInvocation(
