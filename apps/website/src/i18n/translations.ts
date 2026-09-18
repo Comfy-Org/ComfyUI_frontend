@@ -8991,6 +8991,19 @@ Enterprise`
     en: 'Browse Models',
     'zh-CN': '浏览模型'
   },
+  'platform.router.migrate.title': {
+    en: 'Migrate to Comfy Router with your agent',
+    'zh-CN': '用你的智能体迁移到 Comfy Router'
+  },
+  'platform.router.migrate.subtitle': {
+    en: "Help me migrate this project's existing model integration to Comfy Router.",
+    'zh-CN': '帮我把这个项目现有的模型集成迁移到 Comfy Router。'
+  },
+  'platform.router.migrate.copyPrompt': {
+    en: 'COPY MIGRATION PROMPT',
+    'zh-CN': '复制迁移提示词'
+  },
+  'platform.router.migrate.copied': { en: 'COPIED', 'zh-CN': '已复制' },
   'platform.router.proof.caption': {
     en: 'The same models 3M+ ComfyUI users already use, now behind one API.',
     'zh-CN': '300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。'
