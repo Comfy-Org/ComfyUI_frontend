@@ -11,7 +11,7 @@
   "headRefOid": "__HEAD__",
   "baseRefName": "main",
   "mergeable": "MERGEABLE",
-  "mergeStateStatus": "QUEUED",
+  "mergeStateStatus": "BLOCKED",
   "reviewDecision": "APPROVED",
   "body": "Adds the pricing subheading the design team asked for.\n\n## Changes\n- pricing.astro: one new paragraph under the heading",
   "latestReviews": [

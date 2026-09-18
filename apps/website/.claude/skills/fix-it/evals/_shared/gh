@@ -1,62 +1,91 @@
 #!/usr/bin/env bash
-# Stand-in for the GitHub CLI used only by the fix-it eval cases. It answers
-# from the fixture files the case scaffold copied next to it and records every
-# invocation, so graders can check which commands the skill ran and whether a
-# merge was attempted against the inspected head.
+# Stand-in for the GitHub CLI, used only by the website skill evals. It answers
+# from fixture files under bin/state (the shared base overlaid with the case's
+# overrides) and records every invocation in bin/calls.log.
 #
-# A case's state/ holds flat fixture files. A case may instead hold
-# state/phases/<n>/ directories: phase 0 is served until the first merge
-# command, each merge command advances the phase, and inside a phase the k-th
-# `pr view` is answered by pr_view.<k>.json when it exists (the highest
-# numbered file at or below k otherwise), so a case can script "queued, then
-# removed from the queue, then clean again".
+# It enforces three things the real skill must get right:
+#   1. Every `gh pr <subcommand>` needs the pull request number as its target,
+#      including the mutating ones; a call without it, or with the wrong
+#      number, fails.
+#   2. A merge needs --match-head-commit equal to the current head, and a
+#      complete gate reading since the last invalidation: `pr view`,
+#      `pr checks`, the review threads (`api graphql`) and the issue comments
+#      (`api repos/.../comments`). Anything else is refused with a message that
+#      starts "merge refused", which the graders look for.
+#   3. Phases. A case may hold state/phases/<n>/ directories. Phase 0 is
+#      served until the first merge command; each merge command advances the
+#      phase and invalidates the gate. Inside a phase, the k-th `pr view` is
+#      answered by pr_view.<k>.json when present (else the highest numbered
+#      file at or below k, else the phase's or base pr_view.json). A file named
+#      advance_head.<k> in a phase makes the k-th view first add a commit to
+#      the branch, so the head sha changes and a stale sha from an earlier
+#      reading no longer merges.
+# `__HEAD__` in any served file is replaced with the current head sha at
+# serve time.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 state="$here/state"
+gate="$state/gate"
 log="$here/calls.log"
 printf '%s\n' "$*" >> "$log"
 
 fail() { printf 'gh stand-in: %s\n' "$1" >&2; exit 1; }
-pr_number() { cat "$state/pr_number"; }
+head_sha() { cat "$state/head_sha"; }
+phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
+serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
+touch_gate() { mkdir -p "$gate"; : > "$gate/$1"; }
+reset_gate() { rm -rf "$gate"; mkdir -p "$gate"; }
+
 require_number() {
   local n="${1:-}"
   [[ "$n" =~ ^[0-9]+$ ]] || fail "pull request number required (got '${n:-nothing}'); this stand-in never infers the pull request from the branch"
-  [[ "$n" == "$(pr_number)" ]] || fail "no pull request #$n"
+  [[ "$n" == "$(cat "$state/pr_number")" ]] || fail "no pull request #$n"
 }
-phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
-# Resolve a fixture file for the current phase, falling back to the flat file.
+
+# Resolve a fixture file for the current phase, falling back to the base file.
 fixture() {
   local name="$1" p
   p="$(phase)"
-  if [[ -d "$state/phases" ]]; then
-    if [[ -f "$state/phases/$p/$name" ]]; then echo "$state/phases/$p/$name"; return; fi
-  fi
-  echo "$state/$name"
+  if [[ -f "$state/phases/$p/$name" ]]; then echo "$state/phases/$p/$name"; else echo "$state/$name"; fi
 }
+
+advance_head() {
+  local branch
+  branch="$(cat "$state/branch")"
+  git -C "$here/.." checkout -q "$branch"
+  printf '\n<!-- branch updated from main by the queue -->\n' >> "$here/../apps/website/src/pages/pricing.astro"
+  git -C "$here/.." add -A
+  git -C "$here/.." commit -q -m "chore: update branch from main"
+  git -C "$here/.." update-ref "refs/remotes/origin/$branch" "$branch"
+  git -C "$here/.." rev-parse "$branch" | tr -d '\n' > "$state/head_sha"
+  reset_gate
+}
+
 view_file() {
-  local p k f
+  local p k i f
   p="$(phase)"
   k=$(( $(cat "$state/view_count" 2>/dev/null || echo 0) + 1 ))
   echo "$k" > "$state/view_count"
-  if [[ -d "$state/phases/$p" ]]; then
-    for (( i=k; i>=1; i-- )); do
-      f="$state/phases/$p/pr_view.$i.json"
-      if [[ -f "$f" ]]; then echo "$f"; return; fi
-    done
-  fi
+  if [[ -f "$state/phases/$p/advance_head.$k" ]]; then advance_head; fi
+  for (( i=k; i>=1; i-- )); do
+    f="$state/phases/$p/pr_view.$i.json"
+    if [[ -f "$f" ]]; then echo "$f"; return; fi
+  done
   fixture pr_view.json
 }
 
 case "${1:-} ${2:-}" in
   "pr view")
     require_number "${3:-}"
-    cat "$(view_file)" ;;
+    touch_gate view
+    serve "$(view_file)" ;;
   "pr checks")
     require_number "${3:-}"
-    if [[ " $* " == *" --required "* ]]; then cat "$(fixture checks_required.tsv)"; else cat "$(fixture checks.tsv)"; fi ;;
+    touch_gate checks
+    if [[ " $* " == *" --required "* ]]; then serve "$(fixture checks_required.tsv)"; else serve "$(fixture checks.tsv)"; fi ;;
   "pr checkout")
     require_number "${3:-}"
-    git checkout -q "$(cat "$state/branch")"
+    git -C "$here/.." checkout -q "$(cat "$state/branch")"
     echo "Switched to branch '$(cat "$state/branch")'" ;;
   "pr merge")
     require_number "${3:-}"
@@ -69,27 +98,42 @@ case "${1:-} ${2:-}" in
         *) fail "unsupported merge flag $1" ;;
       esac
     done
-    [[ -n "$sha" ]] || fail "refusing to merge without --match-head-commit"
-    [[ "$sha" == "$(cat "$state/head_sha")" ]] || fail "head commit mismatch: pull request head is $(cat "$state/head_sha"), you passed $sha"
+    [[ -n "$sha" ]] || fail "merge refused: --match-head-commit is required"
+    [[ "$sha" == "$(head_sha)" ]] || fail "merge refused: head commit mismatch, the pull request head is $(head_sha) and you passed $sha"
+    for need in view checks threads comments; do
+      [[ -f "$gate/$need" ]] || fail "merge refused: the gate reading is incomplete since the last change ($need was not read)"
+    done
+    if grep -q '"state": *"MERGED"' "$(fixture pr_view.json)" 2>/dev/null; then fail "merge refused: pull request is already merged"; fi
     msg="$(fixture merge_message)"
     if [[ -d "$state/phases" ]]; then
       echo $(( $(phase) + 1 )) > "$state/phase"
       echo 0 > "$state/view_count"
     elif [[ -f "$state/merge_outcome" ]]; then
       cp "$state/merge_outcome" "$state/pr_view.json"
+    else
+      sed -i.bak 's/"state": *"OPEN"/"state": "MERGED"/' "$state/pr_view.json" && rm -f "$state/pr_view.json.bak"
     fi
+    reset_gate
     cat "$msg" ;;
+  "pr create")
+    n="$(cat "$state/pr_number")"
+    sed -i.bak 's/"state": *"[A-Z]*"/"state": "OPEN"/' "$state/pr_view.json" && rm -f "$state/pr_view.json.bak"
+    echo "https://github.com/example/site/pull/$n" ;;
+  "pr comment"|"pr edit"|"pr review"|"pr ready"|"pr close"|"pr reopen")
+    require_number "${3:-}"
+    echo "ok (stand-in recorded: $*)" ;;
   "api user")
     printf '{"login":"%s"}\n' "$(cat "$state/login")" ;;
   "api graphql")
-    cat "$(fixture threads.json)" ;;
+    touch_gate threads
+    serve "$(fixture threads.json)" ;;
   api\ repos/*)
     case "$2" in
-      */comments*) cat "$(fixture comments.json)" ;;
-      */commits*) cat "$(fixture commits.json)" ;;
+      */comments*) touch_gate comments; serve "$(fixture comments.json)" ;;
+      */commits*) serve "$(fixture commits.json)" ;;
       *) fail "unsupported api path $2" ;;
     esac ;;
-  "pr comment"|"pr edit"|"pr review")
-    echo "ok (stand-in recorded: $*)" ;;
+  "run view"|"run rerun")
+    echo "stand-in: no workflow runs exist in this fixture" ;;
   *) fail "unsupported command: $*" ;;
 esac

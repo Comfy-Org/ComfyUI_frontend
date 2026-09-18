@@ -42,10 +42,7 @@ it.
   its files by name and stays inside them. They share the one dev server.
   Anything that touches `translations.ts`, `routes.ts`, `llms.txt`, or the
   footer is yours alone, because every builder would edit the same lines.
-- Investigators, once a pull request exists: one per failing check and one per
-  group of related review comments, all at once. Each reads the log or thread
-  and `git-workflow.md`, and returns the cause and a proposed change without
-  editing. You apply the changes together and push once.
+- Investigators, once a pull request exists, as `review-loop.md` describes.
 
 What a subagent reports is a claim, the same as a review comment. Before you
 act on a "no", look at the screenshot it cites; before you tell anyone a line

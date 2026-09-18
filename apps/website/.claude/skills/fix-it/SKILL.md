@@ -52,10 +52,8 @@ and carry on without waiting.
 
 ## Clear the blockers
 
-Run the loop in `review-loop.md`, with the investigators the `task` skill's
-team section describes (one per failing check and per group of related
-comments, read-only, then one push per round). Three rules are specific to a
-pull request that is not yours:
+Run the loop in `review-loop.md`, investigators and all, with one push per
+round. Three rules are specific to a pull request that is not yours:
 
 - Changes you make stay inside what the pull request already set out to do. A
   reviewer's request that would widen it becomes a note for a follow-up, said
