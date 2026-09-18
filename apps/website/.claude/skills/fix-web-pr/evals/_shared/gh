@@ -134,7 +134,22 @@ check_thread_timing() {
     else
       fail "merge refused: thread by $author has an unanswered last comment by $by"
     fi
-  done < <(jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | [.threadAuthor, .lastCommentBy, .lastCommentAt] | @tsv' "$(fixture threads.json)")
+  done < <(jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | [.comments.nodes[0].author.login, .comments.nodes[-1].author.login, .comments.nodes[-1].createdAt] | @tsv' "$(fixture threads.json)")
+}
+
+# The one threads query the skill prescribes, compared with all whitespace
+# removed. Anything else is not a threads read.
+# shellcheck disable=SC2016
+CANONICAL_THREADS_QUERY='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){pageInfo{hasNextPage endCursor}nodes{id isResolved path comments(first:100){nodes{author{login}createdAt}}}}}}}'
+squash() { tr -d ' \n\t' <<<"$1"; }
+# Every $variable the query declares must have a -f/-F binding (endCursor is
+# bound by --paginate itself).
+require_bindings() {
+  local q="$1" v
+  for v in $(grep -oE '\$[A-Za-z_][A-Za-z0-9_]*:' <<<"$q" | tr -d '$:' | sort -u); do
+    [[ "$v" == endCursor ]] && continue
+    [[ -n "$(field "$v")" ]] || fail "graphql: variable \$$v is declared but not bound with -f/-F $v=..."
+  done
 }
 
 # Parse `gh api` options: -f/-F fields, --paginate, and the path or "graphql".
@@ -158,18 +173,22 @@ graphql() {
   query="$(field query)"
   [[ -n "$query" ]] || fail "graphql: query missing (-f query=...)"
   if grep -q 'addPullRequestReviewThreadReply' <<<"$query"; then
-    thread_id="$(field threadId)"; [[ -n "$thread_id" ]] || thread_id="$(field pullRequestReviewThreadId)"
-    body="$(field body)"
+    require_bindings "$query"
+    grep -qE 'pullRequestReviewThreadId: *[$]threadId' <<<"$query" || fail "reply mutation must pass pullRequestReviewThreadId:\$threadId"
+    grep -qE 'body: *[$]body' <<<"$query" || fail "reply mutation must pass body:\$body"
+    thread_id="$(field threadId)"; body="$(field body)"
     [[ -n "$thread_id" && -n "$body" ]] || fail "reply mutation needs -F threadId=<id> and -f body=<text>"
     jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
     jq --arg t "$thread_id" --arg me "$(login)" --arg at "2026-09-17T21:00:00Z" \
-      '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)) |= (.lastCommentBy = $me | .lastCommentAt = $at)' \
+      '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)).comments.nodes += [{"author":{"login":$me},"createdAt":$at}]' \
       "$(fixture threads.json)" > "$state/threads.live.json.tmp" && mv "$state/threads.live.json.tmp" "$state/threads.live.json"
     reset_gate
     printf '{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"C-%s"}}}}\n' "$thread_id"
     return
   fi
   if grep -q 'resolveReviewThread' <<<"$query"; then
+    require_bindings "$query"
+    grep -qE 'threadId: *[$]threadId' <<<"$query" || fail "resolve mutation must pass threadId:\$threadId"
     thread_id="$(field threadId)"
     jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
     jq --arg t "$thread_id" '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)) |= (.isResolved = true)' \
@@ -178,10 +197,10 @@ graphql() {
     printf '{"data":{"resolveReviewThread":{"thread":{"isResolved":true}}}}\n'
     return
   fi
-  # Canonical thread read: variables owner, name, number; selects reviewThreads.
-  grep -qE 'repository\(owner: *[$]owner, *name: *[$]name\)' <<<"$query" || fail "threads query must use repository(owner: \$owner, name: \$name)"
-  grep -qE 'pullRequest\(number: *[$]number\)' <<<"$query" || fail "threads query must use pullRequest(number: \$number)"
-  grep -q 'reviewThreads' <<<"$query" || fail "threads query must select reviewThreads"
+  # Canonical thread read: the exact prescribed query, paginated.
+  [[ "$(squash "$query")" == "$(squash "$CANONICAL_THREADS_QUERY")" ]] || fail "threads query is not the canonical query review-loop.md prescribes"
+  [[ "$api_paginate" == 1 ]] || fail "threads query must be run with --paginate"
+  require_bindings "$query"
   owner_v="$(field owner)"; name_v="$(field name)"; number_v="$(field number)"
   [[ "$owner_v" == "$(owner)" && "$name_v" == "$(repo_name)" ]] || fail "threads query targets ${owner_v:-?}/${name_v:-?}, not $(owner)/$(repo_name)"
   [[ "$number_v" == "$(pr_number)" ]] || fail "threads query resolves pullRequest(number: ${number_v:-?}), not #$(pr_number)"
@@ -193,9 +212,9 @@ rest() {
   local path="${api_path%%\?*}" prefix
   prefix="repos/$(owner)/$(repo_name)"
   case "$path" in
-    "$prefix/issues/$(pr_number)/comments") touch_gate comments; serve "$(fixture comments.json)" ;;
+    "$prefix/issues/$(pr_number)/comments") touch_gate comments; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
     "$prefix/issues/$(pr_number)/timeline")
-      if [[ "$api_paginate" == 1 ]]; then serve "$(fixture timeline.json)"; else jq --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture timeline.json)"; fi ;;
+      if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture timeline.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture timeline.json)"; fi ;;
     "$prefix/pulls/$(pr_number)/commits") serve "$(fixture commits.json)" ;;
     "$prefix/pulls/$(pr_number)/reviews") render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | jq '.latestReviews' ;;
     user) printf '{"login":"%s"}\n' "$(login)" ;;
@@ -270,9 +289,12 @@ case "${1:-} ${2:-}" in
     printf '%s' "$current" > "$state/created_pr_branch"
     printf 'TITLE=%s\nBRANCH=%s\n' "$title" "$current" > "$state/view.env"
     rm -f "$state/merged.env"
+    hooks_dir="$(git -C "$repo" rev-parse --git-path hooks)"
+    [[ "$hooks_dir" = /* ]] || hooks_dir="$repo/$hooks_dir"
+    mkdir -p "$hooks_dir"
     for hook in post-commit post-rewrite post-checkout post-merge; do
-      printf '#!/usr/bin/env bash\nexec "%s/snapshot-pr.sh"\n' "$here" > "$repo/.git/hooks/$hook"
-      chmod +x "$repo/.git/hooks/$hook"
+      printf '#!/usr/bin/env bash\nexec "%s/snapshot-pr.sh"\n' "$here" > "$hooks_dir/$hook"
+      chmod +x "$hooks_dir/$hook"
     done
     "$here/snapshot-pr.sh"
     echo "https://github.com/$(owner)/$(repo_name)/pull/$(pr_number)" ;;

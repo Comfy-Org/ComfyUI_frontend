@@ -20,6 +20,7 @@ git config user.email eval@example.com
 git config user.name "Eval Fixture"
 git config commit.gpgsign false
 git config tag.gpgsign false
+git config core.hooksPath .git/hooks
 
 mkdir -p apps/website/.claude/skills apps/website/src/pages apps/website/src/config
 cp -R "$skills/build-web-pr" apps/website/.claude/skills/build-web-pr

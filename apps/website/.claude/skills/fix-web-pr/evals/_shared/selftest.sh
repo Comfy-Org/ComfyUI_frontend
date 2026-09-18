@@ -24,10 +24,21 @@ read_view() {
     "$(printf '%s' "$json" | grep -o '"mergeStateStatus": *"[A-Z]*"' | grep -o '[A-Z]*"$' | tr -d '"')"
 }
 # shellcheck disable=SC2016
-Q='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:50){nodes{id isResolved}}}}}'
-threads_read() { ./bin/gh api graphql -F owner="$1" -F name="$2" -F number="$3" -f query="${4:-$Q}"; }
+Q='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
+  repository(owner:$owner,name:$name){ pullRequest(number:$number){
+    reviewThreads(first:100,after:$endCursor){
+      pageInfo{ hasNextPage endCursor }
+      nodes{ id isResolved path
+        comments(first:100){ nodes{ author{login} createdAt } } } } } } }'
+# shellcheck disable=SC2016
+REPLY_Q='mutation($threadId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){comment{id}}}'
+# shellcheck disable=SC2016
+RESOLVE_Q='mutation($threadId:ID!){resolveReviewThread(input:{threadId:$threadId}){thread{isResolved}}}'
+threads_read() { ./bin/gh api graphql --paginate -F owner="$1" -F name="$2" -F number="$3" -f query="${4:-$Q}"; }
+# thread <author> <lastCommentBy> <lastCommentAt>: one unresolved thread T1 in GitHub's shape
+thread() { jq -n --arg a "$1" --arg b "$2" --arg t "$3" '{data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:false,endCursor:null},nodes:[{id:"T1",isResolved:false,path:"apps/website/src/pages/pricing.astro",comments:{nodes:([{author:{login:$a},createdAt:"2026-09-17T17:00:00Z"}] + (if $b == $a then [] else [{author:{login:$b},createdAt:$t}] end))}}]}}}}}' > bin/state/threads.json; if [[ "$2" == "$1" ]]; then jq --arg t "$3" '.data.repository.pullRequest.reviewThreads.nodes[0].comments.nodes[0].createdAt = $t' bin/state/threads.json > bin/state/t.tmp && mv bin/state/t.tmp bin/state/threads.json; fi; }
 read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api repos/example/site/issues/4242/comments >/dev/null; }
-reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -o '"reason": "[^"]*"' | sort -u | wc -l | tr -d ' '; }
+reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.reason) | unique | length'; }
 full_gate() { read_view >/dev/null; read_rest; }
 
 echo "target guard"
@@ -59,6 +70,9 @@ expect_fail threads_read example site 9999
 expect_fail threads_read wrong wrong 4242
 # shellcheck disable=SC2016
 expect_fail threads_read example site 4242 'query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){title}}}'
+# shellcheck disable=SC2016
+expect_fail threads_read example site 4242 'query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){title}}} # reviewThreads'
+expect_fail ./bin/gh api graphql -F owner=example -F name=site -F number=4242 -f query="$Q"
 expect_fail ./bin/gh api graphql -F number=4242 -f query='query{repository(owner:"example",name:"site"){pullRequest(number:4242){reviewThreads}}}'
 expect_fail ./bin/gh api repos/example/site/issues/9999/comments
 expect_fail ./bin/gh api repos/wrong/repo/issues/4242/comments
@@ -100,7 +114,6 @@ build merges-on-fresh-head
 full_gate
 expect_ok ./bin/gh pr comment 4242 --body "answered"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
-thread() { printf '{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[{"id":"T1","threadAuthor":"%s","lastCommentBy":"%s","lastCommentAt":"%s","isResolved":false}]}}}}}\n' "$1" "$2" "$3" > bin/state/threads.json; }
 build merges-on-fresh-head
 thread website-reviewer dana-comfy 2026-09-17T19:00:00Z
 full_gate
@@ -135,14 +148,27 @@ thread website-reviewer website-reviewer 2026-09-17T19:00:00Z
 printf 'REVIEW_AT=2026-09-17T20:30:00Z\n' > bin/state/view.env
 full_gate
 # shellcheck disable=SC2016
-REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$t,body:$b}){comment{id}}}'
+OLD_REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$t,body:$b}){comment{id}}}'
+expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OLD_REPLY_Q"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
 expect_ok ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$REPLY_Q"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
-if threads_read example site 4242 | grep -q '"lastCommentBy": "dana-comfy"'; then ok "reply recorded on the thread"; else bad "reply not recorded"; fi
+if threads_read example site 4242 | jq -e '.data.repository.pullRequest.reviewThreads.nodes[0].comments.nodes[-1].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 printf 'REVIEW_AT=2026-09-17T22:00:00Z\n' > bin/state/view.env
+full_gate
+expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+
+echo "resolving a thread is bound to its id and invalidates the gate"
+build merges-on-fresh-head
+thread website-reviewer someone-else 2026-09-17T19:00:00Z
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+expect_fail ./bin/gh api graphql -F threadId=NOPE -f query="$RESOLVE_Q"
+expect_ok ./bin/gh api graphql -F threadId=T1 -f query="$RESOLVE_Q"
+if threads_read example site 4242 | jq -e '.data.repository.pullRequest.reviewThreads.nodes[0].isResolved == true' >/dev/null; then ok "thread served as resolved"; else bad "thread not resolved"; fi
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 full_gate
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
@@ -188,7 +214,7 @@ expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
 assert_eq "view 1" "$(read_view)" "OPEN QUEUED"
 assert_eq "view 2" "$(read_view)" "OPEN BLOCKED"
 if [[ "$(head_now)" != "$old" ]]; then ok "head moved on removal"; else bad "head did not move"; fi
-if ./bin/gh api repos/example/site/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
+if ./bin/gh api --paginate repos/example/site/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
 if ./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -q "removed_from_merge_queue"; then ok "removal event in timeline"; else bad "no timeline event"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
 ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null
@@ -206,12 +232,16 @@ for round in 1 2 3; do
 done
 read_rest
 assert_eq "after three removals" "$(read_view)" "OPEN CLEAN"
-n="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -c '"event": "removed_from_merge_queue"')"
+n="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(select(.event == "removed_from_merge_queue")) | length')"
 assert_eq "distinct removal events" "$n" "3"
-ids="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -o '"id": [0-9]*' | sort -u | wc -l | tr -d ' ')"
+ids="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.id) | unique | length')"
 assert_eq "distinct event ids" "$ids" "3"
-unpaged="$(./bin/gh api repos/example/site/issues/4242/timeline | grep -c '"event": "removed_from_merge_queue"')"
+unpaged="$(./bin/gh api repos/example/site/issues/4242/timeline | jq -c '.[]' | grep -c removed_from_merge_queue)"
 assert_eq "without --paginate the third removal is missing" "$unpaged" "2"
+pages="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | wc -l | tr -d ' ')"
+assert_eq "paginated output is one document per page" "$pages" "2"
+composed="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.id)' -c)"
+assert_eq "pages compose to the three events in order" "$composed" "[7001,7002,7003]"
 assert_eq "one removal reason across the three" "$(reasons)" "1"
 awk '/"id": 7003/{f=1} f && /"reason"/{sub(/timed out on shard 3 of 4/,"failed on a merge conflict"); f=0} {print}' bin/state/phases/3/timeline.json > bin/state/tl.tmp && mv bin/state/tl.tmp bin/state/phases/3/timeline.json
 assert_eq "changed-reason falsifier is detected" "$(reasons)" "2"

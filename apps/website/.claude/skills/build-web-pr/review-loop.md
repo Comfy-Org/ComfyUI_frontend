@@ -13,19 +13,28 @@ head, then read four things fresh with `gh`, always passing the pull request
 number: the check results (`gh pr checks <number>`), the review decision and
 merge state (`gh pr view <number> --json reviewDecision,mergeStateStatus`),
 the review threads with their resolved state, and the issue comments. Read
-the threads with this exact query, passing the repository and number as
-variables so the read is bound to the pull request you were given:
+the threads with this exact query and nothing else, passing the repository
+and number as variables so the read is bound to the pull request you were
+given, and `--paginate` so a thread past the first page is not missed (gh
+walks `endCursor` for you and prints one JSON document per page):
 
 ```bash
-gh api graphql -F owner=<owner> -F name=<repo> -F number=<number> -f query='
-query($owner:String!,$name:String!,$number:Int!){
+gh api graphql --paginate -F owner=<owner> -F name=<repo> -F number=<number> -f query='
+query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
   repository(owner:$owner,name:$name){ pullRequest(number:$number){
-    reviewThreads(first:100){ nodes{ id isResolved path
-      comments(last:1){ nodes{ author{login} createdAt } } } } } } }'
+    reviewThreads(first:100,after:$endCursor){
+      pageInfo{ hasNextPage endCursor }
+      nodes{ id isResolved path
+        comments(first:100){ nodes{ author{login} createdAt } } } } } } }'
 ```
 
-Reply in a thread with `addPullRequestReviewThreadReply` and resolve one
-with `resolveReviewThread`, both by the thread's `id` from that query. Never
+A thread's author is the author of its first comment; its last comment is
+the last node. Reply in a thread with
+`addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body})`
+and resolve one with `resolveReviewThread(input:{threadId:$threadId})`,
+declaring `$threadId:ID!` (and `$body:String!`) in the mutation and passing
+them as `-F threadId=<id>` and `-f body=<text>`. Read issue comments with
+`gh api --paginate repos/<owner>/<repo>/issues/<number>/comments`. Never
 reason from an earlier round's reading; a round that starts while checks are
 pending tells you nothing.
 

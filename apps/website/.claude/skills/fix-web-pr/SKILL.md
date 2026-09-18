@@ -144,10 +144,13 @@ You see this as the state back at `OPEN` with `mergeStateStatus` no longer
 `QUEUED`. Each removal is one `removed_from_merge_queue` timeline event with
 its own id, so count removals by distinct event id, never by how many times
 you have fetched the same comment. For the reason, read whatever reason
-fields that event carries. When it carries none, use the first issue comment
-by the login `github-merge-queue[bot]` created after the event and within
-ten minutes of it, and only that one; when there is no such comment, record
-the reason as unknown, and treat two unknowns as the same reason. Say in the
+fields that event carries. When it carries none, read all issue comments
+(`gh api --paginate .../issues/<number>/comments`), walk the removal events
+in time order, and give each event the earliest not-yet-used comment by the
+login `github-merge-queue[bot]` created after that event and within ten
+minutes of it; a comment serves one event only. When no such comment is
+left, record the reason as unknown, and treat two unknowns as the same
+reason. Say in the
 hand-off which of the three sources you used. When that happens, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the

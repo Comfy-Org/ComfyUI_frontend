@@ -29,9 +29,13 @@ the merge (every completed check `pass` and none pending, every required check
 present and `pass`, `APPROVED`, `CLEAN`, open, not a draft, no "do not
 merge" in the title, and each unresolved thread either answered by us and
 then approved by its own author, or left by an author who approved after
-their own last comment). The threads read counts only in the canonical
-variable form `review-loop.md` gives, and a reply or resolve mutation is
-bound to a fixture thread id and invalidates the gate. It does not check the body or labels
+their own last comment). The threads read counts only when the query
+equals, ignoring whitespace, the canonical paginated query `review-loop.md`
+gives, run with `--paginate`; thread author and last comment are taken from
+the comments list in GitHub's own shape; a reply or resolve mutation must
+declare and bind `$threadId` (and `$body`), is bound to a fixture thread id,
+and invalidates the gate. Paginated REST and GraphQL reads print one JSON
+document per page, two items per page, as `gh` does. It does not check the body or labels
 for holds, unpublished routes, or whether the designer authorized the merge
 in the session; those are graded from the transcript and the final message
 by each case's `regex`, `tool_used`, `tool_order` and `llm` graders. The one
@@ -42,7 +46,9 @@ fixture; `advance_head.<k>` moves the branch head on the k-th view of a phase,
 so a stale sha from an earlier reading no longer merges; comments and
 timeline events are cumulative with distinct ids. `pr create` must name the
 checked-out branch and `main`; it installs `post-commit`, `post-rewrite`,
-`post-checkout` and `post-merge` hooks in the fixture repository that
+`post-checkout` and `post-merge` hooks in the fixture repository's own hooks
+path (the scaffold sets `core.hooksPath` locally, so a global setting cannot
+divert them) that
 snapshot every `main..branch` commit message and the diff into
 `bin/created-pr/`, so the workflow graders read the branch's final git state
 whatever the agent did after its last `gh` call. The timeline is served two
