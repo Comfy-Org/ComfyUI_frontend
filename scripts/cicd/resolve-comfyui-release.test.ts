@@ -7,7 +7,8 @@ import {
   computeTargetVersion,
   isValidSemver,
   parseRequirementsVersion,
-  parseTargetBranchOverride
+  parseTargetBranchOverride,
+  resolveTargetVersion
 } from './resolve-comfyui-release'
 
 describe('parseRequirementsVersion', () => {
@@ -117,4 +118,89 @@ describe('computeTargetVersion', () => {
   it('returns null for a malformed tag', () => {
     expect(computeTargetVersion(1, 47, 'v1.47', true)).toBeNull()
   })
+})
+
+describe('resolveTargetVersion', () => {
+  const line = { targetMajor: 1, targetMinor: 48 }
+
+  it('bumps from the branch version, not the newest tag', () => {
+    // core/1.48 on 2026-08-10: package.json 1.48.8, newest tag v1.48.7.
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: 'v1.48.7',
+        hasPendingCommits: true,
+        branchVersion: '1.48.8'
+      })
+    ).toEqual({ targetVersion: '1.48.8', pendingBump: true })
+  })
+
+  it('bumps the patch when the branch is level with its tag', () => {
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: 'v1.48.7',
+        hasPendingCommits: true,
+        branchVersion: '1.48.7'
+      })
+    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+  })
+
+  it('keeps the tagged version when nothing is pending', () => {
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: 'v1.48.7',
+        hasPendingCommits: false,
+        branchVersion: '1.48.7'
+      })
+    ).toEqual({ targetVersion: '1.48.7', pendingBump: false })
+  })
+
+  it('treats an untagged line with a bumped package.json as pending', () => {
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: null,
+        hasPendingCommits: true,
+        branchVersion: '1.48.0'
+      })
+    ).toEqual({ targetVersion: '1.48.0', pendingBump: true })
+  })
+
+  it('falls back to the tag when the branch version is unreadable', () => {
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: 'v1.48.7',
+        hasPendingCommits: true,
+        branchVersion: null
+      })
+    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+  })
+
+  it('ignores a branch version behind its newest tag', () => {
+    expect(
+      resolveTargetVersion({
+        ...line,
+        latestPatchTag: 'v1.48.7',
+        hasPendingCommits: true,
+        branchVersion: '1.48.6'
+      })
+    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+  })
+
+  it.for([{ branchVersion: '1.49.0' }, { branchVersion: '2.0.0' }])(
+    'ignores branch version $branchVersion from another release line',
+    ({ branchVersion }) => {
+      expect(
+        resolveTargetVersion({
+          ...line,
+          latestPatchTag: 'v1.48.7',
+          hasPendingCommits: true,
+          branchVersion
+        })
+      ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+    }
+  )
 })
