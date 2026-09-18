@@ -120,39 +120,43 @@ class ManageTemplates extends ComfyDialog {
       const res = await api.getUserData(file)
       if (res.status === 404) {
         this.loadState = { status: 'loaded' }
-      } else {
-        if (res.status !== 200) {
-          throw new Error(
+      } else if (res.status !== 200) {
+        this.failLoad(
+          new Error(
             `Failed to load node templates: ${res.status} ${res.statusText}`
           )
-        }
-
+        )
+      } else {
         const templates: unknown = await res.json()
-        if (!isNodeTemplates(templates)) {
-          throw new Error(
-            'Failed to load node templates: invalid template data'
+        if (isNodeTemplates(templates)) {
+          this.templates = templates
+          this.loadState = { status: 'loaded' }
+        } else {
+          this.failLoad(
+            new Error('Failed to load node templates: invalid template data')
           )
         }
-
-        this.templates = templates
-        this.loadState = { status: 'loaded' }
       }
     } catch (error) {
-      this.loadState = { status: 'error' }
-      reportError(error, {
-        errorType: 'failure_loading_node_templates',
-        tags: {
-          failure_kind: 'caught_unexpected',
-          feature_area: 'extensions',
-          operation: 'load',
-          outcome: 'recovered'
-        },
-        level: 'error'
-      })
-      useToastStore().addAlert(t('nodeTemplates.loadFailed'))
+      this.failLoad(error)
     }
     this.updateActionButtons()
     if (this.element.style.display === 'flex') this.show()
+  }
+
+  failLoad(cause: unknown) {
+    this.loadState = { status: 'error' }
+    reportError(cause, {
+      errorType: 'failure_loading_node_templates',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'extensions',
+        operation: 'load',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    useToastStore().addAlert(t('nodeTemplates.loadFailed'))
   }
 
   canModifyTemplates(): boolean {
