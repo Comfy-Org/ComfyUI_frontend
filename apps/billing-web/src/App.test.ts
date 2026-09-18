@@ -21,11 +21,11 @@ describe('billing app', () => {
       }
     })
 
+    expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'Confirm your payment' })
+      screen.getByText(
+        'Open billing from your Comfy product to manage your plan, payment methods and invoices.'
+      )
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeDisabled()
   })
 })

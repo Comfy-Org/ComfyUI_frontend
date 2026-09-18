@@ -10,6 +10,7 @@ import dts from 'vite-plugin-dts'
  */
 const entries = {
   'billing/index': 'src/billing/index.ts',
+  'billing/stripe/index': 'src/billing/stripe/index.ts',
   'auth/PasswordRules': 'src/auth/PasswordRules.vue',
   'auth/SocialAuthButtons': 'src/auth/SocialAuthButtons.vue',
   'auth/TurnstileWidget': 'src/auth/TurnstileWidget.vue',
@@ -25,7 +26,7 @@ const entries = {
  * bundled copy of Vue would give the consumer two runtimes, and the injection
  * keys the billing composables share are identity-compared.
  */
-const EXTERNAL = [/^vue$/, /^@vueuse\//, /^@comfyorg\//]
+const EXTERNAL = [/^vue$/, /^@vueuse\//, /^@comfyorg\//, /^@stripe\//]
 
 const resolveEntry = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url))
