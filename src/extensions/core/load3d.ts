@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import {
-  type Load3dCachedOutput,
   getLoad3dOutputCache,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
@@ -11,6 +10,7 @@ import {
   setLoad3dOutputCache,
   useLoad3d
 } from '@/composables/useLoad3d'
+import type { Load3dCachedOutput } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -31,7 +31,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -66,7 +69,7 @@ const inputSpecPreview3D: CustomInputSpec = {
 }
 
 async function handleModelUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
     | IStringWidget
@@ -93,17 +96,17 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       )
     )
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        load3d.loadModel(modelUrl)
+        await load3d.loadModel(modelUrl)
       } catch (error) {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
     })
 
     if (uploadPath && modelWidget) {
-      if (!modelWidget.options?.values?.includes(uploadPath)) {
-        modelWidget.options?.values?.push(uploadPath)
+      if (!modelWidget.options.values?.includes(uploadPath)) {
+        modelWidget.options.values?.push(uploadPath)
       }
 
       modelWidget.value = uploadPath
@@ -117,7 +120,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 }
 
 async function handleResourcesUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -256,14 +259,13 @@ useExtensionService().registerExtension({
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
         const selectedNodes = app.canvas.selected_nodes
-        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+        if (Object.keys(selectedNodes).length !== 1) return
 
         const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
 
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
-        // @ts-expect-error clipspace_return_node is an extension property added at runtime
         ComfyApp.clipspace_return_node = selectedNode
 
         const props = { node: selectedNode }
@@ -277,7 +279,7 @@ useExtensionService().registerExtension({
             renderer: 'reka',
             size: 'full',
             contentClass:
-              'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+              'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
@@ -505,7 +507,7 @@ function applyPreview3DOutput(
       silentOnNotFound: true
     })
 
-    if (bgImagePath) load3d.setBackgroundImage(bgImagePath)
+    if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
     if (extrinsics && intrinsics) {
       const targetGeneration = load3d.currentLoadGeneration
@@ -656,9 +658,7 @@ useExtensionService().registerExtension({
 
           config.configure(settings)
 
-          if (bgImagePath) {
-            load3d.setBackgroundImage(bgImagePath)
-          }
+          if (bgImagePath) void load3d.setBackgroundImage(bgImagePath)
 
           if (filePath && extrinsics && intrinsics) {
             // configure(settings) above triggered loadModel for this
@@ -844,7 +844,8 @@ function createPreview3DAdvancedExtension(
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
-          cameraConfig.state = currentLoad3d.getCameraState()
+          const cameraState = currentLoad3d.getCameraState()
+          cameraConfig.state = cameraState
           node.properties['Camera Config'] = cameraConfig
 
           const modelInfo = currentLoad3d.getModelInfo()
@@ -854,7 +855,7 @@ function createPreview3DAdvancedExtension(
             image: '',
             mask: '',
             normal: '',
-            camera_info: cameraConfig.state || null,
+            camera_info: cameraState,
             recording: '',
             model_3d_info
           }

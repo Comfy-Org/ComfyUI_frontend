@@ -12,7 +12,7 @@ function hasV2DraftHistory(raw: string | null): boolean {
     const orderLength = Array.isArray(parsed.order) ? parsed.order.length : 0
     const entriesCount =
       parsed.entries && typeof parsed.entries === 'object'
-        ? Object.keys(parsed.entries as Record<string, unknown>).length
+        ? Object.keys(parsed.entries).length
         : 0
     return orderLength > 0 || entriesCount > 0
   } catch {

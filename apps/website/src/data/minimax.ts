@@ -240,9 +240,9 @@ export const minimaxPage = {
           'zh-CN': 'MiniMax H3 提供开源权重吗？'
         },
         answer: {
-          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud.',
+          en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud. To use what you make locally for commercial work, [get an H3 commercial license through Comfy](https://comfy.org/minimax/license).',
           'zh-CN':
-            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。'
+            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。'
         }
       },
       {
@@ -281,7 +281,8 @@ export const minimaxPage = {
     highlight: {
       titleKey: 'minimax.reviews.highlightTitle',
       descriptionKey: 'minimax.reviews.highlightDescription',
-      ctaKey: 'minimax.reviews.highlightCta'
+      ctaKey: 'minimax.reviews.highlightCta',
+      route: 'minimaxLicense'
     }
   }
 } satisfies ModelLaunchPage

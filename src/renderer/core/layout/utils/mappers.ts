@@ -25,7 +25,7 @@ export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
 
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
-  const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
+  const ynode = new Y.Map<StoredNode[keyof StoredNode]>()
   ynode.set('id', layout.id)
   ynode.set('rect', [
     layout.position.x,
@@ -64,7 +64,7 @@ export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
 
 export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
-  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
+  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>()
   ygroup.set('id', layout.id)
   ygroup.set('rect', [
     layout.position.x,

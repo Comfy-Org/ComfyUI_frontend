@@ -156,10 +156,9 @@ function useSubscriptionInternal() {
       return
     }
 
-    const nextDelay =
-      PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
-        pendingCheckoutRecoveryAttempt
-      ]
+    const nextDelay = getPendingCheckoutRetryDelay(
+      pendingCheckoutRecoveryAttempt
+    )
 
     if (nextDelay === undefined) {
       return
@@ -537,6 +536,10 @@ function useSubscriptionInternal() {
     handleLearnMore,
     handleInvoiceHistory
   }
+}
+
+function getPendingCheckoutRetryDelay(attempt: number): number | undefined {
+  return PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[attempt]
 }
 
 export const useSubscription = createSharedComposable(useSubscriptionInternal)

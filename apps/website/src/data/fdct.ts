@@ -5,6 +5,7 @@ export interface FdctPageData {
   ctas: {
     contact: string
     enterpriseBand: string
+    minimaxBand: string
   }
 }
 
@@ -398,6 +399,7 @@ export function fdctFaqs(locale: Locale) {
 export const fdctPage: FdctPageData = {
   ctas: {
     contact: '/contact',
-    enterpriseBand: '/contact'
+    enterpriseBand: '/contact',
+    minimaxBand: '/minimax/license'
   }
 }

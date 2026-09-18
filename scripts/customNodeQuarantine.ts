@@ -18,7 +18,9 @@ import { promisify } from 'node:util'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import {
+  customNodesManifest,
   FRONTEND_ASSET_EXCLUSIONS,
+  loadAllManifestTargets,
   loadFullManifest,
   loadPackQuarantine,
   loadUnjoinedYamlPacks,
@@ -164,7 +166,7 @@ async function stillBroken(
   }
 }
 
-const quarantine = loadPackQuarantine()
+const quarantine = customNodesManifest() === 'cloud' ? loadPackQuarantine() : {}
 const manifest = new Map(loadFullManifest().map((e) => [e.pack, e]))
 const unjoinedYamlPacks = loadUnjoinedYamlPacks()
 const manifestPackByFoldedName = new Map(
@@ -269,26 +271,33 @@ for (const [pack, entry] of entries) {
   if (entry.class !== 'requires-gpu-runner' && !broken) stale.push(pack)
 }
 
-const tierNodeProblems = tierNodeExclusionProblems(
-  [...manifest.values()].map((entry) => ({
-    identity: packIdentity(entry),
-    pack: entry.pack
-  }))
+const tierNodeProblems = tierNodeExclusionProblems(loadAllManifestTargets())
+const currentManifestTargets = [...manifest.values()].map((entry) => ({
+  identity: packIdentity(entry),
+  pack: entry.pack
+}))
+const applicableTierNodeExclusions = CUSTOM_NODE_TIER_NODE_EXCLUSIONS.filter(
+  (exclusion) =>
+    currentManifestTargets.some(
+      (target) =>
+        target.pack.toLowerCase() === exclusion.pack.toLowerCase() &&
+        target.identity === exclusion.identity
+    )
 )
-const excludedTierSurfaces = CUSTOM_NODE_TIER_NODE_EXCLUSIONS.reduce(
+const excludedTierSurfaces = applicableTierNodeExclusions.reduce(
   (total, exclusion) => total + exclusion.tiers.length,
   0
 )
 note('')
 note(
-  `## Tier-scoped node coverage exclusions - **${CUSTOM_NODE_TIER_NODE_EXCLUSIONS.length} node, ${excludedTierSurfaces} S-tier surfaces**`
+  `## Tier-scoped node coverage exclusions - **${applicableTierNodeExclusions.length} node, ${excludedTierSurfaces} S-tier surfaces**`
 )
 note('')
 note(
   'The pack still has an exact registration-count sentinel and its other nodes run. Only the named node is excluded from the named tiers.'
 )
 note('')
-for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
+for (const exclusion of applicableTierNodeExclusions) {
   note(
     `- **${exclusion.tiers.join('/')} - SKIP - NODE NOT EXERCISED - ${exclusion.pack} / ${exclusion.nodeType}**`
   )
@@ -302,8 +311,9 @@ for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
 }
 
 const nodeExclusions = [
-  ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH).flatMap(
-    ([pack, nodes]) =>
+  ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH)
+    .filter(([pack]) => manifest.has(pack))
+    .flatMap(([pack, nodes]) =>
       Object.entries(nodes).map(([nodeType, exclusion]) => ({
         label: `${nodeType} save/reload`,
         pack,
@@ -312,16 +322,18 @@ const nodeExclusions = [
         tier: 'S3' as const,
         mode: 'expected-failure' as const
       }))
-  ),
-  ...Object.entries(FRONTEND_ASSET_EXCLUSIONS).map(([pack, exclusion]) => ({
-    label: `${pack} frontend assets`,
-    pack,
-    reason: exclusion.reason,
-    restore: exclusion.restore,
-    scope: 'frontend asset registration',
-    tier: 'S11' as const,
-    mode: 'expected-failure' as const
-  })),
+    ),
+  ...Object.entries(FRONTEND_ASSET_EXCLUSIONS)
+    .filter(([pack]) => manifest.has(pack))
+    .map(([pack, exclusion]) => ({
+      label: `${pack} frontend assets`,
+      pack,
+      reason: exclusion.reason,
+      restore: exclusion.restore,
+      scope: 'frontend asset registration',
+      tier: 'S11' as const,
+      mode: 'expected-failure' as const
+    })),
   ...consoleErrorExclusionsForPacks([...manifest.keys()]),
   ...connectivityExclusions
 ].sort(

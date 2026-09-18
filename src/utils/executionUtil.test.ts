@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -30,10 +28,6 @@ async function promptInputs(graph: LGraph, node: LGraphNode) {
 }
 
 describe('graphToPrompt widget serialization', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('tags curve widget values with the CURVE type marker', async () => {
     const graph = new LGraph()
     const node = addNode(graph, 'CurveEditor')

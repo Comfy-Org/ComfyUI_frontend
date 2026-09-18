@@ -6,6 +6,7 @@ import * as Y from 'yjs'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
+import { reportError } from '@/platform/telemetry/reportError'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -117,7 +118,7 @@ function makeScopedLayoutKey(
 function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
   const separatorIndex = key.indexOf(':')
   return {
-    graphId: key.slice(0, separatorIndex) as UUID,
+    graphId: key.slice(0, separatorIndex),
     localId: key.slice(separatorIndex + 1)
   }
 }
@@ -161,6 +162,11 @@ function isSlotOffsetSnapshotEqual(
   return true
 }
 
+type LayoutListenerScope = 'geometry' | 'global' | 'node'
+type LayoutListener =
+  | ((change: LayoutChange) => void)
+  | ((graphIds: ReadonlySet<UUID>) => void)
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -176,6 +182,7 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
+  private _contentSizeVersion = 0
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -194,6 +201,14 @@ class LayoutStoreImpl {
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
   private pendingGeometryChanges: ReadonlySet<UUID>[] = []
   private isGeometryDispatchQueued = false
+  private readonly reportedListenerFailures: Record<
+    LayoutListenerScope,
+    WeakSet<LayoutListener>
+  > = {
+    geometry: new WeakSet(),
+    global: new WeakSet(),
+    node: new WeakSet()
+  }
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -255,6 +270,11 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
+  }
+
+  /** Non-reactive revision for measured Vue content dimensions. */
+  get contentSizeVersion(): number {
+    return this._contentSizeVersion
   }
 
   constructor() {
@@ -392,7 +412,12 @@ class LayoutStoreImpl {
   }
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
-    this.contentSizes.set(makeScopedLayoutKey(rootGraphId, nodeId), size)
+    const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    const previous = this.contentSizes.get(key)
+    if (previous?.width === size.width && previous.height === size.height)
+      return
+    this.contentSizes.set(key, size)
+    this._contentSizeVersion++
   }
 
   /**
@@ -413,9 +438,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -533,9 +556,7 @@ class LayoutStoreImpl {
       isBoundsEqual(existing.bounds, layout.bounds) &&
       isPointEqual(existing.centerPos, layout.centerPos)
     ) {
-      if (layout.path) {
-        existing.path = layout.path
-      }
+      existing.path = layout.path
       return
     }
 
@@ -608,10 +629,10 @@ class LayoutStoreImpl {
       const segmentLayout = this.linkSegmentLayouts.get(key)
       if (!segmentLayout) continue
 
-      if (ctx && segmentLayout.path) {
+      if (ctx) {
         // Match LiteGraph behavior: hit test uses device pixel ratio for coordinates
         const dpi =
-          (typeof window !== 'undefined' && window?.devicePixelRatio) || 1
+          (typeof window !== 'undefined' && window.devicePixelRatio) || 1
         const hit = ctx.isPointInStroke(
           segmentLayout.path,
           point.x * dpi,
@@ -703,11 +724,11 @@ class LayoutStoreImpl {
   applyOperation(operation: LayoutOperation): void {
     const stamped = this.stampActor(operation)
     const change = createLayoutChange(stamped)
-    let applied = false
+    const result: { applied?: boolean } = {}
     this.ydoc.transact(() => {
-      applied = this.applyOperationInTransaction(stamped, change)
+      result.applied = this.applyOperationInTransaction(stamped, change)
     }, this.currentActor)
-    if (!applied) return
+    if (!result.applied) return
 
     this.finalizeOperation(change)
   }
@@ -735,6 +756,23 @@ class LayoutStoreImpl {
     return operation.actor === undefined
       ? { ...operation, actor: this.currentActor }
       : operation
+  }
+
+  /**
+   * Runs `fn` with every actor-less operation stamped as `actor` instead of
+   * this session's actor. The per-mutation command source remote appliers and
+   * provenance-aware listeners key on: stamping happens synchronously at
+   * apply time, so deferred change delivery still carries the scoped actor on
+   * `change.operation.actor`.
+   */
+  withActor<T>(actor: string, fn: () => T): T {
+    const previous = this.currentActor
+    this.currentActor = actor
+    try {
+      return fn()
+    } finally {
+      this.currentActor = previous
+    }
   }
 
   /**
@@ -802,7 +840,9 @@ class LayoutStoreImpl {
       deleted = true
     }
     for (const key of this.contentSizes.keys()) {
-      if (key.startsWith(prefix)) this.contentSizes.delete(key)
+      if (!key.startsWith(prefix)) continue
+      this.contentSizes.delete(key)
+      this._contentSizeVersion++
     }
     for (const key of this.slotOffsets.keys()) {
       if (key.startsWith(prefix)) this.slotOffsets.delete(key)
@@ -920,7 +960,11 @@ class LayoutStoreImpl {
       this.linkSegmentSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      this.contentSizes.clear()
+      if (this.contentSizes.size > 0) {
+        this.contentSizes.clear()
+        this._contentSizeVersion++
+      }
+      this.slotOffsets.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
@@ -1031,7 +1075,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
-    this.contentSizes.delete(nodeKey)
+    if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
     this.slotOffsets.delete(nodeKey)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
@@ -1050,7 +1094,7 @@ class LayoutStoreImpl {
       const ynode = this.ynodes.get(
         makeScopedLayoutKey(operation.graphId, nodeId)
       )
-      if (!ynode || !bounds) continue
+      if (!ynode) continue
 
       const rect = ynode.get('rect')
       if (
@@ -1229,10 +1273,32 @@ class LayoutStoreImpl {
           try {
             listener(change)
           } catch (error) {
-            console.error('Error in layout geometry listener:', error)
+            this.reportListenerFailure(error, 'geometry', listener)
           }
         }
       }
+    })
+  }
+
+  private reportListenerFailure(
+    error: unknown,
+    scope: LayoutListenerScope,
+    listener: LayoutListener
+  ): void {
+    const reportedFailures = this.reportedListenerFailures[scope]
+    if (reportedFailures.has(listener)) return
+    reportedFailures.add(listener)
+
+    reportError(error, {
+      errorType: 'canvas_layout_listener_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'sync',
+        outcome: 'failed',
+        listener_scope: scope
+      },
+      level: 'error'
     })
   }
 
@@ -1241,7 +1307,7 @@ class LayoutStoreImpl {
       try {
         listener(change)
       } catch (error) {
-        console.error('Error in layout change listener:', error)
+        this.reportListenerFailure(error, 'global', listener)
       }
     })
   }
@@ -1258,7 +1324,7 @@ class LayoutStoreImpl {
         try {
           listener(change)
         } catch (error) {
-          console.error('Error in node-scoped layout change listener:', error)
+          this.reportListenerFailure(error, 'node', listener)
         }
       })
     }

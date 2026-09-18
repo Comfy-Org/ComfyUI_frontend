@@ -70,6 +70,7 @@
         :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
+        :aria-busy="!stepSettled"
         tabindex="-1"
         :class="
           cn(
@@ -190,7 +191,8 @@ const {
   backLabel,
   countedStepIdx,
   countedStepsTotal,
-  waitingForTarget
+  waitingForTarget,
+  stepSettled
 } = defineProps<{
   step: SpotlightStep
   title: string
@@ -203,6 +205,7 @@ const {
   countedStepIdx: number
   countedStepsTotal: number
   waitingForTarget: boolean
+  stepSettled: boolean
 }>()
 
 const emit = defineEmits<{

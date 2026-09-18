@@ -69,7 +69,7 @@ const checkerboardStyle = {
 let firstLayout = true
 useResizeObserver(viewportRef, (entries) => {
   const rect = entries[0]?.contentRect
-  if (!rect?.width || !rect?.height) return
+  if (!rect.width || !rect.height) return
   if (firstLayout) {
     firstLayout = false
     session.fitView()

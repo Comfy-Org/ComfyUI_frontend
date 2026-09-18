@@ -44,11 +44,11 @@ const {
 <template>
   <section
     :class="
-      cn('max-w-9xl mx-auto w-full px-6 py-14 md:py-20 lg:px-12', className)
+      cn('mx-auto w-full max-w-9xl px-6 py-14 md:py-20 lg:px-12', className)
     "
   >
     <div
-      class="bg-transparency-white-t4 lg:rounded-5xl flex flex-col gap-6 rounded-4xl p-2 lg:flex-row lg:gap-8"
+      class="flex flex-col gap-6 rounded-4xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8 lg:rounded-5xl"
     >
       <div class="relative aspect-video w-full lg:flex-1">
         <VideoPlayer
@@ -60,7 +60,7 @@ const {
           lazy-autoplay
           loop
           mute-only
-          class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
+          class="absolute inset-0 aspect-auto h-full rounded-3xl border-0 lg:rounded-4.5xl"
         />
       </div>
 
@@ -68,7 +68,7 @@ const {
         class="flex w-full flex-col justify-center gap-2 p-4 lg:flex-1 lg:p-6"
       >
         <p
-          class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
+          class="text-sm font-bold tracking-[0.7px] text-primary-comfy-yellow uppercase"
         >
           {{ eyebrow }}
         </p>

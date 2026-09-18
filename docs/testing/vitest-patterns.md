@@ -7,26 +7,89 @@ globs:
 
 ## Setup
 
-Use `createTestingPinia` from `@pinia/testing`, not `createPinia`:
+`vitest.setup.ts` creates a fresh active testing Pinia before each test with
+`stubActions: false` and disposes the active Pinia afterward to stop store
+watchers. Use real store composables inside tests or `beforeEach`. Do not mock
+their modules, mock Pinia, or create another Pinia instance.
+
+Set scenario state on the store. Actions already have spies, but execute their
+implementations unless you stub them:
 
 ```typescript
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 
-describe('MyStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
-  })
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+beforeEach(() => {
+  const settings = useSettingStore()
+  settings.settingValues['Comfy.WorkflowActions.SeenItems'] = []
+  vi.mocked(settings.set).mockResolvedValue()
 })
 ```
 
-**Why `stubActions: false`?** By default, testing pinia stubs all actions. Set to `false` when testing actual store behavior.
+Stub actions only when the test needs to isolate their effects. Keep the action
+under test real. Use `vi.mocked(store.action)` to access `.mock` or configure
+return values without changing the store's types.
+
+For component tests, configure the same Pinia instance that the component uses.
+Pass `getActivePinia()!` from `pinia` to the mount's `global.plugins` when it
+needs injection. Set scenario state directly or with `store.$patch()` rather
+than creating a Pinia with `initialState`. Stub individual actions to isolate
+their effects; keep actions under test real.
+
+`pnpm lint` enforces `comfy/use-global-pinia` in `.test` and `.spec` files and
+in `__test__`, `__tests__`, and `__fixtures__` directories, including files
+covered by the separate Oxlint audit. It rejects Pinia factory imports,
+namespace access to factories, Pinia module mocks, and replacements of store
+composables. Non-Pinia modules such as `layoutStore` and spies on real store
+actions remain allowed. Only the global setup owns Pinia creation and disposal.
+
+### Avoid hook-assigned aliases of store actions
+
+Read an action from its store where it is used instead of caching it in a
+suite-level `let` assigned by `beforeEach`:
+
+```typescript
+vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
+expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+```
+
+Use a test-local `const store = useToastStore()` when several accesses become
+hard to read. Keep shared variables when they own a per-test resource, a
+reactive fixture, or a value that teardown must restore.
+
+### Capture import-time extension registration
+
+Use `createExtensionCapture` for tests that need registered extension hooks
+without running registration services. Create one capture per test file and
+keep the mock factory in that file:
+
+```typescript
+const extensions = vi.hoisted<{
+  registered: ComfyExtension[]
+  registerExtension: (extension: ComfyExtension) => void
+}>(() => {
+  const registered: ComfyExtension[] = []
+  return {
+    registered,
+    registerExtension: vi.fn((extension) => registered.push(extension))
+  }
+})
+
+vi.mock(import('@/scripts/app'), () => ({
+  app: { registerExtension: extensions.registerExtension }
+}))
+
+await import('@/extensions/core/customWidgets')
+const extension = extensions.registered.find(
+  ({ name }) => name === 'Comfy.CustomWidgets'
+)
+```
+
+Mock only `registerExtension` and the other app members exercised by the module
+under test. Keep one registration array per test file and use the authoritative
+`ComfyExtension` hook signatures. Reset scenario state per test, not the module
+cache.
 
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 
@@ -97,14 +160,14 @@ const fetchMock = vi.fn(async () => ({ ok: true }))
 ### Module mocks with vi.mock()
 
 ```typescript
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     fetchData: vi.fn()
   }
 }))
 
-vi.mock('@/services/myService', () => ({
+vi.mock(import('@/services/myService'), () => ({
   myService: {
     doThing: vi.fn()
   }

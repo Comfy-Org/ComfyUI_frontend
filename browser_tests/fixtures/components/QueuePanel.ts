@@ -6,12 +6,16 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export class QueuePanel {
   readonly overlayToggle: Locator
   readonly overlay: Locator
+  readonly progressNodeFill: Locator
   readonly moreOptionsButton: Locator
   readonly jobAssetsList: Locator
 
   constructor(readonly page: Page) {
     this.overlayToggle = page.getByTestId(TestIds.queue.overlayToggle)
     this.overlay = page.getByTestId(TestIds.queue.progressOverlay)
+    this.progressNodeFill = this.overlay.getByTestId(
+      TestIds.queue.progressNodeFill
+    )
     this.moreOptionsButton = this.overlay.getByLabel(/More options/i)
     this.jobAssetsList = page.getByTestId(TestIds.queue.jobAssetsList)
   }

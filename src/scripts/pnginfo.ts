@@ -1,4 +1,5 @@
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
@@ -29,7 +30,7 @@ function parseExifData(exifData: Uint8Array) {
     isLittleEndian: boolean,
     length: 2 | 4
   ): number {
-    let arr = exifData.slice(offset, offset + length)
+    const arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
         0,
@@ -203,7 +204,7 @@ export type A1111ImportOutcome =
 export async function importA1111(
   graph: LGraph,
   parameters: string,
-  beforeGraphClear?: () => void
+  beforeGraphClear?: () => void | Promise<void>
 ): Promise<A1111ImportOutcome> {
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
@@ -362,7 +363,7 @@ export async function importA1111(
           return { embeddings: [], embeddingsLoaded: false }
         })
 
-      beforeGraphClear?.()
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)

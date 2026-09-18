@@ -26,14 +26,14 @@ const { label, title, description, primaryButton, secondaryButton, image } =
       </SectionLabel>
 
       <h1
-        class="text-primary-comfy-canvas mt-4 text-3xl/tight font-light lg:text-5xl/tight"
+        class="mt-4 text-3xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
       >
         {{ title }}
       </h1>
 
       <p
         v-if="description"
-        class="text-primary-warm-gray mt-6 max-w-xl text-sm/relaxed lg:text-base/relaxed"
+        class="mt-6 max-w-xl text-sm/relaxed text-primary-warm-gray lg:text-base/relaxed"
       >
         {{ description }}
       </p>

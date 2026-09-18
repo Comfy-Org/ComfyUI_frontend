@@ -101,9 +101,33 @@ type ConfirmOptions = BaseConfirmOptions &
 export interface ExecutionErrorDialogInput {
   exception_type: string
   exception_message: string
-  node_id: string | number
-  node_type: string
-  traceback: string[]
+  node_id?: string | number | null
+  node_type?: string | null
+  traceback?: string[] | null
+}
+
+const GLOBAL_PROMPT_KEY = 'global-prompt'
+
+// dialogStore.showDialog raises an existing dialog with the same key instead of
+// wiring the new caller's callbacks, so a second concurrent caller on that key
+// would never settle. Serialize FIFO per key; distinct keys stay concurrent.
+const promptTails = new Map<string, Promise<unknown>>()
+
+function enqueuePrompt<T>(
+  key: string,
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const tail = promptTails.get(key) ?? Promise.resolve()
+  const result = tail.then(() => new Promise<T>(show))
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  )
+  promptTails.set(key, settled)
+  void settled.then(() => {
+    if (promptTails.get(key) === settled) promptTails.delete(key)
+  })
+  return result
 }
 
 export const useDialogService = () => {
@@ -115,8 +139,8 @@ export const useDialogService = () => {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
-        nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        nodeType: executionError.node_type ?? undefined,
+        traceback: executionError.traceback?.join('\n') ?? '',
         reportType: 'graphExecutionError'
       }
     }
@@ -212,28 +236,30 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
-    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazyApiNodesSignInContent(), lazyComfyOrgHeader()])
+    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
+
+    const key = 'api-nodes-signin'
 
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
-        key: 'api-nodes-signin',
+        key,
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
+          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
-        headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
           renderer: 'reka',
-          contentClass: HUG_CONTENT_CLASS,
-          closable: false,
-          onClose: () => resolve(false)
+          headless: true,
+          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
+          closable: true,
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
-      dialogStore.closeDialog({ key: 'api-nodes-signin' })
+      dialogStore.closeDialog({ key })
       return result
     })
   }
@@ -256,7 +282,7 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -276,9 +302,9 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueuePrompt<string | null>(GLOBAL_PROMPT_KEY, (resolve) => {
       dialogStore.showDialog({
-        key: 'global-prompt',
+        key: GLOBAL_PROMPT_KEY,
         title,
         component: PromptDialogContent,
         props: {
@@ -292,7 +318,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -312,9 +338,9 @@ export const useDialogService = () => {
     itemList = [],
     hint,
     denyLabel,
-    key = 'global-prompt'
+    key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    const show = (resolve: (value: boolean | null) => void) => {
       const options: ShowDialogOptions = {
         key,
         title,
@@ -330,12 +356,14 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          onRemoved: () => resolve(null)
         }
       }
 
       dialogStore.showDialog(options)
-    })
+    }
+
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
   async function showTopUpCreditsDialog(options?: {
@@ -469,7 +497,7 @@ export const useDialogService = () => {
         // Contents bring their own width and separators — shrink-wrap the
         // chrome and zero the section padding.
         contentClass:
-          'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-border-default',
+          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -807,8 +835,8 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
+          onRemoved: () => resolve()
         }
       })
     })

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
 import type {
@@ -104,6 +105,9 @@ export class WorkflowHelper {
   async reloadAndWaitForApp() {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
     await this.comfyPage.waitForAppReady()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
@@ -112,6 +116,9 @@ export class WorkflowHelper {
       workflow
     )
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadWorkflow(workflowName: string) {
@@ -197,7 +204,7 @@ export class WorkflowHelper {
 
   async getLinearModeFromGraph(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+      return window.app!.rootGraph.extra.linearMode as boolean | undefined
     })
   }
 
@@ -215,11 +222,31 @@ export class WorkflowHelper {
     })
   }
 
+  async openPersistedWorkflow(workflowName: string): Promise<void> {
+    await this.comfyPage.page.evaluate(async (name) => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      await store.syncWorkflows()
+      const workflow =
+        store.getWorkflowByPath(`workflows/${name}.json`) ??
+        store.persistedWorkflows.find(
+          (candidate) =>
+            candidate.filename === name ||
+            candidate.path.endsWith(`${name}.json`)
+        )
+      if (!workflow) {
+        throw new Error(`Persisted workflow not found: ${name}`)
+      }
+      await store.openWorkflow(workflow)
+    }, workflowName)
+    await this.waitForWorkflowIdle()
+    await this.comfyPage.vueNodes.waitForNodes()
+  }
+
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {
     await this.comfyPage.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout }
     )

@@ -1,6 +1,4 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
   addDynamicCombo
@@ -9,13 +7,18 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const originalNamedValuesRestore = LiteGraph.namedValuesRestore
+afterEach(() => {
+  LiteGraph.namedValuesRestore = originalNamedValuesRestore
+})
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -142,12 +145,86 @@ describe('Dynamic Combos', () => {
       node.inputs[1]
     )
   })
+  test('Restoring serialised state preserves the saved node height', () => {
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.widgets[0].value = '1'
+    node.setSize([node.size[0], 500])
+    const data = node.serialize()
+
+    const restored = testNode()
+    addDynamicCombo(restored, [['INT'], ['INT', 'STRING']])
+    restored.configure(data)
+
+    expect(restored.widgets[0].value).toBe('1')
+    expect(restored.widgets.length).toBe(3)
+    expect(restored.size[1]).toBe(500)
+  })
+  test('Interactive combo selection still refits the node height', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.setSize([node.size[0], 500])
+    node.widgets[0].value = '1'
+    node.widgets[0].callback?.('1')
+    expect(node.size[1]).toBeLessThan(500)
+  })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['STRING']])
     expect.soft(node.widgets[1].tooltip).toBe('0')
     node.widgets[0].value = '1'
     expect.soft(node.widgets[1].tooltip).toBe('1')
+  })
+  test('An edited nested value survives toggling the combo away and back after load (#16006)', () => {
+    LiteGraph.namedValuesRestore = true
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[0].value = '1'
+    node.widgets[1].value = 0.8
+    const serialized = node.serialize()
+
+    const reloaded = testNode()
+    addDynamicCombo(reloaded, [['INT'], ['INT']])
+    reloaded.configure(serialized)
+    expect(reloaded.widgets[1].value).toBe(0.8)
+
+    reloaded.widgets[1].value = 0.3
+
+    reloaded.widgets[0].value = '0'
+    reloaded.widgets[0].value = '1'
+
+    expect(reloaded.widgets[1].value).toBe(0.3)
+  })
+  test('Same-name children keep separate values across options', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[1].value = 3
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).not.toBe(3)
+    node.widgets[1].value = 7
+
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).toBe(7)
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+  })
+  test('Nested child keeps its value when its parent option is recreated', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[[], ['INT']]], ['INT']])
+    node.widgets[1].value = '1'
+    node.widgets[2].value = 7
+
+    node.widgets[0].value = '1'
+    node.widgets[0].value = '0'
+
+    expect(node.widgets[1].value).toBe('1')
+    expect(node.widgets[2].value).toBe(7)
   })
 })
 describe('Autogrow', () => {
@@ -358,7 +435,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',

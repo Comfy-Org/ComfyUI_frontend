@@ -3,10 +3,14 @@
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
     "pin": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 85,
+    "nodeTypesSha256": "977dc06da1996bf022129a59abf55d0508c5d7224473b7aa3b73b5797325671b"
+  },
   "nodes": {
     "ApplyCLIPSeg+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -17,13 +21,13 @@
     },
     "CLIPTextEncodeSDXL+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ConditioningCombineMultiple+": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ConsoleDebug+": {
       "connectFirst": [],
@@ -37,7 +41,7 @@
     },
     "DisplayAny": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "DrawText+": {
@@ -46,19 +50,19 @@
       "disconnect": []
     },
     "FluxAttentionSeeker+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "FluxBlocksBuster+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "FluxSamplerParams+": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "GetImageSize+": {
       "connectFirst": [],
@@ -66,7 +70,7 @@
       "disconnect": []
     },
     "GuidanceTimestepping+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -117,7 +121,7 @@
     },
     "ImageDesaturate+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageEnhanceDifference+": {
@@ -127,12 +131,12 @@
     },
     "ImageExpandBatch+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageFlip+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageFromBatch+": {
@@ -142,7 +146,7 @@
     },
     "ImageHistogramMatch+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageListToBatch+": {
@@ -157,7 +161,7 @@
     },
     "ImagePreviewFromLatent+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageRandomTransform+": {
@@ -171,7 +175,7 @@
       "disconnect": []
     },
     "ImageRemoveBackground+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -197,7 +201,7 @@
     },
     "ImageToDevice+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "ImageUntile+": {
@@ -211,12 +215,12 @@
       "disconnect": []
     },
     "KSamplerVariationsStochastic+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "KSamplerVariationsWithNoise+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -226,7 +230,7 @@
       "disconnect": "NO_INPUTS"
     },
     "LorasForFluxParams+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -237,7 +241,7 @@
     },
     "MaskBlur+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "MaskBoundingBox+": {
@@ -247,7 +251,7 @@
     },
     "MaskExpandBatch+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "MaskFix+": {
@@ -257,7 +261,7 @@
     },
     "MaskFlip+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "MaskFromBatch+": {
@@ -296,12 +300,12 @@
       "disconnect": []
     },
     "ModelCompile+": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "ModelSamplingSD3Advanced+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -317,13 +321,13 @@
     },
     "PlotParameters+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "RemBGSession+": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "RemoveLatentMask+": {
       "connectFirst": [],
@@ -341,28 +345,28 @@
       "disconnect": []
     },
     "SD3AttentionSeekerLG+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SD3AttentionSeekerT5+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SD3NegativeConditioning+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SDXLEmptyLatentSizePicker+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SimpleComparison+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "SimpleCondition+": {
@@ -417,16 +421,16 @@
     },
     "TextEncodeForSamplerParams+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "TransitionMask+": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "TransparentBGSession+": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     }
