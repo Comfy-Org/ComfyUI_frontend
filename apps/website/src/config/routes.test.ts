@@ -55,11 +55,16 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
-    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
-    expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
-      '/enterprise/managed-builds'
-    )
+    expect(localizeHref('/enterprise-msa', 'zh-CN')).toBe('/enterprise-msa')
   })
+
+  it.for(['/enterprise', '/enterprise/managed-builds'])(
+    'localizes the Chinese sales page %s while keeping Japanese on English',
+    (path) => {
+      expect(localizeHref(path, 'zh-CN')).toBe(`/zh-CN${path}`)
+      expect(localizeHref(path, 'ja')).toBe(path)
+    }
+  )
 
   it('only localizes the Japanese homepage', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
