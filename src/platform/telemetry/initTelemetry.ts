@@ -5,10 +5,21 @@
  * cloud telemetry code out of local/desktop bundles.
  */
 import { setTelemetryRegistry } from './index'
+import { TelemetryRegistry } from './TelemetryRegistry'
 
 const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 let _initPromise: Promise<void> | null = null
+let cloudRegistry: TelemetryRegistry | undefined
+
+export function initTelemetryRegistry(): TelemetryRegistry | undefined {
+  if (!IS_CLOUD_BUILD) return
+  if (!cloudRegistry) {
+    cloudRegistry = new TelemetryRegistry()
+    setTelemetryRegistry(cloudRegistry)
+  }
+  return cloudRegistry
+}
 
 /**
  * Initialize telemetry providers for cloud builds.
@@ -16,12 +27,12 @@ let _initPromise: Promise<void> | null = null
  * Safe to call multiple times - only initializes once.
  */
 export async function initTelemetry(): Promise<void> {
-  if (!IS_CLOUD_BUILD) return
+  const registry = initTelemetryRegistry()
+  if (!registry) return
   if (_initPromise) return _initPromise
 
   _initPromise = (async () => {
     const [
-      { TelemetryRegistry },
       { MixpanelTelemetryProvider },
       { GtmTelemetryProvider },
       { ImpactTelemetryProvider },
@@ -32,7 +43,6 @@ export async function initTelemetry(): Promise<void> {
       { DatadogRumTelemetryProvider },
       { SentryTelemetryProvider }
     ] = await Promise.all([
-      import('./TelemetryRegistry'),
       import('./providers/cloud/MixpanelTelemetryProvider'),
       import('./providers/cloud/GtmTelemetryProvider'),
       import('./providers/cloud/ImpactTelemetryProvider'),
@@ -44,7 +54,6 @@ export async function initTelemetry(): Promise<void> {
       import('./providers/cloud/SentryTelemetryProvider')
     ])
 
-    const registry = new TelemetryRegistry()
     registry.registerProvider(new MixpanelTelemetryProvider())
     registry.registerProvider(new GtmTelemetryProvider())
     registry.registerProvider(new ImpactTelemetryProvider())
@@ -54,8 +63,6 @@ export async function initTelemetry(): Promise<void> {
     registry.registerProvider(new CustomerIoTelemetryProvider())
     registry.registerProvider(new DatadogRumTelemetryProvider())
     registry.registerProvider(new SentryTelemetryProvider())
-
-    setTelemetryRegistry(registry)
   })()
 
   return _initPromise

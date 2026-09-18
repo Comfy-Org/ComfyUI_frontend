@@ -1,7 +1,9 @@
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
+import { trackDatadogFeatureFlagEvaluation } from './datadogFeatureFlags'
 import { rumBeforeSend } from './datadogRumBeforeSend'
+import { initTelemetryRegistry } from './initTelemetry'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
 export type DeployEnv = 'prod-v2' | 'stg-v2' | 'test-v2'
@@ -13,6 +15,7 @@ const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
 ])
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 let initializationPromise: Promise<void> | undefined
+let featureFlagsRegistered = false
 
 async function setFrontendContext(): Promise<void> {
   const response = await fetch(window.location.origin, {
@@ -76,7 +79,15 @@ export function initDatadogRum(
   hostname = window.location.hostname
 ): Promise<void> {
   const env = resolveDeployEnv(hostname)
-  if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
+  if (!env) return Promise.resolve()
+
+  if (!featureFlagsRegistered) {
+    initTelemetryRegistry()?.registerProvider({
+      trackFeatureFlagEvaluation: trackDatadogFeatureFlagEvaluation
+    })
+    featureFlagsRegistered = true
+  }
+  if (datadogRum.getInitConfiguration()) return Promise.resolve()
 
   initializationPromise ??= initializeDatadogRum(env).finally(() => {
     initializationPromise = undefined
