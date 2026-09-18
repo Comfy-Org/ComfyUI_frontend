@@ -10,6 +10,7 @@ import Input from '@/components/ui/input/Input.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useToast } from '@/components/ui/toast'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -114,18 +115,19 @@ const options: {
 <template>
   <Popover :open @update:open="onOpenChange">
     <PopoverTrigger as-child>
-      <Button
-        v-tooltip.top="buildTooltipConfig(triggerTooltip)"
-        variant="muted-textonly"
-        size="md"
-        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
-      >
-        <span>{{ triggerLabel }}</span>
-        <span
-          data-testid="run-mode-chevron"
-          class="icon-[lucide--chevron-down] size-4"
-        />
-      </Button>
+      <Tooltip :config="buildTooltipConfig(triggerTooltip)" side="top">
+        <Button
+          variant="muted-textonly"
+          size="md"
+          :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+        >
+          <span>{{ triggerLabel }}</span>
+          <span
+            data-testid="run-mode-chevron"
+            class="icon-[lucide--chevron-down] size-4"
+          />
+        </Button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="top"
@@ -149,41 +151,42 @@ const options: {
         class="flex flex-col gap-1"
         @update:model-value="onDraftMode"
       >
-        <div v-for="option in options" :key="option.mode" class="rounded-lg">
-          <RadioGroupItem :value="option.mode" as-child>
-            <Button
-              :variant="
-                draftMode === option.mode ? 'tertiary' : 'muted-textonly'
+        <div
+          v-for="option in options"
+          :key="option.mode"
+          :class="
+            cn(
+              'rounded-lg',
+              draftMode === option.mode && 'bg-tertiary-background'
+            )
+          "
+        >
+          <RadioGroupItem
+            :value="option.mode"
+            class="flex w-full cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2 text-left hover:bg-secondary-background-hover"
+          >
+            <span
+              :class="
+                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
               "
-              size="unset"
-              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
-            >
-              <span
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
-                    option.icon
-                  )
-                "
-              />
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm/5 text-base-foreground">
-                  {{ t(option.title) }}
-                </span>
-                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-                  {{ t(option.description) }}
-                </span>
+            />
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm/5 text-base-foreground">
+                {{ t(option.title) }}
               </span>
-              <span
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0',
-                    draftMode === option.mode &&
-                      'icon-[lucide--check] text-base-foreground'
-                  )
-                "
-              />
-            </Button>
+              <span class="mt-0.5 block text-xs/4 text-muted-foreground">
+                {{ t(option.description) }}
+              </span>
+            </span>
+            <span
+              :class="
+                cn(
+                  'mt-0.5 size-4 shrink-0',
+                  draftMode === option.mode &&
+                    'icon-[lucide--check] text-base-foreground'
+                )
+              "
+            />
           </RadioGroupItem>
           <div
             v-if="

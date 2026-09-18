@@ -1,15 +1,19 @@
 <template>
-  <button
+  <Tooltip
     v-if="isRecording"
-    v-tooltip.top="tip(t('load3d.menuBar.stopRecording'))"
-    :class="chipClass"
-    type="button"
-    :aria-label="t('load3d.menuBar.stopRecording')"
-    @click="emit('stopRecording')"
+    :config="tip(t('load3d.menuBar.stopRecording'))"
+    side="top"
   >
-    <span class="size-2 animate-pulse rounded-full bg-red-500" />
-    <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
-  </button>
+    <button
+      :class="chipClass"
+      type="button"
+      :aria-label="t('load3d.menuBar.stopRecording')"
+      @click="emit('stopRecording')"
+    >
+      <span class="size-2 animate-pulse rounded-full bg-red-500" />
+      <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
+    </button>
+  </Tooltip>
 
   <div
     v-else-if="hasRecording"
@@ -17,16 +21,20 @@
   >
     <Popover v-model:open="menuOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.videoRecordingTooltip'))"
-          class="focus-visible:ring-ring flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
-          type="button"
-          :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
-          data-testid="load3d-recording-duration"
+        <Tooltip
+          :config="tip(t('load3d.menuBar.videoRecordingTooltip'))"
+          side="top"
         >
-          <i class="icon-[lucide--film] size-4" />
-          {{ formatDuration(recordingDuration ?? 0) }}
-        </button>
+          <button
+            class="focus-visible:ring-ring flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
+            type="button"
+            :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
+            data-testid="load3d-recording-duration"
+          >
+            <i class="icon-[lucide--film] size-4" />
+            {{ formatDuration(recordingDuration ?? 0) }}
+          </button>
+        </Tooltip>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
@@ -60,31 +68,34 @@
         </button>
       </PopoverContent>
     </Popover>
-    <button
-      v-tooltip.top="tip(t('load3d.menuBar.deleteRecording'))"
-      class="focus-visible:ring-ring flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
-      type="button"
-      :aria-label="t('load3d.menuBar.deleteRecording')"
-      @click="emit('clearRecording')"
-    >
-      <i class="icon-[lucide--x] size-3.5" />
-    </button>
+    <Tooltip :config="tip(t('load3d.menuBar.deleteRecording'))" side="top">
+      <button
+        class="focus-visible:ring-ring flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1"
+        type="button"
+        :aria-label="t('load3d.menuBar.deleteRecording')"
+        @click="emit('clearRecording')"
+      >
+        <i class="icon-[lucide--x] size-3.5" />
+      </button>
+    </Tooltip>
   </div>
 
-  <button
-    v-else
-    v-tooltip.top="tip(t('load3d.menuBar.record'))"
-    :class="chipClass"
-    type="button"
-    :aria-label="compact ? t('load3d.menuBar.record') : undefined"
-    @click="emit('startRecording')"
-  >
-    <i class="icon-[lucide--video] size-4" />
-    <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
-  </button>
+  <Tooltip v-else :config="tip(t('load3d.menuBar.record'))" side="top">
+    <button
+      :class="chipClass"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.record') : undefined"
+      @click="emit('startRecording')"
+    >
+      <i class="icon-[lucide--video] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
+    </button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 

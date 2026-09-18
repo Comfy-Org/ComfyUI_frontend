@@ -1,27 +1,16 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import type { DirectiveBinding } from 'vue'
 
 import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
 
-const tooltipBindings = new WeakMap<Element, unknown>()
-const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  },
-  updated(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  }
-}
-
 function mount(isMaximized = false) {
   return render(PanelHeader, {
     props: { isMaximized },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
 }
@@ -40,10 +29,17 @@ describe('PanelHeader', () => {
     [false, 'Maximize panel'],
     [true, 'Minimize panel'],
     [false, 'Close']
-  ] as const)('shows the %s panel tooltip for %s', ([isMaximized, label]) => {
-    mount(isMaximized)
+  ] as const)(
+    'shows the %s panel tooltip for %s',
+    async ([isMaximized, label]) => {
+      mount(isMaximized)
 
-    const button = screen.getByRole('button', { name: label })
-    expect(tooltipBindings.get(button)).toMatchObject({ value: label })
-  })
+      await userEvent.hover(screen.getByRole('button', { name: label }))
+      expect(
+        await screen.findByText(label, {
+          selector: '[data-slot="tooltip-content"]'
+        })
+      ).toBeVisible()
+    }
+  )
 })

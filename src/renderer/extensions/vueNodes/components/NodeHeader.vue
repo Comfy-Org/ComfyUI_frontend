@@ -38,21 +38,22 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <div
-          v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2"
-          data-testid="node-title"
-        >
-          <div class="flex-1 truncate">
-            <EditableText
-              :model-value="displayTitle"
-              :is-editing="isEditing"
-              :input-attrs="{ 'data-testid': 'node-title-input' }"
-              @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
-            />
+        <Tooltip :config="tooltipConfig" side="top">
+          <div
+            class="flex min-w-0 flex-1 items-center gap-2"
+            data-testid="node-title"
+          >
+            <div class="flex-1 truncate">
+              <EditableText
+                :model-value="displayTitle"
+                :is-editing="isEditing"
+                :input-attrs="{ 'data-testid': 'node-title-input' }"
+                @edit="handleTitleEdit"
+                @cancel="handleTitleCancel"
+              />
+            </div>
           </div>
-        </div>
+        </Tooltip>
       </div>
 
       <CreditBadge
@@ -72,6 +73,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
