@@ -141,6 +141,13 @@ reachable at its `*.vercel.app` host, and the core frontend's
 `VITE_BILLING_WEB_URL` must point at whichever origin is live — it accepts
 `https` only outside local development.
 
+## Browser tests
+
+`pnpm --filter @comfyorg/billing-web test:e2e` runs the Playwright suite in
+`e2e/` against a production build of this app and a Cloud, identity and
+payment portal the suite answers in-process; see `e2e/README.md`. CI runs it
+as `CI: Billing Web E2E` whenever this app or a package changes.
+
 ## Path-prefixed hosting
 
 `VITE_BILLING_WEB_URL` may point at a path prefix, such as
