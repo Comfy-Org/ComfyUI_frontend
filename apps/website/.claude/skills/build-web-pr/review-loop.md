@@ -10,7 +10,8 @@ reaches for.
 
 Each round, wait until every check and review bot has finished on the current
 head, then read four things fresh with `gh`, always passing the pull request
-number: the check results (`gh pr checks <number>`), the review decision and
+number: the check results (`gh pr checks <number>` and `gh pr checks <number>
+--required`), the review decision and
 merge state (`gh pr view <number> --json reviewDecision,mergeStateStatus`),
 the review threads with their resolved state, and the issue comments. Read
 the threads with this exact query and nothing else, passing the repository
@@ -19,7 +20,8 @@ given, and `--paginate` so a thread past the first page is not missed (gh
 walks `endCursor` for you and prints one JSON document per page):
 
 ```bash
-gh api graphql --paginate -F owner=<owner> -F name=<repo> -F number=<number> -f query='
+owner=<owner>; name=<repo>; number=<number>
+gh api graphql --paginate -F owner="$owner" -F name="$name" -F number="$number" -f query='
 query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
   repository(owner:$owner,name:$name){ pullRequest(number:$number){
     reviewThreads(first:100,after:$endCursor){
@@ -31,16 +33,20 @@ query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
 
 A thread's author is the author of its `first` comment; its last comment is
 the `last` node, whatever the thread's length. Reply in a thread and resolve
-one with these two commands, exactly, with the thread's `id` from the query:
+one with these two commands, exactly as written, after setting `threadId` to
+the thread's `id` from the query and `body` to your reply:
 
-````bash
-gh api graphql -F threadId=<id> -f body=<text> -f query='
+```bash
+threadId=<id>; body='<your reply>'
+gh api graphql -F threadId="$threadId" -f body="$body" -f query='
 mutation($threadId:ID!,$body:String!){
   addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'
 
-gh api graphql -F threadId=<id> -f query='
+gh api graphql -F threadId="$threadId" -f query='
 mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }'
-``` Read issue comments with
+```
+
+Read issue comments with
 `gh api --paginate repos/<owner>/<repo>/issues/<number>/comments`; without
 `--paginate` you get one page and a later comment can be missing. Never
 reason from an earlier round's reading; a round that starts while checks are
@@ -132,4 +138,3 @@ or the exact person or channel to message; and a block headed "Forward this to
 an engineer" that holds the technical detail (pull request link, check name,
 the failing line, the exact command, what you already tried). Everything above
 that block stays free of technical terms.
-````

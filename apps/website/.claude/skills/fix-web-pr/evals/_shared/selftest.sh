@@ -42,7 +42,18 @@ thread_node() { jq -n --arg id "$1" --arg a "$2" --arg b "$3" --arg t "$4" --arg
 threads_file() { jq -s '{data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:false,endCursor:null},nodes:.}}}}}' > bin/state/threads.json; }
 thread() { thread_node T1 "$1" "$2" "$3" | threads_file; }
 read_all_threads() { threads_read example site 4242 | jq -s 'map(.data.repository.pullRequest.reviewThreads.nodes) | add'; }
-read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null; }
+read_rest() { ./bin/gh pr checks 4242 >/dev/null; ./bin/gh pr checks 4242 --required >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null; }
+# The published commands, taken from review-loop.md itself so the self-test
+# exercises what the skill prints rather than a copy.
+skills_dir="$(cd "$evals/../.." && pwd)"
+loop_md="$skills_dir/build-web-pr/review-loop.md"
+published_block() { awk '/^```bash/{n++; next} n==2&&/^```$/{exit} n==2{print}' "$loop_md" | grep -v '^threadId=<id>'; }
+published_reply_cmd() { published_block | awk 'NF==0{exit} {print}'; }
+published_resolve_cmd() { published_block | awk 'f{print} NF==0{f=1}'; }
+published_reply() { local threadId="$1" body="$2" cmd; cmd="$(published_reply_cmd)"; env PATH="$PWD/bin:$PATH" threadId="$threadId" body="$body" bash -c "$cmd"; }
+published_resolve() { local threadId="$1" cmd; cmd="$(published_resolve_cmd)"; env PATH="$PWD/bin:$PATH" threadId="$threadId" bash -c "$cmd"; }
+md_fences_balanced() { local f n; for f in "$skills_dir"/*/*.md "$skills_dir"/*.md "$skills_dir/../../AGENTS.md"; do n="$(grep -c '^```' "$f" || true)"; if (( n % 2 )); then bad "unbalanced code fence in $f"; fi; if grep -q '^````' "$f"; then bad "four-backtick fence in $f"; fi; done; ok "markdown fences balanced in every skill file"; }
+md_fences_balanced
 reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.reason) | unique | length'; }
 full_gate() { read_view >/dev/null; read_rest; }
 
@@ -62,6 +73,11 @@ expect_fail ./bin/gh pr merge 4242 --squash
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 read_view >/dev/null; ./bin/gh pr checks 4242 >/dev/null
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+./bin/gh pr checks 4242 --required >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null
+expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+read_view >/dev/null; ./bin/gh pr checks 4242 --required >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # full check list unread
 read_rest
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit deadbeef
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
@@ -88,7 +104,7 @@ expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
 echo "an unpaginated comments read is the only missing prerequisite"
 build merges-on-fresh-head
-read_view >/dev/null; ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null
+read_view >/dev/null; ./bin/gh pr checks 4242 >/dev/null; ./bin/gh pr checks 4242 --required >/dev/null; threads_read example site 4242 >/dev/null
 ./bin/gh api repos/example/site/issues/4242/comments >/dev/null
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null
@@ -164,7 +180,7 @@ full_gate
 OLD_REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$t,body:$b}){comment{id}}}'
 expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OLD_REPLY_Q"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
-expect_ok ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$REPLY_Q"
+expect_ok published_reply T1 "Fixed the stale copy in place"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 if read_all_threads | jq -e '.[0].last.nodes[0].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
 # shellcheck disable=SC2016
@@ -182,7 +198,7 @@ thread website-reviewer someone-else 2026-09-17T19:00:00Z
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f query="$RESOLVE_Q"
-expect_ok ./bin/gh api graphql -F threadId=T1 -f query="$RESOLVE_Q"
+expect_ok published_resolve T1
 if read_all_threads | jq -e '.[0].isResolved == true' >/dev/null; then ok "thread served as resolved"; else bad "thread not resolved"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 full_gate
@@ -263,7 +279,7 @@ if [[ "$(head_now)" != "$old" ]]; then ok "head moved on removal"; else bad "hea
 if ./bin/gh api --paginate repos/example/site/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
 if ./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -q "removed_from_merge_queue"; then ok "removal event in timeline"; else bad "no timeline event"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
-./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null
+read_rest
 assert_eq "view 3" "$(read_view)" "OPEN CLEAN"
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 assert_eq "second attempt" "$(read_view)" "MERGED CLEAN"

@@ -12,7 +12,7 @@
 #   2. Gate. A merge needs --match-head-commit equal to the current head, and
 #      since the last invalidation (a merge command, a head move, an accepted
 #      mutation or a thread reply) a read of each of `pr view`, `pr checks`,
-#      the threads query and the issue comments. It also refuses when the
+#      `pr checks --required`, the threads query and the issue comments. It also refuses when the
 #      served state says no: any completed check not `pass` (pending counts
 #      as not finished and refuses too), a required check missing, review
 #      decision not APPROVED, merge state not CLEAN, not open, a draft, a
@@ -237,8 +237,7 @@ case "${1:-} ${2:-}" in
     render_view "$k" ;;
   "pr checks")
     require_number "${3:-}"
-    touch_gate checks
-    if [[ " $* " == *" --required "* ]]; then serve "$(fixture checks_required.tsv)"; else serve "$(fixture checks.tsv)"; fi ;;
+    if [[ " $* " == *" --required "* ]]; then touch_gate checks_required; serve "$(fixture checks_required.tsv)"; else touch_gate checks; serve "$(fixture checks.tsv)"; fi ;;
   "pr checkout")
     require_number "${3:-}"
     git -C "$repo" checkout -q "$(branch)"
@@ -256,7 +255,7 @@ case "${1:-} ${2:-}" in
     done
     [[ -n "$sha" ]] || fail "merge refused: --match-head-commit is required"
     [[ "$sha" == "$(head_sha)" ]] || fail "merge refused: head commit mismatch, the pull request head is $(head_sha) and you passed $sha"
-    for need in view checks threads comments; do
+    for need in view checks checks_required threads comments; do
       [[ -f "$gate/$need" ]] || fail "merge refused: the gate reading is incomplete since the last change ($need was not read for this pull request)"
     done
     [[ -f "$state/merged.env" ]] && fail "merge refused: pull request is already merged"

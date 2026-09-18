@@ -24,7 +24,8 @@ a self-test case:
 - Every `gh pr` subcommand, mutating ones included, names the pull request
   number.
 - The threads read counts only when the query equals, ignoring whitespace,
-  the query `review-loop.md` prints, is run with `--paginate`, and its
+  the query `review-loop.md` prints (the self-test runs the published
+  commands themselves, extracted from that file), is run with `--paginate`, and its
   `owner`, `name` and `number` variables match the fixture. Thread author
   and last comment come from the aliased `first` and `last` fields.
 - A reply or resolve counts only when the mutation equals, ignoring
@@ -36,8 +37,8 @@ a self-test case:
 - Paginated reads print one JSON document per page, two items per page.
 - A merge carries `--match-head-commit` equal to the current head.
 - Since the last invalidation (a merge command, a head move, an accepted
-  mutation or a thread reply), `pr view`, `pr checks`, threads and comments
-  were all read.
+  mutation or a thread reply), `pr view`, `pr checks`, `pr checks
+  --required`, threads and comments were all read, each tracked separately.
 - Every completed check is `pass` and none is `pending`; every required
   check is present and `pass`.
 - `reviewDecision` is `APPROVED`, `mergeStateStatus` is `CLEAN`, the pull

@@ -88,8 +88,9 @@ Take the gate reading immediately before the merge command, after your last
 push and after every check has finished, and take all of it together: `gh pr
 view <number> --json reviewDecision,mergeStateStatus,headRefOid,isDraft,title,
 labels,body,latestReviews` (each review carries its author, state and
-`submittedAt`), `gh pr checks <number>`, the review threads through the
-query `review-loop.md` gives (with the author and time of each thread's last
+`submittedAt`), `gh pr checks <number>` and `gh pr checks <number>
+--required` (the full list and the required subset are separate reads), the
+review threads through the query `review-loop.md` gives (with the author and time of each thread's last
 comment), and the issue comments. Nothing read earlier in the session counts,
 because checks, threads, holds, and the description can all change while you
 work. Keep the `headRefOid` from that reading. Send the pull request to merge
