@@ -21,17 +21,19 @@ import {
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
-/**
- * Records that the consent card was offered unprompted, before it opens.
- * Claiming up front keeps a blocked or full storage from re-prompting on
- * every load, which is the failure mode the onboarding coach already has.
- */
-function claimAutoShow(userId: string, workspaceId: string): boolean {
-  const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+function writeAutoShown(key: string, shown: boolean): boolean {
+  try {
+    localStorage.setItem(key, String(shown))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function prepareAutoShow(key: string): boolean {
   try {
     if (localStorage.getItem(key) === 'true') return false
-    localStorage.setItem(key, 'true')
-    return true
+    return writeAutoShown(key, false)
   } catch {
     return false
   }
@@ -115,10 +117,19 @@ export function registerAgentPanelExtension(): void {
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         if (!userId || !workspaceId || workspaceStore.isSwitching) return
-        if (!claimAutoShow(userId, workspaceId)) return
+        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+        if (!prepareAutoShow(key)) return
 
         autoShowInFlight = true
-        void withConsent(() => agentPanelStore.open()).finally(() => {
+        void withConsent(
+          () => {
+            if (!agentPanelStore.enabled) return
+            agentPanelStore.open('automatic_consent')
+          },
+          () => {
+            writeAutoShown(key, true)
+          }
+        ).finally(() => {
           autoShowInFlight = false
         })
       }

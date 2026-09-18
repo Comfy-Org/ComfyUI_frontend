@@ -29,7 +29,8 @@ export function useAgentConsent() {
 
   function showConsentDialog(
     persistOnAccept = true,
-    expectedIdentity?: string
+    expectedIdentity?: string,
+    onShown?: () => void
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       let settled = false
@@ -94,6 +95,7 @@ export function useAgentConsent() {
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
+          onVnodeMounted: onShown,
           onAccept: () => void accept(),
           onReject: () => closeWith(false)
         },
@@ -117,8 +119,10 @@ export function useAgentConsent() {
     })
   }
 
-  async function acceptAfterSignIn(): Promise<string | null> {
-    if (!(await showConsentDialog(false))) return null
+  async function acceptAfterSignIn(
+    onShown?: () => void
+  ): Promise<string | null> {
+    if (!(await showConsentDialog(false, undefined, onShown))) return null
     try {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
@@ -151,7 +155,9 @@ export function useAgentConsent() {
     }
   }
 
-  async function requestConsentForCurrentUser(): Promise<string | null> {
+  async function requestConsentForCurrentUser(
+    onShown?: () => void
+  ): Promise<string | null> {
     let decisionIdentity: string | null
     try {
       decisionIdentity = await consentStore.ensureScope()
@@ -170,15 +176,21 @@ export function useAgentConsent() {
     }
 
     if (identity.value !== decisionIdentity) return null
-    if (!accepted.value && !(await showConsentDialog(true, decisionIdentity)))
+    if (
+      !accepted.value &&
+      !(await showConsentDialog(true, decisionIdentity, onShown))
+    )
       return null
     return decisionIdentity
   }
 
-  async function withConsent(onAccept: () => void): Promise<void> {
+  async function withConsent(
+    onAccept: () => void,
+    onShown?: () => void
+  ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser()
-      : await acceptAfterSignIn()
+      ? await requestConsentForCurrentUser(onShown)
+      : await acceptAfterSignIn(onShown)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

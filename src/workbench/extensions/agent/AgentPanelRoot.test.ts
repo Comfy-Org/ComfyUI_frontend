@@ -464,7 +464,6 @@ describe('AgentPanelRoot onboarding', () => {
   })
 
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
-    localStorage.removeItem(SCOPED_KEY)
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -482,7 +481,6 @@ describe('AgentPanelRoot onboarding', () => {
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
-    localStorage.removeItem(SCOPED_KEY)
     render(
       defineComponent({
         setup: () => () =>
@@ -535,6 +533,22 @@ describe('AgentPanelRoot onboarding', () => {
     const composer = screen.getByRole('textbox')
     await userEvent.click(composer)
     expect(composer).toHaveFocus()
+  })
+
+  it('preserves legacy tour completion when the panel mounts again', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 

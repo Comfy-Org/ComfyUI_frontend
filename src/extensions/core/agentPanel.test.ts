@@ -10,7 +10,7 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 
 import type { ComfyExtension } from '@/types/comfy'
 import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -44,18 +44,17 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-const withConsentMock = vi.fn(async (onAccept: () => void) => {
-  onAccept()
-})
-
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => ({
-    useAgentConsent: () =>
-      fromPartial<ReturnType<typeof useAgentConsent>>({
-        withConsent: withConsentMock
+  () => {
+    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
+      withConsent: vi.fn(async (onAccept: () => void, onShown?: () => void) => {
+        onShown?.()
+        onAccept()
       })
-  })
+    })
+    return { useAgentConsent: () => consent }
+  }
 )
 
 const mocks = vi.hoisted(() => ({
@@ -156,7 +155,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
-    withConsentMock.mockClear()
     localStorage.clear()
     canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
@@ -179,7 +177,83 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     await flush()
 
-    expect(withConsentMock).toHaveBeenCalledOnce()
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+  })
+
+  it('keeps the panel closed if the feature is disabled before acceptance', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let accept = () => {}
+    let finish = () => {}
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (onAccept) => {
+        accept = onAccept
+        await pending
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    mocks.flagEnabled = false
+    mocks.flagListener?.()
+    accept()
+    finish()
+    await pending
+
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
+  it('records the automatic offer only after the card is displayed', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
+    let show = () => {}
+    let finish = () => {}
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, onShown) => {
+        show = onShown ?? show
+        await pending
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(key)).not.toBe('true')
+    mocks.flagListener?.()
+    await flush()
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+
+    show()
+    expect(localStorage.getItem(key)).toBe('true')
+    finish()
+    await pending
+  })
+
+  it('offers again after a previous attempt returned without displaying the card', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockResolvedValueOnce(undefined)
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    mocks.flagListener?.()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+
     expect(agentStore.open).toHaveBeenCalledOnce()
   })
 
@@ -191,22 +265,53 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     await flush()
 
-    expect(withConsentMock).not.toHaveBeenCalled()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
-  it('offers the card one time only for the same account and workspace', async () => {
-    mocks.flagEnabled = true
-    Object.assign(consentStore, { accepted: false, isChecking: false })
+  it.for([
+    { userId: 'account-b', workspaceId: 'workspace-a' },
+    { userId: 'account-a', workspaceId: 'workspace-b' }
+  ])(
+    'offers independently for $userId / $workspaceId',
+    async ({ userId, workspaceId }) => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
 
-    await loadEntryAndSetup()
-    await flush()
-    expect(withConsentMock).toHaveBeenCalledOnce()
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
 
-    Object.assign(consentStore, { identity: 'account-a/workspace-a-again' })
-    await flush()
+      currentUser.value = { id: userId }
+      Object.assign(workspaceStore, { activeWorkspaceId: workspaceId })
+      Object.assign(consentStore, { identity: `${userId}/${workspaceId}` })
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+      )
 
-    expect(withConsentMock).toHaveBeenCalledOnce()
-  })
+      currentUser.value = { id: 'account-a' }
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-a' })
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it.for(['getItem', 'setItem'] as const)(
+    'skips the automatic offer when storage %s fails',
+    async (method) => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.spyOn(localStorage, method).mockImplementation(() => {
+        throw new Error('Storage unavailable')
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    }
+  )
 
   it('stays silent when the saved consent cannot be read', async () => {
     mocks.flagEnabled = true
@@ -216,7 +321,7 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     await flush()
 
-    expect(withConsentMock).not.toHaveBeenCalled()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
   it('does not self-register when its module is imported', async () => {
