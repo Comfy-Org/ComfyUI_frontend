@@ -125,6 +125,7 @@ describe('template input preparation', () => {
         upload: 'image'
       })
     }
+    expect(result.uploadedCount).toBe(1)
     expect(original.nodes[0].widgets_values).toEqual([
       'kitten_cop.mp4',
       'image'
@@ -180,7 +181,7 @@ describe('template input preparation', () => {
         true
       )
 
-      expect(result).toEqual({ workflow: graph, errors: [] })
+      expect(result).toEqual({ workflow: graph, uploadedCount: 0, errors: [] })
       expect(fetch).not.toHaveBeenCalled()
       expect(api.fetchApi).not.toHaveBeenCalled()
     }
@@ -193,7 +194,7 @@ describe('template input preparation', () => {
       const result = await prepare(graph, [
         { ...input(), sourceRevision: revision }
       ])
-      expect(result).toEqual({ workflow: graph, errors: [] })
+      expect(result).toEqual({ workflow: graph, uploadedCount: 0, errors: [] })
       expect(result.workflow).toBe(graph)
       expect(fetch).not.toHaveBeenCalled()
       expect(api.fetchApi).not.toHaveBeenCalled()
@@ -231,13 +232,19 @@ describe('template input preparation', () => {
 
   it('only fetches declared files that are still used by supported input nodes', async () => {
     const graph = workflow([videoNode(35, 'my_video.mp4')])
-    expect(await prepare(graph)).toEqual({ workflow: graph, errors: [] })
+    expect(await prepare(graph)).toEqual({
+      workflow: graph,
+      uploadedCount: 0,
+      errors: []
+    })
     expect(await prepare(workflow(), [])).toEqual({
       errors: [],
+      uploadedCount: 0,
       workflow: workflow()
     })
     expect(await prepare(workflow(), [{ ...input(), nodeId: 99 }])).toEqual({
       errors: [],
+      uploadedCount: 0,
       workflow: workflow()
     })
     expect(fetch).not.toHaveBeenCalled()
@@ -260,7 +267,13 @@ describe('template input preparation', () => {
       new Response('Not found', { status: 404 })
     )
     await expect(prepare()).resolves.toMatchObject({
-      errors: [expect.any(Error)]
+      uploadedCount: 0,
+      errors: [
+        expect.objectContaining({
+          message: `Template sample download failed: kitten_cop.mp4 (${sourceRevision})`,
+          cause: expect.objectContaining({ message: 'HTTP 404' })
+        })
+      ]
     })
     expect(api.fetchApi).not.toHaveBeenCalled()
   })
@@ -273,8 +286,35 @@ describe('template input preparation', () => {
     async (response) => {
       vi.mocked(api.fetchApi).mockResolvedValue(response)
       await expect(prepare()).resolves.toMatchObject({
-        errors: [expect.any(Error)]
+        uploadedCount: 0,
+        errors: [
+          expect.objectContaining({
+            message: `Template sample upload failed: kitten_cop.mp4 (${sourceRevision})`,
+            cause: expect.any(Error)
+          })
+        ]
       })
+    }
+  )
+
+  it.for([
+    { operation: 'download', request: () => vi.mocked(fetch) },
+    { operation: 'upload', request: () => vi.mocked(api.fetchApi) }
+  ])(
+    'preserves the cause of a $operation failure',
+    async ({ operation, request }) => {
+      const cause = new TypeError('Network unavailable')
+      request().mockRejectedValue(cause)
+
+      const result = await prepare()
+
+      expect(result.uploadedCount).toBe(0)
+      expect(result.errors).toEqual([
+        expect.objectContaining({
+          message: `Template sample ${operation} failed: kitten_cop.mp4 (${sourceRevision})`,
+          cause
+        })
+      ])
     }
   )
 
@@ -298,6 +338,7 @@ describe('template input preparation', () => {
       { ...input('failed.mp4'), nodeId: 36 },
       { ...input('last.mp4'), nodeId: 37 }
     ])
+    expect(result.uploadedCount).toBe(2)
     expect(result.errors).toHaveLength(2)
     expect(result.workflow.nodes.map((node) => node.widgets_values)).toEqual([
       ['first (1).mp4', 'image'],

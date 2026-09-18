@@ -695,33 +695,41 @@ describe('useTemplateWorkflows', () => {
     }
   )
 
-  it.for(['http', 'network', 'timeout', 'upload', 'unsupported'])(
-    'opens the workflow when optional sample preparation fails: %s',
-    async (failure) => {
+  it.for([
+    {
+      failure: 'http',
+      download: async () => new Response('Not found', { status: 404 }),
+      uploadStatus: 200
+    },
+    {
+      failure: 'network',
+      download: async () => {
+        throw new TypeError('Network unavailable')
+      },
+      uploadStatus: 200
+    },
+    {
+      failure: 'timeout',
+      download: async () => {
+        throw new DOMException('Sample timed out', 'TimeoutError')
+      },
+      uploadStatus: 200
+    },
+    {
+      failure: 'upload',
+      download: async () => new Response('video'),
+      uploadStatus: 500
+    }
+  ])(
+    'opens the workflow when optional sample preparation fails: $failure',
+    async ({ download, uploadStatus }) => {
       const graph = addVideoTemplate()
-      if (failure === 'unsupported') {
-        const template = mockWorkflowTemplatesStore.enhancedTemplates.find(
-          (item) => item.name === 'video'
-        )
-        const input = template?.io?.inputs?.[0]
-        if (!input) throw new Error('Missing sample input')
-        input.file = '../kitten_cop.mp4'
-        graph.nodes[0].widgets_values = ['../kitten_cop.mp4', 'image']
-        graph.nodes[0].widgets_values_named = { file: '../kitten_cop.mp4' }
-      }
-      vi.mocked(fetch).mockImplementation(async (url) => {
-        if (!String(url).endsWith('.mp4')) return Response.json(graph)
-        if (failure === 'network') throw new TypeError('Network unavailable')
-        if (failure === 'timeout')
-          throw new DOMException('Sample timed out', 'TimeoutError')
-        return failure === 'http'
-          ? new Response('Not found', { status: 404 })
-          : new Response('video')
-      })
-      if (failure === 'upload')
-        vi.mocked(api.fetchApi).mockResolvedValue(
-          new Response('', { status: 500 })
-        )
+      vi.mocked(fetch)
+        .mockImplementation(download)
+        .mockResolvedValueOnce(Response.json(graph))
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'kitten_cop.mp4' }, { status: uploadStatus })
+      )
       const loader = useTemplateWorkflows()
       expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(true)
       expect(app.loadGraphData).toHaveBeenCalledWith(
@@ -731,6 +739,7 @@ describe('useTemplateWorkflows', () => {
         expect.any(String),
         { openSource: 'template' }
       )
+      expect(app.reloadNodeDefs).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).toHaveBeenCalled()
       expect(useToastStore().messagesToAdd).toContainEqual(
         expect.objectContaining({
@@ -740,6 +749,37 @@ describe('useTemplateWorkflows', () => {
       )
     }
   )
+
+  it('opens the workflow without downloading an unsafe sample filename', async () => {
+    const graph = addVideoTemplate()
+    const template = mockWorkflowTemplatesStore.enhancedTemplates.find(
+      (item) => item.name === 'video'
+    )
+    const input = template?.io?.inputs?.[0]
+    assert.exists(input)
+    input.file = '../kitten_cop.mp4'
+    graph.nodes[0].widgets_values = ['../kitten_cop.mp4', 'image']
+    graph.nodes[0].widgets_values_named = { file: '../kitten_cop.mp4' }
+
+    expect(
+      await useTemplateWorkflows().loadWorkflowTemplate('video', 'default')
+    ).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({ nodes: graph.nodes }),
+      true,
+      true,
+      expect.any(String),
+      { openSource: 'template' }
+    )
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: expect.stringContaining('choose your own files')
+      })
+    )
+  })
 
   it('opens with the uploaded filename even if refreshing node definitions fails', async () => {
     const graph = addVideoTemplate()
