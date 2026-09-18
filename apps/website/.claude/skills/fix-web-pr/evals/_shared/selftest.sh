@@ -25,8 +25,8 @@ read_view() {
 }
 # shellcheck disable=SC2016
 Q='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:50){nodes{id isResolved}}}}}'
-threads_read() { ./bin/gh api graphql -F owner="${1:-example}" -F name="${2:-site}" -F number="${3:-4242}" -f query="${4:-$Q}"; }
-read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read >/dev/null; ./bin/gh api repos/example/site/issues/4242/comments >/dev/null; }
+threads_read() { ./bin/gh api graphql -F owner="$1" -F name="$2" -F number="$3" -f query="${4:-$Q}"; }
+read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api repos/example/site/issues/4242/comments >/dev/null; }
 reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -o '"reason": "[^"]*"' | sort -u | wc -l | tr -d ' '; }
 full_gate() { read_view >/dev/null; read_rest; }
 
@@ -139,7 +139,7 @@ REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pull
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
 expect_ok ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$REPLY_Q"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
-if threads_read | grep -q '"lastCommentBy": "dana-comfy"'; then ok "reply recorded on the thread"; else bad "reply not recorded"; fi
+if threads_read example site 4242 | grep -q '"lastCommentBy": "dana-comfy"'; then ok "reply recorded on the thread"; else bad "reply not recorded"; fi
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 printf 'REVIEW_AT=2026-09-17T22:00:00Z\n' > bin/state/view.env
@@ -191,7 +191,7 @@ if [[ "$(head_now)" != "$old" ]]; then ok "head moved on removal"; else bad "hea
 if ./bin/gh api repos/example/site/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
 if ./bin/gh api --paginate repos/example/site/issues/4242/timeline | grep -q "removed_from_merge_queue"; then ok "removal event in timeline"; else bad "no timeline event"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
-./bin/gh pr checks 4242 >/dev/null; threads_read >/dev/null
+./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null
 assert_eq "view 3" "$(read_view)" "OPEN CLEAN"
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 assert_eq "second attempt" "$(read_view)" "MERGED CLEAN"
