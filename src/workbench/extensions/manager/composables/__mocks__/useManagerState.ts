@@ -11,7 +11,7 @@ type ManagerStateMock = Pick<
 const managerState: ManagerStateMock = {
   isNewManagerUI: computed(() => false),
   shouldShowManagerButtons: computed(() => false),
-  openManager: vi.fn<ManagerState['openManager']>(async () => {})
+  openManager: vi.fn(async () => {})
 }
 
 export const useManagerState = vi.fn(() => managerState)

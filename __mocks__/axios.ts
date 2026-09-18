@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import type realAxios from 'axios'
 
-export default {
-  get: vi.fn<typeof realAxios.get>()
+const axios: Pick<typeof realAxios, 'get'> = {
+  get: vi.fn()
 }
+
+export default axios

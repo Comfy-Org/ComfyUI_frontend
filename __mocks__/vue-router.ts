@@ -1,16 +1,24 @@
 import { onTestFinished, vi } from 'vitest'
 import type { LocationQuery, Router } from 'vue-router'
 
-const query: LocationQuery = {}
-const router: Pick<Router, 'replace'> = {
-  replace: vi.fn<Router['replace']>(async () => {})
+type VueRouterMock = {
+  useRoute: () => { query: LocationQuery }
+  useRouter: () => Pick<Router, 'replace'>
 }
 
-export const useRoute = vi.fn(() => {
-  onTestFinished(() => {
-    for (const key of Object.keys(query)) delete query[key]
-  })
-  return { query }
-})
+const query: LocationQuery = {}
+const router: Pick<Router, 'replace'> = {
+  replace: vi.fn(async () => {})
+}
 
-export const useRouter = vi.fn(() => router)
+const vueRouter: VueRouterMock = {
+  useRoute: vi.fn(() => {
+    onTestFinished(() => {
+      for (const key of Object.keys(query)) delete query[key]
+    })
+    return { query }
+  }),
+  useRouter: vi.fn(() => router)
+}
+
+export const { useRoute, useRouter } = vueRouter
