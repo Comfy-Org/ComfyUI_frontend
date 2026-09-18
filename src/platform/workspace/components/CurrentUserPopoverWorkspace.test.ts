@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
@@ -43,14 +44,7 @@ const state = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userDisplayName: ref('Liz'),
-    userEmail: ref('liz@example.com'),
-    userPhotoUrl: ref(null),
-    handleSignOut: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -231,6 +225,9 @@ function stubHostedTab(): Window & { readonly writes: readonly string[] } {
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    useCurrentUser().userDisplayName = computed(() => 'Liz')
+    useCurrentUser().userEmail = computed(() => 'liz@example.com')
+    useCurrentUser().userPhotoUrl = computed(() => null)
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true

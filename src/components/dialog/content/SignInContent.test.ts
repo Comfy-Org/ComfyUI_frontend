@@ -39,7 +39,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
