@@ -9,9 +9,8 @@ import type { AgentConversation } from '@e2e/fixtures/data/agent/agentConversati
  *
  * Node positions are chosen outside the browser, from the graph's bounding box
  * rather than from the camera, so on a wide graph the new nodes are placed past
- * the edge of the view. Nothing but a rendered-geometry assertion can tell that
- * apart from a build that landed in front of the user: the ops apply, the nodes
- * exist, and the panel reports success either way.
+ * the edge of the view. Successful ops and node existence alone do not prove
+ * that the rendered result is visible to the user.
  *
  * The visible area is the page viewport minus the docked panel, measured from
  * the panel's own box. A node drawn behind the panel is painted but not seen,
