@@ -263,7 +263,13 @@ describe('WidgetGrid', () => {
   it('renders connection-suppressed widgets as input sockets without controls', () => {
     renderGrid([
       {
-        ...widget('prompt', 'text', 0),
+        ...widget('value_1', 'text', 0),
+        simplified: {
+          name: 'value_1',
+          label: 'duration',
+          type: 'text',
+          value: 0
+        },
         visible: false,
         suppressedByConnection: true
       },
@@ -280,8 +286,9 @@ describe('WidgetGrid', () => {
       widget('steps', 'number', 3)
     ])
 
-    expect(screen.getByText('prompt')).toBeVisible()
-    expect(screen.getByLabelText('prompt')).toBeVisible()
+    expect(screen.getByText('duration')).toBeVisible()
+    expect(screen.getByLabelText('duration')).toBeVisible()
+    expect(screen.queryByText('value_1')).not.toBeInTheDocument()
     expect(screen.queryByText('hidden_no_slot')).not.toBeInTheDocument()
     expect(screen.queryByText('hidden_by_extension')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(2)

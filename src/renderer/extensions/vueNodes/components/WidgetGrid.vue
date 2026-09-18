@@ -34,6 +34,7 @@
             :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
             :slot-data="{
               name: row.widget.simplified.name,
+              label: row.widget.simplified.label,
               type: row.widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
