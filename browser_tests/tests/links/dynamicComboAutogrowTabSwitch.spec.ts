@@ -30,10 +30,12 @@ const WORKFLOW_NODE_COUNT = CONNECTED_IMAGES.length + 1
 
 test.describe(
   'Dynamic combo autogrow links across a workflow tab switch',
-  { tag: ['@canvas', '@node', '@workflow'] },
+  { tag: ['@canvas', '@node', '@workflow', '@slow'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // Five interactive drags, plus a poll the pinned test never satisfies.
+      // Required, not slack: five interactive drags plus a poll the pinned
+      // test never satisfies run ~15.6s, against the chromium project's 15s.
+      // Without this the pin times out and reports red instead of expected.
       test.slow()
       await comfyPage.workflow.loadWorkflow(`links/${WORKFLOW_NAME}`)
 
