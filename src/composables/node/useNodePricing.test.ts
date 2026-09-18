@@ -1,7 +1,5 @@
-import {
-  type NodePricingFailureReporter,
-  setNodePricingFailureReporter
-} from '@comfyorg/shared-frontend-utils/nodePricingFailure'
+import type { NodePricingFailureReporter } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
+import { setNodePricingFailureReporter } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'

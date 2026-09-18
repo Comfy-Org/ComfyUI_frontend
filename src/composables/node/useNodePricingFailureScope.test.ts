@@ -57,7 +57,6 @@ describe('scheduleEvaluation failure scoping', () => {
       operation: 'format',
       nodeType: 'FormatBugNode',
       source: 'live_node',
-      expr: '{"type":"usd","usd":0.05}',
       cause: expect.objectContaining({ message: 'formatting regression' })
     })
   })
