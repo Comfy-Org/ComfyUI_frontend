@@ -46,15 +46,8 @@ const graphMutations = fromPartial<GraphMutations>({
   clearSemanticGraph: vi.fn(() => true)
 })
 
-interface SentFrame {
-  type: string
-  data: { workflow_id: string }
-}
-
-function framesSent(): SentFrame[] {
-  return apiState.send.mock.calls.map(
-    ([frame]) => JSON.parse(frame) as SentFrame
-  )
+function framesSent(): unknown[] {
+  return apiState.send.mock.calls.map(([frame]) => JSON.parse(frame) as unknown)
 }
 
 function dispatchServerFrame(
