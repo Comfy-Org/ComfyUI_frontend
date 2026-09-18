@@ -102,12 +102,8 @@ export interface AgentArrivalFramer {
 /**
  * Point the user at what the agent just built.
  *
- * The agent chooses node positions from the graph's bounding box rather than
- * from the camera - it has no access to the camera, and no tool, op or frame
- * carries one - so on a wide graph its nodes are routinely placed a screen or
- * more away from where the user is looking. Every human add path already
- * defaults to the camera (`litegraphService`'s `getCanvasCenter`), which leaves
- * the agent as the only writer whose output can land out of view.
+ * Agent operations carry graph-relative positions, which can place new nodes
+ * outside the current viewport.
  *
  * Two things happen, both off the ids the reconcile pass already reports:
  *
