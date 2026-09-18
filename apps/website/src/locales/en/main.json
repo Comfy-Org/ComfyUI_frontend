@@ -1899,6 +1899,10 @@
     "contact": {
       "label": "CONTACT",
       "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
+    },
+    "meta": {
+      "title": "Gallery - Comfy",
+      "description": "Work built in ComfyUI by the community: images, video, and 3D. Submit your own to be featured on the site and Comfy's social channels."
     }
   },
   "about": {
@@ -3504,6 +3508,10 @@
       "quote3": "ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.",
       "name3": "Alex Chen",
       "role3": "Head of AI at Creative Studios"
+    },
+    "meta": {
+      "title": "ComfyUI Customer Stories: Studios, Brands, and Artists",
+      "description": "Customer stories from studios, brands, artists, and universities using ComfyUI for campaigns, games, films, public art, and teaching."
     }
   },
   "contact": {
@@ -3697,6 +3705,13 @@
         "qwenAdvancedEdit": "Advanced image\nediting with Qwen",
         "wan22TextToVideo": "Wan 2.2\ntext to video"
       }
+    },
+    "meta": {
+      "title": "Models - Comfy",
+      "description": "Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+    },
+    "grokImagine": {
+      "videoAriaLabel": "Grok Imagine output created with ComfyUI"
     }
   },
   "payment": {

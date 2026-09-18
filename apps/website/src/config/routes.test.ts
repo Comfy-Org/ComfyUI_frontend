@@ -4,6 +4,15 @@ import { getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
   it.for([
+    { href: '/models', localized: '/zh-CN/models' },
+    { href: '/models/', localized: '/zh-CN/models/' },
+    { href: '/models?source=nav', localized: '/zh-CN/models?source=nav' },
+    { href: '/models/example/', localized: '/models/example/' }
+  ])('localizes $href for publication', ({ href, localized }) => {
+    expect(localizeHref(href, 'zh-CN', 'publication')).toBe(localized)
+  })
+
+  it.for([
     {
       href: '/cloud#pricing',
       locale: 'zh-CN',

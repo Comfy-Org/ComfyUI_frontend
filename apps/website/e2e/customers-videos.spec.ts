@@ -79,14 +79,19 @@ test.describe('Customer watch pages @smoke', () => {
       expect(video?.thumbnailUrl).toBe(story.poster)
       expect(video?.contentUrl).toBe(story.videoSrc)
       expect(video?.inLanguage).toBe('en')
-      expect((video?.publisher as { '@id'?: string })?.['@id']).toBe(
-        'https://comfy.org/#organization'
-      )
+      expect(
+        (video?.publisher as { '@id'?: string } | undefined)?.['@id']
+      ).toBe('https://comfy.org/#organization')
 
       const webPage = graph.find((node) => node['@type'] === 'WebPage')
-      expect((webPage?.mainEntity as { '@id'?: string })?.['@id']).toBe(
-        video?.['@id']
-      )
+      // Both sides of the comparison below are optional, so a graph missing
+      // both nodes would compare undefined against undefined and pass — turning
+      // the regression this checks for into a green test.
+      expect(webPage, 'the graph has no WebPage node').toBeDefined()
+      expect(video?.['@id'], 'the VideoObject has no @id').toBeTruthy()
+      expect(
+        (webPage?.mainEntity as { '@id'?: string } | undefined)?.['@id']
+      ).toBe(video?.['@id'])
 
       const player = page.locator('video')
       await expect(player).toHaveCount(1)

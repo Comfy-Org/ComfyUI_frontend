@@ -21,9 +21,9 @@ describe('HostEventSection', () => {
     render(HostEventSection)
 
     for (const key of ['check1', 'check2', 'check3'] as const) {
-      expect(screen.getByText(t(`events.host.step1.${key}`))).toBeTruthy()
+      expect(screen.getByText(t(`events.host.step1.${key}`, 'en'))).toBeTruthy()
     }
-    expect(screen.getByText(t('events.host.step1.whoBody'))).toBeTruthy()
+    expect(screen.getByText(t('events.host.step1.whoBody', 'en'))).toBeTruthy()
   })
 
   it('points the browse link at the on-page directory', async () => {
@@ -31,14 +31,14 @@ describe('HostEventSection', () => {
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: `2. ${t('events.host.step2.title')}`
+        name: `2. ${t('events.host.step2.title', 'en')}`
       })
     )
     await nextTick()
 
     expect(
       screen
-        .getByRole('link', { name: t('events.host.step2.browseLink') })
+        .getByRole('link', { name: t('events.host.step2.browseLink', 'en') })
         .getAttribute('href')
     ).toBe('#events-directory')
   })
@@ -58,11 +58,13 @@ describe('HostEventSection', () => {
     render(HostEventSection)
 
     await userEvent.click(
-      screen.getByRole('button', { name: `3. ${t('events.host.step3.title')}` })
+      screen.getByRole('button', {
+        name: `3. ${t('events.host.step3.title', 'en')}`
+      })
     )
     await nextTick()
 
-    expect(screen.getByText(t('events.host.step3.body'))).toBeTruthy()
+    expect(screen.getByText(t('events.host.step3.body', 'en'))).toBeTruthy()
     const applies = screen.getAllByRole('link', { name: 'Apply to host' })
     expect(applies).toHaveLength(2)
     for (const apply of applies) {
@@ -77,26 +79,36 @@ describe('HostEventSection', () => {
     render(HostEventSection)
 
     await userEvent.click(
-      screen.getByRole('button', { name: `4. ${t('events.host.step4.title')}` })
+      screen.getByRole('button', {
+        name: `4. ${t('events.host.step4.title', 'en')}`
+      })
     )
     await nextTick()
 
     for (const key of ['item1', 'item2', 'item3'] as const) {
-      expect(screen.getByText(t(`events.host.step4.${key}.title`))).toBeTruthy()
+      expect(
+        screen.getByText(t(`events.host.step4.${key}.title`, 'en'))
+      ).toBeTruthy()
     }
-    expect(screen.getByText(t('events.host.step4.item1.body'))).toBeTruthy()
-    expect(screen.getByText(t('events.host.step4.item2.body'))).toBeTruthy()
+    expect(
+      screen.getByText(t('events.host.step4.item1.body', 'en'))
+    ).toBeTruthy()
+    expect(
+      screen.getByText(t('events.host.step4.item2.body', 'en'))
+    ).toBeTruthy()
   })
 
   it('closes the promotion step with another route to the application', async () => {
     render(HostEventSection)
 
     await userEvent.click(
-      screen.getByRole('button', { name: `5. ${t('events.host.step5.title')}` })
+      screen.getByRole('button', {
+        name: `5. ${t('events.host.step5.title', 'en')}`
+      })
     )
     await nextTick()
 
-    expect(screen.getByText(t('events.host.step5.body'))).toBeTruthy()
+    expect(screen.getByText(t('events.host.step5.body', 'en'))).toBeTruthy()
     expect(screen.getAllByRole('link', { name: 'Apply to host' })).toHaveLength(
       2
     )

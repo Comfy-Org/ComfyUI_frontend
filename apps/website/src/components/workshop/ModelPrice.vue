@@ -2,10 +2,14 @@
 import { computed } from 'vue'
 
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
+import type { Locale } from '../../config/locales'
 import { splitPriceLabel } from '../../lib/workshop/price-label'
 import { t } from '../../i18n/translations'
 
-const { estimate } = defineProps<{ estimate?: string }>()
+const { estimate, locale = 'en' } = defineProps<{
+  estimate?: string
+  locale?: Locale
+}>()
 
 const price = computed(() => splitPriceLabel(estimate ?? ''))
 </script>
@@ -23,10 +27,10 @@ const price = computed(() => splitPriceLabel(estimate ?? ''))
         }}</span>
       </span>
       <InfoTooltip
-        :text="t('workshop.model.nodePriceDefaults')"
-        :label="t('workshop.model.priceNoteLabel')"
+        :text="t('workshop.model.nodePriceDefaults', locale)"
+        :label="t('workshop.model.priceNoteLabel', locale)"
       />
     </template>
-    <template v-else>{{ t('workshop.model.variablePrice') }}</template>
+    <template v-else>{{ t('workshop.model.variablePrice', locale) }}</template>
   </p>
 </template>

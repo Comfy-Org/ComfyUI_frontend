@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE } from './locales'
+import type { Locale } from './locales'
 import type { WorkshopModelDetail } from './models-catalogue'
 import { applyRouterDefaultInputs } from './router-default-inputs'
 import type {
@@ -14,14 +16,18 @@ import {
 
 export function workshopPageSchema(
   model: WorkshopModelDetail,
-  activeExample?: PlaygroundExample
+  activeExample?: PlaygroundExample,
+  locale: Locale = DEFAULT_LOCALE
 ): readonly FieldSchema[] {
-  return schemaForModel({
-    fields: activeExample?.fields ?? model.fields,
-    modality: model.modality,
-    incompleteReason: model.incompleteReason,
-    form: activeExample?.fields ? undefined : model.form
-  })
+  return schemaForModel(
+    {
+      fields: activeExample?.fields ?? model.fields,
+      modality: model.modality,
+      incompleteReason: model.incompleteReason,
+      form: activeExample?.fields ? undefined : model.form
+    },
+    locale
+  )
 }
 
 export interface InitialWorkshopPageState {
@@ -34,9 +40,10 @@ export interface InitialWorkshopPageState {
 
 export function workshopExampleState(
   model: WorkshopModelDetail,
-  example: PlaygroundExample
+  example: PlaygroundExample,
+  locale: Locale = DEFAULT_LOCALE
 ) {
-  const schema = workshopPageSchema(model, example)
+  const schema = workshopPageSchema(model, example, locale)
   const exampleState = exampleValues(schema, example)
   const seeded = applyRouterDefaultInputs(model, schema, exampleState)
   // The example owns every field it sets, including the indexed siblings of
@@ -62,16 +69,17 @@ function baseFieldName(name: string): string {
 
 /** The exact form state a model page presents before the visitor changes it. */
 export function initialWorkshopPageState(
-  model: WorkshopModelDetail
+  model: WorkshopModelDetail,
+  locale: Locale = DEFAULT_LOCALE
 ): InitialWorkshopPageState {
   const examples = examplesForModel(model)
   const firstExample = examples.at(0)
   const activeExample =
     firstExample?.fields && !firstExample.sampleOnly ? firstExample : undefined
-  const schema = workshopPageSchema(model, activeExample)
+  const schema = workshopPageSchema(model, activeExample, locale)
   const state =
     firstExample && !firstExample.sampleOnly
-      ? workshopExampleState(model, firstExample)
+      ? workshopExampleState(model, firstExample, locale)
       : {
           schema,
           values: applyRouterDefaultInputs(

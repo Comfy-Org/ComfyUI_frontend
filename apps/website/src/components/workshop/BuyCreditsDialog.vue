@@ -269,11 +269,8 @@ function checkoutScopeIsCurrent(scope: CheckoutScope): boolean {
   )
 }
 
-function requireCurrentCheckoutScope(
-  scope: CheckoutScope,
-  message: string
-): void {
-  if (!checkoutScopeIsCurrent(scope)) throw new Error(message)
+function requireCurrentCheckoutScope(scope: CheckoutScope, error: Error): void {
+  if (!checkoutScopeIsCurrent(scope)) throw error
 }
 
 async function creditsBeforeCheckout(
@@ -282,7 +279,7 @@ async function creditsBeforeCheckout(
 ): Promise<number> {
   await refreshWorkshopCredits({ force: true })
   controller.signal.throwIfAborted()
-  requireCurrentCheckoutScope(scope, 'Credit balance is unavailable')
+  requireCurrentCheckoutScope(scope, new Error('Credit balance is unavailable'))
   const currentBalance = balance.value
   if (currentBalance.status !== 'ok')
     throw new Error('Credit balance is unavailable')
@@ -305,7 +302,10 @@ async function tokenForCheckout(
     fresh.session.workspace.id !== scope.workspaceId
   )
     throw new Error('Session changed before checkout')
-  requireCurrentCheckoutScope(scope, 'Session changed before checkout')
+  requireCurrentCheckoutScope(
+    scope,
+    new Error('Session changed before checkout')
+  )
   return fresh.session.token
 }
 
@@ -415,7 +415,10 @@ async function continueToCheckout() {
     controller.signal.throwIfAborted()
     if (checkoutController !== controller)
       throw new Error('Session changed before checkout opened')
-    requireCurrentCheckoutScope(scope, 'Session changed before checkout opened')
+    requireCurrentCheckoutScope(
+      scope,
+      new Error('Session changed before checkout opened')
+    )
     recordCheckout(scope, attemptId, previousCredits, checkout, tab)
   } catch (error) {
     handleCheckoutFailure(error, controller, tab, scope, attemptId, stage)

@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE } from './locales'
+import type { Locale } from './locales'
 import { t } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
@@ -289,78 +291,82 @@ function fromGenerated(field: GeneratedField): FieldSchema {
   }
 }
 
-const prompt: FieldSchema = {
-  kind: 'text',
-  name: 'prompt',
-  label: t('workshop.field.prompt'),
-  placeholder: t('workshop.field.promptPlaceholder'),
-  required: true,
-  multiline: true
-}
-
-const seed: FieldSchema = {
-  kind: 'number',
-  name: 'seed',
-  label: t('workshop.field.seed'),
-  min: 0,
-  max: 999999,
-  step: 1,
-  defaultValue: 42
-}
-
-const imageUpload: FieldSchema = {
-  kind: 'file',
-  name: 'image',
-  label: t('workshop.field.image'),
-  accept: ACCEPT.image,
-  maxBytes: MAX_UPLOAD_BYTES,
-  required: false
-}
-
-const aspectRatio: FieldSchema = {
-  kind: 'select',
-  name: 'aspect_ratio',
-  label: t('workshop.field.aspectRatio'),
-  options: ['16:9', '9:16', '1:1', '4:3'],
-  defaultValue: '16:9'
-}
-
 // Fallback schemas for models whose partner node the generator could not
 // resolve. Everything else comes from workshop-models.generated.json.
-const fallbackSchemas: Record<Modality | 'other', readonly FieldSchema[]> = {
-  image: [prompt, imageUpload, aspectRatio, seed],
-  video: [
-    prompt,
-    imageUpload,
-    aspectRatio,
-    {
-      kind: 'number',
-      name: 'duration',
-      label: t('workshop.field.duration'),
-      min: 2,
-      max: 10,
-      step: 1,
-      defaultValue: 5
-    },
-    seed
-  ],
-  audio: [prompt, seed],
-  '3d': [prompt, imageUpload, seed],
-  text: [prompt],
-  other: [prompt, seed]
+//
+// Built per call rather than held at module scope: the labels are looked up
+// in the page's own dictionary, and a browser loads only that one.
+function fallbackSchemas(
+  locale: Locale
+): Record<Modality | 'other', readonly FieldSchema[]> {
+  const prompt: FieldSchema = {
+    kind: 'text',
+    name: 'prompt',
+    label: t('workshop.field.prompt', locale),
+    placeholder: t('workshop.field.promptPlaceholder', locale),
+    required: true,
+    multiline: true
+  }
+  const seed: FieldSchema = {
+    kind: 'number',
+    name: 'seed',
+    label: t('workshop.field.seed', locale),
+    min: 0,
+    max: 999999,
+    step: 1,
+    defaultValue: 42
+  }
+  const imageUpload: FieldSchema = {
+    kind: 'file',
+    name: 'image',
+    label: t('workshop.field.image', locale),
+    accept: ACCEPT.image,
+    maxBytes: MAX_UPLOAD_BYTES,
+    required: false
+  }
+  const aspectRatio: FieldSchema = {
+    kind: 'select',
+    name: 'aspect_ratio',
+    label: t('workshop.field.aspectRatio', locale),
+    options: ['16:9', '9:16', '1:1', '4:3'],
+    defaultValue: '16:9'
+  }
+  return {
+    image: [prompt, imageUpload, aspectRatio, seed],
+    video: [
+      prompt,
+      imageUpload,
+      aspectRatio,
+      {
+        kind: 'number',
+        name: 'duration',
+        label: t('workshop.field.duration', locale),
+        min: 2,
+        max: 10,
+        step: 1,
+        defaultValue: 5
+      },
+      seed
+    ],
+    audio: [prompt, seed],
+    '3d': [prompt, imageUpload, seed],
+    text: [prompt],
+    other: [prompt, seed]
+  }
 }
 
 export function schemaForModel(
   model: Pick<
     WorkshopModelDetail,
     'fields' | 'modality' | 'form' | 'incompleteReason'
-  >
+  >,
+  locale: Locale = DEFAULT_LOCALE
 ): readonly FieldSchema[] {
   if (model.incompleteReason) return []
   if (model.form) return fieldsForDefinition(model.form).map(fromGenerated)
   return model.fields.length
     ? model.fields.map(fromGenerated)
-    : fallbackSchemas[model.modality ?? 'other']
+    : fallbackSchemas(locale)[model.modality ?? 'other']
 }
 
 export function defaultValues(

@@ -114,14 +114,19 @@ test('does not initialize Firebase on public pages', async ({
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('renders the public Models page without exposing the catalogue', async ({
-    page
-  }) => {
-    await page.goto('/models/')
-    await expect(page.getByTestId('workshop-loading')).toBeHidden()
-    await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-    await expect(
-      page.getByRole('link', { name: /Grok Imagine/i }).first()
-    ).toBeVisible()
-  })
+  for (const { path, heading } of [
+    { path: '/models/', heading: 'Grok Image and Video Creations' },
+    { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' }
+  ]) {
+    test(`renders localized marketing at ${path} without exposing the catalogue`, async ({
+      page
+    }) => {
+      await page.goto(path)
+      await expect(page.getByTestId('workshop-loading')).toBeHidden()
+      await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+      await expect(
+        page.getByRole('heading', { name: heading, exact: true })
+      ).toBeVisible()
+    })
+  }
 })
