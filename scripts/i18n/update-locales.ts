@@ -1,7 +1,9 @@
-import type { MessageFormat,
+import type {
+  MessageFormat,
   OutputLocale,
   TranslationPipelineConfig,
-  TranslationTarget } from './config'
+  TranslationTarget
+} from './config'
 import { execFileSync } from 'node:child_process'
 import {
   existsSync,
