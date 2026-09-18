@@ -495,7 +495,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -531,7 +532,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -821,7 +823,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
 
       captureAdapterFlags(load3d)
 
