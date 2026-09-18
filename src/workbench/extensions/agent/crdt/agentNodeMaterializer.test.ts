@@ -65,6 +65,24 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+class ApiHydratedWidgetNode extends LGraphNode {
+  constructor() {
+    super('api-hydrated-widget-node')
+  }
+}
+
+let includeSecondaryWidget = false
+
+class EvolvingWidgetNode extends LGraphNode {
+  constructor() {
+    super('evolving-widget-node')
+    this.addWidget('number', 'primary', 0, () => {})
+    if (includeSecondaryWidget) {
+      this.addWidget('number', 'secondary', 0, () => {})
+    }
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -113,6 +131,10 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
+    'api-hydrated-widget-node': {
+      widget_order: ['hydrated', 'secondary']
+    },
+    'evolving-widget-node': { widget_order: ['primary', 'secondary'] },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -201,11 +223,14 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('api-hydrated-widget-node', ApiHydratedWidgetNode)
+  LiteGraph.registerNodeType('evolving-widget-node', EvolvingWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
   configuredWidgetValues.length = 0
   configureShouldThrow = false
+  includeSecondaryWidget = false
 })
 
 describe('reconcileAgentAdapters', () => {
@@ -422,27 +447,338 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
     })
 
-    it('replaces a node whose record was re-created under the same id', () => {
+    it('preserves a same-type node whose record was re-created', () => {
       const graph = new LGraph()
-      const scope = seedAgentAddedNode(graph, 1)
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
-      const stale = graph.getNodeById(toNodeId(1))
-      expect(stale).toBeDefined()
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      expect(incumbent.widgets).toHaveLength(1)
 
       const mutations = remoteMutations(scope)
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
 
       const materialized = reconcileAgentAdapters(graph)
 
       expect(materialized).toEqual([toNodeId(1)])
       expect(graph._nodes).toHaveLength(1)
-      const replacement = graph.getNodeById(toNodeId(1))
-      expect(replacement?.id).toBe(toNodeId(1))
-      expect(replacement).not.toBe(stale)
-      expect(graph._nodes).not.toContain(stale)
-      expect(stale?.graph).toBeNull()
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets).toHaveLength(1)
+      expect(incumbent.widgets?.[0].value).toBe(8)
       expect(graph.serialize().nodes).toHaveLength(1)
+    })
+
+    it('retains incumbent widgets when the re-created record omits widget values', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      const widget = incumbent.widgets?.[0]
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(nodePayload(1, 'widget-node'), {
+        ...REMOTE,
+        opId: 'op-1-again'
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.[0]).toBe(widget)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(7)
+    })
+
+    it('preserves widgets added after construction when re-adding the same id', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7, secondary: 70 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      incumbent.addWidget('number', 'hydrated', 7, () => {})
+      incumbent.addWidget('number', 'secondary', 70, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8, secondary: 80 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(
+        incumbent.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'hydrated', value: 8 },
+        { name: 'secondary', value: 80 }
+      ])
+    })
+
+    it('drops incumbent widgets omitted by the re-created record', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7, secondary: 70 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      incumbent.addWidget('number', 'hydrated', 7, () => {})
+      incumbent.addWidget('number', 'secondary', 70, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(
+        incumbent.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([{ name: 'hydrated', value: 8 }])
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'secondary')
+        )
+      ).toBeUndefined()
+    })
+
+    it('retains canonical state and retries when stale widget removal fails', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7, secondary: 70 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      incumbent.addWidget('number', 'hydrated', 7, () => {})
+      const secondary = incumbent.addWidget('number', 'secondary', 70, () => {})
+      secondary.onRemove = () => {
+        throw new Error('extension rejected widget removal')
+      }
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      const canonical = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      if (!canonical) throw new Error('canonical node state missing')
+      expect(useNodeDataStore().ownsNode(scope, canonical)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_node_materialize_rebind_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      secondary.onRemove = undefined
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.map(({ name }) => name)).toEqual(['hydrated'])
+    })
+
+    it('restores detached ownership and retries when widget binding fails', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      const hydrated = incumbent.addWidget('number', 'hydrated', 7, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+      vi.spyOn(
+        hydrated as typeof hydrated & { setNodeId(nodeId: unknown): void },
+        'setNodeId'
+      ).mockImplementationOnce(() => {
+        throw new Error('extension rejected widget binding')
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      const canonical = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      if (!canonical) throw new Error('canonical node state missing')
+      expect(useNodeDataStore().ownsNode(scope, canonical)).toBe(true)
+      expect(useNodeDataStore().ownsNode(scope, incumbent._state)).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_node_materialize_rebind_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(useNodeDataStore().ownsNode(scope, incumbent._state)).toBe(true)
+    })
+
+    it('reconfigures the incumbent before completing a same-type rebind', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'configure-capture'),
+          widgets_values: { value: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      configuredWidgetValues.length = 0
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'configure-capture'),
+          widgets_values: { value: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(configuredWidgetValues).toEqual([8])
+    })
+
+    it('replaces the incumbent when the successor adds a widget', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'evolving-widget-node'),
+          widgets_values: { primary: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+
+      includeSecondaryWidget = true
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'evolving-widget-node'),
+          widgets_values: { primary: 8, secondary: 80 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const replacement = graph.getNodeById(toNodeId(1))!
+      expect(replacement).not.toBe(incumbent)
+      expect(
+        replacement.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'primary', value: 8 },
+        { name: 'secondary', value: 80 }
+      ])
+    })
+
+    it('replaces the incumbent to restore positional widget values', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: [8] },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const replacement = graph.getNodeById(toNodeId(1))!
+      expect(replacement).not.toBe(incumbent)
+      expect(replacement.widgets?.[0].value).toBe(8)
+    })
+
+    it('replaces a missing placeholder after its type registers', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1, 'late-node-type')
+      reconcileAgentAdapters(graph)
+      const placeholder = graph.getNodeById(toNodeId(1))!
+      expect(placeholder.has_errors).toBe(true)
+
+      LiteGraph.registerNodeType('late-node-type', DummyNode)
+      const mutations = remoteMutations(scope)
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(nodePayload(1, 'late-node-type'), {
+        ...REMOTE,
+        opId: 'op-1-again'
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      const replacement = graph.getNodeById(toNodeId(1))!
+      expect(replacement).not.toBe(placeholder)
+      expect(replacement).toBeInstanceOf(DummyNode)
+      expect(replacement.has_errors).toBeFalsy()
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {
@@ -484,7 +820,7 @@ describe('reconcileAgentAdapters', () => {
       expect(
         mutations.addNode(
           {
-            ...nodePayload(1, 'widget-node'),
+            ...nodePayload(1, 'dummy'),
             outputs: [{ name: 'value', type: '*', links: [9] }],
             widgets_values: { value: 7 }
           },
@@ -751,12 +1087,22 @@ describe('reconcileAgentAdapters', () => {
     it('does not echo a remote re-create or delete back as local operations', async () => {
       const scope = graphScopeOf(graph)
       const mutations = remoteMutations(scope)
-      mutations.addNode(nodePayload(1), REMOTE)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
       reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
 
       mutations.deleteNode(toNodeId(1), [], REMOTE)
-      mutations.addNode(nodePayload(1), { ...REMOTE, opId: 'op-1-again' })
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 8 } },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
       reconcileAgentAdapters(graph)
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.[0].value).toBe(8)
+
       mutations.deleteNode(toNodeId(1), [], REMOTE)
       reconcileAgentAdapters(graph)
       await settle()
@@ -838,6 +1184,47 @@ describe('reconcileAgentAdapters', () => {
           widget: 'value',
           value: 8,
           old: 7
+        })
+      ])
+    })
+
+    it('keeps a live widget bound through an ordinary remote reconcile', async () => {
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      await settle()
+
+      const node = graph.getNodeById(toNodeId(1))!
+      const liveWidget = node.widgets![0]
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(liveWidget.value).toBe(9)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(9)
+
+      liveWidget.value = 10
+      await settle()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: toNodeId(1),
+          widget: 'value',
+          value: 10,
+          old: 9
         })
       ])
     })
