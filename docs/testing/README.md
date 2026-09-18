@@ -4,6 +4,8 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
+Design rules that apply at every test level live in [`docs/guidance/testing-principles.md`](../guidance/testing-principles.md); worked examples for those rules are in [`testing-principles-examples.md`](./testing-principles-examples.md). The guides below cover mechanics.
+
 Documentation for unit tests is organized into five guides:
 
 - [Component Testing](./component-testing.md) - How to test Vue components

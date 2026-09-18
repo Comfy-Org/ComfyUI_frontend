@@ -8,11 +8,11 @@ export const brandButtonVariants = cva({
       solid:
         'bg-primary-comfy-yellow text-primary-comfy-ink transition-opacity hover:opacity-90',
       outline:
-        'border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow border hover:text-primary-comfy-ink',
+        'border border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
       'outline-dark':
-        'hover:text-primary-comfy-yellow border-2 border-primary-comfy-ink text-primary-comfy-ink uppercase hover:bg-primary-comfy-ink',
+        'border-2 border-primary-comfy-ink text-primary-comfy-ink uppercase hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow',
       inverse:
-        'text-primary-comfy-yellow bg-primary-comfy-ink transition-opacity hover:opacity-90',
+        'bg-primary-comfy-ink text-primary-comfy-yellow transition-opacity hover:opacity-90',
       'outline-light':
         'border-2 border-primary-warm-white text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink'
     },

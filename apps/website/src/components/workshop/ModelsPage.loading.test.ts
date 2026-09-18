@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -48,6 +47,7 @@ it.for([
       props: { slug },
       slots: { fallback: '<h1>Public Models</h1>' }
     })
+    await nextTick()
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
 
     enabled.value = true

@@ -3,7 +3,7 @@
  *
  * The authorized read (dedupe, the single 401 re-mint, superseded-identity
  * publish guards) lives in the site's own balance reader, since billing
- * stays outside @comfyorg/account in V1; this module owns presentation and
+ * stays outside @comfyorg/account-core in V1; this module owns presentation and
  * page lifecycle. Conversion goes through the shared
  * creditsUtil rounding so this chip never disagrees with what
  * platform.comfy.org renders for the same balance. Refresh triggers: the
