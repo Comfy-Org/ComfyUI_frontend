@@ -25,7 +25,7 @@ export function useKeybindingService() {
     // Let the active menu own Escape without also triggering the global shortcut.
     if (
       event.key === 'Escape' &&
-      target.closest('[role="menu"], [role="menubar"]')
+      target.closest('[role="menu"], [role="menubar"], [role="dialog"]')
     ) {
       return
     }

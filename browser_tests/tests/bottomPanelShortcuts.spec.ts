@@ -119,7 +119,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
     await expect(
-      comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
+      bottomPanel.root.getByRole('tab', { name: 'Essential', exact: true })
     ).toBeVisible()
 
     // Try to open terminal panel - may show terminal OR close shortcuts
@@ -139,14 +139,14 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
       // Should show shortcuts content again
       await expect(
-        comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
+        bottomPanel.root.getByRole('tab', { name: 'Essential', exact: true })
       ).toBeVisible()
     } else {
       // Terminal tabs not loaded - button toggled shortcuts off, reopen for verification
       await bottomPanel.keyboardShortcutsButton.click()
       await expect(bottomPanel.root).toBeVisible()
       await expect(
-        comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
+        bottomPanel.root.getByRole('tab', { name: 'Essential', exact: true })
       ).toBeVisible()
     }
   })

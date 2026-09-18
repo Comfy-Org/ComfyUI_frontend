@@ -77,7 +77,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       .locator('.lg-node-header')
     await nodeHeader.click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
     await expect(contextMenu.getByText('Open Image')).toBeVisible()
     await expect(contextMenu.getByText('Copy Image')).toBeVisible()
