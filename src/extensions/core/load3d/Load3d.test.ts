@@ -136,6 +136,8 @@ function makeInstance() {
     animationManager,
     eventManager,
     adapterRef: { current: null },
+    _loadGeneration: 0,
+    loadingPromise: null,
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -928,6 +930,54 @@ describe('Load3d', () => {
       resolveSecond()
       await Promise.all([idle, loadB])
       expect(settled).toBe(true)
+    })
+
+    it('keeps the viewer empty when clear is accepted during a pending load', async () => {
+      let resolveLoad!: () => void
+      const pendingLoad = new Promise<void>((resolve) => {
+        resolveLoad = resolve
+      })
+      const loadedModel = new THREE.Group()
+      const modelManager = {
+        ...ctx.modelManager,
+        currentModel: null as THREE.Object3D | null,
+        originalModel: null,
+        clearModel: vi.fn(() => {
+          modelManager.currentModel = null
+        })
+      }
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState: vi.fn(),
+          getCurrentCameraType: vi.fn(() => 'perspective'),
+          setCameraState: vi.fn()
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: {
+          loadModel: vi.fn(async () => {
+            await pendingLoad
+            modelManager.currentModel = loadedModel
+          })
+        },
+        modelManager,
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        hasLoadedModel: false
+      })
+
+      const load = ctx.load3d.loadModel('api/view?filename=a.glb')
+      ctx.load3d.clearModel()
+      const idle = ctx.load3d.whenLoadIdle()
+      resolveLoad()
+      await Promise.all([load, idle])
+
+      expect(ctx.load3d.getCurrentModel()).toBeNull()
+      expect(modelManager.clearModel).toHaveBeenCalledTimes(3)
     })
   })
 

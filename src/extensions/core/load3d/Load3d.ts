@@ -335,6 +335,7 @@ class Load3d extends Viewport3d {
     options?: LoadModelOptions
   ): Promise<void> {
     this._loadGeneration += 1
+    const loadGeneration = this._loadGeneration
 
     const previousLoad = this.loadingPromise
     const acceptedLoad = (async () => {
@@ -345,6 +346,7 @@ class Load3d extends Viewport3d {
       }
 
       await this._loadModelInternal(url, originalFileName, options)
+      if (loadGeneration !== this._loadGeneration) this.clearModelState()
     })()
 
     // Publish the tail before waiting so every accepted load is visible to
@@ -423,6 +425,11 @@ class Load3d extends Viewport3d {
   }
 
   clearModel(): void {
+    this._loadGeneration += 1
+    this.clearModelState()
+  }
+
+  private clearModelState(): void {
     this.animationManager.dispose()
     this.gizmoManager.detach()
     this.modelManager.clearModel()
