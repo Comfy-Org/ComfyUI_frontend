@@ -110,6 +110,7 @@ export function createAgentArrivalFramer(
 ): AgentArrivalFramer {
   let buildTurnId: string | null = null
   let build: NodeId[] = []
+  let framingBuild = false
 
   return {
     reveal(canvas, nodes, options = {}) {
@@ -118,6 +119,7 @@ export function createAgentArrivalFramer(
       if (turnId !== null && turnId !== buildTurnId) {
         buildTurnId = turnId
         build = []
+        framingBuild = false
       }
       build = [...build, ...nodes.map((node) => node.id)]
       const liveBuild = build
@@ -125,7 +127,8 @@ export function createAgentArrivalFramer(
         .filter((node) => node !== undefined)
       build = liveBuild.map((node) => node.id)
       if (options.select !== false) canvas.selectItems(liveBuild)
-      if (!needsFraming(canvas, nodes)) return
+      if (!framingBuild && !needsFraming(canvas, nodes)) return
+      framingBuild = true
 
       const bounds = createPositionBounds(liveBuild, FRAME_PADDING)
       if (!bounds) return
@@ -136,6 +139,7 @@ export function createAgentArrivalFramer(
     reset() {
       buildTurnId = null
       build = []
+      framingBuild = false
     }
   }
 }

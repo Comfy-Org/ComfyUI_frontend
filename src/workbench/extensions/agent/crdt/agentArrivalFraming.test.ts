@@ -156,6 +156,17 @@ describe('createAgentArrivalFramer', () => {
     expect(animateToBounds.mock.calls[1][0]).toEqual([2960, -40, 720, 166])
   })
 
+  it('retargets an in-flight frame when the next arrival is in view', () => {
+    const { canvas, animateToBounds } = stubCanvas()
+    const build = framer()
+
+    reveal(build, canvas, [node([3000, 0], [240, 86])])
+    reveal(build, canvas, [node([340, 0], [240, 86])])
+
+    expect(animateToBounds).toHaveBeenCalledTimes(2)
+    expect(animateToBounds.mock.calls[1][0]).toEqual([300, -40, 2980, 166])
+  })
+
   it('starts a new build when the turn changes', () => {
     const { canvas, animateToBounds } = stubCanvas()
     let turn = 'turn-1'
