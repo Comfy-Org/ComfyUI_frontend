@@ -21,10 +21,7 @@
     >
       <i class="pi pi-filter" />
     </Button>
-    <Dialog
-      :open="filterVisible"
-      @update:open="onFilterDialogOpenChange"
-    >
+    <Dialog :open="filterVisible" @update:open="onFilterDialogOpenChange">
       <DialogPortal>
         <DialogOverlay
           v-reka-z-index
