@@ -1,4 +1,5 @@
 import type {
+  DocError,
   DocFrameClient,
   DocOp,
   DocReset,
@@ -100,6 +101,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  private terminalWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -107,6 +109,7 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+    client.addEventListener('doc_error', this.onDocError)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -139,6 +142,7 @@ export class LayoutFollowerBridge extends EventTarget {
   get hasPendingSubscribe(): boolean {
     return (
       this.desiredWorkflowId !== null &&
+      this.terminalWorkflowId !== this.desiredWorkflowId &&
       this.sentWorkflowId !== this.desiredWorkflowId
     )
   }
@@ -155,6 +159,7 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
+    if (workflowId !== this.desiredWorkflowId) this.terminalWorkflowId = null
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
@@ -184,7 +189,12 @@ export class LayoutFollowerBridge extends EventTarget {
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (
+      desired === null ||
+      this.terminalWorkflowId === desired ||
+      this.sentWorkflowId === desired
+    )
+      return
     if (
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
@@ -196,6 +206,11 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   resubscribe(): void {
+    if (
+      this.desiredWorkflowId !== null &&
+      this.terminalWorkflowId === this.desiredWorkflowId
+    )
+      return
     this.sentWorkflowId = null
     this.reconcile()
   }
@@ -225,6 +240,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
+      this.client.removeEventListener('doc_error', this.onDocError)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
       this.followerDoc.destroy()
@@ -351,6 +367,15 @@ export class LayoutFollowerBridge extends EventTarget {
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private readonly onDocError: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const error = event.detail as DocError
+    if (error.workflowId !== this.sentWorkflowId) return
+    this.terminalWorkflowId = error.workflowId
+    this.sentWorkflowId = null
+    this.dispatchEvent(new CustomEvent(event.type, { detail: error }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {

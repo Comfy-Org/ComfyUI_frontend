@@ -195,6 +195,26 @@ describe('doc frame client', () => {
     })
     expect(
       parseServerDocFrame({
+        type: 'doc_error',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          code: 'fatal_doc',
+          message: 'document frame handling failed',
+          request_type: 'doc_subscribe'
+        }
+      })
+    ).toEqual({
+      type: 'doc_error',
+      data: {
+        workflowId: 'wf-1',
+        code: 'fatal_doc',
+        message: 'document frame handling failed',
+        requestType: 'doc_subscribe'
+      }
+    })
+    expect(
+      parseServerDocFrame({
         type: 'doc_reset',
         data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
       })
@@ -222,5 +242,53 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it('keeps a fatal workflow terminal without replacing its Y.Doc', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const errors: unknown[] = []
+    bridge.addEventListener('doc_error', (event) => {
+      if (event instanceof CustomEvent) errors.push(event.detail)
+    })
+    bridge.subscribe('wf-1')
+    const doc = bridge.follower.doc
+    doc.getMap('nodes').set('one', { x: 10 })
+
+    transport.receive('doc_error', {
+      v: 1,
+      workflow_id: 'wf-1',
+      code: 'fatal_doc',
+      message: 'document frame handling failed',
+      request_type: 'doc_subscribe'
+    })
+    bridge.resubscribe()
+    bridge.reconcile()
+
+    expect(errors).toEqual([
+      {
+        workflowId: 'wf-1',
+        code: 'fatal_doc',
+        message: 'document frame handling failed',
+        requestType: 'doc_subscribe'
+      }
+    ])
+    expect(transport.sent).toHaveLength(1)
+    expect(bridge.follower.doc).toBe(doc)
+    expect(doc.getMap('nodes').toJSON()).toEqual({ one: { x: 10 } })
+  })
+
+  it('keeps ordinary reconnect resubscription transient', () => {
+    const transport = new TestTransport()
+    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+    bridge.subscribe('wf-1')
+
+    bridge.resubscribe()
+
+    expect(transport.sent.map((frame) => JSON.parse(frame).type)).toEqual([
+      'doc_subscribe',
+      'doc_subscribe'
+    ])
   })
 })
