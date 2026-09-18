@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { code, lang = 'text' } = defineProps<{
   code: string
@@ -62,9 +63,11 @@ watchDebounced(
         <span class="icon-[lucide--file-code] size-3.5" />
         <span class="font-medium text-base-foreground">{{ lang }}</span>
       </span>
-      <button
+      <Button
         type="button"
-        class="flex items-center gap-1 rounded-sm border border-border-default px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-base-background hover:text-base-foreground"
+        variant="outline"
+        size="sm"
+        class="gap-1 font-mono"
         @click="copy(code)"
       >
         <span
@@ -76,7 +79,7 @@ watchDebounced(
           "
         />
         {{ copied ? t('agent.copied') : t('agent.copy') }}
-      </button>
+      </Button>
     </div>
     <SanitizedHtml
       v-if="highlighted"

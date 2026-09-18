@@ -6,15 +6,15 @@
  */
 import {
   authErrorMessage,
-  classifyAuthError,
-  unauthorizedDomainMessage
-} from '@comfyorg/account/firebaseAuthError'
+  classifyAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
 import type {
-  AuthCopyLocale,
-  AuthErrorClassification
-} from '@comfyorg/account/firebaseAuthError'
+  AuthErrorClassification,
+  AuthErrorCopy
+} from '@comfyorg/account-core/firebaseAuthError'
 
-import type { TranslationKey } from '../i18n/translations'
+import type { Locale, TranslationKey } from '../i18n/translations'
+import { t, translationKeys } from '../i18n/translations'
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'
 
@@ -51,22 +51,44 @@ export type AuthSignInEvent =
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
+const AUTH_ERROR_PREFIX = 'auth.errors.'
+const authErrorCodeKeys = translationKeys.filter(
+  (key) =>
+    key.startsWith(AUTH_ERROR_PREFIX) &&
+    key !== 'auth.errors.generic' &&
+    key !== 'auth.errors.signupBlocked'
+)
+
+/** This host's own auth-error table, keyed the way the package resolver reads it. */
+function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
+  return {
+    ...Object.fromEntries(
+      authErrorCodeKeys.map((key) => [
+        key.slice(AUTH_ERROR_PREFIX.length),
+        t(key, locale)
+      ])
+    ),
+    generic: t('auth.errors.generic', locale),
+    signupBlocked: t('auth.errors.signupBlocked', locale)
+  }
+}
+
 /**
- * The copy for a failed attempt, from the package tables the cloud app's
- * own strings are pinned to. Only the unauthorized-domain line needs this
- * host's values.
+ * The copy for a failed attempt, resolved from this host's own i18n. The
+ * account package supplies the classification and resolution rules; the
+ * strings live here. Only the unauthorized-domain line needs this host's
+ * runtime values.
  */
 export function signInErrorMessage(
   classification: AuthErrorClassification,
-  locale: AuthCopyLocale,
+  locale: Locale,
   hostname: string
 ): string {
   return classification.kind === 'unauthorized-domain'
-    ? unauthorizedDomainMessage(
-        { domain: hostname, email: SUPPORT_EMAIL },
-        locale
-      )
-    : authErrorMessage(classification, locale)
+    ? t('toastMessages.unauthorizedDomain', locale)
+        .replace('{domain}', hostname)
+        .replace('{email}', SUPPORT_EMAIL)
+    : authErrorMessage(classification, localizedAuthErrorCopy(locale))
 }
 
 export function authSignInTransition(
