@@ -342,7 +342,10 @@ describe('authored Router task defaults', () => {
     expect(page.firstExample).toBeDefined()
     expect(resolveModelRouterRender(model).values).toEqual(page.values)
     const prepared = await prepareModelRouterRender(model)
-    expect(prepared.body).toHaveProperty('layer_decomposition', true)
+    expect(prepared.body).toMatchObject({
+      layer_decomposition: true,
+      size: 'auto'
+    })
   })
 
   it('lets an explicit style override the authored initial style', async () => {
