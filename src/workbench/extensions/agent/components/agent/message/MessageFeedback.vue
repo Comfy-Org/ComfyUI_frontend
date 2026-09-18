@@ -172,7 +172,7 @@ async function downloadAssets(): Promise<void> {
           <DropdownMenuContent
             align="end"
             :side-offset="4"
-            class="z-1100 h-9 w-36 rounded-lg border border-border-subtle bg-secondary-background p-1 shadow-lg"
+            class="agent-scope z-1100 h-9 w-36 rounded-lg border border-border-subtle bg-secondary-background p-1 shadow-lg"
           >
             <DropdownMenuItem
               class="flex h-7 w-full cursor-pointer items-center rounded-lg px-1.5 text-[14px]/5 font-normal whitespace-nowrap text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
