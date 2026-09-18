@@ -264,6 +264,71 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('charges at the instant the quote was priced, not at the instant it arrives', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({ proration_at: '2026-09-18T12:00:00.000Z' })
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ proration_at: '2026-09-18T12:00:00.000Z' })
+      )
+    )
+  })
+
+  it('leaves a change that takes effect later to be priced when it does', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({
+          is_immediate: false,
+          proration_at: '2026-09-18T12:00:00.000Z'
+        })
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty('proration_at')
+  })
+
+  it('stops announcing a failed submission once a new quote replaces it', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockResolvedValueOnce({ status: 'error', code: 'CONFLICT' })
+
+    reportConfirm('ctoken_1')
+    expect(
+      await screen.findByText(
+        'That change conflicts with your current subscription.'
+      )
+    ).toBeInTheDocument()
+
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: previewOf({ quote_id: 'q_2' })
+    })
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          'That change conflicts with your current subscription.'
+        )
+      ).toBeNull()
+    )
+  })
+
   it('redirects this tab when the server offers a hosted continuation', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()
@@ -347,6 +412,80 @@ describe('CheckoutView', () => {
     expect(
       await screen.findByRole('button', { name: 'Pay and subscribe' })
     ).toBeInTheDocument()
+  })
+
+  it('holds the pay action until a reactivation charge the quote names is confirmed', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({ requires_reactivation_confirmation: true })
+      }
+    })
+    const pay = await screen.findByRole('button', { name: 'Pay and subscribe' })
+    expect(pay).toBeDisabled()
+
+    await userEvent.click(
+      screen.getByRole('checkbox', {
+        name: 'Your subscription was cancelled. I confirm the $28.00 charge to reactivate it.'
+      })
+    )
+    expect(pay).toBeEnabled()
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ confirm_reactivation: true })
+      )
+    )
+  })
+
+  it('re-quotes and asks when the server, not the quote, demands the confirmation', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    const confirmBox = await screen.findByRole('checkbox')
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+    expect(fake.subscribe).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(confirmBox)
+    reportConfirm('ctoken_2')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        confirmation_token: 'ctoken_2',
+        confirm_reactivation: true
+      })
+    )
+  })
+
+  it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    expect(
+      await screen.findByText(
+        "We couldn't reach the billing service. Please try again."
+      )
+    ).toBeInTheDocument()
+    // Present is not the same as usable: a refused charge has to leave the
+    // customer able to try again.
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeEnabled()
   })
 
   it('goes back to the plans with the same request', async () => {
