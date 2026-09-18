@@ -251,7 +251,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   >
                     <span
                       aria-hidden="true"
-                      class="icon-[comfy--comfy-c] size-2.5 text-brand-yellow"
+                      class="icon-[lucide--check] size-3.5"
                     />
                   </DropdownMenuItemIndicator>
                 </span>
