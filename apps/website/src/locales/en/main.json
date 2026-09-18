@@ -10,6 +10,10 @@
       "body": "Deploy your ComfyUI workflow as a production API. Thousands of models on one platform.",
       "cta": "Explore the Developer Platform",
       "docs": "Read the docs"
+    },
+    "meta": {
+      "title": "Comfy - Professional Control of Visual AI",
+      "keywords": "comfyui app, comfyui web app, comfy ui application, comfyui application, comfy app, comfyui, visual ai app, node-based ai, generative ai workflows"
     }
   },
   "workshop": {
@@ -1113,7 +1117,9 @@
       "headingHighlight": "Desktop"
     },
     "meta": {
-      "description": "Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware."
+      "description": "Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware.",
+      "title": "Download Comfy Desktop - Run AI on Your Hardware",
+      "keywords": "comfyui app, comfyui desktop app, comfyui desktop, comfy ui application, comfyui download, download comfyui, comfyui windows, comfyui mac, comfyui linux"
     },
     "hero": {
       "heading": "Run on your hardware.\nFree forever.",
@@ -1256,6 +1262,10 @@
       },
       "heading": "FAQs",
       "footer": "For pricing, plans, credits, and billing details, see the <a href=\"/cloud/pricing#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
+    },
+    "meta": {
+      "title": "Comfy Cloud - AI in the Cloud",
+      "keywords": "comfyui web app, comfyui app, comfyui online, comfyui cloud, comfy cloud, comfy ui application, comfyui browser, cloud comfyui, managed comfyui"
     }
   },
   "cloudNodes": {
@@ -1489,6 +1499,19 @@
       "heading": "MiniMax license pricing",
       "description": "For running MiniMax models locally. Comfy Cloud already includes commercial use. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.",
       "cta": "See license tiers"
+    },
+    "lookingForElse": {
+      "heading": "Looking for something else?",
+      "community": {
+        "title": "Community Edition",
+        "description": "A standard, self-hosted version of ComfyUI is available on GitHub.",
+        "github": "View on GitHub",
+        "docs": "Self-hosting docs"
+      }
+    },
+    "meta": {
+      "title": "Pricing - Comfy Cloud",
+      "description": "Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes."
     }
   },
   "player": {
@@ -1632,6 +1655,10 @@
       "heading": "Join the team",
       "cta": "SEE OPEN ROLES",
       "noRole": "Don’t see your dream role here?"
+    },
+    "meta": {
+      "title": "About Us - Comfy",
+      "description": "Comfy builds ComfyUI, the open-source engine for visual AI, and the desktop, cloud, API, and enterprise products around it. Meet the team and the mission."
     }
   },
   "careers": {
@@ -1688,6 +1715,36 @@
         "a": "We do our best to provide meaningful feedback to candidates who go through our interview process. Due to volume, we may not be able to provide detailed feedback at the application stage."
       },
       "heading": "Q&A"
+    },
+    "teamPhotos": {
+      "team0": {
+        "alt": "Team dinner"
+      },
+      "team1": {
+        "alt": "Team working"
+      },
+      "team2": {
+        "alt": "Team offsite"
+      },
+      "team3": {
+        "alt": "Team on a boat"
+      },
+      "team4": {
+        "alt": "Teammates posing at a restaurant"
+      },
+      "team5": {
+        "alt": "Teammates at a social gathering"
+      },
+      "team6": {
+        "alt": "Team sailing at golden hour"
+      },
+      "team7": {
+        "alt": "Team on a sailboat at sunset"
+      }
+    },
+    "meta": {
+      "title": "Careers - Comfy",
+      "description": "Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
     }
   },
   "mcp": {
@@ -1925,12 +1982,17 @@
         "a": "On the cloud connection, into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets locally for you. On the local connection, outputs land in your ComfyUI output folder, and your agent can copy them anywhere you name."
       },
       "heading": "Q&As"
+    },
+    "agentBanner": {
+      "title": "The Comfy Agent is in beta. Get early access.",
+      "linkTitle": "Join the waitlist"
     }
   },
   "cli": {
     "meta": {
       "title": "Comfy CLI - Drive ComfyUI from your terminal and any coding agent",
-      "description": "The command line for the full ComfyUI engine. Generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, on Comfy Cloud or your own GPU."
+      "description": "The command line for the full ComfyUI engine. Generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, on Comfy Cloud or your own GPU.",
+      "keywords": "comfy cli, comfyui cli, comfyui command line, comfyui terminal, comfyui automation, comfyui ci, ai cli for coding agents, claude code image generation, comfyui batch generation"
     },
     "hero": {
       "heading": "Drive ComfyUI from\nyour terminal.\nOr your agent's.",
@@ -3161,6 +3223,10 @@
       "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
       "a4": "A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
+    },
+    "meta": {
+      "title": "Contact - Comfy",
+      "description": "Reach Comfy about Enterprise, Forward Deployed Creatives, MiniMax commercial licenses, or partnerships. Common questions answered, including SOC 2 status."
     }
   },
   "hubspotForm": {
@@ -4722,5 +4788,8 @@
       "heading": "Run the model, not the hardware",
       "subtitle": "Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in."
     }
+  },
+  "meta": {
+    "defaultDescription": "Comfy is the AI creation engine for visual professionals who demand control."
   }
 }
