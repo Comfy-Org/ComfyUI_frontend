@@ -1,59 +1,122 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import PlansPricingCta from '../components/individual-submission/PlansPricingCta.vue'
+import { PLAN_LABELS } from '../components/individual-submission/planLabels'
 import HeroSection from '../components/legal/HeroSection.vue'
 import { getRoutes } from '../config/routes'
+import { segments } from '../i18n/segments'
+import type { TranslationKey } from '../i18n/translations'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
+import { requirePlaceholder } from '../utils/placeholders'
 
-const routes = getRoutes('en')
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale
+)
+
+const routes = getRoutes(locale)
+
+const SUPPORT_EMAILS: Record<string, string> = {
+  enterprise: 'gtm-team@comfy.org',
+  support: 'support@comfy.org'
+}
+
+/**
+ * Each sentence's segments, with every placeholder name checked against the set
+ * that sentence is allowed to carry.
+ *
+ * The loops below used to end in a wildcard, so an unexpected name rendered the
+ * enterprise address, or an empty plan name, rather than failing. Checked here
+ * so the templates stay declarative and one unknown name stops the build.
+ */
+function checkedSegments(key: TranslationKey, allowed: readonly string[]) {
+  const parts = segments(
+    t(
+      key,
+      locale,
+      Object.fromEntries(allowed.map((name) => [name, `{${name}}`]))
+    )
+  )
+  for (const part of parts) {
+    if (part.type !== 'text') requirePlaceholder(part.name, allowed, key)
+  }
+  return parts
+}
+
+const planSegments = checkedSegments(
+  'individualSubmission.plans',
+  Object.keys(PLAN_LABELS)
+)
+const enterpriseSegments = checkedSegments(
+  'individualSubmission.enterpriseNeed',
+  ['email']
+)
+const otherHelpSegments = checkedSegments('individualSubmission.otherHelp', [
+  'email'
+])
 ---
 
 <BaseLayout
-  title="Thanks for reaching out - Comfy"
-  description="Thanks for reaching out. Based on what you shared, one of our self-serve plans is probably a better fit."
+  title={t('individualSubmission.meta.title', locale)}
+  description={t('individualSubmission.meta.description', locale)}
   noindex
 >
-  <HeroSection title="Thanks for reaching out." class="text-center" />
+  <HeroSection
+    title={t('individualSubmission.hero.title', locale)}
+    class="text-center"
+  />
 
   <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
     <div
       class="mx-auto flex max-w-2xl flex-col gap-6 text-center text-base font-light text-primary-comfy-canvas lg:text-lg"
     >
       <p>
-        Based on what you shared, one of our self-serve plans is probably a
-        better fit.
-        <strong class="font-semibold text-primary-comfy-yellow italic">
-          Standard</strong
-        >,
-        <strong class="font-semibold text-primary-comfy-yellow italic">
-          Creator</strong
-        >, and
-        <strong class="font-semibold text-primary-comfy-yellow italic">
-          Pro</strong>
-        for individual creators, plus our new
-        <strong class="font-semibold text-primary-comfy-yellow italic">
-          Teams</strong>
-        plan for multiple users under shared billing.
+        {planSegments.map((segment) =>
+          segment.type === 'text' ? (
+            segment.value
+          ) : (
+            <strong class="font-semibold text-primary-comfy-yellow italic">
+              {PLAN_LABELS[segment.name]}
+            </strong>
+          )
+        )}
       </p>
 
-      <PlansPricingCta href={routes.pricing} label="See plans and pricing →" />
+      <PlansPricingCta
+        href={routes.pricing}
+        label={t('individualSubmission.cta.label', locale)}
+      />
 
-      <p class="mt-8 text-sm text-primary-warm-gray">
-        Still think you have an enterprise need?<br /> We're happy to assist.
-        Email:
-        <a
-          href="mailto:gtm-team@comfy.org"
-          class="whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
-          >gtm-team@comfy.org</a
-        >
+      <p class="mt-8 text-sm whitespace-pre-line text-primary-warm-gray">
+        {enterpriseSegments.map((segment) =>
+          segment.type === 'text' ? (
+            segment.value
+          ) : (
+            <a
+              href={`mailto:${SUPPORT_EMAILS.enterprise}`}
+              class="whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
+            >
+              {SUPPORT_EMAILS.enterprise}
+            </a>
+          )
+        )}
       </p>
 
       <p class="text-sm text-primary-warm-gray">
-        Need help with something else? Email:
-        <a
-          href="mailto:support@comfy.org"
-          class="whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
-          >support@comfy.org</a
-        >
+        {otherHelpSegments.map((segment) =>
+          segment.type === 'text' ? (
+            segment.value
+          ) : (
+            <a
+              href={`mailto:${SUPPORT_EMAILS.support}`}
+              class="whitespace-nowrap text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
+            >
+              {SUPPORT_EMAILS.support}
+            </a>
+          )
+        )}
       </p>
     </div>
   </section>

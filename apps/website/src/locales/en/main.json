@@ -2867,6 +2867,13 @@
         "0": "If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:",
         "1": "<a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>"
       }
+    },
+    "meta": {
+      "title": "Privacy Policy - Comfy",
+      "description": "Comfy privacy policy. Learn how we collect, use, and protect your personal information."
+    },
+    "hero": {
+      "title": "Privacy Policy"
     }
   },
   "desktop_privacy": {
@@ -2958,6 +2965,13 @@
       "block": {
         "0": "For any privacy enquiry, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>."
       }
+    },
+    "meta": {
+      "title": "Desktop Privacy Policy - Comfy",
+      "description": "Privacy policy for Comfy Desktop. Named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights."
+    },
+    "hero": {
+      "title": "Desktop Privacy Policy"
     }
   },
   "tos": {
@@ -3238,6 +3252,13 @@
       "block": {
         "0": "If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>."
       }
+    },
+    "meta": {
+      "title": "Terms of Service - Comfy",
+      "description": "Terms of Service governing use of the Comfy Products, including Comfy Cloud, Comfy API, and Comfy Enterprise."
+    },
+    "hero": {
+      "title": "Terms of Service"
     }
   },
   "affiliate-terms": {
@@ -3593,6 +3614,10 @@
     },
     "breadcrumb": {
       "demos": "Demos"
+    },
+    "meta": {
+      "title": "Demos - Comfy",
+      "description": "Interactive demos and tutorials for ComfyUI."
     }
   },
   "carousel": {
@@ -3720,7 +3745,11 @@
       "title": "Payment successful",
       "subtitle": "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
       "primaryCta": "CONTINUE TO COMFY CLOUD",
-      "secondaryCta": "VIEW USAGE & PAYMENTS"
+      "secondaryCta": "VIEW USAGE & PAYMENTS",
+      "meta": {
+        "title": "Payment Successful - Comfy",
+        "description": "Your payment was processed successfully."
+      }
     },
     "failed": {
       "label": "PAYMENT",
@@ -3732,6 +3761,10 @@
         "prefix": "Check our",
         "statusLink": "status page",
         "suffix": "for more information."
+      },
+      "meta": {
+        "title": "Payment Failed - Comfy",
+        "description": "Your payment was not completed."
       }
     }
   },
@@ -4979,6 +5012,12 @@
       "heading": "Maximize scale and control on Developer Platform",
       "headingLead": "Maximize scale and control on",
       "headingAfterBadge": "Deploy your ComfyUI workflow as a production API.\nThousands of models on one platform."
+    },
+    "serverlessAnimation": {
+      "meta": {
+        "title": "Serverless animation comparison · Comfy",
+        "description": "Temporary side-by-side serverless animation study."
+      }
     }
   },
   "cloudNodesLaunch": {
@@ -5107,5 +5146,61 @@
   },
   "meta": {
     "defaultDescription": "Comfy is the AI creation engine for visual professionals who demand control."
+  },
+  "notFound": {
+    "meta": {
+      "title": "404 - Page Not Found - Comfy"
+    },
+    "a11y": {
+      "pageLabel": "404 Page Not Found"
+    }
+  },
+  "bookingConfirmation": {
+    "meta": {
+      "title": "You're booked - Comfy",
+      "description": "Your meeting is booked. Check your email for the calendar invite and meeting link."
+    },
+    "hero": {
+      "title": "You're booked."
+    },
+    "checkEmail": "Check your email for the calendar invite and meeting link!",
+    "resources": {
+      "heading": "Resources while you wait",
+      "learning": "Learning Center",
+      "workflows": "Workflow templates",
+      "customers": "Customer stories",
+      "docs": "Docs"
+    }
+  },
+  "individualSubmission": {
+    "meta": {
+      "title": "Thanks for reaching out - Comfy",
+      "description": "Thanks for reaching out. Based on what you shared, one of our self-serve plans is probably a better fit."
+    },
+    "cta": {
+      "label": "See plans and pricing →"
+    },
+    "hero": {
+      "title": "Thanks for reaching out."
+    },
+    "plans": "Based on what you shared, one of our self-serve plans is probably a better fit. {standard}, {creator}, and {pro} for individual creators, plus our new {teams} plan for multiple users under shared billing.",
+    "enterpriseNeed": "Still think you have an enterprise need?\n We're happy to assist. Email: {email}",
+    "otherHelp": "Need help with something else? Email: {email}"
+  },
+  "pixal3dTrellis2": {
+    "meta": {
+      "title": "Pixal3D + TRELLIS.2 in ComfyUI",
+      "description": "Turn one image into a textured 3D model with Pixal3D and TRELLIS.2 in ComfyUI. Explore examples, download GLBs, and open the workflow."
+    }
+  },
+  "caseStudies": {
+    "meta": {
+      "title": "Case Studies - Comfy"
+    }
+  },
+  "videos": {
+    "meta": {
+      "title": "Videos - Comfy"
+    }
   }
 }
