@@ -8,8 +8,10 @@ describe('RouterVideoSection', () => {
   it('presents the explainer video with an accessible label', () => {
     render(RouterVideoSection, { props: { locale: 'en' } })
 
-    expect(
-      screen.getByLabelText(t('platform.router.video.alt', 'en'))
-    ).toBeTruthy()
+    const video = screen.getByLabelText(t('platform.router.video.alt', 'en'))
+
+    expect(video).toBeTruthy()
+    expect(video.hasAttribute('muted')).toBe(true)
+    expect(video.hasAttribute('autoplay')).toBe(false)
   })
 })
