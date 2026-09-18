@@ -1240,6 +1240,9 @@ importers:
         specifier: workspace:*
         version: link:../account-core
     devDependencies:
+      '@stripe/stripe-js':
+        specifier: 'catalog:'
+        version: 9.12.1
       '@testing-library/user-event':
         specifier: 'catalog:'
         version: 14.6.1(@testing-library/dom@10.4.1)
