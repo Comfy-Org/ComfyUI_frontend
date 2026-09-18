@@ -47,17 +47,17 @@ const supportedProviders = [
   {
     name: 'fal',
     src: '/icons/router-providers/fal.svg',
-    logoClass: 'h-8 w-auto'
+    logoClass: 'h-10 w-auto'
   },
   {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
-    logoClass: 'h-5.5 w-auto'
+    logoClass: 'h-8.25 w-auto'
   },
   {
     name: 'WaveSpeed',
     src: '/icons/router-providers/wavespeed.svg',
-    logoClass: 'h-6 w-auto'
+    logoClass: 'h-9 w-auto'
   }
 ]
 </script>
