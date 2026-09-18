@@ -148,9 +148,7 @@ function renderTab() {
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
         MediaLightbox: true,
-        MediaAssetContextMenu: true,
-        NoResultsPlaceholder: true,
-        Skeleton: true
+        MediaAssetContextMenu: true
       }
     }
   })

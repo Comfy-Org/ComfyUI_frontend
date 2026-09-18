@@ -132,9 +132,6 @@ function renderControls({
         AppModeWidgetList: true,
         Loader: true,
         PartnerNodesList: true,
-        Popover: {
-          template: '<div><slot name="button" /><slot /></div>'
-        },
         ScrubableNumberInput: true,
         SubscribeToRunButton: true
       }

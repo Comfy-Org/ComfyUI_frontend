@@ -110,9 +110,6 @@ describe('ComfyHubPublishWizardContent', () => {
             template: '<div data-testid="publish-gate-flow" />',
             props: ['onProfileCreated', 'onClose', 'showCloseButton']
           },
-          Skeleton: {
-            template: '<div class="skeleton" />'
-          },
           ComfyHubDescribeStep: {
             template: '<div data-testid="describe-step" />'
           },

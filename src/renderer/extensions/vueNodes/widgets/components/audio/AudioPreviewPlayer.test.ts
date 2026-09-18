@@ -36,8 +36,7 @@ function renderPlayer(modelValue?: string) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        TieredMenu: true,
-        Slider: true
+        TieredMenu: true
       }
     }
   })

@@ -45,17 +45,6 @@ vi.mock<unknown>(
   })
 )
 
-const mockToggle = vi.fn()
-const mockHide = vi.fn()
-const PopoverStub = {
-  name: 'Popover',
-  template: '<div><slot></slot></div>',
-  methods: {
-    toggle: mockToggle,
-    hide: mockHide
-  }
-}
-
 const PackVersionSelectorPopoverStub = {
   name: 'PackVersionSelectorPopover',
   template:
@@ -92,7 +81,6 @@ describe('PackVersionBadge', () => {
           tooltip: Tooltip
         },
         stubs: {
-          Popover: PopoverStub,
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
         }
       }
@@ -152,27 +140,29 @@ describe('PackVersionBadge', () => {
 
     await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
 
-    expect(mockToggle).toHaveBeenCalled()
+    expect(await screen.findByRole('dialog')).toBeVisible()
   })
 
   it('closes the popover when cancel is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('cancel-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('closes the popover when submit is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('submit-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   describe('selection state changes', () => {
@@ -181,10 +171,14 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
+      expect(await screen.findByRole('dialog')).toBeVisible()
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(mockHide).toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('does not close the popover when card is selected', async () => {
@@ -192,10 +186,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains false', async () => {
@@ -203,10 +200,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains true', async () => {
@@ -214,10 +214,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
   })
 
@@ -254,7 +257,7 @@ describe('PackVersionBadge', () => {
       const badge = container.querySelector('[role="text"]')!
       await fireEvent.click(badge)
 
-      expect(mockToggle).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
     it('has correct tabindex when disabled', () => {
@@ -272,7 +275,7 @@ describe('PackVersionBadge', () => {
       await fireEvent.keyDown(badge, { key: 'Enter' })
       await fireEvent.keyDown(badge, { key: ' ' })
 
-      expect(mockToggle).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 })

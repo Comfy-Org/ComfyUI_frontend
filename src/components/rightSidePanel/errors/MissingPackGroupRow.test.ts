@@ -118,12 +118,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [PrimeVue, i18n],
-      stubs: {
-        DotSpinner: {
-          template: '<span role="status" aria-label="loading" />'
-        }
-      }
+      plugins: [PrimeVue, i18n]
     }
   })
   return { user, onLocateNode, onOpenManagerInfo }
@@ -364,7 +359,7 @@ describe('MissingPackGroupRow', () => {
       mockIsInstalling.value = true
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       renderRow()
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
     })
 
     it('shows install button when not installed and pack found', () => {
@@ -390,7 +385,7 @@ describe('MissingPackGroupRow', () => {
       mockShouldShowManagerButtons.value = true
       mockIsLoading.value = true
       renderRow()
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
     })
   })
 
