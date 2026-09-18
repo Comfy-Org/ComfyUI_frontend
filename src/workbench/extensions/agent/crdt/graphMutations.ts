@@ -302,6 +302,12 @@ function serialisableSlotFields(
   )
 }
 
+function hasSafeSlots(value: unknown): boolean {
+  return (
+    value === undefined || (Array.isArray(value) && value.every(isSlotRecord))
+  )
+}
+
 /**
  * `ghost` marks a node still following the cursor during search-box placement.
  * The placement click clears it locally and mints no op, so a document that
@@ -1370,6 +1376,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return 'addNode requires a payload id and type'
           }
+          if (
+            !hasSafeSlots(mutation.payload.inputs) ||
+            !hasSafeSlots(mutation.payload.outputs)
+          ) {
+            return `node ${mutation.payload.id} has malformed slots`
+          }
           const node = prepareNode(
             mutation.payload,
             scope,
@@ -1446,6 +1458,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const key = nodeKey(toNodeId(mutation.payload.id))
           const existing = nodes.get(key)
+          if (
+            (!existing || existing.type !== mutation.payload.type) &&
+            (!hasSafeSlots(mutation.payload.inputs) ||
+              !hasSafeSlots(mutation.payload.outputs))
+          ) {
+            return `node ${key} has malformed slots`
+          }
           const node = prepareNode(mutation.payload, scope, existing)
           if (!existing || existing.type !== node.state.type) {
             const validationError = validateNodeUpsert(node, key)

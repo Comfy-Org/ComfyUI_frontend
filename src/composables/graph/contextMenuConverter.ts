@@ -497,6 +497,7 @@ function captureDynamicSubmenu(
         capturedItems = items
         capturedOptions = options
         super([], options)
+        this.close()
       }
     }
 

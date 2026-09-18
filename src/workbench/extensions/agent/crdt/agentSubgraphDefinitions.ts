@@ -235,9 +235,36 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
+function isSafeDefinitionState(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.lastGroupId === 'number' &&
+    typeof value.lastNodeId === 'number' &&
+    typeof value.lastLinkId === 'number' &&
+    typeof value.lastRerouteId === 'number'
+  )
+}
+
+function isSafeIoNode(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    (typeof value.id === 'string' || typeof value.id === 'number') &&
+    Array.isArray(value.bounding) &&
+    value.bounding.length === 4 &&
+    value.bounding.every((coordinate) => typeof coordinate === 'number')
+  )
+}
+
 function isSafeDefinition(value: unknown): value is ExportedSubgraph {
   return (
     isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.revision === 'number' &&
+    (value.version === 0 || value.version === 1) &&
+    isSafeDefinitionState(value.state) &&
+    typeof value.name === 'string' &&
+    isSafeIoNode(value.inputNode) &&
+    isSafeIoNode(value.outputNode) &&
     hasSafeInputs(value.inputs) &&
     hasSafeNodes(value.nodes) &&
     hasSafeLinks(value.links) &&

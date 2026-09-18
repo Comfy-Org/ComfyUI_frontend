@@ -70,7 +70,8 @@ export class LocalDesktopTarget {
               // `executing` dispatches a bare node-id string (api.ts
               // dispatchCustomEvent('executing', msg.data.node)); the other
               // events dispatch object payloads.
-              events.push(
+              const currentEvents = (sink.__cnEvents ??= [])
+              currentEvents.push(
                 detail !== null && typeof detail === 'object'
                   ? { type, ...(detail as Record<string, unknown>) }
                   : { type, node: (detail as string | undefined) ?? null }
