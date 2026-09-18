@@ -3117,6 +3117,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3185,6 +3186,7 @@
     "latent": "잠재 데이터",
     "loaders": "로더",
     "logic": "로직",
+    "looping": "반복",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3217,6 +3219,7 @@
     "scail": "scail",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "시그마",
@@ -3245,6 +3248,7 @@
     "video": "비디오",
     "void": "void",
     "wan": "wan",
+    "yue2": "yue2",
     "z-image": "z-image"
   },
   "nodeErrors": {

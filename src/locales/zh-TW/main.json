@@ -3117,6 +3117,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3185,6 +3186,7 @@
     "latent": "潛空間",
     "loaders": "載入器",
     "logic": "邏輯",
+    "looping": "迴圈",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3217,6 +3219,7 @@
     "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "著色器",
     "sigmas": "西格瑪值",
@@ -3245,6 +3248,7 @@
     "video": "影片",
     "void": "void",
     "wan": "wan",
+    "yue2": "yue2",
     "z-image": "z-image"
   },
   "nodeErrors": {

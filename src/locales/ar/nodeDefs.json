@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "أدرج كائنًا موصوفًا بنص عادي في صورة باستخدام Bria. يعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تكون النتيجة متوافقة مع الإدخال على مستوى البكسل.",
+    "display_name": "Bria إضافة كائن",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "instruction": {
+        "name": "تعليمات",
+        "tooltip": "ما الذي تريد إضافته وأين، مثل: «ضع مزهرية حمراء تحتوي على زهور فوق الطاولة»."
+      },
+      "moderation": {
+        "name": "الإشراف على المحتوى",
+        "tooltip": "إعدادات الإشراف على المحتوى"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لا يستخدم Bria أي بذرة هنا ويعيد تخيّل التعديل عند كل استدعاء، لذا قد تختلف عمليات التشغيل المتكررة. لا تُرسل القيمة مطلقًا؛ فهي تغيّر فقط مفتاح ذاكرة التخزين المؤقت لهذه العقدة، بحيث يعيد مخطط مماثل التعديل بدلًا من إرجاع النتيجة المخزنة مؤقتًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لاستخدامه في تعديل لاحق عبر Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "أزل كائنًا مُسمّى بنص عادي من صورة باستخدام Bria. يعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تكون النتيجة متوافقة مع الإدخال على مستوى البكسل.",
+    "display_name": "Bria مسح بالنص",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف على المحتوى",
+        "tooltip": "إعدادات الإشراف على المحتوى"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "اسم الكائن المراد إزالته، مثل: «المصباح». يمكن تسمية عدة كائنات دفعة واحدة، مثل: «الهاتف والأقلام الرصاص». حتى تسمية شيء غير موجود في الصورة تؤدي إلى إرجاع صورة معاد تصييرها واحتساب تكلفتها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لاستخدامه في تعديل لاحق عبر Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "أزل مقدمة الصورة باستخدام Bria وأنشئ خلفية مكانها. يُزال كل ما يفسّره Bria على أنه مقدمة، وليس الأشخاص فقط. تُحفظ وحدات البكسل غير المعدّلة، لكن يُعاد تصيير الإخراج بحجم قياسي قريب من 1 ميغابكسل.",
+    "display_name": "Bria مسح المقدمة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف على المحتوى",
+        "tooltip": "إعدادات الإشراف على المحتوى"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "أزل الكائنات أو المناطق المحددة بقناع من صورة باستخدام Bria.",
     "display_name": "ممحاة Bria",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "غيّر أجواء الإضاءة واتجاهها في صورة باستخدام Bria. يعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تكون النتيجة متوافقة مع الإدخال على مستوى البكسل.",
+    "display_name": "Bria إعادة الإضاءة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "المصدر الذي يأتي منه الضوء. تتأثر به أكثر أجواء الإضاءة القاسية، مثل ضوء الظهيرة والكشاف المسلط على العنصر وإضاءة الاستوديو القاسية."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "أجواء الإضاءة المطلوب تطبيقها."
+      },
+      "moderation": {
+        "name": "الإشراف على المحتوى",
+        "tooltip": "إعدادات الإشراف على المحتوى"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لاستخدامه في تعديل لاحق عبر Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "إزالة الخلفية من صورة باستخدام Bria RMBG 2.0.",
     "display_name": "Bria إزالة خلفية الصورة",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "استبدل خلفية صورة باستخدام Bria، عبر وصفها بموجّه أو الاسترشاد بصور مرجعية. تُحفظ وحدات بكسل العنصر؛ وتُنشأ الخلفية حوله.",
+    "display_name": "Bria استبدال خلفية الصورة",
+    "inputs": {
+      "background": {
+        "name": "الخلفية",
+        "tooltip": "صف الخلفية الجديدة بموجّه، أو وجّهها بصور مرجعية."
+      },
+      "background_mode": {
+        "name": "الوضع"
+      },
+      "background_prompt": {
+        "name": "الموجّه"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "أعد حجم البكسل الدقيق للإدخال بدلًا من تحجيم النتيجة إلى نحو 1 ميغابكسل. سيؤدي الإدخال الكبير عندئذٍ إلى صورة كبيرة."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "عادةً ما تعيد البذرة نفسها الخلفية نفسها؛ إلا أن التحسين التلقائي للموجّه قد يغيّرها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "الموجّه الذي أنشأته Bria، ويكون فارغًا عند استخدام مسار الصورة المرجعية."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "استبدل كائنًا في صورة بآخر موصوف بنص عادي باستخدام Bria. تعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تتطابق النتيجة بكسليًا مع الإدخال.",
+    "display_name": "Bria لاستبدال كائن",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "instruction": {
+        "name": "تعليمة",
+        "tooltip": "ما الذي يُستبدل بماذا، مثل: «استبدل التفاحة الحمراء بإجاصة خضراء»."
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لا تقبل Bria هنا أي بذرة، وتعيد تخيّل التعديل في كل استدعاء، لذا قد تختلف عمليات التشغيل المتكررة. لا تُرسل هذه القيمة مطلقًا: فهي تغيّر فقط مفتاح ذاكرة التخزين المؤقت لهذه العقدة، بحيث ينفّذ مخطط مماثل في كل شيء آخر التعديل مجددًا بدلًا من إعادة النتيجة المخزنة مؤقتًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لتعديل لاحق باستخدام Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "انقل صورة إلى موسم آخر باستخدام Bria. يُعاد تصيير المشهد بالكامل، لذا قد تتغير المناظر بما يتجاوز الموسم نفسه. تعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تتطابق النتيجة بكسليًا مع الإدخال.",
+    "display_name": "Bria لتغيير الموسم",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "season": {
+        "name": "الموسم",
+        "tooltip": "الموسم المراد تطبيقه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لتعديل لاحق باستخدام Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "أصلح صورة فوتوغرافية قديمة أو متضررة باستخدام Bria: تُزال التحببات والخدوش والضبابية، وتُحيَّد الانحرافات اللونية المرتبطة بالعمر. قد تُقتطع قواعد البطاقات وحدود الاستوديو، ويُعاد رسم الوجوه. تعيد Bria تصيير الإطار بالكامل بدقة تقارب 1 ميغابكسل، لذا لا تتطابق النتيجة بكسليًا مع الإدخال. استخدم Bria Increase Resolution للتكبير بدلًا من ذلك.",
+    "display_name": "Bria لاستعادة صورة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "وصف منظّم للصورة المعدّلة، لإجراء تعديل لاحق باستخدام Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "إزالة الخلفية من الفيديو باستخدام Bria وإرجاع الإطارات المقطوعة بالإضافة إلى قناع ألفا. قم بتوصيلهما مع عقدة تركيب، أو مررهما إلى حفظ WEBM لكتابة فيديو شفاف.",
     "display_name": "Bria إزالة خلفية الفيديو (شفافة)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "أزل من الفيديو أي شيء يغطيه قناع لكل إطار باستخدام Bria واملأ الفراغ. يجب أن يكون القناع أبيض في المناطق المطلوب إزالتها وأسود في غير ذلك. يقبل Bria مقاطع بحد أقصى 5.1 ثوانٍ وبمعدل 20 إلى 30 إطارًا في الثانية وبأبعاد بكسل زوجية؛ ويُحتفظ بالصوت افتراضيًا. قد يكون المقطع المُعاد أقصر ببضعة إطارات من الإدخال.",
+    "display_name": "ممحاة فيديو Bria",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "قناع واحد لكل إطار من الفيديو، باللون الأبيض حيث يوجد الكائن المراد إزالته. وفّر قناعًا أو فيديو قناع، وليس كليهما."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "فيديو قناع مُرمّز مسبقًا بالأبعاد نفسها وعدد الإطارات نفسه للفيديو. وفّر قناعًا أو فيديو قناع، وليس كليهما."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "الاحتفاظ بمسار الصوت للإدخال."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "المقطع المراد إزالة العناصر منه."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "يدمج الفيديوهات بالترتيب دون فك ترميز المدخلات المُرمّزة المتوافقة.",
+    "display_name": "دمج الفيديوهات",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "الترميز المستخدم لترميز موترات الفيديو. يستخدم Auto ترميز H.264؛ وتبقى الفيديوهات المُرمّزة مسبقًا دون تغيير."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "مسار صوتي كامل اختياري للفيديو المدمج. يتجاوز الصوت المحمول بواسطة فيديوهات الإدخال."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "مقاطع الفيديو المراد دمجها حسب ترتيب الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "الفيديو المدمج."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "متوسط التهيئة",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "تهيئة إلى"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "يحمّل تكييفًا محفوظًا باستخدام Save Conditioning، أو أي ملف safetensors يحتوي على موتر 'conditioning'، من مجلد embeddings.",
+    "display_name": "تحميل التكييف",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +4206,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "يستخدم «تلقائي» 8 بت لـ sRGB و10 بت لـ HDR. خيارات 8 بت و10 بت الصريحة مستقلة عن مساحة الألوان."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "يمكن ترميز الفيديو فورًا اختياريًا. يبقي None الصور بصيغة موتر؛ ويستخدم Auto ترميز H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5034,6 +5336,49 @@
       }
     }
   },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صوت YuE2 latent فارغ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "إنهاء الحلقة",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "أعد output_value من كل تكرار عند التمكين؛ وإلا فأعد التكرار الأخير فقط."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "القيمة المُرسلة من End Loop إلى Start Loop للتكرار التالي."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "القيمة التي يعيدها End Loop. يعيد التكرار الأخير أو جميع التكرارات وفقًا لـ accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "صِل المخرجات التي يجب تنفيذها في كل تكرار. لا تُعاد قيمها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "output_value الخاص بالتكرار الأخير، أو القيم المتراكمة عبر التكرارات عند تمكين accumulate."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "تحجيم إبسيلون",
     "inputs": {
@@ -5898,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "يُحرّر clip وفق تعليمات مكتوبة: إزالة الكائنات أو إضافتها أو استبدالها، وتغيير البيئة، وإعادة تصميم اللقطات، وتغيير النص الظاهر على الشاشة، أو استبدال الحوار المنطوق. يأتي الطول والتأطير وحركة الكاميرا والصوت من clip المصدر.",
+    "display_name": "تحرير فيديو Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "يُصغّر تلقائيًا المصادر التي تزيد مساحتها على 1280x704 بكسل قبل الرفع. تُحافَظ على نسبة العرض إلى الارتفاع؛ ولا تتأثر مقاطع الفيديو الأصغر."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ما الذي تريد تغييره، بلغة واضحة، حتى 4096 حرفًا. يُفترض أن يبقى كل ما لا تذكره كما كان. يجب أن يتناسب الحوار البديل مع مدة الكلام الأصلي، ويبقى clip الصامت صامتًا."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "درجة تحمّل الإشراف؛ 0 هي الأكثر صرامة."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة لتحديد ما إذا كان ينبغي للعقدة إعادة التشغيل؛ يختار FLUX بذرته الخاصة، لذا فالنتائج الفعلية غير حتمية بغض النظر عن هذه القيمة."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "clip مصدر مدته من 0.7 إلى 15 ثانية، وبأبعاد لا تقل عن 160x160 بكسل. يُخرَج الناتج بمعدل 24 إطارًا في الثانية، ويُحدّ بحوالي 0.9 ميغابكسل لكل إطار، لذا يعود المصدر الأكبر بحجم أصغر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "يكبّر الفيديو بمقدار 1.5 إلى 3 مرات باستخدام الدقة الفائقة لـ FLUX، إما مع الحفاظ الدقيق على المصدر أو بتحسين تفاصيله إبداعيًا.",
     "display_name": "Flux تكبير الفيديو",
@@ -6473,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "ولّد استجابات نصية باستخدام نماذج Gemini من Google. وفّر مطالبة نصية، واختياريًا، صورة واحدة أو أكثر، أو مقاطع صوتية، أو مقاطع فيديو، أو ملفات كسياق متعدد الوسائط.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Gemini المستخدم لتوليد الاستجابة."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نموذج Google Gemini Omni Flash. يمكنك اختيار صور و/أو مقاطع فيديو مرجعية لتوجيه أو تعديل النتيجة. صف الطول المطلوب (٣-١٠ ثوانٍ) ونسبة العرض إلى الارتفاع (١٦:٩ أو ٩:١٦) مباشرة في المطالبة.",
     "display_name": "Google Gemini Omni (فيديو)",
@@ -6660,6 +7075,22 @@
       },
       "2": {
         "name": "حجم الدفعة",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "الحصول على عنصر من القائمة",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11274,6 +11705,73 @@
       }
     }
   },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
+      }
+    }
+  },
   "LoraLoader": {
     "description": "يُستخدم LoRA لتعديل نماذج الانتشار و CLIP، وتغيير طريقة إزالة الضجيج من الكامن مثل تطبيق الأنماط. يمكن ربط عدة عقد LoRA معاً.",
     "display_name": "تحميل LoRA",
@@ -12366,6 +12864,23 @@
     "inputs": {
       "sigmas": {
         "name": "سيغما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MarigoldV2PostProcess": {
+    "description": "يحوّل تنبؤ Marigold V2 مفكوك الترميز إلى صورة: عمق مُطبَّع تكون فيه المناطق القريبة ساطعة، أو متجهات عمودية سطحية وحيدة الطول، أو بياض سطحي sRGB.",
+    "display_name": "المعالجة اللاحقة لـ Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      },
+      "prediction": {
+        "name": "تنبؤ"
       }
     },
     "outputs": {
@@ -16022,6 +16537,9 @@
       "model": {
         "name": "النموذج"
       },
+      "sampling": {
+        "name": "أخذ العينات"
+      },
       "shift": {
         "name": "الإزاحة"
       }
@@ -17678,6 +18196,93 @@
     "inputs": {
       "value": {
         "name": "القيمة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaImageToVideoNode": {
+    "description": "يحرّك صورة لإنشاء فيديو باستخدام نماذج فيديو Pruna، مع إطار أخير اختياري أو صوت مُولَّد أو مسار صوتي.",
+    "display_name": "Pruna P-Video-2 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المُراد استخدامه."
+      },
+      "model_draft": {
+        "name": "مسودة"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "تحسين الموجّه"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "يولّد فيديو من موجّه نصي باستخدام نماذج فيديو Pruna، مع صوت مُولَّد اختياري أو مسار صوتي لتوجيه التوليد.",
+    "display_name": "Pruna P-Video-2 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المُراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_draft": {
+        "name": "مسودة"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_enhance_prompt": {
+        "name": "تحسين الموجّه"
+      },
+      "model_fps": {
+        "name": "معدل الإطارات"
+      },
+      "model_generate_audio": {
+        "name": "توليد الصوت"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
@@ -20988,6 +21593,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "يحفظ تكييفًا في مجلد الإخراج بصيغة safetensors؛ انقل الملف إلى models/embeddings لتحميله باستخدام Load Conditioning، مثلًا لتجاوز مرمّز النص.",
+    "display_name": "حفظ التكييف",
+    "inputs": {
+      "conditioning": {
+        "name": "التكييف"
+      },
+      "filename_prefix": {
+        "name": "بادئة اسم الملف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "التكييف",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "حفظ GLB",
     "inputs": {
@@ -21680,6 +22303,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "ينسخ الألحان الغنائية والآلية من الموسيقى إلى تدوين ABC. صِل خرج abc بعقدة YuE2 Generate Music واستخدم الوضع المطابق.",
+    "display_name": "SheetSage2 من الصوت إلى ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "مرمّز الصوت"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "كامل: يولّد اللحن والتناغمات؛ لحن: يولّد اللحن فقط، ويوصى به للأغلفة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "تبديل ترتيب الصور في القائمة بشكل عشوائي.",
     "display_name": "تبديل ترتيب مجموعة بيانات الصور",
@@ -22286,6 +22931,52 @@
       "2": {
         "name": "كامِن",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "بدء الحلقة",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "أعِد استخدام نتائج التكرارات غير المتغيرة من عمليات التنفيذ السابقة. عطّل هذا الخيار لتنفيذ كل تكرار مجددًا."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "القيمة المعروضة باعتبارها current_iteration_value في التكرار الأول."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "وضع تكرار الحلقة."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "صِل iteration_index من Start Loop خارجي لتداخل هذه الحلقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "فهرس تكرار الحلقة الحالي."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "صحيح أثناء التكرار الأول من الحلقة."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "صحيح أثناء التكرار الأخير من الحلقة."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "العنصر الحالي من القائمة عند استخدام وضع List. لا شيء في وضعي Simple وFor."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "القيمة المنقولة عبر الحلقة للتكرار الحالي: initial_iteration_value في التكرار الأول، ثم next_iteration_value من End Loop في كل تكرار لاحق."
       }
     }
   },
@@ -24484,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من صورة، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعيات (FBX).",
+    "display_name": "Tripo P2: من صورة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من عرض أمامي، بالإضافة إلى عرض واحد إلى ثلاثة من العروض اليسرى والخلفية واليمنى، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعي (FBX).",
+    "display_name": "Tripo P2: من عروض متعددة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "الاتجاه"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "رباعي"
+      },
+      "model_texture": {
+        "name": "النسيج"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من مطالبة نصية، على هيئة شبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعي (FBX).",
+    "display_name": "Tripo P2: من نص إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quad": {
+        "name": "رباعي"
+      },
+      "model_texture": {
+        "name": "النسيج"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "يكون فارغًا عند تفعيل quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تفعيل quad."
       }
     }
   },
@@ -28528,6 +29405,114 @@
     "outputs": {
       "0": {
         "name": "شبكة",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "يولّد تدوين ABC لأغنية من النمط وكلمات الأغنية. وصّل abc بعقدة YuE2 توليد الموسيقى.",
+    "display_name": "YuE2 توليد ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "full: يولّد اللحن والأوتار؛ melody: يولّد اللحن فقط، موصى به للأغاني المعاد أداؤها."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "عدد رموز ABC الحديثة المستخدمة لمعاقبة التكرار."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "النمط"
+      },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "يولّد رموز الموسيقى والتكييف الصوتي من النمط وكلمات الأغنية وتدوين ABC. أدخل الثواني المُولّدة إلى عقدة Empty YuE2 Latent Audio. يتجاهل إدخال ABC الفارغ الوضع المحدد.",
+    "display_name": "YuE2 توليد الموسيقى",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "وصّل مولّد ABC أو أدخل نوتة معدّلة. اتركه فارغًا لاستخدام وضع off تلقائيًا."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "توجيه انحداري ذاتي للأسلوب وكلمات الأغاني. القيمة 1.0 تعطل CFG، بما يتوافق مع سير عمل ABC. استخدم 1.01 لمطابقة التوجيه الأصلي في وضع الإيقاف."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "المدة القصوى بالثواني. تُخفَّض تلقائيًا للموجّهات الطويلة؛ وقد يتوقف التوليد مبكرًا."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "full: يولّد اللحن والأوتار؛ melody: يولّد اللحن فقط، موصى به للأغاني المعاد أداؤها."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "النمط"
+      },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثوانٍ",
         "tooltip": null
       }
     }
