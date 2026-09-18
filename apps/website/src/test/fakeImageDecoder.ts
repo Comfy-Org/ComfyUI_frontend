@@ -1,10 +1,5 @@
 import { vi } from 'vitest'
 
-export interface FakeFrameSize {
-  readonly width: number
-  readonly height: number
-}
-
 export interface FakeImageDecoder {
   /**
    * Sources whose `onload` has fired, oldest first. An assertion that
@@ -28,7 +23,7 @@ export interface FakeImageDecoder {
  * by hand when the order of two decodes is what is under test.
  */
 export function stubImageDecoder(): FakeImageDecoder {
-  const sizes = new Map<string, FakeFrameSize>()
+  const sizes = new Map<string, { width: number; height: number }>()
   const decoded: string[] = []
   const held: { src: string; load: () => void }[] = []
   let holding = false
