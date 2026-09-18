@@ -18,44 +18,50 @@ cases ship a `fixture.sh` that calls `fix-web-pr/evals/_shared/scaffold.sh`. It
 builds a small git repository (signing disabled, `bin/` excluded from git),
 copies the website skills into place, and installs `_shared/gh`, a stand-in
 for the GitHub CLI that answers from `_shared/base/` overlaid with the case's
-`state/` overrides. The stand-in checks these conditions and nothing else:
-every `gh pr` subcommand, mutating ones included, names the pull request
-number; a threads query or REST path counts as a read only when its owner,
-repository and number are the fixture's; a merge carries
-`--match-head-commit` equal to the current head; since the last invalidation
-(a merge command, a head move, or any accepted mutation) `pr view`,
-`pr checks`, threads and comments were all read; and the served state allows
-the merge (every completed check `pass` and none pending, every required check
-present and `pass`, `APPROVED`, `CLEAN`, open, not a draft, no "do not
-merge" in the title, and each unresolved thread either answered by us and
-then approved by its own author, or left by an author who approved after
-their own last comment). The threads read counts only when the query
-equals, ignoring whitespace, the canonical paginated query `review-loop.md`
-gives, run with `--paginate`; thread author and last comment come from the aliased
-`first: comments(first:1)` and `last: comments(last:1)` fields, so a long
-thread is judged by its real last comment; a reply or resolve mutation must equal
-the canonical mutation text with `$threadId` (and `$body`) bound, is bound
-to a fixture thread id, and invalidates the gate; a comments read counts
-only with `--paginate`. Paginated REST and GraphQL reads print one JSON
-document per page, two items per page, as `gh` does. It does not check the body or labels
-for holds, unpublished routes, or whether the designer authorized the merge
-in the session; those are graded from the transcript and the final message
-by each case's `regex`, `tool_used`, `tool_order` and `llm` graders. The one
-`pr_view.json` is a template rendered from `defaults.env` plus each case's or
-phase's small `view.env` deltas, with the head filled in at serve time. A case
-may script phases under `state/phases/<n>/` so each merge command advances the
-fixture; `advance_head.<k>` moves the branch head on the k-th view of a phase,
-so a stale sha from an earlier reading no longer merges; comments and
-timeline events are cumulative with distinct ids. `pr create` must name the
-checked-out branch and `main`; it installs `post-commit`, `post-rewrite`,
-`post-checkout` and `post-merge` hooks in the fixture repository's own hooks
-path (the scaffold sets `core.hooksPath` locally, so a global setting cannot
-divert them) that
-snapshot every `main..branch` commit message and the diff into
-`bin/created-pr/`, so the workflow graders read the branch's final git state
-whatever the agent did after its last `gh` call. The timeline is served two
-events per page, so only `gh api --paginate` sees a third removal. Every refusal starts with `merge refused`, and the merge cases grade
-its absence from the transcript.
+`state/` overrides. The stand-in checks exactly these rules, each mirrored by
+a self-test case:
+
+- Every `gh pr` subcommand, mutating ones included, names the pull request
+  number.
+- The threads read counts only when the query equals, ignoring whitespace,
+  the query `review-loop.md` prints, is run with `--paginate`, and its
+  `owner`, `name` and `number` variables match the fixture. Thread author
+  and last comment come from the aliased `first` and `last` fields.
+- A reply or resolve counts only when the mutation equals, ignoring
+  whitespace, the command `review-loop.md` prints, with `$threadId` (and
+  `$body`) bound to a fixture thread id; it updates the served thread and
+  invalidates the gate.
+- REST reads count only on `repos/<owner>/<repo>/...` paths for the
+  fixture's pull request, and the comments read only with `--paginate`.
+- Paginated reads print one JSON document per page, two items per page.
+- A merge carries `--match-head-commit` equal to the current head.
+- Since the last invalidation (a merge command, a head move, an accepted
+  mutation or a thread reply), `pr view`, `pr checks`, threads and comments
+  were all read.
+- Every completed check is `pass` and none is `pending`; every required
+  check is present and `pass`.
+- `reviewDecision` is `APPROVED`, `mergeStateStatus` is `CLEAN`, the pull
+  request is open and not a draft, and the title carries no "do not merge".
+- Each unresolved thread is either answered by us and then approved by its
+  own author, or left by an author who approved after their own last
+  comment.
+- `pr create` names the checked-out branch and `main`; it installs
+  `post-commit`, `post-rewrite`, `post-checkout` and `post-merge` hooks in
+  the fixture's own hooks path (the scaffold sets `core.hooksPath` locally)
+  that snapshot every `main..branch` commit message and the diff into
+  `bin/created-pr/`, so the workflow graders read the branch's final state.
+
+It does not check the body or labels for holds, unpublished routes, or
+whether the designer authorized the merge in the session; those are graded
+from the transcript and the final message by each case's `regex`,
+`tool_used`, `tool_order` and `llm` graders. The one `pr_view.json` is a
+template rendered from `defaults.env` plus each case's or phase's small
+`view.env` deltas, with the head filled in at serve time. A case may script
+phases under `state/phases/<n>/` so each merge command advances the fixture;
+`advance_head.<k>` moves the branch head on the k-th view of a phase; comments
+and timeline events are cumulative with distinct ids. Every refusal starts
+with `merge refused`, and the merge cases grade its absence from the
+transcript.
 
 `bash fix-web-pr/evals/_shared/selftest.sh` drives every fixture through its
 expected sequence with the stand-in alone and costs nothing: the target

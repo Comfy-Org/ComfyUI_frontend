@@ -30,11 +30,17 @@ query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
 ```
 
 A thread's author is the author of its `first` comment; its last comment is
-the `last` node, whatever the thread's length. Reply in a thread with
-`addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body})`
-and resolve one with `resolveReviewThread(input:{threadId:$threadId})`,
-declaring `$threadId:ID!` (and `$body:String!`) in the mutation and passing
-them as `-F threadId=<id>` and `-f body=<text>`. Read issue comments with
+the `last` node, whatever the thread's length. Reply in a thread and resolve
+one with these two commands, exactly, with the thread's `id` from the query:
+
+```bash
+gh api graphql -F threadId=<id> -f body=<text> -f query='
+mutation($threadId:ID!,$body:String!){
+  addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'
+
+gh api graphql -F threadId=<id> -f query='
+mutation($threadId:ID!){ resolveReviewThread(input:{threadId:$threadId}){ thread{ isResolved } } }'
+``` Read issue comments with
 `gh api --paginate repos/<owner>/<repo>/issues/<number>/comments`; without
 `--paginate` you get one page and a later comment can be missing. Never
 reason from an earlier round's reading; a round that starts while checks are

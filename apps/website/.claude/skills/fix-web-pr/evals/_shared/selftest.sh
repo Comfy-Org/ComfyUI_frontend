@@ -80,12 +80,18 @@ expect_fail threads_read example site 4242 'query($owner:String!,$name:String!,$
 expect_fail ./bin/gh api graphql -F owner=example -F name=site -F number=4242 -f query="$Q"
 expect_fail ./bin/gh api graphql -F number=4242 -f query='query{repository(owner:"example",name:"site"){pullRequest(number:4242){reviewThreads}}}'
 expect_fail ./bin/gh api repos/example/site/issues/9999/comments
-./bin/gh api repos/example/site/issues/4242/comments >/dev/null
-expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # unpaginated comments read does not count
 expect_fail ./bin/gh api repos/wrong/repo/issues/4242/comments
 expect_fail ./bin/gh api repos/example/site/issues/4242/commentsx
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 read_rest
+expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+
+echo "an unpaginated comments read is the only missing prerequisite"
+build merges-on-fresh-head
+read_view >/dev/null; ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null
+./bin/gh api repos/example/site/issues/4242/comments >/dev/null
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
 echo "served state is enforced (mutations)"
@@ -223,8 +229,12 @@ expect_ok ./bin/gh pr create --base main --head website/copy-change --title "fea
 if grep -q "feat(website): copy" bin/created-pr/commit-messages.txt && grep -qx "apps/website/src/pages/pricing.astro" bin/created-pr/changed-files.txt; then ok "created-pr snapshot from git"; else bad "created-pr snapshot missing"; fi
 echo x > extra.ts && git add extra.ts && git commit -q -m "chore: extra"
 if grep -qx "extra.ts" bin/created-pr/changed-files.txt && grep -q "chore: extra" bin/created-pr/commit-messages.txt; then ok "post-commit hook refreshed the snapshot without a gh call"; else bad "snapshot stale after a later commit"; fi
-git commit -q --amend -m "chore: extra (amended)"
-if grep -q "chore: extra (amended)" bin/created-pr/commit-messages.txt; then ok "post-rewrite hook refreshed the snapshot after amend"; else bad "snapshot stale after amend"; fi
+hooks_dir="$(git rev-parse --git-path hooks)"
+for h in post-commit post-rewrite post-checkout post-merge; do if [[ -x "$hooks_dir/$h" ]]; then ok "hook installed: $h"; else bad "hook missing: $h"; fi; done
+git checkout -q main && echo m > moved.ts && git add moved.ts && git commit -q -m "chore: main moved" && git checkout -q website/copy-change
+before="$(cat bin/state/head_sha)"
+git rebase -q main
+if [[ "$(cat bin/state/head_sha)" != "$before" && "$(cat bin/state/head_sha)" == "$(git rev-parse HEAD)" ]]; then ok "post-rewrite hook refreshed the snapshot after a rebase (post-commit does not fire on rebase)"; else bad "snapshot stale after rebase"; fi
 rm -rf bin/created-pr
 git checkout -q main && git checkout -q website/copy-change
 if [[ -f bin/created-pr/commit-messages.txt ]]; then ok "post-checkout hook regenerated the snapshot"; else bad "post-checkout hook did not run"; fi
