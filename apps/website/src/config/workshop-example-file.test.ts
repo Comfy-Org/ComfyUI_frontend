@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { workshopExampleFile } from './workshop-example-file'
-import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
+import { loadWorkshopExampleFile } from '@comfyorg/router-playground/workshop-example-file-loader'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import type { FormValues } from './workshop-playground'
-import { defaultValues, schemaForModel } from './workshop-playground'
-import { prepareWorkshopRouterInput } from './workshop-request'
+import type { FormValues } from '@comfyorg/router-playground/workshop-playground'
+import {
+  defaultValues,
+  schemaForModel
+} from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import { workshopExampleValues } from './workshop-example-values'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 
 describe('example source images', () => {
   it.for([
@@ -90,7 +94,7 @@ describe('example source images', () => {
       })
     })
     vi.stubGlobal('fetch', transport)
-    const uploader = createWorkshopUrlUploader()
+    const uploader = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
     const body = await prepareWorkshopRouterInput(
       page.execution,
       values,

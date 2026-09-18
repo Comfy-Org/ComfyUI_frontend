@@ -13,7 +13,7 @@ import {
   routerContentById
 } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { parseRouterOpenApiSnapshot } from './workshop-router-openapi'
+import { parseRouterOpenApiSnapshot } from '@comfyorg/router-playground/workshop-router-openapi'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 
 const snapshots = rawSnapshots.map(parseRouterOpenApiSnapshot)

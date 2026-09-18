@@ -1,30 +1,35 @@
 import { chromium } from '@playwright/test'
 import type { Browser } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
-import type { WorkshopSvgRasterizer } from '../src/config/workshop-svg-output'
+import type { WorkshopSvgRasterizer } from '@comfyorg/router-playground/workshop-svg-output'
+
+/** The package's browser-side rasterizer as a data URL, so a page can import
+ * it with every network request blocked. */
+export async function loadRouterSvgRasterizerModule(): Promise<string> {
+  const source = await readFile(
+    createRequire(import.meta.url).resolve(
+      '@comfyorg/router-playground/workshop-svg-rasterizer'
+    ),
+    'utf8'
+  )
+  const compiled = transpileModule(source, {
+    compilerOptions: {
+      target: ScriptTarget.ES2022,
+      module: ModuleKind.ESNext
+    }
+  })
+  return `data:text/javascript;base64,${Buffer.from(compiled.outputText).toString('base64')}`
+}
 
 export function openRouterSvgRasterizer(): {
   rasterize: WorkshopSvgRasterizer
   close: () => Promise<void>
 } {
   let browser: Promise<Browser> | undefined
-  function loadModule() {
-    return readFile(
-      new URL('../src/config/workshop-svg-rasterizer.ts', import.meta.url),
-      'utf8'
-    ).then((source) => {
-      const compiled = transpileModule(source, {
-        compilerOptions: {
-          target: ScriptTarget.ES2022,
-          module: ModuleKind.ESNext
-        }
-      })
-      return `data:text/javascript;base64,${Buffer.from(compiled.outputText).toString('base64')}`
-    })
-  }
-  let moduleUrl: ReturnType<typeof loadModule> | undefined
+  let moduleUrl: Promise<string> | undefined
   const lifetime = new AbortController()
   let active = 0
   const waiting: (() => void)[] = []
@@ -75,7 +80,7 @@ export function openRouterSvgRasterizer(): {
               throw new Error('Invalid rasterized image')
             return result
           },
-          { url: await (moduleUrl ??= loadModule()), svg }
+          { url: await (moduleUrl ??= loadRouterSvgRasterizerModule()), svg }
         )
         requestSignal.throwIfAborted()
         return new Blob(

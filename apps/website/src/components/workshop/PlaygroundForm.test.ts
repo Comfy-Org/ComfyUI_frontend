@@ -7,14 +7,14 @@ import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   defaultValues,
   schemaForModel,
   validateForm
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
 
 describe('Advanced form values', () => {

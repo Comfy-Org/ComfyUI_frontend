@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
+import { loadWorkshopExampleFile } from '@comfyorg/router-playground/workshop-example-file-loader'
 import { runWorkshopRouter } from '../src/config/workshop-router'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 import {
   prepareRouterRender,
   router_for_model,
@@ -13,9 +13,12 @@ vi.mock(import('../src/config/workshop-router'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
-vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
-  loadWorkshopExampleFile: vi.fn()
-}))
+vi.mock(
+  import('@comfyorg/router-playground/workshop-example-file-loader'),
+  () => ({
+    loadWorkshopExampleFile: vi.fn()
+  })
+)
 
 describe('router_render', () => {
   it.for([

@@ -24,18 +24,19 @@ import type {
   FieldErrors,
   FormValues,
   PlaygroundExample
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   isVideoUrl,
   schemaForModel,
   validateForm
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   initialWorkshopPageState,
   workshopExampleState,
   workshopPageSchema
 } from '../../config/workshop-page-state'
-import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
+import type { RunRecord, RunState } from '../../config/workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 import { IDLE, transition } from '../../config/workshop-run'
 import {
   refreshWorkshopCredits,
@@ -44,9 +45,9 @@ import {
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
-import { releaseRouterOutputs } from '../../config/workshop-response'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
+import { releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
@@ -56,6 +57,7 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { WORKSHOP_ROUTER_BASE_URL } from '../../config/workshop-env'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
@@ -107,7 +109,7 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
-const initialPageState = initialWorkshopPageState(model)
+const initialPageState = initialWorkshopPageState(model, locale)
 const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
@@ -130,7 +132,7 @@ const schema = computed(() =>
           advancedFields: []
         }
       })
-    : workshopPageSchema(model, activeExample.value)
+    : workshopPageSchema(model, activeExample.value, locale)
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
@@ -365,7 +367,7 @@ interface ActiveRun {
 
 let activeRun: ActiveRun | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
-const uploadUrl = createWorkshopUrlUploader()
+const uploadUrl = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
 
 const now = useTimestamp({ interval: 1000 })
 
@@ -628,7 +630,7 @@ function applyExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = workshopExampleState(model, example).values
+    values.value = workshopExampleState(model, example, locale).values
     // Agreeing settles both records: the reader has let the example win.
     markSettled()
   }

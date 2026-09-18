@@ -1,13 +1,13 @@
 import { z } from 'astro/zod'
 
-import { workshopCreatorFormSchema } from '../src/config/workshop-creator-form'
+import { workshopCreatorFormSchema } from '@comfyorg/router-playground/workshop-creator-form'
 import type {
   WorkshopCreatorFile,
   WorkshopCreatorForm
-} from '../src/config/workshop-creator-form'
-import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { resolveSchemaReference } from '../src/config/workshop-router-openapi'
+} from '@comfyorg/router-playground/workshop-creator-form'
+import type { WorkshopInputDefinition } from '@comfyorg/router-playground/workshop-input-definition'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
+import { resolveSchemaReference } from '@comfyorg/router-playground/workshop-router-openapi'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())

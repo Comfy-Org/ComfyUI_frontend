@@ -1,10 +1,13 @@
 import { z } from 'astro/zod'
 
-import type { WorkshopContract } from './workshop-contract'
-import type { WorkshopExampleValues } from './models-catalogue'
-import { formForContract } from './workshop-contract'
-import { schemaForModel, validateForm } from './workshop-playground'
-import { workshopExampleFiles } from './workshop-example-file'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
+import type { WorkshopExampleValues } from '@comfyorg/router-playground/workshop-types'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
+import {
+  schemaForModel,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
+import { workshopExampleFiles } from '@comfyorg/router-playground/workshop-example-file'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
 const scalar = z.union([z.string(), z.number(), z.boolean()])

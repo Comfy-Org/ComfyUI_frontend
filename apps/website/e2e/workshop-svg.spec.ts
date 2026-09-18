@@ -1,21 +1,15 @@
 import { expect } from '@playwright/test'
-import { readFileSync } from 'node:fs'
-import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
-import { openRouterSvgRasterizer } from '../scripts/router-model-svg'
+import {
+  loadRouterSvgRasterizerModule,
+  openRouterSvgRasterizer
+} from '../scripts/router-model-svg'
 import { test } from './fixtures/blockExternalMedia'
 
-const source = readFileSync(
-  new URL('../src/config/workshop-svg-rasterizer.ts', import.meta.url),
-  'utf8'
-)
-const compiled = transpileModule(source, {
-  compilerOptions: {
-    target: ScriptTarget.ES2022,
-    module: ModuleKind.ESNext
-  }
+let rendererUrl = ''
+test.beforeAll(async () => {
+  rendererUrl = await loadRouterSvgRasterizerModule()
 })
-const rendererUrl = `data:text/javascript;base64,${Buffer.from(compiled.outputText).toString('base64')}`
 
 test('SVG previews rasterize visible pixels without scripts or external requests', async ({
   page

@@ -1,0 +1,54 @@
+{
+  "name": "@comfyorg/router-playground",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "The Comfy Router playground engine behind comfy.org/models: reads a model's page contract, derives and validates its form, encodes files, builds the provider request, and reads the response. Shared so the Developer Platform runs the same models the same way.",
+  "keywords": [],
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./workshop-contract": "./src/workshop-contract.ts",
+    "./workshop-creator-form": "./src/workshop-creator-form.ts",
+    "./workshop-dialogue": "./src/workshop-dialogue.ts",
+    "./workshop-example-file": "./src/workshop-example-file.ts",
+    "./workshop-example-file-loader": "./src/workshop-example-file-loader.ts",
+    "./workshop-fields": "./src/workshop-fields.ts",
+    "./workshop-form-definition": "./src/workshop-form-definition.ts",
+    "./workshop-generated-schema": "./src/workshop-generated-schema.ts",
+    "./workshop-image-source": "./src/workshop-image-source.ts",
+    "./workshop-input-definition": "./src/workshop-input-definition.ts",
+    "./workshop-json-pointer": "./src/workshop-json-pointer.ts",
+    "./workshop-json-schema": "./src/workshop-json-schema.ts",
+    "./workshop-limits": "./src/workshop-limits.ts",
+    "./workshop-playground": "./src/workshop-playground.ts",
+    "./workshop-request": "./src/workshop-request.ts",
+    "./workshop-request-callbacks": "./src/workshop-request-callbacks.ts",
+    "./workshop-response": "./src/workshop-response.ts",
+    "./workshop-router-errors": "./src/workshop-router-errors.ts",
+    "./workshop-router-openapi": "./src/workshop-router-openapi.ts",
+    "./workshop-svg-output": "./src/workshop-svg-output.ts",
+    "./workshop-svg-rasterizer": "./src/workshop-svg-rasterizer.ts",
+    "./workshop-types": "./src/workshop-types.ts",
+    "./workshop-url-input": "./src/workshop-url-input.ts",
+    "./workshop-url-upload": "./src/workshop-url-upload.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "lint": "oxlint src --type-aware && eslint src",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@comfyorg/registry-types": "workspace:*",
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

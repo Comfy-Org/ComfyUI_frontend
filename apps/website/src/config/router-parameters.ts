@@ -7,11 +7,18 @@ import {
 } from './router-parameter-options'
 import type { RouterMedia } from './router-media'
 import { routerMediaValue } from './router-media'
-import type { WorkshopContract } from './workshop-contract'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
 import type { WorkshopModelDetail } from './models-catalogue'
-import type { FieldSchema, FieldValue, FormValues } from './workshop-playground'
-import { urlUploadField, validateForm } from './workshop-playground'
-import { WorkshopRouterError } from './workshop-router-errors'
+import type {
+  FieldSchema,
+  FieldValue,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
+import {
+  urlUploadField,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 
 type Scalar = string | number | boolean
 

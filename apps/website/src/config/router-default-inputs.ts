@@ -2,7 +2,10 @@ import defaultMedia from '../data/router-default-media.json'
 import type { WorkshopModelDetail } from './models-catalogue'
 import type { RouterRenderParameters } from './router-parameters'
 import { mapRouterParameters } from './router-parameters'
-import type { FieldSchema, FormValues } from './workshop-playground'
+import type {
+  FieldSchema,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
 
 const templateInputs =
   'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@aaac56dd5cc5497533d92cbe50edc35ea660e587/input/'

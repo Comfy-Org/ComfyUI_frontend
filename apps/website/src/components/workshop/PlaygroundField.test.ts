@@ -7,13 +7,13 @@ import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
-import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
-import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
+} from '@comfyorg/router-playground/workshop-playground'
+import type { WorkshopInputDefinition } from '@comfyorg/router-playground/workshop-input-definition'
+import { resolveWorkshopUrlInputs } from '@comfyorg/router-playground/workshop-url-input'
 import {
   defaultValues,
   MAX_UPLOAD_BYTES
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
 

@@ -1,9 +1,9 @@
-import type { FieldSchema } from './workshop-playground'
+import type { FieldSchema } from '@comfyorg/router-playground/workshop-playground'
 import type {
   RouterParameterMapping,
   RouterParameterName
 } from './router-parameters'
-import { WorkshopRouterError } from './workshop-router-errors'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 
 type Scalar = string | number | boolean
 type NumberField = Extract<FieldSchema, { kind: 'number' }>

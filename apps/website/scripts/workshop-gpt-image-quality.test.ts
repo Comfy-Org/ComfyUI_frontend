@@ -2,11 +2,11 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
+} from '@comfyorg/router-playground/workshop-router-openapi'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 

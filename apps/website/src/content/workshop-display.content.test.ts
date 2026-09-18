@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest'
 
 import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
-import { schemaForModel } from '../config/workshop-playground'
+import { schemaForModel } from '@comfyorg/router-playground/workshop-playground'
 import {
   workshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
-import { fieldsForDefinition } from '../config/workshop-form-definition'
+import { fieldsForDefinition } from '@comfyorg/router-playground/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema

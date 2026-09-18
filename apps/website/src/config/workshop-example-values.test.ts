@@ -7,7 +7,7 @@ import {
   defaultValues,
   schemaForModel,
   urlUploadField
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import { workshopExampleValues } from './workshop-example-values'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))

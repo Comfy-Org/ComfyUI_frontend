@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
 import contractsJson from '../content/workshop-router-contracts.json'
-import { workshopContractRecordSchema } from './workshop-contract'
+import { workshopContractRecordSchema } from '@comfyorg/router-playground/workshop-contract'
 
 const contracts = new Map(
   z

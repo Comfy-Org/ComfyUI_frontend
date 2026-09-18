@@ -4,7 +4,7 @@ import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { workshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
-import { formForContract } from './workshop-contract'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -12,12 +12,13 @@ import {
   schemaForModel,
   urlUploadField,
   validateForm
-} from './workshop-playground'
-import type { FormValues } from './workshop-playground'
-import { prepareWorkshopRouterInput } from './workshop-request'
+} from '@comfyorg/router-playground/workshop-playground'
+import type { FormValues } from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import { workshopExampleValues } from './workshop-example-values'
-import type { WorkshopUrlEncoder } from './workshop-url-input'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
+import type { WorkshopUrlEncoder } from '@comfyorg/router-playground/workshop-url-input'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 
 const image = 'https://example.com/first.png'
 const lastImage = 'https://example.com/last.png'
@@ -433,7 +434,7 @@ describe('use-case input contracts', () => {
       })
     })
     vi.stubGlobal('fetch', transport)
-    const uploader = createWorkshopUrlUploader()
+    const uploader = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
     const upload = (file: File, signal: AbortSignal) =>
       uploader(file, 'token', 'owner:workspace', signal)
     expect(

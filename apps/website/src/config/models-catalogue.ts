@@ -1,11 +1,15 @@
 import type { Model } from './models'
-import type { WorkshopFormDefinition } from './workshop-form-definition'
-import type { WorkshopContract } from './workshop-contract'
-import type { WorkshopInputDefinition } from './workshop-input-definition'
+import type { WorkshopFormDefinition } from '@comfyorg/router-playground/workshop-form-definition'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
-export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
-export type Modality = (typeof MODALITIES)[number]
+import type {
+  GeneratedExample,
+  GeneratedField,
+  Modality,
+  WorkshopExampleValues
+} from '@comfyorg/router-playground/workshop-types'
+import { MODALITIES } from '@comfyorg/router-playground/workshop-types'
 
 const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
 export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
@@ -15,93 +19,6 @@ export type ModelStatus = 'deprecated' | 'degraded'
 const TASK_INPUTS = ['text', 'image', 'video', 'audio'] as const
 export type TaskInput = (typeof TASK_INPUTS)[number]
 export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
-
-type GeneratedFieldControl =
-  | {
-      readonly kind: 'text'
-      readonly advanced?: boolean
-      readonly advancedIndex?: number
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly multiline: boolean
-      readonly required: boolean
-      readonly default?: string
-      readonly valueType?: 'string' | 'json'
-      readonly jsonSchema?: Readonly<Record<string, unknown>>
-      readonly suggestions?: readonly (string | number | boolean)[]
-      readonly minLength?: number
-      readonly maxLength?: number
-    }
-  | {
-      readonly kind: 'number'
-      readonly advanced?: boolean
-      readonly advancedIndex?: number
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly min?: number
-      readonly max?: number
-      readonly step: number | 'any'
-      readonly default?: number
-      readonly required?: boolean
-    }
-  | {
-      readonly kind: 'select'
-      readonly advanced?: boolean
-      readonly advancedIndex?: number
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly options: readonly (string | number | boolean)[]
-      readonly default?: string | number | boolean
-      readonly required?: boolean
-    }
-  | {
-      readonly kind: 'toggle'
-      readonly advanced?: boolean
-      readonly advancedIndex?: number
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly default?: boolean
-      readonly required?: boolean
-    }
-  | {
-      readonly kind: 'file'
-      readonly advanced?: boolean
-      readonly advancedIndex?: number
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly accept: 'image' | 'video' | 'audio' | 'file'
-      readonly mimeTypes?: readonly string[]
-      readonly required: boolean
-      readonly multiple?: boolean
-      readonly maxItems?: number
-    }
-
-export type GeneratedField = GeneratedFieldControl & {
-  readonly inputSchema?: Readonly<Record<string, unknown>>
-  readonly presentation?: WorkshopInputDefinition
-}
-
-export type WorkshopExampleValues = Readonly<
-  Partial<Record<string, string | number | boolean | readonly string[]>>
->
-
-export interface GeneratedExample {
-  readonly name: string
-  readonly title: string
-  readonly description: string
-  readonly tags: readonly string[]
-  readonly thumbnailUrl: string
-  readonly mediaKind?: 'image' | 'video' | 'audio'
-  readonly sampleOnly?: boolean
-  readonly node?: { readonly id: string; readonly displayName: string }
-  readonly fields?: readonly GeneratedField[]
-  readonly values: WorkshopExampleValues
-}
 
 export interface GeneratedModel {
   readonly thumbnailUrl?: string

@@ -5,8 +5,11 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FieldSchema, FileValue } from '../../config/workshop-playground'
-import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
+import type {
+  FieldSchema,
+  FileValue
+} from '@comfyorg/router-playground/workshop-playground'
+import { formatWorkshopUploadLimit } from '@comfyorg/router-playground/workshop-limits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'

@@ -1,10 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
-import { prepareWorkshopRouterInput } from './workshop-request'
-import { defaultValues, schemaForModel } from './workshop-playground'
-import type { FileValue, FormValues } from './workshop-playground'
-import { formForContract } from './workshop-contract'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import {
+  defaultValues,
+  schemaForModel
+} from '@comfyorg/router-playground/workshop-playground'
+import type {
+  FileValue,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 
 function selected(
   bytes: string,

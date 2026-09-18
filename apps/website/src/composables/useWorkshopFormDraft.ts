@@ -12,8 +12,11 @@ import {
   readWorkshopDraft,
   storeWorkshopDraft
 } from '../config/workshop-draft-storage'
-import type { FieldSchema, FormValues } from '../config/workshop-playground'
-import { restoreFormValues } from '../config/workshop-playground'
+import type {
+  FieldSchema,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
+import { restoreFormValues } from '@comfyorg/router-playground/workshop-playground'
 import { onBeforeSignInLeave } from '../config/workshop-return'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 

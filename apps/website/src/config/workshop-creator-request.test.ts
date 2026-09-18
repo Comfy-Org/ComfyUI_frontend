@@ -6,15 +6,19 @@ import {
   defaultValues,
   schemaForModel,
   validateForm
-} from './workshop-playground'
-import type { FileValue, FormValues } from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
+import type {
+  FileValue,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
 import type { WorkshopModelDetail } from './models-catalogue'
-import { prepareWorkshopRouterInput } from './workshop-request'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
-import { formForContract } from './workshop-contract'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -97,7 +101,7 @@ function valuesFor(id: string): FormValues {
 }
 
 function prepare(id: string, values: FormValues = {}) {
-  const uploader = createWorkshopUrlUploader()
+  const uploader = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
   return prepareWorkshopRouterInput(
     modelFor(id).execution,
     { ...valuesFor(id), ...values },

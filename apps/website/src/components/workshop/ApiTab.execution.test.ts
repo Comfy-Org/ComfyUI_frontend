@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { expect, it } from 'vitest'
 
-import { workshopExampleFile } from '../../config/workshop-example-file'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { workshopContract } from '../../config/workshop-contract-catalog'

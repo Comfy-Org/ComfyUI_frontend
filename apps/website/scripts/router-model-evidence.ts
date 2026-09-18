@@ -2,7 +2,7 @@ import { resolveObjectURL } from 'node:buffer'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { RunOutput } from '../src/config/workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 
 export async function captureRouterOutputs(
   outputs: readonly RunOutput[],

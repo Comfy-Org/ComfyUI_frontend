@@ -6,8 +6,8 @@ import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
-import { groupPlaygroundFields } from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
+import { groupPlaygroundFields } from '@comfyorg/router-playground/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'

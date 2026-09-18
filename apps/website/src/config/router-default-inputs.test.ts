@@ -5,7 +5,7 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import { prepareModelRouterRender } from './router-render'
 import { workshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { validateForm } from './workshop-playground'
+import { validateForm } from '@comfyorg/router-playground/workshop-playground'
 import { applyRouterDefaultInputs } from './router-default-inputs'
 
 function modelFor(slug: string) {

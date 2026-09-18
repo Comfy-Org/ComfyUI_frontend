@@ -3,8 +3,11 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import type { FieldSchema, FileValue } from '../../config/workshop-playground'
-import { MAX_UPLOAD_BYTES } from '../../config/workshop-playground'
+import type {
+  FieldSchema,
+  FileValue
+} from '@comfyorg/router-playground/workshop-playground'
+import { MAX_UPLOAD_BYTES } from '@comfyorg/router-playground/workshop-playground'
 import FileSourceInput from './FileSourceInput.vue'
 
 const field: Extract<FieldSchema, { kind: 'file' }> = {

@@ -7,7 +7,7 @@ import type {
   WorkshopFormValue,
   WorkshopFormValues
 } from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
+import { parseWorkshopJsonInput } from '@comfyorg/router-playground/workshop-json-schema'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

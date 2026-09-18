@@ -6,7 +6,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { externalLinks } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
+import { parseWorkshopJsonInput } from '@comfyorg/router-playground/workshop-json-schema'
 import {
   onBeforeSignInLeave,
   popWorkshopForm,

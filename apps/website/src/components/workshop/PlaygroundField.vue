@@ -10,15 +10,15 @@ import type {
   FieldSchema,
   FieldValue,
   FormValues
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   MAX_UPLOAD_BYTES,
   urlUploadField,
   validateForm
-} from '../../config/workshop-playground'
-import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
-import { isHttpImageSource } from '../../config/workshop-image-source'
-import { workshopExampleFile } from '../../config/workshop-example-file'
+} from '@comfyorg/router-playground/workshop-playground'
+import { formatWorkshopUploadLimit } from '@comfyorg/router-playground/workshop-limits'
+import { isHttpImageSource } from '@comfyorg/router-playground/workshop-image-source'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'

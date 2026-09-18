@@ -45,6 +45,9 @@ const config: KnipConfig = {
     'packages/registry-types': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/router-playground': {
+      project: ['src/**/*.ts']
+    },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
