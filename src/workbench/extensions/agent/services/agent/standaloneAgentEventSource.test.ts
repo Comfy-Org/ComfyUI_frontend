@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createStandaloneAgentEventSource } from './standaloneAgentEventSource'
@@ -45,7 +44,7 @@ function sourceHarness(endpoint = '/api/agent/events') {
     createSocket(url) {
       const socket = new FakeSocket(url)
       sockets.push(socket)
-      return fromAny<WebSocket, unknown>(socket)
+      return socket
     }
   })
   return { source, sockets }
