@@ -51,7 +51,8 @@ describe('reportNodePricingFailure', () => {
           jsonata_code: 'T1006'
         }),
         context: { source: 'live_node' },
-        level: 'warning'
+        level: 'warning',
+        logToConsole: false
       }
     )
     expect(mockReportError.mock.calls[0][0]).toBeInstanceOf(Error)

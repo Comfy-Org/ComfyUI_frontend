@@ -51,7 +51,9 @@ const nextReportableOccurrence = (key: string): number | null => {
 }
 
 const normalizeFailureCause = (cause: unknown, jsonataError?: JsonataError) =>
-  jsonataError ? new Error(`${jsonataError.code}: ${jsonataError.message}`) : cause
+  jsonataError
+    ? new Error(`${jsonataError.code}: ${jsonataError.message}`)
+    : cause
 
 /**
  * Send a pricing rule failure to diagnostic error reporting.
@@ -67,6 +69,11 @@ export function reportNodePricingFailure({
   source,
   cause
 }: NodePricingFailure): void {
+  console.warn(
+    `[pricing/jsonata] failed to ${operation} pricing for ${nodeType}`,
+    cause
+  )
+
   const key = `${operation}|${source}|${nodeType}`
   const occurrenceCount = nextReportableOccurrence(key)
   if (occurrenceCount === null) return
@@ -87,6 +94,7 @@ export function reportNodePricingFailure({
       jsonata_code: jsonataError?.code
     },
     context: { source },
-    level: 'warning'
+    level: 'warning',
+    logToConsole: false
   })
 }
