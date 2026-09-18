@@ -62,14 +62,14 @@ function dispatchServerFrame(
 function mountFollower(initialWorkflowId: string | null): {
   unmount: () => void
   workflowId: Ref<string | null>
-  status: () => AgentCrdtStatus
+  status: () => Readonly<AgentCrdtStatus>
 } {
   const workflowId = ref(initialWorkflowId)
-  let readStatus!: () => AgentCrdtStatus
+  let readStatus!: () => Readonly<AgentCrdtStatus>
   const host = defineComponent({
     setup() {
       const { status } = useAgentCrdtFollower(workflowId, graphMutations)
-      readStatus = () => status.value as AgentCrdtStatus
+      readStatus = () => status.value
       return () => null
     }
   })
