@@ -141,10 +141,9 @@ test.describe('FDCT page @smoke', () => {
         name: t('fdct.technologists.title', 'en')
       })
     })
-    const seeWork = t('fdct.technologists.seeWork', 'en').replace(
-      '{name}',
-      person.nickname ?? person.name.split(' ')[0]
-    )
+    const seeWork = t('fdct.technologists.seeWork', 'en', {
+      name: person.nickname ?? person.name.split(' ')[0]
+    })
     const trigger = section.getByRole('button', { name: seeWork })
     const dialog = page.getByRole('dialog')
     // reka-ui server-renders the trigger, so a click can land before the island
@@ -214,9 +213,7 @@ test.describe('FDCT page @smoke', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
+      const match = scripts.find((s) => s.textContent.includes('FAQPage'))
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()

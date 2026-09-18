@@ -18,7 +18,7 @@ export interface GridLabels {
   readonly loadMore: string
   readonly empty: string
   readonly emptyHint: string
-  readonly showing: string
+  readonly showing: (shown: number, total: number) => string
 }
 
 const {
@@ -100,9 +100,7 @@ const hasMore = computed(
   () => displayCount.value < sortedTemplates.value.length
 )
 const showingText = computed(() =>
-  labels.showing
-    .replace('{shown}', String(displayedTemplates.value.length))
-    .replace('{total}', String(sortedTemplates.value.length))
+  labels.showing(displayedTemplates.value.length, sortedTemplates.value.length)
 )
 </script>
 

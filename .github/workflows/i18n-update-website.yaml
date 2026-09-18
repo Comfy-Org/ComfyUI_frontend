@@ -1,0 +1,43 @@
+# Description: Generates and updates website translations using OpenAI
+name: 'i18n: Update Website'
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: i18n-update-website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-locales:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          ref: ${{ github.ref_name }}
+          # Blobless full history: the locale pipeline lazily fetches the
+          # English source blobs recorded in
+          # apps/website/src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup ComfyUI Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Update translations
+        run: pnpm locale:website
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Commit updated locales
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          git add apps/website/src/locales/
+          if git diff --cached --quiet; then exit 0; fi
+          ./scripts/cicd/check-json.sh
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -m 'Update website locales'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"

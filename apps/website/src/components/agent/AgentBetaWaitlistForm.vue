@@ -38,7 +38,7 @@ const errorMessage = computed(() => {
 })
 
 const successMessage = computed(() =>
-  t('agent.form.success', locale).replace('{email}', () => submittedEmail.value)
+  t('agent.form.success', locale, { email: submittedEmail.value })
 )
 
 onMounted(() => {
