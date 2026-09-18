@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -15,6 +15,8 @@ import {
   validateForm
 } from '../../config/workshop-playground'
 import { frameRatioRule } from '../../config/workshop-model-restrictions'
+import type { FakeImageDecoder } from '../../test/fakeImageDecoder'
+import { stubImageDecoder } from '../../test/fakeImageDecoder'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -181,29 +183,11 @@ describe('Advanced form values', () => {
 
 describe('First and last frame ratios', () => {
   const SLUG = 'byteplus--seedance-2-5-first-last-frame--animate-images'
-  const sizes = new Map<string, { width: number; height: number }>()
-  const decoded: string[] = []
+  let decoder: FakeImageDecoder
 
-  class StubImage {
-    onload: (() => void) | null = null
-    naturalWidth = 0
-    naturalHeight = 0
-    #src = ''
-    set src(value: string) {
-      this.#src = value
-      const size = sizes.get(value)
-      if (!size) return
-      this.naturalWidth = size.width
-      this.naturalHeight = size.height
-      queueMicrotask(() => {
-        decoded.push(value)
-        this.onload?.()
-      })
-    }
-    get src(): string {
-      return this.#src
-    }
-  }
+  beforeEach(() => {
+    decoder = stubImageDecoder()
+  })
 
   /**
    * Absence proves nothing until the frames have actually been measured: a
@@ -211,26 +195,17 @@ describe('First and last frame ratios', () => {
    * the decode, whatever the form would go on to decide.
    */
   async function silentOnceMeasured(...urls: string[]) {
-    await waitFor(() => expect(decoded).toEqual(expect.arrayContaining(urls)))
+    await waitFor(() =>
+      expect(decoder.decoded).toEqual(expect.arrayContaining(urls))
+    )
     expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
   }
 
-  function frame(url: string, width: number, height: number): string {
-    sizes.set(url, { width, height })
-    return url
-  }
+  const frame = (url: string, width: number, height: number) =>
+    decoder.frame(url, width, height)
 
   const upload = (label: string) =>
     within(screen.getByRole('group', { name: label })).getByRole('listitem')
-
-  beforeEach(() => {
-    vi.stubGlobal('Image', StubImage)
-  })
-
-  afterEach(() => {
-    sizes.clear()
-    decoded.length = 0
-  })
 
   function renderForm(values: Ref<FormValues>) {
     const model = getRouterWorkshopModelDetail(SLUG)

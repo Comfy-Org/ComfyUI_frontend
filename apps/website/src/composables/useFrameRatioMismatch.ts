@@ -41,19 +41,21 @@ export function useFrameRatioMismatch(
 
 function useFrameSize(source: () => string | undefined) {
   const size = ref<FrameSize>()
-  let generation = 0
   watch(
     source,
-    (url) => {
-      const measuring = ++generation
+    (url, _, onCleanup) => {
       size.value = undefined
       if (!url) return
       const image = new Image()
       image.onload = () => {
-        if (measuring !== generation) return
         size.value = { width: image.naturalWidth, height: image.naturalHeight }
       }
       image.src = url
+      // A frame replaced before it decoded must not land its dimensions
+      // afterwards, and a stalled one must not hold the closure past unmount.
+      onCleanup(() => {
+        image.onload = null
+      })
     },
     { immediate: true }
   )

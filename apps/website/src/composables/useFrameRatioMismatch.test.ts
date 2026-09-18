@@ -1,46 +1,27 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { Ref } from 'vue'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import type { FrameSource } from '../config/workshop-model-restrictions'
+import type { FakeImageDecoder } from '../test/fakeImageDecoder'
+import { stubImageDecoder } from '../test/fakeImageDecoder'
 import { useFrameRatioMismatch } from './useFrameRatioMismatch'
-
-// The answer turns on pixels the DOM only knows after a decode, so the decoder
-// is the one thing these tests stand in for.
-const sizes = new Map<string, { width: number; height: number }>()
-const decoded: string[] = []
-
-class StubImage {
-  onload: (() => void) | null = null
-  naturalWidth = 0
-  naturalHeight = 0
-  #src = ''
-  set src(value: string) {
-    this.#src = value
-    const size = sizes.get(value)
-    if (!size) return
-    this.naturalWidth = size.width
-    this.naturalHeight = size.height
-    queueMicrotask(() => {
-      decoded.push(value)
-      this.onload?.()
-    })
-  }
-  get src(): string {
-    return this.#src
-  }
-}
 
 interface Frames {
   first?: FrameSource
   last?: FrameSource
 }
 
-function frame(url: string, width: number, height: number): FrameSource {
-  sizes.set(url, { width, height })
-  return { url }
-}
+let decoder: FakeImageDecoder
+
+beforeEach(() => {
+  decoder = stubImageDecoder()
+})
+
+const frame = (url: string, width: number, height: number): FrameSource => ({
+  url: decoder.frame(url, width, height)
+})
 
 function renderMismatch(frames: Ref<Frames>) {
   render(
@@ -65,18 +46,11 @@ const reported = () => screen.getByTestId('mismatch').textContent
  * composable would go on to decide.
  */
 async function quietOnceMeasured(...urls: string[]) {
-  await waitFor(() => expect(decoded).toEqual(expect.arrayContaining(urls)))
+  await waitFor(() =>
+    expect(decoder.decoded).toEqual(expect.arrayContaining(urls))
+  )
   expect(reported()).toBe('false')
 }
-
-beforeEach(() => {
-  vi.stubGlobal('Image', StubImage)
-})
-
-afterEach(() => {
-  sizes.clear()
-  decoded.length = 0
-})
 
 describe('useFrameRatioMismatch', () => {
   it('reports a mismatch when the frames are shaped differently', async () => {
@@ -120,14 +94,39 @@ describe('useFrameRatioMismatch', () => {
     renderMismatch(frames)
     await waitFor(() => expect(reported()).toBe('true'))
 
-    frames.value = {
-      ...frames.value,
-      last: frame('last-match.png', 1280, 720)
-    }
+    frames.value = { ...frames.value, last: frame('last-match.png', 1280, 720) }
 
     // Anchored to the replacement's own decode: a replaced frame is briefly
     // unmeasured, and the answer is false in that window whatever the ratios.
     await quietOnceMeasured('last-match.png')
+  })
+
+  // Decodes finish in whatever order the network allows. A frame replaced
+  // before it ever decoded must not land its dimensions afterwards, which is
+  // the one behaviour every other case here reaches only by accident.
+  it('ignores a decode that finishes after the frame it measured was replaced', async () => {
+    decoder.hold()
+    const frames = ref<Frames>({
+      first: frame('first.png', 1920, 1080),
+      last: frame('slow.png', 1080, 1920)
+    })
+    renderMismatch(frames)
+    await waitFor(() => expect(decoder.pending).toContain('first.png'))
+    decoder.settle('first.png')
+    await nextTick()
+
+    frames.value = {
+      ...frames.value,
+      last: frame('replacement.png', 1280, 720)
+    }
+    await nextTick()
+    decoder.settle('replacement.png')
+    await waitFor(() => expect(decoder.decoded).toContain('replacement.png'))
+    expect(reported()).toBe('false')
+
+    decoder.settle('slow.png')
+    await waitFor(() => expect(decoder.decoded).toContain('slow.png'))
+    expect(reported()).toBe('false')
   })
 
   // A frame the browser cannot decode never fires onload, so the pair stays

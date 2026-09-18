@@ -78,7 +78,11 @@ describe('framesDisagreeOnRatio', () => {
     ['a 4:3 last frame against 16:9', { width: 1600, height: 1200 }, true],
     ['the same shape at another size', { width: 1280, height: 720 }, false],
     ['an identical frame', landscape, false],
-    ['a frame off by one pixel', { width: 1919, height: 1080 }, false]
+    ['a frame off by one pixel', { width: 1919, height: 1080 }, false],
+    // 16:9 against 1901x1080 is 1% narrower exactly, the widest shape the
+    // tolerance still accepts; one pixel narrower is the first it rejects.
+    ['a frame exactly at the tolerance', { width: 1901, height: 1080 }, false],
+    ['a frame just past the tolerance', { width: 1900, height: 1080 }, true]
   ] as const)('reads %s', ([, last, expected]) => {
     expect(framesDisagreeOnRatio(landscape, last)).toBe(expected)
   })

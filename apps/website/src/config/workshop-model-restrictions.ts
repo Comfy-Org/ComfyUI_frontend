@@ -8,10 +8,6 @@ import type { FieldValue } from './workshop-playground'
  * provider here do not share a rulebook. Each entry records the document it
  * came from and the date that document was read, so a rule the provider drops
  * can be retired instead of outliving it.
- *
- * One rule lives here so far. A second kind belongs beside it as its own
- * lookup rather than a widened union, so that each stays as narrow as the
- * evidence behind it.
  */
 
 /** The fields holding the two frames, in the order the model reads them. */

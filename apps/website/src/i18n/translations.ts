@@ -9964,12 +9964,11 @@ Enterprise`
   },
   'workshop.field.frameRatioMismatchTitle': {
     en: 'The last frame will be stretched',
-    'zh-CN': '\u5c3e\u5e27\u5c06\u88ab\u62c9\u4f38'
+    'zh-CN': '尾帧将被拉伸'
   },
   'workshop.field.frameRatioMismatch': {
-    en: "The video keeps the first frame's aspect ratio. You can run it as is, or upload a last frame with the same proportions for a cleaner result.",
-    'zh-CN':
-      '\u89c6\u9891\u91c7\u7528\u9996\u5e27\u7684\u5bbd\u9ad8\u6bd4\u3002\u53ef\u4ee5\u76f4\u63a5\u751f\u6210\uff0c\u4e5f\u53ef\u4ee5\u4e0a\u4f20\u4e0e\u9996\u5e27\u6bd4\u4f8b\u76f8\u540c\u7684\u5c3e\u5e27\u4ee5\u83b7\u5f97\u66f4\u597d\u7684\u6548\u679c\u3002'
+    en: "The video uses the first frame's aspect ratio. Run it as is, or upload a matching last frame.",
+    'zh-CN': '视频采用首帧的宽高比。可以直接生成，或上传比例相同的尾帧。'
   },
   'workshop.field.selectOrDropReplacement': {
     en: 'Select or drop to replace',

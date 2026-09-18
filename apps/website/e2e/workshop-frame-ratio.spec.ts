@@ -30,8 +30,8 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   const notice = page.getByTestId('frame-ratio-notice')
 
   // The page opens with both frames already filled from its worked example.
-  // The suite serves every external image as the same 1x1 placeholder, so this
-  // pins that an untouched page stays quiet, not the shipped example's shapes.
+  // The suite serves the example's external images as the same 1x1 placeholder,
+  // so this pins that an untouched page stays quiet, not the example's shapes.
   await expect(
     notice,
     'an untouched page must not greet the visitor with a warning'
