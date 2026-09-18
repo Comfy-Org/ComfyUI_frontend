@@ -32,7 +32,7 @@ function root(children: RasterData[]): GroupData {
   }
 }
 
-const ev = fromAny<PointerEvent, unknown>({ pressure: 0.5, shiftKey: false })
+const ev = new PointerEvent('pointerdown', { pressure: 0.5, shiftKey: false })
 
 interface Harness {
   ctx: ToolContext
@@ -188,7 +188,7 @@ describe('SelectTool — picking and modified clicks', () => {
 
   it('shift-click toggles membership without moving anything', () => {
     const { h, a, b, tool } = pickSetup()
-    const shiftEv = fromAny<PointerEvent, unknown>({
+    const shiftEv = new PointerEvent('pointerdown', {
       pressure: 0.5,
       shiftKey: true
     })
@@ -282,7 +282,7 @@ describe('TransformTool — explicit session with apply/cancel', () => {
 
   it('shift-resize keeps the aspect ratio', () => {
     const { raster, tool } = setup()
-    const evShift = fromAny<PointerEvent, unknown>({
+    const evShift = new PointerEvent('pointerdown', {
       pressure: 0.5,
       shiftKey: true
     })
@@ -388,7 +388,7 @@ describe('TransformTool — unified gizmo over a multi-layer selection', () => {
 
   it('Shift constrains the group scale to uniform', () => {
     const { a, b, tool } = setup()
-    const evShift = fromAny<PointerEvent, unknown>({
+    const evShift = new PointerEvent('pointerdown', {
       pressure: 0.5,
       shiftKey: true
     })
@@ -475,7 +475,7 @@ describe('TransformTool — guide snapping', () => {
 
   it('Alt bypasses guide snapping', () => {
     const { raster, tool } = setup([{ axis: 'x', pos: 100 }])
-    const altEv = fromAny<PointerEvent, unknown>({
+    const altEv = new PointerEvent('pointerdown', {
       pressure: 0.5,
       shiftKey: false,
       altKey: true

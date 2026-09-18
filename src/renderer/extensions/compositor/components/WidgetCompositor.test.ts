@@ -1,10 +1,9 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -52,7 +51,8 @@ const i18n = createI18n({
 })
 
 const nodeId = toNodeId(9)
-const graphNode = fromAny<LGraphNode, unknown>({ id: nodeId, graph: null })
+const graphNode = new LGraphNode('Compositor')
+graphNode.id = nodeId
 
 function renderWidget() {
   return render(WidgetCompositor, {

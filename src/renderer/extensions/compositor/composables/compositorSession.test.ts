@@ -2,7 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
@@ -59,7 +59,8 @@ function makeSession() {
   }
 }
 
-const node = fromAny<LGraphNode, unknown>({ id: toNodeId(3) })
+const node = new LGraphNode('Compositor')
+node.id = toNodeId(3)
 const fallbackName = (i: number) => `Layer ${i + 1}`
 
 describe('loadCompositorSession', () => {

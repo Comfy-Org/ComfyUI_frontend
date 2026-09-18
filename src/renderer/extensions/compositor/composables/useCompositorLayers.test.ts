@@ -1,7 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -18,11 +16,11 @@ import {
 
 const layerRef = { filename: 'a.png', subfolder: '', type: 'temp' }
 const bbox = { x: 10, y: 20, width: 30, height: 40, name: 'Subject' }
-const node = fromAny<LGraphNode, unknown>({ id: toNodeId(1), graph: null })
-const subgraphNode = fromAny<LGraphNode, unknown>({
+const node = { id: toNodeId(1), graph: null }
+const subgraphNode = {
   id: toNodeId(1),
   graph: { isRootGraph: false, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }
-})
+}
 
 describe('useCompositorLayers', () => {
   beforeEach(() => {

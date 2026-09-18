@@ -5,9 +5,10 @@ import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { isSubgraph } from '@/utils/typeGuardUtil'
 
-type CompositorNodeRef = Pick<LGraphNode, 'id' | 'graph'>
+type CompositorNodeRef = Pick<LGraphNode, 'id'> & {
+  graph: { id: string; isRootGraph: boolean } | null
+}
 
 interface CompositorNodeCache {
   layers: ImageFileRef[]
@@ -21,7 +22,7 @@ const previewOverrideByNode = reactive(new Map<NodeLocatorId, string>())
 
 function cacheKey(node: CompositorNodeRef): NodeLocatorId {
   return createNodeLocatorId(
-    isSubgraph(node.graph) ? node.graph.id : null,
+    node.graph?.isRootGraph === false ? node.graph.id : null,
     node.id
   )
 }

@@ -6,7 +6,7 @@ import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
@@ -73,7 +73,8 @@ function makeSession(glOk = true) {
   }
 }
 
-const node = fromAny<LGraphNode, unknown>({ id: toNodeId(5) })
+const node = new LGraphNode('Compositor')
+node.id = toNodeId(5)
 
 beforeEach(() => {
   vi.mocked(useToastStore().add).mockImplementation(() => undefined)

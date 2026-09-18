@@ -32,11 +32,7 @@ class FakeCompositor implements Compositor {
     return {}
   }
   readback(): ImageData {
-    return fromAny<ImageData, unknown>({
-      width: 1,
-      height: 1,
-      data: new Uint8ClampedArray(4)
-    })
+    return new ImageData(new Uint8ClampedArray(4), 1, 1)
   }
   async toBlob(): Promise<Blob> {
     return new Blob()
