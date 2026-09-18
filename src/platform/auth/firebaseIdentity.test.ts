@@ -31,7 +31,10 @@ async function loadFresh() {
   return { ...identity, ...firebaseApp, ...firebaseAuth, ...remote }
 }
 
-const defaultApp = fromPartial<FirebaseApp>({ name: '[DEFAULT]' })
+const defaultApp = fromPartial<FirebaseApp>({
+  name: '[DEFAULT]',
+  options: RUNTIME_CONFIG
+})
 const signedIn = fromPartial<User>({ uid: 'user-1' })
 
 /** Identity checks: the mock persistences are structurally alike, so equality could not tell the order apart. */
@@ -130,6 +133,11 @@ describe('firebaseIdentity', () => {
       initializeApp,
       initializeAuth
     } = sdk
+    sdk.remoteConfigState.value = 'anonymous'
+    sdk.remoteConfig.value = {
+      ...sdk.remoteConfig.value,
+      firebase_config: RUNTIME_CONFIG
+    }
     vi.mocked(getApps).mockReturnValue([defaultApp])
     vi.mocked(initializeAuth).mockReturnValue(
       fromPartial<Auth>({ currentUser: signedIn })

@@ -1221,6 +1221,43 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('failed')
+    expect(screen.getByTestId('run-error')).toHaveTextContent(
+      'Check the highlighted fields.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-describedby',
+      'error-prompt'
+    )
+    expect(screen.getByRole('alert')).toBeVisible()
+  })
+
+  it('explains an input rejection without pointing to fields that have no errors', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('validation', 'request-rejected')
+    )
+    mountDetail({ model: runnable })
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByTestId('run-button'))
+
+    expect(await screen.findByTestId('run-error')).toHaveTextContent(
+      'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'false'
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByTestId('router-request-id')).toHaveTextContent(
+      'request-rejected'
+    )
   })
 
   it('keeps curated models in the minimal form even when an old JSON-mode draft exists', async () => {

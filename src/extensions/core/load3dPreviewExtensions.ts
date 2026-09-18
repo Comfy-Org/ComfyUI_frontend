@@ -187,7 +187,8 @@ function createPreview3DExtension(
               cameraType: currentLoad3d.getCurrentCameraType(),
               fov: currentLoad3d.cameraManager.perspectiveCamera.fov
             }
-            cameraConfig.state = currentLoad3d.getCameraState()
+            const cameraState = currentLoad3d.getCameraState()
+            cameraConfig.state = cameraState
             node.properties['Camera Config'] = cameraConfig
 
             const modelInfo = currentLoad3d.getModelInfo()
@@ -197,7 +198,7 @@ function createPreview3DExtension(
               image: '',
               mask: '',
               normal: '',
-              camera_info: cameraConfig.state || null,
+              camera_info: cameraState,
               recording: '',
               model_3d_info
             }
@@ -221,8 +222,8 @@ function createPreview3DExtension(
             node,
             resolveLoad3d(),
             filePath,
-            result?.[1],
-            result?.[2]?.[0],
+            result[1],
+            result[2]?.[0],
             loadFolder
           )
         }

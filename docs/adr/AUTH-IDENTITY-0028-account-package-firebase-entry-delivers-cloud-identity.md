@@ -88,7 +88,10 @@ is not a contract to build on.
    creates a Firebase app or `Auth`. `main.ts` calls `initialize()` after
    remote config has loaded, so the config is the server's; resolution
    before remote config has loaded throws in every environment, so the
-   `main.ts` ordering is the invariant and the cloud e2e set proves it.
+   `main.ts` ordering is the invariant. `firebaseIdentity.test.ts` pins it:
+   the config is read at `initialize()` rather than at import, and a resolve
+   while remote config is still unloaded throws. The cloud e2e set is the
+   end-to-end proof of the `main.ts` sequence and is still pending.
    Booting on build-time config could point auth at the wrong Firebase
    project, so the module fails closed rather than falling back.
    `currentUser()` never initializes, so a feature-flag read before that

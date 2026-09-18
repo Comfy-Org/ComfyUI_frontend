@@ -33,7 +33,9 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -359,7 +361,12 @@ export function useSubscriptionCheckout(
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!embeddedCheckoutEnabled || !shouldUseWorkspaceBilling.value) return
     try {
-      const methods = await workspaceApi.listSavedPaymentMethods()
+      const rail = useBillingReadRail()
+      const methods =
+        rail === null
+          ? await workspaceApi.listSavedPaymentMethods()
+          : await readOnRail(rail.readPaymentMethods)
+      if (methods === undefined) return
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
         methods.find((method) => method.is_default)?.id ?? null

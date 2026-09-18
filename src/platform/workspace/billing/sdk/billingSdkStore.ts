@@ -9,6 +9,7 @@ import type {
   BillingOperationState,
   BillingOperationTelemetryEvent,
   BillingResult,
+  CapabilitiesReadOptions,
   EmbeddedChallengePort,
   PendingBillingOperation,
   PreviewSubscribeInput,
@@ -32,10 +33,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
+  SavedPaymentMethod,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -44,6 +47,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { projectBillingStatus } from './billingStatusView'
@@ -406,6 +410,24 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : { status: 'ok', value: plans }
   }
 
+  async function readCapabilities(
+    options: CapabilitiesReadOptions
+  ): Promise<BillingResult<BillingCapabilitiesResponse>> {
+    const result = await sdk.capabilities.read(options)
+    return result.status === 'ok'
+      ? { status: 'ok', value: projectBillingCapabilities(result.value) }
+      : result
+  }
+
+  async function readPaymentMethods(): Promise<
+    BillingResult<SavedPaymentMethod[]>
+  > {
+    const result = await sdk.paymentMethods.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: [...result.value.methods] }
+      : result
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -432,6 +454,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readStatus,
     readBalance,
     readPlans,
+    readCapabilities,
+    readPaymentMethods,
     retryPaymentAuthentication,
     dismissOperation
   }
