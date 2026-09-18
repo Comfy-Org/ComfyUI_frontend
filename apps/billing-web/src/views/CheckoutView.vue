@@ -6,7 +6,7 @@
  * page renders what the SDK says and never keeps a payment state of its own.
  * A hosted continuation redirects this tab and comes back on `/v1/result`.
  */
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -39,7 +39,13 @@ const { entry } = useBillingEntry()
 
 const planSlug = computed(() => entry.value?.plan)
 
-const { preview, loading, failure, quote } = usePreviewSubscribe()
+const {
+  preview,
+  loading,
+  failure,
+  quote,
+  reset: resetQuote
+} = usePreviewSubscribe()
 
 const challengePort =
   STRIPE_PUBLISHABLE_KEY === undefined
@@ -52,9 +58,17 @@ const checkout = useCheckout({
   challengePort
 })
 
-onMounted(() => {
-  if (planSlug.value !== undefined) void quote({ planSlug: planSlug.value })
-})
+// The route record is shared, so arriving at this page with a different plan
+// reuses the view. Clearing first keeps the previous plan's quote from pricing
+// the new one while its replacement is still in flight.
+watch(
+  planSlug,
+  (slug) => {
+    resetQuote()
+    if (slug !== undefined) void quote({ planSlug: slug })
+  },
+  { immediate: true }
+)
 
 const paymentCopy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
@@ -138,7 +152,7 @@ function resultUrl(): string | undefined {
 
 function confirm(confirmationToken: string) {
   const quoted = preview.value
-  if (planSlug.value === undefined || !quoted) return
+  if (planSlug.value === undefined || !quoted || loading.value) return
   const returnUrl = resultUrl()
   void checkout.subscribe({
     plan_slug: planSlug.value,

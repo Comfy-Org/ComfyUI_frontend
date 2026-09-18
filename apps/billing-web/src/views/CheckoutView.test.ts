@@ -11,6 +11,8 @@ import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
   failedOperation,
+  challengedPendingOperation,
+  hostedPendingOperation,
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
@@ -25,10 +27,16 @@ vi.mock<unknown>(import('@/config/env'), () => ({
   STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
 }))
 
+const challengeMocks = vi.hoisted(() => ({
+  createPort: vi.fn(),
+  handleNextAction: vi.fn(async () => ({}))
+}))
+
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: () => ({
-    handleNextAction: () => Promise.resolve({})
-  })
+  createStripeChallengePort: (key: string) => {
+    challengeMocks.createPort(key)
+    return { handleNextAction: challengeMocks.handleNextAction }
+  }
 }))
 
 /**
@@ -119,6 +127,38 @@ describe('CheckoutView', () => {
     expect(screen.getByText('$69.00')).toBeInTheDocument()
   })
 
+  it('re-quotes when the entry names a different plan and never submits a stale quote', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: previewOf({ quote_id: 'q_2', quote_version: 7 })
+    })
+    // The router guard republishes the entry on every navigation; the route
+    // record is the same, so the view is reused rather than remounted.
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+    await waitFor(() =>
+      expect(fake.previewSubscribe).toHaveBeenCalledWith(
+        { planSlug: 'creator_annual' },
+        expect.anything()
+      )
+    )
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    expect(fake.subscribe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        plan_slug: 'creator_annual',
+        quote_id: 'q_2',
+        quote_version: 7
+      })
+    )
+  })
+
   it("hands the form the quote and this deployment's key", async () => {
     await renderCheckout()
 
@@ -149,6 +189,41 @@ describe('CheckoutView', () => {
         )
       })
     )
+  })
+
+  it('redirects this tab when the server offers a hosted continuation', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        'https://hooks.stripe.test/redirect/op_1'
+      )
+    )
+    expect(challengeMocks.handleNextAction).not.toHaveBeenCalled()
+  })
+
+  it('drives the 3DS challenge in place when the continuation is embedded', async () => {
+    const assign = stubNavigation()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    expect(challengeMocks.createPort).toHaveBeenCalledWith('pk_test_example')
+
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+
+    await waitFor(() =>
+      expect(challengeMocks.handleNextAction).toHaveBeenCalledWith(
+        'pi_1_secret'
+      )
+    )
+    expect(fake.reportChallengeStarted).toHaveBeenCalledWith('op_1')
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it('shows the completed state and carries the outcome on the way back', async () => {

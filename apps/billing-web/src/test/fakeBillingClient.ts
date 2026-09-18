@@ -6,6 +6,7 @@
  * recovery produces are published to lifecycle subscribers the way the real
  * lifecycle would, so a view's projection over them is exercised for real.
  */
+import type { Mock } from 'vitest'
 import { vi } from 'vitest'
 
 import type {
@@ -15,6 +16,7 @@ import type {
   BillingResult,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
+  PendingBillingOperation,
   PlansSnapshot,
   PreviewSubscribeResult,
   SavedPaymentMethod,
@@ -56,7 +58,9 @@ export interface FakeBillingClient {
     BillingResult<PaymentMethodsSnapshot>
   >
   readonly invalidatePaymentMethods: () => void
-  readonly previewSubscribe: BillingClient['commands']['previewSubscribe']
+  readonly previewSubscribe: Mock<BillingClient['commands']['previewSubscribe']>
+  readonly reportChallengeStarted: ReturnType<typeof vi.fn>
+  readonly reportChallengeSettled: ReturnType<typeof vi.fn>
   readonly openPaymentPortal: BillingClient['commands']['openPaymentPortal']
   readonly subscribe: BillingClient['commands']['subscribe']
   readonly recover: BillingClient['lifecycle']['recover']
@@ -109,6 +113,8 @@ export function createFakeBillingClient(
       : paymentMethods
   )
   const invalidatePaymentMethods = vi.fn(() => {})
+  const reportChallengeStarted = vi.fn()
+  const reportChallengeSettled = vi.fn()
   const previewSubscribe = vi.fn(async () => preview)
   const openPaymentPortal = vi.fn(async () => portalOutcome)
   const subscribe = vi.fn(async () => {
@@ -132,12 +138,8 @@ export function createFakeBillingClient(
       switchPresentation: unusedByHostedSurfaces(
         'lifecycle.switchPresentation'
       ),
-      reportChallengeStarted: unusedByHostedSurfaces(
-        'lifecycle.reportChallengeStarted'
-      ),
-      reportChallengeSettled: unusedByHostedSurfaces(
-        'lifecycle.reportChallengeSettled'
-      ),
+      reportChallengeStarted,
+      reportChallengeSettled,
       get: (id) => operations.get(id),
       getSnapshot: () => [...operations.values()],
       subscribe: (listener) => {
@@ -194,6 +196,8 @@ export function createFakeBillingClient(
     readPlans,
     readPaymentMethods,
     invalidatePaymentMethods,
+    reportChallengeStarted,
+    reportChallengeSettled,
     previewSubscribe,
     openPaymentPortal,
     subscribe,
@@ -272,6 +276,38 @@ export function pendingOperation(id = 'op_1'): BillingOperationState {
     ...operationIdentity(id),
     phase: 'pending',
     customerActionSeen: false
+  }
+}
+
+/** Pending with a hosted continuation: the customer has to be sent to it. */
+export function hostedPendingOperation(
+  actionUrl: string,
+  id = 'op_1'
+): PendingBillingOperation {
+  return {
+    id,
+    kind: 'subscription',
+    scope: SCOPE,
+    observedAt: READ_AT,
+    attemptStartedAt: READ_AT,
+    presentation: 'hosted',
+    hostedDestination: 'stripe',
+    phase: 'pending',
+    actionUrl,
+    customerActionSeen: true
+  }
+}
+
+/** Pending with an in-page challenge this tab has to drive. */
+export function challengedPendingOperation(
+  clientSecret: string,
+  id = 'op_1'
+): PendingBillingOperation {
+  return {
+    ...operationIdentity(id),
+    phase: 'pending',
+    challenge: { status: 'required', clientSecret },
+    customerActionSeen: true
   }
 }
 
