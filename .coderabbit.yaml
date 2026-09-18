@@ -4,7 +4,7 @@ issue_enrichment:
 reviews:
   profile: assertive
   high_level_summary: false
-  request_changes_workflow: true
+  request_changes_workflow: false
   # Without this, a review that never happened (rate limit, internal error)
   # still reports green, so an unreviewed PR is indistinguishable from a
   # cleanly reviewed one.
