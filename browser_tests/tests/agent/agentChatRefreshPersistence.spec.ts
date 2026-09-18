@@ -76,8 +76,12 @@ test(
     const beforeReload = await panel
       .getByTestId('user-message-bubble')
       .allTextContents()
+    const historyReadsBeforeReload = promptHistory.historyReads()
 
     await page.reload()
+    await expect
+      .poll(() => promptHistory.historyReads())
+      .toBeGreaterThan(historyReadsBeforeReload)
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
