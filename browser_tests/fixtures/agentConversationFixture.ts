@@ -18,7 +18,6 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type {
@@ -271,10 +270,11 @@ class AgentConversationHarness {
         await new Promise((resolve) =>
           setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
         )
-      if (entry.kind === 'event') this.send(this.stampTurn(entry.event, turn))
+      if (entry.kind === 'event')
+        this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
-        await this.waitForSubscribe()
-        this.send(this.host.apply(entry.ops))
+        await this.hostSocket.waitForSubscribe()
+        this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -560,14 +560,6 @@ class AgentConversationHarness {
         `recorded ${event.type} frame is not a valid agent event: ${parsed.error.message}`
       )
     return parsed.data
-  }
-
-  private send(frame: AgentWsEvent | HostFrame): void {
-    this.hostSocket.send(frame)
-  }
-
-  private waitForSubscribe(): Promise<void> {
-    return this.hostSocket.waitForSubscribe()
   }
 }
 

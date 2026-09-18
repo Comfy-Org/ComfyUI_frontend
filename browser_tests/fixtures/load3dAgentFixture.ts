@@ -9,12 +9,10 @@ import {
   zComfyApiWorkflow,
   zComfyWorkflow
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toNodeId } from '@/types/nodeId'
 
 import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -144,7 +142,7 @@ class Load3dAgentHarness {
       timeout: PANEL_MOUNT_TIMEOUT
     })
     // The agent announces its tab; the panel opens it and binds the follower.
-    this.send({
+    this.hostSocket.send({
       type: 'agent_active_tab',
       data: { workflow_id: WORKFLOW_ID, name: 'Load3D preview' }
     })
@@ -170,7 +168,7 @@ class Load3dAgentHarness {
       old,
       value: model
     }
-    this.send(this.host.apply([op]))
+    this.hostSocket.send(this.host.apply([op]))
   }
 
   /** Waits until the node's `model_file` widget shows `model`. */
@@ -258,10 +256,6 @@ class Load3dAgentHarness {
         jsonRoute({ prompt_id: crypto.randomUUID(), node_errors: {} })
       )
     })
-  }
-
-  private send(frame: AgentWsEvent | HostFrame): void {
-    this.hostSocket.send(frame)
   }
 }
 
