@@ -63,8 +63,9 @@ function seedance({
   values,
   files
 }: WorkshopRequestInputs): Record<string, unknown> {
-  const { prompt, first_frame_url, last_frame_url, ...rest } = values
+  const { prompt, first_frame_url, last_frame_url, video_url, ...rest } = values
   const body = withoutIndexed(rest, 'reference_image_url')
+  const videoUrls = typeof video_url === 'string' ? [video_url] : []
   const first = files.first_frame ?? []
   const last = files.last_frame ?? []
   const references = files.reference_images ?? []
@@ -101,6 +102,11 @@ function seedance({
         type: 'image_url',
         role,
         image_url: { url }
+      })),
+      ...videoUrls.map((url) => ({
+        type: 'video_url',
+        role: 'reference_video',
+        video_url: { url }
       }))
     ]
   }
@@ -196,6 +202,82 @@ function veo({
   }
 }
 
+function validateKlingOmniReferences(
+  mode: unknown,
+  lastFrameUrl: Values[string],
+  references: string[]
+) {
+  if (mode === 'first-last' && lastFrameUrl && references.length)
+    throw new WorkshopRouterError('validation', null, {
+      reference_image_url: 'rejected'
+    })
+}
+
+function klingImageInput(
+  firstFrameUrl: Values[string],
+  lastFrameUrl: Values[string],
+  references: string[]
+): Record<string, unknown> {
+  const imageList = [
+    ...(firstFrameUrl
+      ? [{ image_url: firstFrameUrl, type: 'first_frame' }]
+      : []),
+    ...(lastFrameUrl ? [{ image_url: lastFrameUrl, type: 'end_frame' }] : []),
+    ...references.map((image_url) => ({ image_url }))
+  ]
+  return imageList.length ? { image_list: imageList } : {}
+}
+
+function klingVideoInput(
+  mode: unknown,
+  videoUrl: Values[string],
+  keepOriginalSound: Values[string]
+): Record<string, unknown> {
+  if (!videoUrl) return {}
+  return {
+    video_list: [
+      {
+        video_url: videoUrl,
+        refer_type: mode === 'edit' ? 'base' : 'feature',
+        keep_original_sound: keepOriginalSound === false ? 'no' : 'yes'
+      }
+    ]
+  }
+}
+
+function klingSoundInput(
+  generateAudio: Values[string]
+): Record<string, unknown> {
+  return generateAudio === undefined
+    ? {}
+    : { sound: generateAudio ? 'on' : 'off' }
+}
+
+function klingOmni(
+  request: CallbackRequest,
+  { values }: WorkshopRequestInputs
+): Record<string, unknown> {
+  const references = indexedUrls(values, 'reference_image_url')
+  const {
+    first_frame_url,
+    generate_audio,
+    keep_original_sound,
+    last_frame_url,
+    resolution,
+    video_url,
+    ...body
+  } = withoutIndexed(values, 'reference_image_url')
+  const mode = request.options.mode
+  validateKlingOmniReferences(mode, last_frame_url, references)
+  return {
+    ...body,
+    mode: resolution === '720p' ? 'std' : 'pro',
+    ...klingSoundInput(generate_audio),
+    ...klingImageInput(first_frame_url, last_frame_url, references),
+    ...klingVideoInput(mode, video_url, keep_original_sound)
+  }
+}
+
 export function prepareWorkshopRequestCallback(
   request: CallbackRequest,
   context: WorkshopRequestInputs
@@ -203,6 +285,12 @@ export function prepareWorkshopRequestCallback(
   const { values, files } = context
   switch (request.callback) {
     case 'flat':
+      return { ...values }
+    case 'gpt-image':
+      if ((files.images ?? []).length)
+        throw new WorkshopRouterError('validation', null, {
+          images: 'rejected'
+        })
       return { ...values }
     case 'ideogram': {
       const { prompt, ...rest } = values
@@ -339,6 +427,8 @@ export function prepareWorkshopRequestCallback(
           audio_url: values.audio_url
         }
       }
+    case 'kling-omni-video':
+      return klingOmni(request, context)
     case 'bfl-video': {
       const images = (files.images ?? []).map((file) => file.data)
       if (values.mode === 'i2v' && !images.length)
@@ -418,11 +508,18 @@ export function prepareWorkshopRequestCallback(
       }
     }
     case 'gemini-video': {
-      const { input, image_url, last_frame_url, video_url } = values
+      const { input, image_url, last_frame_url } = values
+      const videos = files.video ?? []
+      if (request.options.mode === 'edit' && !videos.length)
+        throw new WorkshopRouterError('validation', null, { video: 'required' })
       const media = [
         ...(image_url ? [{ type: 'image', uri: image_url }] : []),
         ...(last_frame_url ? [{ type: 'image', uri: last_frame_url }] : []),
-        ...(video_url ? [{ type: 'video', uri: video_url }] : [])
+        ...videos.map((file) => ({
+          type: 'video',
+          data: file.data,
+          mime_type: file.mimeType
+        }))
       ]
       return {
         input: media.length ? [{ type: 'text', text: input }, ...media] : input,

@@ -6,6 +6,7 @@ import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mergeCustomNodesI18n } from '@/i18n'
+import * as i18nModule from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
@@ -13,21 +14,6 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal()
-  Object.assign(actual.api, {
-    init: vi.fn().mockResolvedValue(undefined),
-    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
-    getCustomNodesI18n: vi.fn().mockResolvedValue({}),
-    getUserConfig: vi.fn().mockResolvedValue({})
-  })
-  return actual
-})
-
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  mergeCustomNodesI18n: vi.fn()
-}))
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
@@ -51,6 +37,8 @@ function requestFailure(status: number) {
 
 describe('bootstrapStore', () => {
   beforeEach(() => {
+    vi.spyOn(api, 'getCustomNodesI18n').mockResolvedValue({})
+    vi.spyOn(i18nModule, 'mergeCustomNodesI18n').mockImplementation(() => {})
     useSettingStore().isReady = false
     useAuthStore().isInitialized = false
     Object.assign(useAuthStore(), { isAuthenticated: false })

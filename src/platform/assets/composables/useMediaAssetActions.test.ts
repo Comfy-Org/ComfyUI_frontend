@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
@@ -30,8 +29,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: mockDownloadFile
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -88,11 +86,10 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  }))
+vi.mock(import('@/utils/loaderNodeUtil'), () => ({
+  detectNodeTypeFromFilename: vi.fn(
+    () => ({ nodeType: 'LoadImage', widgetName: 'image' }) as const
+  )
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({

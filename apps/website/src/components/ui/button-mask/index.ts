@@ -8,7 +8,7 @@ export const buttonMaskVariants = cva({
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
-      ghost: 'text-primary-comfy-yellow bg-transparent'
+      ghost: 'bg-transparent text-primary-comfy-yellow'
     },
     size: {
       default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
@@ -36,7 +36,7 @@ export const buttonMaskBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-xl transition-all duration-500',
   variants: {
     variant: {
-      solid: 'text-primary-comfy-yellow bg-primary-comfy-ink',
+      solid: 'bg-primary-comfy-ink text-primary-comfy-yellow',
       ghost: 'bg-primary-comfy-yellow text-primary-comfy-ink'
     },
     size: {

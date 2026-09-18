@@ -1,13 +1,3 @@
-/**
- * The production transport must never throw on send.
- *
- * `apiTransport.send` used to `throw new Error('The ComfyUI WebSocket is not
- * connected')` whenever the socket was not OPEN. That single throw was the root
- * cause of BOTH follower defects: it aborted the `watch(..., {immediate:true})`
- * subscribe (Vue swallows watcher errors, so the follower went silently inert)
- * and it aborted `onBeforeUnmount` before `client.destroy()` (leaking four `api`
- * listeners and a projector still wired to the live canvas).
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: null } }))
@@ -15,6 +5,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
 
 import { api } from '@/scripts/api'
 
+import { createLoggedTransport } from './agentCrdtTransport'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
 const mutableApi = api as unknown as {
@@ -43,5 +36,35 @@ describe('apiTransport.send', () => {
     mutableApi.socket = { readyState: WebSocket.OPEN, send }
     expect(apiTransport.send('frame')).toBe(true)
     expect(send).toHaveBeenCalledWith('frame')
+  })
+})
+
+describe('createLoggedTransport.send', () => {
+  const frame = '{"type":"doc_ops"}'
+
+  beforeEach(() => {
+    clearDevEvents()
+    mutableApi.socket = { readyState: WebSocket.OPEN, send: vi.fn() }
+  })
+
+  it('leaves the frame unparsed while the debug instrument is off', () => {
+    setCrdtDebugEnabled(false)
+    const parse = vi.spyOn(JSON, 'parse')
+
+    expect(createLoggedTransport().send(frame)).toBe(true)
+
+    expect(parse).not.toHaveBeenCalled()
+    parse.mockRestore()
+  })
+
+  it('records the parsed frame while the instrument is on', () => {
+    setCrdtDebugEnabled(true)
+
+    expect(createLoggedTransport().send(frame)).toBe(true)
+
+    expect(devEvents.value.at(-1)?.detail).toEqual({
+      delivered: true,
+      frame: { type: 'doc_ops' }
+    })
   })
 })

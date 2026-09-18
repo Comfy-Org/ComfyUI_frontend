@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { computed, createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -19,13 +20,6 @@ const state = vi.hoisted(() => ({
   tier: null as string | null,
   shouldUseWorkspaceBilling: true,
   isSubscriptionCancelled: false
-}))
-
-const dialogMocks = vi.hoisted(() => ({
-  showCancelSubscriptionFlow: vi.fn(),
-  showEditWorkspaceDialog: vi.fn(),
-  showDeleteWorkspaceDialog: vi.fn(),
-  showLeaveWorkspaceDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -94,9 +88,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => dialogMocks
-}))
+vi.mock(import('@/services/dialogService'))
 
 const apps: App<Element>[] = []
 
@@ -151,7 +143,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       '2026-08-01T00:00:00Z'
     )
   })
@@ -317,7 +309,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionFlow).not.toHaveBeenCalled()
+    expect(useDialogService().showCancelSubscriptionFlow).not.toHaveBeenCalled()
   })
 
   it('shows Leave only when workspace permission grants it', () => {
@@ -348,7 +340,7 @@ describe('useWorkspaceMenuItems', () => {
       item: leaveItem
     })
 
-    expect(dialogMocks.showLeaveWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('shows Leave and Delete when owner permissions grant both', () => {
@@ -409,7 +401,7 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('rechecks the subscription lock before opening the Delete dialog', () => {
@@ -425,6 +417,6 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

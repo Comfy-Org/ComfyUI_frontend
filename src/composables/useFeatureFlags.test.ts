@@ -196,6 +196,143 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('hostedBillingDestination', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('stays on stripe when the server reports nothing, even with a development URL configured', () => {
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.hostedBillingDestination).toBe('stripe')
+      expect(flags.hostedBillingWebEnabled).toBe(false)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.HOSTED_BILLING_DESTINATION,
+        'stripe'
+      )
+    })
+
+    it('enables the hosted app only on the billing_web variant', () => {
+      const { flags } = useFeatureFlags()
+
+      remoteConfig.value = { hosted_billing_destination: 'billing_web' }
+      expect(flags.hostedBillingDestination).toBe('billing_web')
+      expect(flags.hostedBillingWebEnabled).toBe(true)
+
+      remoteConfig.value = { hosted_billing_destination: 'true' }
+      expect(flags.hostedBillingDestination).toBe('stripe')
+      expect(flags.hostedBillingWebEnabled).toBe(false)
+    })
+  })
+
+  describe('billingSdkTopupEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(expected)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
+    })
+  })
+
+  describe('billingSdkTopupRailEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      { auth: 'off', unifiedCloudAuth: false, expected: false },
+      { auth: 'on', unifiedCloudAuth: true, expected: true }
+    ])(
+      'follows the SDK flag only while unified auth is $auth',
+      ({ unifiedCloudAuth, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        vi.mocked(api.getServerFeature).mockImplementation((path) => {
+          if (path === ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED) return true
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
+            return unifiedCloudAuth
+          return false
+        })
+
+        expect(useFeatureFlags().flags.billingSdkTopupRailEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
+  describe('billingSdkSubscriptionEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(
+        expected
+      )
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(false)
+    })
+  })
+
+  describe('billingSdkSubscriptionRailEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      { auth: 'off', unifiedCloudAuth: false, expected: false },
+      { auth: 'on', unifiedCloudAuth: true, expected: true }
+    ])(
+      'follows the SDK flag only while unified auth is $auth',
+      ({ unifiedCloudAuth, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        vi.mocked(api.getServerFeature).mockImplementation((path) => {
+          if (path === ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED)
+            return true
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
+            return unifiedCloudAuth
+          return false
+        })
+
+        expect(useFeatureFlags().flags.billingSdkSubscriptionRailEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false
@@ -308,6 +445,26 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
+  })
+
+  describe('assetsEnabled', () => {
+    it.for([
+      ['stable cohort without the flag', undefined, false],
+      ['beta cohort with the flag', true, true],
+      ['beta cohort after the kill switch', false, false]
+    ] as const)(
+      'maps the %s response to the expected state',
+      ([, servedValue, expected]) => {
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (path, defaultValue) =>
+            path === 'assets' && servedValue !== undefined
+              ? servedValue
+              : defaultValue
+        )
+
+        expect(useFeatureFlags().flags.assetsEnabled).toBe(expected)
+      }
+    )
   })
 
   describe('partnerNodeGovernanceEnabled', () => {

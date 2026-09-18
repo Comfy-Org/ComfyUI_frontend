@@ -138,36 +138,37 @@ export function waitForStartup(
   ])
 }
 
-// One lifecycle for a spawned group: the first exit reason wins and teardown runs once.
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
-  let stopping = false
+  let stopPromise: Promise<number> | null = null
   let requestedExitCode: number | null = null
   let resolveExitRequest: (code: number) => void = () => {}
   const exitRequested = new Promise<number>((resolveExit) => {
     resolveExitRequest = resolveExit
   })
   const requestExit = (code: number) => {
-    if (requestedExitCode !== null) return
+    if (requestedExitCode !== null) {
+      if (stopPromise !== null) {
+        for (const child of [...children].reverse()) stopGroup(child, 'SIGKILL')
+      }
+      return
+    }
     requestedExitCode = code
     resolveExitRequest(code)
   }
   const onSighup = () => requestExit(129)
   const onSigint = () => requestExit(130)
   const onSigterm = () => requestExit(143)
-  // Repeated signals during teardown must not kill the launcher over its detached children.
   process.on('SIGHUP', onSighup)
   process.on('SIGINT', onSigint)
   process.on('SIGTERM', onSigterm)
   return {
     exitRequested,
     requested: () => requestedExitCode !== null,
-    // Signalled newest first, so a dependent stops before what it was talking to.
     stop: async (exitCode: number): Promise<number> => {
-      if (stopping) return exitCode
-      stopping = true
-      const newestFirst = [...children].reverse()
-      try {
+      if (stopPromise !== null) return await stopPromise
+      stopPromise = (async () => {
+        const newestFirst = [...children].reverse()
         for (const child of newestFirst) stopGroup(child, 'SIGTERM')
         await Promise.all(
           newestFirst.map((child) => waitForGroupExit(child, 2000))
@@ -185,12 +186,13 @@ export function supervise(dataDir: string) {
           )
         }
         await rm(dataDir, { force: true, recursive: true })
-      } finally {
+        return exitCode
+      })().finally(() => {
         process.removeListener('SIGHUP', onSighup)
         process.removeListener('SIGINT', onSigint)
         process.removeListener('SIGTERM', onSigterm)
-      }
-      return exitCode
+      })
+      return await stopPromise
     },
     watch: (child: ChildProcess) => {
       children.push(child)

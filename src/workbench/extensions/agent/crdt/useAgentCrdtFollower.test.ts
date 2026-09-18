@@ -14,8 +14,10 @@ import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
@@ -67,6 +69,10 @@ const definitionsState = vi.hoisted(() => ({
     '11111111-1111-4111-8111-111111111111'
   ]),
   readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
+}))
+
+const telemetryState = vi.hoisted(() => ({
+  reportError: vi.fn<typeof reportErrorFn>()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -127,6 +133,10 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: telemetryState.reportError
+}))
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
@@ -137,6 +147,7 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
 
 function persistedRecord(): {
   docId: string
@@ -199,17 +210,117 @@ function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
   return current
 }
 
+function reportedTeardownErrors(): unknown[] {
+  return telemetryState.reportError.mock.calls
+    .filter(([, options]) => options.errorType === TEARDOWN_ERROR_TYPE)
+    .map(([cause]) => cause)
+}
+
 function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
 }
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('does not construct a follower when the product gate is disabled', () => {
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null,
+      updatesApplied: 0
+    })
+    expect(bridgeState.current).toBeNull()
+    expect(adapterState.bind).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('starts on flag delivery and stops synchronously on revocation', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    const { status, workflowId, unmount } = mountFollower('wf-1')
+    expect(bridgeState.current).toBeNull()
+
+    store.enabled = true
+    const first = bridge()
+    expect(first.subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    first.dispatchEvent(
+      new CustomEvent('doc_subscribed', { detail: { ok: true } })
+    )
+    expect(status().connected).toBe(true)
+
+    store.enabled = false
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(clientState.destroy).toHaveBeenCalledOnce()
+    expect(adapterState.destroy).toHaveBeenCalledOnce()
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null
+    })
+
+    const applies = adapterState.applyFrame.mock.calls.length
+    first.dispatchEvent(
+      new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
+    )
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(first.subscribe).toHaveBeenCalledTimes(1)
+    expect(first.resubscribe).not.toHaveBeenCalled()
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(applies)
+
+    store.enabled = true
+    expect(bridge()).not.toBe(first)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-2')
+    unmount()
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(bridge().destroy).toHaveBeenCalledOnce()
+  })
+
+  it('cannot enable transport through diagnostic, legacy URL, storage or build controls', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
+    window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
+    localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
+    expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
+
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(false)
+    expect(bridgeState.current).toBeNull()
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
+  })
+
+  it('keeps product transport enabled when diagnostics and legacy controls are off', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
+    window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
+    expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
+
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(true)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -341,6 +452,20 @@ describe('useAgentCrdtFollower', () => {
       nonce: record?.nonce,
       expiresAt: Date.now() - 1
     })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses an empty doc id rather than subscribing to it', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    writeRawRecord({ docId: '', nonce: persistedRecord()?.nonce })
 
     const { unmount, status } = mountFollower(null)
 
@@ -690,6 +815,26 @@ describe('useAgentCrdtFollower', () => {
       setDirtyCanvas: vi.fn()
     } as unknown as MaterializableGraph
 
+    it('counts the frame even when a removal hook throws out of the reconcile', () => {
+      // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
+      // which runs extension `onRemoved()` uncaught. `received === applied +
+      // skipped` has to survive that, so the outcome must be decided before the
+      // sweep runs.
+      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+        throw new Error('onRemoved threw')
+      })
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      expect(() =>
+        dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      ).toThrow('onRemoved threw')
+
+      const { received, applied, skipped } = status().outcomes
+      expect(received).toBe(1)
+      expect(applied + skipped).toBe(received)
+      unmount()
+    })
+
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
@@ -829,12 +974,20 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles after a follower_replaced clear', () => {
+    it('reconciles a follower_replaced clear against the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(
+        definitionsState.readSubgraphDefinitionIds
+      ).toHaveBeenLastCalledWith(replacementDoc)
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
+        replacementDoc
+      )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
@@ -1087,10 +1240,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('tears down totally on unmount, even when the bridge destroy throws', () => {
-    // Vue routes an onBeforeUnmount throw through the app error channel, so
-    // the throw is absorbed there; the contract under test is that the
-    // client teardown and listener removal still ran.
+  it('tears down totally on unmount, reporting every cleanup failure instead of throwing', () => {
     const hookErrors: unknown[] = []
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
@@ -1108,22 +1258,43 @@ describe('useAgentCrdtFollower', () => {
         }
       }
     })
-    bridge().destroy.mockImplementation(() => {
-      throw new Error('half-dead bridge')
+    const listenerFailure = new Error('listener removal failed')
+    const clientFailure = new Error('client destroy failed')
+    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+      if (type === 'reconnected') throw listenerFailure
+      apiState.target.removeEventListener(type, listener)
+    })
+    clientState.destroy.mockImplementation(() => {
+      throw clientFailure
     })
 
     unmount()
 
-    expect(String(hookErrors[0])).toContain('half-dead bridge')
-    expect(clientState.destroy).toHaveBeenCalled()
+    expect(hookErrors).toEqual([])
+    expect(reportedTeardownErrors()).toStrictEqual([
+      listenerFailure,
+      clientFailure
+    ])
     expect(adapterState.destroy).toHaveBeenCalled()
-    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
-      'reconnected',
-      expect.any(Function)
-    )
+    expect(bridge().destroy).toHaveBeenCalled()
+    expect(clientState.destroy).toHaveBeenCalled()
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
       'status',
       expect.any(Function)
     )
+  })
+
+  it('reports cleanup failures that throw a nullish value', () => {
+    const { unmount } = mountFollower('wf-1')
+    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+      if (type === 'reconnected') throw null
+      if (type === 'status') throw undefined
+      apiState.target.removeEventListener(type, listener)
+    })
+
+    unmount()
+
+    expect(reportedTeardownErrors()).toStrictEqual([null, undefined])
+    expect(clientState.destroy).toHaveBeenCalled()
   })
 })

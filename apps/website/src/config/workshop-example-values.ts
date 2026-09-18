@@ -22,7 +22,8 @@ const aliases: Readonly<Partial<Record<string, readonly string[]>>> = {
 const mediaRoles: Readonly<Partial<Record<string, readonly string[]>>> = {
   image_url: ['image', 'first_frame', 'start_image', 'reference_image'],
   image: ['image', 'first_frame', 'start_image'],
-  images: ['image', 'reference_image'],
+  images: ['image', 'first_frame', 'start_image', 'reference_image'],
+  mask: ['mask'],
   media_image: ['image'],
   media_mask: ['mask'],
   media_reference_image: ['reference_image'],

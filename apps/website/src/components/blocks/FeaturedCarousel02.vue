@@ -173,16 +173,16 @@ useCarouselAutoplay({
 
 <template>
   <section :class="cn('w-full px-6 lg:px-12', className)">
-    <div ref="rootEl" class="max-w-9xl mx-auto">
+    <div ref="rootEl" class="mx-auto max-w-9xl">
       <div
         ref="trackEl"
-        class="flex snap-x snap-mandatory scrollbar-none gap-4 overflow-x-auto overscroll-x-contain"
+        class="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain"
         @scroll.passive="syncActiveFromScroll"
       >
         <article
           v-for="(slide, index) in slides"
           :key="slide.id"
-          class="bg-transparency-white-t4 lg:rounded-5xl flex w-full shrink-0 snap-center flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
+          class="flex w-full shrink-0 snap-center flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8 lg:rounded-5xl"
           :aria-hidden="index !== activeIndex"
           :inert="index !== activeIndex"
         >
@@ -198,7 +198,7 @@ useCarouselAutoplay({
               :aria-label="slide.media.alt"
               autoplay
               mute-only
-              class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
+              class="absolute inset-0 aspect-auto h-full rounded-3xl border-0 lg:rounded-4.5xl"
             />
             <img
               v-else-if="
@@ -214,11 +214,11 @@ useCarouselAutoplay({
               :alt="slide.media.alt"
               :loading="index === 0 ? 'eager' : 'lazy'"
               decoding="async"
-              class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
+              class="absolute inset-0 size-full rounded-3xl object-cover object-center lg:rounded-4.5xl"
             />
             <div
               v-else
-              class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
+              class="absolute inset-0 rounded-3xl bg-black lg:rounded-4.5xl"
             />
           </div>
 
@@ -227,7 +227,7 @@ useCarouselAutoplay({
           >
             <p
               v-if="slide.eyebrow"
-              class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
+              class="text-sm font-bold tracking-[0.7px] text-primary-comfy-yellow uppercase"
             >
               {{ slide.eyebrow }}
             </p>

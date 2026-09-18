@@ -18,6 +18,7 @@ type WorkflowTargetSelection =
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
+  const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
@@ -61,14 +62,19 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   let openedAt: number | null = null
 
-  watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
-    }
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && consentAccepted.value
   )
+
+  watch(isVisible, (visible) => {
+    if (!visible) {
+      openedAt = null
+      return
+    }
+    if (openedAt !== null) return
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
@@ -90,6 +96,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
+  function suppressRestoredOpen(): void {
+    if (!isOpen.value || isVisible.value) return
+    isOpen.value = false
+    openedAt = null
+  }
+
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
     else open()
@@ -105,11 +117,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   return {
     enabled,
+    consentAccepted,
     isOpen,
+    isVisible,
     gateSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,
+    open,
     workflowTargetSelection,
     selectedWorkflow,
     canRestoreWorkflow,
@@ -117,6 +132,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     setWorkflowTarget,
     toggle,
     close,
+    suppressRestoredOpen,
     setWidth,
     toggleMaximize
   }

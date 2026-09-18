@@ -1,22 +1,23 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ActionBarButton } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 
 const registerExtension = vi.hoisted(() => vi.fn())
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
 }))
 
-vi.mock('@/platform/support/feedbackDialog', () => ({
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
 
@@ -40,7 +41,7 @@ describe('cloudFeedbackTopbarButton', () => {
     const buttons = getRegisteredButtons()
     expect(buttons).toHaveLength(1)
     expect(buttons[0].icon).toBe('icon-[hugeicons--megaphone-03]')
-    buttons[0].onClick?.()
+    buttons[0].onClick()
 
     expect(openFeedbackDialog).toHaveBeenCalledWith('action-bar')
   })
