@@ -45,7 +45,7 @@ const MODEL_ASSETS: Record<AgentModelFile, string> = {
   'workflow.glb': 'animated_triangle.glb'
 }
 
-export interface Load3dCapture {
+interface Load3dCapture {
   /** The `image` reference the queued prompt carried for the Load3D node. */
   promptImage: string
   /** The PNG the viewer uploaded under that reference. */
@@ -187,7 +187,7 @@ class Load3dAgentHarness {
   }
 
   /** Clicks Queue and resolves once the prompt for it has been posted. */
-  async queuePrompt(): Promise<unknown> {
+  private async queuePrompt(): Promise<unknown> {
     const posted = this.nextPrompt()
     await this.page.getByTestId(TestIds.topbar.queueButton).click()
     return posted
@@ -203,7 +203,7 @@ class Load3dAgentHarness {
   }
 
   /** Reads the capture the last queued prompt carried and its uploaded bytes. */
-  async captureFor(promptBody: unknown): Promise<Load3dCapture> {
+  private async captureFor(promptBody: unknown): Promise<Load3dCapture> {
     const promptImage = promptImageRef(promptBody)
     const name = PROMPT_IMAGE_REF.exec(promptImage)?.[1]
     const upload = name === undefined ? undefined : this.uploadsByName.get(name)

@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { Load3dCapture } from '@e2e/fixtures/load3dAgentFixture'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
@@ -19,16 +18,15 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         return load3dAgent.capture()
       })
 
-    const updatedPrompt =
+    const after =
       await test.step('queue after the agent replacement finishes loading', async () => {
         load3dAgent.setModelFromAgent('workflow.glb')
         await load3dAgent.expectModel('workflow.glb')
         await load3dAgent.viewer.waitForModelLoaded()
-        return load3dAgent.queuePrompt()
+        return load3dAgent.capture()
       })
 
     await test.step('the prompt carries the replacement model', async () => {
-      const after: Load3dCapture = await load3dAgent.captureFor(updatedPrompt)
       expect(after.promptImage).not.toBe(before.promptImage)
       expect(after.imageBytes.byteLength).toBeGreaterThan(0)
       expect(after.imageBytes).not.toEqual(before.imageBytes)
