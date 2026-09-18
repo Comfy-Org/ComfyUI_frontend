@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -13,6 +17,11 @@ import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
 import { createGraphMutations } from './graphMutations'
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
 class ContractSampler extends LGraphNode {
   static override title = 'Contract Sampler'
@@ -69,6 +78,7 @@ describe('graphMutations', () => {
   beforeEach(() => {
     createLayout.mockReset()
     deleteLayouts.mockReset()
+    mockReportError.mockReset()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
   })
 
@@ -956,5 +966,31 @@ describe('graphMutations', () => {
 
     expect(nodeContexts).toEqual([context])
     expect(widgetContexts).toEqual([context])
+  })
+
+  it.fails('keeps a store-only node in LGraph.serialize() without reporting a mismatch', () => {
+    const graph = new LGraph()
+    const mutations = createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+
+    mutations.addNode(
+      {
+        id: 1,
+        type: 'dummy',
+        pos: [0, 0],
+        size: [100, 80],
+        inputs: [],
+        outputs: []
+      },
+      context
+    )
+
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
+    ).toHaveLength(1)
+    expect(graph.serialize().nodes).toHaveLength(1)
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 })

@@ -381,7 +381,6 @@ class AgentConversationHarness {
     return name
   }
 
-  // A recorded title renders verbatim; any other node shows its display name.
   private expectedTitle(node: { type: string; title?: string }): string {
     return node.title || this.displayName(node.type)
   }
@@ -444,8 +443,6 @@ class AgentConversationHarness {
     }
   }
 
-  // Every widget row a user can read off the canvas: which node, which label,
-  // the value its control shows, and whether it is outlined as invalid.
   renderedWidgetRows(): Promise<RenderedWidgetRow[]> {
     return this.page.getByTestId(TestIds.widgets.widget).evaluateAll(
       (rows, labelTestId) =>

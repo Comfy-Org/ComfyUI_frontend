@@ -1,16 +1,10 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-// Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
-// exemption to drive the real layout store.
-// eslint-disable-next-line import-x/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -23,10 +17,13 @@ import { createGraphMutations } from './graphMutations'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
+  readonly steps = this.addWidget('number', 'steps', 20, () => {}, {
+    min: 1,
+    max: 100
+  })
+  readonly seed = this.addWidget('number', 'seed', 7, () => {}, { min: 0 })
   constructor() {
     super('Test Source')
-    this.addWidget('number', 'steps', 20, () => {}, { min: 1, max: 100 })
-    this.addWidget('number', 'seed', 7, () => {}, { min: 0 })
     this.addOutput('image', 'IMAGE')
     this.serialize_widgets = true
   }
@@ -34,10 +31,12 @@ class TestSource extends LGraphNode {
 
 class TestNote extends LGraphNode {
   static override title = 'Note'
+  readonly text = this.addWidget('markdown', 'text', '', () => {}, {
+    multiline: true
+  })
   constructor() {
     super('Note')
     this.addInput('image', 'IMAGE')
-    this.addWidget('markdown', 'text', '', () => {}, { multiline: true })
     this.serialize_widgets = true
   }
 }
@@ -47,47 +46,10 @@ const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
 }
 
+const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
+
 function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({
-    getScope: () => scope,
-    layout: {
-      createNode(scope, nodeId, { position, size }, context) {
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    }
-  })
+  return createGraphMutations({ getScope: () => scope, layout })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -116,8 +78,8 @@ function buildLiveGraph() {
   source.pos = [10, 20]
   note.pos = [400, 20]
   note.title = 'Release notes'
-  source.widgets![0].value = 21
-  note.widgets![0].value = '# Draft'
+  source.steps.value = 21
+  note.text.value = '# Draft'
   source.connect(0, note, 0)
   return { graph, source, note }
 }
@@ -200,6 +162,8 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
 }
 
 beforeEach(() => {
+  layout.createNode.mockReset()
+  layout.deleteNodes.mockReset()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestNote', TestNote)
 })
@@ -213,6 +177,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     expect(graph.getNodeById(toNodeId(1))).toBe(source)
     expect(graph.getNodeById(toNodeId(2))).toBe(note)
+    expect(layout.createNode).not.toHaveBeenCalled()
+    expect(layout.deleteNodes).not.toHaveBeenCalled()
     expect(snapshot(graph)).toEqual({
       live: [
         {
@@ -264,8 +230,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       node.set('widgets', new Y.Map([['steps', 30]]))
     })
 
-    const values = () => source.widgets!.map(({ value }) => value)
-    expect(values()).toEqual([30, 7])
+    expect([source.steps.value, source.seed.value]).toEqual([30, 7])
     const saved = structuredClone(graph.serialize())
     expect(saved.nodes[0].widgets_values).toEqual([30, 7])
 
