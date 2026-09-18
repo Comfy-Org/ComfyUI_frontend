@@ -8,15 +8,22 @@ vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 describe('LGraphCanvas.deleteSelected', () => {
   let canvas: LGraphCanvas | undefined
 
-  function createCanvas(): { graph: LGraph; element: HTMLCanvasElement } {
+  function createCanvas(): {
+    graph: LGraph
+    element: HTMLCanvasElement
+    canvas: LGraphCanvas
+  } {
     const graph = new LGraph()
     const element = document.createElement('canvas')
     element.getContext = vi
       .fn()
       .mockReturnValue(createMockCanvasRenderingContext2D())
     document.body.append(element)
-    canvas = new LGraphCanvas(element, graph, { skip_render: true })
-    return { graph, element }
+    const createdCanvas = new LGraphCanvas(element, graph, {
+      skip_render: true
+    })
+    canvas = createdCanvas
+    return { graph, element, canvas: createdCanvas }
   }
 
   afterEach(() => {
@@ -46,6 +53,25 @@ describe('LGraphCanvas.deleteSelected', () => {
       2,
       expect.objectContaining({ detail: { subType: 'after-change' } })
     )
+  })
+
+  it('balances graph callbacks when node removal throws', () => {
+    const { graph, canvas } = createCanvas()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    canvas.select(node)
+    node.onRemoved = () => {
+      throw new Error('extension failed')
+    }
+
+    const beforeChange = vi.fn()
+    const afterChange = vi.fn()
+    canvas.onBeforeChange = beforeChange
+    canvas.onAfterChange = afterChange
+
+    expect(() => canvas.deleteSelected()).toThrow('extension failed')
+    expect(beforeChange).toHaveBeenCalledTimes(2)
+    expect(afterChange).toHaveBeenCalledTimes(2)
   })
 
   it('closes both changes when a before-change callback throws', () => {
