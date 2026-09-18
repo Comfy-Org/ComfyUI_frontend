@@ -1293,30 +1293,52 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
   })
 
-  it('aborts an upload when its chip is removed', async () => {
+  it('lets a removed upload finish without reattaching until Undo', async () => {
     const signals: AbortSignal[] = []
+    let finishUpload: (response: Response) => void = () => {}
+    const upload = new Promise<Response>((resolve) => {
+      finishUpload = resolve
+    })
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         if (!String(input).includes('/upload/'))
           return json(200, agentThreadList())
         if (init?.signal) signals.push(init.signal)
-        return new Promise<Response>(() => {})
+        return upload
       })
     )
     renderWithSelectedTarget()
     await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
       files: [new File(['x'], 'cat.png', { type: 'image/png' })]
     })
     await vi.waitFor(() => expect(signals).toHaveLength(1))
+    const composer = useAgentComposerStore()
+    const prompt = composer.prompt
 
     await userEvent.click(
       await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
     )
 
-    expect(signals[0].aborted).toBe(true)
+    expect(signals[0].aborted).toBe(false)
+    finishUpload(
+      json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
+    )
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    expect(composer.attachments).toEqual([])
+    composer.applyEditorPrompt(prompt)
+    expect(composer.attachments).toEqual([
+      expect.objectContaining({
+        name: 'cat.png',
+        ref: 'uploaded-cat.png',
+        uploading: false
+      })
+    ])
   })
 
   it('uses the server limit for audio rejection copy', async () => {

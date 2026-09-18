@@ -1150,7 +1150,6 @@ function onPanelDrop(event: DragEvent): void {
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
-      @remove-attachment="attachment.cancelUpload"
       @mention-pick="onMentionPick"
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
