@@ -105,8 +105,11 @@ unread, and only when every line below is true in that one reading:
   approval from each of two teams and dismiss every approval on push; do not
   count approvals yourself, and do not treat any push of your own as too small
   to need a fresh approval. A person, not only a bot, is among the approvers.
-- Every required check is green, no review stands at "changes requested", and
-  no human reviewer's thread is open.
+- Every required check is green and no review stands at "changes requested".
+- Every review thread is either resolved or has your reply as its last
+  comment, the same test loop two ends on. A human's thread stays open after
+  your reply because only the reviewer may resolve it; their approval, which
+  must postdate your reply, is what says they accepted it.
 - It is not a draft, and nothing in the title, description, labels, or comments
   says to hold it: "do not merge", a launch date not yet reached, an embargo, a
   dependency on another pull request. A hold is lifted only by the person who
