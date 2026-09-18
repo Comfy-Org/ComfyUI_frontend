@@ -38,7 +38,7 @@ function addedNodeIds(conversation: AgentConversation): string[] {
     .flatMap((turn) => turn.response)
     .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
     .filter((op) => op.op === 'add_node')
-    .map((op) => (op as { node_id?: unknown }).node_id)
+    .map((op) => op.node_id)
     .filter(isIdLike)
     .map(String)
 }
