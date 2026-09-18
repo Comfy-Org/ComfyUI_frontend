@@ -52,15 +52,16 @@ The emitter and its schema land together in a later slice, beside the follower s
 mandatory black-box Agent harness case. That slice must define its fields and validation against
 the authoritative producer contracts and the sink's concrete query needs. The executable schema
 must be versioned, and readers must reject unsupported versions. Sink adapters, added separately,
-own pseudonymization, retention, access controls, and vendor mappings.
+own retention, access controls, and vendor mappings.
 
 The future serializer must allowlist named fields and reject content-shaped correlation values.
 Operation correlation must use an authoritative upstream identifier type or factory that makes
-content unrepresentable; if no such contract exists when the emitter lands, the sink boundary must
-pseudonymize the values before serialization. Prompts, responses, tool inputs or results, workflow
-JSON, Yjs bytes, node and widget content, filenames, URLs, emails, credentials, raw errors, and
-arbitrary context are forbidden in every correlation field, including operation identifiers.
-Stable identifiers may be event attributes but never metric tags or event-name components.
+content unrepresentable; if no such contract exists when the emitter lands, the emitter's
+serialization boundary must pseudonymize the values before any sink receives them. Prompts,
+responses, tool inputs or results, workflow JSON, Yjs bytes, node and widget content, filenames,
+URLs, emails, credentials, raw errors, and arbitrary context are forbidden in every correlation
+field, including operation identifiers. Stable identifiers may be event attributes but never
+metric tags or event-name components.
 
 Alternatives rejected:
 
