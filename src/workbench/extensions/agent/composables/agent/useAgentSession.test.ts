@@ -188,7 +188,8 @@ type AgentAdmissionReason = AgentAdmissionError['error']['reason']
 
 function admissionError(
   reason: AgentAdmissionReason,
-  message: string
+  message: string,
+  retryAfterSeconds?: number
 ): AgentApiError {
   const serviceUnavailable = reason === 'funds_unavailable'
   const body = zAgentAdmissionError.parse({
@@ -198,7 +199,12 @@ function admissionError(
       reason
     }
   })
-  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+  return new AgentApiError(
+    message,
+    serviceUnavailable ? 503 : 402,
+    body,
+    retryAfterSeconds
+  )
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -637,6 +643,56 @@ describe('useAgentSession (v1 composition root)', () => {
       role: 'assistant',
       parts: [{ type: 'notice', level: 'error', text: message }]
     })
+  })
+
+  it('carries retryAfterSeconds through on a funds_unavailable denial so the UI can honour Retry-After', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message, 30))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        { type: 'notice', level: 'error', text: message, retryAfterSeconds: 30 }
+      ]
+    })
+  })
+
+  it('never attaches retryAfterSeconds to a manual_block denial, even if the transport carried one', async () => {
+    const message =
+      'This workspace is blocked. Contact support to restore access.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      // A 402 has no standard Retry-After semantics; assert the reason gate,
+      // not merely the header's absence, in case a proxy ever forwards one.
+      .mockRejectedValue(admissionError('manual_block', message, 30))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    const notice = session.entries.value.at(-1)
+    expect(notice).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+    expect(
+      (notice as { parts: Array<{ retryAfterSeconds?: number }> }).parts[0]
+        .retryAfterSeconds
+    ).toBeUndefined()
   })
 
   it('does not infer no_funds from a 402 without an admission reason', async () => {
