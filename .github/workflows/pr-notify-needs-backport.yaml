@@ -118,14 +118,17 @@ jobs:
             # under it, one unreachable recipient would abort the loop and
             # the rest would go unnotified with no annotation at all.
             #
-            # --retry covers Slack's own transient answers (429, 500, 502,
-            # 503, 504) and honours Retry-After; --retry-connrefused and
-            # --retry-all-errors extend that to a refused or dropped
-            # connection. Whatever survives all of it is not a blip.
+            # One attempt, deliberately. `chat.postMessage` carries no
+            # idempotency key, so curl's --retry would repost a DM whose
+            # response merely timed out, and curl's own documentation warns
+            # against parsing a response captured this way while retrying,
+            # because the capture accumulates every attempt's body. What a
+            # retry would buy is small — Slack's transient answers are
+            # already reported below as an undelivered DM rather than as
+            # somebody's mistake — and a duplicate DM recorded as dropped is
+            # worse than a dropped one recorded as dropped.
             if ! RESPONSE=$(curl -sS -X POST \
               --connect-timeout 10 --max-time 30 \
-              --retry 4 --retry-delay 2 --retry-max-time 90 \
-              --retry-connrefused --retry-all-errors \
               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
               -H 'Content-Type: application/json' \
               -d "$BODY" \
@@ -136,15 +139,6 @@ jobs:
               UNDELIVERED=1
               continue
             fi
-
-            # Every retried attempt appends its own body, so four rate-limit
-            # answers arrive concatenated and `.error` reads as four lines,
-            # matching none of the names below. Keep the last attempt only.
-            # A body that is not JSON at all — an error page from something
-            # in front of Slack — collapses to empty and reads as "no usable
-            # response" below.
-            RESPONSE=$(jq -sc '.[-1] // empty' <<<"$RESPONSE" 2>/dev/null) \
-              || RESPONSE=''
 
             # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
             # scope and recipient errors, so the status code alone would
@@ -207,3 +201,14 @@ jobs:
           if [ "$UNDELIVERED" = 1 ]; then
             echo "::warning::A DM was dropped; see the summary for which."
           fi
+
+      # Separate from the build step on purpose. Failing there would skip the
+      # send step, which is guarded on `success()`, so one mistyped entry in
+      # the watcher list would silence the DM to everyone else on it. The
+      # usable watchers are notified first; then the run goes red.
+      - name: Fail on an unusable watcher list
+        if: "!cancelled() && steps.build.outputs.watchers_invalid == '1'"
+        run: |
+          echo "::error::SLACK_NEEDS_BACKPORT_WATCHERS holds an entry that is" \
+            "not a Slack member ID. The Build step names it."
+          exit 1

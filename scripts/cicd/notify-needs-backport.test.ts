@@ -631,12 +631,12 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(sendScript()).toContain('.ok == true')
   })
 
-  it('retries Slack rather than giving up on its first refusal', () => {
-    const code = sendScript()
-
-    expect(code).toMatch(/--retry\s+\d+/)
-    expect(code).toContain('--retry-connrefused')
-    expect(code).toContain('--retry-all-errors')
+  // `chat.postMessage` has no idempotency key, so a retried POST whose
+  // response timed out posts the DM twice. curl also warns that a response
+  // captured this way accumulates one body per attempt, which is how a
+  // rejection once read as an unparseable answer.
+  it('asks Slack once', () => {
+    expect(sendScript()).not.toContain('--retry')
   })
 
   // A green run is the only thing anybody looks at, so the step that sends
@@ -645,6 +645,21 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(
       steps.find((step) => step.name === 'Send the direct messages')
     ).not.toHaveProperty('continue-on-error', true)
+  })
+
+  // A bad watcher entry has to fail the run without gating the send: the
+  // send step is guarded on `success()`, so failing the build step over one
+  // typo would silence the DM to every other watcher on the list.
+  it('fails an unusable watcher list outside the send path', () => {
+    const send = steps.find((step) => step.name === 'Send the direct messages')
+    const fail = steps.find(
+      (step) => step.name === 'Fail on an unusable watcher list'
+    )
+
+    expect(send?.if).not.toContain('watchers_invalid')
+    expect(fail?.if).toContain("steps.build.outputs.watchers_invalid == '1'")
+    expect(fail?.if).toContain('cancelled()')
+    expect(fail?.run).toContain('exit 1')
   })
 
   // A step with an `if` loses the implicit success() guard, so the send step
@@ -776,20 +791,6 @@ describe('the send step, run against a stubbed Slack', () => {
     expect(run.status).toBe(0)
   })
 
-  // curl appends one body per retried attempt, so reading the raw stream
-  // gives `.error` once per attempt — three lines that match no error name
-  // and fall through to the rejection arm, failing the run over a rate
-  // limit. Only the last answer decides.
-  it('judges a retried call by its last answer', () => {
-    const run = runSendStep({
-      U0BA79D8R1T: { body: slackError('ratelimited').repeat(3) }
-    })
-
-    expect(run.stdout).toContain('ratelimited')
-    expect(run.stdout).not.toContain('::error::')
-    expect(run.status).toBe(0)
-  })
-
   // One failure, one explanation: falling through to the response check as
   // well would report the same dropped DM twice, the second time as an
   // unreadable answer that was never received.
@@ -824,6 +825,111 @@ describe('the send step, run against a stubbed Slack', () => {
     })
 
     expect(run.status).toBe(0)
+  })
+})
+
+/**
+ * Runs the script the way the workflow runs it. The unit tests above cover
+ * what it decides; this covers what the workflow can see of that decision —
+ * the exit code and the step outputs — which is where the two have come
+ * apart before.
+ */
+function runBuildStep(watchers: string): {
+  status: number
+  outputs: Record<string, string>
+  recipients: string[]
+} {
+  const dir = mkdtempSync(join(tmpdir(), 'notify-needs-backport-build-'))
+
+  try {
+    const pr = join(dir, 'pr.json')
+    const out = join(dir, 'dms.json')
+    const githubOutput = join(dir, 'github-output')
+    writeFileSync(
+      pr,
+      JSON.stringify({
+        number: 15102,
+        state: 'closed',
+        merged: true,
+        title: 'fix: restore the widget dropdown',
+        html_url: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/15102',
+        user: { login: 'jaeone94' },
+        base: { ref: 'main' },
+        labels: [{ name: 'needs-backport' }, { name: 'core/1.47' }]
+      })
+    )
+    writeFileSync(githubOutput, '')
+
+    const run = spawnSync(
+      join('node_modules', '.bin', 'tsx'),
+      ['scripts/cicd/notify-needs-backport.ts', '--pr', pr, '--out', out],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          LABELED_BY: 'huang47',
+          SLACK_NEEDS_BACKPORT_WATCHERS: watchers,
+          GITHUB_OUTPUT: githubOutput
+        }
+      }
+    )
+
+    const outputs = Object.fromEntries(
+      readFileSync(githubOutput, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          const at = line.indexOf('=')
+          return [line.slice(0, at), line.slice(at + 1)]
+        })
+    ) as Record<string, string>
+
+    return {
+      status: run.status ?? -1,
+      outputs,
+      recipients: (
+        JSON.parse(readFileSync(out, 'utf8')) as { channel: string }[]
+      ).map((message) => message.channel)
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+describe('the build step, run as the workflow runs it', () => {
+  it('writes the messages and passes for a good watcher list', () => {
+    const run = runBuildStep('U0BA79D8R1T U024BE7LH')
+
+    expect(run.status).toBe(0)
+    expect(run.recipients).toEqual(['U0BA79D8R1T', 'U024BE7LH'])
+    expect(run.outputs).toMatchObject({ count: '2', watchers_invalid: '0' })
+  })
+
+  // The send step is guarded on `success()`. Exiting non-zero here to report
+  // the typo would skip it, so the one bad entry would silence the DM to
+  // everybody else on the list — the failure this reports, caused by
+  // reporting it.
+  it('still notifies the usable watchers when one entry is a typo', () => {
+    const run = runBuildStep('U0BA79D8R1T @newperson')
+
+    expect(run.status).toBe(0)
+    expect(run.recipients).toEqual(['U0BA79D8R1T'])
+    expect(run.outputs).toMatchObject({ count: '1', watchers_invalid: '1' })
+  })
+
+  it('asks for the run to fail when no watcher is usable', () => {
+    const run = runBuildStep('@newperson')
+
+    expect(run.status).toBe(0)
+    expect(run.recipients).toEqual([])
+    expect(run.outputs).toMatchObject({ count: '0', watchers_invalid: '1' })
+  })
+
+  it('passes quietly when the notification is turned off', () => {
+    const run = runBuildStep('none')
+
+    expect(run.status).toBe(0)
+    expect(run.outputs).toMatchObject({ count: '0', watchers_invalid: '0' })
   })
 })
 

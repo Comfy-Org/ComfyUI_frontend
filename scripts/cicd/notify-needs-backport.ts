@@ -349,8 +349,9 @@ export interface WatcherResolution {
  * notification itself.
  *
  * A single bad entry among good ones fails too, matching what happens when
- * Slack rejects one recipient of several. One watcher silently never hearing
- * anything is the case worth being loud about.
+ * Slack rejects one recipient of several: the others are still notified, and
+ * the run still goes red. One watcher silently never hearing anything is the
+ * case worth being loud about, but not at the price of the rest of the list.
  */
 export function resolveWatchers(raw: string | undefined): WatcherResolution {
   const { valid, invalid, disabled } = parseSlackRecipients(raw)
@@ -422,8 +423,11 @@ function main() {
     `${recipients.length} recipient(s):\n${buildNeedsBackportText(event)}\n`
   )
 
-  // After the outputs above, so a failing run still shows what it built.
-  if (failed) process.exitCode = 1
+  // Reported, not thrown. Exiting non-zero here would fail this step, and the
+  // send step is guarded on `success()` — so a watcher list with one typo in
+  // it would silence the DM to everyone else on the list, which is the
+  // opposite of the point. A later step reads this and fails the run instead.
+  setOutput('watchers_invalid', failed ? '1' : '0')
 }
 
 if (

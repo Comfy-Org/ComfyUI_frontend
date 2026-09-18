@@ -79,11 +79,12 @@ The recipients are the repository **variable**
 `SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
 (`U…`, or `W…` on Enterprise Grid — "Copy member ID" in Slack gives you one),
 which is how you subscribe without a PR. An entry that is not a member ID, and
-a DM that Slack rejects, both fail the run rather than passing quietly — a
+a DM that Slack rejects, both fail the run rather than passing quietly — so a
 mistyped or stale ID gets noticed and corrected instead of silently dropping
-that person's notification. Slack merely being unreachable does not fail the
-run, since nobody reading the PR can act on it; that DM is dropped, and the
-run summary records which.
+that person's notification. Everyone else on the list is still notified in the
+same run. Slack merely being unreachable does not fail the run, since nobody
+reading the PR can act on it; that DM is dropped, and the run summary records
+which.
 
 Clearing the variable restores the default watcher — currently `U0BA79D8R1T`
 (@huang47), as set in the workflow — rather than silencing the DM. To stop the
