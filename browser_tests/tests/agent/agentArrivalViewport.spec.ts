@@ -1,8 +1,6 @@
 import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { AgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 
 /**
  * Where an agent build ends up relative to what the user is looking at.
@@ -27,82 +25,23 @@ const BATCHED_CASE = 'agent-rec-batched-ops'
 // Long enough for the framing animation and the resulting layout to settle.
 const SETTLE = 10_000
 
-function isIdLike(value: unknown): value is string | number {
-  return typeof value === 'string' || typeof value === 'number'
-}
-
-/** Node ids the recording's ops add, in the order the agent builds them. */
-function addedNodeIds(conversation: AgentConversation): string[] {
-  return conversation.turns
-    .flatMap((turn) => turn.response)
-    .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
-    .filter((op) => op.op === 'add_node')
-    .map((op) => op.node_id)
-    .filter(isIdLike)
-    .map(String)
-}
-
-/**
- * Ids among `ids` whose node is not wholly inside the canvas the panel leaves
- * visible. A node with no box is reported too: `boundingBox()` is null for an
- * element that is not rendered, which must not read as "on screen".
- */
-async function nodesOutsideVisibleCanvas(
-  page: Page,
-  panel: Locator,
-  ids: readonly string[]
-): Promise<string[]> {
-  const viewport = page.viewportSize()
-  if (!viewport) throw new Error('this assertion needs a sized page')
-  const panelBox = await panel.boundingBox()
-  const visible = {
-    right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
-    bottom: viewport.height
-  }
-
-  const seen = await Promise.all(
-    ids.map(async (id) => {
-      const box = await page.locator(`[data-node-id="${id}"]`).boundingBox()
-      return { id, inside: box !== null && contains(visible, box) }
-    })
-  )
-  return seen
-    .filter((node) => !node.inside)
-    .map((node) => node.id)
-    .sort()
-}
-
-function contains(
-  visible: { right: number; bottom: number },
-  box: { x: number; y: number; width: number; height: number }
-): boolean {
-  return (
-    box.x >= 0 &&
-    box.y >= 0 &&
-    box.x + box.width <= visible.right &&
-    box.y + box.height <= visible.bottom
-  )
-}
-
 test.describe('Agent build arrival', { tag: '@cloud' }, () => {
   test.describe('build placed past the edge of the view', () => {
     test.use({ conversationCase: SEQUENTIAL_CASE })
 
     test('leaves every node it added on screen', async ({
-      agentConversation,
-      page
+      agentConversation
     }) => {
       test.setTimeout(90_000)
-      const added = addedNodeIds(agentConversation.conversation)
+      const added = agentConversation.addedNodeIds()
       expect(added.length).toBeGreaterThan(0)
 
       await agentConversation.runTurns()
 
       await expect
-        .poll(
-          () => nodesOutsideVisibleCanvas(page, agentConversation.panel, added),
-          { timeout: SETTLE }
-        )
+        .poll(() => agentConversation.nodesOutsideVisibleCanvas(added), {
+          timeout: SETTLE
+        })
         .toEqual([])
     })
   })
@@ -117,7 +56,7 @@ test.describe('Agent build arrival', { tag: '@cloud' }, () => {
       page
     }) => {
       test.setTimeout(90_000)
-      const added = addedNodeIds(agentConversation.conversation)
+      const added = agentConversation.addedNodeIds()
       expect(added.length).toBeGreaterThan(0)
 
       const before = await page.evaluate(() => {
@@ -128,10 +67,9 @@ test.describe('Agent build arrival', { tag: '@cloud' }, () => {
       await agentConversation.runTurns()
 
       await expect
-        .poll(
-          () => nodesOutsideVisibleCanvas(page, agentConversation.panel, added),
-          { timeout: SETTLE }
-        )
+        .poll(() => agentConversation.nodesOutsideVisibleCanvas(added), {
+          timeout: SETTLE
+        })
         .toEqual([])
       expect(
         await page.evaluate(() => {
