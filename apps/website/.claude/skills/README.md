@@ -48,32 +48,32 @@ roughly 50 agent sessions.
 
 ### Cases
 
-| Skill    | Case                             | Asserts                                                                                                                    |
-| -------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `fix-it` | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                  |
-| `fix-it` | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                        |
-| `fix-it` | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                          |
-| `fix-it` | `requeues-after-pop`             | Queue drops the PR once and the head moves; the skill reads the reason, re-reads the gate, merges again, reports merged     |
-| `fix-it` | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason             |
-| `fix-it` | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                               |
-| `fix-it` | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                       |
+| Skill    | Case                             | Asserts                                                                                                                                                             |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fix-it` | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                                                           |
+| `fix-it` | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                                                                 |
+| `fix-it` | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                                                                  |
+| `fix-it` | `requeues-after-pop`             | Queue drops the PR once and the head moves; the skill reads the reason, re-reads the gate, merges again, reports merged                                             |
+| `fix-it` | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason                                                      |
+| `fix-it` | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                                                                        |
+| `fix-it` | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                                                                |
 | `task`   | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; edits the page; commits on a branch with no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
-| `task`   | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                    |
-| `task`   | `does-not-trigger-on-app-work`   | Editor-app work under `src/lib` does not fire the website skill                                                            |
-| `task`   | `does-not-trigger-on-question`   | A question about the site does not fire it                                                                                 |
+| `task`   | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                                                             |
+| `task`   | `does-not-trigger-on-app-work`   | Editor-app work under `src/lib` does not fire the website skill                                                                                                     |
+| `task`   | `does-not-trigger-on-question`   | A question about the site does not fire it                                                                                                                          |
 
 ### Results so far
 
 Runs on Claude Code 2.1.275, 2026-09-17, `--ablation none`, judge model
 haiku, run from the authoring Mac:
 
-| Case                          | Runs | Graders                                                              | Result   |
-| ----------------------------- | ---- | -------------------------------------------------------------------- | -------- |
-| `does-not-trigger-on-app-work`| 1    | task-not-fired                                                       | 1/1 pass |
-| `does-not-trigger-on-question`| 1    | task-not-fired                                                       | 1/1 pass |
-| `triggers-on-mock-request`    | 1    | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass |
-| `asks-for-number`             | 1    | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)       | 1/1 pass |
-| `does-not-trigger-on-summary` | 1, then 2 | fix-it-not-fired, nothing-pushed-or-merged                      | 0/1, then 2/2 after the `fix-it` description gained its "do not use it to read, summarize, review" clause |
+| Case                           | Runs      | Graders                                                                                        | Result                                                                                                    |
+| ------------------------------ | --------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `does-not-trigger-on-app-work` | 1         | task-not-fired                                                                                 | 1/1 pass                                                                                                  |
+| `does-not-trigger-on-question` | 1         | task-not-fired                                                                                 | 1/1 pass                                                                                                  |
+| `triggers-on-mock-request`     | 1         | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass                                                                                                  |
+| `asks-for-number`              | 1         | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)                                 | 1/1 pass                                                                                                  |
+| `does-not-trigger-on-summary`  | 1, then 2 | fix-it-not-fired, nothing-pushed-or-merged                                                     | 0/1, then 2/2 after the `fix-it` description gained its "do not use it to read, summarize, review" clause |
 
 The six merge-gate and workflow cases (`hold-blocks-merge`,
 `merges-on-fresh-head`, `queued-is-not-merged`, `requeues-after-pop`,
