@@ -53,7 +53,7 @@ export function registerAgentPanelExtension(): void {
         nodeSelectionStore.restoreNodeIds(
           nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
         )
-        canvas?.selectItems(nodes)
+        canvas.selectItems(nodes)
         useCanvasStore().updateSelectedItems()
       } catch (error) {
         nodeSelectionStore.finishWorkflowLoad()

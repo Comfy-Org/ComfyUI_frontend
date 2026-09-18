@@ -20,6 +20,8 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -28,6 +30,7 @@ beforeEach(() => {
   vi.mocked(setPersistence).mockResolvedValue(undefined)
   vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
   vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubAccountIdentityPort()
 })
 
 async function flushPromises() {
