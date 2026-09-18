@@ -80,7 +80,9 @@ export async function launchCancellationFlow({
     if (results.type === 'discount-applied') {
       if (isLaunchWorkspaceCurrent()) {
         await billing.fetchStatus().catch((error) => {
-          reportError(error, { errorType: 'churnkey_discount_billing_refresh' })
+          reportError(error, {
+            errorType: 'error_refreshing_billing_after_churnkey_discount'
+          })
         })
       }
       return

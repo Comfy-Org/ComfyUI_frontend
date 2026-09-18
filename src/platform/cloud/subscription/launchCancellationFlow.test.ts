@@ -115,7 +115,7 @@ describe('launchCancellationFlow', () => {
 
     expect(showFallback).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(error, {
-      errorType: 'churnkey_discount_billing_refresh'
+      errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
   })
 
