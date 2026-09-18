@@ -59,12 +59,7 @@ vi.mock(
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })
