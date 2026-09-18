@@ -30,12 +30,14 @@ interface StringLiteral extends Node {
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
   readonly specifiers: readonly Node[]
+  readonly importKind?: 'type' | 'value'
 }
 
 interface ImportSpecifier extends Node {
   readonly type: 'ImportSpecifier'
   readonly imported: Identifier
   readonly local: Identifier
+  readonly importKind?: 'type' | 'value'
 }
 
 interface ExportDeclaration extends Node {
@@ -80,8 +82,47 @@ interface RuleContext {
   }): void
 }
 
+function isNode(value: unknown): value is Node {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof value.type === 'string'
+  )
+}
+
+function isIdentifier(node: Node): node is Identifier {
+  return (
+    node.type === 'Identifier' &&
+    'name' in node &&
+    typeof node.name === 'string'
+  )
+}
+
+function isImportSpecifier(node: Node): node is ImportSpecifier {
+  return (
+    node.type === 'ImportSpecifier' &&
+    'imported' in node &&
+    'local' in node &&
+    isNode(node.imported) &&
+    isNode(node.local) &&
+    isIdentifier(node.imported) &&
+    isIdentifier(node.local)
+  )
+}
+
+function isTypeAssertion(node: Node): node is TypeAssertion {
+  return (
+    node.type === 'TSAsExpression' &&
+    'expression' in node &&
+    'typeAnnotation' in node &&
+    isNode(node.expression) &&
+    isNode(node.typeAnnotation)
+  )
+}
+
 function identifierName(node: Node): string | undefined {
-  return node.type === 'Identifier' ? (node as Identifier).name : undefined
+  return isIdentifier(node) ? node.name : undefined
 }
 
 function importedLocalName(
@@ -90,10 +131,13 @@ function importedLocalName(
 ): string | undefined {
   const specifier = node.specifiers.find(
     (specifier) =>
-      specifier.type === 'ImportSpecifier' &&
-      (specifier as ImportSpecifier).imported.name === importedName
+      isImportSpecifier(specifier) &&
+      specifier.importKind !== 'type' &&
+      specifier.imported.name === importedName
   )
-  return specifier ? (specifier as ImportSpecifier).local.name : undefined
+  return specifier && isImportSpecifier(specifier)
+    ? specifier.local.name
+    : undefined
 }
 
 function restrictImports(
@@ -173,12 +217,16 @@ export const noUnknownDoubleAssertion = {
   meta: { fixable: 'code' },
   create(context: RuleContext) {
     let fromAny: string | undefined
+    let insertedHelper = 'fromAny'
     let program: Node
     const withoutHelper: TypeAssertion[] = []
 
-    const replacement = (node: TypeAssertion) => {
-      const inner = node.expression as TypeAssertion
-      return `fromAny<${context.sourceCode.getText(node.typeAnnotation)}, unknown>(${context.sourceCode.getText(inner.expression)})`
+    const replacement = (
+      node: TypeAssertion,
+      inner: TypeAssertion,
+      helper: string
+    ) => {
+      return `${helper}<${context.sourceCode.getText(node.typeAnnotation)}, unknown>(${context.sourceCode.getText(inner.expression)})`
     }
 
     return {
@@ -201,32 +249,43 @@ export const noUnknownDoubleAssertion = {
           fix: (fixer: RuleFixer) => [
             fixer.insertTextBefore(
               program,
-              "import { fromAny } from '@total-typescript/shoehorn'\n"
+              `import { fromAny${insertedHelper === 'fromAny' ? '' : ` as ${insertedHelper}`} } from '@total-typescript/shoehorn'\n`
             )
           ]
         })
       },
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== '@total-typescript/shoehorn') return
+        if (
+          node.specifiers.some(
+            (specifier) =>
+              isImportSpecifier(specifier) && specifier.local.name === 'fromAny'
+          )
+        ) {
+          insertedHelper = 'fromAnyRuntime'
+        }
+        if (node.importKind === 'type') return
         fromAny ??= importedLocalName(node, 'fromAny')
       },
       TSAsExpression(node: TypeAssertion) {
-        if (node.expression.type !== 'TSAsExpression') return
-        const inner = node.expression as TypeAssertion
+        if (!isTypeAssertion(node.expression)) return
+        const inner = node.expression
         if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
 
         if (!fromAny) {
-          withoutHelper.push(node)
           if (
-            !/(?:\.test\.|\.spec\.)/.test(context.filename) ||
+            /(?:\.test\.|\.spec\.)/.test(context.filename) &&
             !context.filename.includes('/browser_tests/')
           ) {
+            withoutHelper.push(node)
             return
           }
         }
 
-        const fix = fromAny
-          ? (fixer: RuleFixer) => fixer.replaceText(node, replacement(node))
+        const helper = fromAny
+        const fix = helper
+          ? (fixer: RuleFixer) =>
+              fixer.replaceText(node, replacement(node, inner, helper))
           : undefined
 
         context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })

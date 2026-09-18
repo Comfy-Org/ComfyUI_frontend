@@ -68,6 +68,32 @@ void single
 `
   },
   {
+    file: path.join(probeDirs.source, 'aliasedDoubleAssertion.test.ts'),
+    source: `import { fromAny as coerce } from '@total-typescript/shoehorn'
+const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'typeOnlyDoubleAssertion.test.ts'),
+    source: `import type { fromAny } from '@total-typescript/shoehorn'
+const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'missingHelper.test.ts'),
+    source: `const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'doubleAssertion.ts'),
+    source: `const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.ts'),
     source: `const measured = computed(() => element.getBoundingClientRect())
 const styled = computed(() => window.getComputedStyle(element))
@@ -150,7 +176,10 @@ void z
   },
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
-    source: "test('allowed', () => {})\n"
+    source: `const fixture = value as unknown as Fixture
+void fixture
+test('allowed', () => {})
+`
   }
 ]
 
@@ -244,7 +273,7 @@ describe('restricted syntax rules', () => {
 
   it('rejects unknown double assertions and fixes test fixtures', () => {
     const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
-    expect(doubleAssertionFindings).toHaveLength(2)
+    expect(doubleAssertionFindings).toHaveLength(7)
     expect(
       doubleAssertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
@@ -269,6 +298,72 @@ describe('restricted syntax rules', () => {
     expect(readFileSync(fixture, 'utf8')).toContain(
       'const unresolved = fromAny<Fixture, unknown>(value)'
     )
+
+    const aliasedFixture = path.join(
+      probeDirs.source,
+      'aliasedDoubleAssertion.test.ts'
+    )
+    const aliasedResult = spawnSync(
+      process.execPath,
+      [
+        path.resolve('node_modules/oxlint/bin/oxlint'),
+        '--fix',
+        '--config',
+        path.resolve('.oxlintrc.json'),
+        aliasedFixture
+      ],
+      { encoding: 'utf8', windowsHide: true }
+    )
+    expect(aliasedResult.error).toBeUndefined()
+    expect(aliasedResult.status).toBe(0)
+    expect(readFileSync(aliasedFixture, 'utf8')).toContain(
+      'const fixture = coerce<Fixture, unknown>(value)'
+    )
+
+    const missingHelper = path.join(probeDirs.source, 'missingHelper.test.ts')
+    const typeOnlyHelper = path.join(
+      probeDirs.source,
+      'typeOnlyDoubleAssertion.test.ts'
+    )
+    for (const file of [missingHelper, typeOnlyHelper]) {
+      for (let pass = 0; pass < 2; pass++) {
+        const helperResult = spawnSync(
+          process.execPath,
+          [
+            path.resolve('node_modules/oxlint/bin/oxlint'),
+            '--fix',
+            '--config',
+            path.resolve('.oxlintrc.json'),
+            file
+          ],
+          { encoding: 'utf8', windowsHide: true }
+        )
+        expect(helperResult.error).toBeUndefined()
+        expect(helperResult.status).toBe(0)
+      }
+    }
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      "import { fromAny } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      'const fixture = fromAny<Fixture, unknown>(value)'
+    )
+    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
+      "import { fromAny as fromAnyRuntime } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
+      'const fixture = fromAnyRuntime<Fixture, unknown>(value)'
+    )
+    expect(
+      doubleAssertionFindings.some(({ filename }) =>
+        filename.endsWith('doubleAssertion.ts')
+      )
+    ).toBe(true)
+    expect(
+      doubleAssertionFindings.some(({ filename }) =>
+        filename.endsWith('allowed.spec.ts')
+      )
+    ).toBe(true)
   })
 
   it('reports only static DOM access nested inside computed calls', () => {
