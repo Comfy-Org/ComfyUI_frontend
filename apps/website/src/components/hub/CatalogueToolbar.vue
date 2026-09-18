@@ -4,14 +4,14 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { EntryKind } from '../../lib/hub/catalogue-entries'
+import type { TypeFilter } from '../../lib/hub/browse-entry'
 
 const {
   narrowedBy,
   outcomeLabel,
   locale = 'en'
 } = defineProps<{
-  narrowedBy: EntryKind | undefined
+  narrowedBy: TypeFilter | undefined
   /** The curated row a reader asked to see in full, while it is narrowing. */
   outcomeLabel: string | undefined
   locale?: Locale

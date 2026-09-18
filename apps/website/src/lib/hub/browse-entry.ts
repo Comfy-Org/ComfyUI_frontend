@@ -3,7 +3,14 @@ import { USE_CASES } from '../../config/models-catalogue'
 import type { CardView } from './catalogue-card'
 import type { EntryKind } from './catalogue-entries'
 
-export type TypeFilter = 'all' | EntryKind
+/**
+ * The two halves of the catalogue. They are not the same kind of thing: a
+ * model is a capability and a workflow is a job, so they carry different
+ * measures, different orders and different rows, and a list holding both
+ * compares what does not compare. An app is a workflow somebody wrapped in a
+ * form, so it answers to that tab rather than asking for one of its own.
+ */
+export type TypeFilter = 'model' | 'workflow'
 
 /**
  * One card, projected for the browser. The catalogue itself never crosses the
@@ -69,7 +76,7 @@ export interface BrowseRequest {
   readonly query: string
 }
 
-const KINDS: readonly EntryKind[] = ['model', 'workflow', 'app']
+const TABS: readonly TypeFilter[] = ['model', 'workflow']
 
 export function browseRequestFrom(search: string): BrowseRequest {
   const params = new URLSearchParams(search)
@@ -78,8 +85,10 @@ export function browseRequestFrom(search: string): BrowseRequest {
   const useCase = USE_CASES.find((value) => value === params.get('useCase'))
   return {
     // "N workflows use this" lands on that model's uses, so the link implies
-    // the type even when it does not name one.
-    type: model ? 'workflow' : (KINDS.find((kind) => kind === asked) ?? 'all'),
+    // the tab even when it does not name one.
+    type: model
+      ? 'workflow'
+      : (TABS.find((tab) => tab === asked) ?? 'workflow'),
     useCase: useCase ?? 'all',
     usesModel: model,
     query: params.get('q') ?? ''

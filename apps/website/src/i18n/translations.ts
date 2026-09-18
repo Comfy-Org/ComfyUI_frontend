@@ -10374,44 +10374,36 @@ Enterprise`
       'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
   },
   'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
-  'workshop.outcome.upscaleRestore': {
-    en: 'Upscale and restore',
-    'zh-CN': '放大与修复'
-  },
-  'workshop.outcome.cleanUp': {
-    en: 'Remove and clean up',
-    'zh-CN': '移除与修补'
-  },
-  'workshop.outcome.relightRestyle': {
-    en: 'Relight and restyle',
-    'zh-CN': '重新打光与换风格'
-  },
-  'workshop.outcome.productShots': {
-    en: 'Product shots and ads',
-    'zh-CN': '产品图与广告'
-  },
   'workshop.outcome.animateCharacters': {
     en: 'Animate characters',
     'zh-CN': '让角色动起来'
   },
-  'workshop.outcome.makeThemTalk': {
-    en: 'Make them talk',
-    'zh-CN': '让角色开口说话'
+  'workshop.outcome.productShots': {
+    en: 'Create product photos & ads',
+    'zh-CN': '制作产品图与广告'
+  },
+  'workshop.outcome.upscaleRestore': {
+    en: 'Upscale & restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.outcome.cleanUp': {
+    en: 'Edit & clean up photos',
+    'zh-CN': '修图与清理'
+  },
+  'workshop.outcome.relightRestyle': {
+    en: 'Relight & restyle',
+    'zh-CN': '重新打光与换风格'
   },
   'workshop.outcome.firstLastFrame': {
-    en: 'First and last frame',
+    en: 'First & last frame',
     'zh-CN': '首尾帧'
   },
-  'workshop.outcome.upscaleVideo': {
-    en: 'Upscale and smooth video',
-    'zh-CN': '视频放大与补帧'
-  },
   'workshop.outcome.recutVideo': {
-    en: 'Recut and extend video',
+    en: 'Recut & extend video',
     'zh-CN': '视频剪辑与延长'
   },
   'workshop.outcome.fromAReference': {
-    en: 'From a reference',
+    en: 'Generate from a reference',
     'zh-CN': '基于参考生成'
   },
   'workshop.outcome.guidedGeneration': {
@@ -10419,16 +10411,16 @@ Enterprise`
     'zh-CN': '可控生成'
   },
   'workshop.outcome.logosAndVectors': {
-    en: 'Logos and vectors',
+    en: 'Logos & vectors',
     'zh-CN': '标志与矢量图'
   },
   'workshop.outcome.modelFromAPhoto': {
-    en: 'A model from a photo',
-    'zh-CN': '照片生成模型'
+    en: 'Make a 3D model from a photo',
+    'zh-CN': '照片生成 3D 模型'
   },
-  'workshop.outcome.voices': { en: 'Voices', 'zh-CN': '人声' },
+  'workshop.outcome.voices': { en: 'Voices & speech', 'zh-CN': '人声与配音' },
   'workshop.outcome.musicAndSound': {
-    en: 'Music and sound',
+    en: 'Music & sound',
     'zh-CN': '音乐与音效'
   },
   'workshop.outcome.seeAll': { en: 'See all {n}', 'zh-CN': '查看全部 {n} 个' },
@@ -10440,7 +10432,7 @@ Enterprise`
     en: 'Models, workflows and apps, by what you want to make.',
     'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
   },
-  'workshop.v2.kind.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.v2.kind.label': { en: 'Show', 'zh-CN': '显示' },
   'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
   'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
   'workshop.v2.kind.app': { en: 'App', 'zh-CN': '应用' },

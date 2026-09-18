@@ -24,13 +24,39 @@ test.describe('V2 catalogue', () => {
       .locator('[data-testid^="shelf-"][aria-labelledby]')
     expect(await shelves.count()).toBeGreaterThan(1)
     await expect(page.getByTestId('catalogue-grid')).toHaveCount(0)
+  })
 
-    // Capabilities read before the workflows built on them, inside the shelf.
-    const first = page
-      .getByTestId('shelf-generate-images')
-      .getByTestId('catalogue-card')
-      .first()
-    await expect(first).toHaveAttribute('data-kind', 'model')
+  // A model is a capability and a workflow is a job, so each tab is its own
+  // catalogue rather than a filter over one shared list.
+  test('gives each tab its own shelves', async ({ page }) => {
+    await page.goto(CATALOGUE)
+    await waitForIsland(page, page.getByTestId('catalogue-browse'))
+
+    const kinds = () =>
+      page
+        .getByTestId('shelf-generate-images')
+        .getByTestId('catalogue-card')
+        .evaluateAll((cards) => [
+          ...new Set(cards.map((card) => card.getAttribute('data-kind')))
+        ])
+
+    await expect.poll(kinds).not.toContain('model')
+
+    await page.getByTestId('catalogue-type-model').click()
+    await expect.poll(kinds).toEqual(['model'])
+  })
+
+  // Three of the eight use cases hold no model at all, and an empty shelf
+  // reads as a broken catalogue rather than as a tab that has none.
+  test('leaves out a use case the chosen tab has nothing in', async ({
+    page
+  }) => {
+    await page.goto(CATALOGUE)
+    await waitForIsland(page, page.getByTestId('catalogue-browse'))
+
+    await expect(page.getByTestId('shelf-3d')).toBeVisible()
+    await page.getByTestId('catalogue-type-model').click()
+    await expect(page.getByTestId('shelf-3d')).toHaveCount(0)
   })
 
   test('a shelf opens into the list for that use case', async ({ page }) => {
@@ -61,17 +87,14 @@ test.describe('V2 catalogue', () => {
     await expect.poll(width).toBeGreaterThan(closed)
   })
 
-  test('the type facet narrows to one kind and says how many', async ({
-    page
-  }) => {
+  test('the tab decides which kind the list holds', async ({ page }) => {
     await page.goto(CATALOGUE)
     await openShelf(page, 'generate-images')
 
-    const facet = page.getByTestId('catalogue-type-facet')
-    const workflows = facet.getByRole('button', { name: /^Workflows/ })
-    await expect(workflows).toHaveAttribute('aria-pressed', 'false')
-    await workflows.click()
-    await expect(workflows).toHaveAttribute('aria-pressed', 'true')
+    const models = page.getByTestId('catalogue-type-model')
+    await expect(models).toHaveAttribute('aria-pressed', 'false')
+    await models.click()
+    await expect(models).toHaveAttribute('aria-pressed', 'true')
 
     const kinds = await grid(page)
       .getByTestId('catalogue-card')
@@ -79,7 +102,7 @@ test.describe('V2 catalogue', () => {
         cards.map((card) => card.getAttribute('data-kind'))
       )
     expect(kinds.length).toBeGreaterThan(0)
-    expect([...new Set(kinds)]).toEqual(['workflow'])
+    expect([...new Set(kinds)]).toEqual(['model'])
   })
 
   test('a search with no answer says so instead of showing nothing', async ({
@@ -97,12 +120,10 @@ test.describe('V2 catalogue', () => {
     page
   }) => {
     await page.goto(CATALOGUE)
+    await page.getByTestId('catalogue-type-model').click()
     await openShelf(page, 'generate-images')
 
-    const card = grid(page)
-      .getByTestId('catalogue-card')
-      .filter({ has: page.locator('[data-kind="model"]') })
-      .first()
+    const card = grid(page).getByTestId('catalogue-card').first()
     const href = await card
       .getByTestId('catalogue-card-link')
       .getAttribute('href')

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { UseCase } from '../../config/models-catalogue'
 import type { WorkshopOutcome } from '../../config/workshop-outcomes'
-import { capabilitiesOf, outcomesIn } from '../../config/workshop-outcomes'
+import { WORKSHOP_OUTCOMES } from '../../config/workshop-outcomes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
@@ -16,12 +15,7 @@ import CatalogueCard from './CatalogueCard.vue'
 const ROW_LIMIT = 10
 const MIN_ENTRIES = 2
 
-const {
-  useCase,
-  entries,
-  locale = 'en'
-} = defineProps<{
-  useCase: UseCase
+const { entries, locale = 'en' } = defineProps<{
   entries: readonly BrowseEntry[]
   locale?: Locale
 }>()
@@ -29,30 +23,24 @@ const {
 const emit = defineEmits<{ open: [outcome: WorkshopOutcome] }>()
 
 /**
- * The medium is derived and always complete, so it filters. The job is curated
- * and names what someone came to do, so it heads a row. One list of tags scopes
- * both sides of that row: a workflow joins by the tags it carries and a model
- * by the capability those tags stand for, which is why a model that does
- * everything joins none of them.
+ * The job names what someone came to do, and the entries have already been
+ * narrowed to one medium, so a row turns up wherever its tags have members and
+ * stays out of the shelves where they have none. That is how one "Upscale and
+ * restore" heads the images and the videos without being written twice.
  */
 const rows = computed(() =>
-  outcomesIn(useCase)
-    .map((outcome) => {
-      const wanted = new Set<string>([
-        ...outcome.tags,
-        ...capabilitiesOf(outcome)
-      ])
-      const matches = sortBrowseEntries(
-        entries.filter((entry) => entry.tags.some((tag) => wanted.has(tag))),
-        'popular'
-      )
-      return {
-        outcome,
-        total: matches.length,
-        shown: matches.slice(0, ROW_LIMIT)
-      }
-    })
-    .filter((row) => row.total >= MIN_ENTRIES)
+  WORKSHOP_OUTCOMES.map((outcome) => {
+    const wanted = new Set<string>(outcome.tags)
+    const matches = sortBrowseEntries(
+      entries.filter((entry) => entry.tags.some((tag) => wanted.has(tag))),
+      'popular'
+    )
+    return {
+      outcome,
+      total: matches.length,
+      shown: matches.slice(0, ROW_LIMIT)
+    }
+  }).filter((row) => row.total >= MIN_ENTRIES)
 )
 
 const cardClass = 'peek-card shrink-0 snap-start'

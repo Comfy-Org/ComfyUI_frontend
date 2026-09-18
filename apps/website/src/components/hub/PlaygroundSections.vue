@@ -14,7 +14,6 @@ import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CatalogueCard from './CatalogueCard.vue'
 
 const ROW_LIMIT = 8
-const LEAD_MODELS = 4
 
 const { entries, locale = 'en' } = defineProps<{
   entries: readonly BrowseEntry[]
@@ -22,25 +21,6 @@ const { entries, locale = 'en' } = defineProps<{
 }>()
 
 const emit = defineEmits<{ open: [UseCase] }>()
-
-/**
- * A shelf is the whole answer to one intent, so it has to show both halves of
- * that answer. Ordering by standing alone would fill all eight slots with
- * models, because every use case has more models than the row holds, and the
- * workflows built on them would never appear. So the row leads with a few
- * capabilities and gives the rest to what people built, backfilling from
- * whichever side still has entries.
- */
-function shelfRow(matches: readonly BrowseEntry[]): readonly BrowseEntry[] {
-  const models = matches.filter((entry) => entry.kind === 'model')
-  const built = matches.filter((entry) => entry.kind !== 'model')
-  const lead = models.slice(0, LEAD_MODELS)
-  return [
-    ...lead,
-    ...built.slice(0, ROW_LIMIT - lead.length),
-    ...models.slice(lead.length)
-  ].slice(0, ROW_LIMIT)
-}
 
 const shelves = computed(() =>
   USE_CASES.map((useCase) => {
@@ -51,7 +31,7 @@ const shelves = computed(() =>
     return {
       useCase,
       total: matches.length,
-      shown: shelfRow(matches)
+      shown: matches.slice(0, ROW_LIMIT)
     }
   }).filter((shelf) => shelf.total > 0)
 )

@@ -4,30 +4,35 @@ import type { BrowseEntry, CatalogueOrder } from './browse-entry'
 import { browseRequestFrom, sortBrowseEntries } from './browse-entry'
 
 describe('browseRequestFrom', () => {
-  it('opens on everything when the link asks for nothing', () => {
+  // There is no tab holding both, so a link that names none opens on the one
+  // the catalogue is about: what people built.
+  it('opens on the workflows when the link asks for nothing', () => {
     expect(browseRequestFrom('')).toEqual({
-      type: 'all',
+      type: 'workflow',
       useCase: 'all',
       usesModel: '',
       query: ''
     })
   })
 
-  it('reads the type, the use case and the search off the link', () => {
-    expect(browseRequestFrom('?type=app&useCase=edit-images&q=poster')).toEqual(
-      {
-        type: 'app',
-        useCase: 'edit-images',
-        usesModel: '',
-        query: 'poster'
-      }
-    )
+  it('reads the tab, the use case and the search off the link', () => {
+    expect(
+      browseRequestFrom('?type=model&useCase=edit-images&q=poster')
+    ).toEqual({
+      type: 'model',
+      useCase: 'edit-images',
+      usesModel: '',
+      query: 'poster'
+    })
   })
 
-  it('ignores a type and a use case it does not have', () => {
-    const asked = browseRequestFrom('?type=sculpture&useCase=knitting')
-    expect(asked.type).toBe('all')
-    expect(asked.useCase).toBe('all')
+  // An app browses as a workflow, so it is not a tab a link can ask for.
+  it.for(['sculpture', 'app', 'all'])('reads %s as no tab at all', (asked) => {
+    expect(browseRequestFrom(`?type=${asked}`).type).toBe('workflow')
+  })
+
+  it('ignores a use case it does not have', () => {
+    expect(browseRequestFrom('?useCase=knitting').useCase).toBe('all')
   })
 
   // "42 workflows use this" is a link, and what it means is the workflows, not

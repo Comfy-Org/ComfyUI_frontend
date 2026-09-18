@@ -14,13 +14,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { CatalogueOrder } from '../../lib/hub/browse-entry'
-import type { EntryKind } from '../../lib/hub/catalogue-entries'
+import type { CatalogueOrder, TypeFilter } from '../../lib/hub/browse-entry'
 
 export interface OrderOption {
   readonly value: CatalogueOrder
   readonly label: TranslationKey
-  readonly only?: EntryKind
+  readonly only?: TypeFilter
 }
 
 const { orders, locale = 'en' } = defineProps<{

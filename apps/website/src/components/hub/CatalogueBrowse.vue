@@ -15,7 +15,6 @@ import {
   sortBrowseEntries
 } from '../../lib/hub/browse-entry'
 import type { WorkshopOutcome } from '../../config/workshop-outcomes'
-import { capabilitiesOf } from '../../config/workshop-outcomes'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import { entrySlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
@@ -39,7 +38,7 @@ const { entries, locale = 'en' } = defineProps<{
 const PAGE = 30
 
 const useCase = ref<UseCase | 'all'>('all')
-const type = ref<TypeFilter>('all')
+const type = ref<TypeFilter>('workflow')
 const order = ref<CatalogueOrder>('popular')
 const query = ref('')
 // Set by a model card's "N workflows use this": the catalogue arrives already
@@ -81,7 +80,7 @@ const matchesOutcome = (
   asked: WorkshopOutcome | undefined
 ) => {
   if (!asked) return true
-  const wanted = new Set<string>([...asked.tags, ...capabilitiesOf(asked)])
+  const wanted = new Set<string>(asked.tags)
   return entry.tags.some((tag) => wanted.has(tag))
 }
 
@@ -89,8 +88,8 @@ const usesTheModel = (entry: BrowseEntry, name: string) =>
   name === '' ||
   entry.models.some((model) => normalize(model) === normalize(name))
 
-// Everything but the type, so the curated rows read the whole use case rather
-// than one kind of it.
+// Everything but the tab, which is not a narrowing of the catalogue but a
+// choice of which catalogue you are in.
 const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
   const text = query.value.trim().toLowerCase()
   return [
@@ -102,19 +101,20 @@ const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
   ]
 })
 
-const beforeType = computed(() =>
-  entries.filter((entry) => narrowings.value.every((holds) => holds(entry)))
-)
-
 // An app is a workflow somebody wrapped in a form, so asking for workflows
 // returns it too and the badge on the card is what tells them apart.
 const isType = (entry: BrowseEntry, filter: TypeFilter) =>
-  filter === 'all' ||
-  entry.kind === filter ||
-  (filter === 'workflow' && entry.kind === 'app')
+  entry.kind === filter || (filter === 'workflow' && entry.kind === 'app')
+
+// The tab is read first and everything downstream sees one kind: the shelves,
+// the rows, the order and the banner are all about models or all about
+// workflows, and never about both at once.
+const inTab = computed(() =>
+  entries.filter((entry) => isType(entry, type.value))
+)
 
 const matched = computed(() =>
-  beforeType.value.filter((entry) => isType(entry, type.value))
+  inTab.value.filter((entry) => narrowings.value.every((holds) => holds(entry)))
 )
 
 const sorted = computed(() => sortBrowseEntries(matched.value, order.value))
@@ -144,8 +144,8 @@ const narrowedBy = computed(
 
 // Each narrowing beside the value that means "not narrowing", so both asking
 // whether any is on and putting them all back is one pass over the same list.
-// The type is not among them: it says which kind you are looking at, the way
-// the shelf says which use case, and neither is something to be cleared.
+// The tab is not among them: it says which catalogue you are in, the way the
+// shelf says which use case, and neither is something to be cleared.
 const resettable = computed(() => [
   { ref: usesModel, rest: '' },
   { ref: outcome, rest: undefined },
@@ -162,13 +162,11 @@ function clearNarrowing() {
 
 // The shelves are the catalogue at rest: one row per thing you might want to
 // make. Asking anything of it, a use case or a search, is what turns it into a
-// list. The type is not one of those: it says which kind of card the shelves
-// hold, so the three tabs read the same way and show the same card.
+// list. The tab is not one of those: both tabs open on their own shelves.
 const browsing = computed(() => useCase.value !== 'all' || narrowed.value)
 
 function backToShelves() {
   clearNarrowing()
-  type.value = 'all'
   useCase.value = 'all'
   order.value = 'popular'
 }
@@ -197,10 +195,7 @@ const featured = computed(() =>
     ? []
     : entrySlides(
         sortBrowseEntries(
-          beforeType.value.filter(
-            (entry) =>
-              entry.card.media !== undefined && isType(entry, type.value)
-          ),
+          matched.value.filter((entry) => entry.card.media !== undefined),
           'popular'
         ).slice(0, BANNER_SLIDES),
         (entry) => t(kindLabelKey[entry.kind], locale)
@@ -217,7 +212,7 @@ function openOutcome(asked: WorkshopOutcome) {
 
 const heading = computed(() =>
   useCase.value === 'all'
-    ? t('workshop.v2.kind.all', locale)
+    ? undefined
     : t(useCaseLabelKey[useCase.value], locale)
 )
 </script>
@@ -307,10 +302,11 @@ const heading = computed(() =>
         @clear-outcome="outcome = undefined"
       />
 
+      <!-- A job is something a workflow does end to end. A model is the
+        capability underneath one, so it heads no row and joins none. -->
       <OutcomeRows
-        v-if="showRows && useCase !== 'all'"
-        :use-case="useCase"
-        :entries="beforeType"
+        v-if="showRows && type === 'workflow'"
+        :entries="matched"
         :locale
         @open="openOutcome"
       />

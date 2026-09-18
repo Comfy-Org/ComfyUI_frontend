@@ -45,32 +45,31 @@ const workflow = (overrides: Partial<BrowseEntry> = {}) =>
 
 const ENTRIES = [entry(), workflow()]
 
-// A row needs both halves of its answer, so each job below carries a
-// capability that does it and a workflow built for it.
+// A row needs two members to stand, so each job below carries a pair.
 const EDITING = [
-  entry({
-    key: 'seedvr',
-    title: 'SeedVR2',
-    useCases: ['edit-images'],
-    tags: ['Upscale']
-  }),
   workflow({
     key: 'upscale-photo',
     title: 'Upscale a photo',
     useCases: ['edit-images'],
     tags: ['Image Upscale']
   }),
-  entry({
-    key: 'kontext',
-    title: 'Flux Kontext',
+  workflow({
+    key: 'restore-scan',
+    title: 'Restore a scan',
     useCases: ['edit-images'],
-    tags: ['Inpainting']
+    tags: ['Image Upscale']
   }),
   workflow({
     key: 'erase',
     title: 'Erase an object',
     useCases: ['edit-images'],
     tags: ['Inpainting']
+  }),
+  workflow({
+    key: 'extend',
+    title: 'Extend a photo',
+    useCases: ['edit-images'],
+    tags: ['Outpainting']
   })
 ]
 
@@ -85,9 +84,9 @@ const onShelf = (useCase: string) =>
     .map((card) => card.getAttribute('data-kind'))
 
 // The URL is read on mount, so the first paint is one tick behind it.
-async function at(search: string) {
+async function at(search: string, entries: readonly BrowseEntry[] = ENTRIES) {
   window.history.replaceState({}, '', `/playground/${search}`)
-  render(CatalogueBrowse, { props: { entries: ENTRIES } })
+  render(CatalogueBrowse, { props: { entries } })
   await nextTick()
 }
 
@@ -102,54 +101,34 @@ describe('CatalogueBrowse', () => {
     expect(screen.queryByTestId('catalogue-grid')).toBeNull()
   })
 
-  it('puts a capability before a use of it inside a shelf', async () => {
+  // A model is a capability and a workflow is a job. They carry different
+  // measures and different rows, so each tab is its own catalogue rather than
+  // a filter over one shared list.
+  it('gives each tab its own shelves', async () => {
     await at('')
-    const shelf = screen.getByTestId('shelf-generate-images')
-    expect(
-      within(shelf)
-        .getAllByTestId('catalogue-card')
-        .map((card) => card.getAttribute('data-kind'))
-    ).toEqual(['model', 'workflow'])
+    expect(onShelf('generate-images')).toEqual(['workflow'])
+
+    await userEvent.click(screen.getByTestId('catalogue-type-model'))
+    expect(onShelf('generate-images')).toEqual(['model'])
   })
 
-  // Every use case has more models than the row holds, so ordering by standing
-  // alone would spend all eight slots on models and the shelf would never show
-  // what people built.
-  it('keeps room on the shelf for what was built on the models', async () => {
-    window.history.replaceState({}, '', '/playground/')
-    render(CatalogueBrowse, {
-      props: {
-        entries: [
-          ...Array.from({ length: 6 }, (_, index) =>
-            entry({ key: `model-${index}`, title: `Model ${index}` })
-          ),
-          workflow({ key: 'poster', title: 'Movie poster' }),
-          workflow({ key: 'banner', title: 'Banner' })
-        ]
-      }
-    })
-    await nextTick()
-
-    expect(
-      within(screen.getByTestId('shelf-generate-images'))
-        .getAllByTestId('catalogue-card')
-        .map((card) => card.getAttribute('data-kind'))
-    ).toEqual([
-      'model',
-      'model',
-      'model',
-      'model',
-      'workflow',
-      'workflow',
-      'model',
-      'model'
+  // Three of the eight use cases hold no model at all, and a shelf standing
+  // empty says the catalogue is broken rather than that this tab has none.
+  it('leaves out a use case the chosen tab has nothing in', async () => {
+    await at('', [
+      ...ENTRIES,
+      workflow({ key: 'mesh', title: 'Photo to mesh', useCases: ['3d'] })
     ])
+    expect(screen.getByTestId('shelf-3d')).toBeTruthy()
+
+    await userEvent.click(screen.getByTestId('catalogue-type-model'))
+    expect(screen.queryByTestId('shelf-3d')).toBeNull()
   })
 
   it('opens a shelf into the list for that use case', async () => {
     await at('')
     await userEvent.click(screen.getByTestId('shelf-generate-images-see-all'))
-    expect(shown()).toEqual(['Flux', 'Movie poster'])
+    expect(shown()).toEqual(['Movie poster'])
     expect(screen.getByTestId('catalogue-heading').textContent).toMatch(
       /image/i
     )
@@ -161,18 +140,10 @@ describe('CatalogueBrowse', () => {
     expect(screen.getByTestId('catalogue-chips').textContent).toMatch(/Flux/)
   })
 
-  // The tab says which kind of card the shelves hold, not which list to show,
-  // so all three read the same way and the card keeps its size across them.
-  it('keeps the shelves and narrows what they hold to the type asked for', async () => {
-    await at('?type=workflow')
-    expect(screen.getByTestId('playground-sections')).toBeTruthy()
-    expect(onShelf('generate-images')).toEqual(['workflow'])
-  })
-
-  // The tab says which kind you are looking at, the way the shelf says which
-  // use case. Neither is something a reader has to be offered a way out of.
+  // The tab says which catalogue you are in, the way the shelf says which use
+  // case. Neither is something a reader has to be offered a way out of.
   it('offers nothing to clear when only the tab was chosen', async () => {
-    await at('?type=workflow')
+    await at('?type=model')
     expect(screen.queryByTestId('catalogue-chips')).toBeNull()
   })
 
@@ -182,39 +153,77 @@ describe('CatalogueBrowse', () => {
     expect(screen.getByTestId('catalogue-empty')).toBeTruthy()
   })
 
-  // The medium is complete and filters; the job is curated and heads a row, so
-  // a model that does everything joins no row and an upscaler joins one.
   it('opens a medium on the rows that name a job inside it', async () => {
-    render(CatalogueBrowse, { props: { entries: [...ENTRIES, ...EDITING] } })
-    await nextTick()
-
+    await at('', [...ENTRIES, ...EDITING])
     await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
 
     const rows = screen.getByTestId('outcome-rows')
-    expect(within(rows).getByText('Upscale and restore')).toBeTruthy()
-    expect(within(rows).getByText('Remove and clean up')).toBeTruthy()
-    // Flux is in no row: it lists no capability any of these jobs stands for.
-    expect(within(rows).queryByText('Flux')).toBeNull()
+    expect(within(rows).getByText('Upscale & restore')).toBeTruthy()
+    expect(within(rows).getByText('Edit & clean up photos')).toBeTruthy()
+  })
+
+  // The job does not declare a medium: one "Upscale & restore" heads the
+  // images and the videos, and the tags decide which members it finds there.
+  it('heads two shelves with one job', async () => {
+    const videos = [
+      workflow({
+        key: 'upscale-clip',
+        title: 'Upscale a clip',
+        useCases: ['edit-videos'],
+        tags: ['Video Upscale']
+      }),
+      workflow({
+        key: 'smooth-clip',
+        title: 'Smooth a clip',
+        useCases: ['edit-videos'],
+        tags: ['Frame Interpolation']
+      })
+    ]
+    await at('', [...EDITING, ...videos])
+
+    await userEvent.click(screen.getByTestId('shelf-edit-videos-open'))
+    expect(
+      within(screen.getByTestId('outcome-upscale-restore')).getAllByTestId(
+        'catalogue-card'
+      )
+    ).toHaveLength(2)
+  })
+
+  // A job is something a workflow does end to end. No model in the catalogue
+  // lists one, so the models tab is a list rather than a set of rows.
+  it('heads no row on the models tab', async () => {
+    await at('?type=model', [
+      ...EDITING,
+      entry({ key: 'seedvr', title: 'SeedVR2', useCases: ['edit-images'] }),
+      entry({
+        key: 'kontext',
+        title: 'Flux Kontext',
+        useCases: ['edit-images']
+      })
+    ])
+
+    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+    expect(screen.queryByTestId('outcome-rows')).toBeNull()
+    expect(shown()).toEqual(['Flux Kontext', 'SeedVR2'])
   })
 
   it('narrows the listing to a row a reader asks to see in full', async () => {
-    render(CatalogueBrowse, { props: { entries: [...ENTRIES, ...EDITING] } })
-    await nextTick()
+    await at('', [...ENTRIES, ...EDITING])
     await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
 
     await userEvent.click(screen.getByTestId('outcome-upscale-restore-see-all'))
 
-    expect(shown()).toEqual(['SeedVR2', 'Upscale a photo'])
+    expect(shown()).toEqual(['Restore a scan', 'Upscale a photo'])
     expect(screen.queryByTestId('outcome-rows')).toBeNull()
     expect(screen.getByTestId('catalogue-chips').textContent).toContain(
-      'Upscale and restore'
+      'Upscale & restore'
     )
   })
 
   // The way back a reader wants is the shelf they came from, which is what the
   // live catalogue offers, so opening a card leaves that shelf behind it.
   it('leaves the use case behind for the page the card opens', async () => {
-    await at('?useCase=generate-images')
+    await at('?type=model&useCase=generate-images')
 
     await userEvent.click(
       within(screen.getByTestId('catalogue-grid')).getAllByTestId(
@@ -228,34 +237,24 @@ describe('CatalogueBrowse', () => {
   // An app is a workflow somebody wrapped in a form, so it answers to the
   // workflows tab rather than asking for a tab of its own.
   it('returns the apps along with the workflows', async () => {
-    window.history.replaceState({}, '', '/playground/?type=workflow')
-    render(CatalogueBrowse, {
-      props: {
-        entries: [
-          ...ENTRIES,
-          workflow({ key: 'sketch', title: 'Sketch to photo', kind: 'app' })
-        ]
-      }
-    })
-    await nextTick()
+    await at('', [
+      ...ENTRIES,
+      workflow({ key: 'sketch', title: 'Sketch to photo', kind: 'app' })
+    ])
 
     expect(onShelf('generate-images')).toEqual(['workflow', 'app'])
   })
 
   // Newest over models that carry no date is a ranking over nothing, so the
-  // order follows the type it was chosen for or gives way.
+  // order follows the tab it was chosen for or gives way.
   it('drops a dated order when the reader leaves the workflows behind', async () => {
     await at('?useCase=generate-images')
     await userEvent.click(screen.getByTestId('catalogue-sort'))
     await userEvent.click(await screen.findByTestId('catalogue-sort-newest'))
     expect(shown()).toEqual(['Movie poster'])
 
-    await userEvent.click(
-      within(screen.getByTestId('catalogue-type-facet')).getByRole('button', {
-        name: /^all/i
-      })
-    )
-    expect(shown()).toEqual(['Flux', 'Movie poster'])
+    await userEvent.click(screen.getByTestId('catalogue-type-model'))
+    expect(shown()).toEqual(['Flux'])
     expect(screen.queryByTestId('catalogue-chips')).toBeNull()
   })
 })
