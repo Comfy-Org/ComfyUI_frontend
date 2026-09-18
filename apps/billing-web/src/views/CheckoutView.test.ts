@@ -349,6 +349,78 @@ describe('CheckoutView', () => {
     ).toBeInTheDocument()
   })
 
+  it('holds the pay action until a reactivation charge the quote names is confirmed', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({ requires_reactivation_confirmation: true })
+      }
+    })
+    const pay = await screen.findByRole('button', { name: 'Pay and subscribe' })
+    expect(pay).toBeDisabled()
+
+    await userEvent.click(
+      screen.getByRole('checkbox', {
+        name: 'Your subscription was cancelled. I confirm the $28.00 charge to reactivate it.'
+      })
+    )
+    expect(pay).toBeEnabled()
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ confirm_reactivation: true })
+      )
+    )
+  })
+
+  it('re-quotes and asks when the server, not the quote, demands the confirmation', async () => {
+    const fake = await renderCheckout()
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    const confirmBox = await screen.findByRole('checkbox')
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(2)
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+    expect(fake.subscribe).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(confirmBox)
+    reportConfirm('ctoken_2')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        confirmation_token: 'ctoken_2',
+        confirm_reactivation: true
+      })
+    )
+  })
+
+  it('tells the customer when the subscribe itself was refused and keeps the form', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: { status: 'error', code: 'REQUEST_FAILED' }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    expect(
+      await screen.findByText(
+        "We couldn't reach the billing service. Please try again."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeInTheDocument()
+  })
+
   it('goes back to the plans with the same request', async () => {
     const { router } = await renderCheckout()
     await screen.findByText('Creator · Monthly')

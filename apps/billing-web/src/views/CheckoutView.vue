@@ -24,6 +24,7 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
@@ -82,6 +83,29 @@ watch(
   }
 )
 
+/**
+ * A cancelled subscription is reactivated by subscribing again, and the server
+ * wants that charge confirmed in so many words: the quote says so up front
+ * (`requires_reactivation_confirmation`), or the subscribe answers
+ * `REACTIVATION_CONFIRMATION_REQUIRED` and the plan is re-quoted before the
+ * customer is asked. Either way the form does not submit until they agree.
+ */
+const reactivationRequired = ref(false)
+const reactivationConfirmed = ref(false)
+const submitFailure = ref<string | undefined>()
+
+watch(preview, (quoted) => {
+  reactivationRequired.value =
+    quoted?.requires_reactivation_confirmation === true
+  reactivationConfirmed.value = false
+})
+
+const canSubmit = computed(
+  () =>
+    (preview.value?.allowed ?? false) &&
+    (!reactivationRequired.value || reactivationConfirmed.value)
+)
+
 const paymentCopy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
@@ -120,8 +144,6 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
-const canSubmit = computed(() => preview.value?.allowed ?? false)
-
 const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
 
 const quoting = computed(() => loading.value && summary.value === undefined)
@@ -131,10 +153,6 @@ const phase = computed(() =>
 )
 
 const productName = computed(() => coded('product', entry.value?.product))
-
-function submitBlocked(disabled: boolean, submitting: boolean): boolean {
-  return disabled || submitting
-}
 
 const returnLink = computed(() => {
   const arrival = entry.value
@@ -162,19 +180,29 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-function confirm(confirmationToken: string) {
+async function confirm(confirmationToken: string) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   const returnUrl = resultUrl()
-  void checkout.subscribe({
+  submitFailure.value = undefined
+  const result = await checkout.subscribe({
     plan_slug: planSlug.value,
     confirmation_token: confirmationToken,
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
       ? {}
       : { quote_version: quoted.quote_version }),
-    ...(returnUrl === undefined ? {} : { return_url: returnUrl })
+    ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
+    ...(reactivationConfirmed.value ? { confirm_reactivation: true } : {})
   })
+  if (result.status === 'ok') return
+  if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
+    // The quote did not say so, the server did: price it again and ask.
+    await quote({ planSlug: planSlug.value })
+    reactivationRequired.value = true
+    return
+  }
+  submitFailure.value = coded('failure', result.code)
 }
 
 function back() {
@@ -273,13 +301,14 @@ const subscriptionPath = computed(() => ({
             @confirm="confirm"
           >
             <template #submit="{ disabled, loading: submitting }">
-              <button
-                type="submit"
-                :disabled="submitBlocked(disabled, submitting)"
-                class="h-12 w-full cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {{ t('checkout.payAndSubscribe') }}
-              </button>
+              <CheckoutSubmit
+                v-model:confirmed="reactivationConfirmed"
+                :amount-cents="amountCents"
+                :disabled="disabled"
+                :submitting="submitting"
+                :reactivation-required="reactivationRequired"
+                :failure="submitFailure"
+              />
             </template>
           </StripePaymentForm>
         </template>
