@@ -64,6 +64,11 @@ interface TypeAssertion extends Node {
   readonly typeAnnotation: Node
 }
 
+interface PendingAssertion {
+  readonly node: TypeAssertion
+  readonly inner: TypeAssertion
+}
+
 interface RuleFixer {
   insertTextBefore(node: Node, text: string): unknown
   replaceText(node: Node, text: string): unknown
@@ -138,6 +143,15 @@ function importedLocalName(
   return specifier && isImportSpecifier(specifier)
     ? specifier.local.name
     : undefined
+}
+
+function availableHelperName(usedNames: ReadonlySet<string>): string {
+  if (!usedNames.has('fromAny')) return 'fromAny'
+  if (!usedNames.has('fromAnyRuntime')) return 'fromAnyRuntime'
+
+  let suffix = 2
+  while (usedNames.has(`fromAnyRuntime${suffix}`)) suffix++
+  return `fromAnyRuntime${suffix}`
 }
 
 function restrictImports(
@@ -217,9 +231,13 @@ export const noUnknownDoubleAssertion = {
   meta: { fixable: 'code' },
   create(context: RuleContext) {
     let fromAny: string | undefined
-    let insertedHelper = 'fromAny'
     let program: Node
-    const withoutHelper: TypeAssertion[] = []
+    const withoutHelper: PendingAssertion[] = []
+    const usedNames = new Set<string>()
+    const filename = context.filename.replaceAll('\\', '/')
+    const canInsertHelper =
+      /(?:\.test\.|\.spec\.)/.test(filename) &&
+      !filename.includes('/browser_tests/')
 
     const replacement = (
       node: TypeAssertion,
@@ -234,36 +252,33 @@ export const noUnknownDoubleAssertion = {
         program = node
       },
       'Program:exit'() {
-        if (
-          fromAny ||
-          withoutHelper.length === 0 ||
-          !/(?:\.test\.|\.spec\.)/.test(context.filename) ||
-          context.filename.includes('/browser_tests/')
-        ) {
-          return
-        }
+        if (fromAny || withoutHelper.length === 0 || !canInsertHelper) return
 
-        context.report({
-          node: withoutHelper[0],
-          message: DOUBLE_ASSERTION_MESSAGE,
-          fix: (fixer: RuleFixer) => [
-            fixer.insertTextBefore(
-              program,
-              `import { fromAny${insertedHelper === 'fromAny' ? '' : ` as ${insertedHelper}`} } from '@total-typescript/shoehorn'\n`
+        const helper = availableHelperName(usedNames)
+        withoutHelper.forEach(({ node, inner }, index) => {
+          const fix = (fixer: RuleFixer) => {
+            const replacementFix = fixer.replaceText(
+              node,
+              replacement(node, inner, helper)
             )
-          ]
+            return index === 0
+              ? [
+                  fixer.insertTextBefore(
+                    program,
+                    `import { fromAny${helper === 'fromAny' ? '' : ` as ${helper}`} } from '@total-typescript/shoehorn'\n`
+                  ),
+                  replacementFix
+                ]
+              : replacementFix
+          }
+          context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })
         })
+      },
+      Identifier(node: Identifier) {
+        usedNames.add(node.name)
       },
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== '@total-typescript/shoehorn') return
-        if (
-          node.specifiers.some(
-            (specifier) =>
-              isImportSpecifier(specifier) && specifier.local.name === 'fromAny'
-          )
-        ) {
-          insertedHelper = 'fromAnyRuntime'
-        }
         if (node.importKind === 'type') return
         fromAny ??= importedLocalName(node, 'fromAny')
       },
@@ -273,11 +288,8 @@ export const noUnknownDoubleAssertion = {
         if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
 
         if (!fromAny) {
-          if (
-            /(?:\.test\.|\.spec\.)/.test(context.filename) &&
-            !context.filename.includes('/browser_tests/')
-          ) {
-            withoutHelper.push(node)
+          if (canInsertHelper) {
+            withoutHelper.push({ node, inner })
             return
           }
         }
