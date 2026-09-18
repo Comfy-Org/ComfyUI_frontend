@@ -217,6 +217,29 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Awaits any in-flight unified-auth login mint for the current identity.
+   * The wait can outlast an account switch, so callers must treat a `true`
+   * result (identity changed while waiting) as stale and not read the new
+   * identity's unified token or fall back to its Firebase token.
+   */
+  const awaitUnifiedMint = async (): Promise<boolean> => {
+    const uid = currentUser.value?.uid
+    if (uid) await mintUnifiedToken(uid).catch(() => false)
+    return currentUser.value?.uid !== uid
+  }
+
+  /**
+   * Unified Cloud JWT header, falling back to the Firebase token when minting
+   * failed. See getAuthHeader for the full priority order.
+   */
+  const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (await awaitUnifiedMint()) return null
+    const token = useWorkspaceAuthStore().getUnifiedToken()
+    if (token) return { Authorization: `Bearer ${token}` }
+    return await getFirebaseAuthHeader()
+  }
+
+  /**
    * Retrieves the appropriate authentication header for API requests.
    *
    * When unified_cloud_auth is enabled, awaits any in-flight login mint and
@@ -233,17 +256,7 @@ export const useAuthStore = defineStore('auth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    if (flags.unifiedCloudAuthEnabled) {
-      const uid = currentUser.value?.uid
-      if (uid) await mintUnifiedToken(uid).catch(() => false)
-      // The mint wait can outlast an account switch; a stale caller must not
-      // read the new identity's unified token or fall back to its Firebase
-      // token.
-      if (currentUser.value?.uid !== uid) return null
-      const token = useWorkspaceAuthStore().getUnifiedToken()
-      if (token) return { Authorization: `Bearer ${token}` }
-      return await getFirebaseAuthHeader()
-    }
+    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
 
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
@@ -326,6 +339,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Unified Cloud JWT token. See getAuthToken for the full priority order.
+   */
+  const getUnifiedAuthToken = async (): Promise<string | undefined> => {
+    if (await awaitUnifiedMint()) return undefined
+    return useWorkspaceAuthStore().getUnifiedToken()
+  }
+
+  /**
    * Returns the raw auth token (not wrapped in a header object).
    * When unified_cloud_auth is enabled, awaits any in-flight login mint and
    * returns the single Cloud JWT; otherwise Cloud priority is workspace token
@@ -333,14 +354,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
-    if (flags.unifiedCloudAuthEnabled) {
-      const uid = currentUser.value?.uid
-      if (uid) await mintUnifiedToken(uid).catch(() => false)
-      // See getAuthHeader: a stale caller must not read the new identity's
-      // unified token after an account switch during the mint wait.
-      if (currentUser.value?.uid !== uid) return undefined
-      return useWorkspaceAuthStore().getUnifiedToken()
-    }
+    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
 
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
