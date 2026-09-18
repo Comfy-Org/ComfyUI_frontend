@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useTimeoutFn } from '@vueuse/core'
 import { nextTick, ref, useTemplateRef } from 'vue'
@@ -104,16 +105,58 @@ async function copyPrompt() {
         <Button
           type="button"
           class="shrink-0 self-start lg:self-auto"
-          :prepend-icon="phase === 'copied' ? Check : Copy"
           @click="copyPrompt"
         >
-          {{
-            phase === 'copied'
-              ? t('platform.routerMigration.copied', locale)
-              : phase === 'failed'
-                ? t('platform.routerMigration.retry', locale)
-                : t('platform.routerMigration.copy', locale)
-          }}
+          <template #prepend>
+            <span class="relative grid size-4 shrink-0 place-items-center">
+              <Copy
+                aria-hidden="true"
+                :class="
+                  cn(
+                    'col-start-1 row-start-1 size-4 transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)]',
+                    phase === 'copied' && 'scale-25 opacity-0 blur-xs'
+                  )
+                "
+              />
+              <Check
+                aria-hidden="true"
+                :class="
+                  cn(
+                    'col-start-1 row-start-1 size-4 transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)]',
+                    phase !== 'copied' && 'scale-25 opacity-0 blur-xs'
+                  )
+                "
+              />
+            </span>
+          </template>
+          <span class="grid overflow-hidden">
+            <span
+              :aria-hidden="phase === 'copied'"
+              :class="
+                cn(
+                  'col-start-1 row-start-1 transition-[translate,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
+                  phase === 'copied' && '-translate-y-full opacity-0'
+                )
+              "
+            >
+              {{
+                phase === 'failed'
+                  ? t('platform.routerMigration.retry', locale)
+                  : t('platform.routerMigration.copy', locale)
+              }}
+            </span>
+            <span
+              :aria-hidden="phase !== 'copied'"
+              :class="
+                cn(
+                  'col-start-1 row-start-1 text-center transition-[translate,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
+                  phase !== 'copied' && 'translate-y-full opacity-0'
+                )
+              "
+            >
+              {{ t('platform.routerMigration.copied', locale) }}
+            </span>
+          </span>
         </Button>
       </div>
 

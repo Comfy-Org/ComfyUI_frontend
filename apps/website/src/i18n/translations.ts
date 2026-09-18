@@ -8875,7 +8875,10 @@ Enterprise`
     en: 'Copy migration prompt',
     'zh-CN': '复制迁移提示词'
   },
-  'platform.routerMigration.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'platform.routerMigration.copied': {
+    en: 'Prompt copied',
+    'zh-CN': '已复制提示词'
+  },
   'platform.routerMigration.retry': { en: 'Try again', 'zh-CN': '重试' },
   'platform.routerMigration.failed': {
     en: 'Copying to your clipboard did not work. Copy the prompt from the box below instead.',

@@ -40,8 +40,8 @@ describe('RouterMigrationSection', () => {
     await user.click(cta)
 
     expect(await navigator.clipboard.readText()).toBe(ROUTER_MIGRATION_PROMPT)
-    expect(screen.getByRole('button', { name: 'Copied' })).toHaveFocus()
-    expect(screen.getByRole('status')).toHaveTextContent('Copied')
+    expect(screen.getByRole('button', { name: 'Prompt copied' })).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('Prompt copied')
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
@@ -70,7 +70,7 @@ describe('RouterMigrationSection', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(write).toHaveBeenCalledTimes(2)
-    expect(screen.getByRole('button', { name: 'Copied' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Prompt copied' })).toBeVisible()
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 })
