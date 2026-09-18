@@ -8,11 +8,6 @@ import {
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-
-function currentCanvasElement(): HTMLCanvasElement | null {
-  return app.canvas.canvas
-}
 
 /**
  * Composable for handling canvas interactions from Vue components.
@@ -127,7 +122,7 @@ export function useCanvasInteractions() {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
-    const canvasEl = currentCanvasElement()
+    const canvasEl = canvasStore.canvas?.canvas
     if (!canvasEl) return
     event.preventDefault()
     event.stopPropagation()

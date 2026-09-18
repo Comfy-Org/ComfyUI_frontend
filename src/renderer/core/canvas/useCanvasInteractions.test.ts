@@ -1,23 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { app } from '@/scripts/app'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      canvas: {
-        dispatchEvent: vi.fn()
-      }
-    }
-  }
-}))
-
-function createMockLGraphCanvas(read_only = true): LGraphCanvas {
-  const mockCanvas: Partial<LGraphCanvas> = { read_only }
+function createMockLGraphCanvas(
+  read_only = true,
+  canvas = document.createElement('canvas')
+): LGraphCanvas {
+  const mockCanvas: Partial<LGraphCanvas> = { read_only, canvas }
   return mockCanvas as LGraphCanvas
 }
 
@@ -54,6 +46,29 @@ function createMockWheelEvent(
 }
 
 describe('useCanvasInteractions', () => {
+  let canvasElement: HTMLCanvasElement
+
+  beforeEach(() => {
+    canvasElement = document.createElement('canvas')
+    vi.spyOn(canvasElement, 'dispatchEvent').mockReturnValue(true)
+    useCanvasStore().canvas = createMockLGraphCanvas(false, canvasElement)
+  })
+
+  it('ignores forwarded events before the canvas exists', () => {
+    useCanvasStore().canvas = null
+    const { handlePointerDown } = useCanvasInteractions()
+    const mockEvent = createMockPointerEvent({
+      type: 'pointerdown',
+      button: 1,
+      buttons: 4
+    })
+
+    handlePointerDown(mockEvent)
+
+    expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+    expect(canvasElement.dispatchEvent).not.toHaveBeenCalled()
+  })
+
   describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
       const { getCanvas } = useCanvasStore()
@@ -84,7 +99,7 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
-      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+      expect(canvasElement.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'pointerdown' })
       )
     })
@@ -100,7 +115,7 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
-      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+      expect(canvasElement.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'pointermove' })
       )
     })
