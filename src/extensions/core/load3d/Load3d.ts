@@ -672,7 +672,7 @@ class Load3d extends Viewport3d {
     this.configurationCleanup = cleanup
   }
 
-  clearConfigurationCleanup(): void {
+  private clearConfigurationCleanup(): void {
     this.configurationCleanup?.()
     this.configurationCleanup = undefined
   }

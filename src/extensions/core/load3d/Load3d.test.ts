@@ -159,20 +159,6 @@ function makeInstance() {
 describe('Load3d', () => {
   let ctx: ReturnType<typeof makeInstance>
 
-  it('replaces and clears reactive configuration cleanup exactly once', () => {
-    const load3d = Object.create(Load3d.prototype) as Load3d
-    const first = vi.fn()
-    const second = vi.fn()
-
-    load3d.setConfigurationCleanup(first)
-    load3d.setConfigurationCleanup(second)
-    load3d.clearConfigurationCleanup()
-    load3d.clearConfigurationCleanup()
-
-    expect(first).toHaveBeenCalledTimes(1)
-    expect(second).toHaveBeenCalledTimes(1)
-  })
-
   beforeEach(() => {
     ctx = makeInstance()
   })
@@ -1482,11 +1468,25 @@ describe('Load3d', () => {
 
       expect(source(12, 34)).toBe(ndc)
       expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+    })
 
-      const configurationCleanup = vi.fn()
-      load3d.setConfigurationCleanup(configurationCleanup)
+    it('runs the replaced configuration cleanup immediately and the current one once on remove()', () => {
+      const { container, deps } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+      const first = vi.fn()
+      const second = vi.fn()
+
+      load3d.setConfigurationCleanup(first)
+      expect(first).not.toHaveBeenCalled()
+
+      load3d.setConfigurationCleanup(second)
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).not.toHaveBeenCalled()
+
       load3d.remove()
-      expect(configurationCleanup).toHaveBeenCalledOnce()
+      load3d.remove()
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).toHaveBeenCalledOnce()
     })
   })
 })
