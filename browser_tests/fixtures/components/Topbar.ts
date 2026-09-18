@@ -127,8 +127,8 @@ export class Topbar {
   }
 
   /**
-   * The workflow tab popover opens on hover and only closes on mouseleave, so
-   * waiting alone never clears it while the pointer rests on a tab.
+   * While the pointer rests on a workflow tab, waiting alone never starts the
+   * popover's dismissal, so move the pointer away before asserting it is gone.
    */
   async dismissWorkflowPopover() {
     await this.page.mouse.move(0, 0)
