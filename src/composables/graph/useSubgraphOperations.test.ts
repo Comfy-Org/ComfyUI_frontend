@@ -41,7 +41,8 @@ describe('useSubgraphOperations', () => {
   })
 
   it('preserves previews and history when every unpack is refused', () => {
-    const subgraphNode = createSubgraphNode()
+    const firstSubgraphNode = createSubgraphNode()
+    const secondSubgraphNode = createSubgraphNode()
     const unpackSubgraph = vi.fn(() => false)
     const revokeSubgraphPreviews = vi
       .spyOn(useNodeOutputStore(), 'revokeSubgraphPreviews')
@@ -49,13 +50,16 @@ describe('useSubgraphOperations', () => {
     vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
       fromPartial<LGraphCanvas>({
         graph: fromPartial<LGraph>({ unpackSubgraph }),
-        selectedItems: new Set([subgraphNode])
+        selectedItems: new Set([firstSubgraphNode, secondSubgraphNode])
       })
     )
 
     useSubgraphOperations().unpackSubgraph()
 
-    expect(unpackSubgraph).toHaveBeenCalledWith(subgraphNode, {
+    expect(unpackSubgraph).toHaveBeenCalledWith(firstSubgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(unpackSubgraph).toHaveBeenCalledWith(secondSubgraphNode, {
       skipMissingNodes: true
     })
     expect(revokeSubgraphPreviews).not.toHaveBeenCalled()
