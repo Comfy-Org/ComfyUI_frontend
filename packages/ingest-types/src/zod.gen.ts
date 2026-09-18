@@ -2197,7 +2197,7 @@ export const zCreateTopupCheckoutResponse = z.object({
  * Request body for creating a hosted credit top-up checkout session.
  */
 export const zCreateTopupCheckoutRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(473900)),
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
   idempotency_key: z.string().optional(),
   return_url: z.string().url()
 })
