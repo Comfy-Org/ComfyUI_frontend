@@ -1,5 +1,8 @@
 import { render } from '@testing-library/vue'
+import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { computed } from 'vue'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
@@ -384,9 +387,11 @@ vi.mock<unknown>(
   () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
 )
 
+type PaymentMethodsRail = Pick<BillingReadRail, 'readPaymentMethods'>
+
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
-  rail: null as { readPaymentMethods: ReturnType<typeof vi.fn> } | null
+  rail: null as PaymentMethodsRail | null
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
@@ -771,7 +776,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('selects the default saved payment method read on the SDK rail', async () => {
-      const readPaymentMethods = vi.fn().mockResolvedValue({
+      const readPaymentMethods: Mock<BillingReadRail['readPaymentMethods']> =
+        vi.fn()
+      readPaymentMethods.mockResolvedValue({
         status: 'ok',
         value: [
           { type: 'card', id: 'pm_first', is_default: false },
