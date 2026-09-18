@@ -312,7 +312,10 @@ test.describe(
         .click()
       const editorTabs = page.getByTestId('workflow-tab')
       await expect(editorTabs).toHaveCount(2)
+      const tabButtons = page.locator('.workflow-tab-button')
+      await expect(tabButtons.last()).toHaveAttribute('aria-pressed', 'true')
       await editorTabs.first().click()
+      await expect(tabButtons.first()).toHaveAttribute('aria-pressed', 'true')
       await page
         .getByRole('button', { name: enMessages.agent.askComfyAgent })
         .click()
