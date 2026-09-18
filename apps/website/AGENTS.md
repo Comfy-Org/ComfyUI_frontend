@@ -52,8 +52,11 @@ test to make it pass, and never resolve a human reviewer's comment.
 
 ## Where things are
 
-- `src/pages/` holds one `.astro` file per URL. Every English page has a twin
-  under `src/pages/zh-CN/`; some have one under `src/pages/ja/`.
+- `src/pages/` holds one `.astro` file per URL. Most marketing pages have a
+  twin under `src/pages/zh-CN/` and a few have one under `src/pages/ja/`, but
+  not all: `affiliates/`, `platform/serverless-animation.astro`, and
+  `workshop/` have none. Match what the nearest sibling page of the same kind
+  does, and say in the pull request whether you added a twin.
 - `src/templates/` holds shared page templates. A model launch page is a data
   file in `src/data/` rendered by `src/templates/model-launch/`; clone the
   nearest existing launch page before building anything new.
@@ -95,9 +98,9 @@ This repository fails any pull request whose commits carry an AI co-author
 trailer (`.github/scripts/check-ai-co-authors.sh`). Never add a
 `Co-Authored-By` line, a session link, or any mention of Claude or AI to a
 commit message, a pull request title, or a pull request body.
-`apps/website/.claude/settings.json` turns the automatic trailer off; check the
-last commit message before every push anyway, because sessions started outside
-this folder do not read that file.
+The repository's root `.claude/settings.json` turns the automatic trailer off
+for every session started inside the repository; check the last commit message
+before every push anyway.
 
 Use `feat(website):`, `fix(website):`, or `test(website):` prefixes. Follow
 `.github/pull_request_template.md`. Attach before and after screenshots to every

@@ -88,14 +88,19 @@ contradicts.
 Goal: the pull request goes to the merge queue only when merging is what its
 author, its reviewers, and its content all call for.
 
-Send it to merge with `gh pr merge <number> --squash` (the repository's queue takes it
-from there) only when every line below is true in one reading taken after your
-last push:
+Take one reading with `gh pr view <number> --json
+reviewDecision,mergeStateStatus,headRefOid,isDraft,title,labels` after your
+last push and after every check has finished, and keep the `headRefOid` it
+returns. Send the pull request to merge with
+`gh pr merge <number> --squash --match-head-commit <that sha>`, so a commit
+that lands between your reading and the merge is refused rather than queued
+unread, and only when every line below is true in that one reading:
 
-- A person, not only a bot, has approved it, and that approval came after the
-  last change to what a visitor sees. Your own pushes that only fix tests,
-  formatting, or the description do not stale an approval; anything else does,
-  so ask the reviewer to look again.
+- `reviewDecision` is `APPROVED` and `mergeStateStatus` is `CLEAN`. GitHub
+  computes both from the branch rulesets, which for the website require an
+  approval from each of two teams and dismiss every approval on push; do not
+  count approvals yourself, and do not treat any push of your own as too small
+  to need a fresh approval. A person, not only a bot, is among the approvers.
 - Every required check is green, no review stands at "changes requested", and
   no human reviewer's thread is open.
 - It is not a draft, and nothing in the title, description, labels, or comments

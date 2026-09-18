@@ -8,8 +8,13 @@ describe the repository as read on 2026-09-17 and a workflow may have changed.
 
 ## What `main` requires
 
-`main` accepts squash merges only, through a merge queue, with one approving
-review. The required checks are `test`, `lint-and-format`, `e2e-status`, and
+`main` accepts squash merges only, through a merge queue. A change under
+`apps/website/**` needs one approval from the `comfy_frontend_devs` team and
+one from the `comfy_website_devs` team, and every push dismisses the approvals
+already given, so the last push comes before the last approval. Read
+`reviewDecision` and `mergeStateStatus` from `gh pr view <number>` rather than
+counting approvals yourself; `APPROVED` and `CLEAN` together mean GitHub is
+satisfied. The required checks are `test`, `lint-and-format`, `e2e-status`, and
 `website-e2e`. Every other check is advisory, but fix a red advisory check
 anyway, because reviewers read the whole list. A "changes requested" review
 from CodeRabbit blocks the merge like a human one; the section "CodeRabbit is
@@ -57,9 +62,7 @@ dismiss its review yourself, and never ask it to approve; ask it to review.
   lint, format, and the website typecheck on staged files, and the pre-push hook
   runs `pnpm knip`; both fail with confusing errors when dependencies are
   missing. A `[WARN] Unsupported engine` line is not a failure.
-- Name the branch for the request, such as `website/pricing-hero-copy`. Branches
-  starting `wip/`, `draft/`, or `temp/` skip the website checks, and branches
-  starting `core/` or `cloud/` get no preview deployment.
+- Name the branch for the request, such as `website/pricing-hero-copy`.
 - A hook failure is a real finding. Fix what it reports. `--no-verify` is
   banned here.
 
@@ -79,21 +82,26 @@ dismiss its review yourself, and never ask it to approve; ask it to review.
 ## `Check for AI agent co-author trailers` is red
 
 A commit message on the branch carries a `Co-authored-by` line naming an AI
-tool. Find it with
-`git log --format='%h %(trailers:key=Co-authored-by)' origin/main..HEAD`.
-Interactive rebase does not work in an agent session, so rewrite without it:
+tool. The checker is `.github/scripts/check-ai-co-authors.sh`; it recognises
+Claude, Codex, Copilot, Cursor, Gemini, Jules, Aider, Windsurf, Devin, Amazon
+Q, Cline, Continue, Sourcegraph, and OpenCode, so read its pattern list before
+assuming which line is at fault. Run it locally to see the offending commits:
+`bash .github/scripts/check-ai-co-authors.sh origin/main HEAD`. Interactive
+rebase does not work in an agent session, so rewrite without it:
 
 ```bash
 git rebase origin/main --exec \
-  'git commit --amend -q -m "$(git log -1 --format=%B | grep -viE "^(co-authored-by:.*(claude|anthropic)|claude-session:)")"'
+  'git commit --amend --allow-empty -q -m "$(git log -1 --format=%B | grep -viE "^co-authored-by:.*(claude|anthropic|codex|openai|copilot|cursor|gemini|jules|google|aider|windsurf|codeium|devin|cognition|amazon.?q|cline|continue|sourcegraph|opencode)|^claude-session:")"'
+bash .github/scripts/check-ai-co-authors.sh origin/main HEAD
 git push --force-with-lease
 ```
 
 This replays the branch on `main` and drops earlier "Merge branch 'main'"
-commits, which is fine because `main` squashes. Confirm the first command's
-output list is empty afterwards. Then check that
-`apps/website/.claude/settings.json` exists, since its absence is how the
-trailer got there.
+commits, which is fine because `main` squashes. Push only after the checker
+prints "No AI agent Co-authored-by trailers found"; a human co-author line
+survives the filter, which is intended. Then check that the repository's root
+`.claude/settings.json` still empties `attribution.commit`, since that is what
+stops the next trailer.
 
 ## The branch is behind or conflicts with `main`
 
