@@ -5,7 +5,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 
 import { i18n } from '@/i18n'
-import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
@@ -13,7 +17,12 @@ import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
 
 const graph = { id: 'graph-1' }
-const node = { id: toNodeId(1), graph, pos: [10, 20], size: [100, 80] }
+const node = {
+  id: toNodeId(1),
+  graph: graph as LGraph,
+  pos: [10, 20],
+  size: [100, 80]
+} as unknown as LGraphNode
 const canvas = {
   graph,
   canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) },

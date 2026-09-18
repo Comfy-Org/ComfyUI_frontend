@@ -68,6 +68,36 @@ interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
+function liveAddedNodeIds(
+  added: readonly string[],
+  graph: MaterializableGraph | null
+): NodeId[] {
+  if (!graph) return []
+  return added.flatMap((id) => {
+    const nodeId = parseNodeId(id)
+    return nodeId && graph._nodes_by_id[nodeId] ? [nodeId] : []
+  })
+}
+
+function notifyAgentMaterialization(
+  update: DocUpdate & { catchUp?: boolean },
+  added: readonly string[],
+  materialized: readonly NodeId[],
+  graph: MaterializableGraph | null,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (update.catchUp === true || !update.actor?.startsWith('agent:')) return
+  const nodeIds = [
+    ...new Set([...materialized, ...liveAddedNodeIds(added, graph)])
+  ]
+  if (nodeIds.length === 0) return
+  events.onMaterialized?.({
+    workflowId: update.workflowId,
+    actor: update.actor,
+    nodeIds
+  })
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -311,24 +341,7 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
-    if (
-      update.catchUp !== true &&
-      update.actor?.startsWith('agent:') &&
-      (added.length > 0 || materialized.length > 0)
-    ) {
-      const graph = getGraph()
-      const addedLiveNodeIds = added.flatMap((id) => {
-        const nodeId = parseNodeId(id)
-        return nodeId && graph?._nodes_by_id[nodeId] ? [nodeId] : []
-      })
-      const nodeIds = [...new Set([...materialized, ...addedLiveNodeIds])]
-      if (nodeIds.length > 0)
-        events.onMaterialized?.({
-          workflowId: update.workflowId,
-          actor: update.actor,
-          nodeIds
-        })
-    }
+    notifyAgentMaterialization(update, added, materialized, getGraph(), events)
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
