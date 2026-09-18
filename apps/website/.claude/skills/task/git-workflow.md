@@ -14,15 +14,17 @@ one from the `comfy_website_devs` team, and every push dismisses the approvals
 already given, so the last push comes before the last approval. Read
 `reviewDecision` and `mergeStateStatus` from `gh pr view <number>` rather than
 counting approvals yourself; `APPROVED` and `CLEAN` together mean GitHub is
-satisfied. The required checks are `test`, `lint-and-format`, `e2e-status`, and
-`website-e2e`. Every other check is advisory, but fix a red advisory check
-anyway, because reviewers read the whole list. A "changes requested" review
+satisfied. Read the required checks from `gh pr checks <number> --required`,
+which reflects every active ruleset; on 2026-09-17 they were `test`,
+`lint-and-format`, `e2e-status`, `website-e2e`, and `cla-assistant`. Fix a red
+check that is not required anyway, because reviewers read the whole list. A "changes requested" review
 from CodeRabbit blocks the merge like a human one; the section "CodeRabbit is
 blocking" below says how to lift it.
 
-Never push to `main`. The `task` skill never merges or queues a pull request.
-The `fix-it` skill may send one to the queue, and only when every line of its
-merge gate holds.
+Never push to `main`. The merge decision belongs to whichever skill is
+running: `task` never merges or queues a pull request, and `fix-it` sends one
+to the queue only when every line of its merge gate holds. The approval is
+always a person's.
 
 ## CodeRabbit is blocking
 
@@ -59,8 +61,11 @@ dismiss its review yourself, and never ask it to approve; ask it to review.
 ## Before the first commit
 
 - Run `pnpm install` at the repository root once. The pre-commit hook runs
-  lint, format, and the website typecheck on staged files, and the pre-push hook
-  runs `pnpm knip`; both fail with confusing errors when dependencies are
+  the checks that apply to each staged file's type (`lint-staged.config.ts`:
+  code and Astro files get lint, format, and the website typecheck; Markdown
+  is only formatted; CSS is only linted), and the pre-push hook runs
+  `pnpm knip`. A green hook on a docs-only commit says nothing about the
+  typecheck. Both hooks fail with confusing errors when dependencies are
   missing. A `[WARN] Unsupported engine` line is not a failure.
 - Name the branch for the request, such as `website/pricing-hero-copy`.
 - A hook failure is a real finding. Fix what it reports. `--no-verify` is
@@ -90,16 +95,20 @@ assuming which line is at fault. Run it locally to see the offending commits:
 rebase does not work in an agent session, so rewrite without it:
 
 ```bash
-git rebase origin/main --exec \
-  'git commit --amend --allow-empty -q -m "$(git log -1 --format=%B | grep -viE "^co-authored-by:.*(claude|anthropic|codex|openai|copilot|cursor|gemini|jules|google|aider|windsurf|codeium|devin|cognition|amazon.?q|cline|continue|sourcegraph|opencode)|^claude-session:")"'
+regex="$(sed -n '/^AGENT_PATTERNS=(/,/^)/p' .github/scripts/check-ai-co-authors.sh \
+  | grep -oE "^ *'[^']+'" | tr -d " '" | paste -sd'|' -)"
+git rebase origin/main --exec "git commit --amend --allow-empty -q -m \"\$(git log -1 --format=%B \
+  | grep -viE '^claude-session:' | grep -viE '^co-authored-by:.*($regex)')\""
 bash .github/scripts/check-ai-co-authors.sh origin/main HEAD
 git push --force-with-lease
 ```
 
-This replays the branch on `main` and drops earlier "Merge branch 'main'"
-commits, which is fine because `main` squashes. Push only after the checker
-prints "No AI agent Co-authored-by trailers found"; a human co-author line
-survives the filter, which is intended. Then check that the repository's root
+The filter is built from the checker's own pattern list, so it removes exactly
+the trailers the checker rejects and nothing else: a human at a vendor
+address such as `alice@google.com` survives, because the checker accepts it.
+The rebase replays the branch on `main` and drops earlier "Merge branch
+'main'" commits, which is fine because `main` squashes. Push only after the
+checker prints "No AI agent Co-authored-by trailers found". Then check that the repository's root
 `.claude/settings.json` still empties `attribution.commit`, since that is what
 stops the next trailer.
 
@@ -167,14 +176,7 @@ the first failing assertion.
 
 ## Only a person can do these
 
-Tell the designer exactly what to click or whom to message, per the skill's
-escalation format.
-
-- `CLA Check` is red: the pull request's author must comment, word for word,
-  `I have read and agree to the Contributor License Agreement` on the pull
-  request. Nobody else can sign for them.
-- `gh` says it is not logged in, or a push is denied for permissions: the
-  designer needs repository access from an engineer.
-- The approving review, the merge, and anything about the merge queue.
-- A secret, token, or Vercel setting is missing.
-- A label is needed and you lack permission to add it.
+`review-loop.md` holds the list and the message format. Two more that show up
+as CI or tooling symptoms: `gh` reporting it is not logged in, or a push
+denied for permissions, means the designer needs repository access from an
+engineer; a label you lack permission to add is a request to a maintainer.

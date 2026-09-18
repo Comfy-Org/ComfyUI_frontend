@@ -87,10 +87,13 @@ test to make it pass, and never resolve a human reviewer's comment.
   widths between, empty states, or the Chinese copy, so check those yourself.
 - `gh` shows pull request checks, comments, and review threads. A green list
   says the checks passed; it does not say the page looks right.
-- Each pull request gets a live preview at
-  `https://comfy-website-preview-pr-<number>.vercel.app` once the
-  `deploy-preview` check passes. That preview is the only place the designer can
-  see your work, so give them that link and never a localhost address.
+- A pull request from a branch in this repository that changes files under
+  `apps/website/`, `packages/design-system/`, or `packages/tailwind-utils/`
+  gets a live preview at `https://comfy-website-preview-pr-<number>.vercel.app`
+  once the `deploy-preview` check passes. A pull request from a fork, or one
+  touching only other paths, gets no preview and no such check, so do not wait
+  for one. When a preview exists it is the only place the designer can see
+  your work, so give them that link and never a localhost address.
 
 ## Commits and pull requests
 
