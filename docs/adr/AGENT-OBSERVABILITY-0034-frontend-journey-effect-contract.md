@@ -56,9 +56,10 @@ carriage-return, or tab characters. Their creator owns the guarantee that they a
 rather than content. Optional session, thread, turn, mutation, and run identifiers may be copied
 only when upstream provides privacy-safe opaque values. `observed_at` must be a canonical UTC
 timestamp with millisecond precision. `operation_count`, if retained, must be derived from the
-deduplicated operation IDs rather than accepted from a caller. Readers must reject unsupported
-schema versions. Sink adapters, added separately, own pseudonymization, retention, access controls,
-and vendor mappings.
+deduplicated operation IDs rather than accepted from a caller. The event allowlist requires
+`schema_version: 1`; readers must reject an event when `schema_version` is missing or has any other
+value. Sink adapters, added separately, own pseudonymization, retention, access controls, and vendor
+mappings.
 
 The future serializer must allowlist named fields, validate the canonical timestamp and correlation
 shapes, and reject content in non-operation correlation fields. Event creators must never put
