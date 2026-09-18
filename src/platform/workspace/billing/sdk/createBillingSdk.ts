@@ -7,6 +7,7 @@
  */
 import type {
   BillingCommands,
+  BillingEventsReader,
   BillingOperationLifecycle,
   BillingOperationPointerStorage,
   BillingOperationTelemetryEvent,
@@ -23,6 +24,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -57,6 +59,7 @@ export interface BillingSdk {
   readonly capabilities: CapabilitiesReader
   readonly plans: PlansReader
   readonly paymentMethods: PaymentMethodsReader
+  readonly events: BillingEventsReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
   readonly driveChallenge: (
@@ -95,6 +98,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
   const capabilities = createCapabilitiesReader({ transport, scopeSource })
   const plans = createPlansReader({ transport, scopeSource })
   const paymentMethods = createPaymentMethodsReader({ transport, scopeSource })
+  const events = createBillingEventsReader({ transport, scopeSource })
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -125,6 +129,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     capabilities,
     plans,
     paymentMethods,
+    events,
     topup,
     commands,
     driveChallenge: async (operationId) =>
@@ -143,6 +148,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
       capabilities.dispose()
       plans.dispose()
       paymentMethods.dispose()
+      events.dispose()
     }
   }
 }
