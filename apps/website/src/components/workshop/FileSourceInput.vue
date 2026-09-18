@@ -76,8 +76,9 @@ const prompt = computed(() => {
       imageOnly.value
         ? 'workshop.field.selectOrDropImages'
         : 'workshop.field.selectOrDropFiles',
-      locale
-    ).replace('{count}', String(allowed))
+      locale,
+      { count: allowed }
+    )
   return t(
     imageOnly.value
       ? 'workshop.field.selectOrDropImage'
@@ -101,7 +102,11 @@ const rejectionMessage = computed(() => {
   const unchanged = imageOnly.value
     ? 'workshop.field.imagesUnchanged'
     : 'workshop.field.filesUnchanged'
-  return `${t(rejection.value, locale).replace('{count}', String(limit.value)).replace('{limit}', uploadLimit.value)} ${t(unchanged, locale)}`
+  const named = {
+    limit: uploadLimit.value,
+    ...(limit.value === undefined ? {} : { count: limit.value })
+  }
+  return `${t(rejection.value, locale, named)} ${t(unchanged, locale)}`
 })
 
 function accepts(file: File): boolean {
@@ -215,12 +220,7 @@ function remove(index: number) {
       <span>{{ prompt }}</span>
       <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{
-          t('workshop.field.uploadLimit', locale).replace(
-            '{limit}',
-            uploadLimit
-          )
-        }}
+        {{ t('workshop.field.uploadLimit', locale, { limit: uploadLimit }) }}
       </span>
     </label>
     <input

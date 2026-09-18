@@ -823,10 +823,9 @@ function useInCode() {
               data-testid="gate-note"
             >
               {{
-                t('workshop.error.noCreditsCloud', locale).replace(
-                  '{workspace}',
-                  () => session?.workspace.name ?? ''
-                )
+                t('workshop.error.noCreditsCloud', locale, {
+                  workspace: session?.workspace.name ?? ''
+                })
               }}
             </p>
             <Button
@@ -846,10 +845,9 @@ function useInCode() {
               </p>
               <p class="text-xs text-content-secondary">
                 {{
-                  t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    () => session?.workspace.name ?? ''
-                  )
+                  t('workshop.error.memberNoCredits', locale, {
+                    workspace: session?.workspace.name ?? ''
+                  })
                 }}
               </p>
             </div>

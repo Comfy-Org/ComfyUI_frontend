@@ -68,10 +68,9 @@ function onClientTabChange(value: string | number | undefined) {
 }
 
 function walkthroughLabelFor(connId: ConnectionId): string {
-  return t('mcp.setup.walkthroughAlt', locale).replace(
-    '{client}',
-    activeClientFor(connId).name
-  )
+  return t('mcp.setup.walkthroughAlt', locale, {
+    client: activeClientFor(connId).name
+  })
 }
 
 const copyLabel = t('ui.copy', locale)
