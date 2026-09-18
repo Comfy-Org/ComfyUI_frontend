@@ -17,6 +17,7 @@ import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -610,6 +611,21 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('leaves mint suppression open when graph loading fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const app = fromPartial<ComfyApp>({})
+
+    extension!.beforeLoadGraph!(app)
+    extension!.onGraphLoadError!(new Error('bad workflow json'), app)
+
+    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(mocks.notifyAfterGraphConfigure).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when selection restoration throws', async () => {
