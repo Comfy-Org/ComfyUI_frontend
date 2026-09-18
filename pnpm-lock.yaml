@@ -969,6 +969,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
+      '@stripe/stripe-js':
+        specifier: 'catalog:'
+        version: 9.12.1
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
@@ -1237,9 +1240,12 @@ importers:
   packages/account-ui:
     dependencies:
       '@comfyorg/account-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../account-core
     devDependencies:
+      '@stripe/stripe-js':
+        specifier: 'catalog:'
+        version: 9.12.1
       '@testing-library/user-event':
         specifier: 'catalog:'
         version: 14.6.1(@testing-library/dom@10.4.1)

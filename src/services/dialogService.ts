@@ -106,6 +106,30 @@ export interface ExecutionErrorDialogInput {
   traceback?: string[] | null
 }
 
+const GLOBAL_PROMPT_KEY = 'global-prompt'
+
+// dialogStore.showDialog raises an existing dialog with the same key instead of
+// wiring the new caller's callbacks, so a second concurrent caller on that key
+// would never settle. Serialize FIFO per key; distinct keys stay concurrent.
+const promptTails = new Map<string, Promise<unknown>>()
+
+function enqueuePrompt<T>(
+  key: string,
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const tail = promptTails.get(key) ?? Promise.resolve()
+  const result = tail.then(() => new Promise<T>(show))
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  )
+  promptTails.set(key, settled)
+  void settled.then(() => {
+    if (promptTails.get(key) === settled) promptTails.delete(key)
+  })
+  return result
+}
+
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
@@ -231,7 +255,7 @@ export const useDialogService = () => {
           headless: true,
           contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -258,7 +282,7 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -278,9 +302,9 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueuePrompt<string | null>(GLOBAL_PROMPT_KEY, (resolve) => {
       dialogStore.showDialog({
-        key: 'global-prompt',
+        key: GLOBAL_PROMPT_KEY,
         title,
         component: PromptDialogContent,
         props: {
@@ -294,7 +318,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -314,9 +338,9 @@ export const useDialogService = () => {
     itemList = [],
     hint,
     denyLabel,
-    key = 'global-prompt'
+    key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    const show = (resolve: (value: boolean | null) => void) => {
       const options: ShowDialogOptions = {
         key,
         title,
@@ -332,12 +356,14 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          onRemoved: () => resolve(null)
         }
       }
 
       dialogStore.showDialog(options)
-    })
+    }
+
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
   async function showTopUpCreditsDialog(options?: {
@@ -810,7 +836,7 @@ export const useDialogService = () => {
           closable: false,
           contentClass:
             'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+          onRemoved: () => resolve()
         }
       })
     })

@@ -111,7 +111,7 @@ describe('hosted billing entry routing', () => {
     { intent: 'payment-methods', surface: 'Payment methods' },
     { intent: 'invoices', surface: 'Invoices' },
     { intent: 'result', surface: 'Billing result' },
-    { intent: 'checkout', surface: 'Confirm your payment' }
+    { intent: 'checkout', surface: 'Checkout' }
   ])('opens $intent on the $surface surface', async ({ intent, surface }) => {
     await arriveAt(`/v1/${intent}?${ENTRY_QUERY}`)
 
@@ -189,11 +189,11 @@ describe('hosted billing entry routing', () => {
     ).toBeInTheDocument()
   })
 
-  it('leaves the scaffold checkout page outside the entry contract', async () => {
+  it("leaves the app's own front door outside the entry contract", async () => {
     await arriveAt('/')
 
     expect(
-      await screen.findByRole('heading', { name: 'Confirm your payment' })
+      await screen.findByRole('heading', { name: 'Billing' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
   })
@@ -204,7 +204,7 @@ describe('hosted billing entry routing', () => {
     await router.push('/')
 
     expect(
-      await screen.findByRole('heading', { name: 'Confirm your payment' })
+      await screen.findByRole('heading', { name: 'Billing' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
   })

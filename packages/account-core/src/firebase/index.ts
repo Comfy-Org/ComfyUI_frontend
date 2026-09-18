@@ -118,15 +118,17 @@ interface AuthResolver {
 
 /**
  * A pre-existing app under this name must be the same Firebase project, or
- * `Auth` would bind to another project's session. The identifying fields are
- * what the SDK itself compares on a same-name re-`initializeApp`.
+ * `Auth` binds to another project's session. Deliberately a "same project"
+ * check on the fields that pick a session, not the SDK's byte-identical
+ * compare: `appId` is Installations/Analytics, so omitting it from a partial
+ * same-project config still binds rather than failing boot.
  */
 function assertSameProject(
   existing: FirebaseOptions,
   requested: FirebaseOptions,
   appName: string
 ): void {
-  const mismatch = (['projectId', 'apiKey', 'appId', 'authDomain'] as const)
+  const mismatch = (['projectId', 'apiKey', 'authDomain'] as const)
     .filter((key) => existing[key] !== requested[key])
     .join(', ')
   if (mismatch) {
