@@ -36,35 +36,20 @@ function testScopedRemovableRef<T>(defaultValue: T) {
   })
 }
 
-const remoteConfigRef = testScopedRef<
-  typeof realRemoteConfig.remoteConfig.value
->({})
-const remoteConfigStateRef =
+const state =
   testScopedRef<typeof realRemoteConfig.remoteConfigState.value>('unloaded')
-const remoteConfigErrorStatusRef = testScopedRef<number | null>(null)
-const cachedBillingControlEnabledRef = testScopedRemovableRef<
-  boolean | undefined
->(undefined)
-const cachedLegacyBillingMigrationEnabledRef = testScopedRef<
-  boolean | undefined
->(undefined)
-const cachedV1PaymentRecoveryRef = testScopedRemovableRef<boolean | undefined>(
-  undefined
-)
 
 const remoteConfigModule: typeof realRemoteConfig = {
-  remoteConfig: remoteConfigRef,
-  remoteConfigState: remoteConfigStateRef,
-  remoteConfigErrorStatus: remoteConfigErrorStatusRef,
-  isAuthenticatedConfigLoaded: computed(
-    () => remoteConfigStateRef.value === 'authenticated'
-  ),
+  remoteConfig: testScopedRef({}),
+  remoteConfigState: state,
+  remoteConfigErrorStatus: testScopedRef(null),
+  isAuthenticatedConfigLoaded: computed(() => state.value === 'authenticated'),
   configValueOrDefault(remoteConfig, key, defaultValue) {
     return remoteConfig[key] || defaultValue
   },
-  cachedBillingControlEnabled: cachedBillingControlEnabledRef,
-  cachedLegacyBillingMigrationEnabled: cachedLegacyBillingMigrationEnabledRef,
-  cachedV1PaymentRecovery: cachedV1PaymentRecoveryRef
+  cachedBillingControlEnabled: testScopedRemovableRef(undefined),
+  cachedLegacyBillingMigrationEnabled: testScopedRef(undefined),
+  cachedV1PaymentRecovery: testScopedRemovableRef(undefined)
 }
 
 export const {
