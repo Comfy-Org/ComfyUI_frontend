@@ -222,24 +222,17 @@ export class WorkflowHelper {
     })
   }
 
+  /**
+   * Reopen a saved workflow through the workflows sidebar, the same path a
+   * user takes. The management store's `openWorkflow` only marks a workflow
+   * active, so it cannot prove the saved graph was restored.
+   */
   async openPersistedWorkflow(workflowName: string): Promise<void> {
-    await this.comfyPage.page.evaluate(async (name) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const workflow =
-        store.getWorkflowByPath(`workflows/${name}.json`) ??
-        store.persistedWorkflows.find(
-          (candidate) =>
-            candidate.filename === name ||
-            candidate.path.endsWith(`${name}.json`)
-        )
-      if (!workflow) {
-        throw new Error(`Persisted workflow not found: ${name}`)
-      }
-      await store.openWorkflow(workflow)
-    }, workflowName)
+    const tab = this.comfyPage.menu.workflowsTab
+    await tab.open()
+    await tab.getPersistedItem(workflowName).dblclick()
+    await tab.close()
     await this.waitForWorkflowIdle()
-    await this.comfyPage.vueNodes.waitForNodes()
   }
 
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {

@@ -405,9 +405,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     () => {
       test.use({
         initialSettings: {
-          'Comfy.UseNewMenu': 'Disabled',
-          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)',
-          'Comfy.VueNodes.Enabled': false
+          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
         }
       })
 
@@ -434,6 +432,21 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBe(true)
         await comfyPage.nextFrame()
 
+        const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
+        await expect(subgraphNode).toBeVisible()
+
+        const seedWidget = subgraphNode
+          .getByTestId('widget-layout-field-label')
+          .filter({ hasText: /^renamed_seed$/ })
+        await expect(seedWidget).toBeVisible()
+        await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
+
+        // Switch to the legacy canvas first, then enter through setGraph:
+        // after the disconnect above, the legacy node body shows an
+        // interactive seed widget that swallows coordinate-based navigation
+        // clicks, and entering while Vue nodes are enabled leaves a stale
+        // active canvas that breaks the rename prompt.
+        await comfyPage.menu.topbar.setVueNodesEnabled(false)
         await comfyPage.subgraph.enterSubgraphWithFallback('19')
 
         // The rename prompt reads LGraphCanvas.active_canvas, which only real
@@ -473,7 +486,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.vueNodes.setEnabled(true)
+        await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
         const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
         await expect(subgraphNodeAfter).toBeVisible()
