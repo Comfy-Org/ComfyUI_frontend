@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 import type { WorkshopCreatorForm } from './workshop-creator-form'
 import type { FormValues } from './workshop-playground'

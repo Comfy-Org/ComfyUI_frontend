@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import { pointerKeys } from './workshop-json-pointer'
