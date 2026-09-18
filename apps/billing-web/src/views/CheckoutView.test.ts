@@ -416,9 +416,11 @@ describe('CheckoutView', () => {
         "We couldn't reach the billing service. Please try again."
       )
     ).toBeInTheDocument()
+    // Present is not the same as usable: a refused charge has to leave the
+    // customer able to try again.
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeInTheDocument()
+    ).toBeEnabled()
   })
 
   it('goes back to the plans with the same request', async () => {

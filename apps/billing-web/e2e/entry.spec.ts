@@ -26,5 +26,8 @@ for (const { link, path, reason } of BAD_LINKS) {
       page.getByRole('heading', { name: "We couldn't open that billing page" })
     ).toBeVisible()
     await expect(page.getByText(reason)).toBeVisible()
+    // The name of this test is the assertion: a bad link explains itself where
+    // it landed, and bouncing the customer elsewhere would hide the misdirection.
+    expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(path)
   })
 }

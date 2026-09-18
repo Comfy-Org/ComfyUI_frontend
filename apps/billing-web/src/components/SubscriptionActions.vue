@@ -59,20 +59,25 @@ async function settle(
   busy.value = true
   notice.value = undefined
   failure.value = undefined
-  const result = await run()
-  busy.value = false
-  if (result.status === 'error') {
-    failure.value = coded('failure', result.code)
-    return
+  // Held until the capabilities behind these buttons have been read again:
+  // releasing on the command alone offers a second click against stale answers.
+  try {
+    const result = await run()
+    if (result.status === 'error') {
+      failure.value = coded('failure', result.code)
+      return
+    }
+    if (result.value.phase !== 'succeeded') {
+      failure.value = coded('outcome', result.value.phase)
+      return
+    }
+    notice.value = done
+    capabilities.invalidate()
+    await readCapabilities(true)
+    emit('changed')
+  } finally {
+    busy.value = false
   }
-  if (result.value.phase !== 'succeeded') {
-    failure.value = coded('outcome', result.value.phase)
-    return
-  }
-  notice.value = done
-  capabilities.invalidate()
-  await readCapabilities(true)
-  emit('changed')
 }
 
 async function cancelSubscription() {

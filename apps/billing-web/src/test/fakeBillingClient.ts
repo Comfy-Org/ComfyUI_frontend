@@ -77,7 +77,7 @@ export interface FakeBillingClient {
   readonly cancelSubscription: BillingClient['commands']['cancelSubscription']
   readonly resubscribe: BillingClient['commands']['resubscribe']
   readonly recover: BillingClient['lifecycle']['recover']
-  readonly readCapabilities: BillingClient['capabilities']['read']
+  readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   /** Publishes an operation as the lifecycle would after a poll. */
   readonly publishOperation: (state: BillingOperationState) => void

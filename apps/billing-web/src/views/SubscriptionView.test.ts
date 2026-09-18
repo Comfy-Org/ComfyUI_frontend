@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
@@ -205,6 +205,34 @@ describe('SubscriptionView', () => {
     expect(
       await screen.findByText('Your subscription is active again.')
     ).toBeInTheDocument()
+    expect(fake.resubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the action disabled until the capability refresh lands', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    const button = await screen.findByRole('button', { name: 'Resubscribe' })
+    const granted = await fake.readCapabilities.mock.results[0].value
+
+    let landRefresh: () => void = () => {}
+    fake.readCapabilities.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          landRefresh = () => resolve(granted)
+        })
+    )
+
+    await userEvent.click(button)
+    await waitFor(() => expect(fake.resubscribe).toHaveBeenCalledOnce())
+
+    // The command has settled but the capabilities behind the button have not,
+    // so re-enabling here would offer a second click against stale answers.
+    expect(button).toBeDisabled()
+
+    landRefresh()
+    await waitFor(() => expect(button).toBeEnabled())
     expect(fake.resubscribe).toHaveBeenCalledOnce()
   })
 
