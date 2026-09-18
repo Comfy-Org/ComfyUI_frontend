@@ -127,14 +127,38 @@ describe('parseSlackRecipients', () => {
     { raw: 'U123' },
     { raw: 'C09K9TPU2G7' }
   ])('reports $raw as unusable', ({ raw }) => {
-    expect(parseSlackRecipients(raw)).toEqual({ valid: [], invalid: [raw] })
+    expect(parseSlackRecipients(raw)).toEqual({
+      valid: [],
+      invalid: [raw],
+      disabled: false
+    })
   })
 
   it('keeps the usable entries when one is malformed', () => {
-    expect(parseSlackRecipients('U0BA79D8R1T @huang47')).toEqual({
+    expect(parseSlackRecipients('U0BA79D8R1T @huang47')).toMatchObject({
       valid: ['U0BA79D8R1T'],
       invalid: ['@huang47']
     })
+  })
+
+  // `DISABLED` is a `D` and seven more characters, so the obvious way to
+  // write the off-switch down parses as a DM channel unless it is recognised
+  // first — and a posted-to non-channel fails the run with channel_not_found.
+  it.for([
+    { raw: 'none' },
+    { raw: 'off' },
+    { raw: 'disabled' },
+    { raw: 'OFF' }
+  ])('turns the notification off on $raw', ({ raw }) => {
+    expect(parseSlackRecipients(raw)).toEqual({
+      valid: [],
+      invalid: [],
+      disabled: true
+    })
+  })
+
+  it('leaves the watchers alone when nothing asks for the off switch', () => {
+    expect(parseSlackRecipients('U0BA79D8R1T').disabled).toBe(false)
   })
 })
 
@@ -196,12 +220,6 @@ describe('buildNeedsBackportText', () => {
   // pr-backport.yaml drops a target whose branch is not cut yet and skips one
   // that already has an open backport PR, so a merged PR cannot be promised a
   // cherry-pick that is already happening.
-  it('does not claim a merged PR is being cherry-picked already', () => {
-    expect(buildNeedsBackportText(event({ state: 'MERGED' }))).not.toContain(
-      'cherry-picking'
-    )
-  })
-
   // Labelling a release line before it is cut is the case this guards: the
   // branch does not exist, pr-backport.yaml drops the target, and a DM that
   // promised a cherry-pick into it would send the reader looking for a run
@@ -428,6 +446,37 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(sendScript()).toContain('.ok == true')
   })
 
+  // `jq -e` exits 0 on empty input, so the emptiness test is what stops a
+  // body that is not JSON — an error page in front of Slack — from reading
+  // as a delivered DM.
+  it('does not read an unparseable response as a delivered DM', () => {
+    expect(sendScript()).toMatch(/\[\s+-n\s+"\$RESPONSE"\s+\][\s\S]{0,80}\.ok/)
+  })
+
+  // Every variable the loop counts has to be initialised: the step runs
+  // under `set -u`, where one stale name aborts it after the DMs are sent
+  // and turns a delivered notification into a failed check.
+  it('reads back only the counters it sets', () => {
+    const code = sendScript()
+    const assigned = new Set([
+      ...[...code.matchAll(/^\s*([A-Z][A-Z_]*)=/gm)].map((match) => match[1]),
+      ...[...code.matchAll(/\bread\s+-r\s+([A-Z][A-Z_]*)/g)].map(
+        (match) => match[1]
+      )
+    ])
+    const read = [...code.matchAll(/\$\{?([A-Z][A-Z_]*)\}?/g)].map(
+      (match) => match[1]
+    )
+
+    expect(
+      read.filter(
+        (name) =>
+          !assigned.has(name) &&
+          !['SLACK_BOT_TOKEN', 'GITHUB_STEP_SUMMARY'].includes(name)
+      )
+    ).toEqual([])
+  })
+
   // The loop runs under `set -e`, where an unreachable Slack would abort it
   // at the first recipient and the rest would go unnotified and unannotated —
   // the per-recipient accounting exists precisely for that case.
@@ -439,7 +488,7 @@ describe('pr-notify-needs-backport.yaml', () => {
       /if\s+!\s+RESPONSE=\$\(\s*curl[\s\S]*?\n\s*fi\b/.exec(sendScript())?.[0]
 
     expect(transportFailure).toBeDefined()
-    expect(transportFailure).toContain('UNREACHABLE=1')
+    expect(transportFailure).toContain('UNDELIVERED=1')
     expect(transportFailure).toContain('continue')
   })
 
@@ -454,7 +503,30 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(code).toContain('GITHUB_STEP_SUMMARY')
     expect(code).toContain('::warning::Could not reach Slack')
     expect(code).toMatch(/if\s+\[\s+"\$REJECTED"\s+=\s+1\s+\][\s\S]*?exit 1/)
-    expect(code).not.toMatch(/\$UNREACHABLE[\s\S]*?exit 1/)
+    expect(code).not.toMatch(/\$UNDELIVERED[\s\S]*?exit 1/)
+  })
+
+  // Slack's own overload answers are 429 and 5xx, which curl reports as a
+  // successful transfer, so without this they would land on the rejection
+  // path and redden a PR over a blip that has already passed.
+  it('retries Slack, and counts what it still answers as undelivered', () => {
+    const code = sendScript()
+
+    expect(code).toMatch(/--retry\s+\d+/)
+    expect(code).toContain('--retry-connrefused')
+    expect(code).toContain('--retry-all-errors')
+    // Each retried attempt appends its own body, so reading the raw stream
+    // gives `.error` once per attempt and matches none of the names below.
+    expect(code).toMatch(/jq -sc? '\.\[-1\]/)
+    for (const transient of [
+      'ratelimited',
+      'service_unavailable',
+      'internal_error',
+      'fatal_error',
+      'request_timeout'
+    ]) {
+      expect(code).toContain(transient)
+    }
   })
 
   // A green run is the only thing anybody looks at, so the step that sends

@@ -78,11 +78,11 @@ The recipients are the repository **variable**
 `SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
 (`U…`, `W…`, or a `D…` DM channel), which is how you subscribe without a PR.
 A rejected DM fails the run rather than passing quietly, so a stale ID gets
-noticed and removed instead of silently dropping the notification. Clearing it
-restores the
-default watcher rather than silencing the DM; to stop the DMs entirely, set it
-to a non-ID value such as `none`, which the run reports as an ignored watcher
-and sends nothing.
+noticed and removed instead of silently dropping the notification; Slack
+merely being unreachable does not, since it fixes itself.
+
+Clearing the variable restores the default watcher rather than silencing the
+DM. To stop the DMs, set it to `none`, `off` or `disabled`.
 
 ## Release Sheriff Assignment
 

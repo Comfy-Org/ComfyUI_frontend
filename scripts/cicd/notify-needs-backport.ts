@@ -101,11 +101,22 @@ export function escapeSlackText(text: string): string {
 /** Member (`U`/`W`) or already-open DM channel (`D`). */
 const SLACK_ID_PATTERN = /^[UWD][A-Z0-9]{7,}$/
 
+/**
+ * Turns the notification off, because an empty repository variable restores
+ * the default watcher instead. Spelled out rather than left to "any value
+ * that is not an ID": `DISABLED` is a `D` followed by seven characters, so
+ * the obvious way to write this down parses as a DM channel, gets posted to,
+ * and fails the check with `channel_not_found`.
+ */
+const DISABLED_VALUES = new Set(['NONE', 'OFF', 'DISABLED'])
+
 export interface SlackRecipients {
   /** Well-formed IDs, upper-cased to Slack's canonical form. */
   valid: string[]
   /** Entries left as written, so a typo can be recognised in the log. */
   invalid: string[]
+  /** True when the list only asks for the notification to be turned off. */
+  disabled: boolean
 }
 
 /**
@@ -119,14 +130,16 @@ export interface SlackRecipients {
 export function parseSlackRecipients(raw: string | undefined): SlackRecipients {
   const valid: string[] = []
   const invalid: string[] = []
+  let disabled = false
 
   for (const entry of new Set((raw ?? '').split(/[\s,]+/).filter(Boolean))) {
     const normalised = entry.toUpperCase()
-    if (SLACK_ID_PATTERN.test(normalised)) valid.push(normalised)
+    if (DISABLED_VALUES.has(normalised)) disabled = true
+    else if (SLACK_ID_PATTERN.test(normalised)) valid.push(normalised)
     else invalid.push(entry)
   }
 
-  return { valid: [...new Set(valid)], invalid }
+  return { valid: [...new Set(valid)], invalid, disabled }
 }
 
 /**
@@ -308,7 +321,7 @@ function main() {
     labeledBy: requireEnv('LABELED_BY'),
     remoteBranches: readRemoteBranches(values.branches)
   }
-  const { valid, invalid } = parseSlackRecipients(
+  const { valid, invalid, disabled } = parseSlackRecipients(
     process.env.SLACK_NEEDS_BACKPORT_WATCHERS
   )
 
@@ -317,7 +330,11 @@ function main() {
       `::warning::Ignoring watcher "${entry}": not a Slack member ID.\n`
     )
   }
-  if (valid.length === 0) {
+  if (disabled && valid.length === 0) {
+    process.stderr.write(
+      'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.\n'
+    )
+  } else if (valid.length === 0) {
     process.stderr.write(
       '::warning::No Slack watchers configured — set the SLACK_NEEDS_BACKPORT_WATCHERS repository variable to one or more Slack member IDs.\n'
     )
