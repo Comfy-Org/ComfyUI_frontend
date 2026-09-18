@@ -10,7 +10,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
 import {
   LGraph,
   LGraphNode,
