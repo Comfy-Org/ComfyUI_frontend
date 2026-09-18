@@ -33,6 +33,21 @@ describe('hreflangAlternates', () => {
     )
   })
 
+  it.for(['/enterprise/', '/enterprise/managed-builds/'])(
+    'pairs %s with its published Chinese translation',
+    (path) => {
+      const alternates = hreflangAlternates(path, ORIGIN, 'en')
+      expect(alternates).toEqual([
+        { hreflang: 'en', href: `${ORIGIN}${path}` },
+        { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${path}` },
+        { hreflang: 'x-default', href: `${ORIGIN}${path}` }
+      ])
+      expect(hreflangAlternates(`/zh-CN${path}`, ORIGIN, 'zh-CN')).toEqual(
+        alternates
+      )
+    }
+  )
+
   it('handles the home page in every locale that has one', () => {
     // The home page is the one route with all three locales, so it is the only
     // place the full cluster shape can be asserted today.
@@ -283,7 +298,7 @@ describe('canonicalPath', () => {
    * The canonical must follow whether the page is PUBLISHED in its locale, not
    * whatever path Astro happens to report.
    */
-  it.for(['/pricing/'])(
+  it.for(['/pricing/', '/enterprise/', '/enterprise/managed-builds/'])(
     'points the published Chinese page %s at itself',
     (path) => {
       expect(canonicalPath(path, 'zh-CN')).toBe(`/zh-CN${path}`)
