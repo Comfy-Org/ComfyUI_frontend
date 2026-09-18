@@ -390,6 +390,38 @@ export function useAgentCrdtFollower(
       sender.abortIfUnbound()
     }
   }
+  const recordUpdateOutcome = (applied: boolean): void => {
+    outcomes.value = applied
+      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+  }
+
+  const recordDocNodeChanges = (): void => {
+    const ids = currentDocNodeIds()
+    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
+    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
+    if (added.length > 0 || removed.length > 0)
+      recordDevEvent('doc_nodes_changed', { added, removed })
+    knownDocNodeIds = ids
+  }
+
+  const applyIncomingUpdate = (update: DocUpdate, frameType: string): void => {
+    if (staleProbeTimer !== null) armStaleProbe()
+    refreshPersistedDocId()
+    updatesApplied.value = bridge.follower.updatesApplied
+    lastFrameType.value = frameType
+    const applied = adapter.applyFrame(update)
+    recordUpdateOutcome(applied)
+    if (applied) reconcileLiveGraph(update.workflowId)
+    recordDevEvent('doc_update', {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      actor: update.actor,
+      bytes: update.update instanceof Uint8Array ? update.update.length : null
+    })
+    recordDocNodeChanges()
+  }
+
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
@@ -401,33 +433,10 @@ export function useAgentCrdtFollower(
       !isTargetActive.value ||
       update.workflowId !== subscribedWorkflowId.value
     ) {
-      outcomes.value = {
-        ...outcomes.value,
-        skipped: outcomes.value.skipped + 1
-      }
+      recordUpdateOutcome(false)
       return
     }
-    if (staleProbeTimer !== null) armStaleProbe()
-    refreshPersistedDocId()
-    updatesApplied.value = bridge.follower.updatesApplied
-    lastFrameType.value = event.type
-    const applied = adapter.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) reconcileLiveGraph(update.workflowId)
-    recordDevEvent('doc_update', {
-      workflowId: update.workflowId,
-      seq: update.seq,
-      actor: update.actor,
-      bytes: update.update instanceof Uint8Array ? update.update.length : null
-    })
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    knownDocNodeIds = ids
+    applyIncomingUpdate(update, event.type)
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -621,6 +630,44 @@ export function useAgentCrdtFollower(
     else bridge.subscribe(next)
     sender.abortIfUnbound()
   }
+  const unbindCurrentWorkflow = (): void => {
+    if (boundWorkflowId === null) return
+    adapter.unbind(boundWorkflowId)
+    boundWorkflowId = null
+  }
+  const bindWorkflow = (workflowId: string): void => {
+    if (boundWorkflowId === workflowId) return
+    unbindCurrentWorkflow()
+    adapter.bind(workflowId, bridge.follower)
+    boundWorkflowId = workflowId
+  }
+  const disconnectTarget = (next: string | null): void => {
+    if (next !== null) initialBind = false
+    unbindCurrentWorkflow()
+    subscribedWorkflowId.value = null
+    retarget(null)
+  }
+  const restorePersistedTarget = (justActivated: boolean): void => {
+    const persisted = initialBind ? readPersistedDocId() : null
+    initialBind = false
+    if (persisted === null) {
+      clearPersistedDocId()
+      disconnectTarget(null)
+      return
+    }
+    recordDevEvent('rebind', { workflowId: persisted })
+    bindWorkflow(persisted)
+    subscribedWorkflowId.value = persisted
+    retarget(persisted)
+    if (justActivated) reconcileLiveGraph(persisted)
+  }
+  const activateTarget = (next: string, justActivated: boolean): void => {
+    initialBind = false
+    bindWorkflow(next)
+    subscribedWorkflowId.value = next
+    retarget(next)
+    if (justActivated) reconcileLiveGraph(next)
+  }
   watch(
     [workflowId, isTargetActive],
     (
@@ -646,48 +693,14 @@ export function useAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       if (!active) {
-        if (next !== null) initialBind = false
-        if (boundWorkflowId !== null) {
-          adapter.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        disconnectTarget(next)
         return
       }
       if (next === null) {
-        const persisted = initialBind ? readPersistedDocId() : null
-        initialBind = false
-        if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
-          if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-            adapter.bind(persisted, bridge.follower)
-            boundWorkflowId = persisted
-          }
-          subscribedWorkflowId.value = persisted
-          retarget(persisted)
-          if (justActivated) reconcileLiveGraph(persisted)
-          return
-        }
-        clearPersistedDocId()
-        if (boundWorkflowId !== null) {
-          adapter.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        restorePersistedTarget(justActivated)
         return
       }
-      initialBind = false
-      if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-        adapter.bind(next, bridge.follower)
-        boundWorkflowId = next
-      }
-      subscribedWorkflowId.value = next
-      retarget(next)
-      if (justActivated) reconcileLiveGraph(next)
+      activateTarget(next, justActivated)
     },
     { immediate: true }
   )
