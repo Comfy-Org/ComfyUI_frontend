@@ -1,49 +1,97 @@
 <template>
-  <Tree
+  <UiTree
     v-bind="$attrs"
-    v-model:expanded-keys="expandedKeys"
-    v-model:selection-keys="selectionKeys"
-    class="tree-explorer bg-transparent px-2 py-0 2xl:px-4"
-    :class="props.class"
-    :value="renderedRoot.children"
-    selection-mode="single"
-    :pt="{
-      nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ context }) => ({
-        class: 'group/tree-node',
-        onClick: (e: MouseEvent) =>
-          onNodeContentClick(e, context.node as RenderedTreeExplorerNode<T>),
-        onContextmenu: (e: MouseEvent) =>
-          handleContextMenu(e, context.node as RenderedTreeExplorerNode<T>)
-      }),
-      nodeToggleButton: () => ({
-        onClick: (e: MouseEvent) => {
-          e.stopImmediatePropagation()
-        }
-      })
-    }"
+    v-model:expanded="expandedNodeKeys"
+    v-model:selected="selectedNode"
+    :class="cn('tree-explorer bg-transparent px-2 py-0 2xl:px-4', className)"
+    :items="renderedRoot.children ?? []"
+    :get-key="(node) => node.key"
+    :get-children="
+      (node) => (node.children?.length ? node.children : undefined)
+    "
   >
-    <template #folder="{ node }">
-      <slot name="folder" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
+    <template #default="{ items }">
+      <UiTreeItem
+        v-for="item in items"
+        :key="item._id"
+        v-slot="{ isExpanded, isSelected, handleToggle }"
+        :value="item.value"
+        :level="item.level"
+        @select="preventUnboundSelection"
+      >
+        <div
+          :class="
+            cn(
+              'tree-explorer-item group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--comfy-tree-explorer-item-padding) pr-(--comfy-tree-explorer-item-padding) outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered',
+              isSelected && 'bg-node-component-surface-selected'
+            )
+          "
+          :data-tree-key="item.value.key"
+          :data-parent-key="item.parentItem?.key"
+          :data-parent-label="item.parentItem?.label"
+          :data-tree-node-type="item.value.type"
+          :style="{
+            paddingLeft: `calc(var(--comfy-tree-explorer-item-padding) + ${(item.level - 1) * 16}px)`
+          }"
+          @click="
+            onNodeContentClick(
+              $event,
+              item.value,
+              item.hasChildren ? handleToggle : undefined
+            )
+          "
+          @contextmenu="handleContextMenu($event, item.value)"
+        >
+          <button
+            v-if="item.hasChildren"
+            type="button"
+            tabindex="-1"
+            class="flex size-5 shrink-0 items-center justify-center"
+            :aria-label="isExpanded ? $t('g.collapse') : $t('g.expand')"
+            @click.stop="handleToggle"
+          >
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-right] size-4 transition-transform',
+                  isExpanded && 'rotate-90'
+                )
+              "
+            />
+          </button>
+          <span v-else class="size-5 shrink-0" />
+          <i
+            :class="
+              cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
+            "
+          />
+          <div class="flex min-w-0 flex-1 items-center">
+            <slot
+              v-if="item.value.type === 'folder'"
+              name="folder"
+              :node="item.value"
+            >
+              <TreeExplorerTreeNode :node="item.value" />
+            </slot>
+            <slot v-else name="node" :node="item.value">
+              <TreeExplorerTreeNode :node="item.value" />
+            </slot>
+          </div>
+        </div>
+      </UiTreeItem>
     </template>
-    <template #node="{ node }">
-      <slot name="node" :node="node">
-        <TreeExplorerTreeNode :node="node" />
-      </slot>
-    </template>
-  </Tree>
+  </UiTree>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts" generic="T">
-import Tree from 'primevue/tree'
 import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
+import UiTree from '@/components/ui/tree/Tree.vue'
+import UiTreeItem from '@/components/ui/tree/TreeItem.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
@@ -55,6 +103,7 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
@@ -68,7 +117,11 @@ const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
-const props = defineProps<{
+function preventUnboundSelection(event: Event) {
+  if (!storeSelectionKeys) event.preventDefault()
+}
+
+const { root, class: className } = defineProps<{
   root: TreeExplorerNode<T>
   class?: string
 }>()
@@ -90,10 +143,35 @@ const {
 )
 
 const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
-  const renderedRoot = fillNodeInfo(props.root)
+  const renderedRoot = fillNodeInfo(root)
   return newFolderNode.value
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
+})
+const expandedNodeKeys = computed({
+  get: () =>
+    Object.entries(expandedKeys.value)
+      .filter(([, expanded]) => expanded)
+      .map(([key]) => key),
+  set: (keys: string[]) => {
+    expandedKeys.value = Object.fromEntries(keys.map((key) => [key, true]))
+  }
+})
+const selectedNode = computed({
+  get: () => {
+    if (!storeSelectionKeys) return undefined
+    const key = Object.keys(selectionKeys.value ?? {}).find(
+      (key) => selectionKeys.value?.[key]
+    )
+    return key
+      ? (findNodeByKey(renderedRoot.value, key) ?? undefined)
+      : undefined
+  },
+  set: (node: RenderedTreeExplorerNode<T> | undefined) => {
+    if (storeSelectionKeys) {
+      selectionKeys.value = node ? { [node.key]: true } : {}
+    }
+  }
 })
 const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   if (node.getIcon) {
@@ -130,13 +208,13 @@ const fillNodeInfo = (
 }
 const onNodeContentClick = async (
   e: MouseEvent,
-  node: RenderedTreeExplorerNode<T>
+  node: RenderedTreeExplorerNode<T>,
+  handleToggle?: () => void
 ) => {
-  if (!storeSelectionKeys) {
-    selectionKeys.value = {}
-  }
   if (node.handleClick) {
     await node.handleClick(e)
+  } else {
+    handleToggle?.()
   }
   emit('nodeClick', node, e)
 }
@@ -254,33 +332,3 @@ defineExpose({
   }
 })
 </script>
-
-<style scoped>
-:deep(.tree-explorer-node-label) {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  margin-left: 0.5rem;
-  flex-grow: 1;
-}
-
-/*
- * The following styles are necessary to avoid layout shift when dragging nodes over folders.
- * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
- * we can create a visual indicator for the drop target without affecting the layout of other elements.
- */
-:deep(.p-tree-node-content:has(.tree-folder)) {
-  position: relative;
-}
-
-:deep(.p-tree-node-content:has(.tree-folder.can-drop))::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px solid var(--base-foreground);
-  pointer-events: none;
-}
-</style>

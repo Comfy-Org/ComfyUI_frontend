@@ -294,12 +294,14 @@ const root = computed(() => {
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
+  const fillNodeInfo = (
+    node: TreeNode<ComfyNodeDefImpl>
+  ): TreeExplorerNode<ComfyNodeDefImpl> => {
     const children = node.children?.map(fillNodeInfo)
 
     return {
       key: node.key,
-      label: node.leaf ? node.data.display_name : node.label,
+      label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon() {
@@ -310,6 +312,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       children,
       draggable: node.leaf,
       renderDragPreview(container) {
+        if (!node.data) return
         const vnode = h(NodePreview, { nodeDef: node.data })
         vnode.appContext = appContext
         render(vnode, container)

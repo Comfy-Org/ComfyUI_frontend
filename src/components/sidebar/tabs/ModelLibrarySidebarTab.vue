@@ -143,7 +143,11 @@ const handleSearch = async (query: string) => {
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
-const root = computed<TreeNode>(() => {
+function isModelFolder(value: ModelOrFolder): value is ModelFolder {
+  return 'getModelsFunc' in value
+}
+
+const root = computed<TreeNode<ModelOrFolder>>(() => {
   const allNodes: ModelOrFolder[] = activeSearchQuery.value
     ? searchResults.value.models
     : [...modelStore.visibleModelFolders, ...modelStore.models]
@@ -161,7 +165,7 @@ const root = computed<TreeNode>(() => {
  */
 const autoExpandedSearchKeys = new Set<string>()
 
-function expandNewSearchFolders(node: TreeNode) {
+function expandNewSearchFolders(node: TreeNode<ModelOrFolder>) {
   if (node.leaf || typeof node.key !== 'string') return
   if (!autoExpandedSearchKeys.has(node.key)) {
     autoExpandedSearchKeys.add(node.key)
@@ -177,14 +181,14 @@ watch(root, (newRoot) => {
   expandNewSearchFolders(newRoot)
 })
 
-const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
+const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ModelOrFolder> => {
+  const fillNodeInfo = (
+    node: TreeNode<ModelOrFolder>
+  ): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef | null =
-      node.leaf && node.data ? node.data : null
-    const folder: ModelFolder | null =
-      !node.leaf && node.data ? node.data : null
+    const folder = node.data && isModelFolder(node.data) ? node.data : null
+    const model = node.data && !isModelFolder(node.data) ? node.data : null
 
     return {
       key: node.key,
@@ -194,7 +198,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
           : model.simplified_file_name
         : node.label,
       leaf: node.leaf,
-      data: node.data,
+      data: model ?? undefined,
       getIcon() {
         if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
