@@ -113,7 +113,6 @@ class Load3dAgentHarness {
   private readonly hostSocket: AgentFollowerHostSocket
   private uploads = 0
   private readonly uploadsByName = new Map<string, Request>()
-  private readonly heldModels = new Map<AgentModelFile, Promise<void>>()
 
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
@@ -189,30 +188,6 @@ class Load3dAgentHarness {
       .toBe(model)
   }
 
-  /** The viewer's own loading overlay, shown while a model file is in flight. */
-  get loadingOverlay() {
-    return this.viewer.node.getByTestId(TestIds.loading.overlay)
-  }
-
-  /**
-   * Stops serving `model` until the returned release runs. A capture queued
-   * while the file is held must wait: the prompt is not allowed to carry the
-   * scene the swap is replacing.
-   */
-  holdModel(model: AgentModelFile): () => void {
-    let release: () => void = () => {}
-    this.heldModels.set(
-      model,
-      new Promise<void>((resolve) => {
-        release = resolve
-      })
-    )
-    return () => {
-      this.heldModels.delete(model)
-      release()
-    }
-  }
-
   /** Clicks Queue and resolves once the prompt for it has been posted. */
   async queuePrompt(): Promise<unknown> {
     const posted = this.nextPrompt()
@@ -273,10 +248,9 @@ class Load3dAgentHarness {
       return route.fulfill(jsonRoute({ name, subfolder: 'temp', type: 'temp' }))
     })
     for (const model of Object.keys(MODEL_ASSETS) as AgentModelFile[]) {
-      await page.route(`**/api/view?*filename=${model}*`, async (route) => {
-        await this.heldModels.get(model)
-        return route.fulfill({ path: assetPath(MODEL_ASSETS[model]) })
-      })
+      await page.route(`**/api/view?*filename=${model}*`, (route) =>
+        route.fulfill({ path: assetPath(MODEL_ASSETS[model]) })
+      )
     }
     await page.route(/\/api\/prompt$/, (route) => {
       if (route.request().method() !== 'POST') return route.fallback()

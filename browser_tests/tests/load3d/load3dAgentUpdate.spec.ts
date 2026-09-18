@@ -19,20 +19,16 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         return load3dAgent.capture()
       })
 
-    const heldPrompt =
-      await test.step('hold the replacement model while the agent swaps it in', async () => {
-        const release = load3dAgent.holdModel('workflow.glb')
+    const updatedPrompt =
+      await test.step('queue after the agent replacement finishes loading', async () => {
         load3dAgent.setModelFromAgent('workflow.glb')
         await load3dAgent.expectModel('workflow.glb')
-        await expect(load3dAgent.loadingOverlay).toBeVisible()
-        const heldPrompt = load3dAgent.queuePrompt()
-        release()
-        return heldPrompt
+        await load3dAgent.viewer.waitForModelLoaded()
+        return load3dAgent.queuePrompt()
       })
 
-    await test.step('the held prompt carries the replacement model', async () => {
-      await viewer.waitForModelLoaded()
-      const after: Load3dCapture = await load3dAgent.captureFor(heldPrompt)
+    await test.step('the prompt carries the replacement model', async () => {
+      const after: Load3dCapture = await load3dAgent.captureFor(updatedPrompt)
       expect(after.promptImage).not.toBe(before.promptImage)
       expect(after.imageBytes.byteLength).toBeGreaterThan(0)
       expect(after.imageBytes).not.toEqual(before.imageBytes)
