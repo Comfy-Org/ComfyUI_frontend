@@ -968,14 +968,12 @@ describe('graphMutations', () => {
     expect(widgetContexts).toEqual([context])
   })
 
-  it.fails('keeps a store-only node in LGraph.serialize() without reporting a mismatch', () => {
+  function graphWithStoreOnlyNode() {
     const graph = new LGraph()
-    const mutations = createGraphMutations({
+    createGraphMutations({
       getScope: () => graphScopeOf(graph),
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
-    })
-
-    mutations.addNode(
+    }).addNode(
       {
         id: 1,
         type: 'dummy',
@@ -986,10 +984,21 @@ describe('graphMutations', () => {
       },
       context
     )
+    return graph
+  }
+
+  it('registers a doc node under a live graph scope without an LGraphNode', () => {
+    const graph = graphWithStoreOnlyNode()
 
     expect(
       useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
     ).toHaveLength(1)
+    expect(graph.nodes).toHaveLength(0)
+  })
+
+  it.fails('keeps a store-only node in LGraph.serialize() without reporting a mismatch', () => {
+    const graph = graphWithStoreOnlyNode()
+
     expect(graph.serialize().nodes).toHaveLength(1)
     expect(mockReportError).not.toHaveBeenCalled()
   })
