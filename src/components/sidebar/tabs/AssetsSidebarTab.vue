@@ -209,6 +209,7 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
@@ -236,7 +237,6 @@ import {
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -251,6 +251,7 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -278,10 +279,9 @@ const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
-const shouldShowDeleteButton = computed(() => {
-  if (activeTab.value === 'input' && !isCloud) return false
-  return true
-})
+const shouldShowDeleteButton = computed(
+  () => activeTab.value !== 'input' || flags.assetDeletionEnabled
+)
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
