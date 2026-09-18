@@ -323,6 +323,44 @@ describe('useAttachment', () => {
     await pending
   })
 
+  it('shares three upload slots across overlapping selections and deferred assets', async () => {
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let active = 0
+    let peak = 0
+    const upload = vi.fn(async (file: File) => {
+      active += 1
+      peak = Math.max(peak, active)
+      await gate
+      active -= 1
+      return { ref: file.name }
+    })
+    const registry = chipRegistry()
+    const { addFiles, addDeferredFile } = useAttachment({ upload, ...registry })
+
+    const first = addFiles(['a', 'b', 'c'].map((name) => fileOfSize(name, 1)))
+    const second = addFiles(['d', 'e', 'f'].map((name) => fileOfSize(name, 1)))
+    const deferred = addDeferredFile('g', async () => fileOfSize('g', 1))
+    await Promise.resolve()
+    const startedBeforeRelease = upload.mock.calls.length
+    release()
+    await Promise.all([first, second, deferred])
+
+    expect(startedBeforeRelease).toBe(3)
+    expect(peak).toBe(3)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      'g'
+    ])
+  })
+
   it('scales the upload deadline to the file size', async () => {
     vi.useFakeTimers()
     try {

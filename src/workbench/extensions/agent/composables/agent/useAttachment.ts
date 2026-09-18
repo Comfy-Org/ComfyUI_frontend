@@ -70,27 +70,14 @@ async function withDeadline<T>(
   }
 }
 
-async function forEachWithLimit<T>(
-  items: T[],
-  limit: number,
-  run: (item: T) => Promise<void>
-): Promise<void> {
-  let next = 0
-  const workers = Array.from(
-    { length: Math.min(limit, items.length) },
-    async () => {
-      while (next < items.length) await run(items[next++])
-    }
-  )
-  await Promise.all(workers)
-}
-
 let stagedCount = 0
 
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
+  const waiting: Array<() => void> = []
+  let activeUploads = 0
 
   function stage(name: string): string {
     const id = `upload-${++stagedCount}:${name}`
@@ -128,19 +115,17 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
-    // A pooled batch stages every chip up front, so a queued upload can be
-    // cancelled before its worker reaches it.
-    if (cancelled.has(id)) {
-      settle(id)
-      return false
-    }
-    options.update(id, {
-      name: file.name,
-      previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
-    })
-    const controller = new AbortController()
-    inFlight.set(id, controller)
+    if (activeUploads === MAX_CONCURRENT_UPLOADS)
+      await new Promise<void>((resolve) => waiting.push(resolve))
+    else activeUploads += 1
     try {
+      if (cancelled.has(id)) return false
+      options.update(id, {
+        name: file.name,
+        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
+      })
+      const controller = new AbortController()
+      inFlight.set(id, controller)
       const result = await withDeadline(
         options.upload(file, controller.signal),
         options.uploadTimeoutMs ?? uploadDeadlineMs(file),
@@ -154,6 +139,9 @@ export function useAttachment(options: UseAttachmentOptions) {
       return false
     } finally {
       settle(id)
+      const next = waiting.shift()
+      if (next) next()
+      else activeUploads -= 1
     }
   }
 
@@ -195,12 +183,10 @@ export function useAttachment(options: UseAttachmentOptions) {
       .filter((file) => !isTooLarge(file))
       .map((file) => ({ file, id: stage(file.name) }))
     let uploaded = 0
-    await forEachWithLimit(
-      staged,
-      MAX_CONCURRENT_UPLOADS,
-      async ({ id, file }) => {
+    await Promise.all(
+      staged.map(async ({ id, file }) => {
         if (await uploadStagedFile(id, file)) uploaded += 1
-      }
+      })
     )
     if (uploaded > 0) options.onUploaded?.()
   }
