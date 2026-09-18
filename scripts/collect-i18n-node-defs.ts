@@ -24,7 +24,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const app = window.app
     if (!app) throw new Error('ComfyUI app is not initialized')
 
-    const rawNodeDefs = await app.getNodeDefs()
+    const rawNodeDefs = await app.api.getNodeDefs()
     const { transformNodeDefV1ToV2 } =
       await import('../src/schemas/nodeDef/migration')
 

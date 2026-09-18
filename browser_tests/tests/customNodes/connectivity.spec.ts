@@ -216,7 +216,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
 }) => {
   test.setTimeout(PLAN_SETUP_MS)
   const defs = fromPartial<Record<string, RawNodeDef>>(
-    await comfyPage.page.evaluate(() => window.app!.getNodeDefs())
+    await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
   )
   const registeredNodes = normalizeNodeDefs(defs)
   for (const [nodeType, isolation] of Object.entries(activeIsolatedNodeTypes)) {
@@ -794,7 +794,7 @@ for (const vueNodesEnabled of [false, true]) {
     async ({ comfyPage }) => {
       test.setTimeout(PLAN_SETUP_MS)
       const defs = fromPartial<Record<string, RawNodeDef>>(
-        await comfyPage.page.evaluate(() => window.app!.getNodeDefs())
+        await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
       )
       const nodes = normalizeNodeDefs(defs)
       using consoleErrors = collectConsoleErrors(comfyPage.page)

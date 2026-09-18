@@ -73,6 +73,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -1127,7 +1128,7 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
-  async getNodeDefs(): Promise<unknown> {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
     return await resp.json()
   }
