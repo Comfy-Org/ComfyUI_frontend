@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Stand-in for the GitHub CLI used only by the fix-it eval cases. It answers
+# from the fixture files the case scaffold copied next to it and records every
+# invocation, so graders can check which commands the skill ran and whether a
+# merge was attempted against the inspected head.
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+state="$here/state"
+log="$here/calls.log"
+printf '%s\n' "$*" >> "$log"
+
+fail() { printf 'gh stand-in: %s\n' "$1" >&2; exit 1; }
+pr_number() { cat "$state/pr_number"; }
+require_number() {
+  local n="${1:-}"
+  [[ "$n" =~ ^[0-9]+$ ]] || fail "pull request number required (got '${n:-nothing}'); this stand-in never infers the pull request from the branch"
+  [[ "$n" == "$(pr_number)" ]] || fail "no pull request #$n"
+}
+
+case "${1:-} ${2:-}" in
+  "pr view")
+    require_number "${3:-}"
+    cat "$state/pr_view.json" ;;
+  "pr checks")
+    require_number "${3:-}"
+    if [[ " $* " == *" --required "* ]]; then cat "$state/checks_required.tsv"; else cat "$state/checks.tsv"; fi ;;
+  "pr checkout")
+    require_number "${3:-}"
+    git checkout -q "$(cat "$state/branch")"
+    echo "Switched to branch '$(cat "$state/branch")'" ;;
+  "pr merge")
+    require_number "${3:-}"
+    shift 3
+    sha=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --match-head-commit) sha="${2:-}"; shift 2 ;;
+        --squash|--auto|--delete-branch) shift ;;
+        *) fail "unsupported merge flag $1" ;;
+      esac
+    done
+    [[ -n "$sha" ]] || fail "refusing to merge without --match-head-commit"
+    [[ "$sha" == "$(cat "$state/head_sha")" ]] || fail "head commit mismatch: pull request head is $(cat "$state/head_sha"), you passed $sha"
+    if [[ -f "$state/merge_outcome" ]]; then cp "$state/merge_outcome" "$state/pr_view.json"; fi
+    cat "$state/merge_message" ;;
+  "api user")
+    printf '{"login":"%s"}\n' "$(cat "$state/login")" ;;
+  "api graphql")
+    cat "$state/threads.json" ;;
+  api\ repos/*)
+    case "$2" in
+      */comments*) cat "$state/comments.json" ;;
+      */commits*) cat "$state/commits.json" ;;
+      *) fail "unsupported api path $2" ;;
+    esac ;;
+  "pr comment"|"pr edit"|"pr review")
+    echo "ok (stand-in recorded: $*)" ;;
+  *) fail "unsupported command: $*" ;;
+esac

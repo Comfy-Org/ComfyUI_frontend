@@ -1,6 +1,6 @@
 ---
 name: fix-it
-description: 'Take an existing website pull request (a number or a link) that is stuck, clear every blocker on it (failing checks, unanswered review comments, conflicts with main, a stale description, a missing preview), and send it to merge once it is approved and safe. Use when someone says a pull request is stuck, red, blocked, or asks to get it merged.'
+description: 'Take an existing website pull request (a number or a link) that is stuck, clear every blocker on it (failing checks, unanswered review comments, conflicts with main, a stale description, a missing preview), and send it to merge once it is approved and safe. Use when someone says a pull request is stuck, red, blocked, or asks to get it merged. Do not use it to read, summarize, review, or explain a pull request when nothing on it should change; answer those directly.'
 ---
 
 # fix-it
