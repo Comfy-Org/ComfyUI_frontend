@@ -25,8 +25,10 @@ export class SceneModelManager implements ModelManagerInterface {
   originalRotation: THREE.Euler | null = null
   currentUpDirection: UpDirection = 'original'
   materialMode: MaterialMode = 'original'
-  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]> =
-    new WeakMap()
+  originalMaterials: WeakMap<
+    THREE.Object3D,
+    THREE.Material | THREE.Material[]
+  > = new WeakMap()
   normalMaterial: THREE.MeshNormalMaterial
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial

@@ -4,6 +4,7 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
+import { fromAny } from '@total-typescript/shoehorn'
 
 import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
@@ -30,7 +31,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   function registerWidget<V extends object | string>(widget: BaseDOMWidget<V>) {
     widgetStates.value.set(widget.id, {
-      widget: markRaw(widget) as unknown as Raw<BaseDOMWidget>,
+      widget: fromAny<Raw<BaseDOMWidget>, unknown>(markRaw(widget)),
       visible: true,
       readonly: false,
       zIndex: 0,

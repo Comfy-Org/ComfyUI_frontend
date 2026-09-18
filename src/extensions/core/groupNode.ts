@@ -290,9 +290,7 @@ export class GroupNodeConfig {
                 typeof mergeIfValid
               >[4]
               const res = mergeIfValid(
-                { widget: widgetSpec } as unknown as Parameters<
-                  typeof mergeIfValid
-                >[0],
+                { widget: widgetSpec } as Parameters<typeof mergeIfValid>[0],
                 targetWidget,
                 false,
                 undefined,
@@ -615,7 +613,7 @@ export class GroupNodeConfig {
     const inputMap: Record<string, number> = (this.oldToNewInputMap[nodeIndex] =
       {})
     this.processInputSlots(
-      inputs as unknown as Record<string, unknown[]>,
+      inputs as Record<string, unknown[]>,
       node,
       slots,
       linksTo,
