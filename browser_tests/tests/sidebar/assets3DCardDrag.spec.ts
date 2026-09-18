@@ -24,6 +24,12 @@ const THREE_D_ASSET: Asset = {
   id: '3d-asset-001',
   name: 'output_3d-001.glb',
   tags: ['output'],
+  // Media3DTop.vue only renders the <img> immediately when both preview_id
+  // and preview_url are present; preview_id must be a UUID to pass the
+  // response schema's preview_id: z.string().uuid() (inherited from
+  // @comfyorg/ingest-types). Without it, the card falls back to querying the
+  // server for a preview by filename, which this mock does not serve.
+  preview_id: '54e35f35-63ae-4983-b43e-defe504869c1',
   preview_url: `/api/view?filename=${PREVIEW_FILENAME}&type=output`,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
