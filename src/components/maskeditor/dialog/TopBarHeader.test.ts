@@ -37,6 +37,8 @@ vi.mock(import('@/composables/maskeditor/useMaskEditorSaver'), () => ({
   useMaskEditorSaver: () => mockSaver
 }))
 
+vi.mock(import('@/components/ui/button/Button.vue'))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
