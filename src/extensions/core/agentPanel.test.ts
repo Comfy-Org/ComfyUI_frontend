@@ -112,10 +112,12 @@ async function loadEntryAndSetup(): Promise<void> {
     (e) => e.name === 'Comfy.AgentPanel'
   )
   expect(ext).toBeDefined()
+  // setup() returns the flag gate's promise; awaiting it is the completion
+  // signal, so no polling is needed. It runs inside a scope so the watchers
+  // it installs are torn down between tests.
   await setupScope.run(() =>
     ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   )
-  for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
   expect(mocks.flagListener).toBeTypeOf('function')
 }
 
@@ -405,6 +407,20 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(agentStore.enabled).toBe(true)
     expect(consentStore.load).toHaveBeenCalledOnce()
+  })
+
+  it('forces the panel on for the standalone agent harness even while the flag is false', async () => {
+    // A standalone panel has no cloud identity for PostHog to evaluate the
+    // flag against, so gating it on the flag leaves it permanently off in a
+    // production bundle. The harness itself is the opt-in (the panel is
+    // tree-shaken out of every other non-cloud build).
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    mocks.flagEnabled = false
+
+    await loadEntryAndSetup()
+
+    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(true)
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
