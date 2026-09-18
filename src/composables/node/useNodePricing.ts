@@ -182,6 +182,7 @@ const scheduleEvaluation = (
         source: 'live_node',
         cause
       })
+      cacheLabel(node, sig, '')
     })
     .finally(() => {
       const cur = inflight.get(node)
