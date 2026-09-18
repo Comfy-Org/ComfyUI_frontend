@@ -38,6 +38,12 @@ jobs:
       - name: Typecheck website
         run: pnpm --filter @comfyorg/website typecheck
 
+      # Copy typed into a page file has no key, so it reaches no adapter and
+      # shows up in no report or coverage number: it renders English in every
+      # locale and nothing says so. Reads source, so it runs before the build.
+      - name: Check for copy the translation pipeline cannot see
+        run: pnpm --filter @comfyorg/website check:hardcoded-copy
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
