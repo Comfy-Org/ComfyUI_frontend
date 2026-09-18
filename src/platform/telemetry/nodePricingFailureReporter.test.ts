@@ -17,7 +17,6 @@ const failure = (
   operation: 'evaluate',
   nodeType: 'BrokenNode',
   source: 'live_node',
-  expr: '$error("boom")',
   cause: new Error('boom'),
   ...overrides
 })
@@ -53,7 +52,6 @@ describe('reportNodePricingFailure', () => {
           jsonata_code: 'T1006'
         }),
         context: {
-          expr: '$error("boom")',
           occurrenceCount: 1,
           jsonataPosition: 14,
           jsonataToken: 'notAFunction'

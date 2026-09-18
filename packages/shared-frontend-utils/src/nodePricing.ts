@@ -321,7 +321,6 @@ const compileRule = (
       operation: 'compile',
       nodeType,
       source: 'node_definition',
-      expr: rule.expr,
       cause
     })
     return { ...rule, _compiled: null }
@@ -380,7 +379,6 @@ export async function evaluatePricingContext(
       operation: 'evaluate',
       nodeType: name,
       source: 'pricing_context',
-      expr: rule.expr,
       cause
     })
     return ''
@@ -482,7 +480,6 @@ export const evaluateNodeDefPricing = memoize(
         operation: 'evaluate',
         nodeType: nodeDef.name,
         source: 'node_definition',
-        expr: priceBadge.expr,
         cause
       })
       return ''

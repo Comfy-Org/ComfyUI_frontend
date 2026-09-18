@@ -67,7 +67,6 @@ export function reportNodePricingFailure({
   operation,
   nodeType,
   source,
-  expr,
   cause
 }: NodePricingFailure): void {
   const key = `${operation}|${source}|${nodeType}`
@@ -90,7 +89,6 @@ export function reportNodePricingFailure({
       jsonata_code: jsonataError?.code
     },
     context: {
-      expr,
       occurrenceCount,
       jsonataPosition: jsonataError?.position,
       jsonataToken: jsonataError?.token

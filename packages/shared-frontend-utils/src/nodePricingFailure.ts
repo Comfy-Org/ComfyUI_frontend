@@ -10,7 +10,6 @@ export interface NodePricingFailure {
   nodeType: string
   /** Which host surface ran the rule. */
   source: 'live_node' | 'node_definition' | 'pricing_context'
-  expr: string
   /** The original JSONata error. */
   cause: unknown
 }
@@ -31,8 +30,7 @@ export function setNodePricingFailureReporter(
 
 function logToConsole(failure: NodePricingFailure): void {
   console.error(
-    `[pricing/jsonata] failed to ${failure.operation} expr for ${failure.nodeType}:`,
-    failure.expr,
+    `[pricing/jsonata] failed to ${failure.operation} pricing for ${failure.nodeType}:`,
     failure.cause
   )
 }

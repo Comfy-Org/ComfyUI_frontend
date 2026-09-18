@@ -122,8 +122,7 @@ describe('pricing failure reporting', () => {
     expect(failures).toHaveLength(1)
     expect(failures[0]).toMatchObject({
       operation: 'compile',
-      nodeType: 'BrokenCompile',
-      expr: '{{{'
+      nodeType: 'BrokenCompile'
     })
     expect(failures[0].cause).toMatchObject({ code: 'S0203' })
   })
@@ -135,8 +134,7 @@ describe('pricing failure reporting', () => {
     expect(failures).toHaveLength(1)
     expect(failures[0]).toMatchObject({
       operation: 'evaluate',
-      nodeType: 'BrokenEval',
-      expr: '$error("pricing failure")'
+      nodeType: 'BrokenEval'
     })
     expect(failures[0].cause).toMatchObject({
       code: 'D3137',

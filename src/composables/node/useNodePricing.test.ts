@@ -786,7 +786,6 @@ describe('useNodePricing', () => {
         operation: 'compile',
         nodeType: 'TestInvalidExprNode',
         source: 'node_definition',
-        expr: '{"type":"usd","usd": (widgets.count * 0.01',
         cause: expect.objectContaining({
           message: expect.stringContaining('Expected ")"')
         })
@@ -825,7 +824,6 @@ describe('useNodePricing', () => {
         operation: 'evaluate',
         nodeType: 'TestRuntimeErrorNode',
         source: 'live_node',
-        expr: '$error("pricing failure")',
         cause: expect.objectContaining({
           message: expect.stringContaining('pricing failure')
         })
@@ -1422,7 +1420,6 @@ describe('evaluateNodeDefPricing', () => {
       operation: 'evaluate',
       nodeType: 'ErrorNode',
       source: 'node_definition',
-      expr: '$error("pricing failure")',
       cause: expect.objectContaining({
         message: expect.stringContaining('pricing failure')
       })

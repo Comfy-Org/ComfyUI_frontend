@@ -169,7 +169,6 @@ const scheduleEvaluation = (
           operation: 'evaluate',
           nodeType,
           source: 'live_node',
-          expr: rule.expr,
           cause
         })
         // Cache empty to avoid retry-spam for same signature
@@ -181,7 +180,6 @@ const scheduleEvaluation = (
         operation: 'format',
         nodeType,
         source: 'live_node',
-        expr: rule.expr,
         cause
       })
     })
