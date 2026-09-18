@@ -223,7 +223,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       .click()
     await page.getByRole('button', { name: 'Make owner' }).click()
 
-    await expect(page.getByText('Role updated')).toBeVisible()
+    await expect(
+      page.getByTestId('toast').getByText('Role updated')
+    ).toBeVisible()
     await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
     await expect(emails).toHaveText([
       CREATOR.email,
@@ -296,7 +298,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Make owner' }).click()
 
     // US10 — error toast, dialog stays open, role unchanged.
-    await expect(page.getByText('Failed to update role')).toBeVisible()
+    await expect(
+      page.getByTestId('toast').getByText('Failed to update role')
+    ).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
     ).toBeVisible()

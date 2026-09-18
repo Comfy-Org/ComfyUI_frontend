@@ -131,7 +131,7 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -246,10 +246,8 @@ async function onSelectTemplate(id: string) {
   }
 
   failedTemplateId.value = id
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t('gettingStarted.templateFailed')
+  useToast().error(t('g.error'), {
+    description: t('gettingStarted.templateFailed')
   })
 }
 </script>

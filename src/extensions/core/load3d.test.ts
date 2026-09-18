@@ -1,11 +1,11 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
@@ -136,10 +136,6 @@ vi.mock(import('@/i18n'), () => ({
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
-  LiteGraph: fromPartial({ ContextMenu: fromAny(vi.fn()) })
 }))
 
 await import('@/extensions/core/load3d')
@@ -455,9 +451,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 
@@ -575,9 +571,9 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await flush()
 
     expect(load3d.loadModel).toHaveBeenCalledWith('/view')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.failedToLoadModel'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.failedToLoadModel'
+    })
   })
 
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
@@ -1015,9 +1011,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

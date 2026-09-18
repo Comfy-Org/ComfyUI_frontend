@@ -20,9 +20,7 @@
     </template>
   </div>
 
-  <GlobalToast />
-  <InviteAcceptedToast />
-  <RerouteMigrationToast />
+  <Toaster />
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
   <PartnerNodesEducationCard v-if="!isCloud" />
@@ -53,11 +51,9 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
+import { Toaster } from '@/components/ui/toast'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
-import GlobalToast from '@/components/toast/GlobalToast.vue'
-import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
-import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'

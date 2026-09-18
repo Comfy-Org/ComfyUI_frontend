@@ -10,6 +10,14 @@ import Composer from '../Composer.vue'
 import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null
@@ -88,7 +96,9 @@ describe('sent message workflow clipboard', () => {
       'Use @[Workflow: 参考 <B> 🐈]\n  @[Workflow: Missing]!\n@[Node: Sampler #12]\n@[File: notes.txt]'
     )
 
-    await user.type(editor, 'New: ')
+    await user.click(editor)
+    await user.paste('New: ')
+    expect(store.draft).toBe('New: ')
     await user.paste()
     expect(store.draft).toBe(
       'New: Use \n  !\n@[Node: Sampler #12]\n@[File: notes.txt]'

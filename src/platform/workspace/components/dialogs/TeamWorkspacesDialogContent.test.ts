@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import type { Pinia } from 'pinia'
 import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -22,14 +23,26 @@ const mockSwitchWorkspace = vi.fn()
 let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
@@ -205,10 +218,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Network error'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Network error' })
       )
     })
   })
@@ -300,10 +312,9 @@ describe('TeamWorkspacesDialogContent', () => {
       await typeAndCreate(container, user, 'New Team')
 
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Limit reached'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Limit reached' })
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
@@ -323,10 +334,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Setup failed'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Setup failed' })
       )
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'

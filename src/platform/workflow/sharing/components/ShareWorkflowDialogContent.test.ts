@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -12,15 +13,23 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 
 vi.mock(import('@/platform/telemetry'))
 
-const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
+const mockToast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+  loading: vi.fn(),
+  custom: vi.fn()
+}))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => mockToast
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToast.success)
+  vi.mocked(useToast().error).mockImplementation(mockToast.error)
+  vi.mocked(useToast().info).mockImplementation(mockToast.info)
+  vi.mocked(useToast().warning).mockImplementation(mockToast.warning)
+  vi.mocked(useToast().loading).mockImplementation(mockToast.loading)
+  vi.mocked(useToast().custom).mockImplementation(mockToast.custom)
+})
 
 vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
@@ -481,10 +490,9 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to load publish status'
-      })
+      expect(mockToast.error).toHaveBeenCalledWith(
+        'Failed to load publish status'
+      )
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -502,10 +510,8 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Publish failed'
+      expect(mockToast.error).toHaveBeenCalledWith('Error', {
+        description: 'Publish failed'
       })
     })
 
