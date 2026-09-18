@@ -86,6 +86,7 @@ import {
   appliedMap,
   apush,
   arrayItemRefusal,
+  cloneForMap,
   countDefinitionInstances,
   createNodeMap,
   definitionsMap,
@@ -100,16 +101,17 @@ import {
   stampsMap,
   widgetStorageOf,
 } from "./doc.js";
+import { linkHasMissingEndpoint, remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
 import { CMP_EVENT_SCHEMA_VERSION, emitCmpEvent, type CmpCallContext } from "./events.js";
+import { mintDefinition } from "./mint.js";
+import { projectDefinition } from "./project.js";
 import {
   MAX_OP_COST,
   MAX_OPS_PER_BATCH,
   MAX_PAYLOAD_DEPTH,
   opBoundsRefusal,
 } from "./limits.js";
-import { mintDefinition } from "./mint.js";
-import { projectDefinition } from "./project.js";
 import { codePointCompare, compareStampKeys, stampKey, stampTargetKey, widgetTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
@@ -126,6 +128,7 @@ import {
   type GrowConnectOp,
   type GrowSpec,
   type InteriorSetWidgetOp,
+  type InsertWorkflowOp,
   type Op,
   type SetWidgetOp,
   type StampKey,
@@ -443,9 +446,11 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcom
       return applyClear(doc, op);
     case "define_subgraph":
       return applyDefineSubgraph(doc, op, catalog);
+    case "insert_workflow":
+      return applyInsertWorkflow(doc, op, catalog);
     default:
       // Exhaustiveness guard (issue #21): with every `Op` member cased above,
-      // `op` is `never` here. Add a sixth IMPLEMENTED kind to `Op` and this
+      // `op` is `never` here. Add an eighth IMPLEMENTED kind to `Op` and this
       // line stops compiling until it gets a `case`.
       //
       // Issue #17 removed the `case "reset_doc"` that used to sit here. It was
@@ -558,21 +563,36 @@ function definitionWidgetEdits(
     if (!Array.isArray(target) || target[0] !== "widget" || !Array.isArray(target[1])) continue;
     const path = target[1].map(String);
     const widget = target[3];
-    if (path.length !== 2 || typeof widget !== "string") continue;
-    const oldNode = definitionNode(existing, path[0]!, path[1]!);
-    if (!oldNode) continue;
-    const oldWidgets = oldNode.get("widgets");
+    if (path.length < 2 || typeof widget !== "string") continue;
+    const resolved = definitionNodeAtPath(existing, path);
+    if (!resolved) continue;
+    const oldWidgets = resolved.node.get("widgets");
     if (oldWidgets instanceof Y.Map && oldWidgets.has(widget)) {
       edits.push({
         targetKey,
-        definitionId: path[0]!,
-        nodeId: path[1]!,
+        definitionId: resolved.definitionId,
+        nodeId: path.at(-1)!,
         widget,
         value: structuredClone(oldWidgets.get(widget)),
       });
     }
   }
   return edits;
+}
+
+function definitionNodeAtPath(
+  root: Y.Map<unknown>,
+  path: string[],
+): { definitionId: string; node: Y.Map<unknown> } | null {
+  let definitionId = path[0]!;
+  let node = definitionNode(root, definitionId, path[1]!);
+  if (!node) return null;
+  for (const nodeId of path.slice(2)) {
+    definitionId = String(node.get("type"));
+    node = definitionNode(root, definitionId, nodeId);
+    if (!node) return null;
+  }
+  return { definitionId, node };
 }
 
 function restoreDefinitionWidgetEdits(
@@ -617,8 +637,8 @@ function assertDefinitionIdsAvailable(
   doc: Y.Doc,
   definition: Record<string, unknown>,
   excludedRootId?: string,
+  submitted = new Set<string>(),
 ): void {
-  const submitted = new Set<string>();
   const visit = (candidate: Record<string, unknown>, path: string): void => {
     const id = String(candidate.id);
     if (submitted.has(id)) throw new OpRejectedError("malformed_op", `define_subgraph: duplicate definition id '${id}' at ${path}`);
@@ -700,17 +720,17 @@ function validateSubgraphDefinition(definition: Record<string, unknown>, path: s
   });
 }
 
-function assertUniqueNormalizedIds(values: unknown[], path: string, required = false): void {
+function assertUniqueNormalizedIds(values: unknown[], path: string, required = false, operation = "define_subgraph"): void {
   const ids = new Set<string>();
   values.forEach((value, index) => {
     const id = Array.isArray(value) ? value[0] : isPlainRecord(value) ? value.id : undefined;
     if (id === undefined || id === null) {
-      if (required) throw new OpRejectedError("malformed_op", `define_subgraph: missing id at ${path}[${index}]`);
+      if (required) throw new OpRejectedError("malformed_op", `${operation}: missing id at ${path}[${index}]`);
       return;
     }
     const normalized = String(id);
     if (ids.has(normalized)) {
-      throw new OpRejectedError("malformed_op", `define_subgraph: duplicate normalized id '${normalized}' at ${path}[${index}]`);
+      throw new OpRejectedError("malformed_op", `${operation}: duplicate normalized id '${normalized}' at ${path}[${index}]`);
     }
     ids.add(normalized);
   });
@@ -743,6 +763,227 @@ function validateSerializableValue(value: unknown, path: string): void {
     return;
   }
   throw new OpRejectedError("malformed_op", `define_subgraph: ${path} is not JSON-serializable`);
+}
+
+// ---------------------------------------------------------------------------
+// insert_workflow
+// ---------------------------------------------------------------------------
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (typeof value === "object" && value !== null) {
+    return `{${Object.keys(value).sort(codePointCompare).map((key) => `${JSON.stringify(key)}:${canonicalJson((value as Record<string, unknown>)[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function numericId(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && /^[0-9]+$/.test(value)) return parseInt(value, 10);
+  return undefined;
+}
+
+function scrubPrivateKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(scrubPrivateKeys);
+  if (typeof value !== "object" || value === null) return value;
+  const clean: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (!key.startsWith("__")) clean[key] = scrubPrivateKeys(child);
+  }
+  return clean;
+}
+
+function definitionId(value: unknown): string | undefined {
+  if (typeof value === "string" && value.length > 0) return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+}
+
+function validateRawGraphIds(nodes: unknown[], links: unknown[], path: string): void {
+  assertUniqueNormalizedIds(nodes, `${path}.nodes`, true, "insert_workflow");
+  assertUniqueNormalizedIds(links, `${path}.links`, true, "insert_workflow");
+}
+
+function validateDefinitionInputs(subgraphs: unknown[], path = "workflow.definitions.subgraphs"): void {
+  const ids = new Set<string>();
+  subgraphs.forEach((candidate, index) => {
+    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition must be an object");
+    }
+    const sg = candidate as Record<string, unknown>;
+    const id = definitionId(sg["id"]);
+    if (id === undefined) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition requires a valid id");
+    }
+    if (ids.has(id)) {
+      throw new OpRejectedError("malformed_op", `insert_workflow: duplicate definition id '${id}' at ${path}[${index}]`);
+    }
+    ids.add(id);
+    if (!Array.isArray(sg["nodes"]) || (sg["links"] !== undefined && !Array.isArray(sg["links"]))) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: definition nodes and links must be arrays");
+    }
+    const definitionPath = `${path}[${index}]`;
+    validateRawGraphIds(sg["nodes"], (sg["links"] as unknown[] | undefined) ?? [], definitionPath);
+    const nested = (sg["definitions"] as { subgraphs?: unknown } | undefined)?.subgraphs;
+    if (nested !== undefined && !Array.isArray(nested)) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: nested definitions.subgraphs must be an array");
+    }
+    if (Array.isArray(nested)) validateDefinitionInputs(nested, `${definitionPath}.definitions.subgraphs`);
+  });
+}
+
+function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetCatalog): SuccessfulOutcome {
+  const workflow = scrubPrivateKeys(op.workflow) as unknown;
+  if (typeof workflow !== "object" || workflow === null || Array.isArray(workflow)) {
+    throw new OpRejectedError("malformed_op", "insert_workflow: workflow must be an object");
+  }
+  let wf = workflow as Record<string, unknown>;
+  if (!Array.isArray(wf["nodes"]) || (wf["links"] !== undefined && !Array.isArray(wf["links"]))) {
+    throw new OpRejectedError("malformed_op", "insert_workflow: nodes and links must be arrays");
+  }
+  const definitions = wf["definitions"];
+  if (definitions !== undefined && (typeof definitions !== "object" || definitions === null || Array.isArray(definitions))) {
+    throw new OpRejectedError("malformed_op", "insert_workflow: definitions must be an object");
+  }
+  const subgraphs = (definitions as { subgraphs?: unknown } | undefined)?.subgraphs;
+  if (subgraphs !== undefined && !Array.isArray(subgraphs)) {
+    throw new OpRejectedError("malformed_op", "insert_workflow: definitions.subgraphs must be an array");
+  }
+  if (wf["groups"] !== undefined && !Array.isArray(wf["groups"])) {
+    throw new OpRejectedError("malformed_op", "insert_workflow: groups must be an array");
+  }
+  validateRawGraphIds(wf["nodes"] as unknown[], (wf["links"] as unknown[] | undefined) ?? [], "workflow");
+  validateDefinitionInputs((subgraphs as unknown[] | undefined) ?? []);
+  wf = remapInsertedWorkflowIds(wf as unknown as import("./types.js").WorkflowJSON, op.op_id) as unknown as Record<string, unknown>;
+  const remappedDefinitions = wf["definitions"] as { subgraphs?: unknown[] } | undefined;
+  const remappedSubgraphs = remappedDefinitions?.subgraphs ?? [];
+
+  const nodes = nodesMap(doc);
+  const links = linksMap(doc);
+  const stamps = stampsMap(doc);
+  const stamp = stampKey(op);
+  const seenNodes = new Set<string>();
+  for (const candidate of wf["nodes"] as unknown[]) {
+    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
+      throw new OpRejectedError("invalid_node_payload", "insert_workflow: every node must be an object");
+    }
+    const node = candidate as { id?: unknown; type?: unknown };
+    if (node.id === undefined || typeof node.type !== "string" || node.type.length === 0) {
+      throw new OpRejectedError("invalid_node_payload", "insert_workflow: every node requires id and type");
+    }
+    const key = String(node.id);
+    if (seenNodes.has(key)) {
+      throw new OpRejectedError("node_id_collision", `insert_workflow: node id '${key}' collides`);
+    }
+    const existing = nodes.get(key);
+    if (existing) {
+      const incumbent = stamps.get(JSON.stringify(["insert_workflow_node", key])) as StampKey | undefined;
+      if (incumbent === undefined) {
+        throw new OpRejectedError("node_id_collision", `insert_workflow: node id '${key}' collides`);
+      }
+      if (compareStampKeys(stamp, incumbent) <= 0) return "lww-dropped";
+    }
+    seenNodes.add(key);
+  }
+  const seenLinks = new Set<string>();
+  const linkWrites: unknown[][] = [];
+  for (const candidate of (wf["links"] as unknown[] | undefined) ?? []) {
+    if (!Array.isArray(candidate) || candidate[0] === undefined || candidate[1] === undefined || candidate[3] === undefined) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: every link must be a tuple with an id and two endpoints");
+    }
+    const key = String(candidate[0]);
+    if (seenLinks.has(key)) {
+      throw new OpRejectedError("link_id_collision", `insert_workflow: link id '${key}' collides`);
+    }
+    if (links.has(key)) {
+      const incumbent = stamps.get(JSON.stringify(["insert_workflow_link", key])) as StampKey | undefined;
+      if (incumbent === undefined) {
+        throw new OpRejectedError("link_id_collision", `insert_workflow: link id '${key}' collides`);
+      }
+      if (compareStampKeys(stamp, incumbent) <= 0) return "lww-dropped";
+    }
+    seenLinks.add(key);
+    if (linkHasMissingEndpoint(candidate, (id) => nodes.has(String(id)) || seenNodes.has(String(id)))) {
+      continue;
+    }
+    linkWrites.push(candidate);
+  }
+
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  if (prior != null && compareStampKeys(stamp, prior) <= 0) return "lww-dropped";
+
+  if (remappedSubgraphs.length > 0 && !catalog) {
+    throw new OpRejectedError("catalog_required", "insert_workflow: the pinned catalog is required to encode definitions");
+  }
+  const cat = catalog ?? { types: {} };
+  const defs = definitionsMap(doc);
+  const submittedDefinitionIds = new Set<string>();
+  const definitionWrites: Array<[string, Y.Map<unknown>, string]> = [];
+  for (const candidate of remappedSubgraphs) {
+    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition must be an object");
+    }
+    const sg = candidate as Record<string, unknown>;
+    const id = definitionId(sg["id"])!;
+    validateSubgraphDefinition(sg, "workflow.definitions.subgraphs");
+    validateDefinitionWidgets(sg, cat);
+    assertDefinitionIdsAvailable(doc, sg, undefined, submittedDefinitionIds);
+    const digest = sha256Hex(canonicalOp(sg as unknown as Op));
+    definitionWrites.push([id, mintDefinition(sg, cat), digest]);
+  }
+
+  const nodeWrites: Array<[string, unknown, Y.Map<unknown>]> = [];
+  for (const candidate of wf["nodes"] as import("./types.js").WorkflowNode[]) {
+    const node = structuredClone(candidate);
+    const wv = node.widgets_values;
+    const entry = catalogEntry(catalog, node.type);
+    if (!catalog && Array.isArray(wv) && wv.length > 0) {
+      throw new OpRejectedError("catalog_required", `insert_workflow(${node.type}): positional widgets_values needs a catalog`);
+    }
+    rejectUnprojectableWidgets(node.type, wv, entry);
+    try {
+      nodeWrites.push([String(node.id), node.id, createNodeMap(node, entry?.widget_order)]);
+    } catch (err) {
+      throw new OpRejectedError("invalid_node_payload", `insert_workflow(${node.type}): ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  for (const [id, definition, digest] of definitionWrites) {
+    mset(defs, id, definition);
+    setDefinitionDigest(doc, id, digest);
+  }
+  for (const link of linkWrites) {
+    const key = String((link as unknown[])[0]);
+    mset(links, key, cloneForMap(link, "insert_workflow: link"));
+    mset(stamps, JSON.stringify(["insert_workflow_link", key]), stamp);
+  }
+  for (const [key, id, nodeMap] of nodeWrites) {
+    clearObsoleteWidgetStamps(stamps, key);
+    mset(nodeMap, NODE_INCARNATION_KEY, `${op.op_id}:${key}`);
+    mset(nodes, key, nodeMap);
+    mset(stamps, JSON.stringify(["insert_workflow_node", key]), stamp);
+    mset(stamps, targetKey, stamp);
+    reconcileNodeLinkRefs(doc, id, nodeMap);
+  }
+  if (nodeWrites.length === 0) mset(stamps, targetKey, stamp);
+
+  const meta = metaMap(doc);
+  if (Array.isArray(wf["groups"])) {
+    const currentGroups = Array.isArray(meta.get("groups")) ? meta.get("groups") as unknown[] : [];
+    const merged = new Map<string, unknown>();
+    for (const group of [...currentGroups, ...wf["groups"]]) merged.set(canonicalJson(group), group);
+    mset(meta, "groups", [...merged.entries()].sort(([a], [b]) => codePointCompare(a, b)).map(([, group]) => group));
+  }
+  const currentNode = numericId(meta.get("last_node_id")) ?? 0;
+  const maxNode = Math.max(currentNode, ...nodeWrites.map(([, id]) => numericId(id) ?? currentNode));
+  if (maxNode > currentNode) mset(meta, "last_node_id", maxNode);
+  const currentLink = numericId(meta.get("last_link_id")) ?? 0;
+  const maxLink = Math.max(currentLink, ...linkWrites.map((link) => numericId(link[0]) ?? currentLink));
+  if (maxLink > currentLink) mset(meta, "last_link_id", maxLink);
+  return nodeWrites.length > 0 || linkWrites.length > 0 || definitionWrites.length > 0 || ((wf["groups"] as unknown[] | undefined)?.length ?? 0) > 0
+    ? "applied"
+    : "no-op";
 }
 
 // ---------------------------------------------------------------------------

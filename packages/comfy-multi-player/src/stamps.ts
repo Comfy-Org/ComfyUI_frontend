@@ -112,6 +112,12 @@ export function writeTarget(op: WireOp): unknown[] {
       return ["input", String(op.to_node), op.to_slot];
     case "disconnect":
       return ["input", String(op.to_node), op.to_slot];
+    case "insert_workflow":
+      // One insertion is one register: the op is idempotent by `op_id` (exact
+      // replay is a no-op via the applied-set gate), and two distinct
+      // insertions never contend because the minter allocates fresh ids
+      // (ADR-022). Keyed by op_id so a stamp lookup is per-insertion.
+      return ["insert_workflow", op.op_id];
     case "clear":
     case "reset_doc":
       // Whole-document ops: no scalar register to contest, so the target is
@@ -123,7 +129,7 @@ export function writeTarget(op: WireOp): unknown[] {
       return ["definition", op.subgraph_id];
     default:
       // Exhaustiveness guard (issue #21): with every `WireOp` member cased
-      // above — the five `Op` kinds plus the deferred `reset_doc` — `op` is
+      // above — the eight `Op` kinds plus the deferred `reset_doc` — `op` is
       // `never` here, so adding a kind to EITHER union fails `tsc` at this
       // line until it is given a write target.
       //

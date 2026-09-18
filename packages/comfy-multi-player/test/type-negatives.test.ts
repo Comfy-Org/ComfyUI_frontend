@@ -49,7 +49,7 @@ const negatives = join(root, "test", "types", "invalid-states.negative.ts");
  * tests green. An exact count also means ADDING a state without updating this
  * constant fails, which is the reminder you want.
  */
-const EXPECTED_DIRECTIVES = 13;
+const EXPECTED_DIRECTIVES = 14;
 const DIRECTIVE = /^[ \t]*\/\/ @ts-expect-error\b/gm;
 
 describe("invalid op states are unrepresentable (issue #17)", () => {
