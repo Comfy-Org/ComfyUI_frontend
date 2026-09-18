@@ -1,4 +1,7 @@
 import OpenAI from 'openai'
+import { zodTextFormat } from 'openai/helpers/zod'
+import type { ResponseUsage } from 'openai/resources/responses/responses'
+import { z } from 'zod'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { tokenErrors } from './protected-tokens'
@@ -79,34 +82,17 @@ export function buildSystemPrompt(
   locale: OutputLocale,
   glossary: string
 ): string {
-  return `You are a professional software localization translator for ComfyUI, a node-based interface for generative AI models.
-Translate each item's "source" string from English into ${locale.name}.
+  return `Translate each source from English into ${locale.name} for ComfyUI,
+a node-based generative AI application. Return each translation
+under its item's id.
 
-Rules:
-- Respond with a JSON object that maps every item "id" to its translated string — every id, no other keys, no commentary.
-- Every substring listed in an item's "preserve" array must appear in the translation exactly as written, byte for byte. Never translate, transliterate, or renumber them.
-- Interpolation placeholders such as {name} stay exactly as written.
-- The | character separates plural forms. Keep the same number of forms and translate each form.
-- The "context" field is the JSON path of the string in the UI resources; use it to resolve ambiguity. Keep values that are technical identifiers (node type names, parameter names, file names) unchanged when translating them would break meaning.
-- Match the brevity and professional tone of the source.
+Use context to resolve meaning. Preserve the source's meaning,
+tone, and level of detail. Keep code identifiers and every substring
+in preserve unchanged. Retain the number and order of | separated
+plural forms.
 
 ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
-}
-
-function parseBatchResponse(
-  content: string,
-  requestedIds: ReadonlySet<string>
-): Record<string, string> {
-  const parsed: unknown = JSON.parse(content)
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('translation response is not a JSON object')
-  }
-  const record: Record<string, string> = {}
-  for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string' && requestedIds.has(key)) record[key] = value
-  }
-  return record
 }
 
 export interface RequestCounter {
@@ -141,7 +127,7 @@ interface OpenAiTranslatorOptions {
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
-  onCompletion?: (completion: OpenAI.ChatCompletion) => void
+  onUsage?: (usage: ResponseUsage | undefined) => void
   requestTimeoutMs?: number
 }
 
@@ -161,30 +147,44 @@ export function createOpenAiTranslator(
     splitDepth: number
   ): Promise<Record<string, string>> {
     if (items.length === 0) return {}
-    const requestedIds = new Set(items.map((item) => item.id))
+    const schema = z
+      .object(Object.fromEntries(items.map((item) => [item.id, z.string()])))
+      .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const completion = await client.chat.completions.create({
+      const request = client.responses.parse({
         model: options.model,
-        reasoning_effort: options.reasoningEffort,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(locale, options.glossary)
-          },
-          { role: 'user', content: JSON.stringify({ items }) }
-        ]
+        reasoning: { effort: options.reasoningEffort },
+        store: false,
+        text: { format: zodTextFormat(schema, 'translations') },
+        instructions: buildSystemPrompt(locale, options.glossary),
+        input: JSON.stringify({ items })
       })
-      options.onCompletion?.(completion)
-      const choice = completion.choices[0]
-      if (choice?.finish_reason === 'length') {
+      if (options.onUsage) {
+        const httpResponse = await request.asResponse()
+        const { usage }: { usage?: ResponseUsage } = await httpResponse
+          .clone()
+          .json()
+        options.onUsage(usage)
+      }
+      const response = await request.catch((error: unknown) => {
+        if (!(error instanceof SyntaxError || error instanceof z.ZodError)) {
+          throw error
+        }
+        deferralReason = error.message
+        return undefined
+      })
+      if (!response) continue
+      if (
+        response.status === 'incomplete' &&
+        response.incomplete_details?.reason === 'max_output_tokens'
+      ) {
         if (items.length === 1) {
-          deferralReason = `the response was truncated (finish_reason "length") for the single string ${items[0].context}`
+          deferralReason = `the response was truncated (max_output_tokens) for the single string ${items[0].context}`
           continue
         }
         if (splitDepth >= options.maxTruncationSplitDepth) {
-          deferralReason = `${items.length} strings were still truncated (finish_reason "length") at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
+          deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
           break
         }
         const settled = await Promise.allSettled(
@@ -199,16 +199,22 @@ export function createOpenAiTranslator(
         }
         return merged
       }
-      const content = choice?.message?.content
-      if (typeof content !== 'string') {
-        deferralReason = 'the response has no message content'
-        continue
+      if (response.status !== 'completed') {
+        deferralReason = `response status ${response.status}: ${response.incomplete_details?.reason ?? response.error?.code ?? 'no details'}`
+        break
       }
-      try {
-        return parseBatchResponse(content, requestedIds)
-      } catch (error) {
-        deferralReason = error instanceof Error ? error.message : String(error)
+      if (
+        response.output.some(
+          (item) =>
+            item.type === 'message' &&
+            item.content.some((content) => content.type === 'refusal')
+        )
+      ) {
+        deferralReason = 'the model refused the translation'
+        break
       }
+      if (response.output_parsed !== null) return response.output_parsed
+      deferralReason = 'the response has no parsed translation'
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
