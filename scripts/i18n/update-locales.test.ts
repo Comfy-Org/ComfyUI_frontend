@@ -28,7 +28,8 @@ import {
   assembleLeafTranslations,
   buildTranslationItems,
   formatPruneSummary,
-  formatUsageSummary
+  formatUsageSummary,
+  resolveTargetConfig
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -486,6 +487,49 @@ describe('validateLocale', () => {
     expect(
       validateLocale(source, { count: 'None | {total} many' }, changes)
     ).toEqual(['count: missing {count}', 'count: added {total}'])
+  })
+})
+
+describe('resolveTargetConfig', () => {
+  it.for([
+    {
+      argv: ['--check'],
+      entry: 'src/locales/en',
+      output: 'src/locales',
+      locales: [
+        'zh',
+        'zh-TW',
+        'ru',
+        'ja',
+        'ko',
+        'fr',
+        'es',
+        'ar',
+        'tr',
+        'pt-BR',
+        'fa',
+        'he',
+        'it',
+        'de'
+      ]
+    },
+    {
+      argv: ['--target', 'website', '--check'],
+      entry: 'apps/website/src/locales/en',
+      output: 'apps/website/src/locales',
+      locales: ['zh-CN', 'ja']
+    }
+  ])('selects the catalogs for $argv', ({ argv, entry, output, locales }) => {
+    const config = resolveTargetConfig(argv)
+    expect(config.entry).toBe(entry)
+    expect(config.output).toBe(output)
+    expect(config.outputLocales.map(({ code }) => code)).toEqual(locales)
+  })
+
+  it.for([['--target', 'docs'], ['--target']])('rejects %s', (argv) => {
+    expect(() => resolveTargetConfig(argv)).toThrow(
+      'Unknown translation target'
+    )
   })
 })
 

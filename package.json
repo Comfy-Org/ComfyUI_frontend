@@ -52,6 +52,8 @@
     "lint:website:fix": "pnpm lint:website --fix",
     "locale": "tsx scripts/i18n/update-locales.ts",
     "locale:check": "tsx scripts/i18n/update-locales.ts --check",
+    "locale:website": "tsx scripts/i18n/update-locales.ts --target website",
+    "locale:website:check": "tsx scripts/i18n/update-locales.ts --target website --check",
     "oxlint:audit": "oxlint --config tools/oxlint-plugins/vitestCleanup.config.json .",
     "oxlint:main": "oxlint src browser_tests tools/oxlint-plugins apps/website/src apps/website/scripts apps/billing-web/src --type-aware",
     "oxlint": "pnpm oxlint:main && pnpm oxlint:audit",
