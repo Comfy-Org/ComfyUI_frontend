@@ -33,7 +33,7 @@ A thread's author is the author of its `first` comment; its last comment is
 the `last` node, whatever the thread's length. Reply in a thread and resolve
 one with these two commands, exactly, with the thread's `id` from the query:
 
-```bash
+````bash
 gh api graphql -F threadId=<id> -f body=<text> -f query='
 mutation($threadId:ID!,$body:String!){
   addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'
@@ -132,3 +132,4 @@ or the exact person or channel to message; and a block headed "Forward this to
 an engineer" that holds the technical detail (pull request link, check name,
 the failing line, the exact command, what you already tried). Everything above
 that block stays free of technical terms.
+````
