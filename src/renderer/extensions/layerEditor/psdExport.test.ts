@@ -1,5 +1,6 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { Document } from './engine/document'
 import { registerBuiltinKinds } from './engine/kinds'
@@ -16,11 +17,10 @@ import {
 import type { PsdExportDeps } from './psdExport'
 
 function fakeCanvas(w = 8, h = 8): HTMLCanvasElement {
-  return fromAny<HTMLCanvasElement, unknown>({
-    width: w,
-    height: h,
-    tag: Math.random()
-  })
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  return canvas
 }
 
 let idSeq = 0
@@ -267,16 +267,11 @@ describe('placed leaf rasterization', () => {
     ) {
       if (kind !== '2d') return null
       const noop = () => {}
-      return fromAny<CanvasRenderingContext2D, unknown>({
+      return createMockCanvas2DContext({
         canvas: this,
-        fillStyle: '',
-        fillRect: noop,
         translate: noop,
         rotate: noop,
-        drawImage: noop,
-        clearRect: noop,
-        save: noop,
-        restore: noop
+        drawImage: noop
       })
     } as typeof HTMLCanvasElement.prototype.getContext
   })
