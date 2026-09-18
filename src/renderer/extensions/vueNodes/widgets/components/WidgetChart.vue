@@ -20,7 +20,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 
-const value = defineModel<ChartData>({ required: true })
+const value = defineModel<ChartData | null>({ required: true })
 
 const props = defineProps<{
   widget: SimplifiedWidget<ChartData, ChartWidgetOptions>

@@ -8,12 +8,22 @@ type InputPreviewOutput = Pick<NodeExecutionOutput, 'images'> & {
 }
 
 export function isInputPreviewOutput(
-  output: Pick<NodeExecutionOutput, 'images'> | undefined
+  output: unknown
 ): output is InputPreviewOutput {
-  const images = output?.images
+  if (typeof output !== 'object' || output === null || !('images' in output)) {
+    return false
+  }
+
+  const images = output.images
   return (
     Array.isArray(images) &&
     images.length > 0 &&
-    images.every((image) => image.type === 'input')
+    images.every(
+      (image) =>
+        typeof image === 'object' &&
+        image !== null &&
+        'type' in image &&
+        image.type === 'input'
+    )
   )
 }

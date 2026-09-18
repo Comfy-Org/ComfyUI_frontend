@@ -86,7 +86,7 @@ function isRegistrySubscriptionTier(
 
 // Workspace-level tiers (TEAM, and any added later) map to no key in this
 // personal plan catalog.
-export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
+export function toTierKey(tier: unknown): TierKey | null {
   return isRegistrySubscriptionTier(tier) ? TIER_TO_KEY[tier] : null
 }
 
@@ -101,9 +101,7 @@ export function isEnterprisePlanSlug(slug: string | null | undefined): boolean {
 // A tier the frontend cannot map to its catalog and that is not one of the
 // workspace-level tiers it knows about. Price and feature claims must never be
 // borrowed for a plan we cannot identify (FE-1662 story 6).
-export function isUnknownTier(
-  tier: IngestSubscriptionTier | null | undefined
-): boolean {
+export function isUnknownTier(tier: unknown): boolean {
   if (tier == null || tier === 'TEAM' || tier === 'ENTERPRISE') return false
   return toTierKey(tier) === null
 }
@@ -111,9 +109,7 @@ export function isUnknownTier(
 // Enterprise and unrecognized tiers share one presentation: no catalog price,
 // benefits, or pricing surfaces. The server hides their lifecycle capabilities
 // (billing-api hideLifecycleCapabilities); this helper only drives rendering.
-export function isSalesManagedTier(
-  tier: IngestSubscriptionTier | null | undefined
-): boolean {
+export function isSalesManagedTier(tier: unknown): boolean {
   return tier === 'ENTERPRISE' || isUnknownTier(tier)
 }
 

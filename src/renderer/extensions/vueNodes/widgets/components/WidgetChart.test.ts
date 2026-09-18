@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import type { ChartData } from 'chart.js'
 import { describe, expect, it } from 'vitest'
@@ -41,9 +40,9 @@ function makeWidget(
 
 function renderChart(
   widget: SimplifiedWidget<ChartData, ChartWidgetOptions>,
-  modelValue: ChartData
+  modelValue: ChartData | null
 ) {
-  const value = ref<ChartData>(modelValue)
+  const value = ref<ChartData | null>(modelValue)
   const Harness = defineComponent({
     components: { WidgetChart },
     setup: () => ({ widget, value }),
@@ -91,7 +90,7 @@ describe('WidgetChart', () => {
         labels: ['a'],
         datasets: [{ label: 'x', data: [1] }]
       })
-      value.value = fromAny<ChartData, unknown>(null)
+      value.value = null
       await nextTick()
 
       const parsed = JSON.parse(screen.getByTestId('chart').dataset.chartData!)

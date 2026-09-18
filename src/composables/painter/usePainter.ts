@@ -522,11 +522,12 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function handlePointerDown(e: PointerEvent) {
     if (e.button !== 0) return
+    if (!(e.currentTarget instanceof HTMLElement)) return
     cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
     try {
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      e.currentTarget.setPointerCapture(e.pointerId)
     } catch {
       // setPointerCapture may throw for synthetic events (e.g. in tests)
     }
@@ -555,12 +556,13 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function handlePointerUp(e: PointerEvent) {
     if (e.button !== 0) return
+    if (!(e.currentTarget instanceof HTMLElement)) return
     if (rafId) {
       cancelAnimationFrame(rafId)
       flushPendingStroke()
     }
     try {
-      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      e.currentTarget.releasePointerCapture(e.pointerId)
     } catch {
       // releasePointerCapture may throw for synthetic events (e.g. in tests)
     }
@@ -581,7 +583,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function handleInputImageLoad(e: Event) {
-    const img = e.target as HTMLImageElement
+    if (!(e.currentTarget instanceof HTMLImageElement)) return
+    const img = e.currentTarget
     canvasWidth.value = img.naturalWidth
     canvasHeight.value = img.naturalHeight
   }

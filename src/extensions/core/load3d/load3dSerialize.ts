@@ -1,7 +1,8 @@
-import type Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraConfig,
   CameraState,
+  CameraType,
+  Model3DTransform,
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -11,9 +12,17 @@ type Load3dSerializedBase = {
   model_3d_info: Model3DInfo
 }
 
+interface Load3dStateSource {
+  cameraManager: { perspectiveCamera: { fov: number } }
+  getCameraState(): CameraState
+  getCurrentCameraType(): CameraType
+  getModelInfo(): Model3DTransform | null
+  stopRecording(): void
+}
+
 export function snapshotLoad3dState(
-  node: LGraphNode,
-  load3d: Load3d
+  node: Pick<LGraphNode, 'properties'>,
+  load3d: Load3dStateSource
 ): Load3dSerializedBase {
   const cameraConfig: CameraConfig = (node.properties['Camera Config'] as
     | CameraConfig
