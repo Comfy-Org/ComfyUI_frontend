@@ -18,8 +18,13 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 type WidgetCallback = (value: unknown, ...rest: unknown[]) => void
 interface MutableWidget {
   name: string
-  value: unknown
+  value?: unknown
   callback?: WidgetCallback
+}
+
+interface CameraInfoNode extends NodeWithWidgets {
+  onMouseEnter?: LGraphNode['onMouseEnter']
+  onMouseLeave?: LGraphNode['onMouseLeave']
 }
 
 const WIDGET_NAMES = [
@@ -43,10 +48,10 @@ const WIDGET_NAMES = [
   'mode.quat_w'
 ] as const
 
-export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
+export function useCameraInfo(nodeRef: MaybeRef<CameraInfoNode | null>) {
   const node = toRef(nodeRef)
   let viewport: CameraInfoViewport | null = null
-  let wiredNode: LGraphNode | null = null
+  let wiredNode: CameraInfoNode | null = null
   let originalOnMouseEnter: LGraphNode['onMouseEnter']
   let originalOnMouseLeave: LGraphNode['onMouseLeave']
 
@@ -63,15 +68,15 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     if (viewport) cleanup()
 
     try {
-      const initialState = readStateFromWidgets(raw as NodeWithWidgets)
+      const initialState = readStateFromWidgets(raw)
       cameraState.value = initialState
       viewport = new CameraInfoViewport(container, initialState, {
         onHandleDrag: (fieldName, value) => {
-          writeWidgetValue(raw as NodeWithWidgets, fieldName, value)
+          writeWidgetValue(raw, fieldName, value)
         }
       })
-      wireWidgetsToOverlay(raw as NodeWithWidgets)
-      wireNodeMouseStatus(raw as LGraphNode)
+      wireWidgetsToOverlay(raw)
+      wireNodeMouseStatus(raw)
     } catch (error) {
       console.error('Failed to initialize CameraInfoViewport:', error)
       cleanup()
@@ -109,7 +114,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     viewport?.setLookThrough(on)
   }
 
-  function wireNodeMouseStatus(target: LGraphNode): void {
+  function wireNodeMouseStatus(target: CameraInfoNode): void {
     wiredNode = target
     originalOnMouseEnter = target.onMouseEnter
     originalOnMouseLeave = target.onMouseLeave
