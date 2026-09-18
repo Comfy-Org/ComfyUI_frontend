@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadWorkshopExampleFile } from '../src/config/workshop-example-file'
+import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
 import { runWorkshopRouter } from '../src/config/workshop-router'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
 import {
@@ -9,18 +9,13 @@ import {
   router_render
 } from './router-render'
 
-vi.mock(import('../src/config/workshop-router'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('../src/config/workshop-router'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
-vi.mock(
-  import('../src/config/workshop-example-file'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    loadWorkshopExampleFile: vi.fn()
-  })
-)
+vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
+  loadWorkshopExampleFile: vi.fn()
+}))
 
 describe('router_render', () => {
   it.for([
@@ -81,16 +76,14 @@ describe('router_render', () => {
 
     const text = await prepareRouterRender('vertexai--veo-3--generate-videos')
     expect(text.body).not.toHaveProperty('instances.0.image')
-    expect(text.body).toHaveProperty(
-      'instances.0.prompt',
-      animation.values.prompt
-    )
+    expect(text.body).toHaveProperty('instances.0.prompt', text.values.prompt)
+    expect(text.values.prompt).not.toBe(animation.values.prompt)
   })
 
   it.for([
     'openai--gpt-image-1--edit-images',
     'openai--gpt-image-1.5--edit-images',
-    'openai--gpt-image-2--edit-images'
+    'openai--gpt-image-2--generate-images'
   ])(
     'omits optional PNG compression for the initial %s request',
     async (slug) => {
@@ -195,8 +188,8 @@ describe('router_render', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
   })
 
-  it('uses COMFY_KEY through the production page Router client', async () => {
-    vi.stubEnv('COMFY_KEY', 'comfyui-test-key')
+  it('uses COMFY_API_KEY through the production page Router client', async () => {
+    vi.stubEnv('COMFY_API_KEY', 'comfyui-test-key')
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       requestId: 'request-1',
       deadlineCollections: 0,
@@ -230,7 +223,7 @@ describe('router_render', () => {
   })
 
   it('reports a missing key as unavailable without exposing credentials', async () => {
-    vi.stubEnv('COMFY_KEY', '')
+    vi.stubEnv('COMFY_API_KEY', '')
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('unavailable')
     )

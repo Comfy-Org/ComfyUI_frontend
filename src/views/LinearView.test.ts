@@ -11,12 +11,7 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn(async () => {}),
-  onAuthStateChanged: vi.fn(() => () => {}),
-  onIdTokenChanged: vi.fn(() => () => {})
-}))
+vi.mock(import('firebase/auth'))
 
 interface ViewState {
   sidebarLocation: 'left' | 'right'
