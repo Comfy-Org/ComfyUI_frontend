@@ -436,6 +436,7 @@ async function copyReport() {
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
+      agentMessages: useAgentConversationStore().messages,
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
