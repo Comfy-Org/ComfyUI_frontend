@@ -38,6 +38,20 @@ export async function overlappingNodePairs(nodes: Locator): Promise<string[]> {
   return found.sort()
 }
 
+export async function nodesWithoutGeometry(nodes: Locator): Promise<string[]> {
+  const count = await nodes.count()
+  const missing: string[] = []
+  for (let i = 0; i < count; i++) {
+    const element = nodes.nth(i)
+    const [box, id] = await Promise.all([
+      element.boundingBox(),
+      element.getAttribute('data-node-id')
+    ])
+    if (!box) missing.push(id ?? `#${i}`)
+  }
+  return missing.sort()
+}
+
 /**
  * Ids of nodes not wholly inside the viewport.
  *
