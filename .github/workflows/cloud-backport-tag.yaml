@@ -28,6 +28,11 @@ on:
         required: true
         type: string
 
+# Serialize runs per cloud branch so two merges cannot race on the same tag.
+concurrency:
+  group: cloud-backport-tag-${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
+  cancel-in-progress: false
+
 jobs:
   create-tag:
     if: >
@@ -77,10 +82,20 @@ jobs:
             exit 0
           fi
 
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+          if ! gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
             -f ref="refs/tags/${TAG}" \
             -f sha="${SHA}" \
-            --jq '.ref'
+            --jq '.ref'; then
+            # Two runs for the same branch can both pass the existence check
+            # above; the loser gets 409 Conflict. Treat that as a no-op.
+            if EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha' 2>/dev/null); then
+              echo "::notice::Tag ${TAG} was created concurrently at ${EXISTING}; skipping"
+              echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Failed to create tag ${TAG} at ${SHA}"
+            exit 1
+          fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           {
             echo "Created tag: ${TAG}"
