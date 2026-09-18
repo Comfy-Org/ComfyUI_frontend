@@ -5,6 +5,7 @@ import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
 import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
@@ -16,20 +17,25 @@ const page = await prepareModelPage(Astro.params.slug)
 // separate deployment decision, not a reason to switch this site to SSR.
 if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
 const { model } = page
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale
+)
 ---
 
 <BaseLayout
-  title={`${model.name} · ${t('workshop.title')} - Comfy`}
-  description={t('workshop.model.meta.description', 'en', {
+  title={`${model.name} · ${t('workshop.title', locale)} - Comfy`}
+  description={t('workshop.model.meta.description', locale, {
     name: model.name
   })}
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <ModelsPage slug={model.slug} client:load>
-    <ModelsShowcase slot="fallback" />
+  <ModelsPage slug={model.slug} locale={locale} client:load>
+    <ModelsShowcase locale={locale} slot="fallback" />
   </ModelsPage>
   <noscript>
-    <ModelsShowcase />
+    <ModelsShowcase locale={locale} />
   </noscript>
 </BaseLayout>

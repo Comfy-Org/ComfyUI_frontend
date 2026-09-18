@@ -1267,6 +1267,10 @@
       "browseAll": "浏览全部客户故事",
       "readWrittenStory": "阅读文字版故事",
       "transcript": "文字记录"
+    },
+    "meta": {
+      "title": "客户故事 - Comfy",
+      "description": "工作室、品牌、艺术家与高校如何在生产中使用 ComfyUI：Series Entertainment、Moment Factory、Ubisoft、Groove Jones、Svedka 等。"
     }
   },
   "demos": {
@@ -2461,7 +2465,11 @@
     "heroTitle": {
       "before": "在 ComfyUI 中构建、调整与创想"
     },
-    "label": "画廊"
+    "label": "画廊",
+    "meta": {
+      "title": "作品集 - Comfy",
+      "description": "社区在 ComfyUI 中创作的作品：图像、视频与 3D。提交你的作品，有机会在网站和 Comfy 社交渠道展示。"
+    }
   },
   "geminiOmni": {
     "breadcrumb": {
@@ -3223,6 +3231,13 @@
     "whatIs": {
       "heading": "什么是 {name}？",
       "tutorialLink": "阅读完整教程 →"
+    },
+    "meta": {
+      "title": "模型 - Comfy",
+      "description": "在 ComfyUI 中运行世界领先的 AI 模型。浏览所有支持的模型及社区工作流模板。"
+    },
+    "grokImagine": {
+      "videoAriaLabel": "使用 ComfyUI 创建的 Grok Imagine 作品"
     }
   },
   "nav": {
@@ -4814,7 +4829,7 @@
       "back": "返回全部模型",
       "backTo": "返回{category}",
       "breadcrumb": "模型",
-      "browseAll": "浏览全部模型",
+      "browseAll": "浏览所有模型",
       "browseAllShort": "浏览全部",
       "codeLanguage": "代码语言",
       "copied": "已复制",

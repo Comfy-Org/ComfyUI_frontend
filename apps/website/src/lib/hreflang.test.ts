@@ -1,11 +1,13 @@
-import { readdirSync } from 'node:fs'
+// @vitest-environment node
+import { existsSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { isNoindexPathname } from '../config/indexing'
 import { redirects } from '../config/redirects'
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
@@ -17,6 +19,71 @@ import {
 } from './hreflang'
 
 const ORIGIN = 'https://comfy.org'
+
+describe('Models publication by build', () => {
+  it.for([
+    {
+      name: 'Chinese marketing showcase',
+      workshopInBuild: '0',
+      locale: 'zh-CN',
+      path: '/zh-CN/models/',
+      canonical: '/zh-CN/models/',
+      alternates: [
+        { hreflang: 'en', href: 'https://comfy.org/models/' },
+        { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/models/' },
+        { hreflang: 'x-default', href: 'https://comfy.org/models/' }
+      ]
+    },
+    {
+      name: 'English marketing showcase',
+      workshopInBuild: '0',
+      locale: 'en',
+      path: '/models/',
+      canonical: '/models/',
+      alternates: [
+        { hreflang: 'en', href: 'https://comfy.org/models/' },
+        { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/models/' },
+        { hreflang: 'x-default', href: 'https://comfy.org/models/' }
+      ]
+    },
+    {
+      name: 'Chinese showcase with catalogue bundled',
+      workshopInBuild: '1',
+      locale: 'zh-CN',
+      path: '/zh-CN/models/',
+      canonical: '/zh-CN/models/',
+      alternates: [
+        { hreflang: 'en', href: 'https://comfy.org/models/' },
+        { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/models/' },
+        { hreflang: 'x-default', href: 'https://comfy.org/models/' }
+      ]
+    },
+    {
+      name: 'unpublished Japanese showcase',
+      workshopInBuild: '1',
+      locale: 'ja',
+      path: '/ja/models/',
+      canonical: '/models/',
+      alternates: []
+    },
+    {
+      name: 'Chinese model detail fallback',
+      workshopInBuild: '1',
+      locale: 'zh-CN',
+      path: '/zh-CN/models/example/',
+      canonical: '/models/example/',
+      alternates: []
+    }
+  ] as const)(
+    '$name',
+    ({ workshopInBuild, locale, path, canonical, alternates }) => {
+      vi.stubEnv('WORKSHOP_IN_BUILD', workshopInBuild)
+
+      expect(canonicalPath(path, locale)).toBe(canonical)
+      expect(hreflangAlternates(path, ORIGIN, locale)).toEqual(alternates)
+    }
+  )
+})
 
 describe('hreflangAlternates', () => {
   it('pairs an English page with its zh-CN twin and x-default', () => {
@@ -209,10 +276,20 @@ describe('the emitter agrees with the page tree', () => {
 
   const english = new Set<string>()
   const chinese = new Set<string>()
-  for (const file of astroFiles(pagesDir)) {
-    const rel = relative(pagesDir, file).split(sep).join('/')
-    if (rel.includes('[')) continue
-    const route = routeOf(`/src/pages/${rel}`)
+  const pageRoutes = astroFiles(pagesDir)
+    .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .filter((file) => !file.includes('['))
+    .map((file) => routeOf(`/src/pages/${file}`))
+  const injectedRoutes = [false, true]
+    .flatMap(modelsBuildRoutes)
+    .filter(
+      ({ pattern, entrypoint }) =>
+        !pattern.includes('[') &&
+        entrypoint.endsWith('.astro') &&
+        existsSync(entrypoint)
+    )
+    .map(({ pattern }) => `${pattern}/`)
+  for (const route of [...pageRoutes, ...injectedRoutes]) {
     if (route.startsWith(`${ZH_PREFIX}/`)) {
       chinese.add(route.slice(ZH_PREFIX.length) || '/')
     } else if (!route.startsWith('/ja/')) {

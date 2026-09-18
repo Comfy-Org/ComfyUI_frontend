@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
+import type { Locale } from '../../config/locales'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
 import { useWorkshopEnabled } from '../../scripts/posthog'
@@ -16,8 +17,11 @@ import SplitReveal from './SplitReveal.vue'
 import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
-const { page } = defineProps<{ page: ModelsPageData }>()
-const routes = getRoutes()
+const { page, locale = 'en' } = defineProps<{
+  page: ModelsPageData
+  locale?: Locale
+}>()
+const routes = getRoutes(locale)
 const enabled = useWorkshopEnabled()
 const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
@@ -33,7 +37,7 @@ const restTags = computed(() =>
 <template>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
     <div class="mb-8 sm:px-8 lg:px-10">
-      <CatalogueBackLink />
+      <CatalogueBackLink :locale />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div
@@ -44,11 +48,14 @@ const restTags = computed(() =>
             <p
               class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
             >
-              {{ page.model.provider ?? t('workshop.card.partnerNode') }}
+              {{
+                page.model.provider ?? t('workshop.card.partnerNode', locale)
+              }}
             </p>
             <ModelSupport
               v-if="page.model.incompleteReason"
               :reason="page.model.incompleteReason"
+              :locale
             />
             <a
               v-if="modelUseCase && page.useCaseLabel"
@@ -71,7 +78,7 @@ const restTags = computed(() =>
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <ModelPrice :estimate="page.priceEstimate" />
+          <ModelPrice :estimate="page.priceEstimate" :locale />
           <ul
             v-if="page.shownTags.length > 0"
             class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
@@ -96,11 +103,12 @@ const restTags = computed(() =>
         variant="banner"
         :status="page.model.status"
         :successor="page.successor"
+        :locale
       />
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <ModelDetail :model="page.model" />
+      <ModelDetail :model="page.model" :locale />
 
       <section
         class="mt-24 border-t border-transparency-white-t8 pt-12"
@@ -116,10 +124,10 @@ const restTags = computed(() =>
             class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
           >
             <span class="sm:hidden">{{
-              t('workshop.model.browseAllShort')
+              t('workshop.model.browseAllShort', locale)
             }}</span>
             <span class="max-sm:hidden">{{
-              t('workshop.model.browseAll')
+              t('workshop.model.browseAll', locale)
             }}</span>
             <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
           </a>
@@ -128,7 +136,7 @@ const restTags = computed(() =>
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           <li v-for="other in page.related" :key="other.slug">
-            <WorkshopModelCard :model="other" />
+            <WorkshopModelCard :model="other" :locale />
           </li>
         </ul>
       </section>

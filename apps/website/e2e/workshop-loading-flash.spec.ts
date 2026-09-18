@@ -67,25 +67,38 @@ test.describe('enabled workshop', () => {
   })
 })
 
-test('a disabled visitor still gets the public marketing page', async ({
-  context,
-  page
-}) => {
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: { 'workshop-enabled': false },
-            featureFlagPayloads: {}
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
-  const flags = page.waitForResponse((response) =>
-    /t\.comfy\.org\/(flags|decide)\//.test(response.url())
-  )
-  await page.goto(MODEL_PATH)
-  await flags
-  await expect(page.getByTestId('model-detail')).toHaveCount(0)
-  await expect(page.getByText(/Grok Imagine/i).first()).toBeVisible()
-})
+for (const { path, heading } of [
+  { path: MODEL_PATH, heading: 'Grok Image and Video Creations' },
+  { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' }
+]) {
+  test(`a disabled visitor gets localized marketing at ${path}`, async ({
+    context,
+    page
+  }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await context.route('**/t.comfy.org/**', (route) =>
+      /\/(flags|decide)\//.test(route.request().url())
+        ? route.fulfill({
+            json: {
+              featureFlags: { 'workshop-enabled': false },
+              featureFlagPayloads: {}
+            }
+          })
+        : route.abort('blockedbyclient')
+    )
+    const flags = page.waitForResponse((response) =>
+      /t\.comfy\.org\/(flags|decide)\//.test(response.url())
+    )
+    await page.goto(path)
+    await flags
+    await expect(page.getByTestId('model-detail')).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', { name: heading, exact: true })
+    ).toBeVisible()
+    await expect(page.locator('astro-island[client="load"][ssr]')).toHaveCount(
+      0
+    )
+    expect(errors).toEqual([])
+  })
+}
