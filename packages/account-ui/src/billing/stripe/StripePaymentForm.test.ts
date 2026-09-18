@@ -73,6 +73,8 @@ function renderForm(
     canSubmit?: boolean
     verificationPending?: boolean
     publishableKey?: string
+    onConfirm?: (token: string) => void
+    onSubmittingChange?: (submitting: boolean) => void
   } = {}
 ) {
   const { publishableKey = 'pk_test_example', ...rest } = props
@@ -290,6 +292,33 @@ describe('StripePaymentForm', () => {
       await Promise.resolve()
 
       expect(phaseEvents).toStrictEqual([])
+    })
+
+    it('delivers neither confirm nor a settled submitting state to the host after unmount', async () => {
+      const user = userEvent.setup()
+      const confirmed: string[] = []
+      const submitting: boolean[] = []
+      let resolveToken: (value: unknown) => void = () => {}
+      stripeMocks.createConfirmationToken.mockReturnValue(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const { unmount } = renderForm(66500, 'pmc_test', {
+        onConfirm: (token: string) => confirmed.push(token),
+        onSubmittingChange: (value: boolean) => submitting.push(value)
+      })
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+      unmount()
+      resolveToken({ confirmationToken: { id: 'ctoken_late' } })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(confirmed).toStrictEqual([])
+      expect(submitting).toStrictEqual([true])
     })
 
     it('does not leak an element event after unmount', async () => {
