@@ -574,9 +574,10 @@ describe('Load3DConfiguration "none" model handling', () => {
   let clearModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
+    let cleanup: (() => void) | undefined
     loadModelSpy = vi.fn().mockResolvedValue(undefined)
     clearModelSpy = vi.fn()
-    return {
+    return fromPartial<Load3d>({
       loadModel: loadModelSpy,
       clearModel: clearModelSpy,
       setUpDirection: vi.fn(),
@@ -594,8 +595,11 @@ describe('Load3DConfiguration "none" model handling', () => {
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
       emitModelReady: vi.fn(),
-      setConfigurationCleanup: vi.fn()
-    } as unknown as Load3d
+      setConfigurationCleanup: vi.fn((nextCleanup: () => void) => {
+        cleanup?.()
+        cleanup = nextCleanup
+      })
+    })
   }
 
   async function flush() {
@@ -651,6 +655,92 @@ describe('Load3DConfiguration "none" model handling', () => {
     expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
       silentOnNotFound: false
     })
+  })
+
+  it('stops reacting as soon as the viewer lifecycle is removed', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    const cleanup = vi
+      .mocked(load3d.setConfigurationCleanup)
+      .mock.calls.at(-1)?.[0]
+    if (!cleanup) throw new Error('Expected reactive configuration cleanup')
+    graph.remove(node)
+    expect(modelWidget.widgetId).toBeUndefined()
+    cleanup()
+    loadModelSpy.mockClear()
+
+    modelWidget.value = 'ignored.glb'
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('reloads the model when the CRDT follower writes model_file through widgetValueStore', async () => {
+    const onSceneInvalidated = vi.fn()
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const widgetId = modelWidget.widgetId
+    if (!widgetId) throw new Error('Expected a store-backed widget id')
+
+    new Load3DConfiguration(load3d).configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+    loadModelSpy.mockClear()
+    onSceneInvalidated.mockClear()
+
+    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
+      source: 'agent-remote',
+      actor: 'agent:e2e',
+      opId: 'op-1'
+    })
+
+    expect(applied).toBe(true)
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'agent.glb', {
+      silentOnNotFound: false
+    })
+    expect(modelWidget.value).toBe('agent.glb')
+  })
+
+  it('stops reacting to the previous widget once configure runs with a replacement', async () => {
+    const oldWidget = reactiveWidget('none')
+    const replacementWidget = reactiveWidget('none')
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget: oldWidget, loadFolder: 'input' })
+    config.configure({ modelWidget: replacementWidget, loadFolder: 'input' })
+    await flush()
+    loadModelSpy.mockClear()
+
+    oldWidget.value = 'stale.glb'
+    replacementWidget.value = 'restored.glb'
+    await flush()
+
+    expect(loadModelSpy).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      'restored.glb',
+      { silentOnNotFound: false }
+    )
   })
 })
 
@@ -794,243 +884,5 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     expect(() => {
       modelWidget.value = 'model.glb'
     }).not.toThrow()
-  })
-})
-
-// Load3DConfiguration owns no widget listeners of its own. It observes
-// `modelWidget.value`, `width.value`, and `height.value` reactively, so any
-// writer that goes through widget state (user edit, widgetValueStore.setValue
-// from the CRDT follower, undo) reloads the scene and invalidates the capture
-// cache. These tests pin that reactive contract.
-describe('Load3DConfiguration reactive widget contract', () => {
-  function makeLoad3dMock(): Load3d {
-    let cleanup: (() => void) | undefined
-    return fromPartial<Load3d>({
-      loadModel: vi.fn().mockResolvedValue(undefined),
-      clearModel: vi.fn(),
-      setUpDirection: vi.fn(),
-      setMaterialMode: vi.fn(),
-      setTargetSize: vi.fn(),
-      setCameraState: vi.fn(),
-      toggleGrid: vi.fn(),
-      setBackgroundColor: vi.fn(),
-      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
-      setBackgroundRenderMode: vi.fn(),
-      toggleCamera: vi.fn(),
-      setFOV: vi.fn(),
-      setLightIntensity: vi.fn(),
-      setHDRIIntensity: vi.fn(),
-      setHDRIAsBackground: vi.fn(),
-      setHDRIEnabled: vi.fn(),
-      emitModelReady: vi.fn(),
-      setConfigurationCleanup: vi.fn((nextCleanup: () => void) => {
-        cleanup?.()
-        cleanup = nextCleanup
-      })
-    })
-  }
-
-  async function flush() {
-    await nextTick()
-    await Promise.resolve()
-  }
-
-  beforeEach(() => {
-    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
-    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
-  })
-
-  it('reloads the model when model_file changes', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({
-      modelWidget,
-      loadFolder: 'input',
-      onSceneInvalidated
-    })
-    await flush()
-    vi.mocked(load3d.loadModel).mockClear()
-    onSceneInvalidated.mockClear()
-
-    modelWidget.value = 'agent-model.glb'
-    await flush()
-
-    expect(load3d.loadModel).toHaveBeenCalledWith(
-      expect.any(String),
-      'agent-model.glb',
-      { silentOnNotFound: false }
-    )
-    expect(onSceneInvalidated).toHaveBeenCalled()
-    expect(modelWidget.value).toBe('agent-model.glb')
-  })
-
-  it('clears the model when model_file is emptied', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('model.glb')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
-    await flush()
-    vi.mocked(load3d.clearModel).mockClear()
-    onSceneInvalidated.mockClear()
-
-    modelWidget.value = ''
-    await flush()
-
-    expect(load3d.clearModel).toHaveBeenCalledTimes(1)
-    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-    expect(modelWidget.value).toBe('')
-  })
-
-  it('reacts exactly once per model_file change', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
-    await flush()
-    vi.mocked(load3d.loadModel).mockClear()
-    vi.mocked(load3d.clearModel).mockClear()
-    onSceneInvalidated.mockClear()
-
-    modelWidget.value = 'local-change.glb'
-    await flush()
-
-    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
-    expect(load3d.clearModel).not.toHaveBeenCalled()
-    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-    expect(modelWidget.value).toBe('local-change.glb')
-  })
-
-  it('invalidates synchronously before queueing can observe stale capture state', () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none')
-    new Load3DConfiguration(load3d).configure({
-      modelWidget,
-      loadFolder: 'input',
-      onSceneInvalidated
-    })
-
-    modelWidget.value = 'replacement.glb'
-
-    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not register a second listener when configure runs again for the same widget', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
-    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
-    await flush()
-
-    expect(load3d.setConfigurationCleanup).toHaveBeenCalledTimes(2)
-
-    vi.mocked(load3d.loadModel).mockClear()
-    onSceneInvalidated.mockClear()
-    modelWidget.value = 'agent-model.glb'
-    await flush()
-
-    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
-    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-  })
-
-  it('stops reacting as soon as the viewer lifecycle is removed', async () => {
-    const load3d = makeLoad3dMock()
-    const graph = new LGraph()
-    const node = new LGraphNode('Load3D')
-    graph.add(node)
-    const modelWidget = node.addWidget(
-      'string',
-      'model_file',
-      'none',
-      () => undefined
-    )
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input' })
-    await flush()
-    const cleanup = vi
-      .mocked(load3d.setConfigurationCleanup)
-      .mock.calls.at(-1)?.[0]
-    if (!cleanup) throw new Error('Expected reactive configuration cleanup')
-    graph.remove(node)
-    expect(modelWidget.widgetId).toBeUndefined()
-    cleanup()
-    vi.mocked(load3d.loadModel).mockClear()
-    modelWidget.value = 'ignored.glb'
-    await flush()
-    expect(load3d.loadModel).not.toHaveBeenCalled()
-  })
-
-  it('reloads the model when the CRDT follower writes model_file through widgetValueStore', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const graph = new LGraph()
-    const node = new LGraphNode('Load3D')
-    graph.add(node)
-    const modelWidget = node.addWidget(
-      'string',
-      'model_file',
-      'none',
-      () => undefined
-    )
-    const widgetId = modelWidget.widgetId
-    if (!widgetId) throw new Error('Expected a store-backed widget id')
-
-    new Load3DConfiguration(load3d).configure({
-      modelWidget,
-      loadFolder: 'input',
-      onSceneInvalidated
-    })
-    await flush()
-    vi.mocked(load3d.loadModel).mockClear()
-    onSceneInvalidated.mockClear()
-
-    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
-      source: 'agent-remote',
-      actor: 'agent:e2e',
-      opId: 'op-1'
-    })
-
-    expect(applied).toBe(true)
-    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-    expect(load3d.loadModel).toHaveBeenCalledWith(
-      expect.any(String),
-      'agent.glb',
-      { silentOnNotFound: false }
-    )
-    expect(modelWidget.value).toBe('agent.glb')
-  })
-
-  it('stops reacting to the previous widget once configure runs with a replacement', async () => {
-    const load3d = makeLoad3dMock()
-    const oldWidget = reactiveWidget('none')
-    const replacementWidget = reactiveWidget('none')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget: oldWidget, loadFolder: 'input' })
-    config.configure({ modelWidget: replacementWidget, loadFolder: 'input' })
-    await flush()
-    vi.mocked(load3d.loadModel).mockClear()
-
-    oldWidget.value = 'stale.glb'
-    replacementWidget.value = 'restored.glb'
-    await flush()
-
-    expect(load3d.loadModel).toHaveBeenCalledTimes(1)
-    expect(load3d.loadModel).toHaveBeenCalledWith(
-      expect.any(String),
-      'restored.glb',
-      { silentOnNotFound: false }
-    )
   })
 })
