@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { createI18n } from 'vue-i18n'
 
@@ -33,8 +34,9 @@ export const testI18n = createI18n({
 })
 
 export function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
+  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
+    window
+  ).happyDOM
   if (!happyDOM) {
     throw new Error('window.happyDOM is unavailable to set viewport')
   }

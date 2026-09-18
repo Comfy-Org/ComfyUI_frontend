@@ -124,6 +124,7 @@
     "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
+    "@total-typescript/shoehorn": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",
