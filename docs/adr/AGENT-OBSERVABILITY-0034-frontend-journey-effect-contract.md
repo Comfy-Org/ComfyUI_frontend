@@ -49,23 +49,13 @@ meaning. Follower-side inactive-target and projection results are not remapped o
 owner, source field, precedence rule, and terminality rule exist.
 
 The emitter and its schema land together in a later slice, beside the follower seam and its
-mandatory black-box Agent harness case. That slice must correlate a non-empty, deduplicated list of
-creator-minted operation IDs and an opaque target reference. Operation IDs must use the
-authoritative host-frame grammar: non-empty, at most 128 UTF-8 bytes, and without null, newline,
-carriage-return, or tab characters. Their creator owns the guarantee that they are identifiers
-rather than content. Optional session, thread, turn, mutation, and run identifiers may be copied
-only when upstream provides privacy-safe opaque values. `observed_at` must be a canonical UTC
-timestamp with millisecond precision. `operation_count`, if retained, must be derived from the
-deduplicated operation IDs rather than accepted from a caller. The event allowlist requires
-`schema_version: 1`; readers must reject an event when `schema_version` is missing or has any other
-value. Sink adapters, added separately, own pseudonymization, retention, access controls, and vendor
-mappings.
+mandatory black-box Agent harness case. That slice must define its fields and validation against
+the authoritative producer contracts and the sink's concrete query needs. The executable schema
+must be versioned, and readers must reject unsupported versions. Sink adapters, added separately,
+own pseudonymization, retention, access controls, and vendor mappings.
 
-The future serializer must allowlist named fields, validate the canonical timestamp and correlation
-shapes, and reject content in non-operation correlation fields. Event creators must never put
-prompts, responses, tool inputs or results, workflow JSON, Yjs bytes, node and widget content,
-filenames, URLs, emails, credentials, raw errors, or arbitrary context into operation IDs. Stable
-identifiers may be event attributes but never metric tags or event-name components.
+The future serializer must allowlist named fields and reject content-shaped correlation values.
+Stable identifiers may be event attributes but never metric tags or event-name components.
 
 Alternatives rejected:
 
