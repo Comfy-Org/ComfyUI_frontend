@@ -576,6 +576,116 @@
       "title": "视频模型对决：开源与付费 AI 视频模型"
     }
   },
+  "faq": {
+    "enterprise": {
+      "byok-provider-keys": {
+        "body": "可以。目前我们支持 **Runway 和 Google Gemini** 的自带密钥（BYOK），也可以为企业版客户按需接入其他服务商。BYOK 需按工作区单独开启；使用您自己密钥调用的合作伙伴节点将由该服务商直接向您计费，不会消耗您的 Comfy 积分。[提交企业版咨询](/zh-CN/contact)，我们将为您完成设置。",
+        "question": "Comfy 支持 BYOK（自带密钥）吗？我可以使用自己的服务商密钥吗？"
+      },
+      "how-do-we-get-started": {
+        "body": "[联系我们](/zh-CN/contact)，告诉我们您的团队想要构建什么。我们将与您一起确定环境、算力，以及所需的前沿驻场创意支持。",
+        "question": "我们如何开始？"
+      },
+      "manage-local-instances": {
+        "body": "能。Comfy 企业版同样面向在自有硬件上运行 ComfyUI 的团队。通过一份企业许可统一管理您组织内的本地实例，并获得来自引擎开发团队的支持。[预约演示](/zh-CN/contact)以了解更多。",
+        "question": "我们在本地运行 ComfyUI，企业版能覆盖吗？"
+      },
+      "professional-services-creative-support": {
+        "body": "提供，面向企业版客户。前沿驻场创意人才是 Comfy 专家，他们驻场加入您的团队，在您的环境中构建生产级工作流，并培训您的团队独立运行、修改和扩展这些工作流。构建成果归您所有。该服务作为 Comfy 企业协议的附加项提供。[认识前沿驻场创意人才](/zh-CN/forward-deployed-creatives)，或[联系我们](/zh-CN/contact)。",
+        "question": "你们提供专业服务或驻场创意支持吗？"
+      },
+      "what-does-enterprise-include": {
+        "body": "托管基础设施（专属 GPU 算力与优先队列）、团队工作区（基于角色的访问控制、SSO 与 SCIM 配置）、自定义 SLA，以及 Comfy Cloud 全部模型的商业使用保障。企业版方案还包含与我们工程团队的直接沟通渠道和白手套上手服务。[联系我们](/zh-CN/contact)获取报价。",
+        "question": "Comfy 企业版包含哪些内容？"
+      }
+    },
+    "pricing": {
+      "byok-provider-keys": {
+        "body": "可以。目前我们支持 **Runway 和 Google Gemini** 的自带密钥（BYOK），也可以为企业版客户按需接入其他服务商。BYOK 需按工作区单独开启；使用您自己密钥调用的合作伙伴节点将由该服务商直接向您计费，不会消耗您的 Comfy 积分。[提交企业版咨询](/zh-CN/contact)，我们将为您完成设置。",
+        "question": "Comfy 支持 BYOK（自带密钥）吗？我可以使用自己的服务商密钥吗？"
+      },
+      "change-cancel-plan-refunds": {
+        "body": "您可以随时取消。取消后会立即停止所有后续付款，而您的计划在已付费周期结束前仍保持有效。如需退款，请提交支持工单。我们的团队会逐一进行审核。",
+        "question": "我可以更改或取消我的计划吗？你们提供退款吗？"
+      },
+      "commercial-model-licenses": {
+        "body": "提供。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。请查看 [MiniMax 商业许可页面](/zh-CN/minimax/license)，或[联系销售](/zh-CN/contact)申请许可。",
+        "question": "你们提供 MiniMax H3 等开源权重模型的商业许可吗？"
+      },
+      "difference-between-plans": {
+        "body": "**Standard -** 单个工作流最长运行 30 分钟，API 支持 1 个并发工作流。适合构建工作流的个人。\n\n**Creator -** 包含 Standard 的全部功能，并新增**导入自有模型**（来自 CivitAI 或 Hugging Face）的能力，API 支持最多 3 个并发工作流。\n\n**Pro -** 包含 Creator 的全部功能，并提供**更长的运行时长（最长 1 小时）**，API 支持最多 5 个并发工作流。适合在生产环境中运行 Comfy 的团队。",
+        "question": "Standard、Creator 和 Pro 有什么区别？"
+      },
+      "do-credits-roll-over": {
+        "body": "计划积分在每个计费周期结束时重置，不会顺延——按月订阅每月重置，按年订阅每年重置，并在开通时一次性发放全年积分。**但充值积分会保留。**有效期为一年，且不受计划重置的影响。积分可在 Comfy Cloud 上使用，在 Comfy 桌面版上**仅在调用合作伙伴节点时使用**。Comfy 桌面版本身免费。",
+        "question": "未使用的积分会顺延吗？"
+      },
+      "find-invoices-tax-id": {
+        "body": "您可以直接通过 Stripe 门户管理所有账单信息。前往 设置 → 计划与积分 → 发票历史 即可打开。在那里，您可以查看和下载发票、更新账单信息，并添加公司的税号。",
+        "question": "我在哪里可以找到发票或添加公司的税号？"
+      },
+      "forward-deployed-creatives": {
+        "body": "提供，面向企业版客户。前沿驻场创意人才是 Comfy 专家，他们驻场加入您的团队，在您的环境中构建生产级工作流，并培训您的团队独立运行、修改和扩展这些工作流。构建成果归您所有。该服务作为 Comfy 企业协议的附加项提供。[认识前沿驻场创意人才](/zh-CN/forward-deployed-creatives)，或[联系我们](/zh-CN/contact)。",
+        "question": "你们提供专业服务或驻场创意支持吗？"
+      },
+      "how-does-pricing-work": {
+        "body": "每个计划都包含**积分**池：按月订阅每月重置，按年订阅在开通时一次性发放全年积分。积分用于两类消耗：工作流运行时的**活跃 GPU 时间**，以及**合作伙伴节点**（如 Nano Banana Pro 等专有模型）。空闲时间不会计费。构建或编辑工作流完全免费。只有任务真正运行时才会扣费。",
+        "question": "Comfy Cloud 的定价究竟是如何运作的？"
+      },
+      "how-does-team-plan-work": {
+        "body": "团队计划让整个团队共享**一个积分池**。每位成员都从同一余额中扣费，无需分别管理多个订阅。要点：\n\n**一池共享。**所有人都从同一积分余额中生成内容。\n\n**邮箱邀请。**添加团队成员，随时重新发送或撤销访问权限。\n\n**所有者管理账单。**指定所有者负责付款，并为团队购买充值积分。\n\n**原地升级。**将现有工作区升级为团队工作区，您的工作流、模型和资产都将保留。\n\n选择适合您团队的每月积分承诺。[立即开始。](https://cloud.comfy.org/?pricing=team)",
+        "question": "团队计划是如何运作的？"
+      },
+      "partner-nodes-cost": {
+        "body": "合作伙伴节点让您直接在工作流中运行专有模型（如 Nano Banana Pro）。它们从与您订阅相同的积分池中扣费（不会单独出账单）；每次调用的费用取决于模型以及您设置的参数。这些积分在 Comfy Cloud 和 Comfy 桌面版上均可使用。[了解更多关于合作伙伴节点的信息](https://docs.comfy.org/tutorials/partner-nodes/overview)。",
+        "question": "什么是合作伙伴节点？它们会额外收费吗？"
+      },
+      "run-out-of-credits": {
+        "body": "您可以随时购买**充值积分**，无需更换计划。计划积分会优先消耗；只有当计划额度用完后，才会开始使用充值积分。充值积分自购买之日起 **1 年**内有效。",
+        "question": "积分用完了会怎样？"
+      },
+      "run-workflows-via-api": {
+        "body": "可以。通过 API 以编程方式运行 Comfy 工作流。并发上限随您的计划扩展：Standard / Creator / Pro 分别为 1 / 3 / 5。它专为将 ComfyUI 集成到您的应用、自动化批处理任务或运行生产管线而打造。如果您需要申请提高上限，可以[在此处](https://comfysupport.portal.usepylon.com/forms/team-plan-requests)提交。",
+        "question": "我可以通过 API 运行工作流吗？"
+      },
+      "running-comfy-at-scale": {
+        "body": "对于在生产环境中大规模运行 Comfy 的团队，企业版提供更高的 API 速率限制、高级安全性和专属支持。[了解更多关于企业版的信息](https://comfy.org/enterprise/)，或通过 [enterprise@comfy.org](mailto:enterprise@comfy.org) 与我们联系。",
+        "question": "如果我在大规模运行 Comfy 怎么办？"
+      },
+      "runtime-and-concurrency-limits": {
+        "body": "Standard 和 Creator 上，单个工作流的最长运行时长为 **30 分钟**；Pro 上提升至 **1 小时**。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 **100 个工作流**，并在 Standard / Creator / Pro 上通过 API 分别并发运行 **1 / 3 / 5** 个工作流。如果您需要提高团队计划的并发上限、席位或 API 速率限制，请[点击此处](https://comfysupport.portal.usepylon.com/forms/team-plan-requests)联系我们。",
+        "question": "运行时长和并发的限制是什么？"
+      },
+      "team-collaboration-features": {
+        "body": "在首发阶段，团队计划为您提供**共享基础设施**：一个积分池、一份账单、一组管理员。**工作区内的工作流与资产共享功能即将上线。**在此之前，您可以通过共享工作流、导出工作流 JSON 或将 Comfy 生成的资产拖入另一画布来完成交接。",
+        "question": "首发时包含哪些协作功能？"
+      },
+      "team-concurrency": {
+        "body": "可以。在团队计划中，工作区的每位成员并发上限高于 Pro 计划。如果您遇到问题，可以[在此处](https://comfysupport.portal.usepylon.com/forms/team-plan-requests)为您的团队计划上限申请额外支持。",
+        "question": "团队计划的并发是如何运作的？多名成员可以同时运行工作流吗？"
+      },
+      "team-per-seat-pricing": {
+        "body": "不是。团队定价基于**您每月承诺的积分量**，而非按席位计费。邀请自由职业者后，他们在工作期间从共享积分池中扣费，项目结束后再将其移除即可。**添加或移除成员都不收取额外费用。**目前成员数量上限为 **50** 人；如果您达到上限，请[联系支持](https://portal.usepylon.com/comfy-org/forms/question)以增加席位。",
+        "question": "团队计划是按席位计费吗？我可以为某个项目临时加入一位自由职业者吗？"
+      },
+      "team-spending-controls": {
+        "body": "目前，所有者掌控共享积分池和充值。我们正在积极开发更细粒度的控制功能：用户、项目和工作区级别的**消费上限**、**按项目预算与分摊**、积分池余额不足时的**自动充值**，以及**超过 50 个席位的自助式团队**。",
+        "question": "我可以控制团队消耗积分的方式吗？"
+      },
+      "team-tier-pricing": {
+        "body": "团队计划共有**五个档次，从每月 $200 到 $2,500**，通过积分承诺滑块进行调整。月度承诺越高，折扣越大：**年付计划最高 20% 折扣，月付计划最高 10% 折扣**。折扣自 $400 档位起（年付 5% / 月付 2.5%），并由此递增。",
+        "question": "团队计划各档次的价格是多少？折扣是怎么算的？"
+      },
+      "team-upgrade-carryover": {
+        "body": "全部保留。您升级的是工作区本身，因此**工作流、模型、运行历史和充值积分都会保留**。唯一例外：原计划中未使用的积分会在当前计费周期结束时失效，因为您将获得新的积分额度。**充值积分会顺延。**",
+        "question": "将工作区升级为团队计划时，哪些内容会保留？"
+      },
+      "what-is-a-credit-worth": {
+        "body": "积分对应 GPU 运行时长，因此具体能用多少取决于工作流本身。作为参考：一段 5 秒视频*大约消耗 **11 积分**，因此 Standard 每月可支持数百段，Creator 约为其两倍，Pro 则足以生成一千多段。\n\n\\*基于使用 Wan 2.2 图生视频模板在默认设置（81 帧、18fps、640×640、4-step sampler）下生成 5 秒视频的估算。更复杂的模型、更高分辨率以及加入合作伙伴节点会消耗更多积分。",
+        "question": "一个积分价值多少？能用多久？"
+      }
+    }
+  },
   "flux3": {
     "flux3Page": {
       "audio-control": {

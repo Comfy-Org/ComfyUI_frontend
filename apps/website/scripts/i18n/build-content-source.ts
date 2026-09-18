@@ -24,9 +24,10 @@ import {
 import { translatableEntries } from '../../src/i18n/pipeline/source'
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
 import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
+import { faqAdapter } from '../../src/i18n/pipeline/adapters/faq'
 import { writeSortedJson } from './write-json'
 
-const ADAPTERS: SourceAdapter[] = [dataAdapter]
+const ADAPTERS: SourceAdapter[] = [faqAdapter, dataAdapter]
 const catalogDir = path.resolve('src/locales')
 const ownershipFile = `${catalogDir}/.machine-translations.json`
 const ownership = machineTranslationsSchema.parse(
