@@ -14,7 +14,7 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
-/** Rows per fetch. Pinned so paging can't drift with a backend's default. */
+/** Rows per fetch. Mirrors the API default; pinned so paging stays client-owned. */
 const ASSET_PAGE_SIZE = 20
 
 const BASE_PARAMS: ListAssetsData['query'] = {

@@ -74,6 +74,33 @@ function requestedAfterCursors() {
   })
 }
 
+describe('useAssetsQuery page size', () => {
+  it('sends the pinned page size on the first fetch and on loadMore', async () => {
+    const list = await createList('page-size', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(response(['older']))
+
+    await list.loadMore()
+    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
+
+    expect(requestedLimits()).toEqual(['20', '20'])
+  })
+
+  it('lets a caller override the pinned page size', async () => {
+    fetchApiMock.mockResolvedValueOnce(response(['only']))
+    const scope = effectScope()
+    const list = scope.run(() =>
+      useAssetsQuery({ name_contains: 'override', limit: 100 })
+    )!
+    onTestFinished(() => scope.stop())
+    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
+
+    expect(requestedLimits()).toEqual(['100'])
+  })
+})
+
 // `useAssetsQuery`'s internal `backingOff` ref (src/platform/assets/composables/
 // useAssetsQuery.ts) auto-resets after 2000ms via `refAutoReset`. It is only armed
 // for the "no response object" (network reject) and 5xx/429 branches of `doQuery`,
@@ -112,33 +139,6 @@ const transientFailures: {
     backsOff: true
   }
 ]
-
-describe('useAssetsQuery page size', () => {
-  it('sends the pinned page size on the first fetch and on loadMore', async () => {
-    const list = await createList('page-size', ['newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
-    })
-    fetchApiMock.mockResolvedValueOnce(response(['older']))
-
-    await list.loadMore()
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['20', '20'])
-  })
-
-  it('lets a caller override the pinned page size', async () => {
-    fetchApiMock.mockResolvedValueOnce(response(['only']))
-    const scope = effectScope()
-    const list = scope.run(() =>
-      useAssetsQuery({ name_contains: 'override', limit: 100 })
-    )!
-    onTestFinished(() => scope.stop())
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['100'])
-  })
-})
 
 describe('useAssetsQuery loadMore transient failure retry', () => {
   beforeEach(() => {
