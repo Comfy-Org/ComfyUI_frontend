@@ -39,6 +39,9 @@ test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
         .getByRole('option', { name: 'agent_node_adapters_materialized' })
         .click()
       await expect(filter).toContainText('agent_node_adapters_materialized')
+      await expect(
+        page.getByRole('listbox', { includeHidden: true })
+      ).toHaveCount(0)
 
       await filter.click()
       await page
