@@ -15,7 +15,7 @@ export class Topbar {
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.getByTestId('comfy-menu-button')
-    this.menuRootList = this.menuLocator.getByRole('menubar')
+    this.menuRootList = this.menuLocator
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
@@ -172,12 +172,12 @@ export class Topbar {
   }
 
   async focusMenuItem(itemLabel: string): Promise<void> {
-    await this.menuRootList.focus()
-    const itemCount = await this.menuRootList.getByRole('menuitem').count()
+    const items = this.menuRootList.locator('[role^="menuitem"]')
+    const itemCount = await items.count()
 
     for (let step = 0; step < itemCount; step++) {
-      await this.page.keyboard.press('ArrowDown')
       if ((await this.getFocusedMenuItemLabel()) === itemLabel) return
+      await this.page.keyboard.press('ArrowDown')
     }
 
     throw new Error(
@@ -186,16 +186,12 @@ export class Topbar {
   }
 
   private async getFocusedMenuItemLabel(): Promise<string | null> {
-    const focusedItemId = await this.menuRootList.getAttribute(
-      'aria-activedescendant'
+    const focusedItem = this.menuRootList.locator('[role^="menuitem"]:focus')
+    if ((await focusedItem.count()) === 0) return null
+    return (
+      (await focusedItem.getAttribute('aria-label')) ??
+      (await focusedItem.innerText()).trim()
     )
-    if (!focusedItemId) return null
-
-    const label = this.menuLocator
-      .locator(`#${focusedItemId}`)
-      .locator('.p-menubar-item-label')
-    if ((await label.count()) === 0) return null
-    return (await label.innerText()).trim()
   }
 
   /**

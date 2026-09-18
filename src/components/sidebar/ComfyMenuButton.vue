@@ -75,11 +75,8 @@
       </a>
       <div
         v-else
-        v-bind="props.action"
         class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
         data-testid="nodes-2-toggle-item"
-        @mousedown.prevent
-        @click.stop="onNodes2ToggleChange(!nodes2Enabled)"
       >
         <span class="text-nowrap">{{ item.label }}</span>
         <Switch
@@ -190,7 +187,9 @@ const extraMenuItems = computed(() => [
   },
   {
     key: 'nodes-2.0-toggle',
-    label: 'Nodes 2.0'
+    label: 'Nodes 2.0',
+    checked: nodes2Enabled.value,
+    command: () => onNodes2ToggleChange(!nodes2Enabled.value)
   },
   { separator: true },
   {

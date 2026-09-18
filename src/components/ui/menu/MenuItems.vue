@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuSeparator,
@@ -30,7 +31,7 @@ function select(item: MenuItem, event: Event) {
     event.preventDefault()
     return
   }
-  if (item.comfyCommand?.active) {
+  if (item.checked !== undefined || item.comfyCommand?.active) {
     event.preventDefault()
     void item.command({ originalEvent: event, item })
     return
@@ -75,7 +76,7 @@ function select(item: MenuItem, event: Event) {
       </DropdownMenuPortal>
     </DropdownMenuSub>
     <DropdownMenuItem
-      v-else-if="toValue(item.visible) !== false"
+      v-else-if="toValue(item.visible) !== false && item.checked === undefined"
       :aria-label="toValue(item.label)"
       :disabled="toValue(item.disabled)"
       :class="cn(menuItemClass, item.class)"
@@ -85,5 +86,17 @@ function select(item: MenuItem, event: Event) {
         <MenuItemContent :item :has-submenu="false" />
       </slot>
     </DropdownMenuItem>
+    <DropdownMenuCheckboxItem
+      v-else-if="toValue(item.visible) !== false"
+      :aria-label="toValue(item.label)"
+      :model-value="item.checked"
+      :disabled="toValue(item.disabled)"
+      :class="cn(menuItemClass, item.class)"
+      @select="select(item, $event)"
+    >
+      <slot name="item" :item :props="{ action: {} }" :has-submenu="false">
+        <MenuItemContent :item :has-submenu="false" />
+      </slot>
+    </DropdownMenuCheckboxItem>
   </template>
 </template>
