@@ -193,7 +193,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <div
                 v-if="section.label"
                 aria-hidden="true"
-                class="px-1.5 py-1 text-[11px]/4 font-medium text-muted-foreground"
+                class="px-1.5 py-1 text-[11px]/4 font-normal text-muted-foreground"
               >
                 {{ section.label }}
               </div>
