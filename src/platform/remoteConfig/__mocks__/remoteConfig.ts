@@ -5,7 +5,6 @@ import type * as realRemoteConfig from '../remoteConfig'
 
 function testScopedRef<T>(defaultValue: T) {
   let value = defaultValue
-  let restoring = false
 
   return customRef<T>((track, trigger) => ({
     get() {
@@ -15,13 +14,10 @@ function testScopedRef<T>(defaultValue: T) {
     set(nextValue) {
       value = nextValue
       trigger()
-      if (restoring) return
 
       onTestFinished(() => {
-        restoring = true
         value = defaultValue
         trigger()
-        restoring = false
       })
     }
   }))
@@ -30,20 +26,22 @@ function testScopedRef<T>(defaultValue: T) {
 function testScopedRemovableRef<T>(defaultValue: T) {
   const scopedRef = testScopedRef(defaultValue)
   return Object.assign(scopedRef, {
-    remove: () => {
+    remove() {
       scopedRef.value = defaultValue
     }
   })
 }
 
-const state =
+const remoteConfigStateRef =
   testScopedRef<typeof realRemoteConfig.remoteConfigState.value>('unloaded')
 
 const remoteConfigModule: typeof realRemoteConfig = {
   remoteConfig: testScopedRef({}),
-  remoteConfigState: state,
+  remoteConfigState: remoteConfigStateRef,
   remoteConfigErrorStatus: testScopedRef(null),
-  isAuthenticatedConfigLoaded: computed(() => state.value === 'authenticated'),
+  isAuthenticatedConfigLoaded: computed(
+    () => remoteConfigStateRef.value === 'authenticated'
+  ),
   configValueOrDefault(remoteConfig, key, defaultValue) {
     return remoteConfig[key] || defaultValue
   },
