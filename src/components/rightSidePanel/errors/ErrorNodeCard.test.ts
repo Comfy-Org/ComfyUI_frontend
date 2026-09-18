@@ -112,10 +112,7 @@ describe('ErrorNodeCard.vue', () => {
       global: {
         plugins: [PrimeVue, i18n, getActivePinia()!],
         stubs: {
-          TransitionCollapse: { template: '<div><slot /></div>' },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
-          }
+          TransitionCollapse: { template: '<div><slot /></div>' }
         }
       }
     })
