@@ -495,6 +495,7 @@ function startAgentCrdtFollower(
   // the desired doc changes, and a batch minted for the old doc would
   // otherwise wait out the 10 s result-silence window before noticing.
   const retarget = (next: string | null): void => {
+    framer.reset()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     sender.abortIfUnbound()

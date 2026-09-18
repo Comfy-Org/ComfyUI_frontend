@@ -1120,6 +1120,31 @@ describe('useAgentCrdtFollower', () => {
       expect(animateToBounds).toHaveBeenCalledOnce()
       unmount()
     })
+
+    it('starts a new build after switching workflows', async () => {
+      const { selectItems } = stubCanvas()
+      const first = {
+        pos: [4000, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const second = {
+        pos: [4400, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      let graph = graphWith({ 1: first })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount, workflowId } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      graph = graphWith({ 2: second })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(2)])
+      workflowId.value = 'wf-2'
+      await nextTick()
+      dispatchFrame('doc_update', { workflowId: 'wf-2', seq: 10 })
+
+      expect(selectItems).toHaveBeenLastCalledWith([second])
+      unmount()
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {
