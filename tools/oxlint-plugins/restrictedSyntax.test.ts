@@ -3,6 +3,8 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { noUnknownDoubleAssertion } from './restrictedSyntax'
+
 interface Diagnostic {
   readonly code: string
   readonly filename: string
@@ -84,6 +86,18 @@ void fixture
   {
     file: path.join(probeDirs.source, 'missingHelper.test.ts'),
     source: `const fixture = value as unknown as Fixture
+const other = anotherValue as unknown as OtherFixture
+void fixture
+void other
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'collidingHelpers.test.ts'),
+    source: `const fromAny = 'occupied'
+const fromAnyRuntime = 'also occupied'
+const fixture = value as unknown as Fixture
+void fromAny
+void fromAnyRuntime
 void fixture
 `
   },
@@ -211,6 +225,22 @@ function parseDiagnostics(output: string): Diagnostic[] {
   return report.diagnostics
 }
 
+function fixProbe(file: string): number | null {
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.resolve('node_modules/oxlint/bin/oxlint'),
+      '--fix',
+      '--config',
+      path.resolve('.oxlintrc.json'),
+      file
+    ],
+    { encoding: 'utf8', windowsHide: true }
+  )
+  if (result.error) throw result.error
+  return result.status
+}
+
 describe('restricted syntax rules', () => {
   let findings: Diagnostic[]
 
@@ -273,25 +303,13 @@ describe('restricted syntax rules', () => {
 
   it('rejects unknown double assertions and fixes test fixtures', () => {
     const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
-    expect(doubleAssertionFindings).toHaveLength(7)
+    expect(doubleAssertionFindings).toHaveLength(9)
     expect(
       doubleAssertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
 
     const fixture = path.join(probeDirs.source, 'doubleAssertion.test.ts')
-    const result = spawnSync(
-      process.execPath,
-      [
-        path.resolve('node_modules/oxlint/bin/oxlint'),
-        '--fix',
-        '--config',
-        path.resolve('.oxlintrc.json'),
-        fixture
-      ],
-      { encoding: 'utf8', windowsHide: true }
-    )
-    expect(result.error).toBeUndefined()
-    expect(result.status).toBe(0)
+    expect(fixProbe(fixture)).toBe(0)
     expect(readFileSync(fixture, 'utf8')).toContain(
       "const fixture = fromAny<Fixture, unknown>({ value: 'ok' })"
     )
@@ -303,19 +321,7 @@ describe('restricted syntax rules', () => {
       probeDirs.source,
       'aliasedDoubleAssertion.test.ts'
     )
-    const aliasedResult = spawnSync(
-      process.execPath,
-      [
-        path.resolve('node_modules/oxlint/bin/oxlint'),
-        '--fix',
-        '--config',
-        path.resolve('.oxlintrc.json'),
-        aliasedFixture
-      ],
-      { encoding: 'utf8', windowsHide: true }
-    )
-    expect(aliasedResult.error).toBeUndefined()
-    expect(aliasedResult.status).toBe(0)
+    expect(fixProbe(aliasedFixture)).toBe(0)
     expect(readFileSync(aliasedFixture, 'utf8')).toContain(
       'const fixture = coerce<Fixture, unknown>(value)'
     )
@@ -325,34 +331,36 @@ describe('restricted syntax rules', () => {
       probeDirs.source,
       'typeOnlyDoubleAssertion.test.ts'
     )
-    for (const file of [missingHelper, typeOnlyHelper]) {
-      for (let pass = 0; pass < 2; pass++) {
-        const helperResult = spawnSync(
-          process.execPath,
-          [
-            path.resolve('node_modules/oxlint/bin/oxlint'),
-            '--fix',
-            '--config',
-            path.resolve('.oxlintrc.json'),
-            file
-          ],
-          { encoding: 'utf8', windowsHide: true }
-        )
-        expect(helperResult.error).toBeUndefined()
-        expect(helperResult.status).toBe(0)
-      }
-    }
+    expect(fixProbe(missingHelper)).toBe(0)
+    expect(fixProbe(missingHelper)).toBe(0)
+    expect(fixProbe(typeOnlyHelper)).toBe(0)
+    expect(fixProbe(typeOnlyHelper)).toBe(0)
     expect(readFileSync(missingHelper, 'utf8')).toContain(
       "import { fromAny } from '@total-typescript/shoehorn'"
     )
     expect(readFileSync(missingHelper, 'utf8')).toContain(
       'const fixture = fromAny<Fixture, unknown>(value)'
     )
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      'const other = fromAny<OtherFixture, unknown>(anotherValue)'
+    )
     expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
       "import { fromAny as fromAnyRuntime } from '@total-typescript/shoehorn'"
     )
     expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
       'const fixture = fromAnyRuntime<Fixture, unknown>(value)'
+    )
+    const collidingHelpers = path.join(
+      probeDirs.source,
+      'collidingHelpers.test.ts'
+    )
+    expect(fixProbe(collidingHelpers)).toBe(0)
+    expect(fixProbe(collidingHelpers)).toBe(0)
+    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
+      "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
+      'const fixture = fromAnyRuntime2<Fixture, unknown>(value)'
     )
     expect(
       doubleAssertionFindings.some(({ filename }) =>
@@ -364,6 +372,36 @@ describe('restricted syntax rules', () => {
         filename.endsWith('allowed.spec.ts')
       )
     ).toBe(true)
+  })
+
+  it('does not autofix browser tests with Windows path separators', () => {
+    let reports = 0
+    let fixes = 0
+    const visitors = noUnknownDoubleAssertion.create({
+      filename: 'C:\\repo\\browser_tests\\workflow.spec.ts',
+      sourceCode: {
+        getAncestors: () => [],
+        getText: () => 'value'
+      },
+      report: ({ fix }) => {
+        reports++
+        if (fix) fixes++
+      }
+    })
+    const inner = Object.freeze({
+      type: 'TSAsExpression',
+      expression: { type: 'Identifier' },
+      typeAnnotation: { type: 'TSUnknownKeyword' }
+    })
+    visitors.Program({ type: 'Program' })
+    visitors.TSAsExpression({
+      type: 'TSAsExpression',
+      expression: inner,
+      typeAnnotation: { type: 'TSTypeReference' }
+    })
+    visitors['Program:exit']()
+
+    expect({ reports, fixes }).toEqual({ reports: 1, fixes: 0 })
   })
 
   it('reports only static DOM access nested inside computed calls', () => {
