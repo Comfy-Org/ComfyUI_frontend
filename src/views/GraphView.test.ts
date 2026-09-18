@@ -115,9 +115,7 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
