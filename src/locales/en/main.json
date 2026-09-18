@@ -5293,7 +5293,7 @@
     "stop": "Stop",
     "updatingGraph": "The agent is updating the graph",
     "editWhileWorking": "You can keep editing while it works",
-    "nodesAdded": "1 node added to the graph by the agent | {count} nodes added to the graph by the agent",
+    "nodesAdded": "The agent added 1 node to the graph | The agent added {count} nodes to the graph",
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",

@@ -317,7 +317,11 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+    this.dispatchEvent(
+      new CustomEvent('doc_update', {
+        detail: { ...update, catchUp: isCatchUp }
+      })
+    )
   }
 
   /**
