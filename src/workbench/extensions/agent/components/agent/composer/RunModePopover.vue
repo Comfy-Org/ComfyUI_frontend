@@ -113,17 +113,16 @@ const options: {
 
 <template>
   <Popover :open @update:open="onOpenChange">
-    <PopoverTrigger
-      v-tooltip.top="buildTooltipConfig(triggerTooltip)"
-      :class="
-        cn(
-          'flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground transition-colors hover:bg-secondary-background-hover',
-          open && 'bg-secondary-background-hover text-base-foreground'
-        )
-      "
-    >
-      <span>{{ triggerLabel }}</span>
-      <span class="icon-[lucide--chevron-down] size-3" />
+    <PopoverTrigger as-child>
+      <Button
+        v-tooltip.top="buildTooltipConfig(triggerTooltip)"
+        variant="muted-textonly"
+        size="md"
+        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+      >
+        <span>{{ triggerLabel }}</span>
+        <span class="icon-[lucide--chevron-down] size-3" />
+      </Button>
     </PopoverTrigger>
     <PopoverContent
       side="top"
@@ -147,42 +146,41 @@ const options: {
         class="flex flex-col gap-1"
         @update:model-value="onDraftMode"
       >
-        <div
-          v-for="option in options"
-          :key="option.mode"
-          :class="
-            cn(
-              'rounded-lg',
-              draftMode === option.mode && 'bg-tertiary-background'
-            )
-          "
-        >
-          <RadioGroupItem
-            :value="option.mode"
-            class="flex w-full cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2 text-left hover:bg-secondary-background-hover"
-          >
-            <span
-              :class="
-                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
+        <div v-for="option in options" :key="option.mode" class="rounded-lg">
+          <RadioGroupItem :value="option.mode" as-child>
+            <Button
+              :variant="
+                draftMode === option.mode ? 'tertiary' : 'muted-textonly'
               "
-            />
-            <span class="min-w-0 flex-1">
-              <span class="block text-sm/5 text-base-foreground">
-                {{ t(option.title) }}
+              size="unset"
+              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
+            >
+              <span
+                :class="
+                  cn(
+                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
+                    option.icon
+                  )
+                "
+              />
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm/5 text-base-foreground">
+                  {{ t(option.title) }}
+                </span>
+                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
+                  {{ t(option.description) }}
+                </span>
               </span>
-              <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-                {{ t(option.description) }}
-              </span>
-            </span>
-            <span
-              :class="
-                cn(
-                  'mt-0.5 size-4 shrink-0',
-                  draftMode === option.mode &&
-                    'icon-[lucide--check] text-base-foreground'
-                )
-              "
-            />
+              <span
+                :class="
+                  cn(
+                    'mt-0.5 size-4 shrink-0',
+                    draftMode === option.mode &&
+                      'icon-[lucide--check] text-base-foreground'
+                  )
+                "
+              />
+            </Button>
           </RadioGroupItem>
           <div
             v-if="

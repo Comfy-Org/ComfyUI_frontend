@@ -350,6 +350,111 @@ const translations = {
     en: 'Retry session',
     'zh-CN': '重试会话'
   },
+  // Auth-failure copy this host owns. config/auth-sign-in-state.ts resolves a
+  // classified failure to one of these; the account package ships the rules,
+  // never the strings.
+  'auth.errors.auth/invalid-email': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的电子邮件地址。',
+    ja: '有効なメールアドレスを入力してください。'
+  },
+  'auth.errors.auth/user-disabled': {
+    en: 'This account has been disabled. Please contact support.',
+    'zh-CN': '此账户已被禁用。请联系客服。',
+    ja: 'このアカウントは無効化されています。サポートまでご連絡ください。'
+  },
+  'auth.errors.auth/email-already-in-use': {
+    en: "We couldn't create an account with this email. Try signing in or resetting your password instead.",
+    'zh-CN': '无法使用此电子邮件创建账户。请尝试登录或重置密码。',
+    ja: 'このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。'
+  },
+  'auth.errors.auth/weak-password': {
+    en: 'Password is too weak. Please use a stronger password with at least 6 characters.',
+    'zh-CN': '密码强度太弱。请使用至少6个字符的更强密码。',
+    ja: 'パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。'
+  },
+  'auth.errors.auth/too-many-requests': {
+    en: 'Too many login attempts. Please wait a moment and try again.',
+    'zh-CN': '登录尝试次数过多。请稍等片刻再试。',
+    ja: 'ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。'
+  },
+  'auth.errors.auth/operation-not-allowed': {
+    en: 'This sign-in method is not currently supported.',
+    'zh-CN': '此登录方法目前不受支持。',
+    ja: 'このサインイン方法は現在サポートされていません。'
+  },
+  'auth.errors.auth/invalid-credential': {
+    en: 'Invalid login credentials. Please check your email and password.',
+    'zh-CN': '登录凭据无效。请检查您的邮箱和密码。',
+    ja: 'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。'
+  },
+  'auth.errors.auth/network-request-failed': {
+    en: 'Network error. Please check your connection and try again.',
+    'zh-CN': '网络错误。请检查您的连接并重试。',
+    ja: 'ネットワークエラー。接続を確認してからもう一度お試しください。'
+  },
+  'auth.errors.auth/popup-closed-by-user': {
+    en: 'The sign-in window closed before sign-in finished. Please try again.',
+    'zh-CN': '登录完成前登录窗口已关闭。请重试。',
+    ja: 'サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。'
+  },
+  'auth.errors.auth/cancelled-popup-request': {
+    en: 'Another sign-in window was already open, so this one was cancelled. Please try again.',
+    'zh-CN': '另一个登录窗口已打开，因此此窗口已取消。请重试。',
+    ja: '別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。'
+  },
+  'auth.errors.auth/popup-blocked': {
+    en: 'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
+    'zh-CN': '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。',
+    ja: 'ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。'
+  },
+  'auth.errors.auth/account-exists-with-different-credential': {
+    en: "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
+    'zh-CN': '无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。',
+    ja: 'この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。'
+  },
+  'auth.errors.generic': {
+    en: 'Something went wrong while signing you in. Please try again.',
+    'zh-CN': '登录时出现问题，请重试。',
+    ja: 'サインイン中に問題が発生しました。もう一度お試しください。'
+  },
+  'auth.errors.signupBlocked': {
+    en: "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org.",
+    'zh-CN':
+      '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。',
+    ja: '現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。'
+  },
+  'auth.turnstile.expired': {
+    en: 'Verification expired. Please complete the challenge again.',
+    'zh-CN': '验证已过期。请重新完成验证。',
+    ja: '認証の有効期限が切れました。再度チャレンジを完了してください。'
+  },
+  'auth.turnstile.failed': {
+    en: 'Verification failed. Please try again.',
+    'zh-CN': '验证失败。请重试。',
+    ja: '認証に失敗しました。もう一度お試しください。'
+  },
+  'auth.turnstile.submitBlockedHint': {
+    en: 'Complete the verification challenge above to enable sign up.',
+    'zh-CN': '请先完成上方的验证挑战以启用注册。',
+    ja: '上記の認証チャレンジを完了すると、サインアップが有効になります。'
+  },
+  'toastMessages.unauthorizedDomain': {
+    en: 'Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.',
+    'zh-CN':
+      '您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。',
+    ja: 'あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。'
+  },
+  'g.error': {
+    en: 'Error',
+    'zh-CN': '错误',
+    ja: 'エラー'
+  },
+  'g.warning': {
+    en: 'Warning',
+    'zh-CN': '警告',
+    ja: '警告'
+  },
   // Auth validation copy, matching the platform app's messages. The {length}
   // and {prefix} tokens are interpolated by config/auth-schemas.ts.
   'validation.invalidEmail': {
@@ -9781,7 +9886,10 @@ Enterprise`
     en: 'How this price is estimated',
     'zh-CN': '此估算的计算方式'
   },
-  'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
+  'workshop.field.uploadLimit': {
+    en: 'up to {limit}',
+    'zh-CN': '最大 {limit}'
+  },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
   'workshop.field.providerDefault': {
     en: 'Provider default',
@@ -9805,8 +9913,8 @@ Enterprise`
     'zh-CN': '此字段为必填项'
   },
   'workshop.form.tooLarge': {
-    en: 'File is over 25 MB',
-    'zh-CN': '文件超过 25 MB'
+    en: 'File is over {limit}',
+    'zh-CN': '文件超过 {limit}'
   },
   'workshop.form.uploadFailed': {
     en: 'Upload failed. Try again, or paste a public link instead.',
@@ -9817,9 +9925,9 @@ Enterprise`
     'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'Your images and prompt add up to more than 10 MB. Use smaller images, or a shorter prompt.',
+    en: 'Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '文件和提示词编码后超过 10 MiB 请求限制。编码会使文件增大约三分之一。请使用更小的文件或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -10011,16 +10119,44 @@ Enterprise`
   },
   'workshop.output.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
   'workshop.error.provider': {
-    en: 'We could not fetch your result. Try again without changing anything, so you are not charged for a second run.',
-    'zh-CN': '未能获取结果。请重试未更改的请求，以免提交新的运行。'
+    en: 'The run failed. Keep your inputs unchanged when retrying. If credits were deducted without a result, contact support with the request ID.',
+    'zh-CN':
+      '运行失败。重试时请保持输入不变。若已扣费但未获得结果，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.upload': {
+    en: 'Your file could not be uploaded. The model has not run. Try again or paste a public link.',
+    'zh-CN': '文件上传失败，模型尚未运行。请重试或粘贴可访问的网址。'
+  },
+  'workshop.error.network': {
+    en: 'The connection was interrupted. The run may still complete and be billed. Keep your inputs unchanged when retrying.',
+    'zh-CN': '连接中断，运行仍可能完成并扣费。重试时请保持输入不变。'
+  },
+  'workshop.error.response': {
+    en: 'Comfy returned a response, but we could not read the result. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 已返回响应，但无法读取结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.client': {
+    en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
+    'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.concurrency': {
+    en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',
+    'zh-CN': '此工作区已达到同时运行数量上限。请等待正在进行的运行完成后重试。'
+  },
+  'workshop.error.conflict': {
+    en: 'Comfy could not return this request’s result yet. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 暂时无法返回此请求的结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
   },
   'workshop.error.rateLimit': {
     en: 'Too many runs right now. Wait a moment and try again.',
     'zh-CN': '当前运行过多。请稍后重试。'
   },
   'workshop.error.policy': {
-    en: 'A content or workspace policy blocked this request.',
-    'zh-CN': '内容或工作区策略阻止了此请求。'
+    en: 'The model provider blocked the input or generated output under its content policy. Review your prompt and reference files before running again.',
+    'zh-CN':
+      '模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。'
   },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
@@ -10034,11 +10170,16 @@ Enterprise`
     en: 'Check the highlighted fields.',
     'zh-CN': '请检查高亮的字段。'
   },
+  'workshop.error.inputRejected': {
+    en: 'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.',
+    'zh-CN':
+      '模型拒绝了这些输入，但未指出具体字段。请检查模型的输入要求，或提供请求 ID 联系支持。'
+  },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
-    en: 'The provider took too long to answer. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
+    en: 'We stopped waiting for the result. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
     'zh-CN':
-      '提供方响应超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
+      '等待结果已超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
   },
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',

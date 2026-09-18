@@ -94,12 +94,15 @@ export type {
   BillingOperationServerPhase,
   BillingOperationState,
   BillingPresentation,
+  BillingPresentationState,
   BillingRecoveryAction,
   EmbeddedChallenge,
   FailedBillingOperation,
+  HostedBillingDestination,
   PendingBillingOperation
 } from './operationState.js'
 export {
+  isBlockedOnCustomerPhase,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl

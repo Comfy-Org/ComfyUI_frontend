@@ -424,7 +424,8 @@ describe('ModelDetail', () => {
           concurrencyCurrent: null,
           concurrencyRemaining: null,
           body: 'Private provider response'
-        }
+        },
+        'response'
       )
     )
     mountDetail({ model: runnable })
@@ -443,6 +444,7 @@ describe('ModelDetail', () => {
           request_id: 'request-failed',
           http_status: 503,
           router_error_type: 'provider_timeout',
+          failure_stage: 'response',
           workspace_id: credential.workspace.id
         })
       })
@@ -453,6 +455,34 @@ describe('ModelDetail', () => {
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('Private provider response')
+  })
+
+  it('reports empty output as a response-stage failure with its request ID', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: []
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'An image'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'response',
+          failure_stage: 'response',
+          request_id: routerResult.requestId
+        })
+      })
+    )
+    expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
   })
 
   it('omits an unrecognized Router error header from analytics', async () => {
@@ -1178,7 +1208,10 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'run_validation_failed',
-      properties: expect.objectContaining({ model_slug: runnable.slug })
+      properties: expect.objectContaining({
+        model_slug: runnable.slug,
+        field_error_codes: ['required']
+      })
     })
     expect(
       vi
@@ -1188,6 +1221,43 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('failed')
+    expect(screen.getByTestId('run-error')).toHaveTextContent(
+      'Check the highlighted fields.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-describedby',
+      'error-prompt'
+    )
+    expect(screen.getByRole('alert')).toBeVisible()
+  })
+
+  it('explains an input rejection without pointing to fields that have no errors', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('validation', 'request-rejected')
+    )
+    mountDetail({ model: runnable })
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByTestId('run-button'))
+
+    expect(await screen.findByTestId('run-error')).toHaveTextContent(
+      'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'false'
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByTestId('router-request-id')).toHaveTextContent(
+      'request-rejected'
+    )
   })
 
   it('keeps curated models in the minimal form even when an old JSON-mode draft exists', async () => {

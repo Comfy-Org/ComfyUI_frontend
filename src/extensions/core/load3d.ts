@@ -31,7 +31,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

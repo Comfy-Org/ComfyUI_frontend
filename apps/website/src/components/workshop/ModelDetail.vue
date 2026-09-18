@@ -63,9 +63,9 @@ import {
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
-  workshopHttpStatus,
-  workshopModelAnalytics,
-  workshopRouterErrorType
+  workshopFailureAnalytics,
+  workshopFieldErrorCodes,
+  workshopModelAnalytics
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
@@ -494,7 +494,10 @@ async function renderRun(
           signal
         )
       },
-      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body)
+      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
+      onRequestId: (id) => {
+        if (runIsActive(attempt)) requestId.value = id
+      }
     }
   )
 }
@@ -507,7 +510,14 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   pendingRequest = undefined
   requestId.value = result.requestId
   const [output, ...attachments] = result.outputs
-  if (!output) throw new WorkshopRouterError('provider', result.requestId)
+  if (!output)
+    throw new WorkshopRouterError(
+      'response',
+      result.requestId,
+      {},
+      undefined,
+      'response'
+    )
   const { retained, discarded } = retainRunHistory([
     { output, attachments },
     ...runs.value
@@ -539,9 +549,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('provider')
-  const httpStatus = workshopHttpStatus(failure.response?.status)
-  const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
+      : new WorkshopRouterError('client')
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -553,13 +561,8 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     properties: {
       ...attempt.analytics,
       status: 'failed',
-      reason: failure.reason,
       duration_ms: Date.now() - attempt.startedAt,
-      request_id: failure.requestId ?? undefined,
-      ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
-      ...(routerErrorType === undefined
-        ? {}
-        : { router_error_type: routerErrorType })
+      ...workshopFailureAnalytics(failure)
     }
   })
 }
@@ -571,7 +574,10 @@ async function run() {
   if (Object.keys(fieldErrors).length) {
     captureWorkshopEvent({
       name: 'run_validation_failed',
-      properties: modelAnalytics
+      properties: {
+        ...modelAnalytics,
+        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+      }
     })
     runState.value = transition(runState.value, {
       type: 'fail',
