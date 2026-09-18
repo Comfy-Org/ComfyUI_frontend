@@ -177,6 +177,21 @@ const asFiniteNumber = (v: unknown): number | null => {
   return null
 }
 
+const normalizeBoolean = (raw: unknown): boolean | null => {
+  if (typeof raw === 'boolean') return raw
+  if (typeof raw !== 'string') return null
+
+  const normalized = raw.trim().toLowerCase()
+  if (normalized === 'true') return true
+  if (normalized === 'false') return false
+  return null
+}
+
+const normalizeComboValue = (raw: unknown): string | number | boolean => {
+  if (typeof raw === 'number' || typeof raw === 'boolean') return raw
+  return String(raw).trim().toLowerCase()
+}
+
 /**
  * Normalize widget value based on its declared type.
  * Returns the value in its natural type for simpler JSONata expressions.
@@ -198,20 +213,12 @@ export const normalizeWidgetValue = (
 
   // Boolean type
   if (upperType === 'BOOLEAN') {
-    if (typeof raw === 'boolean') return raw
-    if (typeof raw === 'string') {
-      const ls = raw.trim().toLowerCase()
-      if (ls === 'true') return true
-      if (ls === 'false') return false
-    }
-    return null
+    return normalizeBoolean(raw)
   }
 
   // COMBO type - preserve string/numeric values (for options like [5, "10"])
   if (upperType === 'COMBO') {
-    if (typeof raw === 'number') return raw
-    if (typeof raw === 'boolean') return raw
-    return String(raw).trim().toLowerCase()
+    return normalizeComboValue(raw)
   }
 
   // String/other types - return as lowercase trimmed string

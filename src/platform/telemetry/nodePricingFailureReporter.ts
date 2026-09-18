@@ -34,6 +34,27 @@ const isJsonataError = (cause: unknown): cause is JsonataError =>
   'message' in cause &&
   typeof cause.message === 'string'
 
+const nextReportableOccurrence = (key: string): number | null => {
+  const previousCount = occurrenceCounts.get(key)
+  if (
+    previousCount === undefined &&
+    occurrenceCounts.size >= MAX_REPORTS_PER_SESSION
+  ) {
+    return null
+  }
+
+  const occurrenceCount = (previousCount ?? 0) + 1
+  occurrenceCounts.set(key, occurrenceCount)
+  return REPORTABLE_OCCURRENCE_COUNTS.has(occurrenceCount)
+    ? occurrenceCount
+    : null
+}
+
+const normalizeFailureCause = (cause: unknown, jsonataError?: JsonataError) =>
+  jsonataError
+    ? new Error(`${jsonataError.code}: ${jsonataError.message}`, { cause })
+    : cause
+
 /**
  * Send a pricing rule failure to diagnostic error reporting.
  *
@@ -50,44 +71,30 @@ export function reportNodePricingFailure({
   cause
 }: NodePricingFailure): void {
   const key = `${operation}|${source}|${nodeType}`
-  const previousCount = occurrenceCounts.get(key)
-  if (
-    previousCount === undefined &&
-    occurrenceCounts.size >= MAX_REPORTS_PER_SESSION
-  ) {
-    return
-  }
-
-  const occurrenceCount = (previousCount ?? 0) + 1
-  occurrenceCounts.set(key, occurrenceCount)
-  if (!REPORTABLE_OCCURRENCE_COUNTS.has(occurrenceCount)) return
+  const occurrenceCount = nextReportableOccurrence(key)
+  if (occurrenceCount === null) return
 
   const jsonataError = isJsonataError(cause) ? cause : undefined
 
-  reportError(
-    jsonataError
-      ? new Error(`${jsonataError.code}: ${jsonataError.message}`, { cause })
-      : cause,
-    {
-      errorType: ERROR_TYPE_BY_OPERATION[operation],
-      tags: {
-        failure_kind: 'degraded',
-        feature_area: 'nodes',
-        operation: 'render',
-        outcome: 'recovered',
-        assert_mode: 'soft',
-        pricing_operation: operation,
-        evaluation_source: source,
-        node_type: nodeType,
-        jsonata_code: jsonataError?.code
-      },
-      context: {
-        expr,
-        occurrenceCount,
-        jsonataPosition: jsonataError?.position,
-        jsonataToken: jsonataError?.token
-      },
-      level: 'warning'
-    }
-  )
+  reportError(normalizeFailureCause(cause, jsonataError), {
+    errorType: ERROR_TYPE_BY_OPERATION[operation],
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'nodes',
+      operation: 'render',
+      outcome: 'recovered',
+      assert_mode: 'soft',
+      pricing_operation: operation,
+      evaluation_source: source,
+      node_type: nodeType,
+      jsonata_code: jsonataError?.code
+    },
+    context: {
+      expr,
+      occurrenceCount,
+      jsonataPosition: jsonataError?.position,
+      jsonataToken: jsonataError?.token
+    },
+    level: 'warning'
+  })
 }
