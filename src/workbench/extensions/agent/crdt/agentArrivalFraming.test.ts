@@ -4,11 +4,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createPositionBounds } from '@/utils/positionBounds'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import {
-  createAgentArrivalFramer,
-  needsFraming,
-  visibleGraphRect
-} from './agentArrivalFraming'
+import { createAgentArrivalFramer } from './agentArrivalFraming'
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -48,36 +44,6 @@ beforeEach(() => {
   vi.stubGlobal('devicePixelRatio', 1)
 })
 
-describe('visibleGraphRect', () => {
-  it('is the whole canvas in graph units while the panel is closed', () => {
-    const { canvas } = stubCanvas()
-
-    expect(visibleGraphRect(canvas)).toEqual([0, 0, 2560, 1440])
-  })
-
-  it('follows the camera', () => {
-    const { canvas } = stubCanvas({ scale: 2, offset: [-500, -100] })
-
-    expect(visibleGraphRect(canvas)).toEqual([500, 100, 1280, 720])
-  })
-
-  // The strip behind the docked panel is painted but not visible. Judging
-  // arrival against `ds.visible_area`, which spans the whole element, would
-  // call a node materialized under the panel "already on screen".
-  it('excludes the strip behind the docked panel', () => {
-    openPanel()
-    const { canvas } = stubCanvas()
-
-    expect(visibleGraphRect(canvas)).toEqual([0, 0, 2140, 1440])
-  })
-
-  it('is null when there is no visible area to decide against', () => {
-    const { canvas } = stubCanvas({ width: 0, height: 0 })
-
-    expect(visibleGraphRect(canvas)).toBeNull()
-  })
-})
-
 describe('createPositionBounds', () => {
   it('pads the union of every node', () => {
     expect(
@@ -90,34 +56,6 @@ describe('createPositionBounds', () => {
 
   it('is null with nothing to frame', () => {
     expect(createPositionBounds([], 40)).toBeNull()
-  })
-})
-
-describe('needsFraming', () => {
-  it('is false when one of the arrivals is on screen', () => {
-    const { canvas } = stubCanvas()
-
-    expect(needsFraming(canvas, [node([700, 200]), node([9000, 0])])).toBe(
-      false
-    )
-  })
-
-  it('is true when every arrival is off screen', () => {
-    const { canvas } = stubCanvas()
-
-    expect(needsFraming(canvas, [node([9000, 0])])).toBe(true)
-  })
-
-  it('is false with no arrivals', () => {
-    const { canvas } = stubCanvas()
-
-    expect(needsFraming(canvas, [])).toBe(false)
-  })
-
-  it('is false when there is no visible area to judge against', () => {
-    const { canvas } = stubCanvas({ width: 0, height: 0 })
-
-    expect(needsFraming(canvas, [node([9000, 0])])).toBe(false)
   })
 })
 

@@ -12,7 +12,7 @@ const FRAME_PADDING = 40
  * canvas and Vue nodes alike, and is the pair `anyItemOverlapsRect` and
  * `animateToBounds` already work in.
  */
-export interface FramableNode {
+interface FramableNode {
   pos: readonly [number, number]
   size: readonly [number, number]
 }
@@ -31,7 +31,7 @@ export interface FramableNode {
  * `null` when there is no visible area to speak of (an unsized canvas, or a
  * panel covering all of it); there is no camera decision to make then.
  */
-export function visibleGraphRect(canvas: LGraphCanvas): ReadOnlyRect | null {
+function visibleGraphRect(canvas: LGraphCanvas): ReadOnlyRect | null {
   const [x, y, width, height] = visibleCanvasViewport(canvas)
   const { scale, offset } = canvas.ds
   if (!(width > 0) || !(height > 0) || !(scale > 0)) return null
@@ -50,7 +50,7 @@ export function visibleGraphRect(canvas: LGraphCanvas): ReadOnlyRect | null {
  * enough. The user is then looking at the place the work landed, and moving
  * the camera under them would be the more surprising behaviour.
  */
-export function needsFraming(
+function needsFraming(
   canvas: LGraphCanvas,
   nodes: readonly FramableNode[]
 ): boolean {
