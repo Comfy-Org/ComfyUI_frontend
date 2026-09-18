@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -209,7 +209,7 @@ describe('LoaderManager', () => {
         load: vi.fn().mockResolvedValue(null)
       } satisfies ModelAdapter
 
-      const modelManager = fromAny<ModelManagerInterface, unknown>({
+      const modelManager = fromPartial<ModelManagerInterface>({
         originalMaterials: new WeakMap(),
         clearModel: vi.fn(),
         setupModel: vi.fn()
