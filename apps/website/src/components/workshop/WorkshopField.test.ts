@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -78,7 +77,7 @@ describe('WorkshopField', () => {
     await fireEvent.update(input, '[]')
     await nextTick()
     expect(input.validationMessage).toBe(
-      "Enter JSON that matches this model input's schema."
+      'This JSON does not match what the model expects.'
     )
 
     await fireEvent.update(input, '[{"text":"Hello","voice_id":"Sarah"}]')

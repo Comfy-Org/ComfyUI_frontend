@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  AUTH_TOAST_SUMMARIES,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -50,11 +50,11 @@ let boundTimer: ReturnType<typeof setTimeout> | undefined
 // Any rollout-flag transition, an unmount, or a bounding timeout invalidates the
 // in-flight send, so a late resolve of an abandoned request cannot toast success
 // or redirect. Sync so even a same-tick flicker is counted, not collapsed.
-let resetGeneration = 0
+const operation = useGenerationGuard()
 watch(
   enabled,
   (isEnabled) => {
-    resetGeneration++
+    operation.abandon()
     // Disabling mid-send abandons the request; drop the control back to idle so
     // a flag flicker back on leaves the form immediately retryable, not stuck
     // disabled until the bounding timeout elapses.
@@ -101,12 +101,12 @@ function validEmail(): boolean {
  * timeout firing), so a late resolve falls through instead of settling the UI.
  */
 function beginBoundedSend(): () => boolean {
-  const attempt = resetGeneration
+  const attempt = operation.capture()
   boundTimer = setTimeout(() => {
-    resetGeneration++
+    operation.abandon()
     state.value = 'idle'
   }, RESET_TIMEOUT_MS)
-  return () => attempt === resetGeneration && enabled.value
+  return () => attempt.live() && enabled.value
 }
 
 async function deliverReset(live: () => boolean) {
@@ -156,7 +156,7 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
     detail: signInErrorMessage(classification, locale, hostname)
   })
 }
@@ -179,7 +179,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  resetGeneration++
   clearTimeout(returnTimer)
   clearTimeout(boundTimer)
 })

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,21 +54,25 @@ describe('ModelDiscoverySection', async () => {
     ).toBeNull()
   })
 
-  it('only lines up providers that run published models and have a preview', async () => {
+  it('lines up multiple providers', () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
-    for (const provider of discoveryProviders) {
-      expect(provider.modelCount, provider.name).toBeGreaterThan(0)
-      expect(provider.thumbnailUrl, provider.name).toBeTruthy()
-    }
   })
 
-  it('sends every provider to the catalog filtered by that provider', async () => {
+  it.for(discoveryProviders)(
+    '$name runs published models and has a preview',
+    (provider) => {
+      expect(provider.modelCount).toBeGreaterThan(0)
+      expect(provider.thumbnailUrl).toBeTruthy()
+    }
+  )
+
+  it('sends every provider to a visible catalog search', async () => {
     render(ModelDiscoverySection, { props: { providers } })
     await nextTick()
 
     const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
     expect(provider.getAttribute('href')).toBe(
-      '/models?provider=Fixture%20Studio%20%26%20Co'
+      '/models?q=Fixture+Studio+%26+Co'
     )
     expect(screen.queryByRole('link', { name: /ByteDance/ })).toBeNull()
 

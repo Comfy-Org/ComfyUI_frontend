@@ -6,6 +6,7 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FieldSchema, FileValue } from '../../config/workshop-playground'
+import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'
@@ -37,6 +38,9 @@ const imageOnly = computed(
     field.accept.every((type) => type.startsWith('image/'))
 )
 const limit = computed(() => (field.multiple ? field.maxItems : 1))
+const uploadLimit = computed(() =>
+  formatWorkshopUploadLimit(field.maxBytes, locale)
+)
 const rejection = ref<TranslationKey>()
 const replacement = ref<number>()
 const input = useTemplateRef<HTMLInputElement>('input')
@@ -53,15 +57,25 @@ const description = computed(
       .join(' ') || undefined
 )
 
+// A field that takes one file replaces what it holds, so plural copy would
+// promise a second slot that does not exist.
 const prompt = computed(() => {
-  const replacing = selectedFiles.value.length > 0 && !field.multiple
-  if (replacing)
-    return imageOnly.value
-      ? 'workshop.field.replaceOrDropImage'
-      : 'workshop.field.replaceOrDropFile'
-  return imageOnly.value
-    ? 'workshop.field.chooseOrDropImages'
-    : 'workshop.field.chooseOrDropFiles'
+  const allowed = field.multiple ? field.maxItems : undefined
+  if (allowed !== undefined && allowed > 1)
+    return t(
+      imageOnly.value
+        ? 'workshop.field.selectOrDropImages'
+        : 'workshop.field.selectOrDropFiles',
+      locale
+    ).replace('{count}', String(allowed))
+  if (selectedFiles.value.length > 0)
+    return t('workshop.field.selectOrDropReplacement', locale)
+  return t(
+    imageOnly.value
+      ? 'workshop.field.selectOrDropImage'
+      : 'workshop.field.selectOrDropFile',
+    locale
+  )
 })
 
 const acceptedTypes = computed(() =>
@@ -79,7 +93,7 @@ const rejectionMessage = computed(() => {
   const unchanged = imageOnly.value
     ? 'workshop.field.imagesUnchanged'
     : 'workshop.field.filesUnchanged'
-  return `${t(rejection.value, locale).replace('{count}', String(limit.value))} ${t(unchanged, locale)}`
+  return `${t(rejection.value, locale).replace('{count}', String(limit.value)).replace('{limit}', uploadLimit.value)} ${t(unchanged, locale)}`
 })
 
 function accepts(file: File): boolean {
@@ -158,18 +172,12 @@ function remove(index: number) {
     :aria-label="field.label"
     :class="
       cn(
-        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
-        dropZoneActive
-          ? 'border-primary-comfy-yellow'
-          : 'border-transparency-white-t20',
+        'flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2 has-focus-visible:ring-primary-comfy-yellow',
         disabled && 'opacity-50'
       )
     "
   >
-    <ul
-      v-if="selectedFiles.length"
-      class="flex min-w-0 flex-col gap-2 px-3 pt-3"
-    >
+    <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
       <SelectedFileRow
         v-for="(file, index) in selectedFiles"
         :key="index"
@@ -184,17 +192,25 @@ function remove(index: number) {
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl text-xs text-primary-warm-gray',
+          'flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs text-primary-warm-gray hover:bg-transparency-white-t4',
+          dropZoneActive
+            ? 'border-primary-comfy-yellow'
+            : 'border-transparency-white-t20',
           disabled && 'pointer-events-none'
         )
       "
       @click="replacement = undefined"
     >
       <Upload class="size-5" aria-hidden="true" />
-      <span>{{ t(prompt, locale) }}</span>
-      <span>
+      <span>{{ prompt }}</span>
+      <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{ t('workshop.field.uploadLimit', locale) }}
+        {{
+          t('workshop.field.uploadLimit', locale).replace(
+            '{limit}',
+            uploadLimit
+          )
+        }}
       </span>
     </label>
     <input
@@ -217,7 +233,7 @@ function remove(index: number) {
       v-if="rejection"
       :id="`selection-error-${field.name}`"
       role="alert"
-      class="text-primary-comfy-red px-3 pb-3 text-xs"
+      class="px-3 pb-3 text-xs text-primary-comfy-red"
     >
       {{ rejectionMessage }}
     </p>

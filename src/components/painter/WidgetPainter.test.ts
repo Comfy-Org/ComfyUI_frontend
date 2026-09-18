@@ -73,12 +73,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
 const SliderStub = defineComponent({
   name: 'Slider',
   props: {
@@ -106,7 +100,7 @@ function renderWidget(initialModel = '') {
   return render(Harness, {
     global: {
       plugins: [i18n],
-      stubs: { Button: ButtonStub, Slider: SliderStub }
+      stubs: { Slider: SliderStub }
     }
   })
 }
