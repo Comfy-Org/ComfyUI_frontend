@@ -326,7 +326,10 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
+export const addWidget = <V extends object | string>(
+  node: LGraphNode,
+  widget: BaseDOMWidget<V>
+) => {
   node.addCustomWidget(widget)
 
   if (node.graph) {
@@ -365,7 +368,7 @@ LGraphNode.prototype.addDOMWidget = function <
     options: { hideOnZoom: true, ...options }
   })
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
-  addWidget(this, widget as unknown as BaseDOMWidget)
+  addWidget(this, widget)
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`

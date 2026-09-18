@@ -184,7 +184,7 @@ app.registerExtension({
 
       const audioUIWidget = node.widgets?.find(
         (w) => w.name === 'audioUI'
-      ) as unknown as DOMWidget<HTMLAudioElement, string>
+      ) as DOMWidget<HTMLAudioElement, string>
       const audio = output.audio[0]
       const resourceUrl = getResourceURL(
         audio.subfolder ?? '',
@@ -217,7 +217,7 @@ app.registerExtension({
         // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
+        ) as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
           const value = audioWidget.value
@@ -416,7 +416,7 @@ app.registerExtension({
             try {
               mediaRecorder = new ExtendableMediaRecorder(currentStream, {
                 mimeType: 'audio/wav'
-              }) as unknown as MediaRecorder
+              }) as MediaRecorder
 
               audioChunks = []
 

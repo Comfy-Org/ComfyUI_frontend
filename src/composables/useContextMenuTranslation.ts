@@ -141,18 +141,17 @@ export const useContextMenuTranslation = () => {
   )
 
   const OriginalContextMenu = LiteGraph.ContextMenu
-  function ContextMenu(
-    values: (IContextMenuValue | string)[],
-    options: IContextMenuOptions
-  ) {
-    if (options.title) {
-      options.title = resolveNodeDefText('display_name', options.title)
+  LiteGraph.ContextMenu = new Proxy(OriginalContextMenu, {
+    construct(Target, [values, options], newTarget) {
+      const translatedOptions = options ?? {}
+      if (translatedOptions.title) {
+        translatedOptions.title = resolveNodeDefText(
+          'display_name',
+          translatedOptions.title
+        )
+      }
+      translateContextMenuItems(values, translatedOptions)
+      return Reflect.construct(Target, [values, translatedOptions], newTarget)
     }
-    translateContextMenuItems(values, options)
-    const ctx = new OriginalContextMenu(values, options)
-    return ctx
-  }
-
-  LiteGraph.ContextMenu = ContextMenu as unknown as typeof LiteGraph.ContextMenu
-  LiteGraph.ContextMenu.prototype = OriginalContextMenu.prototype
+  })
 }

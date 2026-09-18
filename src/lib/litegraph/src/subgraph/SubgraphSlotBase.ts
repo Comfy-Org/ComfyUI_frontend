@@ -17,6 +17,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   Serialisable,
   SubgraphIO
@@ -27,6 +28,14 @@ import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
+
+const slotShapes = new Map<RenderShape, SlotShape>([
+  [RenderShape.BOX, SlotShape.Box],
+  [RenderShape.ARROW, SlotShape.Arrow],
+  [RenderShape.GRID, SlotShape.Grid],
+  [RenderShape.CIRCLE, SlotShape.Circle],
+  [RenderShape.HollowCircle, SlotShape.HollowCircle]
+])
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
@@ -177,8 +186,8 @@ export abstract class SubgraphSlot
     fromSlot,
     editorAlpha = 1
   }: SubgraphSlotDrawOptions): void {
-    // Assertion: SlotShape is a subset of RenderShape
-    const shape = this.shape as unknown as SlotShape
+    const shape =
+      slotShapes.get(this.shape ?? RenderShape.CIRCLE) ?? SlotShape.Circle
     const {
       isPointerOver,
       pos: [x, y]
