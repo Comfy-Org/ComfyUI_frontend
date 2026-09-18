@@ -4,6 +4,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -17,7 +18,6 @@ import {
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
 
-const mockUserEmail = ref<string | null>(null)
 const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
 const mockIsInitialized = ref(true)
 const mockRemoveMember = vi.fn<(userId: string) => Promise<void>>()
@@ -83,11 +83,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: mockUserEmail
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -127,6 +123,7 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
+  useCurrentUser().userEmail = computed(() => null)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )
@@ -143,7 +140,6 @@ describe('useDowngradeToPersonal', () => {
     mockMembers.value = []
     mockRemoveMember.mockResolvedValue()
     mockFetchMembers.mockResolvedValue([])
-    mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in
     // production — it's at least a FREE-tier record. Default to that
     // loaded-and-active shape; tests that need "not loaded yet" set
@@ -195,7 +191,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('falls back to protecting owners and the current user when the flag is absent', () => {
-      mockUserEmail.value = 'me@example.com'
+      useCurrentUser().userEmail = computed(() => 'me@example.com')
       mockMembers.value = [
         createMember({
           id: 'owner',

@@ -173,6 +173,7 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'packages/account-core/vitest.config.ts',
+            'packages/account-ui/vite.config.ts',
             'packages/account-ui/vitest.config.ts',
             'packages/billing-contract/vitest.config.ts',
             'packages/design-system/vitest.config.ts',
