@@ -30,7 +30,7 @@ test.describe(
         page.locator('#graph-canvas'),
         page.getByRole('button', { name: 'Reset View' })
       )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.workflowTabs.locator('.workflow-tab-button')
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const widgetRows =
@@ -60,7 +60,7 @@ test.describe(
 
       await test.step('user returns to the edited workflow', async () => {
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0)).toHaveAttribute('data-state', 'on')
         await agentConversation.expectCanvasReplayed(lastTurn)
         await expect
           .poll(() => agentConversation.renderedWidgetRows())
@@ -145,7 +145,7 @@ test.describe(
         page.locator('#graph-canvas'),
         page.getByRole('button', { name: 'Reset View' })
       )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.workflowTabs.locator('.workflow-tab-button')
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const expectViewport = async (viewport: {
@@ -184,7 +184,7 @@ test.describe(
       const returnToTabA = async () => {
         const before = agentConversation.subscribeCount()
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0)).toHaveAttribute('data-state', 'on')
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBe(before + 1)

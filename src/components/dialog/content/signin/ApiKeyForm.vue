@@ -28,7 +28,7 @@
         {{ $form.apiKey.error.message }}
       </Message>
 
-      <div class="flex flex-col gap-2">
+      <FormField v-slot="$field" name="apiKey" class="flex flex-col gap-2">
         <label
           class="mb-2 text-base font-medium opacity-80"
           for="comfy-org-api-key"
@@ -36,14 +36,14 @@
           {{ t('auth.apiKey.label') }}
         </label>
         <div class="flex flex-col gap-2">
-          <InputText
-            pt:root:id="comfy-org-api-key"
-            pt:root:autocomplete="off"
+          <Input
+            v-bind="$field.props"
+            id="comfy-org-api-key"
+            autocomplete="off"
             class="h-10"
-            name="apiKey"
             type="password"
             :placeholder="t('auth.apiKey.placeholder')"
-            :invalid="$form.apiKey?.invalid"
+            :aria-invalid="$field.invalid"
           />
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
@@ -64,7 +64,7 @@
             </a>
           </small>
         </div>
-      </div>
+      </FormField>
 
       <div class="mt-4 flex items-center justify-between">
         <Button type="button" variant="textonly" @click="$emit('back')">
@@ -85,13 +85,13 @@
 
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
+import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {

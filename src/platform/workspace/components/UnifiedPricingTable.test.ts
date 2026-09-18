@@ -118,7 +118,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: { template: '<div />' },
         // Clicking moves the v-model selection to a different stop ($200) so
         // tests can move off the current stop.
         CreditSlider: {
@@ -718,17 +717,6 @@ describe('UnifiedPricingTable outside Cloud', () => {
   })
 })
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderWithCycleToggle(
   props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
 ) {
@@ -738,7 +726,6 @@ function renderWithCycleToggle(
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
         CreditSlider: { template: '<div />' }
       }
     }

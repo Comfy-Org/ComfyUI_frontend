@@ -1,10 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import type { InputTextProps } from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
 
+import Input from '@/components/ui/input/Input.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -14,7 +12,7 @@ import { createMockWidget } from './widgetTestUtils'
 describe('WidgetInputText Value Binding', () => {
   const createInputTextWidget = (
     value: string = 'default',
-    options: Partial<InputTextProps> & IWidgetOptions = {},
+    options: IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
     createMockWidget({
@@ -31,8 +29,7 @@ describe('WidgetInputText Value Binding', () => {
   ) => {
     return render(WidgetInputText, {
       global: {
-        plugins: [PrimeVue],
-        components: { InputText, Textarea }
+        components: { Input, Textarea }
       },
       props: {
         widget,

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import RadioButton from 'primevue/radiobutton'
-import Button from '@/components/ui/button/Button.vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 
@@ -64,7 +64,7 @@ const controlMode = defineModel<ControlOptions>()
       {{ $t('widgets.valueControl.header.postfix') }}
     </div>
 
-    <div class="space-y-2">
+    <RadioGroup v-model="controlMode" class="flex-col space-y-2">
       <Button
         v-for="option in controlOptions"
         :key="option.mode"
@@ -103,13 +103,8 @@ const controlMode = defineModel<ControlOptions>()
           </div>
         </div>
 
-        <RadioButton
-          v-model="controlMode"
-          class="shrink"
-          :input-id="option.mode"
-          :value="option.mode"
-        />
+        <RadioGroupItem :id="option.mode" class="shrink" :value="option.mode" />
       </Button>
-    </div>
+    </RadioGroup>
   </div>
 </template>

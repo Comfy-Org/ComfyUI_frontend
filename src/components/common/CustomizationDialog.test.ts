@@ -8,18 +8,6 @@ import CustomizationDialog from './CustomizationDialog.vue'
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
-vi.mock<unknown>(
-  import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    default: {
-      name: 'SelectButton',
-      template: '<div />',
-      props: ['modelValue', 'options']
-    }
-  })
-)
-
 vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))

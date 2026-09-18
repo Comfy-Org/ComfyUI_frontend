@@ -2,26 +2,26 @@
   <div
     class="color-customization-selector-container flex flex-row items-center gap-2"
   >
-    <SelectButton
-      v-model="selectedColorOption"
-      :options="colorOptionsWithCustom"
-      option-label="name"
-      data-key="value"
-      :allow-empty="false"
-    >
-      <template #option="slotProps">
+    <ToggleGroup v-model="selectedColorName" type="single">
+      <ToggleGroupItem
+        v-for="option in colorOptionsWithCustom"
+        :key="option.name"
+        :value="option.name"
+        :aria-label="option.name"
+        class="flex-none"
+      >
         <div
-          v-if="slotProps.option.name !== '_custom'"
+          v-if="option.name !== '_custom'"
           :style="{
             width: '20px',
             height: '20px',
-            backgroundColor: slotProps.option.value,
+            backgroundColor: option.value,
             borderRadius: '50%'
           }"
         />
         <i v-else class="pi pi-palette text-lg" />
-      </template>
-    </SelectButton>
+      </ToggleGroupItem>
+    </ToggleGroup>
     <ColorPicker
       v-if="selectedColorOption.name === '_custom'"
       v-model="customColorValue"
@@ -30,10 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const {
   modelValue,
@@ -56,6 +56,14 @@ const emit = defineEmits<{
 }>()
 
 const selectedColorOption = ref(customColorOption)
+const selectedColorName = computed({
+  get: () => selectedColorOption.value.name,
+  set: (name: string) => {
+    selectedColorOption.value =
+      colorOptionsWithCustom.value.find((option) => option.name === name) ??
+      selectedColorOption.value
+  }
+})
 const customColorValue = ref('')
 
 // Initialize the component with the provided modelValue
