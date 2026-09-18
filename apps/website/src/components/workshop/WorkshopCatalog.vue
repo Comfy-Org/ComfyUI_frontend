@@ -67,7 +67,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
 <template>
   <header class="mb-10">
     <p
-      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase"
+      class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
     >
       {{ t('workshop.hero.eyebrow', locale) }}
     </p>
@@ -91,14 +91,14 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
           v-model="query"
           type="search"
           :placeholder="t('workshop.search.placeholder', locale)"
-          class="focus:border-primary-comfy-yellow h-12 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 pr-4 pl-12 text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/40"
+          class="h-12 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 pr-4 pl-12 text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/40 focus:border-primary-comfy-yellow"
         />
       </label>
       <label>
         <span class="sr-only">{{ t('workshop.provider.label', locale) }}</span>
         <select
           v-model="provider"
-          class="focus:border-primary-comfy-yellow h-12 min-w-48 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-primary-comfy-canvas outline-none"
+          class="h-12 min-w-48 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
         >
           <option value="all">
             {{ t('workshop.provider.all', locale) }}
@@ -152,11 +152,11 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
       :class="
         cn(
           detailRoutesAvailable &&
-            'group hover:border-primary-comfy-yellow/60 transition hover:-translate-y-0.5 hover:bg-primary-comfy-canvas/8'
+            'group transition hover:-translate-y-0.5 hover:border-primary-comfy-yellow/60 hover:bg-primary-comfy-canvas/8'
         )
       "
     >
-      <p class="text-primary-comfy-yellow text-xs tracking-wider uppercase">
+      <p class="text-xs tracking-wider text-primary-comfy-yellow uppercase">
         {{ model.provider }}
       </p>
       <h2 class="mt-2 text-xl font-semibold text-primary-comfy-canvas">
@@ -178,7 +178,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
         <ChevronRight
           v-if="detailRoutesAvailable"
           aria-hidden="true"
-          class="group-hover:text-primary-comfy-yellow size-5 shrink-0 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
+          class="size-5 shrink-0 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1 group-hover:text-primary-comfy-yellow"
         />
       </div>
     </component>
@@ -187,7 +187,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
   <button
     v-if="displayedModels.length < visibleModels.length"
     type="button"
-    class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors"
+    class="mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
     @click="visibleLimit += WORKSHOP_PAGE_SIZE"
   >
     {{ t('workshop.showMore', locale) }}

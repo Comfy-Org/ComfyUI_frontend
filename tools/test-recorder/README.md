@@ -8,7 +8,7 @@ Interactive CLI for recording and transforming Playwright browser tests for Comf
 
 ```bash
 pnpm comfy-test check       # Verify your environment is ready
-pnpm comfy-test record      # Record a new test interactively (needs a real terminal)
+pnpm comfy-test record      # Record a new test interactively (alias: recorder; needs a real terminal)
 pnpm comfy-test plan --description "<what to test>"  # Non-interactive: print a plan for an agent to hand to playwright-test-generator
 pnpm comfy-test transform <file>  # Transform raw codegen to conventions
 pnpm comfy-test pr <file>   # Open a PR for a generated test
@@ -27,6 +27,9 @@ pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@w
 
 Supplied answers are confirmed and their prompts are skipped. Invalid values
 show a warning and return to the corresponding prompt.
+
+`pnpm comfy-test recorder` is an alias of `pnpm comfy-test record`; both accept
+the same flags.
 
 Record flags:
 

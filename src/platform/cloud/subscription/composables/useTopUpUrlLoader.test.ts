@@ -1,5 +1,8 @@
+import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
@@ -28,15 +31,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
   })
 }))
 
-const mockShowTopUpCreditsDialog = vi.hoisted(() =>
-  vi.fn(async () => undefined)
-)
-
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
@@ -53,13 +48,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
@@ -67,7 +56,6 @@ describe('useTopUpUrlLoader', () => {
     mockCanTopUp.value = true
     mockCanSubscribeSelfServe.value = false
     mockInitialize.mockResolvedValue(undefined)
-    mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -77,7 +65,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
@@ -87,7 +75,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -97,9 +85,11 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
-      source: 'deep_link'
-    })
+    expect(useTelemetry()?.trackAddApiCreditButtonClicked).toHaveBeenCalledWith(
+      {
+        source: 'deep_link'
+      }
+    )
   })
 
   it('retains the deep link until capability loading settles', async () => {
@@ -125,7 +115,7 @@ describe('useTopUpUrlLoader', () => {
     await loading
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('is a silent no-op when the server denies top-up', async () => {
@@ -135,8 +125,10 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('opens the subscription path without top-up telemetry', async () => {
@@ -147,8 +139,10 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
@@ -158,7 +152,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
@@ -179,7 +173,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('strips but does not open for an empty param', async () => {
@@ -188,7 +182,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
@@ -202,7 +196,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -212,6 +206,6 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 })

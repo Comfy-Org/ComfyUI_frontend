@@ -291,7 +291,10 @@ describe('site event data', () => {
   // organizer, so an unlabelled event is unreachable from that select.
   it('labels every event with an organizer', () => {
     for (const event of directoryEvents) {
-      expect(event.organizer, event.id).toBeDefined()
+      expect({ id: event.id, missing: event.organizer === undefined }).toEqual({
+        id: event.id,
+        missing: false
+      })
     }
   })
 
@@ -309,7 +312,12 @@ describe('site event data', () => {
           event.dateLabel?.[locale]
         ]
         for (const value of strings) {
-          if (value) expect(value, `${event.id}.${locale}`).not.toMatch(dash)
+          if (value) {
+            expect({
+              event: `${event.id}.${locale}`,
+              hasDash: dash.test(value)
+            }).toEqual({ event: `${event.id}.${locale}`, hasDash: false })
+          }
         }
       }
     }
@@ -320,11 +328,21 @@ describe('site event data', () => {
   it('gives coords only to in-person events, within valid ranges', () => {
     for (const event of directoryEvents) {
       if (event.location?.en === 'Online') {
-        expect(event.coords, event.id).toBeUndefined()
+        expect({ id: event.id, coords: event.coords }).toEqual({
+          id: event.id,
+          coords: undefined
+        })
       }
       if (event.coords) {
-        expect(Math.abs(event.coords.lat), event.id).toBeLessThanOrEqual(90)
-        expect(Math.abs(event.coords.lng), event.id).toBeLessThanOrEqual(180)
+        expect({
+          id: event.id,
+          validLatitude: Math.abs(event.coords.lat) <= 90,
+          validLongitude: Math.abs(event.coords.lng) <= 180
+        }).toEqual({
+          id: event.id,
+          validLatitude: true,
+          validLongitude: true
+        })
       }
     }
   })

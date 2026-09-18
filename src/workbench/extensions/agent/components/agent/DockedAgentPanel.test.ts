@@ -13,9 +13,7 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -57,6 +55,7 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }

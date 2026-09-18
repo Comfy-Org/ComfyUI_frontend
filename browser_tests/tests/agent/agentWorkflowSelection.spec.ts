@@ -348,6 +348,11 @@ test.describe(
         enMessages.agent.savingWorkflow
       )
       await expect(row).toHaveAttribute('aria-busy', 'true')
+      const loadingIcon = panel.getByRole('img', {
+        name: enMessages.g.agentWorking
+      })
+      await expect(loadingIcon).toHaveCSS('width', '16px')
+      await expect(loadingIcon).toHaveCSS('height', '16px')
       await expect(page.getByRole('dialog')).toHaveCount(0)
       await testInfo.attach('inline-workflow-saving', {
         body: await page.screenshot({

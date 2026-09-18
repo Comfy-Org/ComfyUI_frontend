@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
+import type { NodeError, PromptResponse } from '@/platform/remote/comfyui/types'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -85,8 +85,7 @@ test.describe(
       let promptQueued = false
       const mockResponse: PromptResponse = {
         prompt_id: 'test-id',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await comfyPage.page.route(
         '**/api/prompt',

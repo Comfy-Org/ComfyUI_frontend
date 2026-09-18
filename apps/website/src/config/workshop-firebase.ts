@@ -8,12 +8,12 @@
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
 
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
   signUpWithProvisioning
-} from '@comfyorg/account/provisioning'
+} from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
@@ -25,14 +25,10 @@ import {
 const WORKSHOP_APP_NAME = 'workshop'
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
 const PROVISIONING_TIMEOUT_MS = 15_000
-/** Bounds email sign-in and password reset so a stalled request never pins the
- *  form busy; popup and account creation stay unbounded by the package. */
-const FIREBASE_ACTION_TIMEOUT_MS = 15_000
 
 const identity = createFirebaseIdentity({
   options: WORKSHOP_FIREBASE_OPTIONS,
-  appName: WORKSHOP_APP_NAME,
-  actionTimeoutMs: FIREBASE_ACTION_TIMEOUT_MS
+  appName: WORKSHOP_APP_NAME
 })
 
 /** The slice of a Firebase user this call needs; injectable in tests. */
@@ -40,7 +36,7 @@ interface ProvisionableUser {
   getIdToken: () => Promise<string>
 }
 
-export class WorkshopProvisioningError extends Error {
+class WorkshopProvisioningError extends Error {
   constructor(
     readonly user: User,
     options: ErrorOptions

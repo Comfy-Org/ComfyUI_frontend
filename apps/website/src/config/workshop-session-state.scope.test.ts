@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -11,11 +10,13 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  return {
+    useWorkshopAuthFlag: () => flag
+  }
 })
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
   return {
     workshopIdentity: createTestIdentity({
       onUserChanged: () => () => undefined
