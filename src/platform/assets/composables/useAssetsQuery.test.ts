@@ -1,10 +1,7 @@
 import { effectScope, toValue } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import {
-  ASSET_PAGE_SIZE,
-  useAssetsQuery
-} from '@/platform/assets/composables/useAssetsQuery'
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type {
   AssetItem,
   AssetResponse
@@ -117,10 +114,6 @@ const transientFailures: {
 ]
 
 describe('useAssetsQuery page size', () => {
-  beforeEach(() => {
-    fetchApiMock.mockReset()
-  })
-
   it('sends the pinned page size on the first fetch and on loadMore', async () => {
     const list = await createList('page-size', ['newest'], {
       hasMore: true,
@@ -131,10 +124,7 @@ describe('useAssetsQuery page size', () => {
     await list.loadMore()
     await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
 
-    expect(requestedLimits()).toEqual([
-      String(ASSET_PAGE_SIZE),
-      String(ASSET_PAGE_SIZE)
-    ])
+    expect(requestedLimits()).toEqual(['20', '20'])
   })
 
   it('lets a caller override the pinned page size', async () => {

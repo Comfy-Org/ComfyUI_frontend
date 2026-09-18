@@ -14,7 +14,7 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
-/** Rows per fetch. Stated so the feed's paging can't drift with ingest's default. */
+/** Rows per fetch. Pinned so paging can't drift with a backend's default. */
 export const ASSET_PAGE_SIZE = 20
 
 const BASE_PARAMS: ListAssetsData['query'] = {
