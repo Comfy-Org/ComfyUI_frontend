@@ -1,4 +1,7 @@
-import { setNodePricingFailureReporter } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
+import {
+  type NodePricingFailureReporter,
+  setNodePricingFailureReporter
+} from '@comfyorg/shared-frontend-utils/nodePricingFailure'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
@@ -16,7 +19,7 @@ import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const pricingFailureReporter = vi.fn()
+const pricingFailureReporter = vi.fn<NodePricingFailureReporter>()
 setNodePricingFailureReporter(pricingFailureReporter)
 
 // -----------------------------------------------------------------------------
