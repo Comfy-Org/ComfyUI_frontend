@@ -620,7 +620,25 @@
       "[\"wanAnimate2\",\"wanAnimate2Page\",\"write-the-shot\",\"description\"]": "e34b2dfd447b0228eac9052e360391154eb40b67f454b5fc2238568ff3b2b9cb",
       "[\"wanAnimate2\",\"wanAnimate2Page\",\"write-the-shot\",\"title\"]": "780410605ce3299d80b4dae4ebb9f24e59ba4607031a0887bd5d35b9d1806e17"
     },
-    "ja/main.json": {},
-    "zh-CN/main.json": {}
+    "ja/main.json": {
+      "[\"careers\",\"teamPhotos\",\"team0\",\"alt\"]": "915dddc0ac13d16f44f2d37bc78d42a2ad46fcaef385587071d346b85cb73daa",
+      "[\"careers\",\"teamPhotos\",\"team1\",\"alt\"]": "e2a3083ff8d19534e734ad7e983b8e31475c6490a77da7c8b5a5fc04ff0aa964",
+      "[\"careers\",\"teamPhotos\",\"team2\",\"alt\"]": "55e905e6bcc42c8f8b48956f37ae4c15ec16878cd767c730bed07e2377788411",
+      "[\"careers\",\"teamPhotos\",\"team3\",\"alt\"]": "35e8cb92cd0d8f5a55eed58403b04fc2bf6cd4156c460a5f1b2f59bcb37e753f",
+      "[\"careers\",\"teamPhotos\",\"team4\",\"alt\"]": "a3f11d642dd7c5d846434a818088d4b24184b5b35d493c961ef7d7ae4b2fecae",
+      "[\"careers\",\"teamPhotos\",\"team5\",\"alt\"]": "8e872d1192bfa5f649c84585f31591369781dcae4fd6bfd92afe11fbf0dc39f7",
+      "[\"careers\",\"teamPhotos\",\"team6\",\"alt\"]": "7edfba84932d2686cf9b80ec3a49e31ab90aec99ab84a02265fd574a6f11bb39",
+      "[\"careers\",\"teamPhotos\",\"team7\",\"alt\"]": "035cf7a5926ea845df5177972c5ad4284c9dd1a811b9c3ab46bcf7c6e337d3b7"
+    },
+    "zh-CN/main.json": {
+      "[\"careers\",\"teamPhotos\",\"team0\",\"alt\"]": "cca33c1297ae87de8edf32d0e441c710c4ae1f222f8127d808f57f2e6adf067a",
+      "[\"careers\",\"teamPhotos\",\"team1\",\"alt\"]": "7079648a4914cf6fe970ad95d1b9f28902c9db5ff10f24710a3b9efeaf673ca4",
+      "[\"careers\",\"teamPhotos\",\"team2\",\"alt\"]": "77ec7852783ddab57da4af4d008b2c00f6610e4b2f22aae80f0e7fc614bbbb77",
+      "[\"careers\",\"teamPhotos\",\"team3\",\"alt\"]": "d4699b693e6e9cb2794ceb2c4721e76e219a2e5504834f3204e6dd34bf16464c",
+      "[\"careers\",\"teamPhotos\",\"team4\",\"alt\"]": "6076265da09a9d6f072de44f78556500e96ba8bdf4b19490b9575744d0174702",
+      "[\"careers\",\"teamPhotos\",\"team5\",\"alt\"]": "0dbf80408d8102dd546f36d7e8b967f55db26150d7e8f83ead8c8647d2c06e24",
+      "[\"careers\",\"teamPhotos\",\"team6\",\"alt\"]": "18aa51f1bab3806bb8b9dd131816efc8e2b3780414119d51f9882875b043d2ac",
+      "[\"careers\",\"teamPhotos\",\"team7\",\"alt\"]": "34cb5fc8c5b6d217f5846a9ee0ebb52da48d66aecc1441783f0ffdc14e6cd072"
+    }
   }
 }

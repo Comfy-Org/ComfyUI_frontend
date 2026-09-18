@@ -163,5 +163,39 @@
     "run": {
       "preparingSession": "セッションを確認しています…"
     }
+  },
+  "home": {
+    "meta": {
+      "title": "Comfy - ビジュアルAIを自在にコントロール",
+      "keywords": "ComfyUI, ComfyUI アプリ, ComfyUI ウェブ版, ComfyUI デスクトップ, ビジュアル AI, ノードベース AI, 生成 AI ワークフロー"
+    }
+  },
+  "careers": {
+    "teamPhotos": {
+      "team0": {
+        "alt": "チームディナー"
+      },
+      "team1": {
+        "alt": "作業中のチーム"
+      },
+      "team2": {
+        "alt": "チームオフサイト"
+      },
+      "team3": {
+        "alt": "ボートに乗るチーム"
+      },
+      "team4": {
+        "alt": "レストランでポーズを取るチームメンバー"
+      },
+      "team5": {
+        "alt": "交流会に参加するチームメンバー"
+      },
+      "team6": {
+        "alt": "ゴールデンアワーにセーリングするチーム"
+      },
+      "team7": {
+        "alt": "夕暮れの帆船に乗るチーム"
+      }
+    }
   }
 }

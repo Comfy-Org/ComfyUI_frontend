@@ -54,6 +54,10 @@
       "headingBefore": "我们相信",
       "headingHighlight": "每个人都值得设计出自己梦想中的作品",
       "label": "我们的价值观"
+    },
+    "meta": {
+      "title": "关于我们 - Comfy",
+      "description": "了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。"
     }
   },
   "affiliate": {
@@ -573,6 +577,36 @@
       "reason3": "关心开放、免费的替代方案，而非封闭的 AI 平台。",
       "reason4": "相信艺术家、黑客和独立创作者应该真正掌控自己的工具。",
       "reason5": "想在一个精干、务实、快速迭代的小团队中工作。"
+    },
+    "meta": {
+      "title": "招聘 - Comfy",
+      "description": "加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
+    },
+    "teamPhotos": {
+      "team0": {
+        "alt": "团队聚餐"
+      },
+      "team1": {
+        "alt": "团队工作中"
+      },
+      "team2": {
+        "alt": "团队外出活动"
+      },
+      "team3": {
+        "alt": "团队在船上"
+      },
+      "team4": {
+        "alt": "团队成员在餐厅合影"
+      },
+      "team5": {
+        "alt": "团队成员参加社交聚会"
+      },
+      "team6": {
+        "alt": "团队在黄金时刻扬帆航行"
+      },
+      "team7": {
+        "alt": "团队在日落时的帆船上"
+      }
     }
   },
   "carousel": {
@@ -979,6 +1013,10 @@
       },
       "heading": "专业人士为何\n选择",
       "headingHighlight": "Cloud"
+    },
+    "meta": {
+      "title": "Comfy Cloud - 云端 AI",
+      "keywords": "comfyui web app, comfyui app, comfyui online, comfyui cloud, ComfyUI 网页版, ComfyUI 云端, ComfyUI 应用, Comfy Cloud, 云端 ComfyUI"
     }
   },
   "cloudNodes": {
@@ -1176,6 +1214,10 @@
       "heading": "创建强大的工作流，\n无限扩展。",
       "supportLink": "需要技术或产品支持？",
       "supportLinkCta": "在这里找到答案"
+    },
+    "meta": {
+      "title": "联系我们 - Comfy",
+      "description": "就企业版、驻场创意人才、MiniMax 商业许可或合作事宜联系 Comfy。常见问题解答，包括 SOC 2 进展。"
     }
   },
   "cta": {
@@ -1432,7 +1474,9 @@
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
     "meta": {
-      "description": "下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。"
+      "description": "下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。",
+      "title": "下载 Comfy 桌面版 - 在您的硬件上运行 AI",
+      "keywords": "comfyui app, comfyui desktop app, comfyui download, ComfyUI 下载, ComfyUI 桌面应用, ComfyUI 应用, ComfyUI Windows, ComfyUI macOS, ComfyUI Linux"
     },
     "reason": {
       "1": {
@@ -2220,6 +2264,10 @@
       "browseAll": "浏览全部模型",
       "heading": "在同一个地方运行任何模型",
       "subheading": "汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。"
+    },
+    "meta": {
+      "title": "Comfy - 视觉 AI 的最强可控性",
+      "keywords": "comfyui app, comfyui web app, comfyui application, ComfyUI 应用, ComfyUI 网页版, ComfyUI 桌面应用, ComfyUI 下载, 可视化 AI, 节点式 AI, 生成式 AI 工作流"
     }
   },
   "hubspotForm": {
@@ -3484,7 +3532,20 @@
       "sliderLabel": "团队每月积分承诺",
       "videosEstimate": "约可生成 {count} 个 5 秒视频*"
     },
-    "title": "价格"
+    "title": "价格",
+    "lookingForElse": {
+      "heading": "在找别的方案？",
+      "community": {
+        "title": "社区版",
+        "description": "标准的自托管版 ComfyUI 已在 GitHub 上提供。",
+        "github": "前往 GitHub",
+        "docs": "自托管文档"
+      }
+    },
+    "meta": {
+      "title": "定价 - Comfy Cloud",
+      "description": "Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。"
+    }
   },
   "privacy": {
     "australian-privacy": {
