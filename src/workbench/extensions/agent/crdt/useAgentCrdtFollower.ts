@@ -9,7 +9,6 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -225,7 +224,7 @@ function startAgentCrdtFollower(
     // the store's own update. Widened because the definite-assignment
     // assertion on `app.canvas` does not hold until that host mounts, and a
     // frame can land first.
-    const canvas = app.canvas as LGraphCanvas | undefined
+    const canvas: typeof app.canvas | undefined = app.canvas
     const graph = getGraph()
     if (!canvas || !graph) return
     const nodes = nodeIds
