@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { collectLeaves, pathKey } from './locale-tree'
 import {
+  auditRetainedTranslations,
   machineTranslationsSchema,
   partitionOwnedLocale,
   projectLocale,
@@ -9,6 +10,19 @@ import {
 } from './translation-ownership'
 
 describe('translation ownership', () => {
+  it.for([
+    { value: '確認済み {name}', errors: [] },
+    { value: '', errors: [] },
+    { value: '確認済み', errors: ['title: missing {name}'] }
+  ])('audits retained copy $value', ({ value, errors }) => {
+    expect(
+      auditRetainedTranslations(
+        { title: 'Hello {name}' },
+        new Map([[pathKey(['title']), value]])
+      )
+    ).toEqual(errors)
+  })
+
   it.for([
     { label: 'reviewed copy', value: '確認済みの翻訳' },
     { label: 'intentional empty copy', value: '' }

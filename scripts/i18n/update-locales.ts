@@ -51,6 +51,7 @@ import {
   translateLocaleItems
 } from './translate'
 import {
+  auditRetainedTranslations,
   machineTranslationsSchema,
   partitionOwnedLocale,
   projectLocale,
@@ -404,11 +405,14 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     // the check. Degraded plans (recorded source unavailable) cannot tell
     // staleness from corruption, so they skip the audit.
     if (state.plan.degraded) continue
-    for (const error of auditProtectedLiterals(
-      state.source,
-      state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
-    )) {
+    const skipKeys = new Set([
+      ...state.plan.invalidated,
+      ...state.plan.knownViolationKeys
+    ])
+    for (const error of [
+      ...auditProtectedLiterals(state.source, state.existing, skipKeys),
+      ...auditRetainedTranslations(state.plan.source, state.retained, skipKeys)
+    ]) {
       auditErrors.push(`${label}: ${error}`)
     }
   }
@@ -660,11 +664,10 @@ async function run(argv: readonly string[]): Promise<void> {
     'output' in outcome ? [outcome] : []
   )
   for (const { state, generated } of rebuilt) {
-    for (const error of validateLocale(
-      state.source,
-      generated,
-      state.plan.changes
-    )) {
+    for (const error of [
+      ...validateLocale(state.source, generated, state.plan.changes),
+      ...auditRetainedTranslations(state.plan.source, state.retained)
+    ]) {
       addFailure(
         state.plan.filename,
         `${state.locale.code}/${state.plan.filename}: ${error}`

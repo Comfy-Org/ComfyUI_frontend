@@ -7,6 +7,7 @@ import type {
   LocaleValue
 } from './locale-tree'
 import { collectLeaves, getLeaf, pathKey } from './locale-tree'
+import { auditProtectedLiterals } from './protected-tokens'
 
 export const machineTranslationsSchema = z.object({
   version: z.literal(1),
@@ -72,4 +73,19 @@ export function partitionOwnedLocale(
     eligible.set(key, leaf.value)
   }
   return { source: projectLocale(source, eligible), retained }
+}
+
+export function auditRetainedTranslations(
+  source: LocaleObject,
+  retained: ReadonlyMap<string, LocaleTrackedLeaf>,
+  skipKeys: ReadonlySet<string> = new Set()
+): string[] {
+  const intentionalEmptyKeys = [...retained]
+    .filter(([, value]) => value === '')
+    .map(([key]) => key)
+  return auditProtectedLiterals(
+    source,
+    projectLocale(source, retained),
+    new Set([...skipKeys, ...intentionalEmptyKeys])
+  )
 }
