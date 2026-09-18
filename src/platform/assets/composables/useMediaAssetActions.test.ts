@@ -10,6 +10,7 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
@@ -18,8 +19,15 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
+const mockDownloadFileAsBlob = vi.hoisted(() => vi.fn())
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: mockDownloadFile
+  downloadFile: mockDownloadFile,
+  downloadFileAsBlob: mockDownloadFileAsBlob
+}))
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -586,13 +594,42 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([asset])
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
         'http://localhost:8188/api/assets/single-output/content',
-        'single-output.png'
+        expect.objectContaining({ filename: 'single-output.png' })
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('preserves successful OSS downloads when another file fails', async () => {
+      const failure = new Error('download failed')
+      mockDownloadFile
+        .mockImplementationOnce(() => {
+          throw failure
+        })
+        .mockImplementationOnce(() => {})
+      const actions = useMediaAssetActions()
+
+      actions.downloadAssets([
+        createMockAsset({ id: 'a', name: 'a.png' }),
+        createMockAsset({ id: 'b', name: 'b.png' })
+      ])
+
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => {
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'error_downloading_asset',
+        context: { filename: 'a.png' }
+      })
     })
 
     it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
