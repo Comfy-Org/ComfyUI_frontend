@@ -80,6 +80,16 @@ describe('createPositionBounds', () => {
   it('is null with nothing to frame', () => {
     expect(createPositionBounds([], 40)).toBeNull()
   })
+
+  it('ignores invalid geometry and rejects invalid padding', () => {
+    expect(
+      createPositionBounds(
+        [node([100, 100]), { pos: [200, 200], size: [100, Number.NaN] }],
+        40
+      )
+    ).toEqual([60, 60, 320, 166])
+    expect(createPositionBounds([node([100, 100])], Number.NaN)).toBeNull()
+  })
 })
 
 describe('createAgentArrivalFramer', () => {
