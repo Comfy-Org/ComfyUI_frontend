@@ -193,9 +193,14 @@ describe('buildNeedsBackportText', () => {
       expected: 'closed without merging'
     },
     {
-      situation: 'labelled with no target',
-      overrides: { labels: ['needs-backport'] },
-      expected: 'No target branch label'
+      situation: 'merged with no target',
+      overrides: { labels: ['needs-backport'], state: 'MERGED' as const },
+      expected: 'merged with no usable target branch label'
+    },
+    {
+      situation: 'open with no target',
+      overrides: { labels: ['needs-backport'], state: 'OPEN' as const },
+      expected: 'still open and has no usable target branch label yet'
     },
     {
       situation: 'not based on main',
@@ -214,12 +219,24 @@ describe('buildNeedsBackportText', () => {
     )
 
     expect(text).toContain('only runs on pull requests into `main`')
-    expect(text).not.toContain('No target branch label')
+    expect(text).not.toContain('target branch label')
   })
 
-  // pr-backport.yaml drops a target whose branch is not cut yet and skips one
-  // that already has an open backport PR, so a merged PR cannot be promised a
-  // cherry-pick that is already happening.
+  // A no-target DM that omits the PR's state cannot be acted on: a typo on a
+  // merged PR needs fixing now, while the same label on an open PR is the
+  // normal way to mark a line that has not been cut yet.
+  it('says whether a PR with no usable target is merged or open', () => {
+    const merged = buildNeedsBackportText(
+      event({ labels: ['needs-backport'], state: 'MERGED' })
+    )
+    const open = buildNeedsBackportText(
+      event({ labels: ['needs-backport'], state: 'OPEN' })
+    )
+
+    expect(merged).toContain('The PR is merged')
+    expect(open).toContain('The PR is still open')
+  })
+
   // Labelling a release line before it is cut is the case this guards: the
   // branch does not exist, pr-backport.yaml drops the target, and a DM that
   // promised a cherry-pick into it would send the reader looking for a run
@@ -238,7 +255,7 @@ describe('buildNeedsBackportText', () => {
       event({ labels: ['needs-backport', '1.99'] })
     )
 
-    expect(text).toContain('No target branch left')
+    expect(text).toContain('no usable target branch label')
     expect(text).toContain('`core/1.99` has no branch on the remote')
   })
 
@@ -503,7 +520,15 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(code).toContain('GITHUB_STEP_SUMMARY')
     expect(code).toContain('::warning::Could not reach Slack')
     expect(code).toMatch(/if\s+\[\s+"\$REJECTED"\s+=\s+1\s+\][\s\S]*?exit 1/)
-    expect(code).not.toMatch(/\$UNDELIVERED[\s\S]*?exit 1/)
+
+    // Scoped to the block, not the rest of the script: a negative over
+    // everything after `$UNDELIVERED` only holds while that block happens to
+    // come last, so swapping the two guards would keep it passing.
+    const undelivered =
+      /if\s+\[\s+"\$UNDELIVERED"\s+=\s+1\s+\][\s\S]*?\n\s*fi\b/.exec(code)?.[0]
+
+    expect(undelivered).toBeDefined()
+    expect(undelivered).not.toContain('exit')
   })
 
   // Slack's own overload answers are 429 and 5xx, which curl reports as a

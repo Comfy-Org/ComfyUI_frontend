@@ -183,24 +183,33 @@ function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
     ]
   }
 
+  // Whether the PR is merged decides how to read everything below it, and it
+  // is what tells a typo apart from a deliberate label on a line that has not
+  // been cut yet — so it is in every message, not only the ones that promise
+  // a cherry-pick. `pr-backport.yaml` runs on merge and re-checks the
+  // branches then, so nothing is yet wrong with an open PR.
+  const merged = pr.state === 'MERGED'
+
   const uncut =
     targets.unknown.length === 0
       ? []
       : [
-          `:warning: ${code(targets.unknown)} has no branch on the remote, so *PR Backport* drops it.`
+          merged
+            ? `:warning: ${code(targets.unknown)} has no branch on the remote, so *PR Backport* drops it.`
+            : `:warning: ${code(targets.unknown)} has no branch on the remote yet, and needs one by the time this merges.`
         ]
 
   if (targets.known.length === 0) {
     return [
-      targets.unknown.length === 0
-        ? ':warning: No target branch label — *PR Backport* fails without one. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
-        : ':warning: No target branch left — *PR Backport* fails when every label names a branch that does not exist.',
+      merged
+        ? ':warning: The PR is merged with no usable target branch label, so *PR Backport* fails. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
+        : ':warning: The PR is still open and has no usable target branch label yet — *PR Backport* needs one by the time it merges. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.',
       ...uncut
     ]
   }
 
   return [
-    pr.state === 'MERGED'
+    merged
       ? `The PR is merged, so *PR Backport* will cherry-pick into ${code(targets.known)}.`
       : `The PR is still open — *PR Backport* will cherry-pick into ${code(targets.known)} once it merges.`,
     ...uncut
@@ -334,7 +343,7 @@ function main() {
     process.stderr.write(
       'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.\n'
     )
-  } else if (valid.length === 0) {
+  } else if (valid.length === 0 && invalid.length === 0) {
     process.stderr.write(
       '::warning::No Slack watchers configured — set the SLACK_NEEDS_BACKPORT_WATCHERS repository variable to one or more Slack member IDs.\n'
     )
@@ -347,6 +356,18 @@ function main() {
   process.stderr.write(
     `${valid.length} recipient(s):\n${buildNeedsBackportText(event)}\n`
   )
+
+  // Nothing downstream can report this. With no recipient the send step is
+  // skipped by its own `count != '0'` guard, so a watcher list that was all
+  // typos would otherwise end in a green run and no DM — the silent failure
+  // this notification exists to end, reproduced by the notification itself.
+  // Written after the outputs above so the run still shows what it built.
+  if (!disabled && valid.length === 0 && invalid.length > 0) {
+    process.stderr.write(
+      '::error::No usable Slack watcher in SLACK_NEEDS_BACKPORT_WATCHERS; nobody was notified.\n'
+    )
+    process.exitCode = 1
+  }
 }
 
 if (
