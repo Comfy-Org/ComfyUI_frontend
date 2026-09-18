@@ -21,6 +21,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -50,6 +51,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
+
+vi.mock(import('@/utils/syncUtil'), { spy: true })
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -745,6 +748,21 @@ describe('useWorkflowStore', () => {
       expect(store.getWorkflowByPath(removed.path)).toBeNull()
       expect(store.isOpen(removed)).toBe(false)
       expect(store.openWorkflows).toEqual([survivor])
+    })
+
+    it('should not expose open paths whose lookup record was removed', async () => {
+      const workflow = store.createTemporary('orphan.json')
+      await store.openWorkflow(workflow)
+      vi.mocked(syncEntities).mockImplementationOnce(
+        async (_dir, entityByPath) => {
+          delete entityByPath[workflow.path]
+        }
+      )
+
+      await store.syncWorkflows()
+
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.openWorkflows).not.toContain(undefined)
     })
   })
 
