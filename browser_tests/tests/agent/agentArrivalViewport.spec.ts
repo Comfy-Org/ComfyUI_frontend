@@ -28,21 +28,19 @@ const BATCHED_CASE = 'agent-rec-batched-ops'
 // Long enough for the framing animation and the resulting layout to settle.
 const SETTLE = 10_000
 
+function isIdLike(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
 /** Node ids the recording's ops add, in the order the agent builds them. */
 function addedNodeIds(conversation: AgentConversation): string[] {
-  const ids: string[] = []
-  for (const turn of conversation.turns) {
-    for (const entry of turn.response) {
-      if (entry.kind !== 'graph_ops') continue
-      for (const op of entry.ops) {
-        if (op.op !== 'add_node') continue
-        const { node_id: nodeId } = op as { node_id?: unknown }
-        if (typeof nodeId === 'string' || typeof nodeId === 'number')
-          ids.push(String(nodeId))
-      }
-    }
-  }
-  return ids
+  return conversation.turns
+    .flatMap((turn) => turn.response)
+    .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+    .filter((op) => op.op === 'add_node')
+    .map((op) => (op as { node_id?: unknown }).node_id)
+    .filter(isIdLike)
+    .map(String)
 }
 
 /**
@@ -58,22 +56,33 @@ async function nodesOutsideVisibleCanvas(
   const viewport = page.viewportSize()
   if (!viewport) throw new Error('this assertion needs a sized page')
   const panelBox = await panel.boundingBox()
-  const right = panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width
-
-  const outside: string[] = []
-  for (const id of ids) {
-    const box = await page.locator(`[data-node-id="${id}"]`).boundingBox()
-    if (
-      !box ||
-      box.x < 0 ||
-      box.y < 0 ||
-      box.x + box.width > right ||
-      box.y + box.height > viewport.height
-    ) {
-      outside.push(id)
-    }
+  const visible = {
+    right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
+    bottom: viewport.height
   }
-  return outside.sort()
+
+  const seen = await Promise.all(
+    ids.map(async (id) => {
+      const box = await page.locator(`[data-node-id="${id}"]`).boundingBox()
+      return { id, inside: box !== null && contains(visible, box) }
+    })
+  )
+  return seen
+    .filter((node) => !node.inside)
+    .map((node) => node.id)
+    .sort()
+}
+
+function contains(
+  visible: { right: number; bottom: number },
+  box: { x: number; y: number; width: number; height: number }
+): boolean {
+  return (
+    box.x >= 0 &&
+    box.y >= 0 &&
+    box.x + box.width <= visible.right &&
+    box.y + box.height <= visible.bottom
+  )
 }
 
 test.describe('Agent build arrival', { tag: '@cloud' }, () => {
