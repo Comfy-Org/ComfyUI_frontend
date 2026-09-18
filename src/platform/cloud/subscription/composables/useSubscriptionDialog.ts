@@ -142,7 +142,7 @@ export const useSubscriptionDialog = () => {
                 }
               : {})
           },
-          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
+          // The legacy table hosts a popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
           // unclickable. The unified table has no such overlay.
           dialogComponentProps: {
@@ -172,7 +172,7 @@ export const useSubscriptionDialog = () => {
           )
         },
         dialogComponentProps: {
-          // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
+          // Reka sizes via size/contentClass; the legacy
           // `style` width is ignored here and collapses the table to the default
           // `md` frame. `w-fit` lets each step hug its content -- the pricing
           // table fills its 1280px content while the compact confirm/success

@@ -3,7 +3,6 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -137,7 +136,7 @@ function renderList(pinia: Pinia) {
   })
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia, router],
+      plugins: [testI18n, pinia, router],
       stubs: {
         AsyncSearchInput: {
           template: '<input />'

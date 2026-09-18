@@ -5,7 +5,7 @@
       cn(
         'group focus-visible:outline-ring relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2',
         state === 'dragging' && 'opacity-40',
-        state === 'over' && 'ring-2 ring-primary'
+        state === 'over' && 'ring-2 ring-highlight'
       )
     "
     tabindex="0"
