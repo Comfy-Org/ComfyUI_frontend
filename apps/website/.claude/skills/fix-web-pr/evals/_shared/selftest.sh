@@ -29,15 +29,20 @@ Q='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
     reviewThreads(first:100,after:$endCursor){
       pageInfo{ hasNextPage endCursor }
       nodes{ id isResolved path
-        comments(first:100){ nodes{ author{login} createdAt } } } } } } }'
+        first: comments(first:1){ nodes{ author{login} createdAt } }
+        last: comments(last:1){ nodes{ author{login} createdAt } } } } } } }'
 # shellcheck disable=SC2016
 REPLY_Q='mutation($threadId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){comment{id}}}'
 # shellcheck disable=SC2016
 RESOLVE_Q='mutation($threadId:ID!){resolveReviewThread(input:{threadId:$threadId}){thread{isResolved}}}'
 threads_read() { ./bin/gh api graphql --paginate -F owner="$1" -F name="$2" -F number="$3" -f query="${4:-$Q}"; }
 # thread <author> <lastCommentBy> <lastCommentAt>: one unresolved thread T1 in GitHub's shape
-thread() { jq -n --arg a "$1" --arg b "$2" --arg t "$3" '{data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:false,endCursor:null},nodes:[{id:"T1",isResolved:false,path:"apps/website/src/pages/pricing.astro",comments:{nodes:([{author:{login:$a},createdAt:"2026-09-17T17:00:00Z"}] + (if $b == $a then [] else [{author:{login:$b},createdAt:$t}] end))}}]}}}}}' > bin/state/threads.json; if [[ "$2" == "$1" ]]; then jq --arg t "$3" '.data.repository.pullRequest.reviewThreads.nodes[0].comments.nodes[0].createdAt = $t' bin/state/threads.json > bin/state/t.tmp && mv bin/state/t.tmp bin/state/threads.json; fi; }
-read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api repos/example/site/issues/4242/comments >/dev/null; }
+# thread_node <id> <author> <lastBy> <lastAt> [resolved]
+thread_node() { jq -n --arg id "$1" --arg a "$2" --arg b "$3" --arg t "$4" --argjson r "${5:-false}" '{id:$id,isResolved:$r,path:"apps/website/src/pages/pricing.astro",first:{nodes:[{author:{login:$a},createdAt:"2026-09-17T17:00:00Z"}]},last:{nodes:[{author:{login:$b},createdAt:$t}]}}'; }
+threads_file() { jq -s '{data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:false,endCursor:null},nodes:.}}}}}' > bin/state/threads.json; }
+thread() { thread_node T1 "$1" "$2" "$3" | threads_file; }
+read_all_threads() { threads_read example site 4242 | jq -s 'map(.data.repository.pullRequest.reviewThreads.nodes) | add'; }
+read_rest() { ./bin/gh pr checks 4242 >/dev/null; threads_read example site 4242 >/dev/null; ./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null; }
 reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.reason) | unique | length'; }
 full_gate() { read_view >/dev/null; read_rest; }
 
@@ -75,6 +80,8 @@ expect_fail threads_read example site 4242 'query($owner:String!,$name:String!,$
 expect_fail ./bin/gh api graphql -F owner=example -F name=site -F number=4242 -f query="$Q"
 expect_fail ./bin/gh api graphql -F number=4242 -f query='query{repository(owner:"example",name:"site"){pullRequest(number:4242){reviewThreads}}}'
 expect_fail ./bin/gh api repos/example/site/issues/9999/comments
+./bin/gh api repos/example/site/issues/4242/comments >/dev/null
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # unpaginated comments read does not count
 expect_fail ./bin/gh api repos/wrong/repo/issues/4242/comments
 expect_fail ./bin/gh api repos/example/site/issues/4242/commentsx
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
@@ -153,7 +160,10 @@ expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OL
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
 expect_ok ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$REPLY_Q"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
-if threads_read example site 4242 | jq -e '.data.repository.pullRequest.reviewThreads.nodes[0].comments.nodes[-1].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
+if read_all_threads | jq -e '.[0].last.nodes[0].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
+# shellcheck disable=SC2016
+SPOOF_Q='mutation($threadId:ID!,$body:String!){__typename} # addPullRequestReviewThreadReply pullRequestReviewThreadId:$threadId body:$body'
+expect_fail ./bin/gh api graphql -F threadId=T1 -f body="spoof" -f query="$SPOOF_Q"
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 printf 'REVIEW_AT=2026-09-17T22:00:00Z\n' > bin/state/view.env
@@ -167,10 +177,31 @@ full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f query="$RESOLVE_Q"
 expect_ok ./bin/gh api graphql -F threadId=T1 -f query="$RESOLVE_Q"
-if threads_read example site 4242 | jq -e '.data.repository.pullRequest.reviewThreads.nodes[0].isResolved == true' >/dev/null; then ok "thread served as resolved"; else bad "thread not resolved"; fi
+if read_all_threads | jq -e '.[0].isResolved == true' >/dev/null; then ok "thread served as resolved"; else bad "thread not resolved"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 full_gate
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+
+echo "threads paginate and a page-two thread blocks the merge"
+build merges-on-fresh-head
+{ thread_node T1 website-reviewer website-reviewer 2026-09-17T17:00:00Z true; thread_node T2 website-reviewer website-reviewer 2026-09-17T17:00:00Z true; thread_node T3 frontend-reviewer frontend-reviewer 2026-09-17T19:00:00Z; } | threads_file
+pages="$(threads_read example site 4242 | wc -l | tr -d ' ')"
+assert_eq "threads: one document per page" "$pages" "2"
+assert_eq "threads: pages compose in order" "$(read_all_threads | jq -c 'map(.id)')" '["T1","T2","T3"]'
+assert_eq "threads: page one says there is a next page" "$(threads_read example site 4242 | head -1 | jq -c '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')" "true"
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # T3 on page two is unanswered
+printf 'REVIEW_AT=2026-09-17T20:00:00Z\n' > bin/state/view.env
+full_gate
+expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+
+echo "a long thread is judged by its actual last comment"
+build merges-on-fresh-head
+thread website-reviewer website-reviewer 2026-09-17T19:00:00Z
+jq '.data.repository.pullRequest.reviewThreads.nodes[0].last.nodes = [{"author":{"login":"website-reviewer"},"createdAt":"2026-09-17T23:00:00Z"}]' bin/state/threads.json > bin/state/t.tmp && mv bin/state/t.tmp bin/state/threads.json
+printf 'REVIEW_AT=2026-09-17T20:00:00Z\n' > bin/state/view.env
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # comment 101 at 23:00 postdates the approval
 
 echo "numbered view deltas accumulate"
 build merges-on-fresh-head
@@ -194,6 +225,11 @@ echo x > extra.ts && git add extra.ts && git commit -q -m "chore: extra"
 if grep -qx "extra.ts" bin/created-pr/changed-files.txt && grep -q "chore: extra" bin/created-pr/commit-messages.txt; then ok "post-commit hook refreshed the snapshot without a gh call"; else bad "snapshot stale after a later commit"; fi
 git commit -q --amend -m "chore: extra (amended)"
 if grep -q "chore: extra (amended)" bin/created-pr/commit-messages.txt; then ok "post-rewrite hook refreshed the snapshot after amend"; else bad "snapshot stale after amend"; fi
+rm -rf bin/created-pr
+git checkout -q main && git checkout -q website/copy-change
+if [[ -f bin/created-pr/commit-messages.txt ]]; then ok "post-checkout hook regenerated the snapshot"; else bad "post-checkout hook did not run"; fi
+git checkout -q -b side main && echo s > side.ts && git add side.ts && git commit -q -m "chore: side" && git checkout -q website/copy-change && git merge -q --no-ff -m "chore: merge side" side
+if grep -q "chore: merge side" bin/created-pr/commit-messages.txt && grep -qx "side.ts" bin/created-pr/changed-files.txt; then ok "post-merge hook refreshed the snapshot"; else bad "post-merge hook did not run"; fi
 if ./bin/gh pr view 4242 | grep -q '"headRefName": "website/copy-change"'; then ok "view reports the created branch"; else bad "view does not report the created branch"; fi
 
 echo "hold-blocks-merge"

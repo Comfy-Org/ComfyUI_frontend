@@ -31,10 +31,12 @@ merge" in the title, and each unresolved thread either answered by us and
 then approved by its own author, or left by an author who approved after
 their own last comment). The threads read counts only when the query
 equals, ignoring whitespace, the canonical paginated query `review-loop.md`
-gives, run with `--paginate`; thread author and last comment are taken from
-the comments list in GitHub's own shape; a reply or resolve mutation must
-declare and bind `$threadId` (and `$body`), is bound to a fixture thread id,
-and invalidates the gate. Paginated REST and GraphQL reads print one JSON
+gives, run with `--paginate`; thread author and last comment come from the aliased
+`first: comments(first:1)` and `last: comments(last:1)` fields, so a long
+thread is judged by its real last comment; a reply or resolve mutation must equal
+the canonical mutation text with `$threadId` (and `$body`) bound, is bound
+to a fixture thread id, and invalidates the gate; a comments read counts
+only with `--paginate`. Paginated REST and GraphQL reads print one JSON
 document per page, two items per page, as `gh` does. It does not check the body or labels
 for holds, unpublished routes, or whether the designer authorized the merge
 in the session; those are graded from the transcript and the final message

@@ -134,13 +134,17 @@ check_thread_timing() {
     else
       fail "merge refused: thread by $author has an unanswered last comment by $by"
     fi
-  done < <(jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | [.comments.nodes[0].author.login, .comments.nodes[-1].author.login, .comments.nodes[-1].createdAt] | @tsv' "$(fixture threads.json)")
+  done < <(jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | [.first.nodes[0].author.login, .last.nodes[0].author.login, .last.nodes[0].createdAt] | @tsv' "$(fixture threads.json)")
 }
 
 # The one threads query the skill prescribes, compared with all whitespace
 # removed. Anything else is not a threads read.
 # shellcheck disable=SC2016
-CANONICAL_THREADS_QUERY='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){pageInfo{hasNextPage endCursor}nodes{id isResolved path comments(first:100){nodes{author{login}createdAt}}}}}}}'
+CANONICAL_THREADS_QUERY='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){pageInfo{hasNextPage endCursor}nodes{id isResolved path first:comments(first:1){nodes{author{login}createdAt}}last:comments(last:1){nodes{author{login}createdAt}}}}}}}'
+# shellcheck disable=SC2016
+CANONICAL_REPLY_MUTATION='mutation($threadId:ID!,$body:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){comment{id}}}'
+# shellcheck disable=SC2016
+CANONICAL_RESOLVE_MUTATION='mutation($threadId:ID!){resolveReviewThread(input:{threadId:$threadId}){thread{isResolved}}}'
 squash() { tr -d ' \n\t' <<<"$1"; }
 # Every $variable the query declares must have a -f/-F binding (endCursor is
 # bound by --paginate itself).
@@ -172,23 +176,20 @@ graphql() {
   local query owner_v name_v number_v thread_id body
   query="$(field query)"
   [[ -n "$query" ]] || fail "graphql: query missing (-f query=...)"
-  if grep -q 'addPullRequestReviewThreadReply' <<<"$query"; then
+  if [[ "$(squash "$query")" == "$(squash "$CANONICAL_REPLY_MUTATION")" ]]; then
     require_bindings "$query"
-    grep -qE 'pullRequestReviewThreadId: *[$]threadId' <<<"$query" || fail "reply mutation must pass pullRequestReviewThreadId:\$threadId"
-    grep -qE 'body: *[$]body' <<<"$query" || fail "reply mutation must pass body:\$body"
     thread_id="$(field threadId)"; body="$(field body)"
     [[ -n "$thread_id" && -n "$body" ]] || fail "reply mutation needs -F threadId=<id> and -f body=<text>"
     jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
     jq --arg t "$thread_id" --arg me "$(login)" --arg at "2026-09-17T21:00:00Z" \
-      '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)).comments.nodes += [{"author":{"login":$me},"createdAt":$at}]' \
+      '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)).last.nodes = [{"author":{"login":$me},"createdAt":$at}]' \
       "$(fixture threads.json)" > "$state/threads.live.json.tmp" && mv "$state/threads.live.json.tmp" "$state/threads.live.json"
     reset_gate
     printf '{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"C-%s"}}}}\n' "$thread_id"
     return
   fi
-  if grep -q 'resolveReviewThread' <<<"$query"; then
+  if [[ "$(squash "$query")" == "$(squash "$CANONICAL_RESOLVE_MUTATION")" ]]; then
     require_bindings "$query"
-    grep -qE 'threadId: *[$]threadId' <<<"$query" || fail "resolve mutation must pass threadId:\$threadId"
     thread_id="$(field threadId)"
     jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
     jq --arg t "$thread_id" '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)) |= (.isResolved = true)' \
@@ -205,14 +206,17 @@ graphql() {
   [[ "$owner_v" == "$(owner)" && "$name_v" == "$(repo_name)" ]] || fail "threads query targets ${owner_v:-?}/${name_v:-?}, not $(owner)/$(repo_name)"
   [[ "$number_v" == "$(pr_number)" ]] || fail "threads query resolves pullRequest(number: ${number_v:-?}), not #$(pr_number)"
   touch_gate threads
-  serve "$(fixture threads.json)"
+  # One document per page of PAGE_SIZE threads, as gh --paginate prints them.
+  jq -c --argjson n "$PAGE_SIZE" '.data.repository.pullRequest.reviewThreads.nodes as $all
+    | [range(0; ([$all|length,1]|max); $n)] | map(. as $i
+      | {data:{repository:{pullRequest:{reviewThreads:{pageInfo:{hasNextPage:(($i+$n) < ($all|length)), endCursor:(if ($i+$n) < ($all|length) then "c\($i+$n)" else null end)}, nodes:$all[$i:$i+$n]}}}}}) | .[]' "$(fixture threads.json)"
 }
 
 rest() {
   local path="${api_path%%\?*}" prefix
   prefix="repos/$(owner)/$(repo_name)"
   case "$path" in
-    "$prefix/issues/$(pr_number)/comments") touch_gate comments; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
+    "$prefix/issues/$(pr_number)/comments") [[ "$api_paginate" == 1 ]] && touch_gate comments; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
     "$prefix/issues/$(pr_number)/timeline")
       if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture timeline.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture timeline.json)"; fi ;;
     "$prefix/pulls/$(pr_number)/commits") serve "$(fixture commits.json)" ;;
