@@ -181,7 +181,7 @@ export function useTemplateWorkflows() {
       )
       errors.push(...result.errors)
       preparedJson = result.workflow
-      if (result.workflow !== workflow) {
+      if (result.uploadedCount > 0) {
         await useAssetsStore().inputAssets.invalidate()
         await app.reloadNodeDefs()
       }

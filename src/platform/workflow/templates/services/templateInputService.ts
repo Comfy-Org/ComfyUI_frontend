@@ -22,6 +22,7 @@ const zNamedValues = z.record(z.unknown())
 
 type PreparationResult = {
   workflow: ComfyWorkflowJSON
+  uploadedCount: number
   errors: unknown[]
 }
 
@@ -48,51 +49,62 @@ async function uploadTemplateInput(
   file: string,
   sourceRevision: string,
   signal: AbortSignal
-): Promise<{ ok: true; path: string } | { ok: false; error: unknown }> {
+): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
   const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
-  const response = await fetch(
-    `${INPUT_BASE}${sourceRevision}/input/${encodeURIComponent(file)}`,
-    { signal: requestSignal }
-  )
-  if (!response.ok)
+  let operation = 'download'
+  function failure(cause: unknown): { ok: false; error: Error } {
     return {
       ok: false,
-      error: new Error(`Sample download failed: ${response.status}`)
+      error: new Error(
+        `Template sample ${operation} failed: ${file} (${sourceRevision})`,
+        { cause }
+      )
     }
-  const bytes = await response.arrayBuffer()
-  requestSignal.throwIfAborted()
-  const body = new FormData()
-  body.append('image', new File([bytes], file))
-  body.append('type', 'input')
-  const uploaded = await api.fetchApi('/upload/image', {
-    method: 'POST',
-    body,
-    signal: requestSignal
-  })
-  if (!uploaded.ok)
+  }
+
+  try {
+    const response = await fetch(
+      `${INPUT_BASE}${sourceRevision}/input/${encodeURIComponent(file)}`,
+      { signal: requestSignal }
+    )
+    if (!response.ok) return failure(new Error(`HTTP ${response.status}`))
+    const bytes = await response.arrayBuffer()
+    requestSignal.throwIfAborted()
+    const body = new FormData()
+    body.append('image', new File([bytes], file))
+    body.append('type', 'input')
+    operation = 'upload'
+    const uploaded = await api.fetchApi('/upload/image', {
+      method: 'POST',
+      body,
+      signal: requestSignal
+    })
+    if (!uploaded.ok) return failure(new Error(`HTTP ${uploaded.status}`))
+    const result = zUploadImageResponse.parse(await uploaded.json())
+    if (!result.name)
+      return failure(new Error('No saved filename in upload response'))
     return {
-      ok: false,
-      error: new Error(`Sample upload failed: ${uploaded.status}`)
+      ok: true,
+      path: result.subfolder
+        ? `${result.subfolder}/${result.name}`
+        : result.name
     }
-  const result = zUploadImageResponse.parse(await uploaded.json())
-  if (!result.name)
-    return { ok: false, error: new Error('Sample upload returned no filename') }
-  const path = result.subfolder
-    ? `${result.subfolder}/${result.name}`
-    : result.name
-  return { ok: true, path }
+  } catch (cause) {
+    signal.throwIfAborted()
+    return failure(cause)
+  }
 }
 
 function getTemplateInputFiles(
   inputs: unknown,
-  bindings: NonNullable<ReturnType<typeof getInputBinding>>[],
-  errors: unknown[]
+  bindings: NonNullable<ReturnType<typeof getInputBinding>>[]
 ) {
   const files = new Map<string, string>()
+  const errors: unknown[] = []
   const entries = z.array(z.unknown()).safeParse(inputs)
   if (!entries.success) {
     errors.push(entries.error)
-    return files
+    return { files, errors }
   }
   for (const entry of entries.data) {
     const parsed = zTemplateInput.safeParse(entry)
@@ -119,7 +131,7 @@ function getTemplateInputFiles(
     }
     files.set(input.file, input.sourceRevision)
   }
-  return files
+  return { files, errors }
 }
 
 export async function prepareTemplateInputs(
@@ -140,11 +152,15 @@ export async function prepareTemplateInputs(
       return []
     }
   })
-  const files = getTemplateInputFiles(inputs, bindings, errors)
+  const { files, errors: declarationErrors } = getTemplateInputFiles(
+    inputs,
+    bindings
+  )
+  errors.push(...declarationErrors)
   signal.throwIfAborted()
-  if (!files.size) return { workflow, errors }
+  if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()
-  let resultWorkflow = workflow
+  let uploadedCount = 0
   for (const [file, sourceRevision] of files) {
     signal.throwIfAborted()
     try {
@@ -163,11 +179,15 @@ export async function prepareTemplateInputs(
           : { ...values, [widget]: path }
         if (named) node.widgets_values_named = { ...named, [widget]: path }
       }
-      resultWorkflow = prepared
+      uploadedCount++
     } catch (error) {
       signal.throwIfAborted()
       errors.push(error)
     }
   }
-  return { workflow: resultWorkflow, errors }
+  return {
+    workflow: uploadedCount > 0 ? prepared : workflow,
+    uploadedCount,
+    errors
+  }
 }
