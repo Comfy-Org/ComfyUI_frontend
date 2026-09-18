@@ -13,6 +13,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       :aria-label="t('platform.router.video.alt', locale)"
       src="/videos/router/router-animatic.mp4"
       poster="/videos/router/router-animatic-poster.webp"
+      autoplay
+      lazy-autoplay
     />
   </section>
 </template>
