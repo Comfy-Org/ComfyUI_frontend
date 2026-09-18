@@ -940,6 +940,7 @@ describe('Load3d', () => {
       const loadedModel = new THREE.Group()
       const modelManager: typeof ctx.modelManager & {
         currentModel: THREE.Object3D | null
+        originalModel: THREE.Object3D | null
       } = {
         ...ctx.modelManager,
         currentModel: null,
@@ -976,8 +977,9 @@ describe('Load3d', () => {
       ctx.load3d.clearModel()
       const idle = ctx.load3d.whenLoadIdle()
       resolveLoad()
-      await Promise.all([load, idle])
+      const [accepted] = await Promise.all([load, idle])
 
+      expect(accepted).toBe(false)
       expect(ctx.load3d.getCurrentModel()).toBeNull()
     })
   })

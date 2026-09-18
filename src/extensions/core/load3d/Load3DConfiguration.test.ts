@@ -194,9 +194,10 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   let loadModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    loadModelSpy = vi.fn().mockResolvedValue(true)
     return {
       loadModel: loadModelSpy,
+      clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -317,6 +318,60 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     config.configureForSaveMesh('output', 'model.glb')
     await flush()
     expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not publish effects for a load superseded by clear', async () => {
+    let resolveLoad!: (accepted: boolean) => void
+    const load3d = makeLoad3dMock()
+    vi.mocked(load3d.loadModel).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveLoad = resolve
+        })
+    )
+    const modelWidget = reactiveWidget('a.glb')
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure({ modelWidget, loadFolder: 'output' })
+    modelWidget.value = ''
+    resolveLoad(false)
+    await flush()
+
+    expect(load3d.setUpDirection).not.toHaveBeenCalled()
+    expect(load3d.setMaterialMode).not.toHaveBeenCalled()
+    expect(load3d.emitModelReady).not.toHaveBeenCalled()
+  })
+
+  it('publishes effects only for the replacement after clear', async () => {
+    let resolveFirst!: (accepted: boolean) => void
+    let resolveSecond!: (accepted: boolean) => void
+    const load3d = makeLoad3dMock()
+    vi.mocked(load3d.loadModel)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
+    const modelWidget = reactiveWidget('a.glb')
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure({ modelWidget, loadFolder: 'output' })
+    modelWidget.value = ''
+    modelWidget.value = 'b.glb'
+    resolveFirst(false)
+    resolveSecond(true)
+    await flush()
+
+    expect(load3d.setUpDirection).toHaveBeenCalledTimes(1)
+    expect(load3d.setMaterialMode).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 })
 

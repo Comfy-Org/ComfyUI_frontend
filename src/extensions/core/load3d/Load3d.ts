@@ -64,7 +64,7 @@ class Load3d extends Viewport3d {
   adapterRef: AdapterRef
   private configurationCleanup?: () => void
 
-  private loadingPromise: Promise<void> | null = null
+  private loadingPromise: Promise<void | boolean> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
 
@@ -333,7 +333,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
     this._loadGeneration += 1
     const loadGeneration = this._loadGeneration
 
@@ -345,22 +345,27 @@ class Load3d extends Viewport3d {
         // Serialization only: the rejection already reached the loadModel caller.
       }
 
-      await this._loadModelInternal(url, originalFileName, options)
-      if (loadGeneration !== this._loadGeneration) this.clearModelState()
+      try {
+        await this._loadModelInternal(url, originalFileName, options)
+      } finally {
+        if (loadGeneration !== this._loadGeneration) this.clearModelState()
+      }
+
+      return loadGeneration === this._loadGeneration
     })()
 
     // Publish the tail before waiting so every accepted load is visible to
     // whenLoadIdle(), including loads queued behind the current one.
     this.loadingPromise = acceptedLoad
     try {
-      await acceptedLoad
+      return await acceptedLoad
     } finally {
       if (this.loadingPromise === acceptedLoad) this.loadingPromise = null
     }
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<void> | null = null
+    let last: Promise<void | boolean> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {

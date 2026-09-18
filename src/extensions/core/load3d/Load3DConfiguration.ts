@@ -310,7 +310,10 @@ class Load3DConfiguration {
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename, { silentOnNotFound })
+      const accepted = await this.load3d.loadModel(modelUrl, filename, {
+        silentOnNotFound
+      })
+      if (!accepted) return
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
