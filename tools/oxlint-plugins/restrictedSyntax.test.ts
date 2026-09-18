@@ -54,7 +54,8 @@ void asserted
   },
   {
     file: path.join(probeDirs.source, 'doubleAssertion.test.ts'),
-    source: `import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+    source: `import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 interface Fixture { value: string; required: boolean }
 const fixture = { value: 'ok' } as unknown as Fixture
 const unresolved = value as unknown as Fixture
