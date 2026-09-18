@@ -19,10 +19,10 @@ change any of those owners or treat a raw Yjs update as an observability primiti
 
 ## Decision
 
-Define a versioned `AgentJourneyEvent` contract with an allowlist serializer and a stable event
-name. Version 1 exposes only the frontend-owned `frontend_semantic_effect.observed` outcome. It
-means an authoritative document delta was accepted into the follower projection and live-graph
-reconciliation returned. It does not attest pixels, accessibility state, persistence, or reload.
+Define the frontend-owned observation seam before defining an executable event. The first emitter
+will expose only `frontend_semantic_effect.observed`: an authoritative document delta was accepted
+into the follower projection and live-graph reconciliation returned. It does not attest pixels,
+accessibility state, persistence, or reload.
 
 | Fact                     | Owner                        | Version-one success signal                               |
 | ------------------------ | ---------------------------- | -------------------------------------------------------- |
@@ -48,21 +48,23 @@ meaning. Follower-side inactive-target and projection results are not remapped o
 `superseded`, `reverted`, and any other terminal outcomes remain undefined until an authoritative
 owner, source field, precedence rule, and terminality rule exist.
 
-Correlated effect events require a non-empty, deduplicated list of creator-minted operation IDs and
-an opaque target reference. Operation IDs use the authoritative host-frame grammar: non-empty, at
-most 128 UTF-8 bytes, and without null, newline, carriage-return, or tab characters. Their creator
-owns the guarantee that they are identifiers rather than content. Optional session, thread, turn,
-mutation, and run identifiers are copied only when upstream provides privacy-safe opaque values.
-`observed_at` must be a canonical UTC timestamp with millisecond precision. `operation_count` is
-derived from the deduplicated operation IDs rather than accepted from a caller. Readers reject
-unsupported schema versions. Sink adapters, added separately, own pseudonymization, retention,
-access controls, and vendor mappings.
+The emitter and its schema land together in a later slice, beside the follower seam and its
+mandatory black-box Agent harness case. That slice must correlate a non-empty, deduplicated list of
+creator-minted operation IDs and an opaque target reference. Operation IDs must use the
+authoritative host-frame grammar: non-empty, at most 128 UTF-8 bytes, and without null, newline,
+carriage-return, or tab characters. Their creator owns the guarantee that they are identifiers
+rather than content. Optional session, thread, turn, mutation, and run identifiers may be copied
+only when upstream provides privacy-safe opaque values. `observed_at` must be a canonical UTC
+timestamp with millisecond precision. `operation_count`, if retained, must be derived from the
+deduplicated operation IDs rather than accepted from a caller. Readers must reject unsupported
+schema versions. Sink adapters, added separately, own pseudonymization, retention, access controls,
+and vendor mappings.
 
-The serializer allowlists named fields, validates the canonical timestamp and correlation shapes,
-and rejects content in non-operation correlation fields. Event creators must never put prompts,
-responses, tool inputs or results, workflow JSON, Yjs bytes, node and widget content, filenames,
-URLs, emails, credentials, raw errors, or arbitrary context into operation IDs. Stable identifiers
-may be event attributes but never metric tags or event-name components.
+The future serializer must allowlist named fields, validate the canonical timestamp and correlation
+shapes, and reject content in non-operation correlation fields. Event creators must never put
+prompts, responses, tool inputs or results, workflow JSON, Yjs bytes, node and widget content,
+filenames, URLs, emails, credentials, raw errors, or arbitrary context into operation IDs. Stable
+identifiers may be event attributes but never metric tags or event-name components.
 
 Alternatives rejected:
 
@@ -75,18 +77,32 @@ Alternatives rejected:
 
 ### Positive
 
-- Later emitters and adapters share one executable, privacy-bounded contract.
+- The first emitter has a reviewable frontend success seam and privacy requirements.
 - Host results and future outcomes cannot be counted as frontend-observed semantic effects.
-- Unit golden vectors can detect schema drift before provider or production work begins.
+- Executable vocabulary is not committed before its owner and harness exist.
 
 ### Negative
 
-- This contract-only change proves source and tests, not emission, ingestion, queryability,
-  deployment, notification, or recovery.
-- A later emitter PR must define the legacy frame case where operation IDs are unavailable and must
-  include the mandatory black-box Agent harness case for visible and durable behavior.
+- This ADR-only change proves no emission, ingestion, queryability, deployment, notification, or
+  recovery.
+- The emitter PR must define the legacy frame case where operation IDs are unavailable and include
+  the mandatory black-box Agent harness case for visible behavior. Persistence and reload recovery
+  remain separate later proof planes and require their own harness evidence.
+
+## Delivery sequence
+
+```mermaid
+flowchart TD
+  A[Self-contained frontend ADR] --> B[Observed emitter at follower success seam]
+  B --> C[Sink adapter and query contract]
+  C --> D[Ingestion and deployment evidence]
+  B --> E[Visible-effect black-box harness]
+  D --> F[Persistence and reload-recovery harness]
+  B --> G[Additional outcomes only after authoritative owners exist]
+```
 
 ## Notes
 
-The governing program decision is ADR-034 in `christian-byrne/in-app-agent-program` PR 189. This
+The program's ADR-034 establishes the proof-plane separation summarized here; this ADR is
+self-contained and does not require that external record to interpret its frontend decision. This
 frontend ADR remains proposed until accepted through the repository's normal review process.
