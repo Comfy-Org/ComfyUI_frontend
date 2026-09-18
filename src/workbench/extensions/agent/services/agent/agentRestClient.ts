@@ -113,7 +113,7 @@ export function createAgentRestClient() {
 
   async function request<T>(
     route: string,
-    init: RequestInit,
+    init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
@@ -236,13 +236,19 @@ export function createAgentRestClient() {
 
   async function uploadImage(
     image: Blob,
-    filename: string
+    filename: string,
+    signal?: AbortSignal
   ): Promise<UploadImageResult> {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
       '/upload/image',
-      { method: 'POST', body: form },
+      {
+        method: 'POST',
+        body: form,
+        signal,
+        timeoutMs: signal ? null : undefined
+      },
       zUploadImageResult
     )
   }
