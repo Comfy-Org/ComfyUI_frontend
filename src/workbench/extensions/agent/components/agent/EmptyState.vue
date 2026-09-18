@@ -24,25 +24,15 @@ const promptIcons = [
 <template>
   <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
-      <div class="flex flex-col items-center gap-4 pt-12">
-        <div
-          class="flex size-12 items-center justify-center rounded-xl border border-plum-600 bg-ink-700"
-        >
-          <span
-            class="icon-[comfy--comfy-c] size-6 text-brand-yellow drop-shadow-[0_0_12px_currentColor]"
-            aria-hidden="true"
-          />
-        </div>
-        <div
-          class="flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
-        >
-          <p class="my-0">
-            {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
-          </p>
-          <p class="my-0">
-            {{ t('agent.greetingQuestion') }}
-          </p>
-        </div>
+      <div
+        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
+      >
+        <p class="my-0">
+          {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
+        </p>
+        <p class="my-0">
+          {{ t('agent.greetingQuestion') }}
+        </p>
       </div>
       <div
         data-testid="suggested-prompts"
