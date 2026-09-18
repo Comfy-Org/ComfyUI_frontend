@@ -17,7 +17,7 @@ function mountMenu() {
   render(
     defineComponent({
       setup: () => () =>
-        h(WorkshopFilterMenu, {
+        h(WorkshopFilterMenu<UseCase>, {
           useCaseOptions,
           resultCount: 12,
           useCases: useCases.value,

@@ -1,0 +1,87 @@
+{
+  "4": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-close_up",
+      "images": ["5", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-full_body",
+      "images": ["7", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "1": {
+    "inputs": {
+      "image": "templates-character_sheet_pink_silver_outfit.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Character Image"
+    }
+  },
+  "5": {
+    "inputs": {
+      "prompt": "A 360 turnaround view of the subject, Close up shot of face, straight in 4 different angles, headshots, all white background",
+      "model": "gemini-3-pro-image-preview",
+      "seed": 54321,
+      "aspect_ratio": "9:16",
+      "resolution": "2K",
+      "response_modalities": "IMAGE+TEXT",
+      "system_prompt": "You are an expert image-generation engine. You must ALWAYS produce an image.\nInterpret all user input\u2014regardless of format, intent, or abstraction\u2014as literal visual directives for image composition.\nIf a prompt is conversational or lacks specific visual details, you must creatively invent a concrete visual scenario that depicts the concept.\nPrioritize generating the visual representation above any text, formatting, or conversational requests.",
+      "images": ["1", 0]
+    },
+    "class_type": "GeminiImage2Node",
+    "_meta": {
+      "title": "Nano Banana Pro (Google Gemini Image)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "spacing_width": 0,
+      "spacing_color": "white",
+      "image1": ["7", 0],
+      "image2": ["5", 0]
+    },
+    "class_type": "ImageStitch",
+    "_meta": {
+      "title": "Stitch Images"
+    }
+  },
+  "15": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-character_sheet",
+      "images": ["11", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "prompt": "A 360 turnaround full body view of the subject, straight in 4 different angles. Front view, half turn, side profile, back view. \nFull-body shots, all white background.",
+      "model": "gemini-3-pro-image-preview",
+      "seed": 12345,
+      "aspect_ratio": "16:9",
+      "resolution": "2K",
+      "response_modalities": "IMAGE+TEXT",
+      "system_prompt": "You are an expert image-generation engine. You must ALWAYS produce an image.\nInterpret all user input\u2014regardless of format, intent, or abstraction\u2014as literal visual directives for image composition.\nIf a prompt is conversational or lacks specific visual details, you must creatively invent a concrete visual scenario that depicts the concept.\nPrioritize generating the visual representation above any text, formatting, or conversational requests.",
+      "images": ["1", 0]
+    },
+    "class_type": "GeminiImage2Node",
+    "_meta": {
+      "title": "Nano Banana Pro (Google Gemini Image)"
+    }
+  }
+}

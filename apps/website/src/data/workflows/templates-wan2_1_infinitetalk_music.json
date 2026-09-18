@@ -1,0 +1,269 @@
+{
+  "125": {
+    "inputs": {
+      "audio": "wan2_1_infinitetalk_audio.mp3"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "Load Audio"
+    }
+  },
+  "330:332": {
+    "inputs": {
+      "model_name": "umt5-xxl-enc-bf16.safetensors",
+      "precision": "bf16",
+      "positive_prompt": "The character looks towards the suspended microphone and raps passionately. Very emotional performance",
+      "negative_prompt": "bright tones, overexposed, static, blurred details, subtitles, static, overall gray, worst quality, low quality, JPEG compression residue, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, fused fingers, still picture, messy background, walking backwards",
+      "quantization": "disabled",
+      "use_disk_cache": false,
+      "device": "gpu"
+    },
+    "class_type": "WanVideoTextEncodeCached",
+    "_meta": {
+      "title": "WanVideo TextEncode Cached"
+    }
+  },
+  "330:335": {
+    "inputs": {
+      "chunk_fade_shape": "linear",
+      "chunk_length": 10,
+      "chunk_overlap": 0.1,
+      "audio": ["125", 0]
+    },
+    "class_type": "AudioSeparation",
+    "_meta": {
+      "title": "AudioSeparation"
+    }
+  },
+  "330:342": {
+    "inputs": {
+      "strength_1": 1,
+      "strength_2": 1,
+      "crop": "center",
+      "combine_embeds": "average",
+      "force_offload": true,
+      "tiles": 0,
+      "ratio": 0.5,
+      "clip_vision": ["330:345", 0],
+      "image_1": ["330:341", 0]
+    },
+    "class_type": "WanVideoClipVisionEncode",
+    "_meta": {
+      "title": "WanVideo ClipVision Encode"
+    }
+  },
+  "330:343": {
+    "inputs": {
+      "lora": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+      "strength": 1,
+      "prev_lora": null,
+      "low_mem_load": false,
+      "merge_loras": false
+    },
+    "class_type": "WanVideoLoraSelect",
+    "_meta": {
+      "title": "WanVideo Lora Select"
+    }
+  },
+  "330:344": {
+    "inputs": {
+      "model": "Wan2_1-InfiniTetalk-Single_fp16.safetensors"
+    },
+    "class_type": "MultiTalkModelLoader",
+    "_meta": {
+      "title": "Multi/InfiniteTalk Model Loader"
+    }
+  },
+  "330:345": {
+    "inputs": {
+      "clip_name": "clip_vision_h.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": {
+      "title": "Load CLIP Vision"
+    }
+  },
+  "330:346": {
+    "inputs": {
+      "model": "wan2.1_i2v_480p_14B_fp16.safetensors",
+      "base_precision": "fp16_fast",
+      "quantization": "disabled",
+      "load_device": "offload_device",
+      "attention_mode": "sdpa",
+      "vram_management_args": null,
+      "extra_model": null,
+      "fantasytalking_model": null,
+      "fantasyportrait_model": null,
+      "rms_norm_function": "default",
+      "lora": ["330:343", 0],
+      "multitalk_model": ["330:344", 0]
+    },
+    "class_type": "WanVideoModelLoader",
+    "_meta": {
+      "title": "WanVideo Model Loader"
+    }
+  },
+  "330:347": {
+    "inputs": {
+      "model_name": "Wan2_1_VAE_bf16.safetensors",
+      "precision": "bf16",
+      "use_cpu_cache": false,
+      "verbose": false
+    },
+    "class_type": "WanVideoVAELoader",
+    "_meta": {
+      "title": "WanVideo VAE Loader"
+    }
+  },
+  "330:340": {
+    "inputs": {
+      "width": 480,
+      "height": 832,
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 16,
+      "device": "cpu",
+      "image": ["284", 0]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "330:341": {
+    "inputs": {
+      "image": ["330:340", 0]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "Get Image Size & Count"
+    }
+  },
+  "330:337": {
+    "inputs": {
+      "normalize_loudness": true,
+      "num_frames": 750,
+      "fps": 25,
+      "audio_scale": 1,
+      "audio_cfg_scale": 1,
+      "multi_audio_type": "para",
+      "add_noise_floor": false,
+      "smooth_transients": false,
+      "wav2vec_model": ["330:336", 0],
+      "audio_1": ["330:335", 3]
+    },
+    "class_type": "MultiTalkWav2VecEmbeds",
+    "_meta": {
+      "title": "Multi/InfiniteTalk Wav2vec2 Embeds"
+    }
+  },
+  "330:336": {
+    "inputs": {
+      "model": "TencentGameMate/chinese-wav2vec2-base",
+      "base_precision": "fp16",
+      "load_device": "main_device"
+    },
+    "class_type": "DownloadAndLoadWav2VecModel",
+    "_meta": {
+      "title": "(Down)load Wav2Vec Model"
+    }
+  },
+  "330:339": {
+    "inputs": {
+      "frame_window_size": 81,
+      "motion_frame": 9,
+      "force_offload": false,
+      "colormatch": "disabled",
+      "tiled_vae": false,
+      "mode": "infinitetalk",
+      "output_path": "",
+      "vae": ["330:347", 0],
+      "width": ["330:341", 1],
+      "height": ["330:341", 2],
+      "start_image": ["330:341", 0],
+      "clip_embeds": ["330:342", 0]
+    },
+    "class_type": "WanVideoImageToVideoMultiTalk",
+    "_meta": {
+      "title": "WanVideo Long I2V Multi/InfiniteTalk"
+    }
+  },
+  "330:333": {
+    "inputs": {
+      "steps": 7,
+      "cfg": 1.0000000000000002,
+      "shift": 11.000000000000002,
+      "seed": 940918897846710,
+      "force_offload": true,
+      "scheduler": "dpm++_sde",
+      "riflex_freq_index": 0,
+      "denoise_strength": 1,
+      "batched_cfg": false,
+      "rope_function": "comfy",
+      "start_step": 0,
+      "end_step": -1,
+      "add_noise_to_samples": true,
+      "model": ["330:346", 0],
+      "image_embeds": ["330:339", 0],
+      "text_embeds": ["330:332", 0],
+      "multitalk_embeds": ["330:337", 0]
+    },
+    "class_type": "WanVideoSampler",
+    "_meta": {
+      "title": "WanVideo Sampler"
+    }
+  },
+  "330:331": {
+    "inputs": {
+      "enable_vae_tiling": false,
+      "tile_x": 272,
+      "tile_y": 272,
+      "tile_stride_x": 144,
+      "tile_stride_y": 128,
+      "normalization": "default",
+      "vae": ["330:347", 0],
+      "samples": ["330:333", 0]
+    },
+    "class_type": "WanVideoDecode",
+    "_meta": {
+      "title": "WanVideo Decode"
+    }
+  },
+  "330:334": {
+    "inputs": {
+      "fps": 25,
+      "bit_depth": "auto",
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": ["330:331", 0],
+      "audio": ["125", 0]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "325": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI",
+      "format": "auto",
+      "video": ["330:334", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "284": {
+    "inputs": {
+      "image": "wan2_1_infinitetalk_first_frame.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  }
+}

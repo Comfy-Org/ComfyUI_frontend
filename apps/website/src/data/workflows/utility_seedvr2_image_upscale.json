@@ -1,0 +1,129 @@
+{
+  "24": {
+    "inputs": {
+      "image": "vr_ad.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "45": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-upscaled",
+      "images": ["47:27", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "47:43": {
+    "inputs": {
+      "if_condition": ["47:40", 0],
+      "when_TRUE": ["47:21", 0],
+      "when_FALSE": ["47:21", 1]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "IfElse"
+    }
+  },
+  "47:40": {
+    "inputs": {
+      "cmp": "a <= b",
+      "a": ["47:21", 0],
+      "b": ["47:21", 1]
+    },
+    "class_type": "ImpactCompare",
+    "_meta": {
+      "title": "ImpactCompare"
+    }
+  },
+  "47:25": {
+    "inputs": {
+      "value": "a*b",
+      "a": ["47:43", 0],
+      "b": ["47:30", 0]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "Upscale to Shortest Edge (pixels)"
+    }
+  },
+  "47:30": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Upscale Factor"
+    }
+  },
+  "47:27": {
+    "inputs": {
+      "seed": 296258884,
+      "max_resolution": 0,
+      "batch_size": 1,
+      "uniform_batch_size": false,
+      "color_correction": "lab",
+      "temporal_overlap": 0,
+      "prepend_frames": 0,
+      "input_noise_scale": 0,
+      "latent_noise_scale": 0,
+      "offload_device": "cpu",
+      "enable_debug": false,
+      "image": ["24", 0],
+      "dit": ["47:28", 0],
+      "vae": ["47:22", 0],
+      "resolution": ["47:25", 0]
+    },
+    "class_type": "SeedVR2VideoUpscaler",
+    "_meta": {
+      "title": "SeedVR2 Video Upscaler (v2.5.24)"
+    }
+  },
+  "47:22": {
+    "inputs": {
+      "model": "ema_vae_fp16.safetensors",
+      "device": "cuda:0",
+      "encode_tiled": true,
+      "encode_tile_size": 1024,
+      "encode_tile_overlap": 128,
+      "decode_tiled": true,
+      "decode_tile_size": 1024,
+      "decode_tile_overlap": 128,
+      "tile_debug": "false",
+      "offload_device": "none",
+      "cache_model": false
+    },
+    "class_type": "SeedVR2LoadVAEModel",
+    "_meta": {
+      "title": "SeedVR2 (Down)Load VAE Model"
+    }
+  },
+  "47:28": {
+    "inputs": {
+      "model": "seedvr2_ema_7b_fp16.safetensors",
+      "device": "cuda:0",
+      "blocks_to_swap": 0,
+      "swap_io_components": false,
+      "offload_device": "cpu",
+      "cache_model": false,
+      "attention_mode": "sdpa"
+    },
+    "class_type": "SeedVR2LoadDiTModel",
+    "_meta": {
+      "title": "SeedVR2 (Down)Load DiT Model"
+    }
+  },
+  "47:21": {
+    "inputs": {
+      "image": ["24", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  }
+}

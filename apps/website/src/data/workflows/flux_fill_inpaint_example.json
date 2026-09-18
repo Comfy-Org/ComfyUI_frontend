@@ -1,0 +1,143 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["47:8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "17": {
+    "inputs": {
+      "image": "flux_fill_inpaint_example_input_image.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "47:34": {
+    "inputs": {
+      "clip_name1": "clip_l.safetensors",
+      "clip_name2": "t5xxl_fp16.safetensors",
+      "type": "flux",
+      "device": "default"
+    },
+    "class_type": "DualCLIPLoader",
+    "_meta": {
+      "title": "Load CLIP (Dual)"
+    }
+  },
+  "47:26": {
+    "inputs": {
+      "guidance": 30,
+      "conditioning": ["47:23", 0]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "47:32": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "47:31": {
+    "inputs": {
+      "unet_name": "flux1-fill-dev.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "47:46": {
+    "inputs": {
+      "conditioning": ["47:23", 0]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "Conditioning Zero Out"
+    }
+  },
+  "47:23": {
+    "inputs": {
+      "text": "anime girl with massive fennec ears blonde hair blue eyes wearing a pink shirt",
+      "clip": ["47:34", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "47:39": {
+    "inputs": {
+      "strength": 1,
+      "model": ["47:31", 0]
+    },
+    "class_type": "DifferentialDiffusion",
+    "_meta": {
+      "title": "Differential Diffusion"
+    }
+  },
+  "47:8": {
+    "inputs": {
+      "samples": ["47:3", 0],
+      "vae": ["47:32", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "47:38": {
+    "inputs": {
+      "noise_mask": true,
+      "positive": ["47:26", 0],
+      "negative": ["47:46", 0],
+      "vae": ["47:32", 0],
+      "pixels": ["17", 0],
+      "mask": ["workshop-mask", 0]
+    },
+    "class_type": "InpaintModelConditioning",
+    "_meta": {
+      "title": "InpaintModelConditioning"
+    }
+  },
+  "47:3": {
+    "inputs": {
+      "seed": 190664687740330,
+      "steps": 20,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["47:39", 0],
+      "positive": ["47:38", 0],
+      "negative": ["47:38", 1],
+      "latent_image": ["47:38", 2]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "workshop-mask": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "",
+      "channel": "red"
+    },
+    "_meta": {
+      "title": "Edit mask (white = edit)"
+    }
+  }
+}

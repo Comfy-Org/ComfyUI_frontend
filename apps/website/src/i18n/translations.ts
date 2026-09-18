@@ -23,6 +23,15 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.workflows.eyebrow': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.workflows.heading': {
+    en: 'Start with a workflow. Make it yours.',
+    'zh-CN': '从工作流出发，创作属于你的作品。'
+  },
+  'workshop.workflows.subtitle': {
+    en: 'Models are the building blocks. Workflows bring them together—ready for your ideas.',
+    'zh-CN': '模型是创作的积木，工作流将它们串联起来，等你注入创意。'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
