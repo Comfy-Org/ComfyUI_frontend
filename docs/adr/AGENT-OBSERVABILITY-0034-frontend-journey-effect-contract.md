@@ -19,10 +19,34 @@ change any of those owners or treat a raw Yjs update as an observability primiti
 
 ## Decision
 
-Define a versioned `AgentJourneyEvent` contract with an allowlist serializer and stable total event
-names. Version 1 makes the frontend-owned `frontend_semantic_effect` terminal precise. `observed`
+Define a versioned `AgentJourneyEvent` contract with an allowlist serializer and a stable event
+name. Version 1 exposes only the frontend-owned `frontend_semantic_effect.observed` outcome. It
 means an authoritative document delta was accepted into the follower projection and live-graph
 reconciliation returned. It does not attest pixels, accessibility state, persistence, or reload.
+
+| Fact                     | Owner                        | Version-one success signal                               |
+| ------------------------ | ---------------------------- | -------------------------------------------------------- |
+| Backend acceptance       | Merge authority              | Outside this frontend contract                           |
+| Frontend semantic effect | Frontend follower            | Projection commits and live-graph reconciliation returns |
+| Pixels and accessibility | Renderer / black-box harness | Outside this contract                                    |
+| Persistence              | Persistence owner            | Outside this contract                                    |
+| Reload recovery          | Black-box harness            | Outside this contract                                    |
+
+```mermaid
+flowchart LR
+  A[Backend acceptance] --> B[Authoritative document delta]
+  B --> C[Frontend projection]
+  C --> D[Live-graph reconciliation]
+  D --> E[Frontend semantic effect observed]
+  E -. does not prove .-> F[Pixels and accessibility]
+  E -. does not prove .-> G[Persistence]
+  G -. does not prove .-> H[Reload recovery]
+```
+
+Host-side `applied`, `skipped`, and `failed` results retain their generated `DocOpsResultData`
+meaning. Follower-side inactive-target and projection results are not remapped onto those names.
+`superseded`, `reverted`, and any other terminal outcomes remain undefined until an authoritative
+owner, source field, precedence rule, and terminality rule exist.
 
 Correlated effect events require a non-empty, deduplicated list of creator-minted operation IDs and
 an opaque target reference. Optional session, thread, turn, mutation, and run identifiers are copied
@@ -45,7 +69,7 @@ Alternatives rejected:
 ### Positive
 
 - Later emitters and adapters share one executable, privacy-bounded contract.
-- Optimistic, superseded, reverted, skipped, and failed outcomes cannot be counted as observed.
+- Host results and future outcomes cannot be counted as frontend-observed semantic effects.
 - Unit golden vectors can detect schema drift before provider or production work begins.
 
 ### Negative

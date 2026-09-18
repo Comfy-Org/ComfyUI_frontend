@@ -1,11 +1,6 @@
 export const AGENT_JOURNEY_SCHEMA_VERSION = 1 as const
 
-export type AgentJourneyEffectOutcome =
-  | 'observed'
-  | 'skipped'
-  | 'failed'
-  | 'superseded'
-  | 'reverted'
+export type AgentJourneyEffectOutcome = 'observed'
 
 export type AgentJourneyEffectKind =
   | 'node'
@@ -74,11 +69,7 @@ export type AgentJourneyEventName =
   `agent.journey.frontend_semantic_effect.${AgentJourneyEffectOutcome}`
 
 const EFFECT_EVENT_NAMES = {
-  observed: 'agent.journey.frontend_semantic_effect.observed',
-  skipped: 'agent.journey.frontend_semantic_effect.skipped',
-  failed: 'agent.journey.frontend_semantic_effect.failed',
-  superseded: 'agent.journey.frontend_semantic_effect.superseded',
-  reverted: 'agent.journey.frontend_semantic_effect.reverted'
+  observed: 'agent.journey.frontend_semantic_effect.observed'
 } as const satisfies Record<AgentJourneyEffectOutcome, AgentJourneyEventName>
 
 const OPAQUE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/

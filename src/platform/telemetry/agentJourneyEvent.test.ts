@@ -6,10 +6,7 @@ import {
   serializeAgentJourneyEvent,
   supportsAgentJourneySchemaVersion
 } from './agentJourneyEvent'
-import type {
-  AgentJourneyEffectOutcome,
-  FrontendSemanticEffectEvent
-} from './agentJourneyEvent'
+import type { FrontendSemanticEffectEvent } from './agentJourneyEvent'
 
 const baseEvent: FrontendSemanticEffectEvent = {
   stage: 'frontend_semantic_effect',
@@ -26,34 +23,10 @@ const baseEvent: FrontendSemanticEffectEvent = {
 }
 
 describe('agent journey effect contract', () => {
-  it.for<readonly [string, AgentJourneyEffectOutcome, string]>([
-    [
-      'maps observed to its stable event name',
-      'observed',
+  it('maps observed to its stable event name', () => {
+    expect(getAgentJourneyEventName(baseEvent)).toBe(
       'agent.journey.frontend_semantic_effect.observed'
-    ],
-    [
-      'maps skipped to its stable event name',
-      'skipped',
-      'agent.journey.frontend_semantic_effect.skipped'
-    ],
-    [
-      'maps failed to its stable event name',
-      'failed',
-      'agent.journey.frontend_semantic_effect.failed'
-    ],
-    [
-      'maps superseded to its stable event name',
-      'superseded',
-      'agent.journey.frontend_semantic_effect.superseded'
-    ],
-    [
-      'maps reverted to its stable event name',
-      'reverted',
-      'agent.journey.frontend_semantic_effect.reverted'
-    ]
-  ])('%s', ([, outcome, expected]) => {
-    expect(getAgentJourneyEventName({ ...baseEvent, outcome })).toBe(expected)
+    )
   })
 
   it('serializes the allowlisted version-one golden vector', () => {
