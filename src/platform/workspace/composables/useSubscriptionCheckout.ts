@@ -358,6 +358,26 @@ export function useSubscriptionCheckout(
     }
   }
 
+  function buildSubscriptionOptions(
+    quote: PreviewSubscribeResponse | null,
+    confirmReactivation: boolean,
+    confirmationToken?: string,
+    promotionCode?: string
+  ): SubscribeOptions {
+    return {
+      ...(embeddedCheckoutEnabled &&
+        buildPaymentOptions(quote, confirmationToken, promotionCode)),
+      returnUrl: embeddedCheckoutEnabled
+        ? paymentReturnUrl()
+        : `${getComfyPlatformBaseUrl()}/payment/success`,
+      cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+      confirmReactivation,
+      prorationAt: previewData.value?.is_immediate
+        ? previewData.value.proration_at
+        : undefined
+    }
+  }
+
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!embeddedCheckoutEnabled || !shouldUseWorkspaceBilling.value) return
     try {
@@ -785,31 +805,9 @@ export function useSubscriptionCheckout(
         return
       }
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
-      const response = embeddedCheckoutEnabled
-        ? (
-            await Promise.all([
-              previewSubscribe(planSlug),
-              loadSavedPaymentMethods()
-            ])
-          )[0]
-        : await previewSubscribe(planSlug)
+      const response = await requestSubscriptionPreview(planSlug)
 
-      if (!response || !response.allowed) {
-        const journey = getActiveCheckoutJourney()
-        if (journey) {
-          emitCheckoutJourneyPhase(journey, {
-            phase: 'preview_failed',
-            failure_category: 'unknown'
-          })
-        }
-        toast.error('Unable to subscribe', {
-          description: response?.reason || 'This plan is not available'
-        })
-        return
-      }
-      const checkoutType =
-        response.transition_type === 'new_subscription' ? 'new' : 'change'
-      if (!canPerformCheckout(checkoutType)) return
+      if (!acceptsPersonalSubscriptionPreview(response)) return
 
       installPreview(response)
       checkoutStep.value = 'preview'
@@ -831,6 +829,27 @@ export function useSubscriptionCheckout(
       isLoadingPreview.value = false
       loadingTier.value = null
     }
+  }
+
+  function acceptsPersonalSubscriptionPreview(
+    response: PreviewSubscribeResponse | null
+  ): response is PreviewSubscribeResponse {
+    if (!response || !response.allowed) {
+      const journey = getActiveCheckoutJourney()
+      if (journey) {
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_failed',
+          failure_category: 'unknown'
+        })
+      }
+      toast.error('Unable to subscribe', {
+        description: response?.reason || 'This plan is not available'
+      })
+      return false
+    }
+    const checkoutType =
+      response.transition_type === 'new_subscription' ? 'new' : 'change'
+    return canPerformCheckout(checkoutType)
   }
 
   function canStartPersonalCheckout(): boolean {
@@ -888,9 +907,15 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle,
     teamCreditStopId: string
   ): Promise<PreviewSubscribeResponse | null> {
-    const request = previewSubscribe(getTeamPlanSlug(billingCycle), {
+    return requestSubscriptionPreview(getTeamPlanSlug(billingCycle), {
       teamCreditStopId
     })
+  }
+
+  async function requestSubscriptionPreview(
+    ...args: Parameters<typeof previewSubscribe>
+  ): Promise<PreviewSubscribeResponse | null> {
+    const request = previewSubscribe(...args)
     if (!embeddedCheckoutEnabled) return request
 
     const [response] = await Promise.all([request, loadSavedPaymentMethods()])
@@ -1028,18 +1053,15 @@ export function useSubscriptionCheckout(
       }
       const quote = getCurrentCheckoutQuote()
       const submittingJourney = emitSubmittedCheckoutJourney()
-      const response = await subscribe(planSlug, {
-        ...(embeddedCheckoutEnabled &&
-          buildPaymentOptions(quote, confirmationToken, promotionCode)),
-        returnUrl: embeddedCheckoutEnabled
-          ? paymentReturnUrl()
-          : `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation,
-        prorationAt: previewData.value?.is_immediate
-          ? previewData.value.proration_at
-          : undefined
-      })
+      const response = await subscribe(
+        planSlug,
+        buildSubscriptionOptions(
+          quote,
+          confirmReactivation,
+          confirmationToken,
+          promotionCode
+        )
+      )
 
       if (response) {
         linkSubmittingJourneyToOperation(
@@ -1595,18 +1617,14 @@ export function useSubscriptionCheckout(
       const quote = getCurrentCheckoutQuote()
       const submittingJourney = emitSubmittedCheckoutJourney()
       const response = await subscribe(planSlug, {
-        ...(embeddedCheckoutEnabled &&
-          buildPaymentOptions(quote, confirmationToken, promotionCode)),
+        ...buildSubscriptionOptions(
+          quote,
+          confirmReactivation,
+          confirmationToken,
+          promotionCode
+        ),
         teamCreditStopId,
-        billingCycle,
-        returnUrl: embeddedCheckoutEnabled
-          ? paymentReturnUrl()
-          : `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation,
-        prorationAt: previewData.value?.is_immediate
-          ? previewData.value.proration_at
-          : undefined
+        billingCycle
       })
 
       if (response) {
