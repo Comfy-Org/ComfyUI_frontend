@@ -4,6 +4,7 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
@@ -68,10 +69,7 @@ const inputSpecPreview3D: CustomInputSpec = {
   isPreview: true
 }
 
-const load3dSceneRevisions = new WeakMap<LGraphNode, number>()
-
 function invalidateLoad3dScene(node: LGraphNode): void {
-  load3dSceneRevisions.set(node, (load3dSceneRevisions.get(node) ?? 0) + 1)
   markLoad3dSceneDirty(node)
 }
 
@@ -433,7 +431,7 @@ useExtensionService().registerExtension({
               if (cached) return cached
             }
 
-            const sceneRevision = load3dSceneRevisions.get(node) ?? 0
+            const sceneRevision = getLoad3dSceneRevision(node)
 
             // A model swap (user or agent) may still be loading. Capture the
             // scene the queue will actually run, not the one being replaced.
@@ -479,11 +477,7 @@ useExtensionService().registerExtension({
               returnVal.recording = `threed/${recording.name} [temp]`
             }
 
-            if ((load3dSceneRevisions.get(node) ?? 0) !== sceneRevision) {
-              continue
-            }
-
-            setLoad3dOutputCache(node, returnVal)
+            if (!setLoad3dOutputCache(node, returnVal, sceneRevision)) continue
 
             return returnVal
           }

@@ -57,6 +57,7 @@ vi.mock(import('@/services/load3dService'), () => ({
 
 vi.mock(import('@/composables/useLoad3d'), () => {
   const sceneDirty = new WeakMap<LGraphNode, boolean>()
+  const sceneRevisions = new WeakMap<LGraphNode, number>()
   const outputCache = new WeakMap<LGraphNode, unknown>()
   return {
     useLoad3d: () =>
@@ -67,13 +68,21 @@ vi.mock(import('@/composables/useLoad3d'), () => {
     nodeToLoad3dMap: fromAny(nodeToLoad3dMap),
     markLoad3dSceneDirty: (node: LGraphNode | null) => {
       if (!node) return
+      sceneRevisions.set(node, (sceneRevisions.get(node) ?? 0) + 1)
       sceneDirty.set(node, true)
     },
+    getLoad3dSceneRevision: (node: LGraphNode) => sceneRevisions.get(node) ?? 0,
     isLoad3dSceneDirty: (node: LGraphNode) => sceneDirty.get(node) !== false,
     getLoad3dOutputCache: fromAny((node: LGraphNode) => outputCache.get(node)),
-    setLoad3dOutputCache: (node: LGraphNode, value: unknown) => {
+    setLoad3dOutputCache: (
+      node: LGraphNode,
+      value: unknown,
+      revision: number = sceneRevisions.get(node) ?? 0
+    ) => {
+      if ((sceneRevisions.get(node) ?? 0) !== revision) return false
       outputCache.set(node, value)
       sceneDirty.set(node, false)
+      return true
     }
   }
 })
@@ -1206,7 +1215,8 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
   })
 
   it('re-captures when the scene changes during an upload', async () => {
-    const { load3d, serialize, uploadTempImage } = await setup()
+    const { node, load3d, serialize, uploadTempImage, useLoad3dModule } =
+      await setup()
     let releaseUploads!: () => void
     const uploadsBlocked = new Promise<void>((resolve) => {
       releaseUploads = resolve
@@ -1219,8 +1229,7 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     const pending = serialize()
     await flush()
 
-    const configuration = configureMock.mock.calls.at(-1)?.[0]
-    configuration.onSceneInvalidated()
+    useLoad3dModule.markLoad3dSceneDirty(node)
     releaseUploads()
 
     const refreshed = await pending
