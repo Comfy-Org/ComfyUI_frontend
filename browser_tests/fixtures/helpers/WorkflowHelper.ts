@@ -224,15 +224,25 @@ export class WorkflowHelper {
 
   /**
    * Reopen a saved workflow through the workflows sidebar, the same path a
-   * user takes. The management store's `openWorkflow` only marks a workflow
-   * active, so it cannot prove the saved graph was restored.
+   * user takes. Blanks the graph first so the caller's assertions can only
+   * pass once the saved graph is actually restored: after a reload the app
+   * may already have the target active, and neither the management store's
+   * `openWorkflow` nor `isBusy` tracks `app.loadGraphData`.
    */
   async openPersistedWorkflow(workflowName: string): Promise<void> {
+    await this.comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect
+      .poll(() =>
+        this.comfyPage.page.evaluate(
+          () => window.app!.canvas.graph?.nodes.length ?? 0
+        )
+      )
+      .toBe(0)
+
     const tab = this.comfyPage.menu.workflowsTab
     await tab.open()
-    await tab.getPersistedItem(workflowName).dblclick()
+    await tab.getPersistedItem(workflowName).click()
     await tab.close()
-    await this.waitForWorkflowIdle()
   }
 
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {
