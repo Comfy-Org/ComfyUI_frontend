@@ -216,7 +216,7 @@ function startAgentCrdtFollower(
    * a prompt: that selection is their basket, and replacing it would drop
    * their references.
    */
-  const revealArrivals = (nodeIds: NodeId[]): void => {
+  function revealArrivals(nodeIds: NodeId[]): void {
     if (nodeIds.length === 0) return
     // `app.canvas`, not the canvas store: this layer cannot import from
     // renderer/. The store's `selectedItems` mirror stays in sync anyway -
