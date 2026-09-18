@@ -371,13 +371,15 @@ describe('helpers', () => {
     expect(makeGuid()).toMatch(/^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/)
   })
 
-  it('falls back to a manual guid when randomUUID is unavailable', () => {
-    vi.stubGlobal('crypto', {})
-    try {
-      expect(makeGuid()).toMatch(/^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/)
-    } finally {
-      vi.unstubAllGlobals()
-    }
+  it('uses secure random values when randomUUID is unavailable', () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.fill(0)
+        return bytes
+      }
+    })
+
+    expect(makeGuid()).toBe('00000000-0000-4000-8000-000000000000')
   })
 
   it('computes placed bounds for plain and rotated transforms', () => {
