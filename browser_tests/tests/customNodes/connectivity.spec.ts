@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -214,9 +215,9 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   comfyPage
 }) => {
   test.setTimeout(PLAN_SETUP_MS)
-  const defs = (await comfyPage.page.evaluate(() =>
-    window.app!.api.getNodeDefs()
-  )) as unknown as Record<string, RawNodeDef>
+  const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+    await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+  )
   const registeredNodes = normalizeNodeDefs(defs)
   for (const [nodeType, isolation] of Object.entries(activeIsolatedNodeTypes)) {
     const node = registeredNodes.find(
@@ -570,10 +571,7 @@ async function evaluatePairs(
   if (outcome !== stall) return outcome
   const probe = async () =>
     page
-      .evaluate(
-        () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
-        { timeout: 10_000 }
-      )
+      .evaluate(() => window.__cnPairCursor, { timeout: 10_000 })
       .catch(() => null)
   const first = await probe()
   await new Promise((resolve) => setTimeout(resolve, 2_000))
@@ -795,9 +793,9 @@ for (const vueNodesEnabled of [false, true]) {
     { tag: vueNodesEnabled ? ['@vue-nodes'] : [] },
     async ({ comfyPage }) => {
       test.setTimeout(PLAN_SETUP_MS)
-      const defs = (await comfyPage.page.evaluate(() =>
-        window.app!.api.getNodeDefs()
-      )) as unknown as Record<string, RawNodeDef>
+      const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+        await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+      )
       const nodes = normalizeNodeDefs(defs)
       using consoleErrors = collectConsoleErrors(comfyPage.page)
 

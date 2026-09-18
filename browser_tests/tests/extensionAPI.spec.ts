@@ -278,17 +278,13 @@ test.describe('Topbar commands', () => {
             message: 'Test Prompt Message'
           })
           .then((value: string | null) => {
-            ;(window as unknown as Record<string, unknown>)['value'] = value
+            window.value = value
           })
       })
 
       await comfyPage.nodeOps.fillPromptDialog('Hello, world!')
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => (window as unknown as Record<string, unknown>)['value']
-          )
-        )
+        .poll(() => comfyPage.page.evaluate(() => window.value))
         .toBe('Hello, world!')
     })
 
@@ -302,40 +298,32 @@ test.describe('Topbar commands', () => {
             message: 'Test Confirm Message'
           })
           .then((value: boolean | null) => {
-            ;(window as unknown as Record<string, unknown>)['value'] = value
+            window.value = value
           })
       })
 
       await comfyPage.confirmDialog.click('confirm')
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => (window as unknown as Record<string, unknown>)['value']
-          )
-        )
+        .poll(() => comfyPage.page.evaluate(() => window.value))
         .toBe(true)
     })
 
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        ;(window as unknown as Record<string, unknown>)['value'] = 'foo'
+        window.value = 'foo'
         void window
           .app!.extensionManager.dialog.confirm({
             title: 'Test Confirm',
             message: 'Test Confirm Message'
           })
           .then((value: boolean | null) => {
-            ;(window as unknown as Record<string, unknown>)['value'] = value
+            window.value = value
           })
       })
 
       await comfyPage.confirmDialog.click('reject')
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            () => (window as unknown as Record<string, unknown>)['value']
-          )
-        )
+        .poll(() => comfyPage.page.evaluate(() => window.value))
         .toBeNull()
     })
   })

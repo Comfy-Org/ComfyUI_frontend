@@ -481,10 +481,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
   // seen-set and misclassified the run as EXECUTION_ERROR. This is the
   // discriminating guard for the foreign-attribution bug class.
   await comfyPage.page.evaluate(() => {
-    const w = window as unknown as {
-      __cnEvents?: object[]
-      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
-    }
+    const w = window
     w.__cnSelfCheckTimer = setInterval(() => {
       const sink = w.__cnEvents
       if (!sink || sink.length === 0) return
@@ -510,10 +507,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
   // hold identically against a harness with the prompt-id filter removed).
   // Clearing a not-yet-fired timer stops a post-run push from faking it.
   const injectionLanded = await comfyPage.page.evaluate(() => {
-    const w = window as unknown as {
-      __cnEvents?: { prompt_id?: string }[]
-      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
-    }
+    const w = window
     clearInterval(w.__cnSelfCheckTimer)
     return (w.__cnEvents ?? []).some(
       (event) => event.prompt_id === 'cn-foreign-self-check'
