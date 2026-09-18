@@ -208,6 +208,7 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
+    const dialogComponentProps = options.dialogComponentProps ?? {}
     const evicted =
       dialogStack.value.length >= 10 ? dialogStack.value.shift() : undefined
 
@@ -233,8 +234,8 @@ export const useDialogStore = defineStore('dialog', () => {
         closeOnEscape: true,
         dismissableMask: true,
         renderer: 'reka' as DialogRenderer,
-        ...options.dialogComponentProps,
-        maximized: options.dialogComponentProps?.maximized ?? false,
+        ...dialogComponentProps,
+        maximized: dialogComponentProps.maximized ?? false,
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
@@ -244,7 +245,7 @@ export const useDialogStore = defineStore('dialog', () => {
         onAfterHide: () => {
           closeDialog(dialog)
         },
-        pt: merge(options.dialogComponentProps?.pt || {}, {
+        pt: merge(dialogComponentProps.pt || {}, {
           root: {
             onMousedown: () => {
               riseDialog(dialog)
