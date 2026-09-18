@@ -13,15 +13,13 @@ const context: ReturnType<DatadogRum['getGlobalContext']> = {}
 
 export const datadogRum = vi.mockObject<DatadogRum>(
   {
-    getGlobalContext: () => {
-      onTestFinished(() => {
-        for (const key of Object.keys(context)) delete context[key]
-      })
-      return context
-    },
+    getGlobalContext: () => context,
     getInitConfiguration: () => undefined,
     init: () => {},
     setGlobalContextProperty: (key, value) => {
+      onTestFinished(() => {
+        for (const key of Object.keys(context)) delete context[key]
+      })
       context[key] = value
     }
   },
