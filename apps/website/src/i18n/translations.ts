@@ -10369,9 +10369,8 @@ Enterprise`
     'zh-CN': 'Playground - Comfy'
   },
   'workshop.v2.meta.description': {
-    en: 'Every model Comfy can run, and the workflows built on them, in one catalogue.',
-    'zh-CN':
-      'Comfy 可运行的全部模型，以及基于它们构建的工作流，集中于一个目录。'
+    en: 'Every model Comfy can run, and the workflows built on them.',
+    'zh-CN': 'Comfy 可运行的全部模型，以及基于它们构建的工作流。'
   },
   'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.outcome.animateCharacters': {
@@ -10429,7 +10428,7 @@ Enterprise`
     'zh-CN': '接下来你想创造什么？'
   },
   'workshop.v2.subtitle': {
-    en: 'Models, workflows and apps, by what you want to make.',
+    en: 'Models and the workflows built on them, by what you want to make.',
     'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
   },
   'workshop.v2.kind.label': { en: 'Show', 'zh-CN': '显示' },
@@ -10439,8 +10438,6 @@ Enterprise`
   'workshop.v2.kind.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
-  'workshop.v2.action.run': { en: 'Run', 'zh-CN': '运行' },
-  'workshop.v2.card.credits': { en: '{n} credits', 'zh-CN': '{n} 积分' },
   'workshop.v2.card.runsOn': {
     en: 'Runs on {model}',
     'zh-CN': '运行于 {model}'
@@ -10468,19 +10465,14 @@ Enterprise`
   },
   'workshop.v2.loadMore': { en: 'Show more', 'zh-CN': '显示更多' },
   'workshop.v2.empty': {
-    en: 'Nothing matches those filters',
+    en: 'Nothing here matches',
     'zh-CN': '没有同时满足这些条件的结果'
   },
   'workshop.v2.emptyHint': {
-    en: 'Drop a filter to widen the search.',
+    en: 'Try fewer words, or another tab.',
     'zh-CN': '去掉一个筛选条件以扩大范围。'
   },
-  'workshop.v2.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
-  'workshop.v2.modelsHeld': {
-    en: '{n} more models sit behind the Models filter',
-    'zh-CN': '还有 {n} 个模型在「模型」筛选中'
-  },
-  'workshop.v2.seeModels': { en: 'See them', 'zh-CN': '查看' },
+  'workshop.v2.clear': { en: 'Clear', 'zh-CN': '清除' },
   'workshop.v2.workflow.back': {
     en: 'Back to Playground',
     'zh-CN': '返回 Playground'
@@ -10534,8 +10526,8 @@ Enterprise`
   },
   'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
   'workshop.v2.workflow.graphNote': {
-    en: 'Every node in it, and what feeds what.',
-    'zh-CN': '此工作流背后的节点图，仅供查看。'
+    en: 'See what it does before you open it in ComfyUI or download it.',
+    'zh-CN': '在用 ComfyUI 打开或下载之前，先看看它做什么。'
   },
   'workshop.v2.workflow.graphAlt': {
     en: 'The nodes of this workflow and the links between them',
