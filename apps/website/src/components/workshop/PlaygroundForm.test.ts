@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -220,6 +220,9 @@ describe('First and last frame ratios', () => {
     return url
   }
 
+  const upload = (label: string) =>
+    within(screen.getByRole('group', { name: label })).getByRole('listitem')
+
   beforeEach(() => {
     vi.stubGlobal('Image', StubImage)
   })
@@ -276,6 +279,34 @@ describe('First and last frame ratios', () => {
     }
 
     await silentOnceMeasured('https://example.com/last-match.png')
+  })
+
+  // The warning names a consequence; the mark says which of two uploads to go
+  // and change. Only the stretched one is marked, and nothing is rejected.
+  it('marks the uploaded last frame while the warning stands', async () => {
+    const values = ref<FormValues>({
+      first_frame_url: frame('https://example.com/first.png', 1920, 1080),
+      last_frame_url: frame('https://example.com/last.png', 1080, 1920)
+    })
+    renderForm(values)
+    const notice = await screen.findByTestId('frame-ratio-notice')
+
+    expect(upload('Last frame')).toHaveAttribute('data-attention')
+    expect(upload('First frame')).not.toHaveAttribute('data-attention')
+
+    const lastFrame = within(
+      screen.getByRole('group', { name: 'Last frame' })
+    ).getByLabelText('Last frame')
+    expect(lastFrame).toHaveAttribute('aria-invalid', 'false')
+    expect(lastFrame.getAttribute('aria-describedby')).toContain(notice.id)
+
+    values.value = {
+      ...values.value,
+      last_frame_url: frame('https://example.com/last-match.png', 1280, 720)
+    }
+
+    await silentOnceMeasured('https://example.com/last-match.png')
+    expect(upload('Last frame')).not.toHaveAttribute('data-attention')
   })
 
   it('says nothing when the frames share a shape', async () => {

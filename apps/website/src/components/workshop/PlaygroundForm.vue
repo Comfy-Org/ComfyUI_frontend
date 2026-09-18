@@ -8,6 +8,7 @@ import type {
   FormValues
 } from '../../config/workshop-playground'
 import { groupPlaygroundFields } from '../../config/workshop-playground'
+import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
 import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
 import { frameSource } from '../../config/workshop-model-restrictions'
 import type { Locale } from '../../i18n/translations'
@@ -48,6 +49,19 @@ const frames = computed(() =>
       }
     : undefined
 )
+
+const FRAME_RATIO_NOTICE_ID = 'frame-ratio-notice'
+const frameRatioMismatch = useFrameRatioMismatch(
+  () => frames.value?.first,
+  () => frames.value?.last
+)
+
+// The last frame is the one that gets stretched, so it is the one marked.
+function attentionFor(name: string): string | undefined {
+  return frameRatioMismatch.value && name === frameRatio?.last
+    ? FRAME_RATIO_NOTICE_ID
+    : undefined
+}
 const advancedHasErrors = computed(() =>
   groups.value.advanced.some((field) => errors[field.name] !== undefined)
 )
@@ -79,14 +93,14 @@ function onAdvancedToggle(event: Event) {
         v-model="values"
         :field
         :errors
+        :attention="attentionFor(field.name)"
         :locale
         :disabled
         :file-uploads-disabled
       />
       <FrameRatioNotice
-        v-if="frames"
-        :first="frames.first"
-        :last="frames.last"
+        v-if="frameRatioMismatch"
+        :id="FRAME_RATIO_NOTICE_ID"
         :locale
       />
     </div>
