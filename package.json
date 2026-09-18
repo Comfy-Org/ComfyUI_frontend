@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "adr:check": "tsx scripts/check-adrs.ts",
+    "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
     "build-storybook": "storybook build",
