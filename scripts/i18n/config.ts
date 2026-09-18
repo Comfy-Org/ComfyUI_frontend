@@ -25,6 +25,10 @@ const glossary = `Keep these names untranslated: flux, photomaker, clip, vae, cf
 'latent' is the short form of 'latent space'.
 'mask' is in the context of image processing.`
 
+const websiteGlossary = `Keep these names untranslated: Comfy, ComfyUI, Comfy Cloud, Comfy Desktop, Managed Builds, MiniMax, Flux, LTX, Wan, Seedance, LoRA, ControlNet, MCP, Hugging Face, Civitai.
+Keep URLs, paths, e-mail addresses, product slugs and version numbers exactly as written.
+This is marketing and legal copy for comfy.org: read naturally in the target language rather than word for word, and keep legal sections precise.`
+
 const chineseSimplifiedGuidance = `Use ONLY Simplified Chinese characters (简体中文). Common examples: 节点 (not 節點), 画布 (not 畫布), 图像 (not 圖像), 选择 (not 選擇), 减小 (not 減小). NEVER mix Simplified and Traditional Chinese characters.`
 
 const chineseTraditionalGuidance = `Use ONLY Traditional Chinese characters (繁體中文) with Taiwan-specific terminology. NEVER mix Simplified and Traditional Chinese characters.`
@@ -80,3 +84,25 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     { code: 'de', name: 'German', guidance: germanGuidance }
   ]
 }
+
+const websiteTranslationPipelineConfig: TranslationPipelineConfig = {
+  ...translationPipelineConfig,
+  entry: 'apps/website/src/locales/en',
+  output: 'apps/website/src/locales',
+  glossary: websiteGlossary,
+  outputLocales: [
+    {
+      code: 'zh-CN',
+      name: 'Simplified Chinese',
+      guidance: chineseSimplifiedGuidance
+    },
+    { code: 'ja', name: 'Japanese' }
+  ]
+}
+
+export const translationTargets = {
+  app: translationPipelineConfig,
+  website: websiteTranslationPipelineConfig
+} as const satisfies Record<string, TranslationPipelineConfig>
+
+export type TranslationTarget = keyof typeof translationTargets

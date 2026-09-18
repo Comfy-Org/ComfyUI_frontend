@@ -196,9 +196,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{
-                t('workshop.search.show', locale).replace('{n}', `${matches}`)
-              }}
+              {{ t('workshop.search.show', locale, { n: matches }) }}
             </button>
           </div>
         </DialogContent>

@@ -8,9 +8,7 @@ import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
-
-const LOCALES = ['en', 'zh-CN', 'ja'] as const
-const DEFAULT_LOCALE = 'en'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './src/locales/localeConfig'
 
 export default defineConfig({
   site: 'https://comfy.org',
@@ -53,7 +51,7 @@ export default defineConfig({
     }
   },
   i18n: {
-    locales: [...LOCALES],
+    locales: [...SUPPORTED_LOCALES],
     defaultLocale: DEFAULT_LOCALE,
     routing: {
       prefixDefaultLocale: false

@@ -13,8 +13,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { OpenAI } from 'openai'
 
-import type { OutputLocale, TranslationPipelineConfig } from './config'
-import { translationPipelineConfig } from './config'
+import type {
+  OutputLocale,
+  TranslationPipelineConfig,
+  TranslationTarget
+} from './config'
+import { translationTargets } from './config'
 import type {
   LocaleChanges,
   LocaleLeafEntry,
@@ -398,11 +402,31 @@ function reportCheck(states: readonly LocaleFileState[]): number {
   return auditErrors.length > 0 ? 1 : 0
 }
 
+function isTranslationTarget(
+  name: string | undefined
+): name is TranslationTarget {
+  return name !== undefined && Object.hasOwn(translationTargets, name)
+}
+
+/** `--target <name>` selects which catalogs to translate; the app is the default. */
+export function resolveTargetConfig(
+  argv: readonly string[]
+): TranslationPipelineConfig {
+  const flagIndex = argv.indexOf('--target')
+  const name = flagIndex === -1 ? 'app' : argv.at(flagIndex + 1)
+  if (!isTranslationTarget(name)) {
+    throw new Error(
+      `Unknown translation target "${name ?? ''}"; expected one of: ${Object.keys(translationTargets).join(', ')}.`
+    )
+  }
+  return translationTargets[name]
+}
+
 async function run(argv: readonly string[]): Promise<void> {
   const check = argv.includes('--check')
   const scriptDir = dirname(fileURLToPath(import.meta.url))
   const repoRoot = resolve(scriptDir, '../..')
-  const config = translationPipelineConfig
+  const config = resolveTargetConfig(argv)
   const entryDir = resolve(repoRoot, config.entry)
   const outputDir = resolve(repoRoot, config.output)
   const manifestFile = join(outputDir, '.source-manifest.json')

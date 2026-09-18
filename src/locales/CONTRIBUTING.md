@@ -132,6 +132,17 @@ check immediately. oxfmt ignores `src/locales/**/*.json` — the pipeline is the
 sole writer of those bytes, which keeps the manifest's recorded blob hashes
 valid.
 
+### The website shares this pipeline
+
+`apps/website` keeps its catalogs in the same nested per-locale JSON layout
+and vue-i18n message syntax under `apps/website/src/locales/`, and the same
+script translates them:
+`pnpm locale:website` / `pnpm locale:website:check` at the repository root
+(or `pnpm locale` / `pnpm locale:check` inside `apps/website`). The website's
+locales, glossary and output directory are the `website` entry of
+`translationTargets` in `scripts/i18n/config.ts`; the `i18n: Update Website`
+workflow runs it on demand.
+
 ### Manual Translation Updates
 
 If urgent translation updates are needed outside of releases, maintainers can:

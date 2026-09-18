@@ -28,7 +28,8 @@ import {
   assembleLeafTranslations,
   buildTranslationItems,
   formatPruneSummary,
-  formatUsageSummary
+  formatUsageSummary,
+  resolveTargetConfig
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -489,6 +490,49 @@ describe('validateLocale', () => {
   })
 })
 
+describe('resolveTargetConfig', () => {
+  it.for([
+    {
+      argv: ['--check'],
+      entry: 'src/locales/en',
+      output: 'src/locales',
+      locales: [
+        'zh',
+        'zh-TW',
+        'ru',
+        'ja',
+        'ko',
+        'fr',
+        'es',
+        'ar',
+        'tr',
+        'pt-BR',
+        'fa',
+        'he',
+        'it',
+        'de'
+      ]
+    },
+    {
+      argv: ['--target', 'website', '--check'],
+      entry: 'apps/website/src/locales/en',
+      output: 'apps/website/src/locales',
+      locales: ['zh-CN', 'ja']
+    }
+  ])('selects the catalogs for $argv', ({ argv, entry, output, locales }) => {
+    const config = resolveTargetConfig(argv)
+    expect(config.entry).toBe(entry)
+    expect(config.output).toBe(output)
+    expect(config.outputLocales.map(({ code }) => code)).toEqual(locales)
+  })
+
+  it.for([['--target', 'docs'], ['--target']])('rejects %s', (argv) => {
+    expect(() => resolveTargetConfig(argv)).toThrow(
+      'Unknown translation target'
+    )
+  })
+})
+
 describe('formatPruneSummary', () => {
   it('reports all source deletions without blocking on their size', () => {
     expect(formatPruneSummary('main.json', 0, 100)).toBeUndefined()
@@ -574,7 +618,7 @@ describe('createOpenAiTranslator', () => {
       requestBodies.push(init.body)
       calls++
       const response = Array.isArray(respond)
-        ? respond[calls - 1]
+        ? respond.at(calls - 1)
         : respond(init.body, calls)
       if (!response) {
         throw new Error(`no scripted response for request ${calls}`)
