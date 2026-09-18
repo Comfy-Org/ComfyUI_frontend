@@ -3,11 +3,12 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ChurnkeyInitConfig } from './types'
+import type { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { ChurnkeyInit, ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
-  getChurnkeyAuth: vi.fn(),
-  init: vi.fn(),
+  getChurnkeyAuth: vi.fn<typeof workspaceApi.getChurnkeyAuth>(),
+  init: vi.fn<ChurnkeyInit>(),
   hide: vi.fn(),
   clearState: vi.fn()
 }))
@@ -33,7 +34,7 @@ function authResponse(): ChurnkeyAuthResponse {
 }
 
 function capturedConfig(): ChurnkeyInitConfig {
-  const config = mocks.init.mock.calls[0]?.[1]
+  const config = mocks.init.mock.calls.at(0)?.[1]
   if (!config) throw new Error('Churnkey was not initialized')
   return config
 }
@@ -132,8 +133,11 @@ describe('churnkeyClient', () => {
       ending: 'error',
       reports: [
         [
-          new Error('display failed after success (display)'),
-          { errorType: 'error_displaying_churnkey_after_discount' }
+          'display failed after success',
+          {
+            errorType: 'error_displaying_churnkey_after_discount',
+            context: { churnkeyErrorType: 'display' }
+          }
         ]
       ]
     }
@@ -170,6 +174,30 @@ describe('churnkeyClient', () => {
       expect(vi.mocked(reportError).mock.calls).toEqual(reports)
     }
   )
+
+  it('preserves the original post-discount error and provider context', async () => {
+    mocks.getChurnkeyAuth.mockResolvedValue({
+      ...authResponse(),
+      test_discount_subscription_id: 'sub_test_1'
+    })
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    const showPromise = session.show({ handleCancel: vi.fn() })
+    const config = capturedConfig()
+    const error = new TypeError('Display failed', {
+      cause: new Error('Renderer unavailable')
+    })
+
+    config.onDiscount?.({}, {})
+    config.onError(error, 'display')
+
+    await expect(showPromise).resolves.toEqual({ type: 'discount-applied' })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_displaying_churnkey_after_discount',
+      context: { churnkeyErrorType: 'display' }
+    })
+    expect(vi.mocked(reportError).mock.calls[0]?.[0]).toBe(error)
+  })
 
   it('requires a success notification before reporting a discount', async () => {
     mocks.getChurnkeyAuth.mockResolvedValue({
@@ -212,8 +240,8 @@ describe('churnkeyClient', () => {
 
   it.for([
     { aborted: true, outcome: 'abandoned' },
-    { aborted: false, outcome: 'completed' },
-    { aborted: undefined, outcome: 'completed' }
+    { aborted: false, outcome: 'closed' },
+    { aborted: undefined, outcome: 'closed' }
   ] as const)(
     'normalizes close with aborted=$aborted to $outcome',
     async ({ aborted, outcome }) => {

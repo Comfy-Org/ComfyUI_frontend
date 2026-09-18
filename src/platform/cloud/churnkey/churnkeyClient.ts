@@ -101,7 +101,7 @@ function createSession(
           onClose: (results) => {
             const outcome: ChurnkeySessionOutcome = discountApplied
               ? { type: 'discount-applied' }
-              : { type: results.aborted === true ? 'abandoned' : 'completed' }
+              : { type: results.aborted === true ? 'abandoned' : 'closed' }
             if (!pendingCancellation) {
               settle(() => resolve(outcome))
               return
@@ -117,8 +117,9 @@ function createSession(
             window.churnkey?.hide?.()
             if (discountApplied) {
               resolve({ type: 'discount-applied' })
-              reportError(churnkeyError(error, type), {
-                errorType: 'error_displaying_churnkey_after_discount'
+              reportError(error, {
+                errorType: 'error_displaying_churnkey_after_discount',
+                context: { churnkeyErrorType: type }
               })
             } else {
               reject(churnkeyError(error, type))

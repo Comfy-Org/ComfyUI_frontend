@@ -13,7 +13,7 @@ interface ChurnkeyCloseResults {
 export type ChurnkeySessionOutcome =
   | { type: 'discount-applied' }
   | { type: 'abandoned' }
-  | { type: 'completed' }
+  | { type: 'closed' }
 
 type ChurnkeyUnsupportedHandler = (
   ...args: unknown[]

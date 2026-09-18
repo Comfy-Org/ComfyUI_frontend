@@ -168,7 +168,7 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
-        return { type: 'completed' }
+        return { type: 'closed' }
       })
     )
     const showFallback = vi.fn()
@@ -310,7 +310,7 @@ describe('launchCancellationFlow', () => {
           cancellationError = error
           throw error
         }
-        return { type: 'completed' }
+        return { type: 'closed' }
       })
     )
     const showFallback = vi.fn()
