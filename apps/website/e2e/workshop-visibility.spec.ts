@@ -116,7 +116,8 @@ test.describe('without JavaScript', () => {
 
   for (const { path, heading } of [
     { path: '/models/', heading: 'Grok Image and Video Creations' },
-    { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' }
+    { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' },
+    { path: `/zh-CN${MODEL_PATH}`, heading: 'Grok 图像与视频创作' }
   ]) {
     test(`renders localized marketing at ${path} without exposing the catalogue`, async ({
       page

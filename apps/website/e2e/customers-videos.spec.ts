@@ -131,11 +131,31 @@ test.describe('Customer watch pages @smoke', () => {
     ).toBeVisible()
   })
 
-  test('has no zh-CN twin: the watch page is English-only', async ({
+  /**
+   * The watch page is still English-only to a search engine, but that is no
+   * longer expressed as a 404.
+   *
+   * One page file serves every locale, so the route resolves everywhere and a
+   * Chinese reader following a link gets a page in their own language rather
+   * than a dead end. What holds it back from being indexed as a Chinese page is
+   * the canonical pointing at the English URL, and the sitemap listing only
+   * that one. Asserting the status alone would pass on a page that had quietly
+   * started claiming to be the Chinese original.
+   */
+  test('is served in every locale but canonicals to the English page', async ({
     page
   }) => {
     const response = await page.goto('/zh-CN/customers/videos/black-math')
-    expect(response?.status()).toBe(404)
+    expect(response?.status()).toBe(200)
+
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /^https:\/\/comfy\.org\/customers\/videos\/black-math\/?$/
+    )
+    // An alternate would invite indexing of exactly the page the canonical
+    // disclaims, so the two must not disagree.
+    await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0)
   })
 })
 

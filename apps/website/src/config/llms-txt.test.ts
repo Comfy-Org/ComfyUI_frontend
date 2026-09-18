@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -11,6 +11,7 @@ import {
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
 import { isNoindexPathname } from './indexing'
+import { LOCALE_PREFIXES, LOCALIZED_CODES, localePrefix } from './locales'
 import { getRoutes } from './routes'
 import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
@@ -98,6 +99,11 @@ function pageMatchers(root: string): {
 } {
   const staticPages = new Set<string>()
   const dynamic: RegExp[] = []
+  // A locale can be registered in LOCALES before its pages are generated, which
+  // is the normal state between adding a language and building its shells. That
+  // is not this test's complaint to make: return no routes so the assertions
+  // below report the real problem instead of an ENOENT stack.
+  if (!existsSync(root)) return { static: staticPages, dynamic }
   const entries = readdirSync(root, { recursive: true, withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isFile() || !/\.(astro|ts)$/.test(entry.name)) continue
@@ -107,7 +113,14 @@ function pageMatchers(root: string): {
       .split(sep)
       .join('/')
       .replace(/\.(astro|ts)$/, '')
-    if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
+    // Skip every locale directory, not just Chinese. Naming only /zh-CN/ here
+    // meant /ja counted as an English page, which is why the ja launch broke
+    // this file's coverage test.
+    if (
+      root === pagesDir &&
+      LOCALE_PREFIXES.some((prefix) => relative.startsWith(`${prefix}/`))
+    )
+      continue
     const route = relative.replace(/\/index$/, '') || '/'
     if (route.includes('[')) {
       const pattern = route
@@ -130,8 +143,25 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  // Gated Models routes are legitimate llms.txt targets even when excluded from
+  // the build, so they count as known pages here.
   for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
-  const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
+
+  /**
+   * One matcher per localized locale, keyed by its URL prefix.
+   *
+   * Every locale reuses the ENGLISH matchers. Localized pages have no files of
+   * their own since P3-9: Astro's i18n fallback serves /zh-CN/pricing from
+   * pricing.astro, so a localized path is served exactly when its English route
+   * is. Reading `src/pages/zh-CN/` instead reported all 20 Chinese links in
+   * llms.txt as pointing at nothing.
+   */
+  const byLocalePrefix = new Map(
+    LOCALIZED_CODES.map((code) => [
+      localePrefix(code),
+      { static: staticPages, dynamic }
+    ])
+  )
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
     const lines = llmsTxt.split('\n')
@@ -164,11 +194,16 @@ describe('llms.txt', () => {
       if (path.includes('/workflows')) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
-      if (path.startsWith('/zh-CN')) {
-        const base = normalizePath(path.slice('/zh-CN'.length))
+      const prefix = LOCALE_PREFIXES.find(
+        (candidate) => path === candidate || path.startsWith(`${candidate}/`)
+      )
+      if (prefix !== undefined) {
+        const matchers = byLocalePrefix.get(prefix)
+        if (matchers === undefined) return true
+        const base = normalizePath(path.slice(prefix.length))
         return (
-          !zhCN.static.has(base) &&
-          !zhCN.dynamic.some((matcher) => matcher.test(base))
+          !matchers.static.has(base) &&
+          !matchers.dynamic.some((matcher) => matcher.test(base))
         )
       }
       return (
