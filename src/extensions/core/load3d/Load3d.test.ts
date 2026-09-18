@@ -831,8 +831,8 @@ describe('Load3d', () => {
     })
 
     it('waits for the current loadingPromise to settle', async () => {
-      let resolveLoad!: () => void
-      const p = new Promise<void>((resolve) => {
+      let resolveLoad!: (accepted: boolean) => void
+      const p = new Promise<boolean>((resolve) => {
         resolveLoad = resolve
       })
       Object.assign(ctx.load3d, { loadingPromise: p })
@@ -846,7 +846,7 @@ describe('Load3d', () => {
       await Promise.resolve()
       expect(settled).toBe(false)
 
-      resolveLoad()
+      resolveLoad(true)
 
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
@@ -854,12 +854,12 @@ describe('Load3d', () => {
     })
 
     it('drains a chained sequence of loads before resolving', async () => {
-      let resolveFirst!: () => void
-      const first = new Promise<void>((resolve) => {
+      let resolveFirst!: (accepted: boolean) => void
+      const first = new Promise<boolean>((resolve) => {
         resolveFirst = resolve
       })
-      let resolveSecond!: () => void
-      const second = new Promise<void>((resolve) => {
+      let resolveSecond!: (accepted: boolean) => void
+      const second = new Promise<boolean>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -874,11 +874,11 @@ describe('Load3d', () => {
         settled = true
       })
 
-      resolveFirst()
+      resolveFirst(true)
       await new Promise((r) => setTimeout(r, 0))
       expect(settled).toBe(false)
 
-      resolveSecond()
+      resolveSecond(true)
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
       expect(settled).toBe(true)

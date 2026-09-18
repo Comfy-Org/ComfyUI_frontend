@@ -64,7 +64,7 @@ class Load3d extends Viewport3d {
   adapterRef: AdapterRef
   private configurationCleanup?: () => void
 
-  private loadingPromise: Promise<void | boolean> | null = null
+  private loadingPromise: Promise<boolean> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
 
@@ -365,7 +365,7 @@ class Load3d extends Viewport3d {
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<void | boolean> | null = null
+    let last: Promise<boolean> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {
