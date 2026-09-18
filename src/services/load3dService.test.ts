@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -37,7 +37,7 @@ function makeNode(id: number | string): LGraphNode {
 }
 
 function makeLoad3d(): Load3d {
-  return fromAny<Load3d, unknown>({
+  return fromPartial<Load3d>({
     remove: vi.fn()
   })
 }
@@ -277,7 +277,7 @@ describe('load3dService', () => {
 
     it('toggles the camera through the opposite type and back, then updates controls', () => {
       const controls = { update: vi.fn() }
-      const load3d = fromAny<Load3d, unknown>({
+      const load3d = fromPartial<Load3d>({
         handleResize: vi.fn(),
         getCurrentCameraType: vi.fn().mockReturnValue('perspective'),
         toggleCamera: vi.fn(),
@@ -294,7 +294,7 @@ describe('load3dService', () => {
 
     it('toggles in the reverse direction when starting from orthographic', () => {
       const controls = { update: vi.fn() }
-      const load3d = fromAny<Load3d, unknown>({
+      const load3d = fromPartial<Load3d>({
         handleResize: vi.fn(),
         getCurrentCameraType: vi.fn().mockReturnValue('orthographic'),
         toggleCamera: vi.fn(),
@@ -343,7 +343,7 @@ describe('load3dService', () => {
       } = overrides
       const ambient = { intensity: 0.5 }
       const main = { intensity: lightsIntensity }
-      return fromAny<Load3d, unknown>({
+      return fromPartial<Load3d>({
         modelManager: { currentModel, originalURL },
         getGizmoManager: () => ({
           isEnabled: () => gizmoEnabled,
@@ -434,11 +434,11 @@ describe('load3dService', () => {
         detach: vi.fn(),
         setupForModel: vi.fn()
       }
-      const target = fromAny<Load3d, unknown>({
+      const target = fromPartial<Load3d>({
         getGizmoManager: () => gizmoManager,
         getModelManager: () => modelManager,
         getSceneManager: () => ({
-          scene: fromAny<THREE.Scene, unknown>({
+          scene: fromPartial<THREE.Scene>({
             add: sceneAdd,
             remove: sceneRemove
           })

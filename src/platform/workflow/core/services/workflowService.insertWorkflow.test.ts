@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -83,7 +83,7 @@ function graphJson(id: UUID, widgetValue: number): SerialisableGraph {
 }
 
 function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
-  return fromAny<ComfyWorkflow, unknown>({
+  return fromPartial<ComfyWorkflow>({
     load: vi.fn().mockResolvedValue({ initialState })
   })
 }

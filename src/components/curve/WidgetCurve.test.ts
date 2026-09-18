@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -64,7 +64,7 @@ const CurveEditorStub = defineComponent({
 function makeWidget(
   overrides: Partial<SimplifiedWidget<CurveData>> = {}
 ): SimplifiedWidget<CurveData> {
-  return fromAny<SimplifiedWidget<CurveData>, unknown>({
+  return fromPartial<SimplifiedWidget<CurveData>>({
     name: 'curve_w',
     type: 'curve',
     value: {

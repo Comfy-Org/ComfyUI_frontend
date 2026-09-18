@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
@@ -50,7 +50,7 @@ function createMockTexture(
   height = 512
 ): GPUTexture & { _view: GPUTextureView } {
   const view = {} as GPUTextureView
-  return fromAny<GPUTexture & { _view: GPUTextureView }, unknown>({
+  return fromPartial<GPUTexture & { _view: GPUTextureView }>({
     width,
     height,
     createView: vi.fn(() => view),
@@ -76,7 +76,7 @@ function createMockDevice() {
       _id: `pipeline-${pipelineCounter++}`
     })),
     createComputePipeline: vi.fn(() =>
-      fromAny<GPUComputePipeline, unknown>({
+      fromPartial<GPUComputePipeline>({
         getBindGroupLayout: vi.fn(() => ({}))
       })
     ),
@@ -90,11 +90,10 @@ function createMockDevice() {
     },
     _encoder: encoder
   }
-  return fromAny<
+  return fromPartial<
     GPUDevice & {
       _encoder: ReturnType<typeof createMockEncoder>
-    },
-    unknown
+    }
   >(device)
 }
 
@@ -352,7 +351,7 @@ describe('GPUBrushRenderer', () => {
   })
 
   describe('blitToCanvas', () => {
-    const mockCtx = fromAny<GPUCanvasContext, unknown>({
+    const mockCtx = fromPartial<GPUCanvasContext>({
       getCurrentTexture: vi.fn(() => createMockTexture())
     })
 
@@ -428,7 +427,7 @@ describe('GPUBrushRenderer', () => {
 
   describe('clearPreview', () => {
     it('submits a clear render pass', () => {
-      const mockCtx = fromAny<GPUCanvasContext, unknown>({
+      const mockCtx = fromPartial<GPUCanvasContext>({
         getCurrentTexture: vi.fn(() => createMockTexture())
       })
 

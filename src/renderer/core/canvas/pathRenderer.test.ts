@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -10,7 +10,7 @@ import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 import { StubPath2D } from '@/utils/__tests__/litegraphTestUtils'
 
 function createMockCtx(): CanvasRenderingContext2D {
-  return fromAny<CanvasRenderingContext2D, unknown>({
+  return fromPartial<CanvasRenderingContext2D>({
     save: vi.fn(),
     restore: vi.fn(),
     stroke: vi.fn(),
@@ -183,7 +183,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'linear', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
 
@@ -213,7 +213,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'linear', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const lineToCalls = path.calls.filter((c) => c.method === 'lineTo')
@@ -233,7 +233,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'linear', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const lineToCalls = path.calls.filter((c) => c.method === 'lineTo')
@@ -257,7 +257,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'straight', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const lineToCalls = path.calls.filter((c) => c.method === 'lineTo')
@@ -285,7 +285,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'straight', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const lineToCalls = path.calls.filter((c) => c.method === 'lineTo')
@@ -306,7 +306,7 @@ describe('CanvasPathRenderer', () => {
       const link = makeLink({ controlPoints: cp })
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const bezier = path.calls.find((c) => c.method === 'bezierCurveTo')
@@ -320,7 +320,7 @@ describe('CanvasPathRenderer', () => {
       const link = makeLink()
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const bezier = path.calls.find((c) => c.method === 'bezierCurveTo')
@@ -333,7 +333,7 @@ describe('CanvasPathRenderer', () => {
       const link = makeLink({ controlPoints: [{ x: 100, y: 50 }] })
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const quad = path.calls.find((c) => c.method === 'quadraticCurveTo')
@@ -347,7 +347,7 @@ describe('CanvasPathRenderer', () => {
       const link = makeLink({ controlPoints: [] })
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const lineToCall = path.calls.find((c) => c.method === 'lineTo')
@@ -368,7 +368,7 @@ describe('CanvasPathRenderer', () => {
       })
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const bezier = path.calls.find((c) => c.method === 'bezierCurveTo')!
@@ -392,7 +392,7 @@ describe('CanvasPathRenderer', () => {
       })
       const context = makeContext()
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawLink(ctx, link, context)
       )
       const bezier = path.calls.find((c) => c.method === 'bezierCurveTo')!
@@ -809,7 +809,7 @@ describe('CanvasPathRenderer', () => {
         style: { mode: 'linear', connectionWidth: 3 }
       })
 
-      const path = fromAny<StubPath2D, unknown>(
+      const path = fromPartial<StubPath2D>(
         renderer.drawDraggingLink(
           ctx,
           {
@@ -922,7 +922,7 @@ describe('CanvasPathRenderer', () => {
           style: { mode: 'linear', connectionWidth: 3 }
         })
 
-        const path = fromAny<StubPath2D, unknown>(
+        const path = fromPartial<StubPath2D>(
           renderer.drawLink(ctx, link, context)
         )
         const lineToCalls = path.calls.filter((c) => c.method === 'lineTo')

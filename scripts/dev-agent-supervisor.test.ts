@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
@@ -48,7 +48,7 @@ describe('supervise state', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(fromAny<ChildProcess, unknown>(child))
+    supervisor.watch(fromPartial<ChildProcess>(child))
 
     child.exit(0)
 
@@ -63,8 +63,8 @@ describe('supervise state', () => {
     const first = new FakeChild(100)
     const second = new FakeChild(101)
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(fromAny<ChildProcess, unknown>(first))
-    supervisor.watch(fromAny<ChildProcess, unknown>(second))
+    supervisor.watch(fromPartial<ChildProcess>(first))
+    supervisor.watch(fromPartial<ChildProcess>(second))
 
     second.exit(17)
     first.exit(0)
@@ -86,7 +86,7 @@ describe('waitForStartup', () => {
     const exitRequested = new Promise<number>((resolve) => {
       requestExit = resolve
     })
-    const child = fromAny<ChildProcess, unknown>({
+    const child = fromPartial<ChildProcess>({
       exitCode: null,
       signalCode: null
     })
@@ -113,7 +113,7 @@ describe('waitForStartup', () => {
         .fn<typeof fetch>()
         .mockResolvedValue(new Response(null, { status: 200 }))
     )
-    const child = fromAny<ChildProcess, unknown>({
+    const child = fromPartial<ChildProcess>({
       exitCode: null,
       signalCode: null
     })
@@ -142,7 +142,7 @@ describe('supervise teardown', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(fromAny<ChildProcess, unknown>(child))
+    supervisor.watch(fromPartial<ChildProcess>(child))
 
     process.emit('SIGINT', 'SIGINT')
     const stopped = supervisor.stop(130)
@@ -188,7 +188,7 @@ describe('supervise teardown', () => {
     })
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(fromAny<ChildProcess, unknown>(child))
+    supervisor.watch(fromPartial<ChildProcess>(child))
     child.exit(0)
 
     const stopped = supervisor.stop(1)
@@ -207,7 +207,7 @@ describe('supervise teardown', () => {
     vi.spyOn(process, 'kill').mockReturnValue(true)
     const child = new FakeChild()
     const supervisor = supervise('/tmp/agent-data')
-    supervisor.watch(fromAny<ChildProcess, unknown>(child))
+    supervisor.watch(fromPartial<ChildProcess>(child))
     child.exit(0)
 
     const stopped = supervisor.stop(1).catch((error: unknown) => error)

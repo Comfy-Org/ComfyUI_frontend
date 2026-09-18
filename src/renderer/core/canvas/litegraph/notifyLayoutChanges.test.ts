@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
@@ -16,7 +16,7 @@ function setup() {
   graph.add(node)
 
   const setDirty = vi.fn()
-  const canvas = fromAny<LGraphCanvas, unknown>({ graph, setDirty })
+  const canvas = fromPartial<LGraphCanvas>({ graph, setDirty })
   const stop = notifyLayoutChanges(canvas)
   return {
     graph,

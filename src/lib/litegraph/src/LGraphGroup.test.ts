@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -21,7 +21,7 @@ import { test } from './__fixtures__/testExtensions'
 vi.mock(import('@/utils/colorUtil'), { spy: true })
 
 function createMockContext() {
-  return fromAny<CanvasRenderingContext2D, unknown>({
+  return fromPartial<CanvasRenderingContext2D>({
     beginPath: vi.fn(),
     rect: vi.fn(),
     fill: vi.fn(),
@@ -33,8 +33,8 @@ function createMockContext() {
     fillStyle: '',
     strokeStyle: '',
     globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline
+    textAlign: 'left',
+    textBaseline: 'alphabetic'
   })
 }
 

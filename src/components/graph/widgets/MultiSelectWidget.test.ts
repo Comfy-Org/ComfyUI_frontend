@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
@@ -28,7 +28,7 @@ const MultiSelectStub = defineComponent({
 function makeWidget(
   inputSpec: Partial<ComboInputSpec>
 ): ComponentWidget<string[]> {
-  return fromAny<ComponentWidget<string[]>, unknown>({
+  return fromPartial<ComponentWidget<string[]>>({
     name: 'multi',
     inputSpec: {
       type: 'COMBO',

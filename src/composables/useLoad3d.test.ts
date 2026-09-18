@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
@@ -1588,13 +1588,13 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
-        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+        fromPartial<ReturnType<typeof Load3dUtils.splitFilePath>>([
           '',
           'cube.glb'
         ])
       )
 
-      const modelWidget = fromAny<IWidget, unknown>({
+      const modelWidget = fromPartial<IWidget>({
         name: 'model_file',
         value: 'cube.glb [output]'
       })
@@ -1617,13 +1617,13 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
-        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+        fromPartial<ReturnType<typeof Load3dUtils.splitFilePath>>([
           '3d',
           'ComfyUI_00110.glb'
         ])
       )
       mockNode.widgets = [
-        fromAny<IWidget, unknown>({ name: 'viewport_state', value: {} })
+        fromPartial<IWidget>({ name: 'viewport_state', value: {} })
       ]
       mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
 
@@ -1645,14 +1645,12 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
-        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+        fromPartial<ReturnType<typeof Load3dUtils.splitFilePath>>([
           '3d',
           'ComfyUI_00110.glb'
         ])
       )
-      mockNode.widgets = [
-        fromAny<IWidget, unknown>({ name: 'image', value: '' })
-      ]
+      mockNode.widgets = [fromPartial<IWidget>({ name: 'image', value: '' })]
       mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
 
       const { handler } = await getModelReadyHandler()
@@ -1670,7 +1668,7 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       mockNode.widgets = [
-        fromAny<IWidget, unknown>({ name: 'model_file', value: '' })
+        fromPartial<IWidget>({ name: 'model_file', value: '' })
       ]
 
       const { handler } = await getModelReadyHandler()
@@ -1686,7 +1684,7 @@ describe('useLoad3d', () => {
         await import('@/platform/assets/utils/assetPreviewUtil')
       vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(
-        fromAny<ReturnType<typeof Load3dUtils.splitFilePath>, unknown>([
+        fromPartial<ReturnType<typeof Load3dUtils.splitFilePath>>([
           '',
           'broken.glb'
         ])
@@ -1695,7 +1693,7 @@ describe('useLoad3d', () => {
         new Error('webgl context lost')
       )
       mockNode.widgets = [
-        fromAny<IWidget, unknown>({ name: 'model_file', value: 'broken.glb' })
+        fromPartial<IWidget>({ name: 'model_file', value: 'broken.glb' })
       ]
 
       const { handler } = await getModelReadyHandler()

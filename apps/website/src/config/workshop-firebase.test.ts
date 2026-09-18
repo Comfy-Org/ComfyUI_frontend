@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -40,7 +40,7 @@ describe('provisionCustomer', () => {
 
     await provisionCustomer(user, { fetchImpl })
 
-    const [url, init] = fromAny<[string, RequestInit], unknown>(
+    const [url, init] = fromPartial<[string, RequestInit]>(
       fetchImpl.mock.calls[0]
     )
     expect(url).toMatch(/\/customers$/)
@@ -67,9 +67,7 @@ describe('provisionCustomer', () => {
 
     await provisionCustomer(user, { fetchImpl })
 
-    const [, init] = fromAny<[string, RequestInit], unknown>(
-      fetchImpl.mock.calls[0]
-    )
+    const [, init] = fromPartial<[string, RequestInit]>(fetchImpl.mock.calls[0])
     expect(
       init.signal,
       'a provisioning POST without an abort signal hangs sign-in forever'
@@ -84,9 +82,7 @@ describe('provisionCustomer', () => {
       fetchImpl
     })
 
-    const [, init] = fromAny<[string, RequestInit], unknown>(
-      fetchImpl.mock.calls[0]
-    )
+    const [, init] = fromPartial<[string, RequestInit]>(fetchImpl.mock.calls[0])
     expect(JSON.parse(String(init.body))).toEqual({
       signup_source: 'comfy-workshop',
       turnstile_token: 'cf-token'
@@ -158,7 +154,7 @@ describe('social sign-in provisioning boundary', () => {
     )
 
     const failure = await provisionWorkshopCustomer(
-      fromAny<UserCredential, unknown>({
+      fromPartial<UserCredential>({
         user
       })
     ).catch((error) => error)

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
@@ -447,7 +447,7 @@ describe('attachUnifiedRemintInterceptor', () => {
   function makeClient(statuses: number[]) {
     const adapter = makeAdapter(statuses)
     const client = axios.create({
-      adapter: fromAny<AxiosAdapter, unknown>(adapter)
+      adapter: fromPartial<AxiosAdapter>(adapter)
     })
     attachUnifiedRemintInterceptor(client)
     return { client, adapter }
@@ -607,7 +607,7 @@ describe('attachUnifiedRemintInterceptor', () => {
       )
     })
     const client = axios.create({
-      adapter: fromAny<AxiosAdapter, unknown>(adapter)
+      adapter: fromPartial<AxiosAdapter>(adapter)
     })
     attachUnifiedRemintInterceptor(client)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(

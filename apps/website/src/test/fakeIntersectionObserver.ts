@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -30,7 +30,7 @@ export class FakeIntersectionObserver {
         (target) =>
           ({ target, isIntersecting, time: 0 }) as IntersectionObserverEntry
       ),
-      fromAny<IntersectionObserver, unknown>(this)
+      fromPartial<IntersectionObserver>(this)
     )
   }
 }

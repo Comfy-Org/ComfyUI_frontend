@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   comfyExpect as expect,
@@ -44,7 +44,7 @@ for (const entry of interactionProfileEntries) {
     comfyPage
   }) => {
     test.setTimeout(entry.timeoutMs + 120_000)
-    const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+    const defs = fromPartial<Record<string, RawNodeDef>>(
       await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
     )
     const plans = planInteractionProbes(defs, entry.pack)

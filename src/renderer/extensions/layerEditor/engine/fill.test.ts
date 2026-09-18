@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -14,7 +14,7 @@ import {
 
 function gradientCtx() {
   const calls: string[] = []
-  const gradient = fromAny<CanvasGradient, unknown>({
+  const gradient = fromPartial<CanvasGradient>({
     addColorStop: (offset: number, color: string) =>
       calls.push(`stop:${offset}:${color}`)
   })
@@ -31,7 +31,7 @@ function gradientCtx() {
     }
   }
   return {
-    ctx: fromAny<CanvasRenderingContext2D, unknown>(ctx),
+    ctx: fromPartial<CanvasRenderingContext2D>(ctx),
     calls,
     gradient
   }

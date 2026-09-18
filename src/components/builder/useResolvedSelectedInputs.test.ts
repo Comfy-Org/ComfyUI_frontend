@@ -57,9 +57,7 @@ function setRootGraphNodes(nodes: LGraphNode[]) {
 }
 
 function dispatchRootGraphEvent(type: string) {
-  fromAny<EventTarget, unknown>(app.rootGraph.events).dispatchEvent(
-    new Event(type)
-  )
+  fromPartial<EventTarget>(app.rootGraph.events).dispatchEvent(new Event(type))
 }
 
 describe('useResolvedSelectedInputs', () => {

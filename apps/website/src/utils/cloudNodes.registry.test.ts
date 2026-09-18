@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -125,7 +125,7 @@ describe('fetchRegistryPacks', () => {
       )
 
     const result = await fetchRegistryPacks(['pack-1'], {
-      fetchImpl: fromAny<typeof fetch, unknown>(fetchImpl)
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
 
     expect(fetchImpl).toHaveBeenCalledTimes(2)

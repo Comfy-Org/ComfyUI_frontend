@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { RasterData } from '../node'
@@ -14,7 +14,7 @@ function stubContext2d(
 ): typeof HTMLCanvasElement.prototype.getContext {
   return function (this: HTMLCanvasElement, kind: string) {
     if (kind !== '2d') return null
-    return fromAny<CanvasRenderingContext2D, unknown>({
+    return fromPartial<CanvasRenderingContext2D>({
       canvas: this,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
@@ -121,7 +121,7 @@ describe('groupKind', () => {
   })
 
   it('renderNode is handled by the compositor, not the kind', () => {
-    const ctx = fromAny<Parameters<typeof groupKind.renderNode>[1], unknown>({})
+    const ctx = fromPartial<Parameters<typeof groupKind.renderNode>[1]>({})
     expect(groupKind.renderNode(groupKind.create(), ctx)).toBeNull()
   })
 })

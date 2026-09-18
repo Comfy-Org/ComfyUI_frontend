@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -13,7 +13,7 @@ const makeNumberWidget = (
   value: number,
   options: Partial<IBaseWidget['options']> = {}
 ): IBaseWidget =>
-  fromAny<IBaseWidget, unknown>({
+  fromPartial<IBaseWidget>({
     type: 'number',
     name: 'seed',
     value,
@@ -24,7 +24,7 @@ const makeComboWidget = (
   value: string | number,
   values: (string | number)[]
 ): IBaseWidget =>
-  fromAny<IBaseWidget, unknown>({
+  fromPartial<IBaseWidget>({
     type: 'combo',
     name: 'choice',
     value,
@@ -33,7 +33,7 @@ const makeComboWidget = (
 
 describe('isValueControlWidget', () => {
   it('returns true for a marked widget with both lifecycle hooks', () => {
-    const widget = fromAny<IBaseWidget, unknown>({
+    const widget = fromPartial<IBaseWidget>({
       [IS_CONTROL_WIDGET]: true,
       beforeQueued: () => {},
       afterQueued: () => {}
@@ -42,7 +42,7 @@ describe('isValueControlWidget', () => {
   })
 
   it('returns false when the marker symbol is missing', () => {
-    const widget = fromAny<IBaseWidget, unknown>({
+    const widget = fromPartial<IBaseWidget>({
       beforeQueued: () => {},
       afterQueued: () => {}
     })
@@ -50,7 +50,7 @@ describe('isValueControlWidget', () => {
   })
 
   it('returns false when lifecycle hooks are missing', () => {
-    const widget = fromAny<IBaseWidget, unknown>({
+    const widget = fromPartial<IBaseWidget>({
       [IS_CONTROL_WIDGET]: true
     })
     expect(isValueControlWidget(widget)).toBe(false)
@@ -91,7 +91,7 @@ describe('computeNextControlledValue (number)', () => {
   })
 
   it('returns undefined when target value is not numeric', () => {
-    const widget = fromAny<IBaseWidget, unknown>({
+    const widget = fromPartial<IBaseWidget>({
       type: 'number',
       name: 'seed',
       value: 'not a number',

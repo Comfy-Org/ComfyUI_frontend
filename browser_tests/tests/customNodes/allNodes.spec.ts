@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   comfyExpect as expect,
@@ -44,7 +44,7 @@ test.describe('manifest covers every registered pack @custom-nodes', () => {
   test('no pack registers on the backend without a manifest row', async ({
     comfyPage
   }) => {
-    const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+    const defs = fromPartial<Record<string, RawNodeDef>>(
       await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
     )
     const uncovered = unmanifestedPackNames(defs, ALL_NODES_MANIFEST_ENTRIES)
@@ -82,7 +82,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
           `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
         )
 
-        const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+        const defs = fromPartial<Record<string, RawNodeDef>>(
           await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
         )
         const failures: string[] = []

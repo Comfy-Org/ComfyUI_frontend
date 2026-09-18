@@ -1,6 +1,6 @@
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
@@ -95,9 +95,7 @@ function wrapNode(
 }
 
 function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
-  global.ImageBitmap ??= fromAny<typeof ImageBitmap, unknown>(
-    class ImageBitmap {}
-  )
+  global.ImageBitmap ??= fromPartial<typeof ImageBitmap>(class ImageBitmap {})
 }
 
 beforeEach(() => {
