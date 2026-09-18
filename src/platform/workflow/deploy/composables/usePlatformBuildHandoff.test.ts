@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -16,6 +17,11 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi, addEventListener: vi.fn() }
 }))
 
+const GRAPH = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { graphToPrompt: () => Promise.resolve({ workflow: GRAPH, output: {} }) }
+}))
+
 const exportWorkflow = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const saveWorkflow = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 vi.mock<unknown>(
@@ -24,6 +30,10 @@ vi.mock<unknown>(
 )
 
 const IMPORT_STEP = 'https://platform.comfy.org/profile/builds/new?step=import'
+const HANDOFF_LINK = new RegExp(
+  `^${IMPORT_STEP.replaceAll('?', '\\?')}&handoff=[A-Za-z0-9_-]{16,64}$`
+)
+const WIZARD_ORIGIN = 'http://localhost:3000'
 
 function listing(entries: { id: string; name: string }[]) {
   return fromPartial<Response>({
@@ -43,13 +53,40 @@ function setActiveWorkflow(overrides: Record<string, unknown> = {}) {
 }
 
 describe('usePlatformBuildHandoff', () => {
-  let tab: { location: { href: string } }
+  let tab: {
+    location: { href: string }
+    document: { write: Mock }
+    postMessage: Mock
+    closed: boolean
+  }
   let open: ReturnType<typeof vi.spyOn>
+
+  function handoffNonce(): string | null {
+    return new URL(tab.location.href).searchParams.get('handoff')
+  }
+
+  function wizardSays(
+    data: unknown,
+    init: { source?: Window; origin?: string } = {}
+  ) {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data,
+        origin: init.origin ?? WIZARD_ORIGIN,
+        source: init.source ?? fromPartial<Window>(tab)
+      })
+    )
+  }
 
   beforeEach(() => {
     distribution.isCloud = true
     distribution.isDesktop = false
-    tab = { location: { href: '' } }
+    tab = {
+      location: { href: '' },
+      document: { write: vi.fn() },
+      postMessage: vi.fn(),
+      closed: false
+    }
     open = vi
       .spyOn(window, 'open')
       .mockImplementation(() => fromPartial<Window>(tab))
@@ -67,6 +104,9 @@ describe('usePlatformBuildHandoff', () => {
     await usePlatformBuildHandoff().open()
 
     expect(open).toHaveBeenCalledWith('', '_blank')
+    expect(tab.document.write).toHaveBeenCalledWith(
+      expect.stringContaining('Opening the build wizard')
+    )
     expect(fetchApi).toHaveBeenCalledWith(
       '/workflows?name=portrait-upscale&limit=50'
     )
@@ -98,18 +138,103 @@ describe('usePlatformBuildHandoff', () => {
       arrange: () =>
         fetchApi.mockResolvedValue(fromPartial<Response>({ ok: false }))
     }
-  ])('falls back to the bare import step when $reason', async ({ arrange }) => {
-    setActiveWorkflow({ isTemporary: true })
-    arrange()
+  ])(
+    'hands the workflow over the tab instead when $reason',
+    async ({ arrange }) => {
+      setActiveWorkflow({ isTemporary: true })
+      arrange()
 
-    await usePlatformBuildHandoff().open()
+      await usePlatformBuildHandoff().open()
 
-    expect(tab.location.href).toBe(IMPORT_STEP)
-  })
+      expect(tab.location.href).toMatch(HANDOFF_LINK)
+      expect(exportWorkflow).not.toHaveBeenCalled()
+    }
+  )
 
-  it('exports the workflow file for the drop zone when there is no Cloud copy', async () => {
+  it('answers the wizard that carries its nonce with the workflow, once, at the origin it spoke from', async () => {
     distribution.isCloud = false
     setActiveWorkflow({ path: 'workflows/sub/portrait-upscale.json' })
+
+    await usePlatformBuildHandoff().open()
+    const nonce = handoffNonce()
+    wizardSays({ type: 'comfy-build-handoff:ready', nonce })
+    wizardSays({ type: 'comfy-build-handoff:ready', nonce })
+
+    expect(tab.location.href).toMatch(HANDOFF_LINK)
+    expect(fetchApi).not.toHaveBeenCalled()
+    expect(exportWorkflow).not.toHaveBeenCalled()
+    expect(tab.postMessage).toHaveBeenCalledOnce()
+    expect(tab.postMessage).toHaveBeenCalledWith(
+      {
+        type: 'comfy-build-handoff:workflow',
+        nonce,
+        filename: 'sub/portrait-upscale.json',
+        workflow: GRAPH
+      },
+      WIZARD_ORIGIN
+    )
+  })
+
+  it('uses a fresh nonce for every click', async () => {
+    distribution.isCloud = false
+    setActiveWorkflow()
+
+    await usePlatformBuildHandoff().open()
+    const first = handoffNonce()
+    await usePlatformBuildHandoff().open()
+
+    expect(first).not.toBeNull()
+    expect(handoffNonce()).not.toBe(first)
+  })
+
+  it.for([
+    {
+      reason: 'a wrong nonce',
+      says: () => ({ type: 'comfy-build-handoff:ready', nonce: 'not-ours' })
+    },
+    {
+      reason: 'another message type',
+      says: (nonce: string | null) => ({ type: 'something-else', nonce })
+    },
+    {
+      reason: 'a window we did not open',
+      says: (nonce: string | null) => ({
+        type: 'comfy-build-handoff:ready',
+        nonce
+      }),
+      source: fromPartial<Window>({})
+    }
+  ])('keeps the workflow to itself on $reason', async ({ says, source }) => {
+    distribution.isCloud = false
+    setActiveWorkflow()
+
+    await usePlatformBuildHandoff().open()
+    wizardSays(says(handoffNonce()), { source })
+
+    expect(tab.postMessage).not.toHaveBeenCalled()
+  })
+
+  it('stops listening once the tab is closed', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    distribution.isCloud = false
+    setActiveWorkflow()
+
+    await usePlatformBuildHandoff().open()
+    const nonce = handoffNonce()
+    tab.closed = true
+    await vi.advanceTimersByTimeAsync(1000)
+    wizardSays({ type: 'comfy-build-handoff:ready', nonce })
+
+    expect(tab.postMessage).not.toHaveBeenCalled()
+  })
+
+  it('exports the workflow file for the drop zone when the popup was blocked and there is no Cloud copy', async () => {
+    distribution.isCloud = false
+    setActiveWorkflow({ path: 'workflows/sub/portrait-upscale.json' })
+    open.mockImplementation(() => null)
 
     await usePlatformBuildHandoff().open()
 
@@ -117,17 +242,17 @@ describe('usePlatformBuildHandoff', () => {
       'sub/portrait-upscale',
       'workflow'
     )
-    expect(fetchApi).not.toHaveBeenCalled()
-    expect(tab.location.href).toBe(IMPORT_STEP)
+    expect(open).toHaveBeenLastCalledWith(IMPORT_STEP, '_blank', 'noopener')
   })
 
-  it('opens the resolved link in one go on Desktop, where new windows go to the system browser', async () => {
+  it('exports the file and opens the resolved link in one go on Desktop, where new windows go to the system browser', async () => {
     distribution.isCloud = false
     distribution.isDesktop = true
     setActiveWorkflow()
 
     await usePlatformBuildHandoff().open()
 
+    expect(exportWorkflow).toHaveBeenCalledWith('portrait-upscale', 'workflow')
     expect(open).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith(IMPORT_STEP, '_blank', 'noopener')
   })
