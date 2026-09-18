@@ -41,13 +41,13 @@ machine whose Docker credential store contains a symlink, so run them where
 
 What the cases cover:
 
-| Skill    | Case                          | Asserts                                                                                   |
-| -------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
-| `fix-it` | `hold-blocks-merge`           | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold |
-| `fix-it` | `merges-on-fresh-head`        | Reads checks before merging, merges with `--match-head-commit <head>`, reports merged     |
-| `fix-it` | `queued-is-not-merged`        | Re-reads after the merge command and does not report a queued PR as merged                |
-| `fix-it` | `asks-for-number`             | With no PR named, runs no `gh pr` command and asks which one                              |
-| `fix-it` | `does-not-trigger-on-summary` | A read-only summary request does not fire the skill or push anything                      |
-| `task`   | `triggers-on-mock-request`    | Fires on a mock-matching request; with read-only tools it invents no preview or PR        |
-| `task`   | `does-not-trigger-on-app-work`| Editor-app work under `src/lib` does not fire the website skill                            |
-| `task`   | `does-not-trigger-on-question`| A question about the site does not fire it                                                |
+| Skill    | Case                           | Asserts                                                                                                   |
+| -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `fix-it` | `hold-blocks-merge`            | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold |
+| `fix-it` | `merges-on-fresh-head`         | Reads checks before merging, merges with `--match-head-commit <head>`, reports merged                     |
+| `fix-it` | `queued-is-not-merged`         | Re-reads after the merge command and does not report a queued PR as merged                                |
+| `fix-it` | `asks-for-number`              | With no PR named, runs no `gh pr` command and asks which one                                              |
+| `fix-it` | `does-not-trigger-on-summary`  | A read-only summary request does not fire the skill or push anything                                      |
+| `task`   | `triggers-on-mock-request`     | Fires on a mock-matching request; with read-only tools it invents no preview or PR                        |
+| `task`   | `does-not-trigger-on-app-work` | Editor-app work under `src/lib` does not fire the website skill                                           |
+| `task`   | `does-not-trigger-on-question` | A question about the site does not fire it                                                                |

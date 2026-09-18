@@ -2,7 +2,7 @@
 max_turns: 10
 timeout_seconds: 600
 runs: 2
-tags: [trigger,negative]
+tags: [trigger, negative]
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
