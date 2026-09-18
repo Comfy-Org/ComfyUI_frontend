@@ -304,7 +304,6 @@ export function useAgentCrdtFollower(
     }
     withUndoBracket(() => {
       projection.clearForReset(resetWorkflowId, context)
-      projection.reconcileLiveGraph(resetWorkflowId)
     })
     connected.value = false
     updatesApplied.value = 0
@@ -334,7 +333,6 @@ export function useAgentCrdtFollower(
           actor: 'agent-lineage',
           opId: `follower-replaced:${workflowId}`
         })
-        projection.reconcileLiveGraph(workflowId)
       })
       projection.bind(workflowId, bridge.follower)
     }
