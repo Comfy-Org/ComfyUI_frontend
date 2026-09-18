@@ -15,7 +15,7 @@ interface QueryOptions {
 }
 
 /** Rows per fetch. Pinned so paging can't drift with a backend's default. */
-export const ASSET_PAGE_SIZE = 20
+const ASSET_PAGE_SIZE = 20
 
 const BASE_PARAMS: ListAssetsData['query'] = {
   limit: ASSET_PAGE_SIZE,
