@@ -1,7 +1,7 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '../LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
 import {
   beginNamedValuesShadowDiffLoad,
@@ -27,9 +27,9 @@ vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
 type NodeHooks = Partial<Pick<LGraphNode, 'onSerialize' | 'onConfigure'>>
 
 function fakeNode(className: string, hooks: NodeHooks = {}): LGraphNode {
-  class FakeNode {}
+  class FakeNode extends LGraphNode {}
   Object.defineProperty(FakeNode, 'name', { value: className })
-  return fromAny<LGraphNode, unknown>(Object.assign(new FakeNode(), hooks))
+  return Object.assign(new FakeNode('Test'), hooks)
 }
 
 describe('reportNamedValuesShadowDiff', () => {
