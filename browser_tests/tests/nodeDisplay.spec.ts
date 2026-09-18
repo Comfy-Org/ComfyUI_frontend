@@ -5,9 +5,7 @@ import { toNodeId } from '@/types/nodeId'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
@@ -98,5 +96,22 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'dynamically_added_input.png'
     )
+  })
+})
+
+test.describe('Renamed converted widget values', { tag: ['@node'] }, () => {
+  test('keeps each widget value on its own widget', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
+
+    const node = await comfyPage.nodeOps.getNodeRefById(toNodeId(3))
+    const [width, height, batchSize] = await Promise.all([
+      node.getWidgetByName('width'),
+      node.getWidgetByName('height'),
+      node.getWidgetByName('batch_size')
+    ])
+
+    expect.soft(await width.getValue()).toBe(640)
+    expect.soft(await height.getValue()).toBe(768)
+    expect.soft(await batchSize.getValue()).toBe(3)
   })
 })

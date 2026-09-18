@@ -16,8 +16,22 @@ network clients. Assert destination URLs without contacting them.
 Install dependencies and build the website before restricting the network:
 
 ```sh
-WEBSITE_GITHUB_STARS_OVERRIDE=110000 PUBLIC_CUSTOMERIO_WRITE_KEY=test-e2e-write-key \
+NODE_ENV=production WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 PUBLIC_WORKSHOP_CLOUD_ENV=test \
+  WEBSITE_GITHUB_STARS_OVERRIDE=110000 PUBLIC_CUSTOMERIO_WRITE_KEY=test-e2e-write-key \
   pnpm --filter @comfyorg/website build
+```
+
+Models auth/session responses are mocked by its fixture; no Router generation
+or payment is submitted. The auth flag is enabled by that fixture's PostHog
+response, not globally for unrelated website tests.
+Use production mode even locally: inheriting `NODE_ENV=development` removes
+PostHog initialization from the built page, so the mocked flag cannot settle.
+
+If port 4321 belongs to another worktree, use an unused port for this build:
+
+```sh
+WEBSITE_E2E_PORT=4326 PLAYWRIGHT_HTML_OPEN=never \
+  pnpm --filter @comfyorg/website test:e2e --project=desktop e2e/workshop.spec.ts
 ```
 
 On Linux with `sudo`, `unshare`, and `ip`, run from the repository root:

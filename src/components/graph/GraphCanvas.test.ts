@@ -116,13 +116,13 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useCanvasDrop'), () => ({
+vi.mock(import('@/composables/useCanvasDrop'), () => ({
   useCanvasDrop: vi.fn()
 }))
 vi.mock(import('@/platform/settings/composables/useLitegraphSettings'), () => ({
   useLitegraphSettings: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/node/useNodeBadge'), () => ({
+vi.mock(import('@/composables/node/useNodeBadge'), () => ({
   useNodeBadge: vi.fn()
 }))
 vi.mock(import('@/composables/useGlobalLitegraph'), () => ({

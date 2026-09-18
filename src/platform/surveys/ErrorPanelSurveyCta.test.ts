@@ -22,15 +22,8 @@ const mockSurveyConfig = vi.hoisted(() => ({
     featureId: 'error-panel',
     typeformId: 'iFp4p4mV',
     triggerThreshold: 3,
-    presentation: 'inline-cta'
-  } as
-    | {
-        featureId: string
-        typeformId: string
-        triggerThreshold?: number
-        presentation?: string
-      }
-    | undefined
+    presentation: 'inline-cta' as const
+  }
 }))
 const mockOpen = vi.hoisted(() => vi.fn())
 const i18n = createI18n({
@@ -51,7 +44,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./surveyRegistry'), () => ({
+vi.mock(import('./surveyRegistry'), () => ({
   getSurveyConfig: (id: string) =>
     id === FEATURE_ID ? mockSurveyConfig.value : undefined
 }))

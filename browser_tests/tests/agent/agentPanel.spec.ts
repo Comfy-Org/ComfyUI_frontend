@@ -21,8 +21,6 @@ import {
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
-
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
@@ -34,32 +32,25 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test.use({ agentFlagEnabled: false })
 
     test('does not expose the Ask Comfy Agent button', async ({
-      comfyPage,
+      agentPanel,
       postedMessages
     }) => {
       expect(postedMessages).toHaveLength(0)
 
-      await expect(
-        comfyPage.page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveCount(0)
+      await expect(agentPanel.openButton).toHaveCount(0)
     })
   })
 
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
     test.setTimeout(30_000)
 
-    const page = comfyPage.page
-
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
@@ -70,9 +61,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
     await promptChip.click()
-    await expect(composer).toHaveValue(firstPrompt)
+    await expect(composer).toHaveText(firstPrompt)
     expect(
       postedMessages,
       'inserting a prompt must not POST a message'
@@ -82,7 +73,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
 
     pushEvent(ws, THINKING_EVENT)
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
@@ -172,31 +163,102 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test.describe('diagnostic report', () => {
+    test.use({
+      permissions: ['clipboard-read', 'clipboard-write'],
+      crdtDebugEnabled: true
+    })
+
+    test('copies retained tool metadata with privacy sources turned off', async ({
+      agentPanel,
+      comfyPage,
+      getWebSocket
+    }) => {
+      await test.step('turn off every optional privacy source', async () => {
+        await agentPanel.open()
+        await expect(agentPanel.debugHeading).toBeVisible()
+        await agentPanel.turnOffOptionalReportSources()
+      })
+
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
+        await agentPanel.copyReportButton.click()
+        await expect(agentPanel.copiedButton).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await comfyPage.clipboard.readText()
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
+            }
+          })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
+      })
+    })
+  })
+
   test.describe('composer sizing', () => {
-    test.use({ viewport: { width: 1920, height: 1080 } })
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+      permissions: ['clipboard-read', 'clipboard-write']
+    })
 
     test('caps long text at 400px and scrolls internally', async ({
+      agentPanel,
       comfyPage
     }) => {
-      const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await agentPanel.open()
 
-      const panel = page.locator('#agent-panel-root')
+      const panel = agentPanel.root
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const input = panel.getByTestId('composer-inline-input')
 
-      await composer.fill('A growing prompt line\n'.repeat(14))
+      await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) =>
+          input.evaluate((element) =>
             Math.round(element.getBoundingClientRect().height)
           )
         )
         .toBeGreaterThan(200)
 
-      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await comfyPage.clipboard.writeText(
+        'An overflowing prompt line\n'.repeat(60)
+      )
+      await composer.press('ControlOrMeta+a')
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -211,7 +273,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         .click()
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -224,13 +286,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
-    comfyPage
+    agentPanel
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const scrollContainer = page
-      .locator('#agent-panel-root div.overflow-y-auto')
+    const scrollContainer = agentPanel.root
+      .locator('div.overflow-y-auto')
       .first()
     await expect(scrollContainer).toBeVisible()
 
@@ -248,12 +309,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('sizes the add-to-prompt menu around its longest item', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
@@ -289,18 +351,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('exits node selection when the active workflow changes', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
-    await page
-      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
-      .click()
+    await page.getByRole('menuitem', { name: enMessages.agent.nodes }).click()
     const selectionBanner = page.getByTestId('node-selection-mode-banner')
     await expect(selectionBanner).toBeVisible()
 
@@ -310,14 +372,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('edits and resubmits the last prompt after stopping its turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'
@@ -339,7 +401,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(editButton).toHaveCount(1)
     await editButton.click()
 
-    await expect(composer).toHaveValue(originalPrompt)
+    await expect(composer).toHaveText(originalPrompt)
     await expect(composer).toBeFocused()
 
     await composer.fill(revisedPrompt)

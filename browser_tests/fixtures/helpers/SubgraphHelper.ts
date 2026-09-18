@@ -372,14 +372,10 @@ export class SubgraphHelper {
     const slot = await interiorNode.getInput(slotIndex)
     await slot.removeLinks()
     await this.comfyPage.nextFrame()
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be detached')
-      .toBe(0)
+    await slot.expectLinkCount(0, 'Interior link should be detached')
 
     await this.connectFromInput(interiorNode, slotIndex, inputName)
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be restored')
-      .toBe(1)
+    await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
@@ -646,7 +642,7 @@ export class SubgraphHelper {
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await this.comfyPage.menu.topbar.setVueNodesEnabled(false)
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
       bubbles: true,
       cancelable: true,
