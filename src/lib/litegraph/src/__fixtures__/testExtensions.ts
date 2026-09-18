@@ -1,4 +1,5 @@
 // oxlint-disable no-empty-pattern
+import { fromAny } from '@total-typescript/shoehorn'
 import { test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -36,13 +37,15 @@ export const test = baseTest.extend<LitegraphFixtures>({
   minimalSerialisableGraph: structuredClone(minimalSerialisableGraph),
   oldSchemaGraph: structuredClone(oldSchemaGraph),
   floatingLinkGraph: structuredClone(
-    floatingLink as unknown as ISerialisedGraph
+    fromAny<ISerialisedGraph, unknown>(floatingLink)
   ),
-  linkedNodesGraph: structuredClone(linkedNodes as unknown as ISerialisedGraph),
+  linkedNodesGraph: structuredClone(
+    fromAny<ISerialisedGraph, unknown>(linkedNodes)
+  ),
 
   floatingBranchGraph: async ({}, use) => {
     const cloned = structuredClone(
-      floatingBranch as unknown as ISerialisedGraph
+      fromAny<ISerialisedGraph, unknown>(floatingBranch)
     )
     const graph = new LGraph(cloned)
     await use(graph)
@@ -50,7 +53,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
 
   reroutesComplexGraph: async ({}, use) => {
     const cloned = structuredClone(
-      reroutesComplex as unknown as ISerialisedGraph
+      fromAny<ISerialisedGraph, unknown>(reroutesComplex)
     )
     const graph = new LGraph(cloned)
     await use(graph)
