@@ -7,7 +7,7 @@ on:
         description: 'Package to bump'
         required: true
         type: 'choice'
-        options: [account-core, billing-contract, ingest-types]
+        options: [account-core, account-ui, billing-contract, ingest-types]
       version_type:
         description: 'Version increment type'
         required: true
@@ -54,10 +54,10 @@ jobs:
         run: |
           set -euo pipefail
           # ALPHA_GATED marks the hand-written packages ADR-RELEASES-PACKAGES-0033
-          # holds on 1.0.0-alpha.N. ingest-types is outside that gate; add
-          # account-ui to it when the package goes public.
+          # holds on 1.0.0-alpha.N. ingest-types is outside that gate.
           case "$PACKAGE" in
             account-core) NPM_NAME='@comfyorg/account-core'; ALPHA_GATED=true ;;
+            account-ui) NPM_NAME='@comfyorg/account-ui'; ALPHA_GATED=true ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract'; ALPHA_GATED=true ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types'; ALPHA_GATED=false ;;
             *)

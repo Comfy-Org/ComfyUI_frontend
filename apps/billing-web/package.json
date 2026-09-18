@@ -18,6 +18,7 @@
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@stripe/stripe-js": "catalog:",
     "@vueuse/core": "catalog:",
     "firebase": "catalog:",
     "vue": "catalog:",

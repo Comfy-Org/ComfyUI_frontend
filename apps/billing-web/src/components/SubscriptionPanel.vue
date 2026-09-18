@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
 import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
+import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import PlanCard from '@/components/PlanCard.vue'
 import SubscriptionQuote from '@/components/SubscriptionQuote.vue'
@@ -13,6 +15,8 @@ type CatalogPlan = BillingPlansData['plans'][number]
 
 const { t } = useI18n()
 const { coded, money } = useHostedCopy()
+const route = useRoute()
+const router = useRouter()
 const { plans, loading, failure } = usePlans()
 const {
   preview,
@@ -55,6 +59,15 @@ async function selectPlan(slug: string) {
   selectedSlug.value = slug
   await quote({ planSlug: slug })
 }
+
+/** The entry's product and return target travel with the plan the customer chose. */
+function goToCheckout() {
+  if (selectedSlug.value === undefined) return
+  void router.push({
+    path: billingIntentPath('checkout'),
+    query: { ...route.query, plan: selectedSlug.value }
+  })
+}
 </script>
 
 <template>
@@ -88,6 +101,7 @@ async function selectPlan(slug: string) {
       :preview="preview"
       :loading="quoting"
       :failure-code="quoteFailure?.code"
+      @checkout="goToCheckout"
     />
   </section>
 </template>

@@ -56,16 +56,12 @@ is not a contract to build on.
    port's user is what mints. The wait is bounded, so a silent port fails
    the mint closed instead of hanging the auth gate. Mints stay
    host-driven (`autoMint: false`), so telemetry and coalescing are
-   unchanged. The two stores construct each other (`workspaceAuthStore`
-   reads `useAuthStore().identity` in its setup, `authStore`'s listener
-   calls `useWorkspaceAuthStore()`), which holds only because the SDK
-   delivers a new observer's first emission asynchronously, after
-   persistence resolves; a synchronous identity source in its place would
-   re-enter a half-built store: built workspace-first it throws a boot-time
-   `TypeError` from `authStore`'s listener against the half-assigned store,
-   built auth-first it leaves the client unsubscribed and every mint waiting
-   its ceiling. The "store construction order" test in `authStore.test.ts`
-   pins the working microtask order.
+   unchanged. The two-store construction-order coupling is gone at
+   this head: `workspaceAuthStore` binds the package `firebaseIdentity`, and
+   every `useAuthStore()` read is inside a function or callback, not the setup
+   body, so neither store re-enters the other during construction and nothing
+   depends on the SDK's microtask timing. `useWorkspaceAuth.test.ts` pins the
+   store subscribing and minting even when built before `authStore` exists.
 4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
    subscription: identity is bound to the session client for the store's
    lifetime. With `unified_cloud_auth` off the port stays subscribed but
@@ -91,7 +87,8 @@ is not a contract to build on.
    `main.ts` ordering is the invariant. `firebaseIdentity.test.ts` pins it:
    the config is read at `initialize()` rather than at import, and a resolve
    while remote config is still unloaded throws. The cloud e2e set is the
-   end-to-end proof of the `main.ts` sequence and is still pending.
+   end-to-end proof of the `main.ts` sequence and runs green in the `cloud`
+   and `chromium` projects.
    Booting on build-time config could point auth at the wrong Firebase
    project, so the module fails closed rather than falling back.
    `currentUser()` never initializes, so a feature-flag read before that
