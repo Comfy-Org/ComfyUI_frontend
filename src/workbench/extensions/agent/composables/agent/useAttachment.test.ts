@@ -215,7 +215,7 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
 
     resolveFile(fileOfSize('dropped.mp4', 1024, 'video/mp4'))
-    await expect(pending).resolves.toMatchObject({ name: 'dropped.mp4' })
+    await expect(pending).resolves.toBe('uploaded')
     expect(upload).toHaveBeenCalledOnce()
     expect(registry.chips[0]).toMatchObject({
       ref: 'dropped.mp4',
@@ -230,7 +230,7 @@ describe('useAttachment', () => {
 
     await expect(
       addDeferredFile('missing.mp4', async () => undefined)
-    ).resolves.toBeUndefined()
+    ).resolves.toBe('unsupported')
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
@@ -250,7 +250,7 @@ describe('useAttachment', () => {
 
     await expect(
       addDeferredFile('large.mp4', async () => oversized)
-    ).resolves.toBe(oversized)
+    ).resolves.toBe('failed')
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
@@ -502,7 +502,7 @@ describe('useAttachment', () => {
       )
       await vi.advanceTimersByTimeAsync(60 * 1000)
 
-      await expect(pending).resolves.toBeUndefined()
+      await expect(pending).resolves.toBe('failed')
       expect(registry.chips).toEqual([])
       expect(upload).not.toHaveBeenCalled()
       expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
@@ -513,6 +513,41 @@ describe('useAttachment', () => {
       vi.useRealTimers()
     }
   })
+
+  it.for(['rejected', 'oversized', 'unsupported'] as const)(
+    'ignores a %s deferred source after cancellation',
+    async (outcome) => {
+      let resolveSource: (file: File | undefined) => void = () => {}
+      let rejectSource: (cause: Error) => void = () => {}
+      const source = new Promise<File | undefined>((resolve, reject) => {
+        resolveSource = resolve
+        rejectSource = reject
+      })
+      const upload = vi.fn()
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addDeferredFile, cancelAllUploads } = useAttachment({
+        upload,
+        onError,
+        ...registry
+      })
+      const pending = addDeferredFile('cancelled.png', () => source)
+      cancelAllUploads()
+      const finish = {
+        rejected: () => rejectSource(new Error('source failed')),
+        oversized: () =>
+          resolveSource(fileOfSize('cancelled.png', MAX_ATTACHMENT_BYTES + 1)),
+        unsupported: () => resolveSource(undefined)
+      }
+      finish[outcome]()
+
+      await expect(pending).resolves.toBe('cancelled')
+      expect(registry.chips).toEqual([])
+      expect(upload).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
 
   it('signals a settled batch once, not once per file', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))

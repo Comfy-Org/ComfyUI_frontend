@@ -1613,6 +1613,49 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('does not warn after closing the panel during a deferred asset fetch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.includes('/api/view')) return new Promise(() => {})
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    const { unmount } = renderWithSelectedTarget()
+    await nextTick()
+    const toast = useToastStore()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      expect(
+        screen.getByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(toast.messagesToAdd).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
     // The graph loader only opens a dropped workflow while the drop is
     // unclaimed, so the panel must not claim files it cannot attach.

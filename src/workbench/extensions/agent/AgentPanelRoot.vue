@@ -1062,11 +1062,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
+  const result = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),

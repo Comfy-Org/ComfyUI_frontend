@@ -159,23 +159,29 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function addDeferredFile(
     name: string,
     resolve: () => Promise<File | undefined>
-  ): Promise<File | undefined> {
+  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
     const id = stage(name)
-    const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS).catch(
-      failAttachment(id, name, 'agent_attachment_fetch_failed')
-    )
-    if (!file) {
+    try {
+      const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
+      if (cancelled.has(id)) return 'cancelled'
+      if (!file) {
+        options.remove(id)
+        return 'unsupported'
+      }
+      if (isTooLarge(file)) {
+        options.remove(id)
+        return 'failed'
+      }
+      if (!(await uploadStagedFile(id, file))) return 'failed'
+      options.onUploaded?.()
+      return 'uploaded'
+    } catch (cause) {
+      if (cancelled.has(id)) return 'cancelled'
+      failAttachment(id, name, 'agent_attachment_fetch_failed')(cause)
+      return 'failed'
+    } finally {
       settle(id)
-      options.remove(id)
-      return undefined
     }
-    if (isTooLarge(file)) {
-      settle(id)
-      options.remove(id)
-      return file
-    }
-    if (await uploadStagedFile(id, file)) options.onUploaded?.()
-    return file
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
