@@ -59,8 +59,10 @@ existing script, parameterised by target.
 - `scripts/i18n/config.ts` gains a `website` entry in `translationTargets`
   with the website's entry and output directories, output locales (`zh-CN`,
   `ja`) and glossary; `update-locales.ts` selects it with `--target website`.
-  This is enabled in the next stack change together with ownership and
-  exclusion policy. Catalog migration alone does not enable generation.
+  Source diffing, model calls, retries and validation remain shared. The
+  website opts into reviewed-copy retention: hashes identify unchanged
+  machine output, while untracked or human-edited values survive source
+  changes. Excluded keys are removed from generation before batching.
 - `apps/website/src/i18n/translations.ts` keeps its API and import path and
   now reads the JSON catalogs. Locale identity and publication policy remain
   in `apps/website/src/config/locales.ts`, shared with routes and SEO.
@@ -74,6 +76,12 @@ existing script, parameterised by target.
   placeholder audit rejected.
 
 Alternatives considered:
+
+- **A second approved dictionary beside the JSON catalogs**: rejected; it
+  creates competing sources of text. Ownership stores hashes only.
+- **Rewriting every translation after English changes**: retained for the
+  existing app target, but rejected for reviewed website copy and intentional
+  empty values. Website ownership is an opt-in policy of the shared pipeline.
 
 - **A website-local copy of the translator** (#16747, #17207): rejected; it is
   the second engine FE-2045 exists to avoid.
@@ -118,7 +126,6 @@ Alternatives considered:
 
 ### Follow-ups
 
-- Enable shared generation with explicit ownership and exclusion policy.
-  Route activation and Japanese publication remain separate review units.
+- Route activation and Japanese publication remain separate review units.
 - Content collections (MDX, `src/data/*.ts`) still hold locale copy outside
   the catalogs; they are out of scope here and remain hand-translated.
