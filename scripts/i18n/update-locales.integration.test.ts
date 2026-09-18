@@ -17,7 +17,20 @@ import { expect, it, onTestFinished } from 'vitest'
 const repoRoot = resolve(import.meta.dirname, '../..')
 const loader = createRequire(import.meta.url).resolve('tsx')
 
-it.for([
+it.for<{
+  previous: string
+  value: string
+  status: number
+  diagnostic: string
+  recordedHash?: string
+}>([
+  {
+    previous: 'unavailable recorded source',
+    value: '確認済み',
+    status: 1,
+    diagnostic: 'title: missing {name}',
+    recordedHash: '0000000000000000000000000000000000000000'
+  },
   {
     previous: 'Hello {name}',
     value: '確認済み',
@@ -44,7 +57,7 @@ it.for([
   }
 ])(
   'checks and retains $value when English changes from $previous',
-  async ({ previous, value, status, diagnostic }) => {
+  async ({ previous, value, status, diagnostic, recordedHash }) => {
     const directory = await realpath(
       await mkdtemp(join(tmpdir(), 'locale-cli-'))
     )
@@ -80,7 +93,7 @@ it.for([
       join(catalogs, '.source-manifest.json'),
       JSON.stringify({
         version: 1,
-        files: { 'main.json': hash }
+        files: { 'main.json': recordedHash ?? hash }
       })
     )
     await writeFile(

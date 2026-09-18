@@ -404,13 +404,15 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     // recorded in the manifest; a key newly corrupted beyond those must fail
     // the check. Degraded plans (recorded source unavailable) cannot tell
     // staleness from corruption, so they skip the audit.
-    if (state.plan.degraded) continue
     const skipKeys = new Set([
       ...state.plan.invalidated,
       ...state.plan.knownViolationKeys
     ])
+    const machineErrors = state.plan.degraded
+      ? []
+      : auditProtectedLiterals(state.source, state.existing, skipKeys)
     for (const error of [
-      ...auditProtectedLiterals(state.source, state.existing, skipKeys),
+      ...machineErrors,
       ...auditRetainedTranslations(state.plan.source, state.retained)
     ]) {
       auditErrors.push(`${label}: ${error}`)
