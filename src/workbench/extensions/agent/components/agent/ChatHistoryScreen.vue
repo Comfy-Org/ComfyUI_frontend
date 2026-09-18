@@ -152,7 +152,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
       </p>
 
       <section v-for="[key, label, items] in sections" :key class="mb-3">
-        <p class="my-0 px-2 py-1 text-xs font-medium text-muted-foreground">
+        <p class="my-0 px-2 py-1 text-xs font-normal text-muted-foreground">
           {{ label }}
         </p>
         <div

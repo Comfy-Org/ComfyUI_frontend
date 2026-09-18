@@ -91,7 +91,7 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 )
 
 const duplicateIdClass =
-  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-medium text-base-foreground'
+  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-normal text-base-foreground'
 
 const running = computed(() => streaming || submitting)
 
@@ -394,7 +394,7 @@ defineExpose({
         <span
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
+          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-normal text-base-foreground transition-colors hover:bg-tertiary-background-hover"
         >
           <span class="flex items-center gap-1">
             <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
