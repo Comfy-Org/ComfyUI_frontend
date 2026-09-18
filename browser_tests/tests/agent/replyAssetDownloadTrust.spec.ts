@@ -1,0 +1,87 @@
+import { expect } from '@playwright/test'
+import type { AgentMessage } from '@comfyorg/ingest-types'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+test.describe(
+  'Agent reply asset download trust boundary',
+  {
+    tag: ['@cloud', '@ui']
+  },
+  () => {
+    test.beforeEach(async ({ page, agentFlagEnabled }) => {
+      await bootAgentApp(page, agentFlagEnabled)
+    })
+
+    test('keeps authentication on the trusted view route only', async ({
+      page
+    }) => {
+      const origin = new URL(page.url()).origin
+      const threadId = '4efb615c-b3fd-4cdc-8767-38c2b44d2cec'
+      const urls = [
+        '/api/view?filename=trusted.png',
+        '/api/system_stats?filename=untrusted.png',
+        'https://evil.example/api/view?filename=hostile.png'
+      ]
+      const messages: AgentMessage[] = [
+        {
+          id: 'reply',
+          thread_id: threadId,
+          turn_id: 'download-turn',
+          seq: 1,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: urls.map((url) => `![Asset](${url})`).join('\n\n') }
+        }
+      ]
+      await page.route(`**/api/agent/threads/${threadId}/messages`, (route) =>
+        route.fulfill(jsonRoute(messages))
+      )
+      await page.addInitScript((id) => {
+        localStorage.setItem('Comfy.Agent.ThreadId', id)
+      }, threadId)
+      const requests: string[] = []
+      const cookies: Array<string | null> = []
+      const downloads: string[] = []
+      page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
+      )
+      await page
+        .context()
+        .addCookies([{ name: 'session', value: 'test-session', url: origin }])
+      await page.route(
+        /\/api\/(view|system_stats)\?filename=(trusted|untrusted|hostile)\.png/,
+        async (route) => {
+          if (route.request().resourceType() === 'fetch') {
+            requests.push(route.request().url())
+            cookies.push(await route.request().headerValue('cookie'))
+          }
+          await route.fulfill({ body: 'asset', contentType: 'image/png' })
+        }
+      )
+      await page.reload()
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      const downloadButton = page.getByRole('button', {
+        name: enMessages.agent.downloadAssets,
+        exact: true
+      })
+      await expect(downloadButton).toBeVisible()
+      await downloadButton.click()
+
+      await expect
+        .poll(() => downloads)
+        .toEqual(['trusted.png', 'untrusted.png', 'hostile.png'])
+      expect(requests).toHaveLength(3)
+      expect(cookies[0]).toContain('session=test-session')
+      expect(cookies[1]).toBeNull()
+      expect(cookies[2]).toBeNull()
+    })
+  }
+)

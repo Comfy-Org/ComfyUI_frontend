@@ -18,6 +18,14 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
+// Mock the download sink the way ReplyAudioCard.test.ts in this folder does.
+// The real one appends an <a href="blob:..."> and clicks it, which this DOM
+// treats as a navigation: window.location.origin becomes "null", so the next
+// `new URL(path, origin)` throws Invalid URL. That is why the second of two
+// downloads failed while the first succeeded.
+const downloadBlob = vi.hoisted(() => vi.fn())
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
@@ -55,6 +63,7 @@ describe('MessageFeedback', () => {
     )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
+    downloadBlob.mockClear()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -139,22 +148,48 @@ describe('MessageFeedback', () => {
       ok: true,
       blob: () => Promise.resolve(new Blob(['x']))
     })
-    const createObjectURL = vi.fn(() => 'blob:mock')
-    const revokeObjectURL = vi.fn()
-    URL.createObjectURL = createObjectURL
-    URL.revokeObjectURL = revokeObjectURL
+    // Reply assets the backend serves live on the API's own view route.
+    // Only those go through the authenticated client; downloadReplyAsset
+    // sends anything else through a plain fetch, so asserting foreign URLs
+    // here would be asserting a credential leak.
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/mesh.glb', filename: 'mesh.glb', kind: '3D' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=mesh.glb`,
+        filename: 'mesh.glb',
+        kind: '3D'
+      }
     ])
 
-    await user.click(screen.getByRole('button', { name: 'Download assets' }))
+    const download = screen.getByRole('button', { name: 'Download assets' })
+    await user.click(download)
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
-    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
-  })
+    // The button is disabled for the whole sequential loop and re-enabled in
+    // its `finally`, so waiting on that is the end-of-run signal. Polling the
+    // call count instead races the second download and reports 1 of 2 on a
+    // slow runner.
+    await waitFor(() => expect(download).toBeEnabled())
+
+    // Belt and braces: if the disabled state is ever dropped, the wait above
+    // becomes a no-op, so the count keeps its own bounded retry rather than
+    // silently going back to racing the second download. Kept well inside the
+    // test budget below — a retry as long as the budget just turns a slow run
+    // into a timeout instead of a wait.
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2), {
+      timeout: 2000
+    })
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
+    expect(downloadBlob).toHaveBeenCalledWith('a.png', expect.any(Blob))
+    expect(downloadBlob).toHaveBeenCalledWith('mesh.glb', expect.any(Blob))
+    // Two sequential downloads through the component, under coverage
+    // instrumentation on a shared runner, do not reliably fit the 5s default.
+  }, 20_000)
 
   it('Escape closes the markdown menu without copying', async () => {
     const { user } = renderFeedback()
