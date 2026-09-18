@@ -411,7 +411,7 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     ])
     for (const error of [
       ...auditProtectedLiterals(state.source, state.existing, skipKeys),
-      ...auditRetainedTranslations(state.plan.source, state.retained, skipKeys)
+      ...auditRetainedTranslations(state.plan.source, state.retained)
     ]) {
       auditErrors.push(`${label}: ${error}`)
     }

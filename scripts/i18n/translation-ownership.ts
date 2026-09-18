@@ -77,8 +77,7 @@ export function partitionOwnedLocale(
 
 export function auditRetainedTranslations(
   source: LocaleObject,
-  retained: ReadonlyMap<string, LocaleTrackedLeaf>,
-  skipKeys: ReadonlySet<string> = new Set()
+  retained: ReadonlyMap<string, LocaleTrackedLeaf>
 ): string[] {
   const intentionalEmptyKeys = [...retained]
     .filter(([, value]) => value === '')
@@ -86,6 +85,6 @@ export function auditRetainedTranslations(
   return auditProtectedLiterals(
     source,
     projectLocale(source, retained),
-    new Set([...skipKeys, ...intentionalEmptyKeys])
+    new Set(intentionalEmptyKeys)
   )
 }
