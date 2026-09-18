@@ -4,27 +4,87 @@
   "private": true,
   "description": "The view layer over the framework-free core of @comfyorg/account-core: Vue composables and unstyled components that present the shared operation lifecycle, payment projection and sign-in pieces without choosing a router, a window strategy, or a design system",
   "keywords": [],
+  "homepage": "https://comfy.org",
   "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/account-ui"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
   "exports": {
     "./billing": "./src/billing/index.ts",
     "./auth/PasswordRules": "./src/auth/PasswordRules.vue",
     "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
     "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
     "./auth/regionGate": "./src/auth/regionGate.ts",
+    "./auth/regionProbe": "./src/auth/regionProbe.ts",
     "./auth/turnstileGate": "./src/auth/turnstileGate.ts",
     "./auth/lifecycleScope": "./src/auth/lifecycleScope.ts",
-    "./auth/useGenerationGuard": "./src/auth/useGenerationGuard.ts"
+    "./auth/useGenerationGuard": "./src/auth/useGenerationGuard.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./billing": {
+        "types": "./dist/billing/index.d.ts",
+        "import": "./dist/billing/index.js"
+      },
+      "./auth/PasswordRules": {
+        "types": "./dist/auth/PasswordRules.d.ts",
+        "import": "./dist/auth/PasswordRules.js"
+      },
+      "./auth/SocialAuthButtons": {
+        "types": "./dist/auth/SocialAuthButtons.d.ts",
+        "import": "./dist/auth/SocialAuthButtons.js"
+      },
+      "./auth/TurnstileWidget": {
+        "types": "./dist/auth/TurnstileWidget.d.ts",
+        "import": "./dist/auth/TurnstileWidget.js"
+      },
+      "./auth/regionGate": {
+        "types": "./dist/auth/regionGate.d.ts",
+        "import": "./dist/auth/regionGate.js"
+      },
+      "./auth/regionProbe": {
+        "types": "./dist/auth/regionProbe.d.ts",
+        "import": "./dist/auth/regionProbe.js"
+      },
+      "./auth/turnstileGate": {
+        "types": "./dist/auth/turnstileGate.d.ts",
+        "import": "./dist/auth/turnstileGate.js"
+      },
+      "./auth/lifecycleScope": {
+        "types": "./dist/auth/lifecycleScope.d.ts",
+        "import": "./dist/auth/lifecycleScope.js"
+      },
+      "./auth/useGenerationGuard": {
+        "types": "./dist/auth/useGenerationGuard.d.ts",
+        "import": "./dist/auth/useGenerationGuard.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
   },
   "scripts": {
+    "build": "pnpm run clean && vite build --logLevel error",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
     "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@comfyorg/account-core": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@comfyorg/tailwind-utils": "workspace:*"
+    "@comfyorg/account-core": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/user-event": "catalog:",
@@ -35,6 +95,8 @@
     "@vueuse/core": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"

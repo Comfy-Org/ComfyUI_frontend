@@ -82,6 +82,21 @@ describe('PlaygroundOutput', () => {
     )
   })
 
+  it('asks users to review their inputs after a content-policy rejection', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedance 2.5',
+        state: { status: 'failed', reason: 'policy', fieldErrors: {} },
+        now: 0
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The model provider blocked the input or generated output under its content policy. Review your prompt and reference files before running again.'
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
   it.for([
     { locale: 'en' as const, label: 'Add credits' },
     { locale: 'zh-CN' as const, label: '添加积分' }

@@ -419,9 +419,9 @@
       "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Ya existe una cuenta con esta dirección de correo electrónico, pero utiliza un método de inicio de sesión diferente. Inicia sesión como lo hiciste originalmente.",
+      "auth/account-exists-with-different-credential": "No pudimos iniciar tu sesión con este método. Prueba otra opción de inicio de sesión o restablece tu contraseña para continuar.",
       "auth/cancelled-popup-request": "Ya había otra ventana de inicio de sesión abierta, por lo que esta se canceló. Inténtalo de nuevo.",
-      "auth/email-already-in-use": "Ya existe una cuenta con este correo electrónico. Intenta iniciar sesión en su lugar.",
+      "auth/email-already-in-use": "No pudimos crear una cuenta con este correo electrónico. Intenta iniciar sesión o restablecer tu contraseña.",
       "auth/invalid-credential": "Credenciales de inicio de sesión inválidas. Por favor, verifica tu correo electrónico y contraseña.",
       "auth/invalid-email": "Por favor, ingresa una dirección de correo electrónico válida.",
       "auth/network-request-failed": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "La ventana de inicio de sesión se cerró antes de finalizar el inicio de sesión. Inténtalo de nuevo.",
       "auth/too-many-requests": "Demasiados intentos de inicio de sesión. Por favor, espera un momento e inténtalo de nuevo.",
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
-      "auth/user-not-found": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.",
       "signupBlocked": "No pudimos crear tu cuenta en este momento. Por favor, inténtalo de nuevo más tarde. Si el problema persiste, escribe a support@comfy.org."
     },

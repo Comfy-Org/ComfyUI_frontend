@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +7,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
   async () => undefined
 )
@@ -24,11 +24,7 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const {
@@ -72,7 +68,7 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
       expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
         source: 'settings_billing_panel'
       })

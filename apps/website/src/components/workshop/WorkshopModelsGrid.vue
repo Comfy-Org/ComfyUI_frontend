@@ -70,6 +70,7 @@ onMounted(() => {
 })
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
+const heading = useTemplateRef<HTMLElement>('heading')
 const sortOrders = sortOrdersFor(models)
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
@@ -123,7 +124,7 @@ watch(
       nextShelf !== previousShelf || nextBrowse !== previousBrowse
     void nextTick(() => {
       if (sectionChanged) window.scrollTo({ top: 0 })
-      else toolbar.value?.scrollIntoView({ block: 'start' })
+      else (heading.value ?? toolbar.value)?.scrollIntoView({ block: 'start' })
     })
   }
 )
@@ -233,33 +234,29 @@ const menuItemClass =
         {{ t('workshop.sections.back', locale) }}
       </button>
 
+      <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
+      <h1
+        v-if="inSection"
+        ref="heading"
+        class="mt-3 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
+      >
+        {{ t(sectionTitleKey, locale) }}
+        <span class="text-base font-normal text-primary-warm-gray tabular-nums">
+          {{ visible.length }}
+        </span>
+      </h1>
+
       <div
         ref="toolbar"
+        data-testid="workshop-toolbar"
         class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 sm:flex-nowrap lg:top-26 lg:scroll-mt-26"
       >
-        <h1
-          v-if="inSection"
-          class="mr-auto text-3xl font-bold text-primary-warm-white max-sm:w-full sm:text-4xl"
-        >
-          {{ t(sectionTitleKey, locale) }}
-          <span
-            class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >
-            {{ visible.length }}
-          </span>
-        </h1>
-
         <WorkshopSearchField
           v-model="query"
           :models
           :locale
           compact
-          :class="
-            cn(
-              'min-w-0 flex-1 sm:max-w-xl sm:min-w-32',
-              !inSection && 'sm:mr-auto'
-            )
-          "
+          class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
         />
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">
