@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+vi.mock(import('firebase/auth'), { spy: true })
+
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import type {
   BillingStatusResponse,
@@ -18,6 +20,7 @@ import {
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const flagState = vi.hoisted(() => ({
   billingSdkSubscriptionEnabled: false,
@@ -150,6 +153,7 @@ function setupBilling() {
 }
 
 beforeEach(() => {
+  stubFirebaseAuthHarness()
   trackBillingEvent.mockClear()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)

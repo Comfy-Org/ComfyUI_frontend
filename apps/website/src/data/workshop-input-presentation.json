@@ -1212,6 +1212,10 @@
       }
     },
     "byteplus/dreamina-seedance-2-0-mini": {
+      "resolution": {
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
       "output_format": {
         "hidden": true
       },

@@ -3,7 +3,7 @@ import { effectScope } from 'vue'
 
 const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  attachIdentity: vi.fn(() => () => undefined)
+  activate: vi.fn(async () => undefined)
 }))
 
 vi.mock<unknown>(import('../scripts/posthog'), async () => {
@@ -15,20 +15,9 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
-  return {
-    workshopIdentity: createTestIdentity({
-      onUserChanged: () => () => undefined
-    }),
-    signOutWorkshop: vi.fn()
-  }
-})
-
 vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: () => () => undefined,
-    attachIdentity: h.attachIdentity,
     ensureFresh: vi.fn(),
     remint: vi.fn(),
     clearStoredCredential: vi.fn(),
@@ -39,6 +28,7 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
     }),
     getToken: vi.fn()
   },
+  workshopIdentity: { activate: h.activate, deactivate: vi.fn() },
   subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
@@ -52,7 +42,7 @@ describe('useWorkshopSession scope ownership', () => {
 
     const firstCallerScope = effectScope()
     firstCallerScope.run(() => mod.useWorkshopSession())
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledOnce())
 
     firstCallerScope.stop()
     h.flag!.value = false
@@ -61,7 +51,7 @@ describe('useWorkshopSession scope ownership', () => {
 
     await vi.waitFor(() =>
       expect(
-        h.attachIdentity,
+        h.activate,
         'the shared flag watcher must survive its first caller unmounting, or every other island silently freezes'
       ).toHaveBeenCalledTimes(2)
     )

@@ -33,7 +33,9 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -239,6 +241,10 @@ export function useSubscriptionCheckout(
     if (operation.status === 'succeeded') return true
     if (operation.status !== 'pending') return false
     if (operation.isAuthenticating) return true
+    // Deliberately narrower than isBlockedOnCustomerPhase: releasing the action
+    // exists so the customer can supply the card this park is waiting for. An
+    // invoice park has no such re-submit route — the server refuses a second
+    // operation while this one is open — so it keeps the action busy.
     if (operation.phase === 'awaiting_payment_method') return false
     return (
       operation.authenticationState !== 'failed_retryable' &&
@@ -355,7 +361,12 @@ export function useSubscriptionCheckout(
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!embeddedCheckoutEnabled || !shouldUseWorkspaceBilling.value) return
     try {
-      const methods = await workspaceApi.listSavedPaymentMethods()
+      const rail = useBillingReadRail()
+      const methods =
+        rail === null
+          ? await workspaceApi.listSavedPaymentMethods()
+          : await readOnRail(rail.readPaymentMethods)
+      if (methods === undefined) return
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
         methods.find((method) => method.is_default)?.id ?? null
