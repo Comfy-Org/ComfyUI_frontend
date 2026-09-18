@@ -14,7 +14,10 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type {
+  FrameProjectionResult,
+  MutationsForTarget
+} from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
@@ -131,6 +134,47 @@ export function useAgentCrdtFollower(
     projection.unbind(workflowId)
     settleFrames(workflowId, 'skipped')
   }
+  const handleProjectionResult = (
+    result: FrameProjectionResult,
+    context: { workflowId: string; actor?: string },
+    settleUnresolved = false
+  ): boolean => {
+    const { workflowId } = context
+    switch (result.status) {
+      case 'queued':
+      case 'idle':
+        if (settleUnresolved) settleFrames(workflowId, 'skipped')
+        return false
+      case 'unbound':
+        settleFrames(workflowId, 'skipped')
+        return false
+      case 'retrying':
+        settleFrames(workflowId, 'applied')
+        lastFrameType.value = 'projection_retry'
+        recordDevEvent('projection_error', {
+          ...context,
+          seq: result.sequence,
+          attempt: result.attempt
+        })
+        return false
+      case 'failed':
+        settleFrames(workflowId, 'skipped')
+        connected.value = false
+        lastFrameType.value = 'projection_error'
+        lifecycle.clearStaleProbe()
+        recordDevEvent('projection_error', {
+          ...context,
+          seq: result.sequence,
+          reason: result.reason
+        })
+        return false
+      case 'projected':
+        settleFrames(workflowId, 'applied')
+        connected.value = true
+        projectedSequence.value = result.sequence
+        return true
+    }
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -187,39 +231,9 @@ export function useAgentCrdtFollower(
       const target = subscribedWorkflowId.value
       if (target !== null) {
         const result = projection.retryPending(target)
-        switch (result.status) {
-          case 'projected':
-            settleFrames(target, 'applied')
-            projectedSequence.value = result.sequence
-            projection.reconcileLiveGraph(target)
-            updatesApplied.value = bridge.follower.updatesApplied
-            break
-          case 'retrying':
-            settleFrames(target, 'applied')
-            lastFrameType.value = 'projection_retry'
-            recordDevEvent('projection_error', {
-              workflowId: target,
-              seq: result.sequence,
-              attempt: result.attempt
-            })
-            break
-          case 'failed':
-            settleFrames(target, 'skipped')
-            connected.value = false
-            lastFrameType.value = 'projection_error'
-            lifecycle.clearStaleProbe()
-            recordDevEvent('projection_error', {
-              workflowId: target,
-              seq: result.sequence,
-              reason: result.reason
-            })
-            break
-          case 'unbound':
-            settleFrames(target, 'skipped')
-            break
-          case 'idle':
-          case 'queued':
-            break
+        if (handleProjectionResult(result, { workflowId: target })) {
+          projection.reconcileLiveGraph(target)
+          updatesApplied.value = bridge.follower.updatesApplied
         }
       }
     } else {
@@ -250,40 +264,15 @@ export function useAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     lastFrameType.value = event.type
     const result = projection.applyFrame(update)
-    switch (result.status) {
-      case 'queued':
-      case 'idle':
-      case 'unbound':
-        settleFrames(update.workflowId, 'skipped')
-        return
-      case 'retrying':
-        settleFrames(update.workflowId, 'applied')
-        lastFrameType.value = 'projection_retry'
-        recordDevEvent('projection_error', {
-          workflowId: update.workflowId,
-          seq: result.sequence,
-          actor: update.actor,
-          attempt: result.attempt
-        })
-        return
-      case 'failed':
-        settleFrames(update.workflowId, 'skipped')
-        connected.value = false
-        lastFrameType.value = 'projection_error'
-        lifecycle.clearStaleProbe()
-        recordDevEvent('projection_error', {
-          workflowId: update.workflowId,
-          seq: result.sequence,
-          actor: update.actor,
-          reason: result.reason
-        })
-        return
-      case 'projected':
-        settleFrames(update.workflowId, 'applied')
-        connected.value = true
-        projectedSequence.value = result.sequence
-        updatesApplied.value = bridge.follower.updatesApplied
-    }
+    if (
+      !handleProjectionResult(
+        result,
+        { workflowId: update.workflowId, actor: update.actor },
+        true
+      )
+    )
+      return
+    updatesApplied.value = bridge.follower.updatesApplied
     projection.reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
