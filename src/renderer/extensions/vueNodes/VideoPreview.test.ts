@@ -49,10 +49,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [getActivePinia()!, i18n],
-        stubs: {
-          Skeleton: true
-        }
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

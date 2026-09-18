@@ -204,8 +204,7 @@ function renderComponent() {
           `,
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
-        },
-        Popover: { template: '<div><slot /></div>' }
+        }
       }
     }
   })

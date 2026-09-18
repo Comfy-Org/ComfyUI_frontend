@@ -127,10 +127,7 @@ function renderCard(
       ...props
     },
     global: {
-      plugins: [i18n],
-      stubs: {
-        DotSpinner: { template: '<span role="status" aria-label="loading" />' }
-      }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
@@ -220,7 +217,7 @@ describe('MissingNodeCard', () => {
       vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
       mockIsRestarting.value = true
       renderCard()
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
     })
 
     it('disables button during restart', () => {
@@ -253,12 +250,7 @@ describe('MissingNodeCard', () => {
           onLocateNode
         },
         global: {
-          plugins: [i18n],
-          stubs: {
-            DotSpinner: {
-              template: '<span role="status" aria-label="loading" />'
-            }
-          }
+          plugins: [i18n]
         }
       })
       await user.click(screen.getAllByTestId('locate-node')[0])
@@ -275,12 +267,7 @@ describe('MissingNodeCard', () => {
           onOpenManagerInfo
         },
         global: {
-          plugins: [i18n],
-          stubs: {
-            DotSpinner: {
-              template: '<span role="status" aria-label="loading" />'
-            }
-          }
+          plugins: [i18n]
         }
       })
       await user.click(screen.getAllByTestId('open-manager-info')[0])

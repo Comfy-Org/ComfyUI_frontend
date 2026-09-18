@@ -1,15 +1,9 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
-
-vi.mock(import('@/components/ui/select/Select.vue'))
-vi.mock(import('@/components/ui/select/SelectContent.vue'))
-vi.mock(import('@/components/ui/select/SelectItem.vue'))
-vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
-vi.mock(import('@/components/ui/select/SelectValue.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -29,17 +23,24 @@ function renderComponent(
 }
 
 describe('ViewerExportControls', () => {
-  it('renders all four export format options', () => {
-    renderComponent()
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    const optionValues = Array.from(select.options).map((o) => o.value)
+  it('renders all four export format options', async () => {
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('combobox'))
+    const options = await screen.findAllByRole('option')
 
-    expect(optionValues).toEqual(['glb', 'obj', 'stl', 'fbx'])
+    expect(options.map((option) => option.textContent)).toEqual([
+      'GLB',
+      'OBJ',
+      'STL',
+      'FBX'
+    ])
   })
 
-  it('defaults the export format to obj', () => {
+  it('defaults the export format to obj', async () => {
     renderComponent()
-    expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('obj')
+    await waitFor(() =>
+      expect(screen.getByRole('combobox')).toHaveTextContent('OBJ')
+    )
   })
 
   it('emits exportModel with the currently selected format when the button is clicked', async () => {
@@ -55,7 +56,8 @@ describe('ViewerExportControls', () => {
     const onExportModel = vi.fn()
     const { user } = renderComponent(onExportModel)
 
-    await user.selectOptions(screen.getByRole('combobox'), 'glb')
+    await user.click(screen.getByRole('combobox'))
+    await user.click(await screen.findByRole('option', { name: 'GLB' }))
     await user.click(screen.getByRole('button', { name: 'Export' }))
 
     expect(onExportModel).toHaveBeenCalledWith('glb')
@@ -64,9 +66,12 @@ describe('ViewerExportControls', () => {
   it('offers only the source format for direct-export files (e.g. spz)', async () => {
     const onExportModel = vi.fn()
     const { user } = renderComponent(onExportModel, 'spz')
-    const select = screen.getByRole('combobox') as HTMLSelectElement
+    await user.click(screen.getByRole('combobox'))
 
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['spz'])
+    expect(
+      (await screen.findAllByRole('option')).map((option) => option.textContent)
+    ).toEqual(['SPZ'])
+    await user.keyboard('{Escape}')
 
     await user.click(screen.getByRole('button', { name: 'Export' }))
 
@@ -76,13 +81,17 @@ describe('ViewerExportControls', () => {
   it('repairs the selected format when sourceFormat switches to a direct-export type', async () => {
     const onExportModel = vi.fn()
     const { user, rerender } = renderComponent(onExportModel, null)
-    const select = screen.getByRole('combobox') as HTMLSelectElement
+    const select = screen.getByRole('combobox')
 
-    expect(select.value).toBe('obj')
+    await waitFor(() => expect(select).toHaveTextContent('OBJ'))
 
     await rerender({ onExportModel, sourceFormat: 'ply' })
 
-    expect(Array.from(select.options).map((o) => o.value)).toEqual(['ply'])
+    await user.click(select)
+    expect(
+      (await screen.findAllByRole('option')).map((option) => option.textContent)
+    ).toEqual(['PLY'])
+    await user.keyboard('{Escape}')
 
     await user.click(screen.getByRole('button', { name: 'Export' }))
 

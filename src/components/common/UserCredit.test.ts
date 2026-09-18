@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -31,7 +32,6 @@ describe('UserCredit', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Skeleton: { template: '<div data-testid="skeleton" />' },
           Tag: true
         }
       }
@@ -93,11 +93,16 @@ describe('UserCredit', () => {
   })
 
   describe('loading state', () => {
-    it('shows skeleton when loading', () => {
+    it('hides the balance until loading finishes', async () => {
       useAuthStore().isFetchingBalance = true
 
       renderComponent()
-      expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0)
+      expect(screen.queryByText(/Credits/)).not.toBeInTheDocument()
+
+      useAuthStore().isFetchingBalance = false
+      await nextTick()
+
+      expect(screen.getByText(/Credits/)).toBeInTheDocument()
     })
   })
 })

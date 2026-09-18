@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="dot-spinner"
     class="inline-flex items-center justify-center"
     :style="{ width: size + 'px', height: size + 'px' }"
   >

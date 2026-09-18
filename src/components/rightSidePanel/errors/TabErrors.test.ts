@@ -155,13 +155,7 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
-        stubs: {
-          AsyncSearchInput: {
-            template:
-              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          }
-        }
+        plugins: [PrimeVue, i18n, pinia]
       }
     })
     return { user }

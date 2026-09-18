@@ -59,8 +59,7 @@ function renderComponent() {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
-        Popover: { template: '<div><slot /></div>' }
+        SelectButton: cycleToggleStub
       }
     }
   })

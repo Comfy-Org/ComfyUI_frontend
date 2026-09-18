@@ -31,7 +31,6 @@ const renderActionbar = (showRunProgressBar: boolean) => {
           name: 'ContextMenu',
           template: '<div />'
         },
-        StatusBadge: true,
         ComfyRunButton: {
           name: 'ComfyRunButton',
           template: '<button type="button">Run</button>'
