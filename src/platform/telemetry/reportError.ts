@@ -173,7 +173,12 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
     if (options.logToConsole !== false) {
       const log = options.level === 'warning' ? console.warn : console.error
-      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+      log(
+        `${REPORTED_ERROR_PREFIX}${options.errorType}`,
+        cause instanceof Error
+          ? (cause.stack ?? `${cause.name}: ${cause.message}`)
+          : cause
+      )
     }
     flushErrorReports()
 
