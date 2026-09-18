@@ -1,6 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import { createPositionBounds } from '@/utils/positionBounds'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -17,17 +20,23 @@ function stubCanvas({
 } = {}) {
   const animateToBounds = vi.fn()
   const selectItems = vi.fn()
-  const canvas = {
+  const canvas = fromPartial<LGraphCanvas>({
     canvas: { width, height },
     ds: { scale, offset },
     animateToBounds,
     selectItems
-  } as unknown as LGraphCanvas
+  })
   return { canvas, animateToBounds, selectItems }
 }
 
+let nextNodeId = 1
+
 function node(pos: [number, number], size: [number, number] = [240, 86]) {
-  return { pos, size } as unknown as LGraphNode
+  const item = new LGraphNode('Test')
+  item.id = toNodeId(nextNodeId++)
+  item.pos = pos
+  item.size = size
+  return item
 }
 
 /** The docked panel, at its minimum width, covering the right of the canvas. */
@@ -40,6 +49,7 @@ function openPanel(width = 420) {
 }
 
 beforeEach(() => {
+  nextNodeId = 1
   localStorage.clear()
   vi.stubGlobal('devicePixelRatio', 1)
 })
