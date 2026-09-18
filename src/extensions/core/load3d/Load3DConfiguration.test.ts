@@ -22,6 +22,7 @@ import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
 vi.mock(import('@/scripts/api'), () => ({
@@ -66,11 +67,8 @@ function stubSettings(values: Partial<Settings>) {
   vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
-function reactiveWidget(
-  value: IBaseWidget['value'],
-  widgetId?: string
-): IBaseWidget {
-  return reactive(fromPartial<IBaseWidget>({ value, widgetId }))
+function reactiveWidget(value: IBaseWidget['value']): IBaseWidget {
+  return reactive(fromPartial<IBaseWidget>({ value }))
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -800,14 +798,12 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
   })
 })
 
-// PM-1011: after the agent interacts with the graph, Load3D preview capture
-// stopped working. Root cause: the agent/CRDT follower writes widget values
-// straight into widgetValueStore (graphMutations.ts `setWidget`), bypassing
-// this file's `Object.defineProperty` override on `modelWidget.value`. That
-// override is the only thing that reloads the Three.js scene and marks the
-// capture cache dirty, so a remote-origin model_file change left the scene
-// (and the next capture) stale. These tests pin the bridge that fixes it.
-describe('Load3DConfiguration remote (agent) model updates', () => {
+// Load3DConfiguration owns no widget listeners of its own. It observes
+// `modelWidget.value`, `width.value`, and `height.value` reactively, so any
+// writer that goes through widget state (user edit, widgetValueStore.setValue
+// from the CRDT follower, undo) reloads the scene and invalidates the capture
+// cache. These tests pin that reactive contract.
+describe('Load3DConfiguration reactive widget contract', () => {
   function makeLoad3dMock(): Load3d {
     let cleanup: (() => void) | undefined
     return fromPartial<Load3d>({
@@ -845,10 +841,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
   })
 
-  it('reloads the model when the agent changes model_file via widgetValueStore', async () => {
+  it('reloads the model when model_file changes', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none', 'widget-1')
+    const modelWidget = reactiveWidget('none')
 
     const config = new Load3DConfiguration(load3d)
     config.configure({
@@ -860,8 +856,6 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     vi.mocked(load3d.loadModel).mockClear()
     onSceneInvalidated.mockClear()
 
-    // Simulate the agent/CRDT follower's setWidget write: the store value
-    // changes but nothing ever assigns `modelWidget.value` directly.
     modelWidget.value = 'agent-model.glb'
     await flush()
 
@@ -874,10 +868,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     expect(modelWidget.value).toBe('agent-model.glb')
   })
 
-  it('clears the model when the agent clears model_file via widgetValueStore', async () => {
+  it('clears the model when model_file is emptied', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('model.glb', 'widget-clear')
+    const modelWidget = reactiveWidget('model.glb')
 
     const config = new Load3DConfiguration(load3d)
     config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
@@ -893,10 +887,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     expect(modelWidget.value).toBe('')
   })
 
-  it('reacts once to local model changes through the shared state path', async () => {
+  it('reacts exactly once per model_file change', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none', 'widget-2')
+    const modelWidget = reactiveWidget('none')
 
     const config = new Load3DConfiguration(load3d)
     config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
@@ -917,7 +911,7 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
   it('invalidates synchronously before queueing can observe stale capture state', () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none', 'sync-widget')
+    const modelWidget = reactiveWidget('none')
     new Load3DConfiguration(load3d).configure({
       modelWidget,
       loadFolder: 'input',
@@ -939,7 +933,7 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
         }),
         async (values) => {
           const load3d = makeLoad3dMock()
-          const modelWidget = reactiveWidget('none', 'generated-widget')
+          const modelWidget = reactiveWidget('none')
           new Load3DConfiguration(load3d).configure({
             modelWidget,
             loadFolder: 'input'
@@ -968,32 +962,10 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     )
   })
 
-  it('ignores value changes for a different widget id', async () => {
-    const load3d = makeLoad3dMock()
-    const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none', 'widget-3')
-    const otherWidget = reactiveWidget('none', 'some-other-widget')
-
-    const config = new Load3DConfiguration(load3d)
-    config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
-    await flush()
-    vi.mocked(load3d.loadModel).mockClear()
-    vi.mocked(load3d.clearModel).mockClear()
-    onSceneInvalidated.mockClear()
-
-    otherWidget.value = 'agent-model.glb'
-    await flush()
-
-    expect(load3d.loadModel).not.toHaveBeenCalled()
-    expect(load3d.clearModel).not.toHaveBeenCalled()
-    expect(onSceneInvalidated).not.toHaveBeenCalled()
-    expect(modelWidget.value).toBe('none')
-  })
-
   it('does not register a second listener when configure runs again for the same widget', async () => {
     const load3d = makeLoad3dMock()
     const onSceneInvalidated = vi.fn()
-    const modelWidget = reactiveWidget('none', 'widget-4')
+    const modelWidget = reactiveWidget('none')
 
     const config = new Load3DConfiguration(load3d)
     config.configure({ modelWidget, loadFolder: 'input', onSceneInvalidated })
@@ -1038,10 +1010,50 @@ describe('Load3DConfiguration remote (agent) model updates', () => {
     expect(load3d.loadModel).not.toHaveBeenCalled()
   })
 
-  it('isolates a replacement widget that reuses the same id', async () => {
+  it('reloads the model when the CRDT follower writes model_file through widgetValueStore', async () => {
     const load3d = makeLoad3dMock()
-    const oldWidget = reactiveWidget('none', 'widget-6')
-    const replacementWidget = reactiveWidget('none', 'widget-6')
+    const onSceneInvalidated = vi.fn()
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const widgetId = modelWidget.widgetId
+    if (!widgetId) throw new Error('Expected a store-backed widget id')
+
+    new Load3DConfiguration(load3d).configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+    vi.mocked(load3d.loadModel).mockClear()
+    onSceneInvalidated.mockClear()
+
+    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
+      source: 'agent-remote',
+      actor: 'agent:e2e',
+      opId: 'op-1'
+    })
+
+    expect(applied).toBe(true)
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+    expect(load3d.loadModel).toHaveBeenCalledWith(
+      expect.any(String),
+      'agent.glb',
+      { silentOnNotFound: false }
+    )
+    expect(modelWidget.value).toBe('agent.glb')
+  })
+
+  it('stops reacting to the previous widget once configure runs with a replacement', async () => {
+    const load3d = makeLoad3dMock()
+    const oldWidget = reactiveWidget('none')
+    const replacementWidget = reactiveWidget('none')
 
     const config = new Load3DConfiguration(load3d)
     config.configure({ modelWidget: oldWidget, loadFolder: 'input' })
