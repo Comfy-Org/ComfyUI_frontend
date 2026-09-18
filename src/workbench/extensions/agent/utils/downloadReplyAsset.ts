@@ -28,7 +28,7 @@ export async function downloadReplyAsset(asset: ReplyAsset): Promise<void> {
     ? await api.fetchApi(
         `${candidate.pathname.slice(apiBase.pathname.length)}${candidate.search}`
       )
-    : await fetch(asset.url)
+    : await fetch(asset.url, { credentials: 'omit' })
   if (!response.ok) return
   downloadBlob(await displayFilename(asset), await response.blob())
 }

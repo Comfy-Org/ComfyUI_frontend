@@ -45,12 +45,14 @@ describe('downloadReplyAsset', () => {
     const embeddedApiUrl = `https://evil.example/x/${window.location.origin}/api/view?filename=a.png`
     await downloadReplyAsset(asset(embeddedApiUrl))
     expect(fetchApi).not.toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledWith(embeddedApiUrl)
+    expect(fetch).toHaveBeenCalledWith(embeddedApiUrl, { credentials: 'omit' })
 
     vi.mocked(fetch).mockClear()
     const sameOriginNonViewUrl = `${window.location.origin}/api/system_stats`
     await downloadReplyAsset(asset(sameOriginNonViewUrl))
     expect(fetchApi).not.toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledWith(sameOriginNonViewUrl)
+    expect(fetch).toHaveBeenCalledWith(sameOriginNonViewUrl, {
+      credentials: 'omit'
+    })
   })
 })
