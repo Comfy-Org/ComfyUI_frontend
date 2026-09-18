@@ -1346,9 +1346,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
     const mockNode = createMockLGraphNode({ id: 1 })
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
+    })
 
     fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
 
@@ -1357,9 +1357,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
   it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
+    })
     vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
       undefined
     )
@@ -2802,11 +2802,13 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('storeJob populates queuedJobs and tracks the workflow path', () => {
-    const workflow = {
+    const workflow = fromPartial<
+      Parameters<typeof store.storeJob>[0]['workflow']
+    >({
       activeState: { id: 'wf-1' },
       initialState: { id: 'wf-1' },
       path: '/workflows/foo.json'
-    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+    })
 
     store.storeJob({
       nodes: ['a', 'b'],

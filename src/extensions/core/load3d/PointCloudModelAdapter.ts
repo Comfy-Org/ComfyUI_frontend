@@ -97,7 +97,7 @@ function buildPointsGroup(
       })
 
   const points = new THREE.Points(geometry, pointMaterial)
-  ctx.registerOriginalMaterial(points as unknown as THREE.Mesh, pointMaterial)
+  ctx.registerOriginalMaterial(points, pointMaterial)
 
   const group = new THREE.Group()
   group.add(points)
@@ -134,7 +134,7 @@ export function buildPointCloudForMaterialMode(
   originalGeometry: THREE.BufferGeometry,
   mode: MaterialMode,
   standardMaterial: THREE.MeshStandardMaterial,
-  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
+  originalMaterials: WeakMap<THREE.Object3D, THREE.Material | THREE.Material[]>
 ): THREE.Group {
   const geometry = originalGeometry.clone()
   const hasVertexColors = geometry.hasAttribute('color')

@@ -1,5 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,7 +42,7 @@ function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
     clientWidth: 400,
     clientHeight: 300
   }
-  return {
+  return fromPartial<THREE.WebGLRenderer>({
     domElement,
     outputColorSpace: THREE.SRGBColorSpace,
     toneMapping: THREE.ACESFilmicToneMapping,
@@ -59,7 +59,7 @@ function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
     setClearColor: vi.fn(),
     clear: vi.fn(),
     render: vi.fn()
-  } as unknown as THREE.WebGLRenderer
+  })
 }
 
 function makeMockEventManager() {
@@ -84,7 +84,7 @@ function makeView(
     configurable: true,
     value: height
   })
-  return {
+  return fromPartial<RendererView>({
     renderer,
     canvas,
     state: createRendererViewState(),
@@ -93,7 +93,7 @@ function makeView(
     beginRender: vi.fn(),
     blit: vi.fn(),
     setSize: vi.fn()
-  } as unknown as RendererView
+  })
 }
 
 function makeRenderer() {
@@ -109,7 +109,7 @@ function makeRenderer() {
   canvas.width = 800
   canvas.height = 600
   vi.spyOn(canvas, 'toDataURL').mockReturnValue('data:image/png;base64,FAKE')
-  return {
+  return fromPartial<THREE.WebGLRenderer>({
     domElement: canvas,
     setClearColor: vi.fn(),
     setSize: vi.fn(),
@@ -126,16 +126,17 @@ function makeRenderer() {
     toneMapping: THREE.NoToneMapping,
     toneMappingExposure: 1,
     outputColorSpace: THREE.SRGBColorSpace
-  } as unknown as THREE.WebGLRenderer
+  })
 }
 
 function makeImageTexture(width = 200, height = 100): THREE.Texture {
   const texture = new THREE.Texture()
-  ;(texture as unknown as { image: { width: number; height: number } }).image =
-    {
-      width,
-      height
-    }
+  fromAny<{ image: { width: number; height: number } }, unknown>(
+    texture
+  ).image = {
+    width,
+    height
+  }
   return texture
 }
 
@@ -152,7 +153,7 @@ describe('SceneManager', () => {
     manager = new SceneManager(
       makeView(renderer),
       () => camera,
-      () => ({}) as unknown as OrbitControls,
+      () => fromPartial<OrbitControls>({}),
       events
     )
   })

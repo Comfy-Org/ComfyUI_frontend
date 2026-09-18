@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -25,15 +25,14 @@ class MockContextMenu {
   }
 }
 
-;(LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
-  MockContextMenu
+fromPartial<{ ContextMenu: unknown }>(LiteGraph).ContextMenu = MockContextMenu
 
 function makeLoad3d(
   exportImpl: (format: string) => Promise<void> = vi
     .fn()
     .mockResolvedValue(undefined)
 ): Load3d {
-  return { exportModel: exportImpl } as unknown as Load3d
+  return fromPartial<Load3d>({ exportModel: exportImpl })
 }
 
 describe('createExportMenuItems', () => {
@@ -71,7 +70,7 @@ describe('createExportMenuItems', () => {
 
   it('forwards the parent menu and event when opening the submenu', () => {
     const items = createExportMenuItems(makeLoad3d())
-    const event = { x: 100 } as unknown as MouseEvent
+    const event = fromPartial<MouseEvent>({ x: 100 })
     const parentMenu = { id: 'prev' }
 
     ;(items[1]!.callback as (...args: unknown[]) => void)(

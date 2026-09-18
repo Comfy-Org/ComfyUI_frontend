@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import {
   getPackUpdateStatus,
   isNightlyVersion
 } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
-type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
 
 const createPack = (
   id: string | undefined,
@@ -19,14 +17,11 @@ const createPack = (
   latest_version: latestVersion ? { version: latestVersion } : undefined
 })
 
-const createStore = (
-  installed: Record<string, string | undefined>
-): ComfyManagerStore =>
-  ({
-    isPackInstalled: (id: string | undefined) =>
-      id !== undefined && id in installed,
-    getInstalledPackVersion: (id: string) => installed[id]
-  }) as unknown as ComfyManagerStore
+const createStore = (installed: Record<string, string | undefined>) => ({
+  isPackInstalled: (id: string | undefined) =>
+    id !== undefined && id in installed,
+  getInstalledPackVersion: (id: string) => installed[id]
+})
 
 describe('isNightlyVersion', () => {
   it('is true for a non-semver git hash version', () => {

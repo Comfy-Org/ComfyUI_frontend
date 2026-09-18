@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -42,9 +44,9 @@ test.describe('manifest covers every registered pack @custom-nodes', () => {
   test('no pack registers on the backend without a manifest row', async ({
     comfyPage
   }) => {
-    const defs = (await comfyPage.page.evaluate(() =>
-      window.app!.api.getNodeDefs()
-    )) as unknown as Record<string, RawNodeDef>
+    const defs = fromPartial<Record<string, RawNodeDef>>(
+      await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+    )
     const uncovered = unmanifestedPackNames(defs, ALL_NODES_MANIFEST_ENTRIES)
     expect(
       uncovered,
@@ -80,9 +82,9 @@ test.describe('all nodes by tier @custom-nodes', () => {
           `[tier-session] pid=${process.pid} tier=${tier} pageId=${pageId}`
         )
 
-        const defs = (await comfyPage.page.evaluate(() =>
-          window.app!.api.getNodeDefs()
-        )) as unknown as Record<string, RawNodeDef>
+        const defs = fromPartial<Record<string, RawNodeDef>>(
+          await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+        )
         const failures: string[] = []
         for (const entry of tierEntries) {
           let result = 'pass'

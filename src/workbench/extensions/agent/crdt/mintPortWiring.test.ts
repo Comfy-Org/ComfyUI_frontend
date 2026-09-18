@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -68,7 +69,8 @@ describe('attachMintPortWiring', () => {
     id: ROOT_ID,
     rootGraph: { id: ROOT_ID },
     getNodeById: (id) =>
-      (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
+      fromAny<LGraphNode | undefined, unknown>(graphNodes.get(String(id))) ??
+      null,
     get _nodes() {
       return [...graphNodes.values()] as LGraphNode[]
     }
@@ -277,6 +279,11 @@ describe('attachMintPortWiring', () => {
       serialize: () => ({
         id: 5,
         type: 'LoadImage',
+        pos: [10, 20],
+        size: [270, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
         widgets_values: ['positional'],
         widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
       }),
@@ -304,6 +311,11 @@ describe('attachMintPortWiring', () => {
         node: {
           id: 5,
           type: 'LoadImage',
+          pos: [10, 20],
+          size: [270, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
           widgets_values: { image: 'cat.png' }
         }
       }

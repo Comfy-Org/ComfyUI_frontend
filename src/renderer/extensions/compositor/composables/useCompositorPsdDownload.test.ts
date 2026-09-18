@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -5,7 +6,7 @@ import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
@@ -72,7 +73,8 @@ function makeSession(glOk = true) {
   }
 }
 
-const node = { id: toNodeId(5) } as unknown as LGraphNode
+const node = new LGraphNode('Compositor')
+node.id = toNodeId(5)
 
 beforeEach(() => {
   vi.mocked(useToastStore().add).mockImplementation(() => undefined)
@@ -86,8 +88,8 @@ describe('useCompositorPsdDownload', () => {
 
   it('loads a throwaway session, downloads the psd, and disposes it', async () => {
     const session = makeSession()
-    const { exporting, downloadPsd } = renderPsdDownload(
-      () => session as unknown as LayerEditorSession
+    const { exporting, downloadPsd } = renderPsdDownload(() =>
+      fromAny<LayerEditorSession, unknown>(session)
     )
 
     await downloadPsd(node)
@@ -108,8 +110,8 @@ describe('useCompositorPsdDownload', () => {
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
     const session = makeSession(false)
-    const { downloadPsd } = renderPsdDownload(
-      () => session as unknown as LayerEditorSession
+    const { downloadPsd } = renderPsdDownload(() =>
+      fromAny<LayerEditorSession, unknown>(session)
     )
 
     await downloadPsd(node)
@@ -127,8 +129,8 @@ describe('useCompositorPsdDownload', () => {
   it('refuses to export when some layers failed to load', async () => {
     loadCompositorSession.mockResolvedValueOnce(2)
     const session = makeSession()
-    const { downloadPsd } = renderPsdDownload(
-      () => session as unknown as LayerEditorSession
+    const { downloadPsd } = renderPsdDownload(() =>
+      fromAny<LayerEditorSession, unknown>(session)
     )
 
     await downloadPsd(node)
@@ -142,8 +144,8 @@ describe('useCompositorPsdDownload', () => {
   it('reports an error and disposes when export fails midway', async () => {
     buildSessionPsdBlob.mockRejectedValueOnce(new Error('boom'))
     const session = makeSession()
-    const { exporting, downloadPsd } = renderPsdDownload(
-      () => session as unknown as LayerEditorSession
+    const { exporting, downloadPsd } = renderPsdDownload(() =>
+      fromAny<LayerEditorSession, unknown>(session)
     )
 
     await downloadPsd(node)
@@ -172,8 +174,8 @@ describe('useCompositorPsdDownload', () => {
       () => new Promise<Blob>((resolve) => (resolveBlob = resolve))
     )
     const session = makeSession()
-    const { downloadPsd } = renderPsdDownload(
-      () => session as unknown as LayerEditorSession
+    const { downloadPsd } = renderPsdDownload(() =>
+      fromAny<LayerEditorSession, unknown>(session)
     )
 
     const first = downloadPsd(node)

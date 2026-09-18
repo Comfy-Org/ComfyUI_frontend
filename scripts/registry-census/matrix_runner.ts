@@ -5,6 +5,7 @@
  * $MATRIX_OUT/<pack>.json for cross-branch diffing.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import fs from 'node:fs'
 import { vi } from 'vitest'
@@ -198,19 +199,19 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         id: n.id,
         type: n.type,
         mode: n.mode,
-        collapsed: !!n.flags?.collapsed,
+        collapsed: !!n.flags.collapsed,
         widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: (n.inputs ?? []).map((_, i: number) => {
+        in: n.inputs.map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: (n.outputs ?? []).map((_, i: number) => {
+        out: n.outputs.map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -262,10 +263,6 @@ export async function runPack(
   const load: Record<string, string> = {}
   for (const key of entries) {
     const fn = loaders[key]
-    if (!fn) {
-      load[key] = 'NO-GLOB'
-      continue
-    }
     try {
       await fn()
       load[key] = 'OK'
@@ -282,9 +279,6 @@ export async function runPack(
   const regErrs: string[] = []
   for (const [name, d] of Object.entries(DEFS)) {
     try {
-      // Bound to the service's real signature: a node-def contract change
-      // breaks this cast in the same PR instead of silently measuring a
-      // shape the app no longer accepts.
       await svc.registerNodeDef(name, {
         name,
         display_name: name,
@@ -294,7 +288,7 @@ export async function runPack(
         output_is_list: [],
         output_node: name === 'SaveImage',
         ...(d as object)
-      } as Parameters<typeof svc.registerNodeDef>[1])
+      })
     } catch (e) {
       regErrs.push(`${name}:${errMsg(e)}`)
     }
@@ -451,9 +445,9 @@ export async function runPack(
   // ---- the user-operation battery ---------------------------------------
   await op('load', () =>
     graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
+      fromAny<Parameters<typeof graph.configure>[0], unknown>(
+        structuredClone(defaultWorkflow)
+      )
     )
   )
   // Harness self-check: if the default workflow did not materialize, the
@@ -530,9 +524,9 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps') as
-        | ConvertibleWidget
-        | undefined
+      const w: ConvertibleWidget | undefined = k?.widgets?.find(
+        (x) => x.name === 'steps'
+      )
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
@@ -613,7 +607,7 @@ export async function runPack(
   })
   await op('addReroute', () => {
     const link = [...graph.links.values()][0]
-    if (link) graph.createReroute([500, 500], link)
+    graph.createReroute([500, 500], link)
   })
 
   // ---- drive the pack's OWN frontend-registered node types --------------
@@ -629,12 +623,12 @@ export async function runPack(
       n.pos = [1200, 100]
       graph.add(n)
       const parts = [
-        `in=${n.inputs?.length ?? 0}`,
-        `out=${n.outputs?.length ?? 0}`,
+        `in=${n.inputs.length}`,
+        `out=${n.outputs.length}`,
         `w=${n.widgets?.length ?? 0}`
       ]
       // try a wildcard-friendly connection into its first input
-      if (n.inputs?.length) {
+      if (n.inputs.length) {
         const ck = byType('CheckpointLoaderSimple')
         try {
           const r = ck?.connect(0, n, 0)
@@ -670,7 +664,7 @@ export async function runPack(
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
-    row.prompt = S(p.output ?? {})
+    row.prompt = S(p.output)
   })
 
   row.ops = ops

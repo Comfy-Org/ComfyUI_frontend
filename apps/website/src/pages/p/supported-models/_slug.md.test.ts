@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { PRICING_URL } from '../../../config/model-pricing'
@@ -20,9 +21,9 @@ const open = mustFind(
 )
 
 function render(model: Model, site?: URL) {
-  return GET({ props: { model }, site } as unknown as Parameters<
-    typeof GET
-  >[0]) as Response
+  return GET(
+    fromPartial<Parameters<typeof GET>[0]>({ props: { model }, site })
+  ) as Response
 }
 
 describe('getStaticPaths', () => {

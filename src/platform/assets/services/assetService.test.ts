@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -51,12 +52,12 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return {
+  return fromPartial<Response>({
     ok: init.ok ?? true,
     status: init.status ?? 200,
     json: vi.fn().mockResolvedValue(body),
     text: vi.fn().mockResolvedValue(JSON.stringify(body))
-  } as unknown as Response
+  })
 }
 
 function buildAssetListResponse(

@@ -36,15 +36,17 @@
 <script
   setup
   lang="ts"
-  generic="
-    T extends string | number | { label: string; value: string | number }
-  "
+  generic="T extends string | number | Record<string, unknown>"
 >
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from '../layout'
 
-type ModelValue = T extends object ? T['value'] : T
+type ModelValue = T extends { value: infer V extends PropertyKey }
+  ? V
+  : T extends object
+    ? PropertyKey
+    : T
 
 interface Props {
   modelValue: ModelValue | null | undefined
@@ -77,12 +79,12 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   const valueField = optionValue
   const optionRecord = option as Record<string, unknown>
   const value =
-    optionRecord[valueField] ??
-    option.value ??
-    optionRecord.name ??
-    option.label ??
-    index
-  return value as ModelValue
+    optionRecord[valueField] ?? optionRecord.name ?? optionRecord.label ?? index
+  return typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'symbol'
+    ? (value as ModelValue)
+    : (String(value) as ModelValue)
 }
 
 // for display with PrimeVue compatibility
@@ -92,9 +94,9 @@ const getOptionLabel = (option: T): string => {
     const optionRecord = option as Record<string, unknown>
     return String(
       optionRecord[labelField] ??
-        option.label ??
+        optionRecord.label ??
         optionRecord.name ??
-        option.value ??
+        optionRecord.value ??
         option
     )
   }

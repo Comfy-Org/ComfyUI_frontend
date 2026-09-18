@@ -178,6 +178,22 @@ function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
 }
 
+function isSlotRecord(
+  value: unknown
+): value is Record<string, unknown> & { name: string; type: string | number } {
+  return (
+    isRecord(value) &&
+    typeof value.name === 'string' &&
+    (typeof value.type === 'string' || typeof value.type === 'number')
+  )
+}
+
+function hasSafeSlots(value: unknown): boolean {
+  return (
+    value === undefined || (Array.isArray(value) && value.every(isSlotRecord))
+  )
+}
+
 /**
  * A supplied input slot whose record has no `link` key carries no link
  * information (as opposed to `link: null`, which means unlinked). Such slots
@@ -189,20 +205,20 @@ function prepareInputSlots(
   existing?: NodeState['inputs']
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw, index) => {
+  return value.filter(isSlotRecord).map((raw, index) => {
     const slot = structuredClone(raw)
     if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
     if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
     return {
       ...slot,
       boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['inputs'][number]
+    }
   })
 }
 
 function prepareOutputSlots(value: unknown): NodeState['outputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw) => {
+  return value.filter(isSlotRecord).map((raw) => {
     const slot = structuredClone(raw)
     if (Array.isArray(slot.links)) {
       slot.links = slot.links.map((id) => toLinkId(Number(id)))
@@ -210,7 +226,7 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
     return {
       ...slot,
       boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['outputs'][number]
+    }
   })
 }
 
@@ -235,17 +251,31 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  const order = Number(payload.order)
+  const flags = cloneRecord(payload.flags)
+  const inputs = prepareInputSlots(payload.inputs, existing?.inputs)
+  const outputs = prepareOutputSlots(payload.outputs)
+  const lastSerialization = {
+    ...structuredClone(payload),
+    id: payload.id,
+    type: payload.type,
+    pos: [x, y],
+    size: [width, height],
+    flags,
+    order: Number.isInteger(order) ? order : 0,
+    mode: Number.isInteger(mode) ? mode : 0
+  } satisfies ISerialisedNode
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
     title: nodeTitle(payload.title, payload.type),
-    flags: cloneRecord(payload.flags),
-    inputs: prepareInputSlots(payload.inputs, existing?.inputs),
-    outputs: prepareOutputSlots(payload.outputs),
+    flags,
+    inputs,
+    outputs,
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
     ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
     ...(typeof payload.color === 'string' && { color: payload.color }),
@@ -413,6 +443,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return 'addNode requires a payload id and type'
           }
+          if (
+            !hasSafeSlots(mutation.payload.inputs) ||
+            !hasSafeSlots(mutation.payload.outputs)
+          ) {
+            return `node ${mutation.payload.id} has malformed slots`
+          }
           const node = prepareNode(
             mutation.payload,
             scope,
@@ -448,6 +484,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const key = nodeKey(toNodeId(mutation.payload.id))
           const existing = nodes.get(key)
+          if (
+            (!existing || existing.type !== mutation.payload.type) &&
+            (!hasSafeSlots(mutation.payload.inputs) ||
+              !hasSafeSlots(mutation.payload.outputs))
+          ) {
+            return `node ${key} has malformed slots`
+          }
           const node = prepareNode(mutation.payload, scope, existing)
           if (!existing || existing.type !== node.state.type) {
             const validationError = validateNodeUpsert(node, key)

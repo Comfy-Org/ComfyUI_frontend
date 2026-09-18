@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
@@ -44,8 +45,9 @@ function seenTours(): string[] {
 }
 
 function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
+  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
+    window
+  ).happyDOM
   if (!happyDOM) {
     throw new Error('window.happyDOM is unavailable to set viewport')
   }

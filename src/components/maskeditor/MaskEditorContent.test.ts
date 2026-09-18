@@ -1,5 +1,6 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -112,12 +113,10 @@ class MockResizeObserver {
 
 // `node` only flows into mocked `loader.loadFromNode`, so a typed sentinel
 // with a stable identity is enough — we never read its fields.
-const fakeNode = { id: 1, title: 'test-node' } as unknown as LGraphNode
+const fakeNode = fromAny<LGraphNode, unknown>({ id: 1, title: 'test-node' })
 
 const renderContent = () =>
   render(MaskEditorContent, { props: { node: fakeNode } })
-
-let originalResizeObserver: typeof ResizeObserver | undefined
 
 describe('MaskEditorContent', () => {
   beforeEach(() => {
@@ -132,13 +131,7 @@ describe('MaskEditorContent', () => {
     mockImageLoader.loadImages.mockResolvedValue({ width: 100, height: 100 })
     mockPanZoom.initializeCanvasPanZoom.mockResolvedValue(undefined)
     mockBrushDrawing.initGPUResources.mockResolvedValue(undefined)
-    originalResizeObserver = globalThis.ResizeObserver
-    globalThis.ResizeObserver = MockResizeObserver
-  })
-
-  afterEach(() => {
-    globalThis.ResizeObserver =
-      originalResizeObserver as unknown as typeof ResizeObserver
+    vi.stubGlobal('ResizeObserver', MockResizeObserver)
   })
 
   describe('mount', () => {

@@ -268,7 +268,11 @@ describe('graphMutations', () => {
       flags: { pinned: true },
       properties: { source: 'mint-time' }
     })
-    expect(state.lastSerialization).toEqual(node(7, { seed: 42 }))
+    expect(state.lastSerialization).toEqual({
+      ...node(7, { seed: 42 }),
+      mode: 0,
+      order: 0
+    })
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'seed'))
     ).toMatchObject({ name: 'seed', value: 42, type: 'number' })
@@ -463,6 +467,22 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
     error.mockRestore()
   })
+
+  it.for(['inputs', 'outputs'] as const)(
+    'rejects malformed %s without shifting serialized slot indexes',
+    (field) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const malformed = {
+        ...node(1),
+        [field]: [null, { name: 'slot-1', type: 'IMAGE' }]
+      }
+
+      expect(mutations().addNode(malformed, context)).toBe(false)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(createLayout).not.toHaveBeenCalled()
+      error.mockRestore()
+    }
+  )
 
   it('reconciles a seeded node while preserving renderer-owned layout', () => {
     const graph = mutations()

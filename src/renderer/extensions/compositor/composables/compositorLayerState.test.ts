@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
@@ -648,7 +649,7 @@ describe('applyLayerState', () => {
         y: 0,
         width: 5,
         height: 5,
-        name: 7 as unknown as string
+        name: fromAny<string, unknown>(7)
       }
     ])
     expect(state).not.toBeNull()

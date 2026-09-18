@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { Compositor, CompositeInput, FBOHandle } from '../compositor'
@@ -37,11 +38,11 @@ class FakeCompositor implements Compositor {
   }
   readback(): ImageData {
     const { w, h } = this.readbackSize
-    return {
+    return fromPartial<ImageData>({
       width: w,
       height: h,
       data: new Uint8ClampedArray(w * h * 4)
-    } as unknown as ImageData
+    })
   }
   async toBlob(): Promise<Blob> {
     return new Blob()
@@ -74,7 +75,7 @@ function probeToolContext(editor: Editor): ToolContext {
   return captured!
 }
 
-const ev = { pressure: 0.5, shiftKey: false } as unknown as PointerEvent
+const ev = fromPartial<PointerEvent>({ pressure: 0.5, shiftKey: false })
 
 function stub2d(): () => void {
   const orig = HTMLCanvasElement.prototype.getContext
@@ -83,7 +84,7 @@ function stub2d(): () => void {
     kind: string
   ) {
     if (kind !== '2d') return null
-    return {
+    return fromPartial<CanvasRenderingContext2D>({
       canvas: this,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
@@ -99,18 +100,18 @@ function stub2d(): () => void {
       clearRect: () => {},
       putImageData: () => {},
       getImageData: (_x: number, _y: number, w: number, h: number) =>
-        ({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
-        }) as unknown as ImageData,
+        }),
       createImageData: (w: number, h: number) =>
-        ({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
-        }) as unknown as ImageData
-    } as unknown as CanvasRenderingContext2D
+        })
+    })
   } as typeof HTMLCanvasElement.prototype.getContext
   return () => {
     HTMLCanvasElement.prototype.getContext = orig
@@ -322,7 +323,7 @@ describe('createEditor — end-to-end orchestration', () => {
       kind: string
     ) {
       if (kind !== '2d') return null
-      return {
+      return fromPartial<CanvasRenderingContext2D>({
         canvas: this,
         imageSmoothingEnabled: true,
         imageSmoothingQuality: 'high',
@@ -332,7 +333,7 @@ describe('createEditor — end-to-end orchestration', () => {
         rotate: () => {},
         drawImage: () => {},
         clearRect: () => {}
-      } as unknown as CanvasRenderingContext2D
+      })
     } as typeof HTMLCanvasElement.prototype.getContext
     try {
       const editor = setup()
@@ -518,7 +519,10 @@ describe('createEditor — floating pointer interaction', () => {
 
   it('dragging the rotate handle rotates; shift snaps the angle', () => {
     const { editor } = floatingSetup()
-    const shiftEv = { pressure: 0.5, shiftKey: true } as unknown as PointerEvent
+    const shiftEv = fromPartial<PointerEvent>({
+      pressure: 0.5,
+      shiftKey: true
+    })
     editor.pointerDown(shiftEv, { x: 100, y: 66 })
     editor.pointerMove(shiftEv, { x: 137, y: 100 })
     expect(editor.floating()!.transform.rotation).toBeCloseTo(Math.PI / 2)

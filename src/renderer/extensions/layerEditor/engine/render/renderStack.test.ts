@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type {
@@ -18,19 +19,19 @@ import { buildDocumentInputs, renderDocument } from './renderStack'
 const T: Transform = { x: 0, y: 0, w: 10, h: 10, rotation: 0 }
 const LOCKS = { content: false, position: false, visibility: false }
 
-const stubKind = {
+const stubKind = fromAny<NodeKind, unknown>({
   kind: 'stub',
   renderNode: (_node: unknown, ctx: { region: unknown }) => ({
     source: document.createElement('canvas'),
     rect: ctx.region,
     linear: false
   })
-} as unknown as NodeKind
+})
 
 beforeAll(() => registerNodeKind(stubKind))
 
 function leaf(opacity = 1, visible = true): SceneNode {
-  return {
+  return fromAny<SceneNode, unknown>({
     kind: 'stub',
     id: `l${opacity}`,
     name: 'l',
@@ -39,7 +40,7 @@ function leaf(opacity = 1, visible = true): SceneNode {
     mode: defaultMode('normal'),
     transform: { ...T },
     locks: { ...LOCKS }
-  } as unknown as SceneNode
+  })
 }
 
 function group(

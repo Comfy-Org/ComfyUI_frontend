@@ -6,6 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -810,10 +811,10 @@ describe('useAgentCrdtFollower', () => {
     // The materializer is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
     const { fakeDefinitions } = definitionsState
-    const fakeGraph = {
+    const fakeGraph = fromPartial<MaterializableGraph>({
       rootGraph: { subgraphs: new Map() },
       setDirtyCanvas: vi.fn()
-    } as unknown as MaterializableGraph
+    })
 
     it('counts the frame even when a removal hook throws out of the reconcile', () => {
       // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
@@ -857,12 +858,12 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('does not deep-copy definitions for a frame when all are registered', () => {
-      const registeredGraph = {
+      const registeredGraph = fromPartial<MaterializableGraph>({
         rootGraph: {
           subgraphs: new Map([[fakeDefinitions[0].id, {}]])
         },
         setDirtyCanvas: vi.fn()
-      } as unknown as MaterializableGraph
+      })
       const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })

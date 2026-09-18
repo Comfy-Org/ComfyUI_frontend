@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -777,11 +778,11 @@ describe('useSecretForm', () => {
         onSaved: vi.fn()
       })
 
-      const unreadable = {
+      const unreadable = fromPartial<File>({
         name: 'sa.json',
         size: 20,
         text: () => Promise.reject(new Error('read failed'))
-      } as unknown as File
+      })
       await loadSecretFromFile(unreadable)
 
       expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
@@ -826,14 +827,14 @@ describe('useSecretForm', () => {
       await nextTick()
 
       let resolveRead: (value: string) => void = () => {}
-      const slowFile = {
+      const slowFile = fromPartial<File>({
         name: 'sa.json',
         size: 26,
         text: () =>
           new Promise<string>((resolve) => {
             resolveRead = resolve
           })
-      } as unknown as File
+      })
 
       const pending = loadSecretFromFile(slowFile)
       form.provider = 'huggingface'

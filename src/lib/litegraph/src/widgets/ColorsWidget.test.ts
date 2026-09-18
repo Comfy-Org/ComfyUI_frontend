@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -5,7 +6,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ColorsWidget } from './ColorsWidget'
 
 function fakeCtx() {
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     save: vi.fn(),
     restore: vi.fn(),
     fillRect: vi.fn(),
@@ -16,7 +17,7 @@ function fakeCtx() {
     font: '',
     textAlign: '',
     textBaseline: ''
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 describe('ColorsWidget', () => {

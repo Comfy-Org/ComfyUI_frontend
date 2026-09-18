@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import type { ChartData } from 'chart.js'
 import { describe, expect, it } from 'vitest'
@@ -90,7 +91,7 @@ describe('WidgetChart', () => {
         labels: ['a'],
         datasets: [{ label: 'x', data: [1] }]
       })
-      value.value = null as unknown as ChartData
+      value.value = fromAny<ChartData, unknown>(null)
       await nextTick()
 
       const parsed = JSON.parse(screen.getByTestId('chart').dataset.chartData!)

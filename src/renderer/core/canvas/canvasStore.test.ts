@@ -101,7 +101,7 @@ describe('useCanvasStore', () => {
           selectedItems.delete(item)
         })
       }
-      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      store.canvas = fromPartial<LGraphCanvas>(fakeCanvas)
       await nextTick()
       store.updateSelectedItems()
       expect(store.selectedItems).toContain(node)
@@ -129,7 +129,7 @@ describe('useCanvasStore', () => {
         graph,
         selectedItems: new Set()
       }
-      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      store.canvas = fromPartial<LGraphCanvas>(fakeCanvas)
       await nextTick()
       expect(store.rootGraphId).toBe(graph.id)
 

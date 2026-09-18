@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -49,7 +49,7 @@ function makeMockEventManager() {
 }
 
 function makeOrbitControls(target = new THREE.Vector3()) {
-  return { target } as unknown as OrbitControls
+  return fromPartial<OrbitControls>({ target })
 }
 
 describe('ViewHelperManager', () => {

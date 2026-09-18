@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -568,8 +569,8 @@ describe('formatUtil', () => {
     })
 
     it('returns an empty string for non-string input', () => {
-      expect(escapeI18nMessage(42 as unknown as string)).toBe('')
-      expect(escapeI18nMessage(null as unknown as string)).toBe('')
+      expect(escapeI18nMessage(fromPartial<string>(42))).toBe('')
+      expect(escapeI18nMessage(fromPartial<string>(null))).toBe('')
     })
   })
 })

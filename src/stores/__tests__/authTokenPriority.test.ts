@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -49,7 +50,7 @@ describe('auth token priority chain', () => {
     mockDistributionTypes.isCloud = true
     stubFirebaseAuthHarness()
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
+      fromPartial<ReturnType<typeof vuefire.useFirebaseAuth>>(mockAuth)
     )
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>

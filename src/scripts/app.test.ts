@@ -3086,7 +3086,7 @@ describe('ComfyApp', () => {
       )
 
       try {
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        fromAny<{ addDropHandler(): void }, unknown>(app).addDropHandler()
 
         document.dispatchEvent(new DragEvent('drop'))
         await vi.waitFor(() => {

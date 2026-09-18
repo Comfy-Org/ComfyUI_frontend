@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { BoundingBox } from '@/types/boundingBoxes'
@@ -182,7 +183,13 @@ describe('fromBoundingBoxes', () => {
           type: 'obj',
           text: '',
           desc: '',
-          palette: ['#FF0000', '#abc', 'red', '', 123] as unknown as string[]
+          palette: fromAny<string[], unknown>([
+            '#FF0000',
+            '#abc',
+            'red',
+            '',
+            123
+          ])
         }
       }
     ]
@@ -203,7 +210,7 @@ describe('fromBoundingBoxes', () => {
   })
 
   it('drops entries that are not bounding boxes', () => {
-    const boxes = [null, { x: 1 }, undefined] as unknown as BoundingBox[]
+    const boxes = fromAny<BoundingBox[], unknown>([null, { x: 1 }, undefined])
     expect(fromBoundingBoxes(boxes, 100, 100)).toEqual([])
   })
 

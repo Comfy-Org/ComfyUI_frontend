@@ -6,7 +6,6 @@
  * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
  * suppressed until the next load's pair recloses.
  */
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
@@ -103,9 +102,10 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
  * `widget_order`, and any extra key is an opaque server-side 500).
  */
 function serializeForMint(node: LGraphNode): WorkflowNode | null {
-  let serialized: Record<string, unknown>
+  let serialized: WorkflowNode
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    const snapshot = node.serialize()
+    serialized = { ...snapshot, flags: { ...snapshot.flags } }
   } catch {
     return null
   }
@@ -121,7 +121,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
     serialized.widgets_values = filtered
     delete serialized.widgets_values_named
   }
-  return serialized as unknown as WorkflowNode
+  return serialized
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
@@ -194,7 +194,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
-      return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
+      return findSubgraphNodePathById(graph, owningGraphId)
     },
     enqueue: deps.enqueue
   })

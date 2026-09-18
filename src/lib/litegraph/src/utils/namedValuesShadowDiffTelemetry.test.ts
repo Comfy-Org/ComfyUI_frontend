@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '../LGraphNode'
@@ -28,7 +29,7 @@ type NodeHooks = Partial<Pick<LGraphNode, 'onSerialize' | 'onConfigure'>>
 function fakeNode(className: string, hooks: NodeHooks = {}): LGraphNode {
   class FakeNode {}
   Object.defineProperty(FakeNode, 'name', { value: className })
-  return Object.assign(new FakeNode(), hooks) as unknown as LGraphNode
+  return fromAny<LGraphNode, unknown>(Object.assign(new FakeNode(), hooks))
 }
 
 describe('reportNamedValuesShadowDiff', () => {

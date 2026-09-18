@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -267,11 +268,12 @@ describe('Viewport3d', () => {
       const overlay = makeOverlay()
       ctx.viewport.setOverlay(overlay)
 
-      const tick = (
-        ctx.viewport as unknown as {
+      const tick = fromAny<
+        {
           tickPerFrame(delta: number): void
-        }
-      ).tickPerFrame.bind(ctx.viewport)
+        },
+        unknown
+      >(ctx.viewport).tickPerFrame.bind(ctx.viewport)
       tick(0.016)
 
       expect(overlay.update).toHaveBeenCalledWith(0.016)
@@ -317,11 +319,12 @@ describe('Viewport3d', () => {
 
   describe('applyTargetSize guards', () => {
     function applyTargetSize(width: number, height: number): void {
-      ;(
-        ctx.viewport as unknown as {
+      fromAny<
+        {
           applyTargetSize(w: number, h: number): void
-        }
-      ).applyTargetSize(width, height)
+        },
+        unknown
+      >(ctx.viewport).applyTargetSize(width, height)
     }
 
     beforeEach(() => {
@@ -456,7 +459,7 @@ describe('Viewport3d', () => {
           renderer: { setViewport: vi.fn(), setScissor: vi.fn(), render }
         }
       })
-      const internals = ctx.viewport as unknown as DimmerInternals
+      const internals = fromAny<DimmerInternals, unknown>(ctx.viewport)
 
       internals.dimLetterboxBars([])
 
@@ -471,7 +474,7 @@ describe('Viewport3d', () => {
       Object.assign(ctx.viewport, {
         view: { renderer: { setViewport, setScissor, render } }
       })
-      const internals = ctx.viewport as unknown as DimmerInternals
+      const internals = fromAny<DimmerInternals, unknown>(ctx.viewport)
 
       internals.dimLetterboxBars([
         { x: 0, y: 0, width: 100, height: 20 },
@@ -496,7 +499,7 @@ describe('Viewport3d', () => {
           }
         }
       })
-      const internals = ctx.viewport as unknown as DimmerInternals
+      const internals = fromAny<DimmerInternals, unknown>(ctx.viewport)
 
       internals.dimLetterboxBars([{ x: 0, y: 0, width: 100, height: 20 }])
       const dimmer = internals.letterboxDimmer!
@@ -576,7 +579,7 @@ describe('Viewport3d', () => {
         update: vi.fn<(delta: number) => void>(),
         render: vi.fn()
       }
-      const deps = {
+      const deps = fromAny<Viewport3dDeps, unknown>({
         view,
         eventManager: {
           addEventListener: vi.fn(),
@@ -595,7 +598,7 @@ describe('Viewport3d', () => {
         controlsManager,
         lightingManager: { init: vi.fn() },
         viewHelperManager
-      } as unknown as Viewport3dDeps
+      })
 
       const viewport = new Viewport3d(document.createElement('div'), deps)
       return { viewport, view, renderer, controlsManager, viewHelperManager }
@@ -636,7 +639,7 @@ describe('Viewport3d', () => {
     }
 
     it('does not skip siblings when a post-render callback disposes itself', () => {
-      const vp = ctx.viewport as unknown as CallbackAccess
+      const vp = fromAny<CallbackAccess, unknown>(ctx.viewport)
       vp.postRenderCallbacks = []
       const calls: string[] = []
 
@@ -652,7 +655,7 @@ describe('Viewport3d', () => {
     })
 
     it('runs pre-render callbacks and stops after disposal', () => {
-      const vp = ctx.viewport as unknown as CallbackAccess
+      const vp = fromAny<CallbackAccess, unknown>(ctx.viewport)
       vp.preRenderCallbacks = []
       const cb = vi.fn()
 
@@ -665,7 +668,7 @@ describe('Viewport3d', () => {
     })
 
     it('scopes each disposer to its own registration of the same callback', () => {
-      const vp = ctx.viewport as unknown as CallbackAccess
+      const vp = fromAny<CallbackAccess, unknown>(ctx.viewport)
       vp.postRenderCallbacks = []
       const cb = vi.fn()
 
@@ -689,9 +692,12 @@ describe('Viewport3d', () => {
         renderMainScene: () => order.push('main'),
         viewHelperManager: { render: vi.fn() }
       })
-      const vp = ctx.viewport as unknown as CallbackAccess & {
-        renderView(): void
-      }
+      const vp = fromAny<
+        CallbackAccess & {
+          renderView(): void
+        },
+        unknown
+      >(ctx.viewport)
       vp.preRenderCallbacks = []
       vp.postRenderCallbacks = []
       vp.addPreRenderCallback(() => order.push('pre'))

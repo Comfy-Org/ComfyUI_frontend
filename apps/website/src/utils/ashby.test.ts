@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -78,7 +79,7 @@ describe('fetchRolesForBuild', () => {
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -102,7 +103,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -120,7 +121,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -142,7 +143,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -165,7 +166,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
@@ -182,7 +183,7 @@ describe('fetchRolesForBuild', () => {
     const fetchImpl = vi.fn()
     const outcome = await fetchRolesForBuild({
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -195,7 +196,7 @@ describe('fetchRolesForBuild', () => {
     const snapshotUrl = withSnapshotDir(null)
     const outcome = await fetchRolesForBuild({
       snapshotUrl,
-      fetchImpl: vi.fn() as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(vi.fn())
     })
     expect(outcome.status).toBe('failed')
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
@@ -209,7 +210,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -229,7 +230,7 @@ describe('fetchRolesForBuild', () => {
       snapshotUrl,
       retryDelaysMs: [1, 1, 1],
       sleep,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('stale')
     expect(fetchImpl).toHaveBeenCalledTimes(4)
@@ -245,7 +246,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -261,7 +262,7 @@ describe('fetchRolesForBuild', () => {
       apiKey: KEY,
       boardName: BOARD,
       baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     }
     const [a, b] = await Promise.all([
       fetchRolesForBuild(opts),
@@ -285,7 +286,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     const after = fs.readFileSync(before).toString()
     expect(after).toBe(initial)
@@ -300,7 +301,7 @@ describe('fetchRolesForBuild', () => {
       boardName: BOARD,
       baseUrl: BASE_URL,
       snapshotUrl,
-      fetchImpl: fetchImpl as unknown as typeof fetch
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })

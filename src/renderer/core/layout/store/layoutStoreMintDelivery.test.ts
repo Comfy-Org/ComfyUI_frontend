@@ -10,6 +10,7 @@
  * workbench must not import renderer, so the wiring takes the store's seams
  * injected - exactly as the composition root will inject them.
  */
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -106,7 +107,7 @@ describe('mint ports against the real layout store delivery', () => {
       id: graphId,
       rootGraph: { id: graphId },
       getNodeById: (id) =>
-        (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ??
+        fromAny<LGraphNode | undefined, unknown>(graphNodes.get(String(id))) ??
         null,
       get _nodes() {
         return [...graphNodes.values()] as LGraphNode[]

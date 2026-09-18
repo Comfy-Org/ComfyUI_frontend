@@ -238,7 +238,7 @@ export interface ModelManagerInterface {
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   setUpDirection(direction: UpDirection): void
   materialMode: MaterialMode
-  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
+  originalMaterials: WeakMap<THREE.Object3D, THREE.Material | THREE.Material[]>
   normalMaterial: THREE.MeshNormalMaterial
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial

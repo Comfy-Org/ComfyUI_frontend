@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -38,7 +39,7 @@ class FakeCameraWidget implements CameraWidgetContract {
 
 vi.mock(import('./camera/CameraWidget'), () => ({
   CameraWidget:
-    FakeCameraWidget as unknown as typeof CameraWidgetModule.CameraWidget
+    fromPartial<typeof CameraWidgetModule.CameraWidget>(FakeCameraWidget)
 }))
 
 async function renderAngleNode() {

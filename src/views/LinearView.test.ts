@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,8 +44,9 @@ vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
 }))
 
 function setViewport(width: number) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
+  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
+    window
+  ).happyDOM
   if (!happyDOM) {
     throw new Error('window.happyDOM is unavailable to set viewport')
   }

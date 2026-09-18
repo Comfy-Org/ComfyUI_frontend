@@ -35,7 +35,7 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
       // Create media recorder
       mediaRecorder.value = new ExtendableMediaRecorder(stream.value, {
         mimeType: 'audio/wav'
-      }) as unknown as MediaRecorder
+      }) as MediaRecorder
 
       mediaRecorder.value.ondataavailable = (e) => {
         audioChunks.value.push(e.data)

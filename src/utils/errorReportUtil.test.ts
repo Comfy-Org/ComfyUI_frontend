@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
@@ -20,7 +21,10 @@ const baseSystemStats: SystemStats = {
   devices: []
 }
 
-const baseWorkflow = { nodes: [], links: [] } as unknown as ISerialisedGraph
+const baseWorkflow = fromPartial<ISerialisedGraph>({
+  nodes: [],
+  links: []
+})
 
 function buildError(serverLogs: unknown): ErrorReportData {
   return {

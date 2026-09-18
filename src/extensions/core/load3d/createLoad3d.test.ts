@@ -186,9 +186,11 @@ function makeAdapter(overrides: Partial<ModelAdapter> = {}): ModelAdapter {
 
 describe('createLoad3d', () => {
   beforeEach(() => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: vi.fn()
-    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      fromAny<ReturnType<HTMLCanvasElement['getContext']>, unknown>({
+        drawImage: vi.fn()
+      })
+    )
   })
 
   it('constructs the renderer with alpha + antialias and appends it to the container', () => {
@@ -205,14 +207,16 @@ describe('createLoad3d', () => {
     const container = createContainer()
     const options = { width: 640, height: 480, isViewerMode: true }
 
-    const instance = createLoad3d(container, options) as unknown as FakeLoad3d
+    const instance = fromAny<FakeLoad3d, unknown>(
+      createLoad3d(container, options)
+    )
 
     expect(instance.options).toEqual(options)
   })
 
   it('shares one AdapterRef between LoaderManager and SceneModelManager lambdas', () => {
     const container = createContainer()
-    const instance = createLoad3d(container) as unknown as FakeLoad3d
+    const instance = fromAny<FakeLoad3d, unknown>(createLoad3d(container))
 
     const adapterRef = instance.deps.adapterRef
     expect(adapterRef.current).toBeNull()
@@ -223,7 +227,9 @@ describe('createLoad3d', () => {
 
   describe('SceneModelManager capability lambdas (default — no adapter loaded)', () => {
     it('getCurrentCapabilities falls back to DEFAULT_MODEL_CAPABILITIES', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = fromAny<FakeLoad3d, unknown>(
+        createLoad3d(createContainer())
+      )
 
       expect(instance.deps.modelManager.getCurrentCapabilities()).toEqual(
         DEFAULT_MODEL_CAPABILITIES
@@ -231,26 +237,34 @@ describe('createLoad3d', () => {
     })
 
     it('getBoundsFromAdapter returns null', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = fromAny<FakeLoad3d, unknown>(
+        createLoad3d(createContainer())
+      )
       expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter is a no-op', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = fromAny<FakeLoad3d, unknown>(
+        createLoad3d(createContainer())
+      )
       expect(() =>
         instance.deps.modelManager.disposeModelViaAdapter({})
       ).not.toThrow()
     })
 
     it('getDefaultCameraPose returns null', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = fromAny<FakeLoad3d, unknown>(
+        createLoad3d(createContainer())
+      )
       expect(instance.deps.modelManager.getDefaultCameraPose()).toBeNull()
     })
   })
 
   describe('SceneModelManager capability lambdas (after adapter is published)', () => {
     function withAdapter(adapter: ModelAdapter) {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = fromAny<FakeLoad3d, unknown>(
+        createLoad3d(createContainer())
+      )
       instance.deps.adapterRef.current = adapter
       instance.deps.adapterRef.capabilities = adapter.capabilities
       return instance

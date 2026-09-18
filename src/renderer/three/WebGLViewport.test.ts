@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import type * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -5,11 +6,11 @@ import { WebGLViewport } from './WebGLViewport'
 
 function fakeRenderer() {
   const domElement = document.createElement('canvas')
-  return {
+  return fromPartial<THREE.WebGLRenderer>({
     forceContextLoss: vi.fn(),
     dispose: vi.fn(),
     domElement
-  } as unknown as THREE.WebGLRenderer
+  })
 }
 
 describe('WebGLViewport', () => {

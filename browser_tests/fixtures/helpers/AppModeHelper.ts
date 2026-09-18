@@ -196,15 +196,11 @@ export class AppModeHelper {
         )
         .map((n: { id: number | string }) => String(n.id))
 
-      const workflow = graph.serialize() as unknown as Record<string, unknown>
+      const workflow = graph.serialize()
       const extra = (workflow.extra ?? {}) as Record<string, unknown>
       extra.linearData = { inputs: inputTuples, outputs: outputNodeIds }
       workflow.extra = extra
-      await window.app!.loadGraphData(
-        workflow as unknown as Parameters<
-          NonNullable<typeof window.app>['loadGraphData']
-        >[0]
-      )
+      await window.app!.loadGraphData(JSON.parse(JSON.stringify(workflow)))
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -96,7 +97,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
   it('resolves INDEX from the promoted host choice, not the frozen interior value', async () => {
     const rootGraph = new LGraph()
     type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
+    const appWithRootGraph = fromAny<AppWithRootGraph, unknown>(app)
     const previousRootGraph = appWithRootGraph.rootGraphInternal
     appWithRootGraph.rootGraphInternal = rootGraph
 
@@ -147,7 +148,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
   it('resolves INDEX from the interior widget when choice was never promoted', async () => {
     const rootGraph = new LGraph()
     type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
+    const appWithRootGraph = fromAny<AppWithRootGraph, unknown>(app)
     const previousRootGraph = appWithRootGraph.rootGraphInternal
     appWithRootGraph.rootGraphInternal = rootGraph
 
