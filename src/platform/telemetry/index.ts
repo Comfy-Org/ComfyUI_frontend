@@ -1,23 +1,5 @@
 import type { TelemetryDispatcher } from './types'
 
-export {
-  AGENT_JOURNEY_SCHEMA_VERSION,
-  getAgentJourneyEventName,
-  serializeAgentJourneyEvent,
-  supportsAgentJourneySchemaVersion
-} from './agentJourneyEvent'
-export type {
-  AgentJourneyCorrelation,
-  AgentJourneyEffectKind,
-  AgentJourneyEffectOutcome,
-  AgentJourneyEvent,
-  AgentJourneyEventName,
-  AgentJourneyRecoveryMode,
-  AgentJourneyReleaseChannel,
-  FrontendSemanticEffectEvent,
-  SerializedAgentJourneyEvent
-} from './agentJourneyEvent'
-
 let _telemetryRegistry: TelemetryDispatcher | null = null
 
 /**
