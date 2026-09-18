@@ -26,7 +26,7 @@ describe('reportNodePricingFailure', () => {
     mockReportError.mockClear()
   })
 
-  it('names the report after the JSONata error and keeps the original as cause', async () => {
+  it('names the report after the JSONata error without retaining raw rule data', async () => {
     const reportNodePricingFailure = await loadReporter()
     // JSONata rejects with a plain object, not an Error.
     const cause = {
@@ -40,8 +40,7 @@ describe('reportNodePricingFailure', () => {
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
-        message: 'T1006: Attempted to invoke a non-function',
-        cause
+        message: 'T1006: Attempted to invoke a non-function'
       }),
       {
         errorType: 'nodes_pricing_rule_evaluate_failed',
@@ -59,6 +58,7 @@ describe('reportNodePricingFailure', () => {
       }
     )
     expect(mockReportError.mock.calls[0][0]).toBeInstanceOf(Error)
+    expect(mockReportError.mock.calls[0][0]).not.toHaveProperty('cause')
   })
 
   it('passes a non-JSONata failure through untouched', async () => {

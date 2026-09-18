@@ -51,9 +51,7 @@ const nextReportableOccurrence = (key: string): number | null => {
 }
 
 const normalizeFailureCause = (cause: unknown, jsonataError?: JsonataError) =>
-  jsonataError
-    ? new Error(`${jsonataError.code}: ${jsonataError.message}`, { cause })
-    : cause
+  jsonataError ? new Error(`${jsonataError.code}: ${jsonataError.message}`) : cause
 
 /**
  * Send a pricing rule failure to diagnostic error reporting.
