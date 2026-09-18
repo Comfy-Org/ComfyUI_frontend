@@ -29,8 +29,12 @@ on:
         type: string
 
 # Serialize runs per cloud branch so two merges cannot race on the same tag.
+# `queue: max` keeps every pending run: each merge tags its own package.json
+# version, so the default single-slot queue would drop an older version's tag
+# when several backports merge in a burst.
 concurrency:
   group: cloud-backport-tag-${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
+  queue: max
   cancel-in-progress: false
 
 jobs:
