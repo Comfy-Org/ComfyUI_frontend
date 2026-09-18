@@ -182,6 +182,7 @@ describe('Advanced form values', () => {
 describe('First and last frame ratios', () => {
   const SLUG = 'byteplus--seedance-2-5-first-last-frame--animate-images'
   const sizes = new Map<string, { width: number; height: number }>()
+  const decoded: string[] = []
 
   class StubImage {
     onload: (() => void) | null = null
@@ -194,11 +195,24 @@ describe('First and last frame ratios', () => {
       if (!size) return
       this.naturalWidth = size.width
       this.naturalHeight = size.height
-      queueMicrotask(() => this.onload?.())
+      queueMicrotask(() => {
+        decoded.push(value)
+        this.onload?.()
+      })
     }
     get src(): string {
       return this.#src
     }
+  }
+
+  /**
+   * Absence proves nothing until the frames have actually been measured: a
+   * bare assertion that the notice is missing is satisfied by the tick before
+   * the decode, whatever the form would go on to decide.
+   */
+  async function silentOnceMeasured(...urls: string[]) {
+    await waitFor(() => expect(decoded).toEqual(expect.arrayContaining(urls)))
+    expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
   }
 
   function frame(url: string, width: number, height: number): string {
@@ -212,6 +226,7 @@ describe('First and last frame ratios', () => {
 
   afterEach(() => {
     sizes.clear()
+    decoded.length = 0
   })
 
   function renderForm(values: Ref<FormValues>) {
@@ -254,6 +269,13 @@ describe('First and last frame ratios', () => {
     expect(
       (await screen.findByTestId('frame-ratio-notice')).textContent
     ).toContain('first frame')
+
+    values.value = {
+      ...values.value,
+      last_frame_url: frame('https://example.com/last-match.png', 1280, 720)
+    }
+
+    await silentOnceMeasured('https://example.com/last-match.png')
   })
 
   it('says nothing when the frames share a shape', async () => {
@@ -263,8 +285,9 @@ describe('First and last frame ratios', () => {
     })
     renderForm(values)
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
+    await silentOnceMeasured(
+      'https://example.com/first.png',
+      'https://example.com/last.png'
     )
   })
 

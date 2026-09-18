@@ -7,6 +7,7 @@ import FrameRatioNotice from './FrameRatioNotice.vue'
 // The notice exists to read pixels the DOM only knows after a decode, so the
 // decoder is the one thing these tests stand in for.
 const sizes = new Map<string, { width: number; height: number }>()
+const decoded: string[] = []
 
 class StubImage {
   onload: (() => void) | null = null
@@ -19,7 +20,10 @@ class StubImage {
     if (!size) return
     this.naturalWidth = size.width
     this.naturalHeight = size.height
-    queueMicrotask(() => this.onload?.())
+    queueMicrotask(() => {
+      decoded.push(value)
+      this.onload?.()
+    })
   }
   get src(): string {
     return this.#src
@@ -31,12 +35,23 @@ function frame(url: string, width: number, height: number): FrameSource {
   return { url }
 }
 
+/**
+ * Absence proves nothing until the pair has actually been measured: a bare
+ * assertion that the notice is missing is satisfied by the tick before the
+ * decode, whatever the component would go on to decide.
+ */
+async function silentOnceMeasured(...urls: string[]) {
+  await waitFor(() => expect(decoded).toEqual(expect.arrayContaining(urls)))
+  expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
+}
+
 beforeEach(() => {
   vi.stubGlobal('Image', StubImage)
 })
 
 afterEach(() => {
   sizes.clear()
+  decoded.length = 0
 })
 
 describe('FrameRatioNotice', () => {
@@ -63,9 +78,7 @@ describe('FrameRatioNotice', () => {
       }
     })
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
-    )
+    await silentOnceMeasured('first.png', 'last.png')
   })
 
   it('stays silent until both frames are chosen', async () => {
@@ -73,9 +86,25 @@ describe('FrameRatioNotice', () => {
       props: { first: frame('first.png', 1920, 1080) }
     })
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
-    )
+    await silentOnceMeasured('first.png')
+  })
+
+  // Replacing a frame is the ordinary way out of the warning, and it is a
+  // different path from arriving already matched: the notice has to come down.
+  it('retires the notice when the last frame is replaced with a matching shape', async () => {
+    const { rerender } = render(FrameRatioNotice, {
+      props: {
+        first: frame('first.png', 1920, 1080),
+        last: frame('last.png', 1080, 1920)
+      }
+    })
+    await screen.findByTestId('frame-ratio-notice')
+
+    await rerender({ last: frame('last-match.png', 1280, 720) })
+
+    // Anchored to the replacement's own decode: a replaced frame is briefly
+    // unmeasured, and the notice is down in that window whatever the ratios.
+    await silentOnceMeasured('last-match.png')
   })
 
   // A frame the browser cannot decode never fires onload, so the pair stays
@@ -88,8 +117,6 @@ describe('FrameRatioNotice', () => {
       }
     })
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
-    )
+    await silentOnceMeasured('first.png')
   })
 })
