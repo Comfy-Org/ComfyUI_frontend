@@ -366,7 +366,7 @@ const ext: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
+      disabled: !Object.keys(app.canvas.selected_nodes).length,
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),

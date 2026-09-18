@@ -37,7 +37,7 @@ const sdk = vi.hoisted(() => {
 })
 
 const app = vi.hoisted(() => ({
-  existing: [] as Array<{ name: string }>,
+  existing: [] as Array<{ name: string; options?: unknown }>,
   initializeApp: vi.fn((_options: unknown, name: string) => ({ name }))
 }))
 
@@ -131,7 +131,8 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
   })
 
   it('reuses an app another entry already created under that name', async () => {
-    app.existing.push({ name: '[DEFAULT]' })
+    const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
+    app.existing.push(existingApp)
     const { createFirebaseIdentity } = await import('./index.js')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
@@ -141,11 +142,12 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     identity.onUserChanged(() => {})
 
     expect(app.initializeApp).not.toHaveBeenCalled()
-    expect(sdk.getAuth).toHaveBeenCalledWith({ name: '[DEFAULT]' })
+    expect(sdk.getAuth).toHaveBeenCalledWith(existingApp)
   })
 
   it("applies the host persistence to an app another script already created, so its Auth is not left on platform defaults or silently on that script's dependencies", async () => {
-    app.existing.push({ name: '[DEFAULT]' })
+    const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
+    app.existing.push(existingApp)
     const { createFirebaseIdentity } = await import('./index.js')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
@@ -156,14 +158,39 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     identity.onUserChanged(() => {})
 
     expect(app.initializeApp).not.toHaveBeenCalled()
-    expect(sdk.initializeAuth).toHaveBeenCalledWith(
-      { name: '[DEFAULT]' },
-      {
-        persistence: [localStore, indexedDbStore],
-        popupRedirectResolver: sdk.browserPopupRedirectResolver
-      }
-    )
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(existingApp, {
+      persistence: [localStore, indexedDbStore],
+      popupRedirectResolver: sdk.browserPopupRedirectResolver
+    })
     expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it('runs the host config thunk before reusing an existing app, so a resolve before remote config loads still fails closed', async () => {
+    app.existing.push({ name: '[DEFAULT]', options: { apiKey: 'test' } })
+    const options = vi.fn(() => {
+      throw new Error('remote config not loaded')
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({ options, appName: '[DEFAULT]' })
+
+    expect(() => identity.initialize()).toThrow('remote config not loaded')
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it('throws instead of binding Auth to an existing app from a different project', async () => {
+    app.existing.push({
+      name: '[DEFAULT]',
+      options: { apiKey: 'other', projectId: 'other-project' }
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test', projectId: 'this-project' },
+      appName: '[DEFAULT]'
+    })
+
+    expect(() => identity.initialize()).toThrow(/different project/)
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).not.toHaveBeenCalled()
   })
 
   it.for([

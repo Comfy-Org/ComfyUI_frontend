@@ -345,26 +345,26 @@ test.describe('Workflow Persistence', () => {
       await assertMissingGraph()
     })
 
-    test(`widget value and node title edited in the UI survive saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.Enabled',
-        vueNodesEnabled
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.Node.DoubleClickTitleToEdit',
-        true
-      )
-      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-      await fitToViewInstant(comfyPage)
-      const node = await comfyPage.nodeOps.getNodeRefById(3)
-      const originalTitle = await getNodeTitle(comfyPage, 3)
-      const seed = await node.getWidgetByName('seed')
-      const originalSeed = await seed.getValue()
-      const savedSeed = 123456789
+    test.describe(`saved reload Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, () => {
+      test.use({
+        initialSettings: {
+          'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar',
+          'Comfy.VueNodes.Enabled': vueNodesEnabled,
+          'Comfy.Node.DoubleClickTitleToEdit': true
+        }
+      })
 
-      const rename = async () => {
+      test(`widget value and node title edited in the UI survive saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+        await fitToViewInstant(comfyPage)
+        const node = await comfyPage.nodeOps.getNodeRefById(3)
+        const originalTitle = await getNodeTitle(comfyPage, 3)
+        const seed = await node.getWidgetByName('seed')
+        const originalSeed = await seed.getValue()
+        const savedSeed = 123456789
+
         if (vueNodesEnabled) {
           await (
             await comfyPage.vueNodes.getFixtureByTitle(originalTitle)
@@ -377,138 +377,124 @@ test.describe('Workflow Persistence', () => {
           await comfyPage.titleEditor.setTitle('Renamed node')
         }
         await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
-      }
 
-      await rename()
-      await node.click('title')
-      await comfyPage.keyboard.undo()
-      await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe(originalTitle)
-      await rename()
-
-      if (vueNodesEnabled) {
-        const seedInput = comfyPage.page
-          .locator('[data-node-id="3"]')
-          .getByRole('spinbutton')
-          .first()
-        await seedInput.fill(String(savedSeed))
-        await seedInput.press('Enter')
-        await expect(seedInput).toHaveValue(String(savedSeed))
-      } else {
-        await seed.click()
-        await comfyPage.page.keyboard.press('ControlOrMeta+A')
-        await comfyPage.page.keyboard.type(String(savedSeed))
-        await comfyPage.page.keyboard.press('Enter')
-      }
-      await expect.poll(() => seed.getValue()).toBe(savedSeed)
-
-      const name = `renamed-node-${generateUniqueFilename()}`
-      await comfyPage.menu.topbar.saveWorkflowAs(name)
-      await comfyPage.workflow.reloadAndWaitForApp()
-      const tab = comfyPage.menu.workflowsTab
-      await tab.open()
-      await tab.getPersistedItem(name).dblclick()
-      await tab.close()
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
-      const reloadedNode = await comfyPage.nodeOps.getNodeRefById(3)
-      await expect
-        .poll(async () =>
-          (await reloadedNode.getWidgetByName('seed')).getValue()
-        )
-        .toBe(savedSeed)
-      expect(await getNodeTitle(comfyPage, 3)).not.toBe(originalTitle)
-      expect(
-        await (await reloadedNode.getWidgetByName('seed')).getValue()
-      ).not.toBe(originalSeed)
-      if (vueNodesEnabled) {
-        await expect(
-          comfyPage.page.locator('[data-node-id="3"]').getByText('Renamed node')
-        ).toBeVisible()
-        await expect(
-          comfyPage.page
+        if (vueNodesEnabled) {
+          const seedInput = comfyPage.page
             .locator('[data-node-id="3"]')
             .getByRole('spinbutton')
             .first()
-        ).toHaveValue(String(savedSeed))
-      } else {
-        await comfyPage.canvasOps.mouseDblclickAt(
-          await reloadedNode.getTitlePosition()
+          await seedInput.fill(String(savedSeed))
+          await seedInput.press('Enter')
+          await expect(seedInput).toHaveValue(String(savedSeed))
+        } else {
+          await seed.click()
+          await comfyPage.page.keyboard.press('ControlOrMeta+A')
+          await comfyPage.page.keyboard.type(String(savedSeed))
+          await comfyPage.page.keyboard.press('Enter')
+        }
+        await expect.poll(() => seed.getValue()).toBe(savedSeed)
+
+        const name = `renamed-node-${generateUniqueFilename()}`
+        await comfyPage.menu.topbar.saveWorkflowAs(name)
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await comfyPage.workflow.openPersistedWorkflow(name)
+        await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
+        const reloadedNode = await comfyPage.nodeOps.getNodeRefById(3)
+        await expect
+          .poll(async () =>
+            (await reloadedNode.getWidgetByName('seed')).getValue()
+          )
+          .toBe(savedSeed)
+        expect(await getNodeTitle(comfyPage, 3)).not.toBe(originalTitle)
+        expect(
+          await (await reloadedNode.getWidgetByName('seed')).getValue()
+        ).not.toBe(originalSeed)
+        if (vueNodesEnabled) {
+          await expect(
+            comfyPage.page
+              .locator('[data-node-id="3"]')
+              .getByText('Renamed node')
+          ).toBeVisible()
+          await expect(
+            comfyPage.page
+              .locator('[data-node-id="3"]')
+              .getByRole('spinbutton')
+              .first()
+          ).toHaveValue(String(savedSeed))
+        } else {
+          await comfyPage.canvasOps.mouseDblclickAt(
+            await reloadedNode.getTitlePosition()
+          )
+          await comfyPage.titleEditor.expectVisible()
+          await expect(comfyPage.titleEditor.input).toHaveValue('Renamed node')
+          await comfyPage.titleEditor.cancel()
+          const reloadedSeed = await reloadedNode.getWidgetByName('seed')
+          await reloadedSeed.click()
+          await expect(
+            comfyPage.page.locator('.graphdialog input[type="text"]')
+          ).toHaveValue(String(savedSeed))
+          await comfyPage.page.keyboard.press('Escape')
+        }
+      })
+
+      test(`copied links keep copied endpoints after saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
+
+        const before = await getPersistenceSnapshot(comfyPage)
+        const originalIds = new Set(before.nodes.map(({ id }) => String(id)))
+        const originalEndpoints = await getLinkEndpoints(comfyPage)
+        expect(originalIds.size).toBeGreaterThan(0)
+        expect(originalEndpoints.length).toBeGreaterThan(0)
+        await comfyPage.canvas.click()
+        await comfyPage.keyboard.selectAll()
+        await comfyPage.clipboard.copy()
+        await comfyPage.clipboard.paste()
+        await comfyPage.nextFrame()
+
+        const copied = await getPersistenceSnapshot(comfyPage)
+        const copiedIds = new Set(
+          copied.nodes
+            .map(({ id }) => String(id))
+            .filter((id) => !originalIds.has(id))
         )
-        await comfyPage.titleEditor.expectVisible()
-        await expect(comfyPage.titleEditor.input).toHaveValue('Renamed node')
-        await comfyPage.titleEditor.cancel()
-        const reloadedSeed = await reloadedNode.getWidgetByName('seed')
-        await reloadedSeed.click()
-        await expect(
-          comfyPage.page.locator('.graphdialog input[type="text"]')
-        ).toHaveValue(String(savedSeed))
-        await comfyPage.page.keyboard.press('Escape')
-      }
-    })
+        expect(copiedIds.size).toBe(originalIds.size)
+        const copiedEndpoints = (await getLinkEndpoints(comfyPage)).filter(
+          ([originId, , targetId]) =>
+            copiedIds.has(originId) || copiedIds.has(targetId)
+        )
+        expect(copiedEndpoints).toHaveLength(originalEndpoints.length)
+        for (const [originId, , targetId] of copiedEndpoints) {
+          expect(copiedIds.has(originId)).toBe(true)
+          expect(copiedIds.has(targetId)).toBe(true)
+          expect(originalIds.has(originId)).toBe(false)
+          expect(originalIds.has(targetId)).toBe(false)
+        }
 
-    test(`copied links keep copied endpoints after saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.Enabled',
-        vueNodesEnabled
-      )
-      await comfyPage.workflow.loadWorkflow('default')
-      await fitToViewInstant(comfyPage)
+        const expectedEndpointTuples = await getLinkEndpoints(comfyPage)
+        expect(expectedEndpointTuples).toHaveLength(
+          originalEndpoints.length * 2
+        )
+        expect(expectedEndpointTuples).toEqual(
+          expect.arrayContaining(originalEndpoints)
+        )
+        const name = `copied-links-${generateUniqueFilename()}`
+        await comfyPage.menu.topbar.saveWorkflowAs(name)
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await comfyPage.workflow.openPersistedWorkflow(name)
 
-      const before = await getPersistenceSnapshot(comfyPage)
-      const originalIds = new Set(before.nodes.map(({ id }) => String(id)))
-      const originalEndpoints = await getLinkEndpoints(comfyPage)
-      expect(originalIds.size).toBeGreaterThan(0)
-      expect(originalEndpoints.length).toBeGreaterThan(0)
-      await comfyPage.canvas.click()
-      await comfyPage.keyboard.selectAll()
-      await comfyPage.clipboard.copy()
-      await comfyPage.clipboard.paste()
-      await comfyPage.nextFrame()
-
-      const copied = await getPersistenceSnapshot(comfyPage)
-      const copiedIds = new Set(
-        copied.nodes
-          .map(({ id }) => String(id))
-          .filter((id) => !originalIds.has(id))
-      )
-      expect(copiedIds.size).toBe(originalIds.size)
-      const copiedEndpoints = (await getLinkEndpoints(comfyPage)).filter(
-        ([originId, , targetId]) =>
-          copiedIds.has(originId) || copiedIds.has(targetId)
-      )
-      expect(copiedEndpoints).toHaveLength(originalEndpoints.length)
-      for (const [originId, , targetId] of copiedEndpoints) {
-        expect(copiedIds.has(originId)).toBe(true)
-        expect(copiedIds.has(targetId)).toBe(true)
-        expect(originalIds.has(originId)).toBe(false)
-        expect(originalIds.has(targetId)).toBe(false)
-      }
-
-      const expectedEndpointTuples = await getLinkEndpoints(comfyPage)
-      expect(expectedEndpointTuples).toHaveLength(originalEndpoints.length * 2)
-      expect(expectedEndpointTuples).toEqual(
-        expect.arrayContaining(originalEndpoints)
-      )
-      const name = `copied-links-${generateUniqueFilename()}`
-      await comfyPage.menu.topbar.saveWorkflowAs(name)
-      await comfyPage.workflow.reloadAndWaitForApp()
-      const tab = comfyPage.menu.workflowsTab
-      await tab.open()
-      await tab.getPersistedItem(name).dblclick()
-      await tab.close()
-      await comfyPage.workflow.waitForWorkflowIdle()
-
-      const reloadedEndpointTuples = await getLinkEndpoints(comfyPage)
-      expect(reloadedEndpointTuples).toEqual(expectedEndpointTuples)
-      for (const [originId, , targetId] of reloadedEndpointTuples.filter(
-        ([candidateOriginId, , candidateTargetId]) =>
-          copiedIds.has(candidateOriginId) || copiedIds.has(candidateTargetId)
-      )) {
-        expect(copiedIds.has(originId)).toBe(true)
-        expect(copiedIds.has(targetId)).toBe(true)
-      }
+        const reloadedEndpointTuples = await getLinkEndpoints(comfyPage)
+        expect(reloadedEndpointTuples).toEqual(expectedEndpointTuples)
+        for (const [originId, , targetId] of reloadedEndpointTuples.filter(
+          ([candidateOriginId, , candidateTargetId]) =>
+            copiedIds.has(candidateOriginId) || copiedIds.has(candidateTargetId)
+        )) {
+          expect(copiedIds.has(originId)).toBe(true)
+          expect(copiedIds.has(targetId)).toBe(true)
+        }
+      })
     })
 
     test(`Save As and export/import preserve the exact graph with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({

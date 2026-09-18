@@ -117,6 +117,26 @@ interface AuthResolver {
 }
 
 /**
+ * A pre-existing app under this name must be the same Firebase project, or
+ * `Auth` would bind to another project's session. The identifying fields are
+ * what the SDK itself compares on a same-name re-`initializeApp`.
+ */
+function assertSameProject(
+  existing: FirebaseOptions,
+  requested: FirebaseOptions,
+  appName: string
+): void {
+  const mismatch = (['projectId', 'apiKey', 'appId', 'authDomain'] as const)
+    .filter((key) => existing[key] !== requested[key])
+    .join(', ')
+  if (mismatch) {
+    throw new Error(
+      `Firebase app "${appName}" already exists for a different project (${mismatch})`
+    )
+  }
+}
+
+/**
  * Host persistence goes through `initializeAuth`, whether this entry creates
  * the named app or another script already did: Firebase allows one Auth per
  * app, so an Auth another module initialized with different dependencies
@@ -130,15 +150,16 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
     return { resolve: () => auth, peek: () => auth }
   }
   const appName = config.appName ?? 'comfy-account'
-  const createApp = () => {
-    const options =
-      typeof config.options === 'function' ? config.options() : config.options
-    return initializeApp(options, appName)
-  }
   let resolved: Auth | undefined
   const resolve = (): Auth => {
     if (resolved) return resolved
-    const app = getApps().find((app) => app.name === appName) ?? createApp()
+    // Resolve options before the lookup so the host's config thunk (its
+    // unloaded-remote-config guard) always runs, even when reusing an app.
+    const options =
+      typeof config.options === 'function' ? config.options() : config.options
+    const existing = getApps().find((app) => app.name === appName)
+    if (existing) assertSameProject(existing.options, options, appName)
+    const app = existing ?? initializeApp(options, appName)
     resolved = config.persistence
       ? initializeAuth(app, {
           persistence: config.persistence,
