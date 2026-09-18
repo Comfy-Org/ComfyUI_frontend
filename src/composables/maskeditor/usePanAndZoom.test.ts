@@ -7,40 +7,30 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
-  return fromPartial<HTMLElement>({
-    clientWidth: width,
-    clientHeight: height,
-    style: {},
-    getBoundingClientRect: () =>
-      ({
-        left: 0,
-        top: 0,
-        width,
-        height,
-        right: width,
-        bottom: height
-      }) as DOMRect
+  const element = document.createElement('div')
+  Object.defineProperties(element, {
+    clientWidth: { value: width },
+    clientHeight: { value: height }
   })
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, width, height)
+  )
+  return element
 }
 
 function createMockCanvas(width: number, height: number): HTMLCanvasElement {
-  return fromPartial<HTMLCanvasElement>({
-    width,
-    height,
-    getContext: vi.fn().mockImplementation(() => null),
-    clientWidth: width,
-    clientHeight: height,
-    style: {},
-    getBoundingClientRect: () =>
-      ({
-        left: 0,
-        top: 0,
-        width,
-        height,
-        right: width,
-        bottom: height
-      }) as DOMRect
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  Object.defineProperties(canvas, {
+    clientWidth: { value: width },
+    clientHeight: { value: height }
   })
+  vi.spyOn(canvas, 'getContext').mockReturnValue(null)
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, width, height)
+  )
+  return canvas
 }
 
 function createMockImage(width: number, height: number): HTMLImageElement {

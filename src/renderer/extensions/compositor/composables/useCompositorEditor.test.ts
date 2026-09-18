@@ -1,11 +1,10 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorEditor } from './useCompositorEditor'
@@ -44,7 +43,8 @@ beforeEach(() => {
 })
 
 describe('useCompositorEditor', () => {
-  const node = fromAny<LGraphNode, unknown>({ id: toNodeId(1) })
+  const node = new LGraphNode('Compositor')
+  node.id = toNodeId(1)
 
   beforeEach(() => {
     clearCompositorLayers(node)

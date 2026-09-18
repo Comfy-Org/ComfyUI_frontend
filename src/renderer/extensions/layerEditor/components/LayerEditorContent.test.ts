@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
 import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
 import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 const {
@@ -103,7 +103,8 @@ const i18n = createI18n({
 })
 
 function renderEditor(mode: 'images' | 'compositor') {
-  const node = fromAny<LGraphNode, unknown>({ id: toNodeId(1) })
+  const node = new LGraphNode('Layer editor')
+  node.id = toNodeId(1)
   render(TopBarHeader, { global: { plugins: [i18n] } })
   return render(LayerEditorContent, {
     props: { node, mode },
