@@ -5,7 +5,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 vi.mock(import('@/i18n'))
 
@@ -32,29 +32,25 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 describe('dialogService Reka renderer opt-in', () => {
-  it("prompt() sets renderer 'reka' and size 'md'", async () => {
-    const result = useDialogService().prompt({ title: 'T', message: 'M' })
-    await vi.waitFor(() =>
-      expect(useDialogStore().showDialog).toHaveBeenCalled()
-    )
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
-    expect(args.dialogComponentProps?.size).toBe('md')
-    args.dialogComponentProps?.onRemoved?.()
-    await expect(result).resolves.toBeNull()
-  })
-
-  it("confirm() sets renderer 'reka' and size 'md'", async () => {
-    const result = useDialogService().confirm({ title: 'T', message: 'M' })
-    await vi.waitFor(() =>
-      expect(useDialogStore().showDialog).toHaveBeenCalled()
-    )
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
-    expect(args.dialogComponentProps?.size).toBe('md')
-    args.dialogComponentProps?.onRemoved?.()
-    await expect(result).resolves.toBeNull()
-  })
+  it.for(['prompt', 'confirm'] as const)(
+    "%s() sets renderer 'reka' and size 'md'",
+    async (method) => {
+      const store = useDialogStore()
+      const showDialog = vi.mocked(store.showDialog)
+      const result = useDialogService()[method]({ title: 'T', message: 'M' })
+      onTestFinished(async () => {
+        await vi.waitFor(() =>
+          expect(store.isDialogOpen('global-prompt')).toBe(true)
+        )
+        store.closeDialog({ key: 'global-prompt' })
+        await result
+      })
+      await vi.waitFor(() => expect(showDialog).toHaveBeenCalled())
+      const [args] = showDialog.mock.calls[0]
+      expect(args.dialogComponentProps?.renderer).toBe('reka')
+      expect(args.dialogComponentProps?.size).toBe('md')
+    }
+  )
 
   it('confirm() opens under its own stack key when the caller passes one', async () => {
     const service = useDialogService()
