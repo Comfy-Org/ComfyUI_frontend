@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessScale.heading', locale) }}
       <template #subtitle>
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
 
     <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <!-- Autoscaling: a stepped worker line tracking a dashed demand curve -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"
@@ -109,7 +109,7 @@ onBeforeUnmount(() => {
       </article>
 
       <!-- Logs: a console panel streaming rows -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink"
@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
       </article>
 
       <!-- Any workflow & model: the ecosystem converging on one endpoint -->
-      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
+      <article class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"

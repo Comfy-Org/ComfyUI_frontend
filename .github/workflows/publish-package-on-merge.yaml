@@ -1,0 +1,181 @@
+name: Publish Package on PR Merge
+
+on:
+  pull_request:
+    types: ['closed']
+    branches: [main]
+    paths:
+      - 'packages/account-core/package.json'
+      - 'packages/account-ui/package.json'
+      - 'packages/billing-contract/package.json'
+      - 'packages/ingest-types/package.json'
+
+env:
+  # #proj-billing — where the SDK package release notices go.
+  SLACK_CHANNEL_ID: 'C0BNGQG2LCW'
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve Released Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+      released: ${{ steps.collect.outputs.released }}
+      summary: ${{ steps.collect.outputs.summary }}
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Collect packages whose version changed
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          INCLUDE='[]'
+          SUMMARY=''
+          for PACKAGE in account-core account-ui billing-contract ingest-types; do
+            PACKAGE_JSON="packages/$PACKAGE/package.json"
+            if ! git diff --quiet HEAD^1 HEAD -- "$PACKAGE_JSON"; then
+              PREV_JSON=$(git show "HEAD^1:$PACKAGE_JSON" 2>/dev/null || true)
+              if [ -z "$PREV_JSON" ]; then
+                echo "::notice title=New package manifest::$PACKAGE_JSON did not exist before this merge; skipping publish."
+                continue
+              fi
+              PREV_VERSION=$(printf '%s' "$PREV_JSON" | node -pe "JSON.parse(require('fs').readFileSync(0, 'utf8')).version ?? ''")
+              VERSION=$(node -p "require('./$PACKAGE_JSON').version")
+              if [ "$PREV_VERSION" = "$VERSION" ]; then
+                continue
+              fi
+              if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+                DIST_TAG=next
+              else
+                DIST_TAG=latest
+              fi
+              INCLUDE=$(jq -c \
+                --arg package "$PACKAGE" \
+                --arg version "$VERSION" \
+                --arg dist_tag "$DIST_TAG" \
+                '. + [{package: $package, version: $version, dist_tag: $dist_tag}]' \
+                <<<"$INCLUDE")
+              SUMMARY="${SUMMARY}@comfyorg/${PACKAGE}@${VERSION} (${DIST_TAG}) "
+            fi
+          done
+          COUNT=$(jq -r 'length' <<<"$INCLUDE")
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::notice title=No version change::No releasable package changed its version in this merge."
+          fi
+          {
+            echo "matrix=$(jq -c --argjson include "$INCLUDE" -n '{include: $include}')"
+            echo "released=$COUNT"
+            echo "summary=${SUMMARY% }"
+          } >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish ${{ matrix.package }} to npm
+    needs: resolve
+    if: needs.resolve.outputs.released != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-package.yaml
+    with:
+      package: ${{ matrix.package }}
+      version: ${{ matrix.version }}
+      dist_tag: ${{ matrix.dist_tag }}
+      ref: ${{ github.event.pull_request.merge_commit_sha }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # The release links are written to an artifact here and posted by
+  # pr-publish-report.yaml, a workflow_run consumer, so this pull_request-
+  # triggered workflow holds no write permission on pull requests.
+  publish_report:
+    name: Write Publish Report
+    needs:
+      - resolve
+      - publish
+    if: success() && needs.resolve.outputs.released != '0'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Write release links and the PR number
+        env:
+          MATRIX: ${{ needs.resolve.outputs.matrix }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p publish-report
+          {
+            echo 'Publish jobs finished successfully:'
+            echo ''
+            jq -r '
+              .include[]
+              | "- npm @comfyorg/\(.package): [`\(.version)`](https://www.npmjs.com/package/@comfyorg/\(.package)/v/\(.version)) on `\(.dist_tag)`"
+            ' <<<"$MATRIX"
+            echo "- Published from [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
+            echo ''
+          } > publish-report/report.md
+          printf '%s' "$PR_NUMBER" > publish-report/pr-number.txt
+
+      - name: Upload publish report
+        uses: actions/upload-artifact@v6
+        with:
+          name: publish-report
+          path: publish-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  # publish is a matrix call, and GitHub attributes a matrix job's outputs to
+  # whichever entry finished last, so `needs.publish.outputs.published` cannot
+  # say which package published and which was skipped as already-on-npm. The
+  # wording below is therefore true of both outcomes; the per-package answer is
+  # the reusable workflow's `published` output, read by single-call consumers.
+  notify_slack:
+    name: Notify Slack
+    needs:
+      - resolve
+      - publish
+    if: success() && needs.resolve.outputs.released != '0'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Post to Slack
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SUMMARY: ${{ needs.resolve.outputs.summary }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          TEXT=":package: *${SUMMARY}* is live on npm — <${PR_URL}|#${PR_NUMBER}> by ${PR_AUTHOR}."
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$TEXT" '{channel: $ch, text: $text}')
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          echo "$RESPONSE" | jq -e '.ok == true' >/dev/null

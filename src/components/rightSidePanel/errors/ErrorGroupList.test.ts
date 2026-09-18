@@ -22,6 +22,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
@@ -391,3 +392,38 @@ describe('ErrorGroupList selection emphasis', () => {
     })
   })
 })
+
+it.for([
+  { name: 'missing without a failed run', nodeErrors: null, badgeCount: 0 },
+  {
+    name: 'missing and blocked the last run',
+    nodeErrors: {
+      '1': nodeError([validationError('value_not_in_list', 'ckpt_name')])
+    },
+    badgeCount: 1
+  }
+])(
+  'blocked-run badge count is $badgeCount when $name',
+  ({ nodeErrors, badgeCount }) => {
+    const pinia = getActivePinia()!
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    useExecutionErrorStore(pinia).recordNodeErrors(nodeErrors)
+
+    renderList(pinia)
+
+    expect(screen.getByTestId('error-group-missing-model')).toBeInTheDocument()
+    expect(screen.queryAllByTestId('blocked-last-run-indicator')).toHaveLength(
+      badgeCount
+    )
+  }
+)

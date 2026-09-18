@@ -13,7 +13,7 @@ import { workshopExampleValues } from './workshop-example-values'
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
 const examples = workshopModels.flatMap((model) => {
   const source = routerContentBySlug.get(model.slug)
-  if (!source || source.alias.contentIssue) return []
+  if (!source || source.binding.contentIssue) return []
   return source.overlay.examples.flatMap((example, index) => {
     if (!Object.hasOwn(example.values, 'medias')) return []
     const media = mediaSchema.parse(example.values.medias)
