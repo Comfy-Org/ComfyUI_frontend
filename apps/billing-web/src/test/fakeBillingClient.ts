@@ -59,8 +59,12 @@ export interface FakeBillingClient {
   >
   readonly invalidatePaymentMethods: () => void
   readonly previewSubscribe: Mock<BillingClient['commands']['previewSubscribe']>
-  readonly reportChallengeStarted: ReturnType<typeof vi.fn>
-  readonly reportChallengeSettled: ReturnType<typeof vi.fn>
+  readonly reportChallengeStarted: Mock<
+    BillingClient['lifecycle']['reportChallengeStarted']
+  >
+  readonly reportChallengeSettled: Mock<
+    BillingClient['lifecycle']['reportChallengeSettled']
+  >
   readonly openPaymentPortal: BillingClient['commands']['openPaymentPortal']
   readonly subscribe: BillingClient['commands']['subscribe']
   readonly recover: BillingClient['lifecycle']['recover']
@@ -113,8 +117,12 @@ export function createFakeBillingClient(
       : paymentMethods
   )
   const invalidatePaymentMethods = vi.fn(() => {})
-  const reportChallengeStarted = vi.fn()
-  const reportChallengeSettled = vi.fn()
+  const reportChallengeStarted: Mock<
+    BillingClient['lifecycle']['reportChallengeStarted']
+  > = vi.fn()
+  const reportChallengeSettled: Mock<
+    BillingClient['lifecycle']['reportChallengeSettled']
+  > = vi.fn()
   const previewSubscribe = vi.fn(async () => preview)
   const openPaymentPortal = vi.fn(async () => portalOutcome)
   const subscribe = vi.fn(async () => {

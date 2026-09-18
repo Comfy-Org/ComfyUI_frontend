@@ -10,8 +10,10 @@
  * the account silently switching itself.
  *
  * `embeddedCheckoutAvailable` follows the Stripe key: with one configured the
- * checkout form collects a card and drives a challenge in-page, without one
- * every operation routes hosted.
+ * checkout form collects a card and drives a challenge in-page. Without one
+ * the form reports itself unavailable and no payment can be started here —
+ * the hosted continuation the lifecycle drives resumes a payment, it does not
+ * open one.
  */
 import type {
   BillingOperationPointerStorage,

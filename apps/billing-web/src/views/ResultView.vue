@@ -8,6 +8,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   CheckoutSteps,
@@ -15,12 +16,17 @@ import {
   useCheckout
 } from '@comfyorg/account-ui/billing'
 import type { BillingOutcome } from '@comfyorg/billing-contract'
+import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import HostedSurface from '@/components/HostedSurface.vue'
+import { useHostedCopy } from '@/composables/useHostedCopy'
 import { STRIPE_PUBLISHABLE_KEY } from '@/config/env'
 import { createStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
+const { coded } = useHostedCopy()
+const route = useRoute()
+const router = useRouter()
 const { lifecycle } = useBillingClient<'lifecycle'>(undefined)
 
 const checkout = useCheckout({
@@ -33,11 +39,27 @@ const checkout = useCheckout({
 })
 
 const recovering = ref(true)
+const recoveryFailure = ref<string | undefined>()
 
 onMounted(async () => {
-  await lifecycle.recover()
+  // `recover` reports a refusal rather than throwing, and this page is where a
+  // customer lands back from the provider. Swallowing that result would tell
+  // someone who may well have paid that no payment exists.
+  const recovered = await lifecycle.recover()
+  if (recovered.status === 'error') recoveryFailure.value = recovered.code
   recovering.value = false
 })
+
+/**
+ * A recovered operation carries no `subscribe` input, so the lifecycle's own
+ * retry has nothing to resend. The payment form is where a new attempt starts.
+ */
+function retryPayment() {
+  void router.push({
+    path: billingIntentPath('checkout'),
+    query: route.query
+  })
+}
 
 const outcome = computed<BillingOutcome>(() => {
   switch (checkout.projection.value.step) {
@@ -62,6 +84,12 @@ const returnResult = computed(() => ({
       {{ t('hosted.result.recovering') }}
     </p>
     <p
+      v-else-if="recoveryFailure"
+      class="m-0 text-sm text-destructive-background"
+    >
+      {{ coded('failure', recoveryFailure) }}
+    </p>
+    <p
       v-else-if="!checkout.operation.value"
       class="m-0 text-sm text-muted-foreground"
     >
@@ -77,7 +105,7 @@ const returnResult = computed(() => ({
       safety-class="m-0 text-sm text-muted-foreground"
       actions-class="mt-2 flex gap-2"
       action-class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
-      @retry="checkout.retry()"
+      @retry="retryPayment"
       @cancel="checkout.cancel()"
       @continue-verification="checkout.continueVerification()"
     />

@@ -48,16 +48,19 @@ describe('EmbeddedCheckout', () => {
     ).toBeInTheDocument()
   })
 
-  it('prices a yearly plan by its period and the exact fractional charge', () => {
+  it('prices a yearly plan by its period and charges the prorated amount due', () => {
+    // A mid-period upgrade: the period price and the charge today differ, so a
+    // swapped or duplicated binding cannot pass.
     renderCheckout({
       priceCents: 33_649,
-      amountDueCents: 33_649,
+      amountDueCents: 12_500,
       billingCycle: 'yearly'
     })
 
-    expect(screen.getAllByText('$336.49')).toHaveLength(2)
+    expect(screen.getByText('$336.49')).toBeInTheDocument()
     expect(screen.getByText('USD per year')).toBeInTheDocument()
-    expect(screen.getByText('$336.49 billed yearly')).toBeInTheDocument()
+    expect(screen.getByText('$125.00 billed yearly')).toBeInTheDocument()
+    expect(screen.getByText('$125.00')).toBeInTheDocument()
   })
 
   it('renders the completed state with the way back the host provides', () => {
