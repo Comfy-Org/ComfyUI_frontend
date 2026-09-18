@@ -1,0 +1,22 @@
+name: 'CI: Custom Node Detection Proof Patches'
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify stale-patch detection
+        run: bash scripts/cicd/check-custom-node-proof-patches.test.sh
+
+      - name: Validate detection proof patches
+        run: bash scripts/cicd/check-custom-node-proof-patches.sh
