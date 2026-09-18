@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { SearchResult } from 'minisearch'
@@ -284,15 +284,14 @@ describe('searchTemplates', () => {
 
 describe('rankByRelevanceThenUsage', () => {
   const hit = (id: string, score: number, usage: number): SearchResult =>
-    fromAny<SearchResult, unknown>({ id, score, usage })
+    fromPartial<SearchResult>({ id, score, usage })
 
   const curatedHit = (
     id: string,
     score: number,
     usage: number,
     searchRank: number
-  ): SearchResult =>
-    fromAny<SearchResult, unknown>({ id, score, usage, searchRank })
+  ): SearchResult => fromPartial<SearchResult>({ id, score, usage, searchRank })
 
   it('produces a stable order for an intransitive cluster', () => {
     // These scores and usages cycle under a pairwise relative-band compare

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TurnstileApi } from './turnstileScript'
@@ -65,16 +65,16 @@ describe('loadTurnstile', () => {
     const realCreateElement = document.createElement.bind(document)
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
       tag === 'script'
-        ? fromAny<HTMLElement, unknown>(new FakeScript())
+        ? fromPartial<HTMLElement>(new FakeScript())
         : realCreateElement(tag)
     )
     vi.spyOn(document, 'querySelector').mockImplementation((sel: string) =>
       typeof sel === 'string' && sel.includes('challenges.cloudflare.com')
-        ? fromAny<Element | null, unknown>(scriptEl())
+        ? fromPartial<Element | null>(scriptEl())
         : null
     )
     vi.spyOn(document.head, 'appendChild').mockImplementation((node: Node) => {
-      inserted.push(fromAny<FakeScript, unknown>(node))
+      inserted.push(fromPartial<FakeScript>(node))
       return node
     })
   })

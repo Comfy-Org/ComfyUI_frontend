@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -48,7 +48,7 @@ describe('auth token priority chain', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      fromAny<ReturnType<typeof vuefire.useFirebaseAuth>, unknown>(mockAuth)
+      fromPartial<ReturnType<typeof vuefire.useFirebaseAuth>>(mockAuth)
     )
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {

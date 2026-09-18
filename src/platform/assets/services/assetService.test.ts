@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -52,7 +52,7 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return fromAny<Response, unknown>({
+  return fromPartial<Response>({
     ok: init.ok ?? true,
     status: init.status ?? 200,
     json: vi.fn().mockResolvedValue(body),

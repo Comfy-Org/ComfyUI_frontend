@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -43,7 +43,7 @@ const lottieMock = {
 } satisfies MockLottie
 
 vi.mock(import('lottie-web'), () => ({
-  default: fromAny<typeof LottieModule.default, unknown>(lottieMock)
+  default: fromPartial<typeof LottieModule.default>(lottieMock)
 }))
 
 async function renderScene(props: { src: string; active?: boolean }) {

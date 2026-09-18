@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { PRICING_URL } from '../../../config/model-pricing'
@@ -22,7 +22,7 @@ const open = mustFind(
 
 function render(model: Model, site?: URL) {
   return GET(
-    fromAny<Parameters<typeof GET>[0], unknown>({ props: { model }, site })
+    fromPartial<Parameters<typeof GET>[0]>({ props: { model }, site })
   ) as Response
 }
 

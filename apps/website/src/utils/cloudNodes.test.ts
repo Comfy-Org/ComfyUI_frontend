@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -195,7 +195,7 @@ describe('fetchCloudNodesForBuild', () => {
     const fetchImpl = vi.fn()
     const outcome = await fetchCloudNodesForBuild({
       snapshotUrl,
-      fetchImpl: fromAny<typeof fetch, unknown>(fetchImpl)
+      fetchImpl: fromPartial<typeof fetch>(fetchImpl)
     })
     expect(outcome.status).toBe('stale')
     if (outcome.status !== 'stale') return
@@ -208,7 +208,7 @@ describe('fetchCloudNodesForBuild', () => {
     const snapshotUrl = withSnapshotDir(null)
     const outcome = await fetchCloudNodesForBuild({
       snapshotUrl,
-      fetchImpl: fromAny<typeof fetch, unknown>(vi.fn())
+      fetchImpl: fromPartial<typeof fetch>(vi.fn())
     })
     expect(outcome.status).toBe('failed')
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })

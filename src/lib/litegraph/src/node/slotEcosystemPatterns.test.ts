@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -41,7 +41,7 @@ describe('ecosystem slot patterns', () => {
 
       target._setConcreteSlots()
       const ctx = mockCanvasContext()
-      target.drawCollapsedSlots(fromAny<CanvasRenderingContext2D, unknown>(ctx))
+      target.drawCollapsedSlots(fromPartial<CanvasRenderingContext2D>(ctx))
 
       expect(ctx.fill).toHaveBeenCalledTimes(1)
     })

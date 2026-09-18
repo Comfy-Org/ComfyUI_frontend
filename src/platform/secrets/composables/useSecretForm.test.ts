@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -778,7 +778,7 @@ describe('useSecretForm', () => {
         onSaved: vi.fn()
       })
 
-      const unreadable = fromAny<File, unknown>({
+      const unreadable = fromPartial<File>({
         name: 'sa.json',
         size: 20,
         text: () => Promise.reject(new Error('read failed'))
@@ -827,7 +827,7 @@ describe('useSecretForm', () => {
       await nextTick()
 
       let resolveRead: (value: string) => void = () => {}
-      const slowFile = fromAny<File, unknown>({
+      const slowFile = fromPartial<File>({
         name: 'sa.json',
         size: 26,
         text: () =>

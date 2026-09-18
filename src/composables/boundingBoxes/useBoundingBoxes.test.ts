@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
@@ -21,7 +21,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const ctx = fromAny<CanvasRenderingContext2D, unknown>({
+const ctx = fromPartial<CanvasRenderingContext2D>({
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -47,7 +47,7 @@ function makeCanvas(): HTMLCanvasElement {
   const el = document.createElement('canvas')
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
   Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
-  el.getContext = fromAny<HTMLCanvasElement['getContext'], unknown>(() => ctx)
+  el.getContext = fromPartial<HTMLCanvasElement['getContext']>(() => ctx)
   el.getBoundingClientRect = () => ({
     left: 0,
     top: 0,
@@ -96,7 +96,7 @@ const pe = (
   clientY: number,
   over: Partial<PointerEvent> = {}
 ) =>
-  fromAny<PointerEvent, unknown>({
+  fromPartial<PointerEvent>({
     button: 0,
     clientX,
     clientY,
@@ -232,7 +232,7 @@ describe('useBoundingBoxes region editing', () => {
   it('deletes the active region on Delete', async () => {
     const c = setup([box()])
     c.onCanvasKeyDown(
-      fromAny<KeyboardEvent, unknown>({
+      fromPartial<KeyboardEvent>({
         key: 'Delete',
         preventDefault: () => {},
         stopPropagation: () => {}

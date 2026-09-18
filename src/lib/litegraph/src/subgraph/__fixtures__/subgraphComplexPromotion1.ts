@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -6,7 +6,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 
-export const subgraphComplexPromotion1 = fromAny<ISerialisedGraph, unknown>({
+export const subgraphComplexPromotion1 = fromPartial<ISerialisedGraph>({
   id: 'e49902fa-ee3e-40e6-a59e-c8931888ad0e',
   revision: 0,
   last_node_id: 21,

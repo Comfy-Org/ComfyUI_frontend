@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
@@ -7,10 +7,10 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
-  return fromAny<HTMLElement, unknown>({
+  return fromPartial<HTMLElement>({
     clientWidth: width,
     clientHeight: height,
-    style: {} as CSSStyleDeclaration,
+    style: {},
     getBoundingClientRect: () =>
       ({
         left: 0,
@@ -24,13 +24,13 @@ function createMockElement(width = 1200, height = 800): HTMLElement {
 }
 
 function createMockCanvas(width: number, height: number): HTMLCanvasElement {
-  return fromAny<HTMLCanvasElement, unknown>({
+  return fromPartial<HTMLCanvasElement>({
     width,
     height,
     getContext: vi.fn().mockImplementation(() => null),
     clientWidth: width,
     clientHeight: height,
-    style: {} as CSSStyleDeclaration,
+    style: {},
     getBoundingClientRect: () =>
       ({
         left: 0,
@@ -56,7 +56,7 @@ function createTouchList(...points: { x: number; y: number }[]): TouchList {
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
-  return fromAny<TouchEvent, unknown>({
+  return fromPartial<TouchEvent>({
     touches,
     preventDefault: vi.fn()
   })

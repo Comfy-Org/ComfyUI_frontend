@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -215,7 +215,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   comfyPage
 }) => {
   test.setTimeout(PLAN_SETUP_MS)
-  const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+  const defs = fromPartial<Record<string, RawNodeDef>>(
     await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
   )
   const registeredNodes = normalizeNodeDefs(defs)
@@ -793,7 +793,7 @@ for (const vueNodesEnabled of [false, true]) {
     { tag: vueNodesEnabled ? ['@vue-nodes'] : [] },
     async ({ comfyPage }) => {
       test.setTimeout(PLAN_SETUP_MS)
-      const defs = fromAny<Record<string, RawNodeDef>, unknown>(
+      const defs = fromPartial<Record<string, RawNodeDef>>(
         await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
       )
       const nodes = normalizeNodeDefs(defs)

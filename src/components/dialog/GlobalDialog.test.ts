@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -578,11 +578,10 @@ describe('GlobalDialog Reka focus-outside binding', () => {
 describe('shouldPreventRekaDismiss', () => {
   function makeEvent(target: Element | null) {
     let prevented = false
-    return fromAny<
+    return fromPartial<
       CustomEvent<{ originalEvent: PointerEvent }> & {
         defaultPrevented: boolean
-      },
-      unknown
+      }
     >({
       detail: { originalEvent: { target } },
       preventDefault: () => {

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -53,7 +53,7 @@ type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    delete fromAny<ConfigWindow, unknown>(window).__CONFIG__
+    delete fromPartial<ConfigWindow>(window).__CONFIG__
   })
 
   it('warns and disables itself when no mixpanel_token is configured', () => {
@@ -76,7 +76,7 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    fromAny<ConfigWindow, unknown>(window).__CONFIG__ = {
+    fromPartial<ConfigWindow>(window).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
     mockMixpanel.init.mockImplementation((_token, config) => {
@@ -266,7 +266,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    fromAny<ConfigWindow, unknown>(window).__CONFIG__ = {
+    fromPartial<ConfigWindow>(window).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
     mockMixpanel.init.mockImplementation((_token, config) => {

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -6,7 +6,7 @@ import { api } from '@/scripts/api'
 // Tests for api.cancelJob and api.cancelJobs; fetchApi is stubbed.
 const okResponse = () => ({ ok: true, status: 200 }) as Response
 const errorResponse = (status: number, body = '') =>
-  fromAny<Response, unknown>({
+  fromPartial<Response>({
     ok: false,
     status,
     text: () => Promise.resolve(body)

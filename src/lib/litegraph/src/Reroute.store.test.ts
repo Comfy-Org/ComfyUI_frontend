@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -168,7 +168,7 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
   it('deduplicates colliding subgraph reroute ids into one root bucket', () => {
     LiteGraph.registerNodeType('dummy', LGraphNode)
-    const data = fromAny<SerialisableGraph, unknown>(
+    const data = fromPartial<SerialisableGraph>(
       structuredClone(duplicateSubgraphNodeIds)
     )
     const [a, b] = data.definitions!.subgraphs!

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { Compositor, CompositeInput, FBOHandle } from '../compositor'
@@ -38,7 +38,7 @@ class FakeCompositor implements Compositor {
   }
   readback(): ImageData {
     const { w, h } = this.readbackSize
-    return fromAny<ImageData, unknown>({
+    return fromPartial<ImageData>({
       width: w,
       height: h,
       data: new Uint8ClampedArray(w * h * 4)
@@ -75,7 +75,7 @@ function probeToolContext(editor: Editor): ToolContext {
   return captured!
 }
 
-const ev = fromAny<PointerEvent, unknown>({ pressure: 0.5, shiftKey: false })
+const ev = fromPartial<PointerEvent>({ pressure: 0.5, shiftKey: false })
 
 function stub2d(): () => void {
   const orig = HTMLCanvasElement.prototype.getContext
@@ -84,7 +84,7 @@ function stub2d(): () => void {
     kind: string
   ) {
     if (kind !== '2d') return null
-    return fromAny<CanvasRenderingContext2D, unknown>({
+    return fromPartial<CanvasRenderingContext2D>({
       canvas: this,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
@@ -100,13 +100,13 @@ function stub2d(): () => void {
       clearRect: () => {},
       putImageData: () => {},
       getImageData: (_x: number, _y: number, w: number, h: number) =>
-        fromAny<ImageData, unknown>({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
         }),
       createImageData: (w: number, h: number) =>
-        fromAny<ImageData, unknown>({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
@@ -323,7 +323,7 @@ describe('createEditor — end-to-end orchestration', () => {
       kind: string
     ) {
       if (kind !== '2d') return null
-      return fromAny<CanvasRenderingContext2D, unknown>({
+      return fromPartial<CanvasRenderingContext2D>({
         canvas: this,
         imageSmoothingEnabled: true,
         imageSmoothingQuality: 'high',
@@ -519,7 +519,7 @@ describe('createEditor — floating pointer interaction', () => {
 
   it('dragging the rotate handle rotates; shift snaps the angle', () => {
     const { editor } = floatingSetup()
-    const shiftEv = fromAny<PointerEvent, unknown>({
+    const shiftEv = fromPartial<PointerEvent>({
       pressure: 0.5,
       shiftKey: true
     })

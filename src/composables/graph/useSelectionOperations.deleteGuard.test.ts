@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
@@ -24,7 +24,7 @@ function stubCanvas(selectOnly: boolean) {
     deleteSelected,
     setDirty: vi.fn()
   }
-  fromAny<{ canvas: unknown }, unknown>(app).canvas = canvas
+  fromPartial<{ canvas: unknown }>(app).canvas = canvas
   return { deleteSelected }
 }
 

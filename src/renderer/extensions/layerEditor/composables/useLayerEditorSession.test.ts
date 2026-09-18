@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import {
   afterAll,
   beforeAll,
@@ -46,7 +46,7 @@ class FakeCompositor implements Compositor {
     return {}
   }
   readback(): ImageData {
-    return fromAny<ImageData, unknown>({
+    return fromPartial<ImageData>({
       width: 1,
       height: 1,
       data: new Uint8ClampedArray(4)
@@ -73,7 +73,7 @@ function stub2d(): () => void {
     kind: string
   ) {
     if (kind !== '2d') return null
-    return fromAny<CanvasRenderingContext2D, unknown>({
+    return fromPartial<CanvasRenderingContext2D>({
       canvas: this,
       imageSmoothingEnabled: true,
       imageSmoothingQuality: 'high',
@@ -104,13 +104,13 @@ function stub2d(): () => void {
       setLineDash: () => {},
       putImageData: () => {},
       getImageData: (_x: number, _y: number, w: number, h: number) =>
-        fromAny<ImageData, unknown>({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4).fill(255)
         }),
       createImageData: (w: number, h: number) =>
-        fromAny<ImageData, unknown>({
+        fromPartial<ImageData>({
           width: w,
           height: h,
           data: new Uint8ClampedArray(w * h * 4)
@@ -213,7 +213,7 @@ function makeElements() {
 }
 
 function pointer(init: Partial<PointerEvent>): PointerEvent {
-  return fromAny<PointerEvent, unknown>({
+  return fromPartial<PointerEvent>({
     button: 0,
     pointerId: 1,
     clientX: 0,
@@ -228,7 +228,7 @@ function pointer(init: Partial<PointerEvent>): PointerEvent {
 }
 
 function key(init: Partial<KeyboardEvent>): KeyboardEvent {
-  return fromAny<KeyboardEvent, unknown>({
+  return fromPartial<KeyboardEvent>({
     code: '',
     key: '',
     ctrlKey: false,
@@ -649,7 +649,7 @@ describe('useLayerEditorSession', () => {
       await flushFrames()
       const before = session.zoomRatio.value
       session.onWheel(
-        fromAny<WheelEvent, unknown>({
+        fromPartial<WheelEvent>({
           deltaY: -1,
           offsetX: 10,
           offsetY: 10

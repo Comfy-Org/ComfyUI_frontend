@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Transform } from '../node'
@@ -25,7 +25,7 @@ function context(drawImageError?: Error) {
   const restore = vi.fn(() => {
     globalAlpha = alphaStack.pop() ?? 1
   })
-  const ctx = fromAny<CanvasRenderingContext2D, unknown>({
+  const ctx = fromPartial<CanvasRenderingContext2D>({
     get globalAlpha() {
       return globalAlpha
     },

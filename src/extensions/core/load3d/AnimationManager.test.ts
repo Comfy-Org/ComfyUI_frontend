@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -52,7 +52,7 @@ describe('AnimationManager', () => {
     it('falls back to originalModel.animations when the model itself has none', () => {
       const clips = [makeClip('idle', 1.5)]
       const model = makeAnimatedModel([])
-      const originalModel = fromAny<THREE.Object3D, unknown>({
+      const originalModel = fromPartial<THREE.Object3D>({
         animations: clips
       })
 

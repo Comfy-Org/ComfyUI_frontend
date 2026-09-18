@@ -1,11 +1,11 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { models } from '../../../config/models'
 import { GET } from './llms.txt'
 
 function render(site?: URL) {
-  return GET(fromAny<Parameters<typeof GET>[0], unknown>({ site })) as Response
+  return GET(fromPartial<Parameters<typeof GET>[0]>({ site })) as Response
 }
 
 describe('llms.txt catalog', () => {

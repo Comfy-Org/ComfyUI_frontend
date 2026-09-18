@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access --
  * The scene is a decorative aria-hidden SVG with no accessible roles or text;
  * its structure and animation can only be asserted through the DOM. */
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -29,12 +29,9 @@ beforeEach(() => {
     cancelledIds.push(id)
   })
   const graphicsProto =
-    fromAny<
-      {
-        SVGGraphicsElement?: { prototype: SVGElement }
-      },
-      unknown
-    >(globalThis).SVGGraphicsElement?.prototype ?? SVGElement.prototype
+    fromPartial<{
+      SVGGraphicsElement?: { prototype: SVGElement }
+    }>(globalThis).SVGGraphicsElement?.prototype ?? SVGElement.prototype
   Object.defineProperty(graphicsProto, 'getBBox', {
     configurable: true,
     value: () => ({ x: 0, y: 100, width: 100, height: 200 })

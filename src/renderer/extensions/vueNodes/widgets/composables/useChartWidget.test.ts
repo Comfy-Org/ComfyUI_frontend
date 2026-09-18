@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -93,7 +93,7 @@ describe('useChartWidget', () => {
 
   it('throws when the input spec is not a chart spec', () => {
     const { node } = createMockNode()
-    const inputSpec = fromAny<InputSpec, unknown>({
+    const inputSpec = fromPartial<InputSpec>({
       type: 'STRING',
       name: 'chart'
     })

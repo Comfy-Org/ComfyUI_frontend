@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -101,7 +101,7 @@ describe('useCanvasStore', () => {
           selectedItems.delete(item)
         })
       }
-      store.canvas = fromAny<LGraphCanvas, unknown>(fakeCanvas)
+      store.canvas = fromPartial<LGraphCanvas>(fakeCanvas)
       await nextTick()
       store.updateSelectedItems()
       expect(store.selectedItems).toContain(node)
@@ -129,7 +129,7 @@ describe('useCanvasStore', () => {
         graph,
         selectedItems: new Set()
       }
-      store.canvas = fromAny<LGraphCanvas, unknown>(fakeCanvas)
+      store.canvas = fromPartial<LGraphCanvas>(fakeCanvas)
       await nextTick()
       expect(store.rootGraphId).toBe(graph.id)
 

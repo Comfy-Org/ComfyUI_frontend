@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { mipForScale, placeBitmap } from './place'
@@ -15,7 +15,7 @@ function recordingStub(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
     (op: string) =>
     (...args: unknown[]) =>
       calls.push({ op, args })
-  return fromAny<CanvasRenderingContext2D, unknown>({
+  return fromPartial<CanvasRenderingContext2D>({
     canvas,
     imageSmoothingEnabled: false,
     imageSmoothingQuality: 'low',
