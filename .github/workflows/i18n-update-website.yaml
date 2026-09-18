@@ -13,13 +13,16 @@ concurrency:
 
 jobs:
   update-locales:
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          token: ${{ secrets.PR_GH_TOKEN }}
           ref: ${{ github.ref_name }}
+          # The push token is scoped to the final step so dependency install
+          # scripts never see it
+          persist-credentials: false
           # Blobless full history: the locale pipeline lazily fetches the
           # English source blobs recorded in
           # apps/website/src/locales/.source-manifest.json
@@ -37,10 +40,12 @@ jobs:
       - name: Commit updated locales
         env:
           TARGET_BRANCH: ${{ github.ref_name }}
+          PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
         run: |
           git add apps/website/src/locales/
           if git diff --cached --quiet; then exit 0; fi
           ./scripts/cicd/check-json.sh
           git -c user.name=github-actions -c user.email=github-actions@github.com \
             commit -m 'Update website locales'
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/$TARGET_BRANCH"
