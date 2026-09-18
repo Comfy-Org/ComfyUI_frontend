@@ -316,13 +316,82 @@ function requireEnv(name: string): string {
   return value
 }
 
-function readRemoteBranches(path: string | undefined): string[] | null {
+/**
+ * The workflow leaves an empty file behind when `git ls-remote` fails, which
+ * has to read as "could not be listed" and not as "the remote has no
+ * branches" — the second would warn that every target is uncut.
+ */
+export function readRemoteBranches(path: string | undefined): string[] | null {
   if (!path || !existsSync(path)) return null
   const branches = readFileSync(path, 'utf8')
     .split('\n')
     .map((branch) => branch.trim())
     .filter(Boolean)
   return branches.length > 0 ? branches : null
+}
+
+export interface WatcherResolution {
+  recipients: string[]
+  /** Lines to print, each already carrying its own workflow-command prefix. */
+  notices: string[]
+  /** Whether the run should fail because nobody reliable was notified. */
+  failed: boolean
+}
+
+/**
+ * Decides who gets the DM and whether the run may pass.
+ *
+ * The send step is skipped when there is no recipient, and a skipped step is
+ * a green step — so anything wrong with the watcher list has to be caught
+ * here or it is not caught at all. A list that is entirely typos, or nothing
+ * but separators, would otherwise end as a passing run that notified nobody:
+ * the silent failure this whole notification exists to end, reproduced by the
+ * notification itself.
+ *
+ * A single bad entry among good ones fails too, matching what happens when
+ * Slack rejects one recipient of several. One watcher silently never hearing
+ * anything is the case worth being loud about.
+ */
+export function resolveWatchers(raw: string | undefined): WatcherResolution {
+  const { valid, invalid, disabled } = parseSlackRecipients(raw)
+  const notices = invalid.map(
+    (entry) => `::warning::Ignoring watcher "${entry}": not a Slack member ID.`
+  )
+
+  if (disabled && valid.length === 0) {
+    return {
+      recipients: [],
+      notices: [
+        ...notices,
+        'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.'
+      ],
+      failed: false
+    }
+  }
+
+  if (valid.length === 0) {
+    return {
+      recipients: [],
+      notices: [
+        ...notices,
+        '::error::No usable Slack member ID in SLACK_NEEDS_BACKPORT_WATCHERS; nobody was notified.'
+      ],
+      failed: true
+    }
+  }
+
+  if (invalid.length > 0) {
+    return {
+      recipients: valid,
+      notices: [
+        ...notices,
+        `::error::${invalid.length} watcher(s) in SLACK_NEEDS_BACKPORT_WATCHERS are not Slack member IDs and were not notified.`
+      ],
+      failed: true
+    }
+  }
+
+  return { recipients: valid, notices, failed: false }
 }
 
 function main() {
@@ -339,44 +408,22 @@ function main() {
     labeledBy: requireEnv('LABELED_BY'),
     remoteBranches: readRemoteBranches(values.branches)
   }
-  const { valid, invalid, disabled } = parseSlackRecipients(
+  const { recipients, notices, failed } = resolveWatchers(
     process.env.SLACK_NEEDS_BACKPORT_WATCHERS
   )
 
-  for (const entry of invalid) {
-    process.stderr.write(
-      `::warning::Ignoring watcher "${entry}": not a Slack member ID.\n`
-    )
-  }
-  if (disabled && valid.length === 0) {
-    process.stderr.write(
-      'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.\n'
-    )
-  } else if (valid.length === 0 && invalid.length === 0) {
-    process.stderr.write(
-      '::warning::No Slack watchers configured — set the SLACK_NEEDS_BACKPORT_WATCHERS repository variable to one or more Slack member IDs.\n'
-    )
-  }
+  for (const notice of notices) process.stderr.write(`${notice}\n`)
 
-  const messages = buildDirectMessages(event, valid)
+  const messages = buildDirectMessages(event, recipients)
   writeFileSync(values.out, JSON.stringify(messages))
   setOutput('count', String(messages.length))
 
   process.stderr.write(
-    `${valid.length} recipient(s):\n${buildNeedsBackportText(event)}\n`
+    `${recipients.length} recipient(s):\n${buildNeedsBackportText(event)}\n`
   )
 
-  // Nothing downstream can report this. With no recipient the send step is
-  // skipped by its own `count != '0'` guard, so a watcher list that was all
-  // typos would otherwise end in a green run and no DM — the silent failure
-  // this notification exists to end, reproduced by the notification itself.
-  // Written after the outputs above so the run still shows what it built.
-  if (!disabled && valid.length === 0 && invalid.length > 0) {
-    process.stderr.write(
-      '::error::No usable Slack watcher in SLACK_NEEDS_BACKPORT_WATCHERS; nobody was notified.\n'
-    )
-    process.exitCode = 1
-  }
+  // After the outputs above, so a failing run still shows what it built.
+  if (failed) process.exitCode = 1
 }
 
 if (

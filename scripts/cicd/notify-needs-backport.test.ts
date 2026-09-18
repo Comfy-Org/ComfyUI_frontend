@@ -1,4 +1,13 @@
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
@@ -11,7 +20,10 @@ import {
   buildNeedsBackportText,
   escapeSlackText,
   parsePullRequest,
-  parseSlackRecipients
+  parseSlackRecipients,
+  readRemoteBranches,
+  resolveWatchers,
+  splitBackportTargets
 } from './notify-needs-backport'
 
 const REMOTE_BRANCHES = ['main', 'core/1.47', 'cloud/1.47', 'core/1.46']
@@ -84,6 +96,127 @@ describe('backportTargetsFromLabels', () => {
     expect(backportTargetsFromLabels(['1.47', 'core/1.47'])).toEqual([
       'core/1.47'
     ])
+  })
+})
+
+describe('splitBackportTargets', () => {
+  it('separates the targets that have a branch from those that do not', () => {
+    expect(
+      splitBackportTargets(['needs-backport', '1.47', '1.99'], ['core/1.47'])
+    ).toEqual({ known: ['core/1.47'], unknown: ['core/1.99'] })
+  })
+
+  // The workflow leaves an empty branch list behind when `git ls-remote`
+  // fails, and reading that as "no branch exists" would put a warning about
+  // every target into every DM.
+  it('treats an unlistable remote as no evidence either way', () => {
+    expect(splitBackportTargets(['1.47', '1.99'], null)).toEqual({
+      known: ['core/1.47', 'core/1.99'],
+      unknown: []
+    })
+  })
+})
+
+describe('resolveWatchers', () => {
+  // The send step is skipped when there is no recipient, and a skipped step
+  // is a green step — so every way of ending up with nobody has to be caught
+  // here or it is not caught at all. Rows are the ways a watcher list can be
+  // wrong, plus the two that are deliberate.
+  it.for([
+    {
+      raw: 'U0BA79D8R1T',
+      situation: 'one good ID',
+      recipients: ['U0BA79D8R1T'],
+      failed: false
+    },
+    {
+      raw: 'U0BA79D8R1T U024BE7LH',
+      situation: 'two good IDs',
+      recipients: ['U0BA79D8R1T', 'U024BE7LH'],
+      failed: false
+    },
+    {
+      raw: 'disabled',
+      situation: 'the off switch',
+      recipients: [],
+      failed: false
+    },
+    {
+      raw: '@huang47',
+      situation: 'a handle instead of an ID',
+      recipients: [],
+      failed: true
+    },
+    {
+      raw: ' , ',
+      situation: 'separators and nothing else',
+      recipients: [],
+      failed: true
+    },
+    {
+      raw: '',
+      situation: 'an empty list',
+      recipients: [],
+      failed: true
+    },
+    {
+      raw: undefined,
+      situation: 'an unset variable',
+      recipients: [],
+      failed: true
+    },
+    {
+      raw: 'U0BA79D8R1T @huang47',
+      situation: 'one good ID and one typo',
+      recipients: ['U0BA79D8R1T'],
+      failed: true
+    }
+  ])('resolves $situation', ({ raw, recipients, failed }) => {
+    expect(resolveWatchers(raw)).toMatchObject({ recipients, failed })
+  })
+
+  it('says why it failed, in a line the run surfaces', () => {
+    const { notices } = resolveWatchers('@huang47')
+
+    expect(notices.join('\n')).toContain('::error::')
+    expect(notices.join('\n')).toContain('@huang47')
+  })
+
+  it('stays quiet about a list that only turns the notification off', () => {
+    expect(resolveWatchers('none').notices.join('\n')).not.toContain('::')
+  })
+})
+
+describe('readRemoteBranches', () => {
+  const write = (contents: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'notify-needs-backport-branches-'))
+    const path = join(dir, 'branches.txt')
+    writeFileSync(path, contents)
+    return path
+  }
+
+  it('reads the branch names', () => {
+    expect(readRemoteBranches(write('main\ncore/1.47\n'))).toEqual([
+      'main',
+      'core/1.47'
+    ])
+  })
+
+  // What the workflow leaves behind when `git ls-remote` fails: the file was
+  // created by the redirect, then nothing was written to it. Reading that as
+  // an empty list of branches would mark every target uncut.
+  it.for([
+    { contents: '', situation: 'an empty file' },
+    { contents: '\n  \n', situation: 'a file of blank lines' }
+  ])('reads $situation as unknown rather than empty', ({ contents }) => {
+    expect(readRemoteBranches(write(contents))).toBeNull()
+  })
+
+  it.for([
+    { path: undefined, situation: 'no path' },
+    { path: '/nonexistent/branches.txt', situation: 'a missing file' }
+  ])('reads $situation as unknown', ({ path }) => {
+    expect(readRemoteBranches(path)).toBeNull()
   })
 })
 
@@ -429,6 +562,15 @@ const readWorkflow = (path: string) =>
 
 const NOTIFY_WORKFLOW = '.github/workflows/pr-notify-needs-backport.yaml'
 
+function readSendStep(): string {
+  const step = Object.values(readWorkflow(NOTIFY_WORKFLOW).jobs ?? {})
+    .flatMap((job) => job?.steps ?? [])
+    .find((step) => step.name === 'Send the direct messages')
+
+  expect(step?.run).toBeDefined()
+  return step?.run ?? ''
+}
+
 describe('pr-notify-needs-backport.yaml', () => {
   const workflow = readWorkflow(NOTIFY_WORKFLOW)
   const steps = Object.values(workflow.jobs ?? {}).flatMap(
@@ -467,10 +609,14 @@ describe('pr-notify-needs-backport.yaml', () => {
 
   // This job holds SLACK_BOT_TOKEN on a PR anyone can open. A PR title, a
   // branch name or a label expanded into `run:` is a shell for whoever wrote
-  // it, so nothing off the webhook may reach a script body directly.
+  // it, so nothing off the webhook may reach a script body directly. The test
+  // bans every expression rather than the few known-dangerous ones:
+  // `github.head_ref` is as attacker-controlled as `github.event.*` and would
+  // sail past a narrower filter, and an expression in a `run:` body is
+  // reviewable through `env:` instead in every case we have needed so far.
   it('passes webhook values through the environment only', () => {
     const interpolated = steps
-      .filter((step) => step.run?.includes('${{ github.event'))
+      .filter((step) => /\$\{\{/.test(step.run ?? ''))
       .map((step) => step.name ?? '<unnamed step>')
 
     expect(interpolated).toEqual([])
@@ -485,95 +631,12 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(sendScript()).toContain('.ok == true')
   })
 
-  // `jq -e` exits 0 on empty input, so the emptiness test is what stops a
-  // body that is not JSON — an error page in front of Slack — from reading
-  // as a delivered DM.
-  it('does not read an unparseable response as a delivered DM', () => {
-    expect(sendScript()).toMatch(/\[\s+-n\s+"\$RESPONSE"\s+\][\s\S]{0,80}\.ok/)
-  })
-
-  // Every variable the loop counts has to be initialised: the step runs
-  // under `set -u`, where one stale name aborts it after the DMs are sent
-  // and turns a delivered notification into a failed check.
-  it('reads back only the counters it sets', () => {
-    const code = sendScript()
-    const assigned = new Set([
-      ...[...code.matchAll(/^\s*([A-Z][A-Z_]*)=/gm)].map((match) => match[1]),
-      ...[...code.matchAll(/\bread\s+-r\s+([A-Z][A-Z_]*)/g)].map(
-        (match) => match[1]
-      )
-    ])
-    const read = [...code.matchAll(/\$\{?([A-Z][A-Z_]*)\}?/g)].map(
-      (match) => match[1]
-    )
-
-    expect(
-      read.filter(
-        (name) =>
-          !assigned.has(name) &&
-          !['SLACK_BOT_TOKEN', 'GITHUB_STEP_SUMMARY'].includes(name)
-      )
-    ).toEqual([])
-  })
-
-  // The loop runs under `set -e`, where an unreachable Slack would abort it
-  // at the first recipient and the rest would go unnotified and unannotated —
-  // the per-recipient accounting exists precisely for that case.
-  it('keeps going when one recipient cannot be reached', () => {
-    // Just the guard's own block, up to its `fi`. Reading the whole script
-    // would match the `continue` that ends the success branch instead, and
-    // pass with the failure branch falling through.
-    const transportFailure =
-      /if\s+!\s+RESPONSE=\$\(\s*curl[\s\S]*?\n\s*fi\b/.exec(sendScript())?.[0]
-
-    expect(transportFailure).toBeDefined()
-    expect(transportFailure).toContain('UNDELIVERED=1')
-    expect(transportFailure).toContain('continue')
-  })
-
-  // The two failures are not interchangeable: an outage fixes itself, while a
-  // rejection leaves every DM undelivered until a human acts. If a rejection
-  // does not fail the step, this feature can stop working for good on a run
-  // that stays green.
-  it('fails the step on a rejection but not on an outage', () => {
-    const code = sendScript()
-
-    expect(code).toContain('::error::Slack rejected the DM')
-    expect(code).toContain('GITHUB_STEP_SUMMARY')
-    expect(code).toContain('::warning::Could not reach Slack')
-    expect(code).toMatch(/if\s+\[\s+"\$REJECTED"\s+=\s+1\s+\][\s\S]*?exit 1/)
-
-    // Scoped to the block, not the rest of the script: a negative over
-    // everything after `$UNDELIVERED` only holds while that block happens to
-    // come last, so swapping the two guards would keep it passing.
-    const undelivered =
-      /if\s+\[\s+"\$UNDELIVERED"\s+=\s+1\s+\][\s\S]*?\n\s*fi\b/.exec(code)?.[0]
-
-    expect(undelivered).toBeDefined()
-    expect(undelivered).not.toContain('exit')
-  })
-
-  // Slack's own overload answers are 429 and 5xx, which curl reports as a
-  // successful transfer, so without this they would land on the rejection
-  // path and redden a PR over a blip that has already passed.
-  it('retries Slack, and counts what it still answers as undelivered', () => {
+  it('retries Slack rather than giving up on its first refusal', () => {
     const code = sendScript()
 
     expect(code).toMatch(/--retry\s+\d+/)
     expect(code).toContain('--retry-connrefused')
     expect(code).toContain('--retry-all-errors')
-    // Each retried attempt appends its own body, so reading the raw stream
-    // gives `.error` once per attempt and matches none of the names below.
-    expect(code).toMatch(/jq -sc? '\.\[-1\]/)
-    for (const transient of [
-      'ratelimited',
-      'service_unavailable',
-      'internal_error',
-      'fatal_error',
-      'request_timeout'
-    ]) {
-      expect(code).toContain(transient)
-    }
   })
 
   // A green run is the only thing anybody looks at, so the step that sends
@@ -590,6 +653,177 @@ describe('pr-notify-needs-backport.yaml', () => {
     expect(
       steps.find((step) => step.name === 'Send the direct messages')?.if
     ).toContain('success()')
+  })
+})
+
+/**
+ * Runs the real `Send the direct messages` shell with `curl` replaced by a
+ * stub, which is the only way to tell this step's semantics from its
+ * vocabulary: every earlier version of these assertions grepped the script,
+ * and grepping passes just as happily on a script whose branches have been
+ * swapped as on a correct one.
+ */
+function runSendStep(
+  responses: Record<string, { body?: string; exit?: number }>
+): { status: number; stdout: string; summary: string } {
+  const dir = mkdtempSync(join(tmpdir(), 'notify-needs-backport-'))
+
+  try {
+    const script = join(dir, 'send.sh')
+    const summary = join(dir, 'summary.md')
+    writeFileSync(script, readSendStep())
+    writeFileSync(summary, '')
+    writeFileSync(
+      join(dir, 'dms.json'),
+      JSON.stringify(
+        Object.keys(responses).map((channel) => ({ channel, text: 'hello' }))
+      )
+    )
+
+    // Answers by recipient, so one run can mix a delivery with a failure.
+    writeFileSync(
+      join(dir, 'curl'),
+      [
+        '#!/usr/bin/env bash',
+        'if [[ "$*" =~ \\"channel\\":\\"([A-Z0-9]+)\\" ]]; then',
+        '  CHANNEL="${BASH_REMATCH[1]}"',
+        'else',
+        '  echo "stub curl: no channel in: $*" >&2; exit 99',
+        'fi',
+        'HERE="$(dirname "$0")"',
+        '[ -f "$HERE/$CHANNEL.body" ] && cat "$HERE/$CHANNEL.body"',
+        'if [ -f "$HERE/$CHANNEL.exit" ]; then exit "$(cat "$HERE/$CHANNEL.exit")"; fi',
+        'exit 0'
+      ].join('\n')
+    )
+    chmodSync(join(dir, 'curl'), 0o755)
+
+    for (const [channel, response] of Object.entries(responses)) {
+      if (response.body !== undefined) {
+        writeFileSync(join(dir, `${channel}.body`), response.body)
+      }
+      if (response.exit !== undefined) {
+        writeFileSync(join(dir, `${channel}.exit`), String(response.exit))
+      }
+    }
+
+    const run = spawnSync('bash', [script], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${dir}:${process.env.PATH ?? ''}`,
+        SLACK_BOT_TOKEN: 'xoxb-stub',
+        GITHUB_STEP_SUMMARY: summary
+      }
+    })
+
+    return {
+      status: run.status ?? -1,
+      stdout: `${run.stdout}${run.stderr}`,
+      summary: readFileSync(summary, 'utf8')
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+const ok = JSON.stringify({ ok: true, channel: 'D1', ts: '1.2' })
+const rejection = JSON.stringify({ ok: false, error: 'channel_not_found' })
+const slackError = (error: string) => JSON.stringify({ ok: false, error })
+
+describe('the send step, run against a stubbed Slack', () => {
+  it('delivers, and says nothing else', () => {
+    const run = runSendStep({ U0BA79D8R1T: { body: ok } })
+
+    expect(run.status).toBe(0)
+    expect(run.stdout).toContain('Notified U0BA79D8R1T')
+    expect(run.summary).toBe('')
+  })
+
+  // Each row is a way Slack can decline, split by who can act on it: the
+  // first group clears on its own and must not redden a contributor's PR,
+  // the rest name something a human has to change and must not pass quietly.
+  it.for([
+    { answer: 'ratelimited', status: 0 },
+    { answer: 'rate_limited', status: 0 },
+    { answer: 'service_unavailable', status: 0 },
+    { answer: 'internal_error', status: 0 },
+    { answer: 'fatal_error', status: 0 },
+    { answer: 'request_timeout', status: 0 },
+    { answer: 'channel_not_found', status: 1 },
+    { answer: 'missing_scope', status: 1 },
+    { answer: 'invalid_auth', status: 1 },
+    { answer: 'token_revoked', status: 1 },
+    { answer: 'account_inactive', status: 1 }
+  ])('exits $status on $answer', ({ answer, status }) => {
+    const run = runSendStep({ U0BA79D8R1T: { body: slackError(answer) } })
+
+    expect(run.status).toBe(status)
+    expect(run.stdout).not.toContain('Notified')
+    expect(run.summary).toContain('U0BA79D8R1T')
+  })
+
+  // `jq -e` exits 0 on empty input, so a body that is not JSON reads as a
+  // delivered DM unless the script tests for emptiness first.
+  it('does not read an error page as a delivered DM', () => {
+    const run = runSendStep({
+      U0BA79D8R1T: { body: '<html><body>502</body></html>' }
+    })
+
+    expect(run.stdout).not.toContain('Notified')
+    expect(run.stdout).toContain('no usable response')
+    expect(run.status).toBe(0)
+  })
+
+  // curl appends one body per retried attempt, so reading the raw stream
+  // gives `.error` once per attempt — three lines that match no error name
+  // and fall through to the rejection arm, failing the run over a rate
+  // limit. Only the last answer decides.
+  it('judges a retried call by its last answer', () => {
+    const run = runSendStep({
+      U0BA79D8R1T: { body: slackError('ratelimited').repeat(3) }
+    })
+
+    expect(run.stdout).toContain('ratelimited')
+    expect(run.stdout).not.toContain('::error::')
+    expect(run.status).toBe(0)
+  })
+
+  // One failure, one explanation: falling through to the response check as
+  // well would report the same dropped DM twice, the second time as an
+  // unreadable answer that was never received.
+  it('reports a Slack it could not reach at all, and passes', () => {
+    const run = runSendStep({ U0BA79D8R1T: { exit: 7 } })
+
+    expect(run.status).toBe(0)
+    expect(run.stdout).toContain('Could not reach Slack')
+    expect(run.stdout).not.toContain('no usable response')
+    expect(run.summary).toContain('U0BA79D8R1T')
+  })
+
+  // The per-recipient accounting exists for this: under `set -e` the first
+  // failure would otherwise abort the loop and leave the rest unnotified.
+  it('finishes the list when a recipient fails, and fails the step', () => {
+    const run = runSendStep({
+      UBADRECIP1: { body: rejection },
+      UOUTAGE001: { exit: 7 },
+      U0BA79D8R1T: { body: ok }
+    })
+
+    expect(run.stdout).toContain('Notified U0BA79D8R1T')
+    expect(run.stdout).toContain('::error::Slack rejected the DM to UBADRECIP1')
+    expect(run.stdout).toContain('Could not reach Slack to DM UOUTAGE001')
+    expect(run.status).toBe(1)
+  })
+
+  it('passes when an outage is the only thing that went wrong', () => {
+    const run = runSendStep({
+      UOUTAGE001: { exit: 7 },
+      U0BA79D8R1T: { body: ok }
+    })
+
+    expect(run.status).toBe(0)
   })
 })
 

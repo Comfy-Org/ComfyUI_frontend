@@ -131,6 +131,8 @@ jobs:
               -d "$BODY" \
               https://slack.com/api/chat.postMessage); then
               echo "::warning::Could not reach Slack to DM ${CHANNEL}"
+              echo "Slack could not be reached to DM \`${CHANNEL}\`." \
+                >> "$GITHUB_STEP_SUMMARY"
               UNDELIVERED=1
               continue
             fi
@@ -164,8 +166,8 @@ jobs:
             # rest name something a human has to change, and they are the ones
             # worth failing the check for.
             case "$ERROR" in
-              '' | ratelimited | service_unavailable | internal_error \
-                | fatal_error | request_timeout)
+              '' | ratelimited | rate_limited | service_unavailable \
+                | internal_error | fatal_error | request_timeout)
                 echo "::warning::Slack could not deliver the DM to" \
                   "${CHANNEL}: ${ERROR:-no usable response}"
                 # On the run page too, not just as an annotation: the label
