@@ -26,7 +26,9 @@ a self-test case:
 - The threads read counts only when the query equals, ignoring whitespace,
   the query `review-loop.md` prints (the self-test extracts the published
   read, reply and resolve commands from that file and runs them as written,
-  the reply with an apostrophe, quotes and a dollar sign in the body), is run with `--paginate`, and its
+  the reply body read from a file and compared byte for byte after a
+  multiline body with an apostrophe, quotes, a dollar sign, a backslash and
+  the old heredoc delimiter), is run with `--paginate`, and its
   `owner`, `name` and `number` variables match the fixture. Thread author
   and last comment come from the aliased `first` and `last` fields.
 - A reply or resolve counts only when the mutation equals, ignoring

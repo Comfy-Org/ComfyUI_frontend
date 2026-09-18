@@ -51,10 +51,9 @@ loop_md="$skills_dir/build-web-pr/review-loop.md"
 published_fence() { awk -v want="$1" '/^```bash/{n++; next} n==want&&/^```$/{exit} n==want{print}' "$loop_md"; }
 # The published thread read, with the placeholder assignment line replaced by real values.
 published_threads_read() { local cmd; cmd="$(published_fence 1 | sed "s/^owner=<owner>; name=<repo>; number=<number>$/owner=$1; name=$2; number=$3/")"; env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
-# The published reply, with the placeholder id and the heredoc body replaced; the body is
-# passed as a file so any characters, apostrophes included, go through the documented setup.
+# The published reply: the body goes into a file, never through the shell or sed.
 published_reply() { local threadId="$1" body="$2" cmd; printf '%s' "$body" > "$PWD/bin/reply-body.txt"
-  cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s/^threadId=<id>$/threadId=$threadId/" | sed "s|^<your reply.*>$|$(sed 's/[&|]/\\&/g' "$PWD/bin/reply-body.txt")|")"
+  cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=$threadId; bodyFile=$PWD/bin/reply-body.txt|")"
   env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
 published_resolve() { local threadId="$1" cmd; cmd="$(published_fence 2 | awk 'f{print} NF==0{f=1}')"; env PATH="$PWD/bin:$PATH" threadId="$threadId" bash -c "$cmd"; }
 md_fences_balanced() { local f n c=0; while IFS= read -r f; do c=$((c+1)); n="$(grep -c '^```' "$f" || true)"; if (( n % 2 )); then bad "unbalanced code fence in $f"; fi; if grep -q '^````' "$f"; then bad "four-backtick fence in $f"; fi; done < <(find "$skills_dir" "$skills_dir/../../AGENTS.md" -name '*.md' -not -path '*/results/*' | sort); ok "markdown fences balanced in $c markdown files under the skill tree"; }
@@ -185,7 +184,9 @@ full_gate
 OLD_REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$t,body:$b}){comment{id}}}'
 expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OLD_REPLY_Q"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
-expect_ok published_reply T1 "It's fixed: the stale copy is gone, and \"quotes\" survive"
+nasty_body="$(printf "It's fixed: the stale copy is gone, and \"quotes\" survive\nREPLY\n\$HOME and a back\\slash, a | pipe and an & ampersand\nlast line, no newline")"
+expect_ok published_reply T1 "$nasty_body"
+if [[ "$(cat bin/state/last-reply-body.txt)" == "$nasty_body" ]]; then ok "reply body received byte for byte (multiline, apostrophe, quotes, dollar, backslash, delimiters)"; else bad "reply body altered in transit"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 if read_all_threads | jq -e '.[0].last.nodes[0].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
 # shellcheck disable=SC2016

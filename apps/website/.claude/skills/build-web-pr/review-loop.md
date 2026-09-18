@@ -34,14 +34,13 @@ query($owner:String!,$name:String!,$number:Int!,$endCursor:String){
 A thread's author is the author of its `first` comment; its last comment is
 the `last` node, whatever the thread's length. Reply in a thread and resolve
 one with these two commands, exactly as written, after setting `threadId` to
-the thread's `id` from the query and `body` to your reply:
+the thread's `id` from the query and writing your reply, any characters over
+any number of lines, to a file (use your file-writing tool; the shell never
+sees the text):
 
 ```bash
-threadId=<id>
-IFS= read -r -d '' body <<'REPLY' || true
-<your reply, any characters, over as many lines as you like>
-REPLY
-gh api graphql -F threadId="$threadId" -f body="$body" -f query='
+threadId=<id>; bodyFile=<path to the file holding your reply>
+gh api graphql -F threadId="$threadId" -F body="@$bodyFile" -f query='
 mutation($threadId:ID!,$body:String!){
   addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'
 
