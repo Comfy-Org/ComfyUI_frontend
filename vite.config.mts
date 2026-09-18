@@ -245,7 +245,9 @@ if (accessHeaders && VITE_REMOTE_DEV) {
 // that carries the backend's host rather than the dev server's.
 const backendProxyConfig: ProxyOptions = {
   ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
-  ...(accessHeaders ? { headers: accessHeaders, changeOrigin: true } : {})
+  ...(accessHeaders
+    ? { headers: accessHeaders, changeOrigin: true, secure: true }
+    : {})
 }
 
 // The agent proxy adds the session token, so only the dev server's own pages may use it.
