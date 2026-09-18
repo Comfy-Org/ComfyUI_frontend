@@ -371,9 +371,11 @@ describe('useAttachment', () => {
 
     const pending = addFiles([fileOfSize('cat.png', 1024)])
     cancelUpload(registry.chips[0].id)
+    expect(registry.chips).toEqual([])
     await pending
 
     expect(signal?.aborted).toBe(true)
+    expect(registry.chips).toEqual([])
     expect(onError).not.toHaveBeenCalled()
   })
 
@@ -399,6 +401,11 @@ describe('useAttachment', () => {
     )
     const queued = registry.chips[3]
     cancelUpload(queued.id)
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      '0.png',
+      '1.png',
+      '2.png'
+    ])
 
     await vi.waitFor(() => {
       for (const resolve of resolvers) resolve()
@@ -410,7 +417,7 @@ describe('useAttachment', () => {
     expect(onError).not.toHaveBeenCalled()
   })
 
-  it('aborts every in-flight upload when the panel goes away', async () => {
+  it('removes active and queued uploads synchronously when the panel goes away', async () => {
     const signals: AbortSignal[] = []
     const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
       signals.push(uploadSignal)
@@ -426,11 +433,17 @@ describe('useAttachment', () => {
       ...registry
     })
 
-    const pending = addFiles([fileOfSize('a.png', 1), fileOfSize('b.png', 1)])
+    const pending = addFiles(
+      ['a.png', 'b.png', 'c.png', 'queued.png'].map((name) =>
+        fileOfSize(name, 1)
+      )
+    )
     cancelAllUploads()
+    expect(registry.chips).toEqual([])
     await pending
 
-    expect(signals.map(({ aborted }) => aborted)).toEqual([true, true])
+    expect(signals.map(({ aborted }) => aborted)).toEqual([true, true, true])
+    expect(registry.chips).toEqual([])
   })
 
   it('removes a deferred chip whose source never resolves', async () => {
@@ -482,15 +495,12 @@ describe('useAttachment', () => {
 describe('resolveAttachmentLimit', () => {
   const MULTIPART_ENVELOPE_BYTES = 1024
 
-  it('falls back to the built-in limit for an unusable advertised value', () => {
-    for (const advertised of [undefined, null, 0, -1, Number.NaN, '100MB'])
-      expect(resolveAttachmentLimit(advertised)).toBeLessThanOrEqual(
-        MAX_ATTACHMENT_BYTES
-      )
-    expect(resolveAttachmentLimit(null)).toBe(
-      MAX_ATTACHMENT_BYTES - MULTIPART_ENVELOPE_BYTES
-    )
-  })
+  it.for([undefined, null, 0, -1, Number.NaN, '100MB'])(
+    'falls back to 20 MiB minus request overhead for %s',
+    (advertised) => {
+      expect(resolveAttachmentLimit(advertised)).toBe(20 * 1024 * 1024 - 1024)
+    }
+  )
 
   it('keeps a client ceiling below an implausible advertised value', () => {
     expect(resolveAttachmentLimit(Number.MAX_SAFE_INTEGER)).toBe(

@@ -160,6 +160,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   function cancelUpload(id: string): void {
     if (!pending.has(id)) return
     cancelled.add(id)
+    options.remove(id)
     inFlight.get(id)?.abort()
   }
 
