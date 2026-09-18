@@ -57,6 +57,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  adoptSharedOnboardingFlag,
+  scopedOnboardingKey
+} from './composables/agent/useOnboarding'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -95,6 +99,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -195,6 +200,20 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const workspaceStore = useTeamWorkspaceStore()
+const onboardingKey = computed(() =>
+  scopedOnboardingKey(
+    resolvedUserInfo.value?.id,
+    workspaceStore.activeWorkspaceId
+  )
+)
+watch(
+  onboardingKey,
+  (key) => {
+    if (key) adoptSharedOnboardingFlag(key)
+  },
+  { immediate: true }
+)
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,
@@ -1170,9 +1189,14 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="consentAccepted && !canvasStore.linearMode && activeTour === null"
+      v-if="
+        consentAccepted &&
+        onboardingKey &&
+        !canvasStore.linearMode &&
+        activeTour === null
+      "
       :steps="coachSteps"
-      storage-key="Comfy.AgentPanel.onboarded"
+      :storage-key="onboardingKey"
     />
   </div>
 </template>
