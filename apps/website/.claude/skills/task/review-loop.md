@@ -55,9 +55,11 @@ bot's "changes requested" still stands after its threads are answered, follow
 
 The loop ends in one of two states, and both are valid outcomes to report:
 
-- Merge-ready: one fresh reading shows every required check passing, every
-  thread answered, no review at "changes requested", and a clean merge state.
-  What remains is a person's approval.
+- Merge-ready: one fresh reading shows every completed check passing
+  (required or not; a skipped check is fine, a red one is not, because the
+  `task` skill promises a pull request that passes every check and reviewers
+  read the whole list), every thread answered, no review at "changes
+  requested", and a clean merge state. What remains is a person's approval.
 - Escalated: five rounds in a row ended with the same check failing or the
   same comment reopened, or a blocker below appeared. Stop looping on that
   item and hand it to a person with the message below; keep working on any
@@ -67,10 +69,9 @@ The loop ends in one of two states, and both are valid outcomes to report:
 
 Do not loop on them. Hand each one over with the message format below.
 
-- The approving review. For the website, one approval from each of two teams;
-  read `reviewDecision` rather than counting.
-- The merge decision. `task` never merges; `fix-it` merges only through its
-  own gate.
+- The approving review and the authorization to merge (the designer asking
+  for it). `task` never merges. Once both exist, sending the pull request to
+  the queue after its gate is `fix-it`'s job.
 - Signing the CLA: the pull request's author must comment, word for word,
   `I have read and agree to the Contributor License Agreement`.
 - A missing secret, token, permission, or repository access.

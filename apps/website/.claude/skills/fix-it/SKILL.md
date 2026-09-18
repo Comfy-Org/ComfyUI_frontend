@@ -72,17 +72,20 @@ round. Three rules are specific to a pull request that is not yours:
 
 ## Merge, or name who it waits on
 
-The merge decision belongs to this skill and to nobody else in these files:
-`task` never merges, and `review-loop.md` lists the approval, not the merge,
-among the things only a person does. The pull request goes to the merge queue
+Two things stay with people: the approving review, and the authorization to
+merge (the designer asking for it in this session). Once both exist and the
+gate below holds, sending the pull request to the queue is this skill's job
+and nobody else's; `task` never merges. The pull request goes to the merge queue
 only when merging is what its author, its reviewers, and its content all call
 for.
 
 Take the gate reading immediately before the merge command, after your last
 push and after every check has finished, and take all of it together: `gh pr
 view <number> --json reviewDecision,mergeStateStatus,headRefOid,isDraft,title,
-labels,body`, `gh pr checks <number>`, the review threads with their resolved
-state, and the issue comments. Nothing read earlier in the session counts,
+labels,body,latestReviews` (each review carries its author, state and
+`submittedAt`), `gh pr checks <number>`, the review threads with their
+resolved state and the time of each thread's last comment, and the issue
+comments. Nothing read earlier in the session counts,
 because checks, threads, holds, and the description can all change while you
 work. Keep the `headRefOid` from that reading. Send the pull request to merge
 with `gh pr merge <number> --squash --match-head-commit <that sha>`, so a
@@ -97,8 +100,10 @@ queued unread, and only when every line below is true in that one reading:
 - Every required check is green and no review stands at "changes requested".
 - Every review thread is either resolved or has your reply as its last
   comment, the same test the review loop ends on. A human's thread stays open
-  after your reply because only the reviewer may resolve it; their approval,
-  which must postdate your reply, is what says they accepted it.
+  after your reply because only the reviewer may resolve it, so for each such
+  thread compare times from this reading: an approval from a human reviewer
+  must have a `submittedAt` later than your reply's time, or the thread does
+  not count as accepted and the line is false.
 - It is not a draft, and nothing in the title, description, labels, or comments
   says to hold it: "do not merge", a launch date not yet reached, an embargo, a
   dependency on another pull request. A hold is lifted only by the person who
@@ -116,15 +121,18 @@ The merge command only adds the pull request to the queue. You have merged it
 when `gh pr view <number>` reports the state as `MERGED`, and nothing short of
 that counts: not "added to the merge queue", not `mergeStateStatus` of
 `QUEUED`, not a green queue run. Keep reading `gh pr view <number>` (state,
-`mergeStateStatus`, head sha) and the issue comments every few minutes until
-the state is `MERGED`; the queue runs the required checks again on a merge
-group, so this can take as long as a full check run.
+`mergeStateStatus`, head sha), the issue comments, and the timeline
+(`gh api repos/<owner>/<repo>/issues/<number>/timeline`) every few minutes
+until the state is `MERGED`; the queue runs the required checks again on a
+merge group, so this can take as long as a full check run.
 
 The queue can remove the pull request: a check fails in the merge group, `main`
 moves so the branch conflicts, an approval is dismissed, or a person pulls it.
 You see this as the state back at `OPEN` with `mergeStateStatus` no longer
-`QUEUED`, usually with a comment or timeline entry saying it was removed and
-why. When that happens, do not stop and do not report it as merged or queued:
+`QUEUED`. The reason lives in the timeline as a `removed_from_merge_queue`
+event (read its reason fields) and sometimes also in a bot comment; a removal
+is one event with one id, so count removals by distinct event id, never by how
+many times you have fetched the same comment. When that happens, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the
 same way), then take the whole gate reading again and, when every line holds,

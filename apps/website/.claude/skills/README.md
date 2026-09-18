@@ -20,18 +20,28 @@ copies the website skills into place, and installs `_shared/gh`, a stand-in
 for the GitHub CLI that answers from `_shared/base/` overlaid with the case's
 `state/` overrides. The stand-in enforces what the skills must get right:
 every `gh pr` subcommand, mutating ones included, needs the pull request
-number; a merge needs `--match-head-commit` equal to the current head and a
-complete gate reading (`pr view`, `pr checks`, threads, comments) since the
-last change; `__HEAD__` in a fixture is replaced with the current head at
-serve time. A case may script phases under `state/phases/<n>/` so each merge
-command advances the fixture, and `advance_head.<k>` moves the branch head on
-the k-th view of a phase, so a stale sha from an earlier reading no longer
-merges. Every refusal starts with `merge refused`, and the merge cases grade
+number, and a threads query or issue path that names another number does not
+count as a read; a merge needs `--match-head-commit` equal to the current
+head, a complete gate reading (`pr view`, `pr checks`, threads, comments) for
+this pull request since the last change, and served state that allows it
+(every required check `pass`, `APPROVED`, `CLEAN`, open, not a draft). The one
+`pr_view.json` is a template rendered from `defaults.env` plus each case's or
+phase's small `view.env` deltas, with the head filled in at serve time. A case
+may script phases under `state/phases/<n>/` so each merge command advances the
+fixture; `advance_head.<k>` moves the branch head on the k-th view of a phase,
+so a stale sha from an earlier reading no longer merges; comments and
+timeline events are cumulative with distinct ids. `pr create` must name the
+checked-out branch and `main`, and from then on every call snapshots that
+branch's commit message and diff into `bin/created-pr/` for the workflow
+graders. Every refusal starts with `merge refused`, and the merge cases grade
 its absence from the transcript.
 
 `bash fix-it/evals/_shared/selftest.sh` drives every fixture through its
-expected sequence with the stand-in alone and costs nothing; run it after
-touching a fixture.
+expected sequence with the stand-in alone and costs nothing: the target
+guard, the gate, wrong-target reads, four mutations of the served state (a
+failed required check, blocked, changes requested, already merged), `pr
+create` binding, the moving head, distinct removal events, and the three
+removals. Run it after touching a fixture.
 
 Fixture setup and shell access are off by default, so pass the flags:
 
@@ -57,7 +67,7 @@ roughly 50 agent sessions.
 | `fix-it` | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason                                                      |
 | `fix-it` | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                                                                        |
 | `fix-it` | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                                                                |
-| `task`   | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; edits the page; commits on a branch with no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
+| `task`   | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; the created branch's diff touches only `pricing.astro` and adds the new line; its commit message uses the `(website)` prefix and carries no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
 | `task`   | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                                                             |
 | `task`   | `does-not-trigger-on-app-work`   | Editor-app work under `src/lib` does not fire the website skill                                                                                                     |
 | `task`   | `does-not-trigger-on-question`   | A question about the site does not fire it                                                                                                                          |

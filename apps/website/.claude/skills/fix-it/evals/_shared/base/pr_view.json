@@ -1,37 +1,40 @@
 {
   "number": 4242,
-  "title": "feat(website): add the pricing subheading",
-  "state": "OPEN",
+  "title": "__TITLE__",
+  "state": "__STATE__",
   "isDraft": false,
   "author": {
     "login": "dana-comfy"
   },
   "labels": [],
-  "headRefName": "website/pricing-subheading",
+  "headRefName": "__BRANCH__",
   "headRefOid": "__HEAD__",
   "baseRefName": "main",
   "mergeable": "MERGEABLE",
-  "mergeStateStatus": "CLEAN",
-  "reviewDecision": "APPROVED",
+  "mergeStateStatus": "__MERGE_STATE__",
+  "reviewDecision": "__REVIEW_DECISION__",
   "body": "Adds the pricing subheading the design team asked for.\n\n## Changes\n- pricing.astro: one new paragraph under the heading",
   "latestReviews": [
     {
       "author": {
         "login": "frontend-reviewer"
       },
-      "state": "APPROVED"
+      "state": "APPROVED",
+      "submittedAt": "__REVIEW_AT__"
     },
     {
       "author": {
         "login": "website-reviewer"
       },
-      "state": "APPROVED"
+      "state": "APPROVED",
+      "submittedAt": "__REVIEW_AT__"
     },
     {
       "author": {
         "login": "coderabbitai"
       },
-      "state": "APPROVED"
+      "state": "APPROVED",
+      "submittedAt": "__REVIEW_AT__"
     }
   ],
   "url": "https://github.com/example/site/pull/4242"

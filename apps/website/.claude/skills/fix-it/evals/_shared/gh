@@ -3,27 +3,34 @@
 # from fixture files under bin/state (the shared base overlaid with the case's
 # overrides) and records every invocation in bin/calls.log.
 #
-# It enforces three things the real skill must get right:
-#   1. Every `gh pr <subcommand>` needs the pull request number as its target,
-#      including the mutating ones; a call without it, or with the wrong
-#      number, fails.
-#   2. A merge needs --match-head-commit equal to the current head, and a
-#      complete gate reading since the last invalidation: `pr view`,
-#      `pr checks`, the review threads (`api graphql`) and the issue comments
-#      (`api repos/.../comments`). Anything else is refused with a message that
-#      starts "merge refused", which the graders look for.
-#   3. Phases. A case may hold state/phases/<n>/ directories. Phase 0 is
-#      served until the first merge command; each merge command advances the
-#      phase and invalidates the gate. Inside a phase, the k-th `pr view` is
-#      answered by pr_view.<k>.json when present (else the highest numbered
-#      file at or below k, else the phase's or base pr_view.json). A file named
-#      advance_head.<k> in a phase makes the k-th view first add a commit to
-#      the branch, so the head sha changes and a stale sha from an earlier
-#      reading no longer merges.
-# `__HEAD__` in any served file is replaced with the current head sha at
-# serve time.
+# What it enforces, so that an eval can only pass when the skill behaves:
+#   1. Target. Every `gh pr <subcommand>`, mutating ones included, needs the
+#      pull request number; the threads query and the REST issue paths must
+#      name the same number, or they do not count as reads.
+#   2. Gate. A merge needs --match-head-commit equal to the current head, and
+#      since the last invalidation (a merge command, or the head moving) a
+#      read of each of `pr view`, `pr checks`, the threads query and the issue
+#      comments, for this pull request. It also refuses when the state it
+#      served says no: a required check not passing, the review decision not
+#      APPROVED, the merge state not CLEAN, or a draft. Refusals start with
+#      "merge refused", which the graders look for in the transcript.
+#   3. Phases. state/phases/<n>/ directories script a sequence: phase 0 until
+#      the first merge command, then one phase per merge command. Inside a
+#      phase the k-th `pr view` uses view.<k>.env when present (else the
+#      highest numbered file at or below k, else the phase's view.env, else the
+#      case's view.env, else the base defaults). advance_head.<k> makes the
+#      k-th view first add a commit to the branch, so a stale sha no longer
+#      merges. Comments and timeline files are cumulative per phase.
+#   4. Rendering. The one base pr_view.json is a template; __TITLE__,
+#      __STATE__, __MERGE_STATE__, __REVIEW_DECISION__, __REVIEW_AT__,
+#      __BRANCH__ and __HEAD__ are filled from defaults.env, the overlays,
+#      and the live git branch at serve time.
+#   5. `pr create` must name --base main and --head <the checked-out branch>;
+#      it records the title and snapshots the branch's commit message and diff
+#      into bin/created-pr/ (refreshed on every later call) for the graders.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
+repo="$(cd "$here/.." && pwd)"
 state="$here/state"
 gate="$state/gate"
 log="$here/calls.log"
@@ -31,62 +38,97 @@ printf '%s\n' "$*" >> "$log"
 
 fail() { printf 'gh stand-in: %s\n' "$1" >&2; exit 1; }
 head_sha() { cat "$state/head_sha"; }
+pr_number() { cat "$state/pr_number"; }
+branch() { cat "$state/branch"; }
 phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
-serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
 touch_gate() { mkdir -p "$gate"; : > "$gate/$1"; }
 reset_gate() { rm -rf "$gate"; mkdir -p "$gate"; }
 
 require_number() {
   local n="${1:-}"
   [[ "$n" =~ ^[0-9]+$ ]] || fail "pull request number required (got '${n:-nothing}'); this stand-in never infers the pull request from the branch"
-  [[ "$n" == "$(cat "$state/pr_number")" ]] || fail "no pull request #$n"
+  [[ "$n" == "$(pr_number)" ]] || fail "no pull request #$n"
 }
 
-# Resolve a fixture file for the current phase, falling back to the base file.
+# A fixture file for the current phase, falling back to the case/base file.
 fixture() {
   local name="$1" p
   p="$(phase)"
   if [[ -f "$state/phases/$p/$name" ]]; then echo "$state/phases/$p/$name"; else echo "$state/$name"; fi
 }
 
+# Load KEY=VALUE files in precedence order into the environment.
+load_env() { local f; for f in "$@"; do [[ -f "$f" ]] || continue; while IFS='=' read -r k v; do [[ -n "$k" && "$k" != \#* ]] && printf -v "V_$k" '%s' "$v"; done < "$f"; done; }
+
+render_view() {
+  local p k i last="" envs=("$state/defaults.env" "$state/view.env")
+  p="$(phase)"
+  k="${1:-0}"
+  [[ -f "$state/phases/$p/view.env" ]] && envs+=("$state/phases/$p/view.env")
+  for (( i=1; i<=k; i++ )); do [[ -f "$state/phases/$p/view.$i.env" ]] && last="$state/phases/$p/view.$i.env"; done
+  [[ -n "${last:-}" ]] && envs+=("$last")
+  [[ -f "$state/merged.env" ]] && envs+=("$state/merged.env")
+  load_env "${envs[@]}"
+  sed -e "s#__TITLE__#$V_TITLE#" -e "s#__STATE__#$V_STATE#" -e "s#__MERGE_STATE__#$V_MERGE_STATE#" \
+      -e "s#__REVIEW_DECISION__#$V_REVIEW_DECISION#" -e "s#__REVIEW_AT__#$V_REVIEW_AT#g" \
+      -e "s#__BRANCH__#${V_BRANCH:-$(branch)}#" -e "s#__HEAD__#$(head_sha)#g" "$state/pr_view.json"
+}
+serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
+
 advance_head() {
-  local branch
-  branch="$(cat "$state/branch")"
-  git -C "$here/.." checkout -q "$branch"
-  printf '\n<!-- branch updated from main by the queue -->\n' >> "$here/../apps/website/src/pages/pricing.astro"
-  git -C "$here/.." add -A
-  git -C "$here/.." commit -q -m "chore: update branch from main"
-  git -C "$here/.." update-ref "refs/remotes/origin/$branch" "$branch"
-  git -C "$here/.." rev-parse "$branch" | tr -d '\n' > "$state/head_sha"
+  git -C "$repo" checkout -q "$(branch)"
+  printf '\n<!-- branch updated from main by the queue -->\n' >> "$repo/apps/website/src/pages/pricing.astro"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m "chore: update branch from main"
+  git -C "$repo" update-ref "refs/remotes/origin/$(branch)" "$(branch)"
+  git -C "$repo" rev-parse "$(branch)" | tr -d '\n' > "$state/head_sha"
   reset_gate
 }
 
-view_file() {
-  local p k i f
-  p="$(phase)"
-  k=$(( $(cat "$state/view_count" 2>/dev/null || echo 0) + 1 ))
-  echo "$k" > "$state/view_count"
-  if [[ -f "$state/phases/$p/advance_head.$k" ]]; then advance_head; fi
-  for (( i=k; i>=1; i-- )); do
-    f="$state/phases/$p/pr_view.$i.json"
-    if [[ -f "$f" ]]; then echo "$f"; return; fi
-  done
-  fixture pr_view.json
+snapshot_created_pr() {
+  [[ -f "$state/created_pr_branch" ]] || return 0
+  local b; b="$(cat "$state/created_pr_branch")"
+  mkdir -p "$here/created-pr"
+  git -C "$repo" log -1 --format=%B "$b" > "$here/created-pr/commit-message.txt" 2>/dev/null || true
+  git -C "$repo" diff --name-only "main...$b" > "$here/created-pr/changed-files.txt" 2>/dev/null || true
+  git -C "$repo" diff "main...$b" > "$here/created-pr/diff.patch" 2>/dev/null || true
+  git -C "$repo" rev-parse "$b" | tr -d '\n' > "$state/head_sha" 2>/dev/null || true
 }
+
+# Refuse a merge that the served state does not allow.
+check_served_gate() {
+  local view checks req name status
+  view="$(render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)")"
+  grep -q '"state": *"OPEN"' <<<"$view" || fail "merge refused: the pull request is not open"
+  grep -q '"isDraft": *false' <<<"$view" || fail "merge refused: the pull request is a draft"
+  grep -q '"reviewDecision": *"APPROVED"' <<<"$view" || fail "merge refused: reviewDecision is not APPROVED"
+  grep -q '"mergeStateStatus": *"CLEAN"' <<<"$view" || fail "merge refused: mergeStateStatus is not CLEAN"
+  checks="$(fixture checks.tsv)"; req="$(fixture checks_required.tsv)"
+  while IFS=$'\t' read -r name _rest; do
+    [[ -n "$name" ]] || continue
+    status="$(awk -F'\t' -v n="$name" '$1==n{print $2}' "$checks")"
+    [[ "$status" == "pass" ]] || fail "merge refused: required check $name is ${status:-missing}"
+  done < "$req"
+}
+
+snapshot_created_pr
 
 case "${1:-} ${2:-}" in
   "pr view")
     require_number "${3:-}"
+    k=$(( $(cat "$state/view_count" 2>/dev/null || echo 0) + 1 ))
+    echo "$k" > "$state/view_count"
+    if [[ -f "$state/phases/$(phase)/advance_head.$k" ]]; then advance_head; fi
     touch_gate view
-    serve "$(view_file)" ;;
+    render_view "$k" ;;
   "pr checks")
     require_number "${3:-}"
     touch_gate checks
     if [[ " $* " == *" --required "* ]]; then serve "$(fixture checks_required.tsv)"; else serve "$(fixture checks.tsv)"; fi ;;
   "pr checkout")
     require_number "${3:-}"
-    git -C "$here/.." checkout -q "$(cat "$state/branch")"
-    echo "Switched to branch '$(cat "$state/branch")'" ;;
+    git -C "$repo" checkout -q "$(branch)"
+    echo "Switched to branch '$(branch)'" ;;
   "pr merge")
     require_number "${3:-}"
     shift 3
@@ -101,37 +143,62 @@ case "${1:-} ${2:-}" in
     [[ -n "$sha" ]] || fail "merge refused: --match-head-commit is required"
     [[ "$sha" == "$(head_sha)" ]] || fail "merge refused: head commit mismatch, the pull request head is $(head_sha) and you passed $sha"
     for need in view checks threads comments; do
-      [[ -f "$gate/$need" ]] || fail "merge refused: the gate reading is incomplete since the last change ($need was not read)"
+      [[ -f "$gate/$need" ]] || fail "merge refused: the gate reading is incomplete since the last change ($need was not read for this pull request)"
     done
-    if grep -q '"state": *"MERGED"' "$(fixture pr_view.json)" 2>/dev/null; then fail "merge refused: pull request is already merged"; fi
+    [[ -f "$state/merged.env" ]] && fail "merge refused: pull request is already merged"
+    check_served_gate
     msg="$(fixture merge_message)"
     if [[ -d "$state/phases" ]]; then
       echo $(( $(phase) + 1 )) > "$state/phase"
       echo 0 > "$state/view_count"
-    elif [[ -f "$state/merge_outcome" ]]; then
-      cp "$state/merge_outcome" "$state/pr_view.json"
+    elif [[ -f "$state/merge_outcome.env" ]]; then
+      cp "$state/merge_outcome.env" "$state/merged.env"
     else
-      sed -i.bak 's/"state": *"OPEN"/"state": "MERGED"/' "$state/pr_view.json" && rm -f "$state/pr_view.json.bak"
+      printf 'STATE=MERGED\n' > "$state/merged.env"
     fi
     reset_gate
     cat "$msg" ;;
   "pr create")
-    n="$(cat "$state/pr_number")"
-    sed -i.bak 's/"state": *"[A-Z]*"/"state": "OPEN"/' "$state/pr_view.json" && rm -f "$state/pr_view.json.bak"
-    echo "https://github.com/example/site/pull/$n" ;;
+    shift 2
+    base=""; head_ref=""; title=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --base) base="${2:-}"; shift 2 ;;
+        --head) head_ref="${2:-}"; shift 2 ;;
+        --title|-t) title="${2:-}"; shift 2 ;;
+        --body|-b|--body-file|-F) shift 2 ;;
+        --draft|--fill|-f|--web|-w) shift ;;
+        *) shift ;;
+      esac
+    done
+    current="$(git -C "$repo" branch --show-current)"
+    [[ -n "$head_ref" ]] || head_ref="$current"
+    [[ "$base" == "" || "$base" == "main" ]] || fail "pr create refused: base must be main, got $base"
+    [[ "$head_ref" == "$current" ]] || fail "pr create refused: --head $head_ref is not the checked-out branch $current"
+    [[ "$current" != "main" ]] || fail "pr create refused: you are on main; create the pull request from a branch"
+    [[ -n "$title" ]] || fail "pr create refused: --title is required"
+    printf '%s' "$current" > "$state/created_pr_branch"
+    printf 'TITLE=%s\nBRANCH=%s\n' "$title" "$current" > "$state/view.env"
+    rm -f "$state/merged.env"
+    snapshot_created_pr
+    echo "https://github.com/example/site/pull/$(pr_number)" ;;
   "pr comment"|"pr edit"|"pr review"|"pr ready"|"pr close"|"pr reopen")
     require_number "${3:-}"
     echo "ok (stand-in recorded: $*)" ;;
   "api user")
     printf '{"login":"%s"}\n' "$(cat "$state/login")" ;;
   "api graphql")
-    touch_gate threads
+    if [[ "$*" =~ (number|n|pr)[\"\']?[[:space:]]*[:=][[:space:]]*[\"\']?$(pr_number)([^0-9]|$) ]]; then touch_gate threads; else fail "threads query does not name pull request #$(pr_number); pass it as a variable or literal"; fi
     serve "$(fixture threads.json)" ;;
   api\ repos/*)
-    case "$2" in
-      */comments*) touch_gate comments; serve "$(fixture comments.json)" ;;
-      */commits*) serve "$(fixture commits.json)" ;;
-      *) fail "unsupported api path $2" ;;
+    path="${2%%\?*}"
+    case "$path" in
+      repos/*/*/issues/$(pr_number)/comments) touch_gate comments; serve "$(fixture comments.json)" ;;
+      repos/*/*/issues/$(pr_number)/timeline) serve "$(fixture timeline.json)" ;;
+      repos/*/*/pulls/$(pr_number)/commits) serve "$(fixture commits.json)" ;;
+      repos/*/*/pulls/$(pr_number)/reviews) render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | sed -n '/"latestReviews"/,/\]/p' ;;
+      repos/*/issues/*|repos/*/pulls/*) fail "path $path does not name pull request #$(pr_number)" ;;
+      *) fail "unsupported api path $path" ;;
     esac ;;
   "run view"|"run rerun")
     echo "stand-in: no workflow runs exist in this fixture" ;;
