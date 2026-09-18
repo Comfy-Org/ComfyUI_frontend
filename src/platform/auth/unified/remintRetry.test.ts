@@ -18,7 +18,6 @@ const { mockRemint, flagState } = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
