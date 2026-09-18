@@ -183,7 +183,7 @@ export function assembleLeafTranslations(
   return assembled
 }
 
-function loadManifest(filename: string): SourceManifest {
+export function loadManifest(filename: string): SourceManifest {
   if (!existsSync(filename)) {
     throw new Error(
       `${filename} is missing. The source manifest records which English sources the current translations were generated from; restore it from git history.`
@@ -216,7 +216,7 @@ function loadManifest(filename: string): SourceManifest {
   return manifest as SourceManifest
 }
 
-function readManifestSource(
+export function readManifestSource(
   repoRoot: string,
   filename: string,
   hash: string

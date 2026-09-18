@@ -78,7 +78,9 @@ export type Locale = keyof typeof LOCALES
 export const LOCALE_CODES = Object.keys(LOCALES) as Locale[]
 
 /** Non-default locales, i.e. the ones that carry a URL prefix. */
-const LOCALIZED_CODES = LOCALE_CODES.filter((code) => code !== DEFAULT_LOCALE)
+export const LOCALIZED_CODES = LOCALE_CODES.filter(
+  (code) => code !== DEFAULT_LOCALE
+)
 
 /** Every URL prefix that identifies a locale, default excluded. */
 export const LOCALE_PREFIXES = LOCALIZED_CODES.map(
