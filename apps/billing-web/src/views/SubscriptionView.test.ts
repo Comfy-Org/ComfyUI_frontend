@@ -19,8 +19,8 @@ import {
 import SubscriptionView from '@/views/SubscriptionView.vue'
 
 /** The two values this surface reads; a test-family key stands in for a deployment's. */
-vi.mock<unknown>(import('@/config/env'), () => ({
-  BILLING_WEB_ENV: 'test',
+vi.mock(import('@/config/env'), () => ({
+  BILLING_WEB_ENV: 'test' as const,
   STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
 }))
 
@@ -181,9 +181,9 @@ describe('SubscriptionView', () => {
       await screen.findByRole('button', { name: 'Cancel subscription' })
     )
     expect(fake.cancelSubscription).not.toHaveBeenCalled()
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Confirm cancellation' })
-    )
+    const confirm = screen.getByRole('button', { name: 'Confirm cancellation' })
+    await waitFor(() => expect(confirm).toHaveFocus())
+    await userEvent.click(confirm)
 
     expect(
       await screen.findByText('Your subscription is cancelled.')
@@ -207,9 +207,11 @@ describe('SubscriptionView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Keep my plan' }))
 
     expect(fake.cancelSubscription).not.toHaveBeenCalled()
-    expect(
-      screen.getByRole('button', { name: 'Cancel subscription' })
-    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Cancel subscription' })
+      ).toHaveFocus()
+    )
   })
 
   it('resubscribes when the server allows it', async () => {

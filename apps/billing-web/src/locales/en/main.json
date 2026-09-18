@@ -218,7 +218,7 @@
     },
     "outcome": {
       "unknown": "That didn't complete. Please try again.",
-      "failed": "The payment for that change was declined.",
+      "failed": "That change didn't go through. Please try again.",
       "timed_out": "We stopped waiting for the billing service. Check back in a moment.",
       "reconciliation_needed": "That change needs a look from support before it completes.",
       "superseded": "Your workspace changed while we were working. Please try again."

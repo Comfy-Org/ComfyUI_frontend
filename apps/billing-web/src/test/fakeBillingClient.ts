@@ -74,8 +74,10 @@ export interface FakeBillingClient {
   readonly openPaymentPortal: BillingClient['commands']['openPaymentPortal']
   /** A mock, so a test can script a sequence of answers for one attempt. */
   readonly subscribe: Mock<BillingClient['commands']['subscribe']>
-  readonly cancelSubscription: BillingClient['commands']['cancelSubscription']
-  readonly resubscribe: BillingClient['commands']['resubscribe']
+  readonly cancelSubscription: Mock<
+    BillingClient['commands']['cancelSubscription']
+  >
+  readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
   readonly recover: BillingClient['lifecycle']['recover']
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']

@@ -264,6 +264,71 @@ describe('CheckoutView', () => {
     )
   })
 
+  it('charges at the instant the quote was priced, not at the instant it arrives', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({ proration_at: '2026-09-18T12:00:00.000Z' })
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({ proration_at: '2026-09-18T12:00:00.000Z' })
+      )
+    )
+  })
+
+  it('leaves a change that takes effect later to be priced when it does', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {
+      preview: {
+        status: 'ok',
+        value: previewOf({
+          is_immediate: false,
+          proration_at: '2026-09-18T12:00:00.000Z'
+        })
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty('proration_at')
+  })
+
+  it('stops announcing a failed submission once a new quote replaces it', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockResolvedValueOnce({ status: 'error', code: 'CONFLICT' })
+
+    reportConfirm('ctoken_1')
+    expect(
+      await screen.findByText(
+        'That change conflicts with your current subscription.'
+      )
+    ).toBeInTheDocument()
+
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: previewOf({ quote_id: 'q_2' })
+    })
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          'That change conflicts with your current subscription.'
+        )
+      ).toBeNull()
+    )
+  })
+
   it('redirects this tab when the server offers a hosted continuation', async () => {
     const assign = stubNavigation()
     const fake = await renderCheckout()

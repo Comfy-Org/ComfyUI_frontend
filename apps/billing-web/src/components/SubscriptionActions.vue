@@ -6,7 +6,7 @@
  * the checkout composable, whose continuation redirects this tab when the
  * server asks for a card.
  */
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -41,6 +41,8 @@ const checkout = useCheckout({
 
 const allowed = ref<BillingCapabilities | undefined>()
 const confirmingCancel = ref(false)
+const cancelTrigger = ref<HTMLButtonElement | null>(null)
+const confirmCancelAction = ref<HTMLButtonElement | null>(null)
 const busy = ref(false)
 const notice = ref<string | undefined>()
 const failure = ref<string | undefined>()
@@ -78,6 +80,19 @@ async function settle(
   } finally {
     busy.value = false
   }
+}
+
+/** The trigger is replaced by these controls, so the keyboard has to follow. */
+async function askToCancel() {
+  confirmingCancel.value = true
+  await nextTick()
+  confirmCancelAction.value?.focus()
+}
+
+async function keepPlan() {
+  confirmingCancel.value = false
+  await nextTick()
+  cancelTrigger.value?.focus()
 }
 
 async function cancelSubscription() {
@@ -118,6 +133,7 @@ async function resubscribe() {
       </p>
       <div class="flex gap-2">
         <button
+          ref="confirmCancelAction"
           type="button"
           :disabled="busy"
           class="h-11 cursor-pointer rounded-lg bg-destructive-background px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
@@ -129,7 +145,7 @@ async function resubscribe() {
           type="button"
           :disabled="busy"
           class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
-          @click="confirmingCancel = false"
+          @click="keepPlan"
         >
           {{ t('hosted.subscription.keepPlan') }}
         </button>
@@ -139,10 +155,11 @@ async function resubscribe() {
     <div v-else class="flex gap-2">
       <button
         v-if="allowed?.can_cancel"
+        ref="cancelTrigger"
         type="button"
         :disabled="busy"
         class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
-        @click="confirmingCancel = true"
+        @click="askToCancel"
       >
         {{ t('hosted.subscription.cancel') }}
       </button>

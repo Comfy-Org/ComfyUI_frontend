@@ -98,6 +98,7 @@ const reactivationConfirmed = ref(false)
 const submitFailure = ref<string | undefined>()
 
 watch(preview, (quoted) => {
+  submitFailure.value = undefined
   reactivationRequired.value =
     quoted?.requires_reactivation_confirmation === true
   reactivationConfirmed.value = false
@@ -197,6 +198,9 @@ function subscribeRequest(
     ...(quoted.quote_version === undefined
       ? {}
       : { quote_version: quoted.quote_version }),
+    ...(quoted.is_immediate && quoted.proration_at !== undefined
+      ? { proration_at: quoted.proration_at }
+      : {}),
     ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
     ...(reactivationConfirmed.value ? { confirm_reactivation: true } : {})
   }

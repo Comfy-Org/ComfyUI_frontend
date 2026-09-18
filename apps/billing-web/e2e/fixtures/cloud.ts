@@ -186,27 +186,45 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
   ['/billing/payment-portal', () => ({ body: { url: PORTAL_URL } })]
 ])
 
+/**
+ * Only an operation a spec scripted or a command just issued is answered for.
+ * Any other id is a route the real Cloud would not know either, so an id the
+ * app invented cannot poll its way to a settled payment.
+ */
 function builtInGetReply(
   scenario: CloudScenario,
-  path: string
+  path: string,
+  issued: ReadonlySet<string>
 ): Reply | undefined {
   const known = GET_REPLIES.get(path)
   if (known) return known(scenario)
   const operation = OPERATION_PATH.exec(path)
   if (!operation) return undefined
   const id = decodeURIComponent(operation[1])
-  return { body: scenario.operations[id] ?? succeededOperation(id) }
+  if (Object.hasOwn(scenario.operations, id))
+    return { body: scenario.operations[id] }
+  return issued.has(id) ? { body: succeededOperation(id) } : undefined
 }
 
 function builtInReply(
   scenario: CloudScenario,
-  request: RecordedRequest
+  request: RecordedRequest,
+  issued: ReadonlySet<string>
 ): Reply {
   const { method, path } = request
-  if (method === 'GET') return builtInGetReply(scenario, path) ?? NO_SUCH_ROUTE
+  if (method === 'GET')
+    return builtInGetReply(scenario, path, issued) ?? NO_SUCH_ROUTE
   if (method === 'POST')
     return POST_REPLIES.get(path)?.(scenario) ?? NO_SUCH_ROUTE
   return NO_SUCH_ROUTE
+}
+
+/** Read off the reply itself, so an override's own id counts as issued. */
+function issuedOperationId(reply: Reply): string | undefined {
+  const { body } = reply
+  if (typeof body !== 'object' || body === null) return undefined
+  if (!('billing_op_id' in body)) return undefined
+  return typeof body.billing_op_id === 'string' ? body.billing_op_id : undefined
 }
 
 export async function installMockCloud(
@@ -215,6 +233,7 @@ export async function installMockCloud(
   const scenario = defaultScenario()
   const requests: RecordedRequest[] = []
   const overrides = new Map<string, ReplyHandler>()
+  const issued = new Set<string>()
 
   // Registered first, so every more specific route below outranks it: the
   // app's own origin is served, everything else is refused.
@@ -248,7 +267,11 @@ export async function installMockCloud(
     }
     requests.push(recorded)
     const handler = overrides.get(`${recorded.method} ${recorded.path}`)
-    return json(route, handler?.(recorded) ?? builtInReply(scenario, recorded))
+    const reply =
+      handler?.(recorded) ?? builtInReply(scenario, recorded, issued)
+    const operationId = issuedOperationId(reply)
+    if (operationId !== undefined) issued.add(operationId)
+    return json(route, reply)
   })
 
   // Where a hosted redirect lands: a page of its own, so a spec can assert
