@@ -76,7 +76,8 @@ describe('normalizeSubgraphDefinitionIds', () => {
 
     expect(result.subgraphs).toHaveLength(2)
     expect(isUuidShapedSubgraphId(normalizedId)).toBe(true)
-    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedId)
+    expect(result.subgraphs[1].nodes).toHaveLength(1)
+    expect(result.subgraphs[1].nodes?.[0]?.type).toBe(normalizedId)
   })
 
   it('recursively normalizes a subgraph-within-subgraph definition and hoists it to the flat result', () => {
@@ -322,7 +323,9 @@ describe('normalizeSubgraphDefinitions', () => {
     const duplicate = makeSubgraph('legacy-id')
     duplicate.name = 'duplicate'
     const parent = makeSubgraph('parent', ['legacy-id'])
-    const rootNode = makeSubgraph('root', ['legacy-id']).nodes![0]
+    const rootNode = makeSubgraph('root', ['legacy-id']).nodes?.[0]
+    expect(rootNode).toBeDefined()
+    if (!rootNode) return
 
     const result = normalizeSubgraphDefinitions(
       [first, duplicate, parent],
@@ -340,8 +343,9 @@ describe('normalizeSubgraphDefinitions', () => {
     expect(result.subgraphs).toHaveLength(2)
     expect(result.subgraphs[0].name).toBe('first')
     expect(isUuidShapedSubgraphId(normalizedLegacyId)).toBe(true)
-    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedLegacyId)
-    expect(result.rootNodes![0].type).toBe(normalizedLegacyId)
+    expect(result.subgraphs[1].nodes).toHaveLength(1)
+    expect(result.subgraphs[1].nodes?.[0]?.type).toBe(normalizedLegacyId)
+    expect(result.rootNodes?.[0]?.type).toBe(normalizedLegacyId)
   })
 
   it('keeps the first same-owner link across regular and floating links', () => {
@@ -363,8 +367,8 @@ describe('normalizeSubgraphDefinitions', () => {
 
     expect(result.links).toHaveLength(1)
     expect(result.floatingLinks).toHaveLength(0)
-    expect(result.links![0].id).toBe(toLinkId(1))
-    expect(result.inputs![0].linkIds).toEqual([toLinkId(1)])
+    expect(result.links?.[0]?.id).toBe(toLinkId(1))
+    expect(result.inputs?.[0]?.linkIds).toEqual([toLinkId(1)])
     expect(subgraph.floatingLinks).toHaveLength(1)
   })
 })
