@@ -17,6 +17,7 @@ import {
 } from '@comfyorg/account-core/session'
 
 import { t } from '@/i18n'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
@@ -878,9 +879,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         })
       }
     },
-    // Keep synchronous within setup: Firebase's first delivery is a microtask,
-    // so this store is fully assigned before authStore's listener re-enters it.
-    useAuthStore().identity
+    // Observer order against authStore is not load-bearing: unifiedUser() waits for the port's user and fails closed on the ceiling.
+    firebaseIdentity
   )
 
   const stopUnifiedSnapshot = unifiedSessionClient.subscribe((snapshot) => {
