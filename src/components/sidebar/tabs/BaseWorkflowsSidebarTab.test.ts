@@ -171,10 +171,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
-
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: mockExpandNode,

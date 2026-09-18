@@ -247,13 +247,6 @@ const CreditsTileStub = {
     '<div data-testid="credits-tile" :data-zero-state="String(zeroState)" :data-inactive-plan="String(inactivePlan)" />'
 }
 
-const ButtonStub = {
-  template:
-    '<button v-bind="$attrs" :disabled="loading" @click="$emit(\'click\', $event)"><slot /></button>',
-  props: ['variant', 'size', 'loading'],
-  emits: ['click']
-}
-
 const SubscriptionFooterLinksStub = {
   props: ['showInvoiceHistory'],
   template:
@@ -278,7 +271,6 @@ function renderComponent({ stubFooter = true } = {}) {
       directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
-        Button: ButtonStub,
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
