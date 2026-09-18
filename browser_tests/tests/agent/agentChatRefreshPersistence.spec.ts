@@ -10,13 +10,13 @@ import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixtu
 // persisted `Comfy.Agent.ThreadId` from localStorage and calls
 // `hydrateFromServer`, which re-fetches this same history and replays it
 // through `agentConversationStore.hydrate()`.
+test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
   'keeps the transcript and its order after a browser refresh',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
-    test.setTimeout(120_000)
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
