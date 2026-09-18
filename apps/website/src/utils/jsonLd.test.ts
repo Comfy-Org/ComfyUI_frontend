@@ -178,6 +178,34 @@ describe('softwareApplicationNode', () => {
   })
 })
 
+describe('videoObjectNode', () => {
+  const baseInput = {
+    siteUrl,
+    id: 'https://comfy.org/video/#video',
+    pageUrl: 'https://comfy.org/video/',
+    name: 'Test Video',
+    description: 'A test video',
+    thumbnailUrl: 'https://media.comfy.org/test.jpg',
+    locale: 'en' as const
+  }
+
+  it('converts a YYYY-MM-DD uploadDate to midnight UTC', () => {
+    const node = videoObjectNode({
+      ...baseInput,
+      uploadDate: '2026-07-16'
+    })
+    expect(node.uploadDate).toBe('2026-07-16T00:00:00+00:00')
+  })
+
+  it('passes a fully qualified datetime uploadDate through unchanged', () => {
+    const node = videoObjectNode({
+      ...baseInput,
+      uploadDate: '2026-08-26T18:00:00-07:00'
+    })
+    expect(node.uploadDate).toBe('2026-08-26T18:00:00-07:00')
+  })
+})
+
 describe('sameAs encyclopedic references', () => {
   it('links the organization to its Wikidata entity', () => {
     const graph = buildPageGraph(
