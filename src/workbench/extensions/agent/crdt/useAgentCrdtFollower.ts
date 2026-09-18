@@ -403,6 +403,33 @@ export function useAgentCrdtFollower(
     return true
   }
 
+  const acceptSubscription = (): void => {
+    clearSubscribeRetry()
+    subscription.value = { status: 'connected', refusalCode: null }
+    armStaleProbe()
+    // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
+    // a remount — persist on ok, not on intent.
+    if (subscribedWorkflowId.value !== null)
+      persistConfirmedDocId(subscribedWorkflowId.value)
+  }
+
+  const refuseSubscription = (code: unknown): void => {
+    clearStaleProbe()
+    subscription.value = refusedSubscriptionState(code)
+    if (subscription.value.status !== 'retrying') {
+      clearSubscribeRetry()
+    } else if (!scheduleSubscribeRetry()) {
+      subscription.value = {
+        status: 'retry_exhausted',
+        refusalCode: subscription.value.refusalCode
+      }
+    }
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    sender.abortIfUnbound()
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -411,34 +438,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      clearSubscribeRetry()
-      subscription.value = { status: 'connected', refusalCode: null }
-      armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
-        persistConfirmedDocId(subscribedWorkflowId.value)
+      acceptSubscription()
     } else {
-      clearStaleProbe()
-      subscription.value = refusedSubscriptionState(event.detail?.code)
-      switch (subscription.value.status) {
-        case 'too_large':
-        case 'permanent_failure':
-          clearSubscribeRetry()
-          break
-        case 'retrying':
-          if (!scheduleSubscribeRetry()) {
-            subscription.value = {
-              status: 'retry_exhausted',
-              refusalCode: subscription.value.refusalCode
-            }
-          }
-          break
-      }
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      sender.abortIfUnbound()
+      refuseSubscription(event.detail?.code)
     }
   }
   const onUpdate: EventListener = (event) => {
