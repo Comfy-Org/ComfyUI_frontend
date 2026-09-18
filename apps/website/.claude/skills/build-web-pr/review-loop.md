@@ -12,7 +12,20 @@ Each round, wait until every check and review bot has finished on the current
 head, then read four things fresh with `gh`, always passing the pull request
 number: the check results (`gh pr checks <number>`), the review decision and
 merge state (`gh pr view <number> --json reviewDecision,mergeStateStatus`),
-the review threads with their resolved state, and the issue comments. Never
+the review threads with their resolved state, and the issue comments. Read
+the threads with this exact query, passing the repository and number as
+variables so the read is bound to the pull request you were given:
+
+```bash
+gh api graphql -F owner=<owner> -F name=<repo> -F number=<number> -f query='
+query($owner:String!,$name:String!,$number:Int!){
+  repository(owner:$owner,name:$name){ pullRequest(number:$number){
+    reviewThreads(first:100){ nodes{ id isResolved path
+      comments(last:1){ nodes{ author{login} createdAt } } } } } } }'
+```
+
+Reply in a thread with `addPullRequestReviewThreadReply` and resolve one
+with `resolveReviewThread`, both by the thread's `id` from that query. Never
 reason from an earlier round's reading; a round that starts while checks are
 pending tells you nothing.
 

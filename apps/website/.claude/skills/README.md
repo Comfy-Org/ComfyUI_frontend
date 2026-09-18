@@ -25,10 +25,13 @@ repository and number are the fixture's; a merge carries
 `--match-head-commit` equal to the current head; since the last invalidation
 (a merge command, a head move, or any accepted mutation) `pr view`,
 `pr checks`, threads and comments were all read; and the served state allows
-the merge (every completed check `pass`, every required check present and
-`pass`, `APPROVED`, `CLEAN`, open, not a draft, no "do not merge" in the
-title, and for each unresolved thread the last comment is ours and the
-thread's own author approved after it). It does not check the body or labels
+the merge (every completed check `pass` and none pending, every required check
+present and `pass`, `APPROVED`, `CLEAN`, open, not a draft, no "do not
+merge" in the title, and each unresolved thread either answered by us and
+then approved by its own author, or left by an author who approved after
+their own last comment). The threads read counts only in the canonical
+variable form `review-loop.md` gives, and a reply or resolve mutation is
+bound to a fixture thread id and invalidates the gate. It does not check the body or labels
 for holds, unpublished routes, or whether the designer authorized the merge
 in the session; those are graded from the transcript and the final message
 by each case's `regex`, `tool_used`, `tool_order` and `llm` graders. The one
@@ -38,20 +41,23 @@ may script phases under `state/phases/<n>/` so each merge command advances the
 fixture; `advance_head.<k>` moves the branch head on the k-th view of a phase,
 so a stale sha from an earlier reading no longer merges; comments and
 timeline events are cumulative with distinct ids. `pr create` must name the
-checked-out branch and `main`, and from then on every call snapshots every
-`main..branch` commit message and the diff into `bin/created-pr/` for the
-workflow graders. The snapshot is only as fresh as the last `gh` call, so a
-commit made after the skill's final `gh pr view` is invisible to those
-graders; the hand-off's mandatory final read narrows that window but does not
-close it. Every refusal starts with `merge refused`, and the merge cases grade
+checked-out branch and `main`; it installs `post-commit`, `post-rewrite`,
+`post-checkout` and `post-merge` hooks in the fixture repository that
+snapshot every `main..branch` commit message and the diff into
+`bin/created-pr/`, so the workflow graders read the branch's final git state
+whatever the agent did after its last `gh` call. The timeline is served two
+events per page, so only `gh api --paginate` sees a third removal. Every refusal starts with `merge refused`, and the merge cases grade
 its absence from the transcript.
 
 `bash fix-web-pr/evals/_shared/selftest.sh` drives every fixture through its
 expected sequence with the stand-in alone and costs nothing: the target
-guard, the gate, wrong-target reads, four mutations of the served state (a
-failed required check, blocked, changes requested, already merged), `pr
-create` binding, the moving head, distinct removal events, and the three
-removals. Run it after touching a fixture.
+guard, the gate, wrong-target and wrong-shape reads, mutations of the served
+state (a failed required check, a failed or pending optional check, blocked,
+changes requested, already merged, a hold edited into the title), thread
+timing in both arms, thread replies, cumulative view deltas, `pr create`
+binding with the git hooks, the moving head, pagination, distinct removal
+events with a changed-reason falsifier, and the three removals. Run it after
+touching a fixture. The stand-in needs `jq`.
 
 Fixture setup and shell access are off by default, so pass the flags:
 

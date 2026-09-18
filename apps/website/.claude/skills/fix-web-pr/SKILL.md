@@ -88,9 +88,9 @@ Take the gate reading immediately before the merge command, after your last
 push and after every check has finished, and take all of it together: `gh pr
 view <number> --json reviewDecision,mergeStateStatus,headRefOid,isDraft,title,
 labels,body,latestReviews` (each review carries its author, state and
-`submittedAt`), `gh pr checks <number>`, the review threads with their
-resolved state and the time of each thread's last comment, and the issue
-comments. Nothing read earlier in the session counts,
+`submittedAt`), `gh pr checks <number>`, the review threads through the
+query `review-loop.md` gives (with the author and time of each thread's last
+comment), and the issue comments. Nothing read earlier in the session counts,
 because checks, threads, holds, and the description can all change while you
 work. Keep the `headRefOid` from that reading. Send the pull request to merge
 with `gh pr merge <number> --squash --match-head-commit <that sha>`, so a
@@ -144,9 +144,10 @@ You see this as the state back at `OPEN` with `mergeStateStatus` no longer
 `QUEUED`. Each removal is one `removed_from_merge_queue` timeline event with
 its own id, so count removals by distinct event id, never by how many times
 you have fetched the same comment. For the reason, read whatever reason
-fields that event carries; when it carries none, take the merge-queue bot
-comment closest in time to the event; when there is neither, record the
-reason as unknown and treat two unknowns as the same reason. Say in the
+fields that event carries. When it carries none, use the first issue comment
+by the login `github-merge-queue[bot]` created after the event and within
+ten minutes of it, and only that one; when there is no such comment, record
+the reason as unknown, and treat two unknowns as the same reason. Say in the
 hand-off which of the three sources you used. When that happens, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the

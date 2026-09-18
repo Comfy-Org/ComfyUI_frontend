@@ -35,6 +35,8 @@ git update-ref refs/remotes/origin/main main
 printf "bin/\n" >> .git/info/exclude
 mkdir -p bin
 cp "$shared/gh" bin/gh
+cp "$shared/snapshot-pr.sh" bin/snapshot-pr.sh
+chmod +x bin/snapshot-pr.sh
 chmod +x bin/gh
 mkdir -p bin/state
 cp -R "$shared/base/." bin/state/
