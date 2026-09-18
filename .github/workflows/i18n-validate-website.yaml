@@ -81,3 +81,6 @@ jobs:
 
       - name: Check generated data content
         run: pnpm --filter @comfyorg/website i18n:write-data --check
+
+      - name: Check generated faq content
+        run: pnpm --filter @comfyorg/website i18n:write-faq --check

@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+
 /**
  * How a content writer was asked to run.
  *
@@ -33,4 +35,24 @@ export function exitCheck(
       `Run \`${command}\` and commit the result.\n`
   )
   process.exit(1)
+}
+
+/**
+ * Whether a document on disk is a person's work. A translation a person wrote
+ * or signed off is never overwritten and never withdrawn, whatever the machine
+ * layer holds.
+ */
+export function writtenByPerson(
+  document: { machineWritten: boolean } | undefined
+): boolean {
+  return document !== undefined && !document.machineWritten
+}
+
+/**
+ * Whether a generated file already holds exactly this content. Byte-identical
+ * is not a write, and reporting it as one left a dry run unable to say
+ * whether anything had actually changed.
+ */
+export function alreadyOnDisk(file: string, contents: string): boolean {
+  return fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contents
 }
