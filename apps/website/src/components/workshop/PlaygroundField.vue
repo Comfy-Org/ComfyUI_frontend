@@ -69,14 +69,13 @@ const fieldError = computed(() =>
 )
 const errorMessage = computed(() =>
   fieldError.value
-    ? t(errorKey[fieldError.value], locale).replace(
-        '{limit}',
-        formatWorkshopUploadLimit(
+    ? t(errorKey[fieldError.value], locale, {
+        limit: formatWorkshopUploadLimit(
           (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
             MAX_UPLOAD_BYTES,
           locale
         )
-      )
+      })
     : ''
 )
 const invalid = () => fieldError.value !== undefined
@@ -111,7 +110,7 @@ function formatValue(value: string | number | boolean): string {
       : label
   return value === -1 || value === '-1'
     ? t('workshop.field.auto', locale)
-    : t('workshop.field.seconds', locale).replace('{value}', seconds)
+    : t('workshop.field.seconds', locale, { value: seconds })
 }
 
 const hasEmptyOption = computed(
@@ -276,10 +275,9 @@ function booleanValue(fallback = false): boolean {
         class="text-xs text-primary-warm-gray"
       >
         {{
-          t('workshop.field.defaultValue', locale).replace(
-            '{value}',
-            formatValue(declaredDefault)
-          )
+          t('workshop.field.defaultValue', locale, {
+            value: formatValue(declaredDefault)
+          })
         }}
       </p>
     </div>
@@ -357,12 +355,7 @@ function booleanValue(fallback = false): boolean {
           :selected="selectValue() === ''"
           class="bg-primary-comfy-ink"
         >
-          {{
-            t('workshop.field.chooseValue', locale).replace(
-              '{label}',
-              field.label
-            )
-          }}
+          {{ t('workshop.field.chooseValue', locale, { label: field.label }) }}
         </option>
         <option
           v-for="(option, index) in field.options"

@@ -1,18 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { authSchemasFor, interpolate } from './auth-schemas'
-
-describe('interpolate', () => {
-  it('fills named tokens and leaves unknown ones visible', () => {
-    expect(interpolate('At least {length} characters', { length: 8 })).toBe(
-      'At least 8 characters'
-    )
-    expect(
-      interpolate('At least {length} characters'),
-      'a missing param must stay loud in the copy, not vanish'
-    ).toBe('At least {length} characters')
-  })
-})
+import { authSchemasFor } from './auth-schemas'
 
 describe('authSchemasFor', () => {
   it('renders localized, parameterized messages through the site translator', () => {

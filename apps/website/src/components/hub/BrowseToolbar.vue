@@ -72,10 +72,10 @@ export interface ToolbarLabels {
   readonly searchPlaceholder: string
   readonly noResults: string
   readonly less: string
-  readonly selected: string
+  readonly selected: (count: number) => string
   readonly typeAll: string
-  readonly showResults: string
-  readonly showModels: string
+  readonly showResults: (count: number) => string
+  readonly showModels: (count: number) => string
   readonly resize: string
 }
 
@@ -220,9 +220,7 @@ const groupLabel = (group: FacetGroupConfig) =>
 
 const selectLabel = (group: FacetGroupConfig) => {
   const chosen = activeCountForType(group.type)
-  return chosen === 0
-    ? group.allLabel
-    : labels.selected.replace('{n}', String(chosen))
+  return chosen === 0 ? group.allLabel : labels.selected(chosen)
 }
 
 const sortLabel = computed(
@@ -644,11 +642,7 @@ function phoneToggle(key: string, value: string) {
             data-testid="hub-filter-show"
             @click="resultCount > 0 ? (filterOpen = false) : clearAll()"
           >
-            {{
-              resultCount > 0
-                ? showLabel.replace('{n}', String(resultCount))
-                : labels.clearAll
-            }}
+            {{ resultCount > 0 ? showLabel(resultCount) : labels.clearAll }}
           </button>
         </div>
       </div>

@@ -66,12 +66,7 @@ const isPartnerNode = directory === 'partner_nodes'
       </h1>
 
       <p class="text-sm text-primary-comfy-canvas/60">
-        {{
-          t('models.hero.workflowCount').replace(
-            '{count}',
-            String(workflowCount)
-          )
-        }}
+        {{ t('models.hero.workflowCount', 'en', { count: workflowCount }) }}
       </p>
 
       <div class="flex flex-col gap-3 sm:flex-row">

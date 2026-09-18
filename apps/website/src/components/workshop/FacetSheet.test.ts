@@ -8,9 +8,9 @@ const labels = {
   title: 'Filters',
   search: 'Search filters',
   noMatches: 'No matches',
-  applied: '{n} applied',
+  applied: (n: number) => `${n} applied`,
   clearAll: 'Clear all',
-  show: 'Show {n}',
+  show: (n: number) => `Show ${n}`,
   close: 'Close',
   resize: 'Resize filters'
 }

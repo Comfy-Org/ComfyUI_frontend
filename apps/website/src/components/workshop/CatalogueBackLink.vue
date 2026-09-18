@@ -35,7 +35,7 @@ onMounted(() => {
     <ChevronLeft class="size-4" aria-hidden="true" />
     {{
       category
-        ? t('workshop.model.backTo', locale).replace('{category}', category)
+        ? t('workshop.model.backTo', locale, { category })
         : t('workshop.model.back', locale)
     }}
   </a>
