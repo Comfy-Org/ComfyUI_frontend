@@ -40,7 +40,6 @@ describe('auth token priority chain', () => {
 
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     stubFirebaseAuthHarness()
     const authStateObservers: Array<(user: User | null) => void> = []
     authStateCallback = (user) =>
