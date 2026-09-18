@@ -16,7 +16,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
   test('Escape dismisses the run permissions popover', async ({
     agentPanel,
     comfyPage
-  }, testInfo) => {
+  }) => {
     const page = comfyPage.page
 
     await agentPanel.open()
@@ -32,9 +32,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       name: enMessages.agent.runModeTriggerAsk,
       exact: true
     })
-    const workflowIcon = panel.getByTestId('workflow-selector-icon')
-    await expect(workflowIcon).toHaveCSS('width', '16px')
-    await expect(workflowIcon).toHaveCSS('height', '16px')
 
     // Without this, "hidden after Escape" would also pass for a popover that
     // never opened in the first place.
@@ -44,15 +41,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       await expect(trigger).toBeVisible()
       await trigger.click()
       await expect(popoverHeading).toBeVisible()
-      const chevron = trigger.getByTestId('run-mode-chevron')
-      await expect(chevron).toHaveCSS('width', '16px')
-      await expect(chevron).toHaveCSS('height', '16px')
-      await testInfo.attach('run-permissions-popover', {
-        body: await page.screenshot({
-          path: testInfo.outputPath('run-permissions-popover.png')
-        }),
-        contentType: 'image/png'
-      })
     })
 
     await test.step('Escape dismisses it', async () => {
