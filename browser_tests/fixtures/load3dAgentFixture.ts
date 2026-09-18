@@ -1,4 +1,4 @@
-import type { Page, Request, WebSocketRoute } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -9,14 +9,13 @@ import {
   zComfyApiWorkflow,
   zComfyWorkflow
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toNodeId } from '@/types/nodeId'
 
 import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -28,7 +27,6 @@ const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 const SOCKET_SID = '5b0e2c9a-6f1d-4a83-9c27-3e4f5a6b7c8d'
 const NODE_ID = '1'
 const PANEL_MOUNT_TIMEOUT = 30_000
-const SUBSCRIBE_TIMEOUT = 15_000
 
 // The backend's Load3D definition, in `widgets_values` order; the host applier
 // rejects a `set_widget` naming anything outside this list.
@@ -98,22 +96,6 @@ async function uploadedImageBytes(request: Request): Promise<Uint8Array> {
   return new Uint8Array(await image.arrayBuffer())
 }
 
-async function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  message: string
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(message)), ms)
-  })
-  try {
-    return await Promise.race([promise, timeout])
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 /**
  * One Load3D node bound to an agent workflow, driven the way production is:
  * the panel opens the agent's tab, the follower subscribes over `/ws`, and the
@@ -128,36 +110,25 @@ class Load3dAgentHarness {
     seedWorkflow(),
     LOAD3D_CATALOG
   )
-  private socket: WebSocketRoute | null = null
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
+  private readonly hostSocket: AgentFollowerHostSocket
   private uploads = 0
   private readonly uploadsByName = new Map<string, Request>()
   private readonly heldModels = new Map<AgentModelFile, Promise<void>>()
 
   constructor(private readonly page: Page) {
+    this.hostSocket = new AgentFollowerHostSocket(
+      page,
+      WORKFLOW_ID,
+      this.host,
+      SOCKET_SID
+    )
     this.viewer = new Load3DHelper(page.locator(`[data-node-id="${NODE_ID}"]`))
   }
 
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.mockLoad3dIo()
-    // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
@@ -178,11 +149,7 @@ class Load3dAgentHarness {
       type: 'agent_active_tab',
       data: { workflow_id: WORKFLOW_ID, name: 'Load3D preview' }
     })
-    await withTimeout(
-      this.subscribed,
-      SUBSCRIBE_TIMEOUT,
-      'the follower never subscribed to the agent workflow after agent_active_tab'
-    )
+    await this.hostSocket.waitForSubscribe()
     await expect(this.viewer.node).toBeVisible()
     await expect(this.viewer.canvas).toBeVisible()
   }
@@ -320,33 +287,7 @@ class Load3dAgentHarness {
   }
 
   private send(frame: AgentWsEvent | HostFrame): void {
-    // Every frame must satisfy production's own parser, so a host that stopped
-    // emitting a required field fails here, not silently on the client.
-    if (frame.type.startsWith('doc_') || frame.type === 'awareness') {
-      if (parseServerDocFrame(frame) === null)
-        throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    } else if (!parseAgentWsEvent(frame).success) {
-      throw new Error(`agent event ${frame.type} is not a valid agent event`)
-    }
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
-  }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.resolveSubscribed?.()
+    this.hostSocket.send(frame)
   }
 }
 
