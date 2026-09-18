@@ -63,11 +63,12 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 `pr-notify-needs-backport.yaml` DMs the backport watchers as soon as
 `needs-backport` is added, so a backport decision is heard while its context is
 fresh rather than when the next release cut lists it. The DM says whether
-`pr-backport.yaml` is cherry-picking already, waiting on the merge, or will
-never start — a PR carrying no version label never reaches the cherry-pick, and
-that is the case worth hearing about early. The PR is read live rather than
-taken from the label webhook, so the labels it reports are the ones that had
-landed by the time the DM was sent.
+`pr-backport.yaml` will cherry-pick on merge, is waiting on the merge, or will
+never start — no version label, a label naming a branch that has not been cut,
+a PR closed unmerged, and a base that is not `main` all end with nothing
+happening, and those are the cases worth hearing about early. The PR and the
+remote branches are read live rather than taken from the label webhook, so what
+the DM reports is true at the moment it is sent.
 
 It fires for a PR into any base branch, and says so when the base is not
 `main` — `pr-backport.yaml` only runs on PRs into `main`, so the label does
@@ -75,7 +76,10 @@ nothing there and that is worth hearing rather than assuming.
 
 The recipients are the repository **variable**
 `SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
-(`U…`), which is how you subscribe without a PR. Clearing it restores the
+(`U…`, `W…`, or a `D…` DM channel), which is how you subscribe without a PR.
+A rejected DM fails the run rather than passing quietly, so a stale ID gets
+noticed and removed instead of silently dropping the notification. Clearing it
+restores the
 default watcher rather than silencing the DM; to stop the DMs entirely, set it
 to a non-ID value such as `none`, which the run reports as an ignored watcher
 and sends nothing.

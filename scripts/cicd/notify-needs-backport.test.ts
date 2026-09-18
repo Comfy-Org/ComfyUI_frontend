@@ -14,7 +14,12 @@ import {
   parseSlackRecipients
 } from './notify-needs-backport'
 
-function event(overrides: Partial<PullRequest> = {}): NeedsBackportEvent {
+const REMOTE_BRANCHES = ['main', 'core/1.47', 'cloud/1.47', 'core/1.46']
+
+function event(
+  overrides: Partial<PullRequest> = {},
+  remoteBranches: readonly string[] | null = REMOTE_BRANCHES
+): NeedsBackportEvent {
   return {
     pullRequest: {
       number: 15102,
@@ -26,7 +31,8 @@ function event(overrides: Partial<PullRequest> = {}): NeedsBackportEvent {
       labels: ['needs-backport', 'core/1.47'],
       ...overrides
     },
-    labeledBy: 'huang47'
+    labeledBy: 'huang47',
+    remoteBranches
   }
 }
 
@@ -196,6 +202,39 @@ describe('buildNeedsBackportText', () => {
     )
   })
 
+  // Labelling a release line before it is cut is the case this guards: the
+  // branch does not exist, pr-backport.yaml drops the target, and a DM that
+  // promised a cherry-pick into it would send the reader looking for a run
+  // that never happened.
+  it('reports a target whose branch has not been cut', () => {
+    const text = buildNeedsBackportText(
+      event({ labels: ['needs-backport', 'core/1.47', '1.99'] })
+    )
+
+    expect(text).toContain('will cherry-pick into `core/1.47`')
+    expect(text).toContain('`core/1.99` has no branch on the remote')
+  })
+
+  it('says a backport cannot start when every target is uncut', () => {
+    const text = buildNeedsBackportText(
+      event({ labels: ['needs-backport', '1.99'] })
+    )
+
+    expect(text).toContain('No target branch left')
+    expect(text).toContain('`core/1.99` has no branch on the remote')
+  })
+
+  // An unreadable remote is not evidence that a branch is missing, and a DM
+  // that warned on every target would train the reader to ignore the warning.
+  it('promises the cherry-pick when the remote could not be listed', () => {
+    const text = buildNeedsBackportText(
+      event({ labels: ['needs-backport', '1.99'] }, null)
+    )
+
+    expect(text).toContain('will cherry-pick into `core/1.99`')
+    expect(text).not.toContain('no branch on the remote')
+  })
+
   it('escapes a PR title so it cannot end the link early', () => {
     const text = buildNeedsBackportText(
       event({ title: 'fix: treat a < b && c > d' })
@@ -339,6 +378,21 @@ describe('pr-notify-needs-backport.yaml', () => {
     (job) => job?.steps ?? []
   )
 
+  // Comments are dropped before the send step is read: the rationale in this
+  // script names the very shell it explains, so `toContain('continue')` would
+  // pass on the phrase "continue-on-error" in a comment with every `continue`
+  // statement deleted. Asserting against executable shell only is what makes
+  // these assertions mean anything.
+  const sendScript = () => {
+    const step = steps.find((step) => step.name === 'Send the direct messages')
+
+    expect(step).toBeDefined()
+    return (step?.run ?? '')
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n')
+  }
+
   // `pull_request` hands a fork PR a read-only token with no secrets, so the
   // same workflow would go quiet for exactly the PRs it is watched for.
   it('runs on the label event under pull_request_target', () => {
@@ -371,35 +425,44 @@ describe('pr-notify-needs-backport.yaml', () => {
   // Slack answers HTTP 200 with {"ok":false} on auth, scope and recipient
   // errors, so curl's own status would call a dropped DM a delivered one.
   it('treats a Slack ok:false response as a failure', () => {
-    const send = steps.find(
-      (step) => step.name === 'Send the direct messages'
-    )?.run
-
-    expect(send).toContain('.ok == true')
-    expect(send).toContain('FAILED=1')
+    expect(sendScript()).toContain('.ok == true')
   })
 
   // The loop runs under `set -e`, where an unreachable Slack would abort it
   // at the first recipient and the rest would go unnotified and unannotated —
   // the per-recipient accounting exists precisely for that case.
   it('keeps going when one recipient cannot be reached', () => {
-    const send =
-      steps.find((step) => step.name === 'Send the direct messages')?.run ?? ''
+    // Just the guard's own block, up to its `fi`. Reading the whole script
+    // would match the `continue` that ends the success branch instead, and
+    // pass with the failure branch falling through.
+    const transportFailure =
+      /if\s+!\s+RESPONSE=\$\(\s*curl[\s\S]*?\n\s*fi\b/.exec(sendScript())?.[0]
 
-    expect(send).toMatch(/if !\s+RESPONSE=\$\(curl/)
-    expect(send).toContain('continue')
+    expect(transportFailure).toBeDefined()
+    expect(transportFailure).toContain('UNREACHABLE=1')
+    expect(transportFailure).toContain('continue')
   })
 
-  // continue-on-error keeps the run green, so the annotation is the only
-  // signal. A rejected DM is a permanent misconfiguration and has to outrank
-  // a transient outage, or the feature stops working without anyone noticing.
-  it('raises a rejected DM above a transport blip', () => {
-    const send =
-      steps.find((step) => step.name === 'Send the direct messages')?.run ?? ''
+  // The two failures are not interchangeable: an outage fixes itself, while a
+  // rejection leaves every DM undelivered until a human acts. If a rejection
+  // does not fail the step, this feature can stop working for good on a run
+  // that stays green.
+  it('fails the step on a rejection but not on an outage', () => {
+    const code = sendScript()
 
-    expect(send).toContain('::error::Slack rejected the DM')
-    expect(send).toContain('GITHUB_STEP_SUMMARY')
-    expect(send).toContain('::warning::Could not reach Slack')
+    expect(code).toContain('::error::Slack rejected the DM')
+    expect(code).toContain('GITHUB_STEP_SUMMARY')
+    expect(code).toContain('::warning::Could not reach Slack')
+    expect(code).toMatch(/if\s+\[\s+"\$REJECTED"\s+=\s+1\s+\][\s\S]*?exit 1/)
+    expect(code).not.toMatch(/\$UNREACHABLE[\s\S]*?exit 1/)
+  })
+
+  // A green run is the only thing anybody looks at, so the step that sends
+  // the DM must be allowed to redden it.
+  it('does not swallow the send step failure', () => {
+    expect(
+      steps.find((step) => step.name === 'Send the direct messages')
+    ).not.toHaveProperty('continue-on-error', true)
   })
 
   // A step with an `if` loses the implicit success() guard, so the send step

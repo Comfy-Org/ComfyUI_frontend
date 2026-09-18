@@ -15,7 +15,12 @@
  * therefore states which of those three the PR is currently missing — the
  * part a watcher would otherwise have to open the PR to work out.
  */
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
@@ -29,9 +34,8 @@ export const BACKPORT_SOURCE_BRANCH = 'main'
  *
  * Divergence from that loop is the bug to avoid — a message that lists a
  * target the workflow will not act on, or omits one it will, is worse than no
- * message. Deliberately *not* mirrored is the workflow's `git ls-remote`
- * existence check: whether the branch exists is not knowable from the labels
- * and the workflow already warns about it where it can be.
+ * message. The loop's `git ls-remote` existence check is applied separately by
+ * `splitBackportTargets`, against the branch list the workflow reads.
  */
 function targetFromLabel(label: string): string | null {
   const prefixed = /^(?:branch|backport):(.+)$/.exec(label)
@@ -41,12 +45,45 @@ function targetFromLabel(label: string): string | null {
   return null
 }
 
-/** The branches `pr-backport.yaml` would cherry-pick into, in label order. */
+/** The branches the labels ask `pr-backport.yaml` for, in label order. */
 export function backportTargetsFromLabels(labels: readonly string[]): string[] {
   const targets = labels
     .map(targetFromLabel)
     .filter((target): target is string => !!target)
   return [...new Set(targets)]
+}
+
+export interface BackportTargets {
+  /** Requested by a label and present on the remote. */
+  known: string[]
+  /** Requested by a label with no such branch, which `pr-backport.yaml` drops. */
+  unknown: string[]
+}
+
+/**
+ * Splits the requested targets by whether the branch exists yet.
+ *
+ * A label can name a release line before it is cut — `1.50` the week before
+ * the minor bump creates `core/1.50`. `pr-backport.yaml` drops such a target
+ * with a warning and fails outright when none survives, so promising a
+ * cherry-pick into it would be a promise nothing keeps.
+ *
+ * `branches` is null when the remote could not be listed, in which case every
+ * target is reported as known: an unavailable branch list is no evidence that
+ * a branch is missing.
+ */
+export function splitBackportTargets(
+  labels: readonly string[],
+  branches: readonly string[] | null
+): BackportTargets {
+  const requested = backportTargetsFromLabels(labels)
+  if (branches === null) return { known: requested, unknown: [] }
+
+  const remote = new Set(branches)
+  return {
+    known: requested.filter((target) => remote.has(target)),
+    unknown: requested.filter((target) => !remote.has(target))
+  }
 }
 
 /**
@@ -112,42 +149,63 @@ export interface PullRequest {
 export interface NeedsBackportEvent {
   pullRequest: PullRequest
   labeledBy: string
+  /** Branch names on the remote, or null when they could not be listed. */
+  remoteBranches: readonly string[] | null
 }
 
+const code = (values: readonly string[]) =>
+  values.map((value) => `\`${escapeSlackText(value)}\``).join(', ')
+
 /** What `pr-backport.yaml` will do with this PR, and when. */
-function backportOutlook(pr: PullRequest, targets: string[]): string {
+function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
   if (pr.baseRef !== BACKPORT_SOURCE_BRANCH) {
-    return `:warning: The base branch is \`${escapeSlackText(pr.baseRef)}\`, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
+    return [
+      `:warning: The base branch is \`${escapeSlackText(pr.baseRef)}\`, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
+    ]
   }
 
   if (pr.state === 'CLOSED') {
-    return ':warning: The PR was closed without merging, so *PR Backport* will not run.'
+    return [
+      ':warning: The PR was closed without merging, so *PR Backport* will not run.'
+    ]
   }
 
-  if (targets.length === 0) {
-    return ':warning: No target branch label — *PR Backport* fails without one. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
+  const uncut =
+    targets.unknown.length === 0
+      ? []
+      : [
+          `:warning: ${code(targets.unknown)} has no branch on the remote, so *PR Backport* drops it.`
+        ]
+
+  if (targets.known.length === 0) {
+    return [
+      targets.unknown.length === 0
+        ? ':warning: No target branch label — *PR Backport* fails without one. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
+        : ':warning: No target branch left — *PR Backport* fails when every label names a branch that does not exist.',
+      ...uncut
+    ]
   }
 
-  const list = targets
-    .map((target) => `\`${escapeSlackText(target)}\``)
-    .join(', ')
-  // Future tense even for a merged PR: the labels say which branches are
-  // wanted, but pr-backport.yaml also drops a target whose branch does not
-  // exist yet and skips one that already has an open backport PR, so "is
-  // cherry-picking now" would over-claim on a PR labelled for an uncut line.
-  return pr.state === 'MERGED'
-    ? `The PR is merged, so *PR Backport* will cherry-pick into ${list}.`
-    : `The PR is still open — *PR Backport* will cherry-pick into ${list} once it merges.`
+  return [
+    pr.state === 'MERGED'
+      ? `The PR is merged, so *PR Backport* will cherry-pick into ${code(targets.known)}.`
+      : `The PR is still open — *PR Backport* will cherry-pick into ${code(targets.known)} once it merges.`,
+    ...uncut
+  ]
 }
 
 export function buildNeedsBackportText({
   pullRequest,
-  labeledBy
+  labeledBy,
+  remoteBranches
 }: NeedsBackportEvent): string {
   return [
     `:label: \`needs-backport\` was added to <${pullRequest.url}|#${pullRequest.number} ${escapeSlackText(pullRequest.title)}>`,
     `Author: ${escapeSlackText(pullRequest.author)} · Labelled by: ${escapeSlackText(labeledBy)} · Base: \`${escapeSlackText(pullRequest.baseRef)}\``,
-    backportOutlook(pullRequest, backportTargetsFromLabels(pullRequest.labels))
+    ...backportOutlook(
+      pullRequest,
+      splitBackportTargets(pullRequest.labels, remoteBranches)
+    )
   ].join('\n')
 }
 
@@ -227,17 +285,28 @@ function requireEnv(name: string): string {
   return value
 }
 
+function readRemoteBranches(path: string | undefined): string[] | null {
+  if (!path || !existsSync(path)) return null
+  const branches = readFileSync(path, 'utf8')
+    .split('\n')
+    .map((branch) => branch.trim())
+    .filter(Boolean)
+  return branches.length > 0 ? branches : null
+}
+
 function main() {
   const { values } = parseArgs({
     options: {
       pr: { type: 'string', default: 'pr.json' },
+      branches: { type: 'string' },
       out: { type: 'string', default: 'slack-dms.json' }
     }
   })
 
   const event: NeedsBackportEvent = {
     pullRequest: parsePullRequest(readFileSync(values.pr, 'utf8')),
-    labeledBy: requireEnv('LABELED_BY')
+    labeledBy: requireEnv('LABELED_BY'),
+    remoteBranches: readRemoteBranches(values.branches)
   }
   const { valid, invalid } = parseSlackRecipients(
     process.env.SLACK_NEEDS_BACKPORT_WATCHERS
