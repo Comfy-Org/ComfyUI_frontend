@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -11,15 +11,27 @@ import type {
   LocaleObject,
   LocaleTrackedLeaf
 } from '@comfyorg/comfyui-frontend/scripts/i18n/locale-tree'
-import { projectLocale } from '@comfyorg/comfyui-frontend/scripts/i18n/translation-ownership'
+import {
+  machineTranslationsSchema,
+  projectLocale
+} from '@comfyorg/comfyui-frontend/scripts/i18n/translation-ownership'
 import { LOCALIZED_CODES } from '../../src/config/locales'
-import { catalogEntries, machineLayer } from '../../src/i18n/pipeline/catalogs'
+import {
+  catalogEntries,
+  machineLayer,
+  translatedLayer
+} from '../../src/i18n/pipeline/catalogs'
 import { translatableEntries } from '../../src/i18n/pipeline/source'
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
+import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
 import { writeSortedJson } from './write-json'
 
-const ADAPTERS: SourceAdapter[] = []
+const ADAPTERS: SourceAdapter[] = [dataAdapter]
 const catalogDir = path.resolve('src/locales')
+const ownershipFile = `${catalogDir}/.machine-translations.json`
+const ownership = machineTranslationsSchema.parse(
+  JSON.parse(readFileSync(ownershipFile, 'utf8'))
+)
 const entries = ADAPTERS.flatMap((adapter) => adapter.read())
 const source: LocaleObject = {}
 for (const entry of entries) {
@@ -53,9 +65,20 @@ for (const locale of LOCALIZED_CODES) {
     const value = entry.approved[locale]
     if (value !== undefined) values.set(pathKey(entry.key.split('.')), value)
   }
+  const approvedKeys = new Set(
+    entries
+      .filter((entry) => entry.approved[locale] !== undefined)
+      .map((entry) => pathKey(entry.key.split('.')))
+  )
+  ownership.files[`${locale}/content.json`] = Object.fromEntries(
+    Object.entries(ownership.files[`${locale}/content.json`] ?? {}).filter(
+      ([key]) => !approvedKeys.has(key)
+    )
+  )
   mkdirSync(path.dirname(file), { recursive: true })
   writeFileSync(file, serializeLocale(projectLocale(source, values)))
 }
+writeFileSync(ownershipFile, `${JSON.stringify(ownership, null, 2)}\n`)
 const english = Object.fromEntries(
   translatableEntries([...catalogEntries('main.json'), ...entries]).map(
     ({ key, english }) => [key, english]
@@ -65,6 +88,6 @@ writeSortedJson(path.resolve('src/i18n/content/en.json'), english)
 for (const locale of LOCALIZED_CODES) {
   writeSortedJson(path.resolve(`src/i18n/content/${locale}.json`), {
     ...machineLayer('main.json', locale),
-    ...machineLayer('content.json', locale)
+    ...translatedLayer('content.json', locale)
   })
 }

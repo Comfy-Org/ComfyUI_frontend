@@ -1,1 +1,1262 @@
-{}
+{
+  "affiliateAudience": {
+    "affiliateAudienceCriteria": {
+      "tutorial-creator": {
+        "label": "A ComfyUI tutorial creator or workflow builder"
+      },
+      "ai-tool-reviewer": {
+        "label": "An AI tool reviewer on YouTube, TikTok, blogs"
+      },
+      "tech-blogger": {
+        "label": "A tech blogger covering AI creative tools"
+      },
+      "newsletter-operator": {
+        "label": "A newsletter operator in the AI/creative space"
+      },
+      "audience-owner": {
+        "label": "Anyone with an audience interested in AI image, video, or 3D"
+      }
+    }
+  },
+  "affiliateBenefits": {
+    "open-source-platform": {
+      "description": "ComfyUI is the most powerful open-source AI creative platform"
+    },
+    "cloud-no-gpu": {
+      "description": "Comfy Cloud lets you run ComfyUI in the browser, no GPU needed, all models pre-loaded"
+    },
+    "node-based-control": {
+      "description": "Node-based workflows give users full creative control unlike prompt-only tools"
+    },
+    "custom-nodes": {
+      "description": "1,000+ community custom node packages"
+    }
+  },
+  "affiliateBrandAssets": {
+    "core-logo": {
+      "title": "Core Logo"
+    },
+    "logomark": {
+      "title": "Logomark"
+    },
+    "icon": {
+      "title": "Icon"
+    },
+    "amplified-logomark": {
+      "title": "Amplified Logomark"
+    }
+  },
+  "affiliateFaq": {
+    "affiliateFaqs": {
+      "how-do-i-track-my-referrals": {
+        "question": "How do I track my referrals?",
+        "answer": "Real-time dashboard via our partner portal."
+      },
+      "what-plans-qualify": {
+        "question": "What plans qualify?",
+        "answer": "All Comfy Cloud paid subscription plans (Standard, Creator, Pro, Teams)."
+      },
+      "how-long-to-get-approved": {
+        "question": "How long does approval take?",
+        "answer": "Most applications approved within 24 hours."
+      },
+      "when-do-i-get-paid": {
+        "question": "When do I get paid?",
+        "answer": "Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal."
+      },
+      "what-happens-if-referral-upgrades-or-downgrades": {
+        "question": "What happens if my referral upgrades or downgrades?",
+        "answer": "If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds."
+      },
+      "can-i-use-coupon-codes": {
+        "question": "Can I use coupon codes?",
+        "answer": "Yes. We support both tracking links and unique coupon codes."
+      },
+      "what-if-my-referral-uses-an-ad-blocker": {
+        "question": "What if my referral uses an ad blocker?",
+        "answer": "We use server-side tracking, so conversions are tracked regardless."
+      },
+      "what-assets-do-you-provide": {
+        "question": "What assets do you provide?",
+        "answer": "Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval."
+      }
+    }
+  },
+  "affiliateHowItWorks": {
+    "affiliateHowItWorksSteps": {
+      "apply": {
+        "label": "Apply",
+        "description": "Submit a quick form. Most applicants approved same day."
+      },
+      "share": {
+        "label": "Share",
+        "description": "Get your unique tracking link. Share via content, social, email, however you reach your audience."
+      },
+      "earn": {
+        "label": "Earn",
+        "description": "30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly."
+      }
+    }
+  },
+  "chatgptImage25": {
+    "premiumNote": "Pay-as-you-go",
+    "chatgptImage25Page": {
+      "vaporwave-atmosphere": {
+        "name": "Vaporwave architecture generated with ChatGPT Images 2.5",
+        "description": "A polished vaporwave world with crisp typography, reflective marble, and neon light."
+      },
+      "alien-convenience-store": {
+        "name": "Aliens in a convenience store generated with ChatGPT Images 2.5",
+        "description": "A deadpan security-camera frame of four sharply dressed visitors from another world."
+      },
+      "goldfish-fisheye": {
+        "name": "Goldfish in a glass bowl generated with ChatGPT Images 2.5",
+        "description": "A curious goldfish meets an extreme fisheye lens in a sunlit field."
+      },
+      "flame-engine": {
+        "name": "Flaming engine watercolor generated with ChatGPT Images 2.5",
+        "description": "A roaring V8 rendered as an expressive watercolor study in heat and motion."
+      },
+      "canyon-chase": {
+        "name": "Canyon car chase generated with ChatGPT Images 2.5",
+        "description": "A cinematic canyon pursuit freezes at the instant a muscle car clears the gap."
+      },
+      "anime-horizon": {
+        "name": "Anime hero at a red horizon generated with ChatGPT Images 2.5",
+        "description": "A solitary hero watches a red sun rise over a restrained anime landscape."
+      },
+      "what-is-chatgpt-image-2-5": {
+        "question": "What is ChatGPT Images 2.5?",
+        "answer": "ChatGPT Images 2.5 is an OpenAI image model for generating new visuals and editing existing images from natural-language instructions. In ComfyUI, it runs through Partner Nodes and can be combined with the rest of your workflow."
+      },
+      "how-to-run": {
+        "question": "How do I run ChatGPT Images 2.5 in ComfyUI?",
+        "answer": "Open [Comfy Cloud](https://cloud.comfy.org/?template=api_openai_gpt_image_25_flare_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=gpt-image-2-5), add the OpenAI image Partner Node to a workflow, enter a prompt, and connect any reference images you want to use."
+      },
+      "image-editing": {
+        "question": "Can ChatGPT Images 2.5 edit an existing image?",
+        "answer": "Yes. Supply an image and describe the change you want, from replacing objects and restyling a scene to focused masked edits. You can keep the result in the same graph for further processing."
+      },
+      "reference-images": {
+        "question": "Can I use reference images?",
+        "answer": "Yes. Reference images can guide the subject, composition, materials, or visual language of a generation. Describe which qualities should carry into the result."
+      },
+      "prompting": {
+        "question": "How should I prompt ChatGPT Images 2.5?",
+        "answer": "Write a clear creative brief: name the subject, setting, composition, lighting, medium, and any text that must appear. For edits, state what should change and what must stay untouched."
+      },
+      "comfy-workflows": {
+        "question": "Why use ChatGPT Images 2.5 in a ComfyUI workflow?",
+        "answer": "The generated image becomes one step in a larger, repeatable pipeline. Route it into masking, compositing, upscaling, animation, or another model while keeping every step visible and adjustable."
+      }
+    }
+  },
+  "creatorReviews": {
+    "scott-belsky": {
+      "body": "Comfy has innovated a new and powerful ecosystem for creativity without compromising creative control. It has been amazing to watch technical artists and curious creative minds leverage Comfy to explore the full surface area of their ideas.",
+      "role": "Founder of Behance"
+    },
+    "richard-n": {
+      "body": "The best part for me is the node-based workflow: it offers a lot of possibilities and enables many different combinations. I also appreciate the optimization options and the automatic memory handling, even when working with tight models.",
+      "role": "Owner"
+    },
+    "maryann-e": {
+      "body": "I appreciate being able to use models that my computer can no longer keep up with. I prefer the node-based approach because it is adjustable, rather than being behind a closed door.",
+      "role": "Broker at Pop RV's"
+    },
+    "alan-m": {
+      "body": "The UI and UX of ComfyUI are intuitive and user-friendly, making navigation straightforward and efficient. Its integrations with other tools streamline workflows and enhance overall productivity.",
+      "role": "Co-Founder"
+    },
+    "kirk-h": {
+      "body": "I use ComfyUI to help me create VFX for my animated show. It's easy to use, especially with importing a Comfy pipeline on the cloud, and I really like the clean UI and how straightforward it is."
+    },
+    "fred-c": {
+      "body": "I love that ComfyUI is extremely fast and very reliable. It gives me so much freedom to create the characters I want."
+    },
+    "matthew-p": {
+      "body": "The one-click workflows are something I do love, as they simplify many processes for me. The setup was very easy, even for someone who isn't familiar with it all."
+    },
+    "verified-user-in-depth": {
+      "body": "I like how in-depth ComfyUI can be. It makes me feel like the software itself isn't limited, which encourages me to keep experimenting and learning."
+    },
+    "nikolai-k": {
+      "body": "A holistic approach and visualisation through an endless whiteboard.",
+      "role": "3D Artist"
+    },
+    "leonardo-s": {
+      "body": "Having full control of the GenAI process, and being able to use it unlimited times, integrating it into your workflow whenever you need to create.",
+      "role": "Social Media Marketing Expert"
+    },
+    "verified-user-local": {
+      "body": "Helps me run AI models locally and generate images, video, and audio, all free of cost.",
+      "role": "Computer Software"
+    }
+  },
+  "drops": {
+    "EXPLORE": "EXPLORE",
+    "PLATFORM": "Platform",
+    "CLOUD": "Cloud",
+    "COMMUNITY": "Community",
+    "DEVELOPER": "Developer",
+    "MODELS_AND_NODES": "Models & Nodes",
+    "NEW_BADGE": "NEW",
+    "comfy-cloud-nodes": {
+      "media": "Comfy Cloud Nodes",
+      "title": "Comfy Cloud Nodes",
+      "description": "Run the newest open models on our GPUs from inside your own ComfyUI. No subscription, no downloads."
+    },
+    "desktop-client": {
+      "media": "New Desktop Client",
+      "title": "New Desktop Client",
+      "description": "A faster, redesigned desktop app for ComfyUI — one-click install and managed updates."
+    },
+    "comfy-mcp": {
+      "media": "Comfy MCP",
+      "title": "Comfy MCP",
+      "description": "The full power of ComfyUI from anywhere — no setup, no GPU required."
+    },
+    "app-mode": {
+      "media": "App Mode",
+      "title": "App Mode",
+      "description": "A simplified view of your workflows. Flip back to the node graph anytime to go deeper."
+    },
+    "comfy-api": {
+      "media": "Comfy API",
+      "title": "Developer Platform",
+      "description": "Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs."
+    },
+    "community-workflows": {
+      "media": "Community Workflows",
+      "title": "Community Workflows",
+      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template."
+    },
+    "supported-models": {
+      "media": "Supported Models",
+      "title": "Supported Models",
+      "description": "Run the latest open and partner models — every checkpoint, LoRA, and ControlNet, ready to use in your graph."
+    },
+    "supported-nodes": {
+      "media": "Supported Nodes",
+      "title": "Supported Nodes",
+      "description": "Thousands of community and partner nodes, curated and verified to run on Comfy Cloud."
+    },
+    "comfy-enterprise": {
+      "media": "Comfy Enterprise",
+      "title": "Comfy Enterprise",
+      "description": "Enterprise-grade infrastructure for the creative engine inside your organization."
+    },
+    "learning-hub": {
+      "media": "Learning Hub",
+      "title": "Learning Hub",
+      "description": "Walkthroughs and ready-to-run workflows to take you from first render to production pipeline.",
+      "cta": {
+        "label": "START LEARNING"
+      }
+    },
+    "share-comfy": {
+      "media": "Comfy Affiliate",
+      "title": "Comfy Affiliate",
+      "description": "Share Comfy with your audience and earn for every creator you bring on board.",
+      "cta": {
+        "label": "LEARN MORE"
+      }
+    }
+  },
+  "events": {
+    "UPCOMING_LIVESTREAM": "UPCOMING LIVESTREAM",
+    "comfy-agent-beta": {
+      "title": "Comfy Agent Beta: What It Does & How We Built It",
+      "description": "Jo Zhang, Product Manager at Comfy, joins host Allyson to unpack the Comfy Agent beta: what it does and how the team built it.",
+      "location": "Online",
+      "dateLabel": "September 10, 2026 · 10AM PT",
+      "media": "Comfy Agent Beta: What It Does & How We Built It livestream",
+      "featured": {
+        "media": "Comfy Agent Beta: What It Does & How We Built It livestream"
+      }
+    },
+    "comfy-agent-ga": {
+      "title": "Comfy Agent: Live Demos, VFX, 3D & Marketing",
+      "description": "Purz and Allyson host live demos of Comfy Agent across VFX, 3D, and marketing use cases.",
+      "location": "Online",
+      "dateLabel": "September 15, 2026 · 10AM PT",
+      "media": "Comfy Agent: Live Demos, VFX, 3D & Marketing livestream",
+      "featured": {
+        "media": "Comfy Agent: Live Demos, VFX, 3D & Marketing livestream"
+      }
+    },
+    "dev-platform-101": {
+      "title": "Developer Platform 101: Building with the New Comfy API",
+      "description": "Jacob Segal, Product Manager at Comfy, joins hosts Allyson and Purz for an introduction to building with the new Comfy developer API.",
+      "location": "Online",
+      "dateLabel": "September 17, 2026 · 10AM PT",
+      "media": "Developer Platform 101: Building with the New Comfy API livestream",
+      "featured": {
+        "media": "Developer Platform 101: Building with the New Comfy API livestream"
+      }
+    },
+    "la-august-meetup": {
+      "title": "ComfyUI Official LA August Meet-Up",
+      "description": "Join us for the official ComfyUI meetup in LA, hosted at the new AI on the Lot office in Culver City.",
+      "location": "Los Angeles, CA",
+      "dateLabel": "August 26, 2026 · 6-9 PM PT",
+      "ctaLabel": "Register",
+      "media": "ComfyUI Official LA August Meet-Up"
+    },
+    "mutek-3d-projection-mapping": {
+      "title": "MUTEK: Generative AI for 3D Projection Mapping ft. Purz & Moment Factory",
+      "description": "A hands-on workshop with Moment Factory on bringing generative AI into large-scale spatial design with ComfyUI, ending by projecting AI-generated visuals onto a physical maquette.",
+      "location": "Édifice Wilder, Montréal, QC",
+      "dateLabel": "August 27, 2026 · 1:30PM ET",
+      "ctaLabel": "Register",
+      "featured": {
+        "media": "MUTEK: Generative AI for 3D Projection Mapping"
+      }
+    },
+    "h3-sync-sound-challenge": {
+      "title": "Comfy H3 Sync Sound Challenge: Guest Judge Livestream",
+      "description": "Guest judges join us live to review the best MiniMax H3 sync sound entries from the community and break down what makes generated audio and picture land together.",
+      "location": "Online",
+      "dateLabel": "September 2, 2026 · 10AM PT",
+      "media": "Comfy H3 Sync Sound Challenge guest judge livestream",
+      "featured": {
+        "media": "Comfy H3 Sync Sound Challenge guest judge livestream"
+      }
+    },
+    "ucan-agentic-commerce": {
+      "title": "UCAN: Agentic Commerce, Designing the Next Business Infrastructure ft. Jo Zhang",
+      "description": "A UCAN by Alibaba Design gathering on agentic commerce, where AI shifts from generating outputs to taking action across real business workflows. Jo Zhang joins speakers from Alibaba, Figma, Stripe, and more to explore designing for trust and AI as operational infrastructure.",
+      "location": "Plug and Play Tech Center, Sunnyvale, CA",
+      "dateLabel": "September 13, 2026 · 2:00-6:30 PM PT",
+      "ctaLabel": "Register",
+      "media": "UCAN: Agentic Commerce, Designing the Next Business Infrastructure"
+    },
+    "local-mcp": {
+      "title": "Local MCP: Run ComfyUI with Your Agent & Hardware",
+      "description": "Run ComfyUI locally through MCP: a live walkthrough of driving your own agent and hardware to build and run workflows from the tools you already use.",
+      "location": "Online",
+      "dateLabel": "August 26, 2026 · 10AM PT",
+      "media": "Local MCP: Run ComfyUI with Your Agent & Hardware livestream"
+    },
+    "beyond-the-models": {
+      "title": "Using Comfy to Go Beyond the Models: Custom Workflows for Commercial and Film Production",
+      "description": "Go beyond off-the-shelf models: a live walkthrough of building custom ComfyUI workflows for commercial and film production.",
+      "location": "Online",
+      "dateLabel": "August 19, 2026 · 10AM PT",
+      "media": "Using Comfy to Go Beyond the Models livestream",
+      "featured": {
+        "media": "Using Comfy to Go Beyond the Models livestream"
+      }
+    },
+    "future-ai-post-production": {
+      "title": "The Future of AI Post Production",
+      "description": "Ingi Erlingsson explores the future of AI post production with custom LoRAs and motion graphics nodes.",
+      "location": "Online",
+      "dateLabel": "August 5, 2026 · 10AM PT",
+      "featured": {
+        "media": "The Future of AI Post Production livestream"
+      }
+    },
+    "video-model-showdown": {
+      "title": "Video Model Showdown: Open-Source vs. Paid AI Video Models",
+      "description": "Purz and Allyson put open-source and paid AI video models head to head in a live comparison.",
+      "location": "Online",
+      "media": "Video Model Showdown livestream recording"
+    },
+    "comfy-creatives-model-jam": {
+      "title": "Comfy Creatives Model Jam: MiniMax H3, Seedance 2.5, Wan Animate 2 & More",
+      "description": "The Comfy Creatives community jams on the latest models (MiniMax H3, Seedance 2.5, Wan Animate 2, and more) in a hands-on livestream.",
+      "location": "Online",
+      "media": "Comfy Creatives Model Jam livestream recording"
+    },
+    "july-launches": {
+      "title": "Using ComfyUI MCP with Claude Code",
+      "description": "Our monthly livestream covering the latest ComfyUI launches and updates.",
+      "media": "July Launches livestream recording"
+    },
+    "black-math-hackathon": {
+      "title": "Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI",
+      "description": "Design and technology studio Black Math used ComfyUI to build a full hackathon experience in just three weeks. Jeremy Sahlman (Co-Founder & Chief Creative Officer, Black Math) shares how.",
+      "media": "Black Math X Comfy livestream with Jeremy Sahlman"
+    },
+    "comfy-mcp-claude-cursor": {
+      "title": "Run ComfyUI From Claude/Cursor with Comfy MCP",
+      "description": "Comfy MCP lets Claude, Cursor, and almost any AI agent you already use build, run, and iterate real Comfy Cloud workflows for you. Join Jo Zhang for a live walkthrough.",
+      "media": "Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording"
+    },
+    "production-pipeline": {
+      "title": "Reinventing the Production Pipeline",
+      "description": "Erin Sarofsky (COO/Owner, Sarofsky) and Ryan Summers (Head of Creative Innovation, Sarofsky) share how their team used ComfyUI to reinvent the studio production pipeline.",
+      "media": "Reinventing the Production Pipeline livestream recording"
+    },
+    "june-launches": {
+      "title": "June Launches | Desktop, MCP & Core Engine Improvements",
+      "description": "Your front-row seat to everything we shipped in June: product leaders Jedrzej Kosinski, Alexis Rolland, Jo Zhang, and Matt Miller walk through desktop, MCP, and core engine improvements.",
+      "media": "June Launches livestream recording"
+    },
+    "krea-founders-live": {
+      "title": "Krea X Comfy: Founders Live",
+      "description": "A special live conversation with Victor Perez (CEO, Krea), Miguel Lara (Krea team), and ComfyAnonymous (Co-Founder, Comfy Org) on building creative AI tools.",
+      "media": "Krea X Comfy Founders Live recording",
+      "featured": {
+        "media": "Krea X Comfy Founders Live"
+      }
+    },
+    "nyc-creative-ai-august-forum": {
+      "title": "NYC Creative AI August Forum",
+      "description": "The August forum drew 433 registrations. Demos covered the Livepeer Agent, MiniMax H3 running in ComfyUI, and an AI-generated musical performance by MetaDJ.",
+      "location": "New York, NY",
+      "dateLabel": "August 13, 2026",
+      "media": "NYC Creative AI August Forum"
+    },
+    "nyc-creative-ai-july-forum": {
+      "title": "NYC Creative AI July Forum (formerly ComfyUI NYC)",
+      "description": "The July forum drew 445 registrations and marked the rebrand from ComfyUI NYC, and the series stayed rooted in ComfyUI.",
+      "location": "New York, NY",
+      "dateLabel": "July 10, 2026",
+      "media": "NYC Creative AI July Forum (formerly ComfyUI NYC)"
+    },
+    "nyc-february-meetup-2026": {
+      "title": "ComfyUI Meetup (February)",
+      "description": "The February ComfyUI meetup ran at ZeroSpace.",
+      "location": "New York, NY",
+      "dateLabel": "February 25, 2026"
+    },
+    "nyc-january-meetup-2026": {
+      "title": "ComfyUI Official NYC January Meetup",
+      "description": "The January meetup drew 425 attendees and included Comfy Cloud announcements.",
+      "location": "New York, NY",
+      "dateLabel": "January 30, 2026",
+      "media": "ComfyUI Official NYC January Meetup"
+    },
+    "nyc-december-meetup-2025": {
+      "title": "ComfyUI Official NYC (December) Meet-Up",
+      "description": "The December meetup featured talks from Yondon Fu (Daydream) and Alex Katzfey (Comfydock).",
+      "location": "New York, NY",
+      "dateLabel": "December 10, 2025"
+    },
+    "nyc-secret-sauce-workshop": {
+      "title": "AI Creative / ComfyUI Event in NYC with Secret Sauce",
+      "description": "The MFA Interaction Design program at the School of Visual Arts hosted this event with Secret Sauce.",
+      "location": "New York, NY",
+      "dateLabel": "December 5, 2025",
+      "media": "AI Creative / ComfyUI Event in NYC with Secret Sauce"
+    },
+    "low-rank-adapters-comfyui-chill": {
+      "title": "low rank adapters present: ComfyUI & Chill",
+      "description": "Gabriel and Carlo of daisy, a generative media startup, hosted a hands-on session on building node-based workflows in ComfyUI.",
+      "location": "Location not listed",
+      "dateLabel": "October 15, 2025",
+      "media": "low rank adapters present: ComfyUI & Chill"
+    },
+    "nyc-october-meetup-2025": {
+      "title": "ComfyUI Official NYC October Meet-Up",
+      "description": "The October meetup drew 280 attendees and included a talk on LTX-2.",
+      "location": "New York, NY",
+      "dateLabel": "October 2025",
+      "media": "ComfyUI Official NYC October Meet-Up"
+    },
+    "nyc-august-meetup-2025": {
+      "title": "ComfyUI Official NYC August Meet-Up",
+      "description": "The August meetup drew 399 attendees and included a talk on Wan 2.2.",
+      "location": "New York, NY",
+      "dateLabel": "August 2025",
+      "media": "ComfyUI Official NYC August Meet-Up"
+    },
+    "nyc-july-meetup-2025": {
+      "title": "ComfyUI Official NYC July Meet-Up",
+      "description": "The July meetup drew 224 attendees to ZeroSpace.",
+      "location": "New York, NY",
+      "dateLabel": "July 2025",
+      "media": "ComfyUI Official NYC July Meet-Up"
+    },
+    "nvidia-rtx-mini-hackathon": {
+      "title": "ComfyUI x NVIDIA RTX Hackathon (Mini-Hackathon) @ GitHub HQ",
+      "description": "Comfy Org ran the first ComfyUI hackathon at GitHub HQ, co-sponsored by NVIDIA. Prizes included two RTX 5090s.",
+      "location": "San Francisco, CA",
+      "dateLabel": "June 26, 2025",
+      "media": "ComfyUI x NVIDIA RTX Hackathon (Mini-Hackathon) @ GitHub HQ"
+    },
+    "nyc-june-meetup-2025": {
+      "title": "ComfyUI Official NYC June Meet-Up",
+      "description": "The June meetup drew 179 attendees to ZeroSpace.",
+      "location": "New York, NY",
+      "dateLabel": "June 2025",
+      "media": "ComfyUI Official NYC June Meet-Up"
+    },
+    "nyc-may-meetup-2025": {
+      "title": "ComfyUI Official NYC May Meet-Up",
+      "description": "The May meetup drew 209 attendees to ZeroSpace.",
+      "location": "New York, NY",
+      "dateLabel": "May 2025",
+      "media": "ComfyUI Official NYC May Meet-Up"
+    },
+    "genart-nyu-real-time-video": {
+      "title": "Real-Time Video AI @GenART NYU with ComfyUI & Livepeer",
+      "description": "Livepeer presented this real-time video AI workshop at NYU in Brooklyn, hosted with Daydream and GenART NYU. The workshop drew 71 registrations.",
+      "location": "370 Jay St, Brooklyn, NY",
+      "dateLabel": "April 18, 2025",
+      "media": "Real-Time Video AI @GenART NYU with ComfyUI & Livepeer"
+    },
+    "nyc-april-meetup-2025": {
+      "title": "ComfyUI Official NYC April Meet-Up",
+      "description": "The April meetup drew 131 attendees.",
+      "location": "91 E 3rd St, New York, NY",
+      "dateLabel": "April 3, 2025",
+      "media": "ComfyUI Official NYC April Meet-Up"
+    },
+    "comfycon-shanghai": {
+      "title": "ComfyCon: ComfyUI's first official global conference",
+      "description": "Comfy Org's first official global conference ran for two days in Shanghai. The global core dev team was there, including Jo Zhang, Yoland Yan, Robin Huang, and Charlene.",
+      "location": "Shanghai, China",
+      "dateLabel": "March 29 to 30, 2025",
+      "media": "ComfyCon: ComfyUI's first official global conference"
+    },
+    "austin-ai-film-fest-meetup": {
+      "title": "ComfyUI Official Meetup: Austin AI Film Fest Edition",
+      "description": "This community meetup coincided with SXSW and the Austin AI Film Festival. Ori Apkon of FungAI Media hosted locally, and Daydream co-presented.",
+      "location": "Austin, TX",
+      "dateLabel": "March 14 to 15, 2025",
+      "media": "ComfyUI Official Meetup: Austin AI Film Fest Edition"
+    },
+    "nyc-march-meetup-women-in-ai-2025": {
+      "title": "ComfyUI Official NYC March Meet-Up: Celebrating Women in AI",
+      "description": "The March meetup ran on a Women in AI theme.",
+      "location": "New York, NY",
+      "dateLabel": "March 12, 2025",
+      "media": "ComfyUI Official NYC March Meet-Up: Celebrating Women in AI"
+    },
+    "ai-la-march-meetup": {
+      "title": "ComfyUI Official AI LA March Meet-Up",
+      "description": "The March AI LA meetup ran at BLANKSPACES in Venice. Speakers included ComfyAnonymous, joining remotely, along with Midjourney Man and Spencer Sterling.",
+      "location": "Los Angeles, CA",
+      "dateLabel": "March 6, 2025",
+      "media": "ComfyUI Official AI LA March Meet-Up"
+    },
+    "bentoml-api-endpoints": {
+      "title": "Turning ComfyUI workflows into API endpoints with BentoML",
+      "description": "Sean Sheng, Head of Engineering at BentoML, demoed comfy-pack, the tool that turns a ComfyUI workflow into a callable API endpoint. Eric Liu hosted the Zoom session as part of the AGI Builders Meetup.",
+      "location": "Online",
+      "dateLabel": "February 2025",
+      "media": "Turning ComfyUI workflows into API endpoints with BentoML"
+    },
+    "la-february-meetup": {
+      "title": "ComfyUI Official LA February Meet-Up",
+      "description": "The February LA meetup ran in the former Snapchat office on Venice Beach, presented by AI LA Events and hosted by AI LA with FBRC.AI. Wan AI and Oxen.ai sponsored the event.",
+      "location": "Los Angeles, CA",
+      "dateLabel": "February 2025",
+      "media": "ComfyUI Official LA February Meet-Up"
+    },
+    "nyc-february-meetup-2025": {
+      "title": "ComfyUI Official NYC February Meet-Up",
+      "description": "The February meetup drew 64 attendees. NYC Creative AI presented it, and Daydream, Livepeer, and ZeroSpace hosted.",
+      "location": "New York, NY",
+      "dateLabel": "February 2025",
+      "media": "ComfyUI Official NYC February Meet-Up"
+    },
+    "sf-meetup-github": {
+      "title": "ComfyUI Official SF Meet-up at GitHub",
+      "description": "Comfy Org's first official meetup in San Francisco ran at GitHub HQ. Charlene, Yoland, Robin Huang, and Jo Zhang hosted, with Sahar Mor co-hosting.",
+      "location": "San Francisco, CA",
+      "dateLabel": "January 2025",
+      "media": "ComfyUI Official SF Meet-up at GitHub"
+    },
+    "kikk-festival-comfyui-workshop": {
+      "title": "Workshop: Exploring Generative AI with ComfyUI (by Varvara & Mar)",
+      "description": "Varvara & Mar led a workshop on generative AI in ComfyUI at TRAKK, the Namur creative hub. It was hosted by KIKK Festival and run via RunComfy.",
+      "location": "TRAKK, Namur, Belgium",
+      "dateLabel": "October 26, 2024",
+      "media": "Workshop: Exploring Generative AI with ComfyUI (by Varvara & Mar)"
+    },
+    "tokyo-comfyui-meetup": {
+      "title": "Tokyo ComfyUI Meet Up (東京ComfyUI交流イベント)",
+      "description": "Comfy Org took its first meetup overseas to Tokyo. Core devs Charlene and Yoland attended.",
+      "location": "Tokyo, Japan",
+      "dateLabel": "September 27, 2024",
+      "media": "Tokyo ComfyUI Meet Up (東京ComfyUI交流イベント)"
+    }
+  },
+  "flux3": {
+    "flux3Page": {
+      "lake-valley": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "A peaceful pixelated lake valley holds every detail as the camera pushes in."
+      },
+      "three-dancers": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "Three dancers, three rooms, one rhythm, timing locked across every panel."
+      },
+      "porcelain": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "Shattered porcelain reassembles on white, every fragment tracked in reverse."
+      },
+      "drone-transition": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "A drone crosses from one environment to the next."
+      },
+      "outlaws": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "Outlaws ride into town, hooves and crowd noise with the frame."
+      },
+      "bear-checkpoint": {
+        "name": "Flux 3",
+        "note": "Pay-as-you-go",
+        "description": "A bear closes in at the checkpoint, game-engine look held steady."
+      },
+      "prompt-syntax": {
+        "question": "Do I need special prompt syntax or keywords for Flux 3?",
+        "answer": "No. Flux 3 interprets and rewrites your prompt before generation, so plain language works. Describe the scene the way you would brief a colleague. Keyword stacking and caption-style prose add nothing."
+      },
+      "prompt-rewriting": {
+        "question": "Does Flux 3 change my prompt? Will it override what I asked for?",
+        "answer": "It rewrites, but the rewrite preserves what you explicitly specify. The more precisely you describe a scene, the more of the output is your call rather than the model's. Vague prompts hand control to the rewriter."
+      },
+      "burned-in-text": {
+        "question": "Why is my text appearing burned into the video instead of being spoken?",
+        "answer": "Quoted text without a visible speaker tends to render as on-screen text. To get a spoken line: quote the line, describe a speaker visible on camera, and add \"no on-screen text, no subtitles\"."
+      },
+      "audio-control": {
+        "question": "How do I control audio in Flux 3?",
+        "answer": "Describe audio in layers and name each one separately: ambient sound, music, and speech. Each lands as its own layer. Lumping them into one phrase gives you less control over the mix."
+      },
+      "multi-shot": {
+        "question": "Can Flux 3 generate multiple shots in one generation?",
+        "answer": "Yes. Structure the prompt as \"SHOT ONE ... HARD CUT. SHOT TWO ...\" and it produces real cuts inside a single generation. For an uncut take, ask explicitly for \"one continuous unbroken shot\"."
+      },
+      "cuts-not-reading": {
+        "question": "Why do my cuts not look like cuts?",
+        "answer": "Consecutive shots that are too similar will not register as edits. Change scale, location, or colour between shots so the cut reads cleanly."
+      },
+      "music-bed": {
+        "question": "Can I hold one music bed across multiple shots?",
+        "answer": "Yes. Specify it directly, such as \"one continuous music bed across all three shots\", alongside the shot structure."
+      },
+      "prompt-examples": {
+        "question": "What does a good Flux 3 prompt look like?",
+        "answer": "Three examples, copy and paste ready.\n\nPlain brief: A cozy ramen shop on a rainy Tokyo night: steam rising from the broth, neon reflections in the window puddles, the cook working calmly. Rain patter and quiet kitchen sounds.\n\nSpoken line: A weather presenter on camera in front of a stylized storm map, speaking directly to the lens: \"Storm season is here and this time, we're ready.\" Confident delivery, clean studio lighting. No on-screen text, no subtitles.\n\nMulti-shot: SHOT ONE: wide aerial of a desert highway at dawn, a single red car speeding through. HARD CUT. SHOT TWO: interior close-up, the driver's hands drumming the wheel to the radio. HARD CUT. SHOT THREE: from the roadside, the car shrinking into the heat haze. Warm engine hum under one continuous music bed across all three shots."
+      }
+    }
+  },
+  "geminiOmni": {
+    "premiumNote": "Pay-as-you-go",
+    "geminiOmniPage": {
+      "seasonal-timelapse": {
+        "name": "Seasonal timelapse",
+        "description": "Winter to spring and back again"
+      },
+      "saxophone-halftone": {
+        "name": "Saxophone solo",
+        "description": "Saxophone solo in halftone"
+      },
+      "floor-robot": {
+        "name": "Floor robot advert",
+        "description": "Slow push on a floor robot"
+      },
+      "stone-head-speaks": {
+        "name": "Stone head speaks",
+        "description": "Stone head speaks"
+      },
+      "cavemen-discover-fire": {
+        "name": "Cavemen discover fire",
+        "description": "Cavemen meet the future"
+      },
+      "dog-with-hot-dog": {
+        "name": "Dog in a hot dog costume",
+        "description": "A dog with hot dog"
+      },
+      "upload-references": {
+        "title": "Upload your reference assets"
+      },
+      "prompt-the-scene": {
+        "title": "Prompt the scene",
+        "description": "Camera, action, timing, dialogue"
+      },
+      "generate-your-shot": {
+        "title": "Generate your shot",
+        "description": "Up to 10 seconds at 4k."
+      },
+      "what-is-omni-flash": {
+        "question": "What is Gemini Omni 1.1 Flash?",
+        "answer": "Gemini Omni 1.1 Flash is Google's multimodal video model, built for fast video generation, editing, and cinematic control. It processes text, image, audio, and video together, generates clips with an audio track, and edits existing video from plain-language instructions. It replaces earlier versions of Gemini Omni Flash."
+      },
+      "extend-a-video": {
+        "question": "Can Gemini Omni 1.1 Flash extend a video?",
+        "answer": "Yes. With task type set to extend, Gemini Omni 1.1 Flash reads the prior motion and composition of a clip and continues the shot, holding character identity and lighting steady. A prompt like \"continue the shot: the woman finishes the violin solo and takes a bow\" picks up where the clip ends."
+      },
+      "commercial-use": {
+        "question": "Can I use Gemini Omni 1.1 Flash commercially?",
+        "answer": "Yes. Output generated through ComfyUI partner nodes can be used in commercial work, subject to ComfyUI's terms and Google's usage policies. All videos carry a SynthID watermark, which is invisible to viewers but programmatically detectable for provenance."
+      },
+      "resolutions-and-aspect-ratios": {
+        "question": "What resolutions and aspect ratios does Gemini Omni 1.1 Flash support in ComfyUI?",
+        "answer": "The Gemini Video Omni node outputs Gemini Omni 1.1 Flash video at 360p, 720p, 1080p, or 4K, in 16:9 or 9:16. Landscape is the default; set 9:16 for vertical clips. Higher resolutions take longer to generate."
+      },
+      "edit-an-existing-video": {
+        "question": "Can Gemini Omni 1.1 Flash edit an existing video?",
+        "answer": "Yes. Connect a clip to the node's video input and describe the change, and Gemini Omni 1.1 Flash applies it while preserving everything else. Short prompts work best: \"make this video anime,\" \"change the lighting to be more dramatic.\" Add \"keep everything else the same\" when targeting a single element."
+      },
+      "compared-to-previous-omni-flash": {
+        "question": "How does Gemini Omni 1.1 Flash compare to the previous Omni Flash?",
+        "answer": "Gemini Omni 1.1 Flash is a full replacement for earlier Omni Flash versions, with the same generate-and-edit workflow and faster generation. The 1.1 release lets you draft videos more efficiently at 360p, upscale to 4K resolution, and extend scenes for longer storytelling."
+      },
+      "cost-in-comfyui": {
+        "question": "How much does Gemini Omni 1.1 Flash cost in ComfyUI?",
+        "answer": "Gemini Omni 1.1 Flash is billed per generation through ComfyUI credits, with cost varying by resolution. See the ComfyUI pricing page for current rates. No separate Google subscription is needed."
+      }
+    }
+  },
+  "learningTutorials": {
+    "dougHogan": {
+      "name": "Doug Hogan"
+    },
+    "shaneFu": {
+      "name": "Shane Fu"
+    },
+    "basics_node_graph": {
+      "title": "ComfyUI Tutorial for Beginners: Full Node Graph Basics (2026)",
+      "description": "A beginner's tour of the ComfyUI node graph: how nodes, links, and the run queue fit together to build your first working pipeline."
+    },
+    "basics_text_to_image": {
+      "title": "ComfyUI Tutorial for Beginners: Text-to-Image & Image-to-Image Workflows (2026)",
+      "description": "Build your first text-to-image workflow, then adapt it for image-to-image: prompts, samplers, denoise strength, and when to reach for each."
+    },
+    "basics_loras_style_controlnets": {
+      "title": "ComfyUI Tutorial for Beginners: LoRAs, Style Transfer & ControlNets (2026)",
+      "description": "Go further with LoRAs, style transfer, and ControlNets: what each one does and how to wire them into a ComfyUI workflow."
+    },
+    "basics_inpainting": {
+      "title": "ComfyUI Tutorial for Beginners: Inpainting, Outpainting & Upscaling (2026)",
+      "description": "Edit and enlarge images in ComfyUI: mask and repaint with inpainting, extend the frame with outpainting, and add resolution with upscaling."
+    },
+    "basics_image_to_video": {
+      "title": "ComfyUI Tutorial for Beginners: Image-to-Video, Motion Control & Upscaling (2026)",
+      "description": "Turn a still into a shot: build an image-to-video workflow, steer the result with motion control, and finish at higher resolution with upscaling."
+    },
+    "cleanplate_walkthrough_v03": {
+      "title": "Cleanplate Walkthrough"
+    },
+    "deaging_workflow_v03": {
+      "title": "Deaging Workflow"
+    },
+    "frame_adjustments_demo_v03": {
+      "title": "Frame Adjustments Demo"
+    },
+    "mattes_and_utilities_v03": {
+      "title": "Mattes and Utilities"
+    },
+    "seedance_demo_comfyui_v03": {
+      "title": "Seedance Demo ComfyUI"
+    },
+    "skyreplacement_smaller_v06": {
+      "title": "Sky Replacement"
+    },
+    "animation_character_sheet": {
+      "title": "Character Sheet",
+      "description": "Turn concept art into a full character sheet with this ComfyUI workflow: GPT Image 2 generates body turnarounds and face close-ups, then auto-stitches them."
+    },
+    "animation_keyframe_exploration": {
+      "title": "Keyframe Exploration",
+      "description": "Generate a character keyframe at any camera angle with this ComfyUI workflow: set direction, elevation, and distance, then GPT Image 2 renders the shot."
+    },
+    "animation_background_and_asset_generation": {
+      "title": "Background and Asset Generation",
+      "description": "Apply a production frame’s style to backgrounds and props with this ComfyUI workflow: GPT Image 2 paints sketches to match, with auto background removal."
+    },
+    "animation_concept_exploration": {
+      "title": "Concept Exploration",
+      "description": "Turn concept art into a poseable 3D proxy with this ComfyUI workflow: Tripo builds the model, then generate a styled still or camera-move video from any angle."
+    },
+    "animation_in_betweening": {
+      "title": "In-Betweening",
+      "description": "Generate the in-between frames from a sequence of keyframes with this ComfyUI workflow: Wan 2.2 interpolates each pair into one assembled character animation."
+    },
+    "animation_background_and_compositing": {
+      "title": "Background and Compositing",
+      "description": "Animate backgrounds and composite characters with this ComfyUI workflow: Cdance loops still backgrounds, then blends the character with matched lighting."
+    },
+    "ad_moodboard_creation": {
+      "title": "Moodboard Creation",
+      "description": "Turn mood board selects into fresh, on-brand ad visuals with this ComfyUI workflow: extract a style with Recraft, or alter elements with GPT Image 2."
+    },
+    "ad_storyboard_creation": {
+      "title": "Storyboard Creation",
+      "description": "Generate an ad storyboard from a shot list, then render polished style frames: a ComfyUI workflow using GPT Image and NanoBanana Pro across two passes."
+    },
+    "ad_product_photography": {
+      "title": "Product Photography",
+      "description": "Generate, retouch, and animate product shots in one ComfyUI workflow: place products with GPT Image, mask-edit details, then create a hero video."
+    },
+    "ad_talent_casting": {
+      "title": "Talent Casting",
+      "description": "Preview talent in a scene before the shoot with this ComfyUI workflow: generate a previs still with Gemini Image 2, then animate it into a clip with Kling."
+    },
+    "ad_broll_creation": {
+      "title": "B-Roll Creation",
+      "description": "Create or edit B-roll three ways in one ComfyUI workflow: generate a clip from a prompt, place a subject into a reference scene, or alter existing footage."
+    },
+    "ad_ooh_visualization": {
+      "title": "OOH Visualization",
+      "description": "Place a poster into real-world outdoor ad spots with this ComfyUI workflow: auto-generate billboard, transit, and building-wrap mockups with Gemini Image 2."
+    }
+  },
+  "ltx": {
+    "freeNote": "Included free",
+    "premiumNote": "Pay-as-you-go",
+    "modelName": "LTX 2.5",
+    "ltxPage": {
+      "blackbird": {
+        "description": "A fighter jet banks hard over a stormy, moonlit sea."
+      },
+      "circuitry": {
+        "description": "Luminous figure drinks from a flower-filled glass."
+      },
+      "portrait": {
+        "description": "A weathered face stares out from deep shadow."
+      },
+      "drones": {
+        "description": "Heavy-lift drones haul goats across a misty mountain range."
+      },
+      "astronaut": {
+        "description": "A frost-covered astronaut gazes up at the aurora."
+      },
+      "horseman": {
+        "description": "A coated rider and horse stand atop the clouds above Earth."
+      },
+      "what-is-ltx": {
+        "question": "What is LTX-2.5?"
+      },
+      "whats-new": {
+        "question": "What's new in LTX-2.5 vs LTX-2.3?"
+      },
+      "diffusion-fidelity-rendering": {
+        "question": "What is Diffusion Fidelity Rendering?",
+        "answer": "The core change in this release. Instead of spending compute evenly across a scene, the model allocates it by complexity. Structure comes first: motion, composition, and framing generate in an 8x temporally compressed latent space, alongside a set of high-fidelity keyframes, more for complex scenes and fewer for simple ones. A dedicated pixel-diffusion stage then renders the final video from structure and keyframes together. Textures, materials, intricate objects, and faces resolve with pixel-level precision, and busy shots draw more rendering compute than static ones."
+      },
+      "which-variant": {
+        "question": "Which LTX-2.5 variant should I use?"
+      },
+      "run-in-comfyui": {
+        "question": "How do I run LTX-2.5 in ComfyUI?"
+      },
+      "clip-length": {
+        "question": "How long can LTX-2.5 videos be?",
+        "answer": "Through Partner Nodes, Fast runs 2 to 20 seconds, with clips over 10 seconds capped at 720p or 1080p and 24 or 25 FPS. Pro runs 2 to 10 seconds. LTX-2.5 also ships an experimental duration head that reads the action in your prompt and sets clip length before diffusion starts."
+      },
+      "native-audio": {
+        "question": "Does LTX-2.5 generate audio?",
+        "answer": "Yes. Synchronized audio and video carry over from LTX-2.3, and multi-shot generations hold voice across cuts."
+      },
+      "multi-shot": {
+        "question": "Can LTX-2.5 generate more than one shot?",
+        "answer": "Yes. One generation produces multiple connected shots, holding character, environment, lighting, voice, and style across the cuts. You get a sequence from a single run instead of matching separate generations afterward."
+      },
+      "fine-tuning": {
+        "question": "Can I fine-tune LTX-2.5?",
+        "answer": "Yes. The base checkpoint is built for adaptation, so you can fine-tune the raw model on your own data."
+      },
+      "is-it-free": {
+        "question": "Is LTX-2.5 free to use?"
+      }
+    }
+  },
+  "minimax": {
+    "minimaxPage": {
+      "liquid-chrome": {
+        "name": "Liquid chrome",
+        "note": "Text to video",
+        "description": "A chrome fluid ripples under teal and amber light, a stress test for reflection and micro-detail."
+      },
+      "sunken-temple": {
+        "name": "Sunken temple",
+        "note": "Text to video",
+        "description": "God-rays drift through a flooded temple of carved gold, holding light and depth steady across the whole shot."
+      },
+      "night-ascent": {
+        "name": "Night ascent",
+        "note": "Text to video",
+        "description": "A headlamped climber pushes up a moonlit dune, fine grain and motion kept clean in near-dark."
+      },
+      "ice-rider": {
+        "name": "Ice canyon rider",
+        "note": "Text to video",
+        "description": "A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3."
+      },
+      "backyard-hero": {
+        "name": "Backyard hero",
+        "note": "Reference to video",
+        "description": "A pint-size superhero calls out a towering city monster, character held consistent from a single reference image."
+      },
+      "stay-comfy-can": {
+        "name": "Stay Comfy can",
+        "note": "Reference to video",
+        "description": "One product shot becomes a full scene — the label stays crisp as the can pours out beside a waterfall."
+      },
+      "what-is-minimax": {
+        "question": "What is MiniMax H3?"
+      },
+      "cost-per-generation": {
+        "question": "How much does MiniMax H3 cost per generation?",
+        "answer": "It runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render."
+      },
+      "resolution-length": {
+        "question": "What resolution and clip length does MiniMax H3 support?",
+        "answer": "Up to 2K, and 5 to 15 seconds per generation."
+      },
+      "native-audio": {
+        "question": "Does MiniMax H3 generate audio?",
+        "answer": "Yes. Every clip carries native stereo audio. When you feed it input audio, H3 conditions on that track instead of overwriting or dropping it."
+      },
+      "open-weights": {
+        "question": "Is MiniMax H3 available as Open Weights?",
+        "answer": "Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud. To use what you make locally for commercial work, [get an H3 commercial license through Comfy](https://comfy.org/minimax/license)."
+      },
+      "run-in-comfyui": {
+        "question": "How do I run MiniMax H3 in ComfyUI?"
+      }
+    }
+  },
+  "minimaxLicense": {
+    "minimaxLicenseComparison": {
+      "professional": {
+        "label": "Professional"
+      },
+      "enterprise": {
+        "label": "Enterprise"
+      },
+      "price": {
+        "label": "Price",
+        "cells": {
+          "0": "From $5,000 / month",
+          "1": "Contact sales"
+        }
+      },
+      "video-seconds": {
+        "label": "Video-seconds included",
+        "cells": {
+          "0": "~46,250",
+          "1": "Custom"
+        }
+      },
+      "price-per-video-second": {
+        "label": "Price per video-second (in bundle)",
+        "cells": {
+          "0": "$0.108",
+          "1": "Contact sales"
+        }
+      },
+      "overage": {
+        "label": "Overage per video-second",
+        "cells": {
+          "0": "$0.036",
+          "1": "Contact sales"
+        }
+      },
+      "licensed-users": {
+        "label": "Licensed users",
+        "cells": {
+          "0": "Up to 10",
+          "1": "No cap"
+        }
+      },
+      "domains": {
+        "label": "Domains",
+        "cells": {
+          "0": "1",
+          "1": "Custom"
+        }
+      },
+      "commercial-use": {
+        "label": "Commercial use of outputs",
+        "cells": {
+          "0": "Yes, full commercial rights",
+          "1": "Yes, full commercial rights"
+        }
+      },
+      "fine-tuning": {
+        "label": "Fine-tuning and LoRA training",
+        "cells": {
+          "0": "Yes",
+          "1": "Yes"
+        }
+      },
+      "client-work": {
+        "label": "Client and downstream work",
+        "cells": {
+          "0": "Yes",
+          "1": "Yes"
+        }
+      },
+      "model-versions": {
+        "label": "Model versions",
+        "cells": {
+          "0": "Distilled open-weight versions",
+          "1": "Every version, undistilled weights included"
+        }
+      },
+      "term": {
+        "label": "Term",
+        "cells": {
+          "0": "Monthly",
+          "1": "12-month minimum"
+        }
+      }
+    },
+    "minimaxLicensePage": {
+      "professional": {
+        "title": "Professional",
+        "description": "A fixed-price monthly license for studios and teams shipping client work. Up to 10 licensed users, on distilled open-weight model versions."
+      },
+      "enterprise": {
+        "title": "Enterprise"
+      },
+      "who-needs-a-license": {
+        "question": "Who needs a MiniMax H3 commercial license?"
+      },
+      "whats-included": {
+        "question": "What does the license include?",
+        "answer": "Full commercial rights to your outputs: everything you generate is yours to use, sell, and ship. Fine-tuning and LoRA training on your characters, your style, or your product. Client and downstream work, so agencies and studios can use H3 for customer projects."
+      },
+      "cloud-already-covered": {
+        "question": "I'm on Comfy Cloud. Do I need a license?",
+        "answer": "No. Comfy Cloud subscriptions already include commercial rights to what you generate. This license is for running H3 locally on your own hardware."
+      },
+      "plans": {
+        "question": "What is the difference between the Professional and Enterprise tiers?",
+        "answer": "Professional is a fixed-price monthly license for studios and teams shipping client work, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom volume pricing, no user cap, and every model version, undistilled weights included. Request a license and we will help you pick."
+      },
+      "pricing-parity": {
+        "question": "Is the Commercial License more expensive through Comfy?",
+        "answer": "No. **MiniMax requires pricing parity across its Commercial License resellers**, so purchasing the license through Comfy does not come with a reseller markup or a higher license price compared with other authorized channels."
+      },
+      "audio-music": {
+        "question": "Does the license cover MiniMax's audio and music models?",
+        "answer": "Yes. MiniMax commercial licenses through Comfy cover MiniMax H3 and MiniMax Audio & Music, available globally, so video, audio, and music sit under one agreement. MiniMax Music 3 has its own Community License that allows free commercial use below 20 million US dollars in yearly revenue; above that threshold, it needs a commercial license too."
+      },
+      "not-covered": {
+        "question": "What is not covered?",
+        "answer": "Reselling or sublicensing the model, and running a model marketplace, API aggregator, inference-as-a-service, or model-routing platform. The license is for building your own products and content."
+      }
+    }
+  },
+  "minimaxMusic3": {
+    "minimaxMusic3Page": {
+      "sample-01": {
+        "description": "Gospel Soul"
+      },
+      "sample-02": {
+        "description": "Rock (Instrumental)"
+      },
+      "what-is-minimax-music-3": {
+        "question": "What is MiniMax Music 3?",
+        "answer": "An open weights music generation model that writes complete songs. Give it lyrics and a description of the sound, and it returns a finished track with vocals and full arrangement."
+      },
+      "how-to-use": {
+        "question": "How do I use MiniMax Music 3?",
+        "answer": "The easiest way to try MiniMax Music 3 is to connect to Comfy Cloud, search the corresponding workflows in the example workflows and run them! To use the model locally, download Comfy Desktop, create a new ComfyUI instance or update an existing one, search MiniMax Music 3 in the example workflows, download the models and run."
+      },
+      "how-to-prompt": {
+        "question": "How do I prompt MiniMax Music 3?"
+      },
+      "song-length": {
+        "question": "How long can MiniMax Music 3 songs be?",
+        "answer": "Up to five minutes in a single generation. Structure holds across the full length, so melody, rhythm, and vocal identity stay consistent from intro to outro."
+      },
+      "control-vocals": {
+        "question": "Can I control the vocals?",
+        "answer": "Yes. You can set gender, timbre, performance style, harmony, backing vocals, and effects."
+      },
+      "audio-quality": {
+        "question": "What audio quality does MiniMax Music 3 output?",
+        "answer": "32 kHz, 16-bit stereo WAV."
+      },
+      "free-to-use": {
+        "question": "Is MiniMax Music 3 free to use?",
+        "answer": "Yes. MiniMax Music 3 is open weight under the [MiniMax Community License](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE), free to use, including commercially, for companies under 20 million US dollars in yearly revenue."
+      },
+      "commercial-use": {
+        "question": "Can I use MiniMax Music 3 commercially?",
+        "answer": "Yes, for companies under 20 million US dollars in yearly revenue, under the MiniMax Community License. Above that threshold you need MiniMax authorization, which [a MiniMax commercial license through Comfy](https://comfy.org/minimax/license) covers."
+      },
+      "write-your-lyrics": {
+        "title": "Write your lyrics",
+        "description": "Your words, or auto-written from a theme"
+      },
+      "describe-the-sound": {
+        "title": "Describe the sound",
+        "description": "Style, mood, instruments"
+      },
+      "generate-your-song": {
+        "title": "Generate your song",
+        "description": "Full track, up to five minutes"
+      }
+    }
+  },
+  "qwenImage21": {
+    "freeNote": "Included free",
+    "qwenImage21Page": {
+      "infographic": {
+        "name": "Coffee infographic generated with Qwen Image 2.1",
+        "description": "A five-step \"From Cherry to Cup\" explainer with every heading, number, and label set cleanly in one pass."
+      },
+      "harlem-stoop": {
+        "name": "Editorial portrait on a Harlem stoop generated with Qwen Image 2.1",
+        "description": "Denim on denim, wrought iron, and warm brick: a natural portrait with true skin tones and fabric detail."
+      },
+      "holi-powder": {
+        "name": "Holi colour powder burst generated with Qwen Image 2.1",
+        "description": "Magenta, gold, and cobalt powder frozen mid-air against clean white, every grain sharp."
+      },
+      "game-environment": {
+        "name": "Floating island game environment generated with Qwen Image 2.1",
+        "description": "A waterfall citadel and rope bridges in a painterly concept-art style, ready for a level brief."
+      },
+      "character-sheet": {
+        "name": "Character turnaround sheet generated with Qwen Image 2.1",
+        "description": "Four consistent views of the same character, from goggles to boots, on a clean white sheet."
+      },
+      "interior-archviz": {
+        "name": "Interior architectural visualization generated with Qwen Image 2.1",
+        "description": "A calm living room in soft daylight: oak, linen, paper lantern, and birch forest beyond the glass."
+      },
+      "what-is-qwen-image-2-1": {
+        "question": "What is Qwen Image 2.1?",
+        "answer": "Qwen Image 2.1 is the latest image model from the Qwen team at Alibaba. One model handles both text-to-image generation and instruction-based editing, with a focus on accurate text rendering and native high-resolution output. It runs natively in ComfyUI."
+      },
+      "how-to-run": {
+        "question": "How do I run Qwen Image 2.1 in ComfyUI?"
+      },
+      "text-rendering": {
+        "question": "How well does Qwen Image 2.1 render text?",
+        "answer": "Text rendering is the model's signature strength. Posters, infographics, slides, comics, and signage come out with legible copy in both English and Chinese, so you can put the exact words you need into the prompt rather than compositing them afterwards."
+      },
+      "image-editing": {
+        "question": "Can Qwen Image 2.1 edit an existing image?",
+        "answer": "Yes. Feed in an image and describe the change: swap objects, restyle a scene, relight it, or revise the text it contains. Generation and editing live in the same model, so no second checkpoint is needed."
+      },
+      "license": {
+        "question": "Can I use Qwen Image 2.1 commercially?",
+        "answer": "Qwen Image 2.1 ships as open weights under the Apache 2.0 license, so you can run it locally, fine-tune it, and use the output in commercial work. On Comfy Cloud it is included in your plan with no per-image fee."
+      },
+      "comfy-workflows": {
+        "question": "Why use Qwen Image 2.1 in a ComfyUI workflow?",
+        "answer": "The generated image becomes one step in a larger, repeatable pipeline. Add ControlNet or LoRAs, route the result into upscaling, animation, or another model, and keep every step visible and adjustable."
+      }
+    }
+  },
+  "seedance": {
+    "sharedCardIdentity": {
+      "name": "Seedance 2.5",
+      "note": "Pay-as-you-go"
+    },
+    "clips": {
+      "balloons": {
+        "description": "Animals crossing a rain-slick city street under balloon letters."
+      },
+      "grass": {
+        "description": "A meadow running down the middle of an empty office floor."
+      },
+      "worldcup": {
+        "description": "A packed stadium crowd, shot handheld from the stands."
+      },
+      "city": {
+        "description": "A close pass over a wet city street at ground level."
+      },
+      "shark": {
+        "description": "A dog fetching a frisbee as a shark breaches behind it."
+      },
+      "giraffe": {
+        "description": "A giraffe clearing a ring of fire in a single leap."
+      }
+    },
+    "seedancePage": {
+      "what-is-seedance": {
+        "question": "What is Seedance 2.5?",
+        "answer": "ByteDance's cinematic video model. Give it a text prompt or a reference image and it renders the shot with native audio. On Comfy you direct it on the canvas alongside every other model."
+      },
+      "whats-new-in-25": {
+        "question": "What's new in Seedance 2.5 vs Seedance 2.0?",
+        "answer": "Longer native clips and support for many more reference inputs than 2.0."
+      },
+      "run-in-comfyui": {
+        "question": "How do I run Seedance 2.5 in ComfyUI?",
+        "answer": "Open a Seedance workflow template, or add Seedance to any workflow on the canvas. It runs on Comfy Cloud, so you do not need a local GPU."
+      },
+      "clip-length": {
+        "question": "How long can Seedance 2.5 videos be?",
+        "answer": "Up to 30 seconds natively, and you can chain shots on the canvas when you need a longer cut."
+      },
+      "native-audio": {
+        "question": "Does Seedance 2.5 generate audio?",
+        "answer": "Yes. Dialogue, music and sound effects are generated with the frame, so you do not have to score the clip afterwards."
+      },
+      "is-it-free": {
+        "question": "Is Seedance 2.5 free to use?",
+        "answer": "Seedance runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render."
+      },
+      "commercial-use": {
+        "question": "Can I use the videos commercially?",
+        "answer": "Yes. Renders include commercial use and carry no watermark."
+      },
+      "write-the-shot": {
+        "title": "Write the shot",
+        "description": "Camera, subject, framing"
+      },
+      "draft-free": {
+        "title": "Draft free on other models",
+        "description": "Same workflow, zero credits"
+      },
+      "switch-to-seedance": {
+        "title": "Switch to Seedance 2.5",
+        "description": "Final render, native audio"
+      }
+    }
+  },
+  "wan3": {
+    "wan3Page": {
+      "what-is-wan-3": {
+        "question": "What is Wan 3.0?",
+        "answer": "Alibaba's latest video model. Give it a prompt, up to 20 reference assets, or even a document and it generates up to 30 seconds with native audio."
+      },
+      "whats-new": {
+        "question": "What's new in Wan 3.0 vs Wan 2.7?",
+        "answer": "Native 30-second clips, up to 20 reference inputs, and 480p generations for quick and cost effective generations."
+      },
+      "how-to-run": {
+        "question": "How do I run Wan 3.0 in ComfyUI?"
+      },
+      "prompting": {
+        "question": "How do I prompt Wan 3.0?",
+        "answer": "Start simple: subject, scene, motion — one sentence is enough for a full clip. For more control, layer in camera movement, lighting, style, and sound, or address your uploads directly with @ syntax: \"@Image1 walks through the door and says the line from @Audio1.\" The longer and more precise the prompt, the closer the output tracks your intent — it accepts up to 20,000 characters."
+      },
+      "video-editing": {
+        "question": "Can Wan 3.0 edit video I already have?",
+        "answer": "Yes. Describe the change — remove an object, relight the scene, swap a subject — and everything else in the frame stays put. It can also extend existing footage."
+      },
+      "clip-length": {
+        "question": "How long can clips be?",
+        "answer": "Anywhere from 2 to 30 seconds, generated in one continuous take — no stitching. Audio is generated natively, or switch it off."
+      }
+    }
+  },
+  "wanAnimate2": {
+    "wanAnimate2Page": {
+      "upload-your-reference": {
+        "title": "Upload your reference",
+        "description": "A reference image of your character, plus a driving video of the motion you want to transfer."
+      },
+      "write-the-shot": {
+        "title": "Write the shot",
+        "description": "Add your prompt, zero credits"
+      },
+      "run-wan-animate-2": {
+        "title": "Run Wan Animate 2",
+        "description": "Final render"
+      }
+    }
+  }
+}

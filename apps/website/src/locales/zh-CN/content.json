@@ -1,1 +1,1262 @@
-{}
+{
+  "affiliateAudience": {
+    "affiliateAudienceCriteria": {
+      "ai-tool-reviewer": {
+        "label": "在 YouTube、TikTok、博客上做 AI 工具测评"
+      },
+      "audience-owner": {
+        "label": "拥有关注 AI 图像、视频或 3D 受众的任何人"
+      },
+      "newsletter-operator": {
+        "label": "AI／创意领域的简报运营者"
+      },
+      "tech-blogger": {
+        "label": "报道 AI 创作工具的科技博主"
+      },
+      "tutorial-creator": {
+        "label": "ComfyUI 教程作者或工作流创建者"
+      }
+    }
+  },
+  "affiliateBenefits": {
+    "cloud-no-gpu": {
+      "description": "Comfy Cloud 让你在浏览器中运行 ComfyUI，无需 GPU，所有模型预加载"
+    },
+    "custom-nodes": {
+      "description": "1,000+ 社区自定义节点包"
+    },
+    "node-based-control": {
+      "description": "基于节点的工作流让用户拥有完整的创作控制力，区别于仅靠提示词的工具"
+    },
+    "open-source-platform": {
+      "description": "ComfyUI 是最强大的开源 AI 创作平台"
+    }
+  },
+  "affiliateBrandAssets": {
+    "amplified-logomark": {
+      "title": "放大版标志符号"
+    },
+    "core-logo": {
+      "title": "核心标志"
+    },
+    "icon": {
+      "title": "图标"
+    },
+    "logomark": {
+      "title": "标志符号"
+    }
+  },
+  "affiliateFaq": {
+    "affiliateFaqs": {
+      "can-i-use-coupon-codes": {
+        "answer": "可以。我们同时支持追踪链接和专属优惠码。",
+        "question": "我可以使用优惠码吗？"
+      },
+      "how-do-i-track-my-referrals": {
+        "answer": "通过我们的合作伙伴门户使用实时仪表盘追踪。",
+        "question": "我如何追踪我的推荐？"
+      },
+      "how-long-to-get-approved": {
+        "answer": "大多数申请会在 24 小时内获批。",
+        "question": "审核需要多长时间？"
+      },
+      "what-assets-do-you-provide": {
+        "answer": "本页面提供 Logo 和横幅图，获批后您还可以在联盟仪表盘中获取截图和宣传文案。",
+        "question": "你们提供哪些素材？"
+      },
+      "what-happens-if-referral-upgrades-or-downgrades": {
+        "answer": "如果他们升级订阅，您的佣金会相应增加；如果降级，佣金也会同步调整。佣金以 Comfy.org 实际收到的金额为准，并扣除退款部分。",
+        "question": "如果我推荐的用户升级或降级订阅会怎样？"
+      },
+      "what-if-my-referral-uses-an-ad-blocker": {
+        "answer": "我们采用服务端追踪，因此无论用户是否使用广告拦截器，转化都能正常记录。",
+        "question": "如果我推荐的用户使用广告拦截器怎么办？"
+      },
+      "what-plans-qualify": {
+        "answer": "所有 Comfy Cloud 付费订阅方案（Standard、Creator、Pro、Teams）。",
+        "question": "哪些订阅方案符合条件？"
+      },
+      "when-do-i-get-paid": {
+        "answer": "每月结算，于每月前 10 个工作日内发放。最低结算余额为 100 美元，通过 Stripe Express 或 PayPal 支付。",
+        "question": "什么时候结算佣金？"
+      }
+    }
+  },
+  "affiliateHowItWorks": {
+    "affiliateHowItWorksSteps": {
+      "apply": {
+        "description": "填写一份简短表单。大多数申请当天获批。",
+        "label": "申请"
+      },
+      "earn": {
+        "description": "每位您推荐的 Comfy Cloud 订阅者，可获连续 3 个月 30% 的经常性佣金。实时追踪，每月结算。",
+        "label": "赚取"
+      },
+      "share": {
+        "description": "获取您的专属追踪链接。通过内容、社交、邮件等任何触达受众的方式分享。",
+        "label": "分享"
+      }
+    }
+  },
+  "chatgptImage25": {
+    "chatgptImage25Page": {
+      "alien-convenience-store": {
+        "description": "便利店监控镜头下，四位衣着考究的外星来客冷面出镜。",
+        "name": "使用 ChatGPT Images 2.5 生成的便利店外星人场景"
+      },
+      "anime-horizon": {
+        "description": "孤独的英雄凝望红日，从克制的动画风景中升起。",
+        "name": "使用 ChatGPT Images 2.5 生成的红日地平线动画场景"
+      },
+      "canyon-chase": {
+        "description": "电影感峡谷追逐，在肌肉车飞越断崖的一刻定格。",
+        "name": "使用 ChatGPT Images 2.5 生成的峡谷飞车追逐场景"
+      },
+      "comfy-workflows": {
+        "answer": "生成的图像可以成为更大规模、可复用流程中的一步。你可以继续将它传入蒙版、合成、放大、动画或其他模型，同时让每个步骤都保持可见、可调。",
+        "question": "为什么要在 ComfyUI 工作流中使用 ChatGPT Images 2.5？"
+      },
+      "flame-engine": {
+        "description": "咆哮的 V8 引擎化作充满热浪与动势的水彩习作。",
+        "name": "使用 ChatGPT Images 2.5 生成的火焰引擎水彩画"
+      },
+      "goldfish-fisheye": {
+        "description": "阳光草地上，好奇的金鱼遇见极致鱼眼镜头。",
+        "name": "使用 ChatGPT Images 2.5 生成的玻璃鱼缸金鱼场景"
+      },
+      "how-to-run": {
+        "answer": "打开 [Comfy Cloud](https://cloud.comfy.org/?template=api_openai_gpt_image_25_flare_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=gpt-image-2-5)，在工作流中添加 OpenAI 图像合作伙伴节点，输入提示词，并连接需要使用的参考图像。",
+        "question": "如何在 ComfyUI 中运行 ChatGPT Images 2.5？"
+      },
+      "image-editing": {
+        "answer": "可以。提供图像并描述想要的改动，即可替换物体、重塑场景风格或进行局部蒙版编辑。结果可以留在同一图形中继续处理。",
+        "question": "ChatGPT Images 2.5 可以编辑现有图像吗？"
+      },
+      "prompting": {
+        "answer": "像写创意简报一样清楚描述：主体、场景、构图、光线、媒介，以及必须出现的文字。进行编辑时，请说明哪些内容需要改变、哪些必须保持不变。",
+        "question": "如何为 ChatGPT Images 2.5 编写提示词？"
+      },
+      "reference-images": {
+        "answer": "可以。参考图像能够引导生成结果的主体、构图、材质或视觉语言。请在提示词中说明希望保留哪些特征。",
+        "question": "可以使用参考图像吗？"
+      },
+      "vaporwave-atmosphere": {
+        "description": "精致的蒸汽波世界，融合清晰文字、反光大理石与霓虹光影。",
+        "name": "使用 ChatGPT Images 2.5 生成的蒸汽波建筑场景"
+      },
+      "what-is-chatgpt-image-2-5": {
+        "answer": "ChatGPT Images 2.5 是 OpenAI 的图像模型，可通过自然语言指令生成新视觉内容或编辑现有图像。在 ComfyUI 中，它通过合作伙伴节点运行，并可与工作流中的其他步骤组合。",
+        "question": "ChatGPT Images 2.5 是什么？"
+      }
+    },
+    "premiumNote": "按量付费"
+  },
+  "creatorReviews": {
+    "alan-m": {
+      "body": "ComfyUI 的界面和交互直观易用，导航清晰高效。它与其他工具的集成让工作流更顺畅，整体效率也随之提升。",
+      "role": "联合创始人"
+    },
+    "fred-c": {
+      "body": "我喜欢 ComfyUI 既极快又非常可靠。它让我可以自由地创作出想要的角色。"
+    },
+    "kirk-h": {
+      "body": "我用 ComfyUI 为我的动画剧集制作视觉特效。它很好上手，尤其是在云端导入 Comfy 流程时，我非常喜欢它简洁直观的界面。"
+    },
+    "leonardo-s": {
+      "body": "能够完全掌控生成式 AI 的过程，并且可以无限次使用，随时将它融入到你的创作工作流中。",
+      "role": "社交媒体营销专家"
+    },
+    "maryann-e": {
+      "body": "我很喜欢能够使用那些本地电脑已经带不动的模型。我更偏爱基于节点的方式，因为它可以自由调整，而不是被关在一扇关闭的门后。",
+      "role": "Pop RV's 经纪人"
+    },
+    "matthew-p": {
+      "body": "我很喜欢一键式工作流，它为我简化了许多流程。整个设置也非常简单，即使对不太熟悉的人也是如此。"
+    },
+    "nikolai-k": {
+      "body": "一种整体性的方式，通过无限画布进行可视化。",
+      "role": "3D 艺术家"
+    },
+    "richard-n": {
+      "body": "对我来说最棒的是基于节点的工作流：它带来了大量可能性，能实现许多不同的组合。我也很欣赏它的优化选项和自动显存管理，即使在显存吃紧时也能应对。",
+      "role": "企业主"
+    },
+    "scott-belsky": {
+      "body": "Comfy 打造了一个全新而强大的创意生态，同时毫不牺牲创作掌控力。看着技术型艺术家和充满好奇的创意人借助 Comfy 探索创意的每一个维度，令人惊叹。",
+      "role": "Behance 创始人"
+    },
+    "verified-user-in-depth": {
+      "body": "我喜欢 ComfyUI 可以做到多么深入。它让我觉得软件本身没有边界，鼓励我不断尝试和学习。"
+    },
+    "verified-user-local": {
+      "body": "帮助我在本地运行 AI 模型，并免费生成图像、视频和音频。",
+      "role": "计算机软件"
+    }
+  },
+  "drops": {
+    "app-mode": {
+      "description": "工作流的简化视图。随时切换回节点图视图以深入了解。",
+      "media": "App 模式",
+      "title": "App 模式"
+    },
+    "CLOUD": "云端",
+    "comfy-api": {
+      "description": "将任意工作流变成生产端点。自动化生成并扩展到数千个输出。",
+      "media": "Comfy API",
+      "title": "开发者平台"
+    },
+    "comfy-cloud-nodes": {
+      "description": "在你自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。无需订阅，无需下载。",
+      "media": "Comfy Cloud 节点",
+      "title": "Comfy Cloud 节点"
+    },
+    "comfy-enterprise": {
+      "description": "为您组织内创意引擎提供的企业级基础设施。",
+      "media": "Comfy 企业版",
+      "title": "Comfy 企业版"
+    },
+    "comfy-mcp": {
+      "description": "随时随地体验 ComfyUI 的全部能力 — 无需配置，无需 GPU。",
+      "media": "Comfy MCP",
+      "title": "Comfy MCP"
+    },
+    "COMMUNITY": "社区",
+    "community-workflows": {
+      "description": "浏览和混搭数千个社区共享的工作流。从经过验证的模板开始。",
+      "media": "社区工作流",
+      "title": "社区工作流"
+    },
+    "desktop-client": {
+      "description": "更快、重新设计的 ComfyUI 桌面应用程序 — 一键安装与受管更新。",
+      "media": "新桌面客户端",
+      "title": "新桌面客户端"
+    },
+    "DEVELOPER": "开发者",
+    "EXPLORE": "探索",
+    "learning-hub": {
+      "cta": {
+        "label": "开始学习"
+      },
+      "description": "配套教程与开箱即用的工作流，带您从第一次渲染走向生产管线。",
+      "media": "学习中心",
+      "title": "学习中心"
+    },
+    "MODELS_AND_NODES": "模型与节点",
+    "NEW_BADGE": "新",
+    "PLATFORM": "平台",
+    "share-comfy": {
+      "cta": {
+        "label": "了解更多"
+      },
+      "description": "与您的受众分享 Comfy，为您带来的每一位创作者获得回报。",
+      "media": "Comfy Affiliate",
+      "title": "Comfy Affiliate"
+    },
+    "supported-models": {
+      "description": "运行最新的开源和合作伙伴模型 — 每个 checkpoint、LoRA 和 ControlNet 都可直接在工作流中使用。",
+      "media": "支持的模型",
+      "title": "支持的模型"
+    },
+    "supported-nodes": {
+      "description": "数千个社区与合作伙伴节点，经过精选与验证，可在 Comfy Cloud 上运行。",
+      "media": "支持的节点",
+      "title": "支持的节点"
+    }
+  },
+  "events": {
+    "ai-la-march-meetup": {
+      "dateLabel": "2025年3月6日",
+      "description": "三月的 AI LA 见面会在 Venice 的 BLANKSPACES 举行，演讲嘉宾包括远程连线的 ComfyAnonymous，以及 Midjourney Man 和 Spencer Sterling。",
+      "location": "美国加州洛杉矶",
+      "media": "ComfyUI 官方 AI LA 三月见面会",
+      "title": "ComfyUI 官方 AI LA 三月见面会"
+    },
+    "austin-ai-film-fest-meetup": {
+      "dateLabel": "2025年3月14日至15日",
+      "description": "这场社区见面会与 SXSW 和 Austin AI Film Festival 同期举行，由 FungAI Media 的 Ori Apkon 在当地主办，Daydream 联合呈现。",
+      "location": "美国德克萨斯州奥斯汀",
+      "media": "ComfyUI 官方见面会：Austin AI Film Fest 特别场",
+      "title": "ComfyUI 官方见面会：Austin AI Film Fest 特别场"
+    },
+    "bentoml-api-endpoints": {
+      "dateLabel": "2025年2月",
+      "description": "BentoML 工程负责人 Sean Sheng 演示了 comfy-pack，用它把 ComfyUI 工作流变成可调用的 API 端点。这场 Zoom 活动由 Eric Liu 主持，是 AGI Builders Meetup 的一期。",
+      "location": "线上",
+      "media": "用 BentoML 把 ComfyUI 工作流变成 API 端点",
+      "title": "用 BentoML 把 ComfyUI 工作流变成 API 端点"
+    },
+    "beyond-the-models": {
+      "dateLabel": "2026年8月19日 · 上午10点（PT）",
+      "description": "超越开箱即用的模型：现场演示如何为商业与影视制作构建自定义 ComfyUI 工作流。",
+      "featured": {
+        "media": "善用 Comfy，超越模型本身直播"
+      },
+      "location": "线上",
+      "media": "善用 Comfy，超越模型本身直播",
+      "title": "善用 Comfy，超越模型本身：面向商业与影视制作的自定义工作流"
+    },
+    "black-math-hackathon": {
+      "description": "设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。",
+      "media": "Black Math X Comfy 直播，嘉宾 Jeremy Sahlman",
+      "title": "体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松"
+    },
+    "comfy-agent-beta": {
+      "dateLabel": "2026年9月10日 · 上午10点（PT）",
+      "description": "Comfy 产品经理 Jo Zhang 做客本场直播，与主持人 Allyson 一起拆解 Comfy Agent Beta 版：它能做什么，以及团队是如何打造它的。",
+      "featured": {
+        "media": "Comfy Agent Beta 直播"
+      },
+      "location": "线上",
+      "media": "Comfy Agent Beta 直播",
+      "title": "Comfy Agent Beta：它能做什么，我们又是如何打造它的"
+    },
+    "comfy-agent-ga": {
+      "dateLabel": "2026年9月15日 · 上午10点（PT）",
+      "description": "Purz 与 Allyson 主持本场直播，现场演示 Comfy Agent 在 VFX、3D 与营销场景中的应用。",
+      "featured": {
+        "media": "Comfy Agent 现场演示直播"
+      },
+      "location": "线上",
+      "media": "Comfy Agent 现场演示直播",
+      "title": "Comfy Agent 现场演示：VFX、3D 与营销"
+    },
+    "comfy-creatives-model-jam": {
+      "description": "Comfy Creatives 社区在这场实战直播中集中体验最新模型：MiniMax H3、Seedance 2.5、Wan Animate 2 等。",
+      "location": "线上",
+      "media": "Comfy Creatives 模型大乱斗直播回放",
+      "title": "Comfy Creatives 模型大乱斗：MiniMax H3、Seedance 2.5、Wan Animate 2 等"
+    },
+    "comfy-mcp-claude-cursor": {
+      "description": "Comfy MCP 让 Claude、Cursor 以及几乎所有你正在使用的 AI 智能体为你构建、运行并迭代真实的 Comfy Cloud 工作流。欢迎观看 Jo Zhang 的现场演示。",
+      "media": "通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放",
+      "title": "通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI"
+    },
+    "comfycon-shanghai": {
+      "dateLabel": "2025年3月29日至30日",
+      "description": "Comfy Org 首届官方全球大会在上海举行，为期两天。全球核心开发团队到场，包括 Jo Zhang、Yoland Yan、Robin Huang、Charlene 等人。",
+      "location": "中国上海",
+      "media": "ComfyCon：ComfyUI 首届官方全球大会",
+      "title": "ComfyCon：ComfyUI 首届官方全球大会"
+    },
+    "dev-platform-101": {
+      "dateLabel": "2026年9月17日 · 上午10点（PT）",
+      "description": "Comfy 产品经理 Jacob Segal 做客本场直播，与主持人 Allyson 和 Purz 一起介绍如何使用全新的 Comfy 开发者 API 构建应用。",
+      "featured": {
+        "media": "开发者平台 101 直播"
+      },
+      "location": "线上",
+      "media": "开发者平台 101 直播",
+      "title": "开发者平台 101：使用全新 Comfy API 构建应用"
+    },
+    "future-ai-post-production": {
+      "dateLabel": "2026年8月5日 · 上午10点（PT）",
+      "description": "Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。",
+      "featured": {
+        "media": "AI 后期制作的未来直播"
+      },
+      "location": "线上",
+      "title": "AI 后期制作的未来"
+    },
+    "genart-nyu-real-time-video": {
+      "dateLabel": "2025年4月18日",
+      "description": "Livepeer 呈现了这场在布鲁克林的 NYU 举办的实时视频 AI 工作坊，并与 Daydream、GenART NYU 共同主办。这场工作坊共有 71 人报名。",
+      "location": "美国纽约布鲁克林 370 Jay St",
+      "media": "实时视频 AI @GenART NYU：ComfyUI 与 Livepeer",
+      "title": "实时视频 AI @GenART NYU：ComfyUI 与 Livepeer"
+    },
+    "h3-sync-sound-challenge": {
+      "dateLabel": "2026年9月2日 · 上午10点（PT）",
+      "description": "特邀评委做客直播间，点评社区在 MiniMax H3 同步声音挑战赛中的优秀作品，并拆解让生成音频与画面同频的关键所在。",
+      "featured": {
+        "media": "Comfy H3 同步声音挑战赛特邀评委直播"
+      },
+      "location": "线上",
+      "media": "Comfy H3 同步声音挑战赛特邀评委直播",
+      "title": "Comfy H3 同步声音挑战赛：特邀评委直播"
+    },
+    "july-launches": {
+      "description": "我们的月度直播，介绍 ComfyUI 最新发布与更新。",
+      "media": "七月发布直播回放",
+      "title": "在 Claude Code 中使用 ComfyUI MCP"
+    },
+    "june-launches": {
+      "description": "第一时间了解我们六月发布的所有内容：产品负责人 Jedrzej Kosinski、Alexis Rolland、Jo Zhang 和 Matt Miller 介绍桌面版、MCP 与核心引擎改进。",
+      "media": "六月发布直播回放",
+      "title": "六月发布 | 桌面版、MCP 与核心引擎改进"
+    },
+    "kikk-festival-comfyui-workshop": {
+      "dateLabel": "2024年10月26日",
+      "description": "Varvara 与 Mar 在那慕尔创意中心 TRAKK 主讲了一场 ComfyUI 生成式 AI 工作坊。活动由 KIKK Festival 主办，通过 RunComfy 进行。",
+      "location": "比利时那慕尔 TRAKK",
+      "media": "工作坊：用 ComfyUI 探索生成式 AI（Varvara & Mar 主讲）",
+      "title": "工作坊：用 ComfyUI 探索生成式 AI（Varvara & Mar 主讲）"
+    },
+    "krea-founders-live": {
+      "description": "与 Victor Perez（Krea CEO）、Miguel Lara（Krea 团队）以及 ComfyAnonymous（Comfy Org 联合创始人）的特别直播对谈，聊聊创意 AI 工具的打造。",
+      "featured": {
+        "media": "Krea X Comfy 创始人直播"
+      },
+      "media": "Krea X Comfy 创始人直播回放",
+      "title": "Krea X Comfy：创始人直播"
+    },
+    "la-august-meetup": {
+      "ctaLabel": "报名",
+      "dateLabel": "2026年8月26日 · 下午6点至9点（PT）",
+      "description": "欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。",
+      "location": "美国加州洛杉矶",
+      "media": "ComfyUI 官方洛杉矶八月见面会",
+      "title": "ComfyUI 官方洛杉矶八月见面会"
+    },
+    "la-february-meetup": {
+      "dateLabel": "2025年2月",
+      "description": "二月的洛杉矶见面会在 Venice Beach 的 Snapchat 旧办公室举行，由 AI LA Events 呈现，AI LA 与 FBRC.AI 共同主办，Wan AI 和 Oxen.ai 提供赞助。",
+      "location": "美国加州洛杉矶",
+      "media": "ComfyUI 官方洛杉矶二月见面会",
+      "title": "ComfyUI 官方洛杉矶二月见面会"
+    },
+    "local-mcp": {
+      "dateLabel": "2026年8月26日 · 上午10点（PT）",
+      "description": "通过 MCP 在本地运行 ComfyUI：现场演示如何驱动你自己的智能体与硬件，用你已经在使用的工具来构建并运行工作流。",
+      "location": "线上",
+      "media": "本地 MCP：用你的智能体与硬件运行 ComfyUI 直播",
+      "title": "本地 MCP：用你的智能体与硬件运行 ComfyUI"
+    },
+    "low-rank-adapters-comfyui-chill": {
+      "dateLabel": "2025年10月15日",
+      "description": "生成式媒体创业公司 daisy 的 Gabriel 和 Carlo 主持了这场实操活动，带参与者在 ComfyUI 中搭建节点工作流。",
+      "location": "地点未列出",
+      "media": "low rank adapters 呈现：ComfyUI & Chill",
+      "title": "low rank adapters 呈现：ComfyUI & Chill"
+    },
+    "mutek-3d-projection-mapping": {
+      "ctaLabel": "报名",
+      "dateLabel": "2026年8月27日 · 下午1:30（ET）",
+      "description": "与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。",
+      "featured": {
+        "media": "MUTEK：面向 3D 投影映射的生成式 AI"
+      },
+      "location": "Édifice Wilder，加拿大魁北克蒙特利尔",
+      "title": "MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory"
+    },
+    "nvidia-rtx-mini-hackathon": {
+      "dateLabel": "2025年6月26日",
+      "description": "Comfy Org 在 GitHub 总部举办了首届 ComfyUI 黑客松，由 NVIDIA 联合赞助，奖品包括两块 RTX 5090。",
+      "location": "美国加州旧金山",
+      "media": "ComfyUI x NVIDIA RTX 黑客松（迷你黑客松）@ GitHub 总部",
+      "title": "ComfyUI x NVIDIA RTX 黑客松（迷你黑客松）@ GitHub 总部"
+    },
+    "nyc-april-meetup-2025": {
+      "dateLabel": "2025年4月3日",
+      "description": "四月的见面会共有 131 人到场。",
+      "location": "美国纽约 91 E 3rd St",
+      "media": "ComfyUI 官方纽约四月见面会",
+      "title": "ComfyUI 官方纽约四月见面会"
+    },
+    "nyc-august-meetup-2025": {
+      "dateLabel": "2025年8月",
+      "description": "八月的见面会共有 399 人到场，现场有一场关于 Wan 2.2 的分享。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约八月见面会",
+      "title": "ComfyUI 官方纽约八月见面会"
+    },
+    "nyc-creative-ai-august-forum": {
+      "dateLabel": "2026年8月13日",
+      "description": "八月论坛共有 433 人报名。现场演示包括 Livepeer Agent、在 ComfyUI 中运行的 MiniMax H3，以及 MetaDJ 带来的 AI 生成音乐表演。",
+      "location": "美国纽约",
+      "media": "NYC Creative AI 八月论坛",
+      "title": "NYC Creative AI 八月论坛"
+    },
+    "nyc-creative-ai-july-forum": {
+      "dateLabel": "2026年7月10日",
+      "description": "七月论坛共有 445 人报名。该系列自本期起从 ComfyUI NYC 更名，但仍以 ComfyUI 为核心。",
+      "location": "美国纽约",
+      "media": "NYC Creative AI 七月论坛（前身为 ComfyUI NYC）",
+      "title": "NYC Creative AI 七月论坛（前身为 ComfyUI NYC）"
+    },
+    "nyc-december-meetup-2025": {
+      "dateLabel": "2025年12月10日",
+      "description": "十二月的见面会上，Yondon Fu（Daydream）与 Alex Katzfey（Comfydock）做了分享。",
+      "location": "美国纽约",
+      "title": "ComfyUI 官方纽约见面会（十二月）"
+    },
+    "nyc-february-meetup-2025": {
+      "dateLabel": "2025年2月",
+      "description": "二月的见面会共有 64 人到场。活动由 NYC Creative AI 呈现，Daydream、Livepeer 与 ZeroSpace 共同主办。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约二月见面会",
+      "title": "ComfyUI 官方纽约二月见面会"
+    },
+    "nyc-february-meetup-2026": {
+      "dateLabel": "2026年2月25日",
+      "description": "二月的 ComfyUI 见面会在 ZeroSpace 举行。",
+      "location": "美国纽约",
+      "title": "ComfyUI 见面会（二月）"
+    },
+    "nyc-january-meetup-2026": {
+      "dateLabel": "2026年1月30日",
+      "description": "一月的见面会共有 425 人到场，现场公布了 Comfy Cloud 的相关消息。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约一月见面会",
+      "title": "ComfyUI 官方纽约一月见面会"
+    },
+    "nyc-july-meetup-2025": {
+      "dateLabel": "2025年7月",
+      "description": "七月的见面会在 ZeroSpace 举行，共有 224 人到场。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约七月见面会",
+      "title": "ComfyUI 官方纽约七月见面会"
+    },
+    "nyc-june-meetup-2025": {
+      "dateLabel": "2025年6月",
+      "description": "六月的见面会在 ZeroSpace 举行，共有 179 人到场。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约六月见面会",
+      "title": "ComfyUI 官方纽约六月见面会"
+    },
+    "nyc-march-meetup-women-in-ai-2025": {
+      "dateLabel": "2025年3月12日",
+      "description": "三月的见面会以 AI 领域的女性为主题。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约三月见面会：致敬 AI 领域的女性",
+      "title": "ComfyUI 官方纽约三月见面会：致敬 AI 领域的女性"
+    },
+    "nyc-may-meetup-2025": {
+      "dateLabel": "2025年5月",
+      "description": "五月的见面会在 ZeroSpace 举行，共有 209 人到场。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约五月见面会",
+      "title": "ComfyUI 官方纽约五月见面会"
+    },
+    "nyc-october-meetup-2025": {
+      "dateLabel": "2025年10月",
+      "description": "十月的见面会共有 280 人到场，现场有一场关于 LTX-2 的分享。",
+      "location": "美国纽约",
+      "media": "ComfyUI 官方纽约十月见面会",
+      "title": "ComfyUI 官方纽约十月见面会"
+    },
+    "nyc-secret-sauce-workshop": {
+      "dateLabel": "2025年12月5日",
+      "description": "这场活动由 School of Visual Arts 的 MFA Interaction Design 项目与 Secret Sauce 共同举办。",
+      "location": "美国纽约",
+      "media": "AI Creative / ComfyUI 纽约活动（与 Secret Sauce 共同举办）",
+      "title": "AI Creative / ComfyUI 纽约活动（与 Secret Sauce 共同举办）"
+    },
+    "production-pipeline": {
+      "description": "Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。",
+      "media": "重塑生产流水线直播回放",
+      "title": "重塑生产流水线"
+    },
+    "sf-meetup-github": {
+      "dateLabel": "2025年1月",
+      "description": "Comfy Org 首场官方旧金山见面会在 GitHub 总部举行。活动由 Charlene、Yoland、Robin Huang 和 Jo Zhang 主持，Sahar Mor 联合主持。",
+      "location": "美国加州旧金山",
+      "media": "ComfyUI 官方旧金山见面会 @ GitHub",
+      "title": "ComfyUI 官方旧金山见面会 @ GitHub"
+    },
+    "tokyo-comfyui-meetup": {
+      "dateLabel": "2024年9月27日",
+      "description": "这是 Comfy Org 首次在海外举办见面会，地点在东京。核心开发者 Charlene 与 Yoland 到场参与。",
+      "location": "日本东京",
+      "media": "Tokyo ComfyUI Meet Up（東京ComfyUI交流イベント）",
+      "title": "Tokyo ComfyUI Meet Up（東京ComfyUI交流イベント）"
+    },
+    "ucan-agentic-commerce": {
+      "ctaLabel": "报名",
+      "dateLabel": "2026年9月13日 · 下午2:00至6:30（PT）",
+      "description": "UCAN（由阿里巴巴设计主办）关于智能体商务的聚会，探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。",
+      "location": "Plug and Play 科技中心，加州森尼韦尔",
+      "media": "UCAN：智能体商务，设计下一代商业基础设施",
+      "title": "UCAN：智能体商务，设计下一代商业基础设施（特邀 Jo Zhang）"
+    },
+    "UPCOMING_LIVESTREAM": "即将直播",
+    "video-model-showdown": {
+      "description": "Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。",
+      "location": "线上",
+      "media": "视频模型对决直播回放",
+      "title": "视频模型对决：开源与付费 AI 视频模型"
+    }
+  },
+  "flux3": {
+    "flux3Page": {
+      "audio-control": {
+        "answer": "把音频分层描述，并分别点名：环境音、音乐、人声。每一项都会作为独立的音轨生成。把它们塞进一句话里，会让你对混音的控制变弱。",
+        "question": "如何控制 Flux 3 的音频？"
+      },
+      "bear-checkpoint": {
+        "description": "一头熊在检查站前逼近，游戏引擎般的质感稳定统一。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      },
+      "burned-in-text": {
+        "answer": "如果引号中的文字没有对应的出镜说话者，通常会被渲染成画面文字。想要念出来的台词：把台词放在引号里，描述一个出现在镜头中的说话者，并加上 \"no on-screen text, no subtitles\"。",
+        "question": "为什么我的文字变成了画面上的字幕，而不是被念出来？"
+      },
+      "cuts-not-reading": {
+        "answer": "相邻镜头如果太相似，就不会被看成一次剪辑。在镜头之间改变景别、场景或色调，剪切点才会清晰可辨。",
+        "question": "为什么我的剪切点看起来不像剪切？"
+      },
+      "drone-transition": {
+        "description": "无人机从一个场景穿越到下一个场景。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      },
+      "lake-valley": {
+        "description": "宁静的像素风湖谷，镜头推进时每个细节都清晰保留。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      },
+      "multi-shot": {
+        "answer": "可以。把提示词写成 \"SHOT ONE ... HARD CUT. SHOT TWO ...\" 的结构，它就会在一次生成中产生真正的剪切点。如果要一镜到底，请明确写出 \"one continuous unbroken shot\"。",
+        "question": "Flux 3 能在一次生成里输出多个镜头吗？"
+      },
+      "music-bed": {
+        "answer": "可以。在镜头结构旁边直接写明，例如 \"one continuous music bed across all three shots\"。",
+        "question": "可以让同一段配乐贯穿多个镜头吗？"
+      },
+      "outlaws": {
+        "description": "匪徒骑马进城，马蹄声与人群嘈杂声随画面同步生成。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      },
+      "porcelain": {
+        "description": "碎裂的青花瓷在白色背景上复原，每一片碎片都被倒放追踪。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      },
+      "prompt-examples": {
+        "answer": "三个可直接复制使用的示例（提示词保留英文原文，以保证效果一致）。\n\n日常描述：A cozy ramen shop on a rainy Tokyo night: steam rising from the broth, neon reflections in the window puddles, the cook working calmly. Rain patter and quiet kitchen sounds.\n\n带台词：A weather presenter on camera in front of a stylized storm map, speaking directly to the lens: \"Storm season is here and this time, we're ready.\" Confident delivery, clean studio lighting. No on-screen text, no subtitles.\n\n多镜头：SHOT ONE: wide aerial of a desert highway at dawn, a single red car speeding through. HARD CUT. SHOT TWO: interior close-up, the driver's hands drumming the wheel to the radio. HARD CUT. SHOT THREE: from the roadside, the car shrinking into the heat haze. Warm engine hum under one continuous music bed across all three shots.",
+        "question": "一个好的 Flux 3 提示词是什么样的？"
+      },
+      "prompt-rewriting": {
+        "answer": "它会改写，但你明确指定的内容会被保留。你对画面描述得越精确，成片就越由你决定，而不是由模型决定。含糊的提示词等于把控制权交给改写环节。",
+        "question": "Flux 3 会改写我的提示词吗？会不会覆盖我的要求？"
+      },
+      "prompt-syntax": {
+        "answer": "不需要。Flux 3 会在生成前理解并改写你的提示词，因此用日常语言就可以。像给同事交代拍摄需求那样描述画面即可。堆砌关键词或写成图注式短语没有额外帮助。",
+        "question": "Flux 3 需要特殊的提示词语法或关键词吗？"
+      },
+      "three-dancers": {
+        "description": "三位舞者、三个房间、同一个节奏，每一格画面的节拍都锁得住。",
+        "name": "Flux 3",
+        "note": "按量付费"
+      }
+    }
+  },
+  "geminiOmni": {
+    "geminiOmniPage": {
+      "cavemen-discover-fire": {
+        "description": "穴居人遇见未来",
+        "name": "穴居人发现火"
+      },
+      "commercial-use": {
+        "answer": "可以。通过 ComfyUI 合作伙伴节点生成的内容可用于商业作品，但须遵守 ComfyUI 的条款与 Google 的使用政策。所有视频都带有 SynthID 水印，观众无法察觉，但可通过程序检测以追溯来源。",
+        "question": "我可以将 Gemini Omni 1.1 Flash 用于商业用途吗？"
+      },
+      "compared-to-previous-omni-flash": {
+        "answer": "Gemini Omni 1.1 Flash 完全取代此前各版本的 Omni Flash，沿用同样的生成与编辑工作流，且生成更快。1.1 版本让你能以 360p 更高效地打草稿，放大到 4K 分辨率，并延长场景以讲述更长的故事。",
+        "question": "Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？"
+      },
+      "cost-in-comfyui": {
+        "answer": "Gemini Omni 1.1 Flash 按每次生成通过 ComfyUI 积分计费，费用随分辨率而变。当前费率请见 ComfyUI 定价页面。无需单独订阅 Google。",
+        "question": "在 ComfyUI 中使用 Gemini Omni 1.1 Flash 的费用是多少？"
+      },
+      "dog-with-hot-dog": {
+        "description": "狗与热狗",
+        "name": "穿热狗装的狗"
+      },
+      "edit-an-existing-video": {
+        "answer": "可以。将片段接入节点的视频输入并描述改动，Gemini Omni 1.1 Flash 会在保留其余部分的前提下应用该改动。简短的提示词效果最好，例如「make this video anime」「change the lighting to be more dramatic」。若只想改动单个元素，可加上「keep everything else the same」。",
+        "question": "Gemini Omni 1.1 Flash 可以编辑已有视频吗？"
+      },
+      "extend-a-video": {
+        "answer": "可以。将任务类型设为 extend 后，Gemini Omni 1.1 Flash 会读取片段此前的运动与构图并延续该镜头，同时保持人物特征与光照一致。诸如「continue the shot: the woman finishes the violin solo and takes a bow」这样的提示词，会从片段结束处接续下去。",
+        "question": "Gemini Omni 1.1 Flash 可以延长视频吗？"
+      },
+      "floor-robot": {
+        "description": "缓缓推近的扫地机器人",
+        "name": "扫地机器人广告"
+      },
+      "generate-your-shot": {
+        "description": "最长 10 秒，最高 4K。",
+        "title": "生成你的镜头"
+      },
+      "prompt-the-scene": {
+        "description": "运镜、动作、节奏、对白",
+        "title": "描述你的场景"
+      },
+      "resolutions-and-aspect-ratios": {
+        "answer": "Gemini Video Omni 节点可输出 360p、720p、1080p 或 4K 的 Gemini Omni 1.1 Flash 视频，宽高比为 16:9 或 9:16。默认是横屏；竖屏片段请设为 9:16。分辨率越高，生成耗时越长。",
+        "question": "在 ComfyUI 中，Gemini Omni 1.1 Flash 支持哪些分辨率和宽高比？"
+      },
+      "saxophone-halftone": {
+        "description": "半调风格的萨克斯独奏",
+        "name": "萨克斯独奏"
+      },
+      "seasonal-timelapse": {
+        "description": "冬去春来，四季轮回",
+        "name": "四季延时"
+      },
+      "stone-head-speaks": {
+        "description": "石像开口说话",
+        "name": "石像开口"
+      },
+      "upload-references": {
+        "title": "上传你的参考素材"
+      },
+      "what-is-omni-flash": {
+        "answer": "Gemini Omni 1.1 Flash 是 Google 的多模态视频模型，为快速视频生成、编辑与运镜控制而打造。它同时处理文本、图像、音频与视频，生成自带音轨的片段，并可依据自然语言指令编辑已有视频。它取代了此前各版本的 Gemini Omni Flash。",
+        "question": "什么是 Gemini Omni 1.1 Flash？"
+      }
+    },
+    "premiumNote": "按量付费"
+  },
+  "learningTutorials": {
+    "ad_broll_creation": {
+      "description": "在一套 ComfyUI 工作流中以三种方式创建或编辑 B-Roll 素材：用提示词生成片段、将主体置入参考场景，或修改现有素材。",
+      "title": "B-Roll 素材制作"
+    },
+    "ad_moodboard_creation": {
+      "description": "通过此 ComfyUI 工作流，将情绪板参考图转化为符合品牌调性的全新广告视觉：用 Recraft 提取风格，或用 GPT Image 2 调整元素。",
+      "title": "情绪板制作"
+    },
+    "ad_ooh_visualization": {
+      "description": "用此 ComfyUI 工作流将海报置入真实的户外广告场景：通过 Gemini Image 2 自动生成广告牌、公交站台和楼体包装样机。",
+      "title": "户外广告可视化"
+    },
+    "ad_product_photography": {
+      "description": "在一套 ComfyUI 工作流中生成、修饰并让产品照片动起来：用 GPT Image 置入产品，蒙版编辑细节，再生成主打视频。",
+      "title": "产品摄影"
+    },
+    "ad_storyboard_creation": {
+      "description": "通过此 ComfyUI 工作流，从镜头表生成广告故事板，再渲染精致的风格帧：两个阶段分别使用 GPT Image 与 NanoBanana Pro。",
+      "title": "故事板制作"
+    },
+    "ad_talent_casting": {
+      "description": "在开拍前用此 ComfyUI 工作流预览演员在场景中的效果：用 Gemini Image 2 生成预演静帧，再用 Kling 将其动画化为短片。",
+      "title": "演员选角"
+    },
+    "animation_background_and_asset_generation": {
+      "description": "用此 ComfyUI 工作流将制作帧的风格应用到背景与道具：GPT Image 2 将草图绘制成匹配风格，并自动去除背景。",
+      "title": "背景与素材生成"
+    },
+    "animation_background_and_compositing": {
+      "description": "用此 ComfyUI 工作流让背景动起来并合成角色：Cdance 将静态背景生成循环动画，再以匹配的光照将角色融合其中。",
+      "title": "背景与合成"
+    },
+    "animation_character_sheet": {
+      "description": "用此 ComfyUI 工作流将概念美术转化为完整的角色设定表：GPT Image 2 生成全身转身视图与面部特写，并自动拼接成一张图。",
+      "title": "角色设定表"
+    },
+    "animation_concept_exploration": {
+      "description": "用此 ComfyUI 工作流将概念美术转化为可摆姿的 3D 代理：Tripo 生成模型，再从任意角度生成风格化静帧或运镜视频。",
+      "title": "概念探索"
+    },
+    "animation_in_betweening": {
+      "description": "用此 ComfyUI 工作流从关键帧序列生成中间帧：Wan 2.2 对每一对关键帧进行插值，拼接成一段完整的角色动画。",
+      "title": "中间帧绘制"
+    },
+    "animation_keyframe_exploration": {
+      "description": "用此 ComfyUI 工作流在任意机位角度生成角色关键帧：设置方向、俯仰和距离，再由 GPT Image 2 渲染出画面。",
+      "title": "关键帧探索"
+    },
+    "basics_image_to_video": {
+      "description": "让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。",
+      "title": "ComfyUI 新手教程：图生视频、运动控制与放大 (2026)"
+    },
+    "basics_inpainting": {
+      "description": "在 ComfyUI 中编辑与放大图像：用局部重绘遮罩改图，用扩图扩展画面，再通过放大提升分辨率。",
+      "title": "ComfyUI 新手教程：局部重绘、扩图与放大 (2026)"
+    },
+    "basics_loras_style_controlnets": {
+      "description": "进阶了解 LoRA、风格迁移与 ControlNet：各自的作用，以及如何将它们接入 ComfyUI 工作流。",
+      "title": "ComfyUI 新手教程：LoRA、风格迁移与 ControlNet (2026)"
+    },
+    "basics_node_graph": {
+      "description": "面向初学者的 ComfyUI 节点图入门：了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。",
+      "title": "ComfyUI 新手教程：完整节点图基础 (2026)"
+    },
+    "basics_text_to_image": {
+      "description": "搭建你的第一条文生图工作流，再将它改造为图生图：提示词、采样器、去噪强度，以及各自的适用场景。",
+      "title": "ComfyUI 新手教程：文生图与图生图工作流 (2026)"
+    },
+    "cleanplate_walkthrough_v03": {
+      "title": "净板演练"
+    },
+    "deaging_workflow_v03": {
+      "title": "减龄工作流"
+    },
+    "dougHogan": {
+      "name": "Doug Hogan"
+    },
+    "frame_adjustments_demo_v03": {
+      "title": "帧调整演示"
+    },
+    "mattes_and_utilities_v03": {
+      "title": "遮罩与实用工具"
+    },
+    "seedance_demo_comfyui_v03": {
+      "title": "Seedance ComfyUI 演示"
+    },
+    "shaneFu": {
+      "name": "Shane Fu"
+    },
+    "skyreplacement_smaller_v06": {
+      "title": "天空替换"
+    }
+  },
+  "ltx": {
+    "freeNote": "免费包含",
+    "ltxPage": {
+      "astronaut": {
+        "description": "覆霜的宇航员仰望极光。"
+      },
+      "blackbird": {
+        "description": "战斗机在月光下的风暴海面上急转倾斜。"
+      },
+      "circuitry": {
+        "description": "发光的人像举起插着白花的玻璃杯饮下。"
+      },
+      "clip-length": {
+        "answer": "通过 Partner Nodes，Fast 支持 2 到 20 秒，超过 10 秒的片段会限制在 720p 或 1080p、24 或 25 FPS。Pro 支持 2 到 10 秒。LTX-2.5 还配备了一个实验性的时长预测模块，能读取提示词中的动作内容，在 diffusion 开始前就确定片段长度。",
+        "question": "LTX-2.5 能生成多长的视频？"
+      },
+      "diffusion-fidelity-rendering": {
+        "answer": "这是本次更新的核心变化。模型不再将算力平均分配到整个场景，而是按复杂度分配。结构信息优先生成：运动、构图与取景在时间维度压缩 8 倍的潜空间中生成，同时生成一组高保真关键帧，场景越复杂，关键帧越多，反之则越少。随后，一个专门的像素级 diffusion 阶段会结合结构信息与关键帧渲染出最终视频。纹理、材质、复杂物体与人脸都能以像素级精度呈现，画面越繁忙，占用的渲染算力也越多。",
+        "question": "Diffusion Fidelity Rendering 是什么？"
+      },
+      "drones": {
+        "description": "重型无人机吊运山羊飞越雾气缭绕的山脉。"
+      },
+      "fine-tuning": {
+        "answer": "可以。基础 checkpoint 就是为微调而设计的，因此你可以在自己的数据上微调原始模型。",
+        "question": "LTX-2.5 可以微调吗？"
+      },
+      "horseman": {
+        "description": "身披长衣的骑手与马伫立云端，俯瞰地球。"
+      },
+      "is-it-free": {
+        "question": "LTX-2.5 可以免费使用吗？"
+      },
+      "multi-shot": {
+        "answer": "能。一次生成就能产出多个连贯的镜头，并在镜头切换之间保持角色、环境、光线、配音与风格的一致性。你可以通过一次运行得到一段连续的序列，而不必事后再拼接多次独立生成的结果。",
+        "question": "LTX-2.5 能生成多个镜头吗？"
+      },
+      "native-audio": {
+        "answer": "会。同步音视频能力延续自 LTX-2.3，并且在多镜头生成中，配音能在不同镜头之间保持一致。",
+        "question": "LTX-2.5 会生成音频吗？"
+      },
+      "portrait": {
+        "description": "饱经风霜的面孔从深深的阴影中凝视。"
+      },
+      "run-in-comfyui": {
+        "question": "如何在 ComfyUI 中运行 LTX-2.5？"
+      },
+      "what-is-ltx": {
+        "question": "LTX-2.5 是什么？"
+      },
+      "whats-new": {
+        "question": "LTX-2.5 相比 LTX-2.3 有哪些新变化？"
+      },
+      "which-variant": {
+        "question": "应该使用哪个 LTX-2.5 版本？"
+      }
+    },
+    "modelName": "LTX 2.5",
+    "premiumNote": "按量付费"
+  },
+  "minimax": {
+    "minimaxPage": {
+      "backyard-hero": {
+        "description": "小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。",
+        "name": "后院小英雄",
+        "note": "参考生成视频"
+      },
+      "cost-per-generation": {
+        "answer": "它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。",
+        "question": "MiniMax H3 每次生成需要多少费用？"
+      },
+      "ice-rider": {
+        "description": "骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。",
+        "name": "冰川峡谷骑手",
+        "note": "文本生成视频"
+      },
+      "liquid-chrome": {
+        "description": "青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。",
+        "name": "液态铬",
+        "note": "文本生成视频"
+      },
+      "native-audio": {
+        "answer": "会。每个片段都带有原生立体声音频。当你输入音频时，H3 会以该音轨为条件进行生成，而不是覆盖或丢弃它。",
+        "question": "MiniMax H3 会生成音频吗？"
+      },
+      "night-ascent": {
+        "description": "头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。",
+        "name": "夜间攀登",
+        "note": "文本生成视频"
+      },
+      "open-weights": {
+        "answer": "是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。",
+        "question": "MiniMax H3 提供开源权重吗？"
+      },
+      "resolution-length": {
+        "answer": "最高 2K，每次生成 5 到 15 秒。",
+        "question": "MiniMax H3 支持哪些分辨率和片段时长？"
+      },
+      "run-in-comfyui": {
+        "question": "如何在 ComfyUI 中运行 MiniMax H3？"
+      },
+      "stay-comfy-can": {
+        "description": "一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。",
+        "name": "Stay Comfy 罐",
+        "note": "参考生成视频"
+      },
+      "sunken-temple": {
+        "description": "光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。",
+        "name": "沉没神殿",
+        "note": "文本生成视频"
+      },
+      "what-is-minimax": {
+        "question": "MiniMax H3 是什么？"
+      }
+    }
+  },
+  "minimaxLicense": {
+    "minimaxLicenseComparison": {
+      "client-work": {
+        "cells": {
+          "0": "是",
+          "1": "是"
+        },
+        "label": "客户与下游项目"
+      },
+      "commercial-use": {
+        "cells": {
+          "0": "是，完整商业权利",
+          "1": "是，完整商业权利"
+        },
+        "label": "产出的商业使用"
+      },
+      "domains": {
+        "cells": {
+          "0": "1 个",
+          "1": "定制"
+        },
+        "label": "域名数量"
+      },
+      "enterprise": {
+        "label": "企业版"
+      },
+      "fine-tuning": {
+        "cells": {
+          "0": "是",
+          "1": "是"
+        },
+        "label": "微调与 LoRA 训练"
+      },
+      "licensed-users": {
+        "cells": {
+          "0": "最多 10 个",
+          "1": "不设上限"
+        },
+        "label": "授权用户"
+      },
+      "model-versions": {
+        "cells": {
+          "0": "蒸馏开源权重版本",
+          "1": "所有版本，包括未蒸馏权重"
+        },
+        "label": "模型版本"
+      },
+      "overage": {
+        "cells": {
+          "0": "0.036 美元",
+          "1": "联系销售"
+        },
+        "label": "超出部分每视频秒价格"
+      },
+      "price": {
+        "cells": {
+          "0": "5,000 美元 / 月起",
+          "1": "联系销售"
+        },
+        "label": "价格"
+      },
+      "price-per-video-second": {
+        "cells": {
+          "0": "0.108 美元",
+          "1": "联系销售"
+        },
+        "label": "每视频秒价格（套餐内）"
+      },
+      "professional": {
+        "label": "专业版"
+      },
+      "term": {
+        "cells": {
+          "0": "按月",
+          "1": "至少 12 个月"
+        },
+        "label": "期限"
+      },
+      "video-seconds": {
+        "cells": {
+          "0": "约 46,250",
+          "1": "定制"
+        },
+        "label": "包含视频秒数"
+      }
+    },
+    "minimaxLicensePage": {
+      "audio-music": {
+        "answer": "涵盖。通过 Comfy 获取的 MiniMax 商业许可涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，全球可用，视频、音频与音乐都在同一份协议之下。MiniMax Music 3 拥有自己的社区许可，年收入低于 2000 万美元的公司可免费商用；超过该门槛，同样需要商业许可。",
+        "question": "许可涵盖 MiniMax 的音频和音乐模型吗？"
+      },
+      "cloud-already-covered": {
+        "answer": "不需要。Comfy Cloud 订阅已包含你所生成内容的商业权利。此许可面向在自有硬件上本地运行 H3 的场景。",
+        "question": "我在使用 Comfy Cloud，还需要许可吗？"
+      },
+      "enterprise": {
+        "title": "企业版"
+      },
+      "not-covered": {
+        "answer": "转售或再许可模型，以及运营模型市场、API 聚合、推理即服务或模型路由平台。许可用于构建你自己的产品和内容。",
+        "question": "哪些情况不在许可范围内？"
+      },
+      "plans": {
+        "answer": "专业版是面向交付客户项目的工作室和团队的固定价格月度许可，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版是年度协议，提供定制批量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会帮你选择。",
+        "question": "专业版和企业版有什么区别？"
+      },
+      "pricing-parity": {
+        "answer": "不会。**MiniMax 要求其商业许可经销商之间保持价格一致**，因此通过 Comfy 购买许可不会产生经销商加价，价格也不会高于其他授权渠道。",
+        "question": "通过 Comfy 购买商业许可会更贵吗？"
+      },
+      "professional": {
+        "description": "面向交付客户项目的工作室和团队的固定价格月度许可。最多 10 个授权用户，使用蒸馏开源权重模型版本。",
+        "title": "专业版"
+      },
+      "whats-included": {
+        "answer": "产出的完整商业权利：你生成的一切都归你所有，可自由使用、出售和发布。可针对你的角色、风格或产品进行微调和 LoRA 训练。涵盖客户项目与下游用途，创意代理商和工作室都可以将 H3 用于客户项目。",
+        "question": "许可包含什么？"
+      },
+      "who-needs-a-license": {
+        "question": "谁需要 MiniMax H3 商业许可？"
+      }
+    }
+  },
+  "minimaxMusic3": {
+    "minimaxMusic3Page": {
+      "audio-quality": {
+        "answer": "32 kHz、16 位立体声 WAV。",
+        "question": "MiniMax Music 3 输出的音频质量如何？"
+      },
+      "commercial-use": {
+        "answer": "可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license)即涵盖这一授权。",
+        "question": "我可以将 MiniMax Music 3 用于商业用途吗？"
+      },
+      "control-vocals": {
+        "answer": "可以。你可以设定性别、音色、演唱风格、和声、伴唱以及音效。",
+        "question": "我可以控制人声吗？"
+      },
+      "describe-the-sound": {
+        "description": "风格、情绪、乐器",
+        "title": "描述你想要的声音"
+      },
+      "free-to-use": {
+        "answer": "可以。MiniMax Music 3 依据 [MiniMax 社区许可](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)提供开源权重，年收入低于 2000 万美元的公司可免费使用，包括商业用途。",
+        "question": "MiniMax Music 3 可以免费使用吗？"
+      },
+      "generate-your-song": {
+        "description": "完整曲目，最长五分钟",
+        "title": "生成你的歌曲"
+      },
+      "how-to-prompt": {
+        "question": "如何为 MiniMax Music 3 编写提示词？"
+      },
+      "how-to-use": {
+        "answer": "体验 MiniMax Music 3 最简单的方式是连接 Comfy Cloud，在示例工作流中搜索对应的工作流并运行！若要在本地使用该模型，请下载 Comfy Desktop，新建一个 ComfyUI 实例或更新现有实例，在示例工作流中搜索 MiniMax Music 3，下载模型后运行。",
+        "question": "如何使用 MiniMax Music 3？"
+      },
+      "sample-01": {
+        "description": "福音灵魂乐"
+      },
+      "sample-02": {
+        "description": "摇滚（纯音乐）"
+      },
+      "song-length": {
+        "answer": "单次生成最长五分钟。结构在整首曲目中保持稳定，因此旋律、节奏和人声特征从前奏到尾声都保持一致。",
+        "question": "MiniMax Music 3 生成的歌曲能有多长？"
+      },
+      "what-is-minimax-music-3": {
+        "answer": "一款开源权重的音乐生成模型，能创作完整的歌曲。给它歌词和对声音的描述，它就会返回一首带人声和完整编曲的成品曲目。",
+        "question": "MiniMax Music 3 是什么？"
+      },
+      "write-your-lyrics": {
+        "description": "用你自己的词，或根据主题自动生成",
+        "title": "写下你的歌词"
+      }
+    }
+  },
+  "qwenImage21": {
+    "freeNote": "免费包含",
+    "qwenImage21Page": {
+      "character-sheet": {
+        "description": "同一角色四个视角保持一致，从护目镜到靴子，呈现在干净的白底上。",
+        "name": "使用 Qwen Image 2.1 生成的角色三视图"
+      },
+      "comfy-workflows": {
+        "answer": "生成的图像可以成为更大规模、可复用流程中的一步。你可以加入 ControlNet 或 LoRA，将结果继续传入放大、动画或其他模型，同时让每个步骤都保持可见、可调。",
+        "question": "为什么要在 ComfyUI 工作流中使用 Qwen Image 2.1？"
+      },
+      "game-environment": {
+        "description": "瀑布城堡与绳桥构成的绘画风概念场景，可直接用于关卡设定。",
+        "name": "使用 Qwen Image 2.1 生成的浮空岛游戏场景"
+      },
+      "harlem-stoop": {
+        "description": "牛仔套装、铸铁栏杆与暖色砖墙：肤色真实、布料细节丰富的自然人像。",
+        "name": "使用 Qwen Image 2.1 生成的哈莱姆门廊人像"
+      },
+      "holi-powder": {
+        "description": "洋红、金黄与钴蓝彩粉在纯白背景前凝固半空，每一粒都清晰锐利。",
+        "name": "使用 Qwen Image 2.1 生成的洒红节彩粉"
+      },
+      "how-to-run": {
+        "question": "如何在 ComfyUI 中运行 Qwen Image 2.1？"
+      },
+      "image-editing": {
+        "answer": "可以。输入图像并描述改动：替换物体、重塑场景风格、重新打光或修改图中文字。生成与编辑集成在同一模型中，无需加载第二个模型。",
+        "question": "Qwen Image 2.1 可以编辑现有图像吗？"
+      },
+      "infographic": {
+        "description": "五步\"从咖啡果到咖啡杯\"说明图，标题、编号与标签一次生成即工整清晰。",
+        "name": "使用 Qwen Image 2.1 生成的咖啡信息图"
+      },
+      "interior-archviz": {
+        "description": "柔和日光中的静谧客厅：橡木、亚麻、纸灯笼，以及窗外的白桦林。",
+        "name": "使用 Qwen Image 2.1 生成的室内建筑可视化"
+      },
+      "license": {
+        "answer": "Qwen Image 2.1 以 Apache 2.0 许可开源权重发布，你可以本地运行、微调，并将输出用于商业项目。在 Comfy Cloud 上它包含在套餐内，无需按张付费。",
+        "question": "Qwen Image 2.1 可以商用吗？"
+      },
+      "text-rendering": {
+        "answer": "文字渲染是该模型的招牌能力。海报、信息图、幻灯片、漫画和招牌中的中英文文字都能清晰生成，你可以直接把需要的文字写进提示词，而无需事后合成。",
+        "question": "Qwen Image 2.1 的文字渲染效果如何？"
+      },
+      "what-is-qwen-image-2-1": {
+        "answer": "Qwen Image 2.1 是阿里巴巴 Qwen 团队推出的最新图像模型。同一模型同时支持文生图与基于指令的图像编辑，专注于精准的文字渲染和原生高分辨率输出。它可在 ComfyUI 中原生运行。",
+        "question": "Qwen Image 2.1 是什么？"
+      }
+    }
+  },
+  "seedance": {
+    "clips": {
+      "balloons": {
+        "description": "动物们走过雨后的城市街道，身后是巨大的气球字母。"
+      },
+      "city": {
+        "description": "贴近地面掠过湿漉漉的城市路面。"
+      },
+      "giraffe": {
+        "description": "一只长颈鹿一跃穿过熊熊火圈。"
+      },
+      "grass": {
+        "description": "一片草地从空荡的办公楼中间蔓延开来。"
+      },
+      "shark": {
+        "description": "狗狗叼回飞盘，身后鲨鱼破浪跃起。"
+      },
+      "worldcup": {
+        "description": "看台上人声鼎沸的球迷，手持镜头拍摄。"
+      }
+    },
+    "seedancePage": {
+      "clip-length": {
+        "answer": "最长可原生生成 30 秒。需要更长的成片时，你可以在画布上串联多个镜头。",
+        "question": "Seedance 2.5 能生成多长的视频？"
+      },
+      "commercial-use": {
+        "answer": "可以。渲染结果包含商业使用授权，且不带水印。",
+        "question": "视频可以商用吗？"
+      },
+      "draft-free": {
+        "description": "同一工作流，零积分消耗",
+        "title": "先用其他模型免费打样"
+      },
+      "is-it-free": {
+        "answer": "Seedance 采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一镜头，只在最终渲染时消耗积分。",
+        "question": "Seedance 2.5 可以免费使用吗？"
+      },
+      "native-audio": {
+        "answer": "会。对白、音乐和音效会与画面一同生成，你无需事后再单独配乐配音。",
+        "question": "Seedance 2.5 会生成音频吗？"
+      },
+      "run-in-comfyui": {
+        "answer": "打开 Seedance 工作流模板，或将 Seedance 添加到画布上的任意工作流中。它在 Comfy Cloud 上运行，因此你不需要本地 GPU。",
+        "question": "如何在 ComfyUI 中运行 Seedance 2.5？"
+      },
+      "switch-to-seedance": {
+        "description": "最终渲染，原生音频",
+        "title": "切换到 Seedance 2.5"
+      },
+      "what-is-seedance": {
+        "answer": "字节跳动的电影级视频模型。给它一段文本提示或一张参考图，它就能渲染出带原生音频的镜头。在 Comfy 上，你可以在画布上与其他模型一起执导它。",
+        "question": "Seedance 2.5 是什么？"
+      },
+      "whats-new-in-25": {
+        "answer": "更长的原生片段，以及比 2.0 多得多的参考输入支持。",
+        "question": "Seedance 2.5 相比 Seedance 2.0 有哪些新变化？"
+      },
+      "write-the-shot": {
+        "description": "运镜、主体、构图",
+        "title": "写下你的镜头"
+      }
+    },
+    "sharedCardIdentity": {
+      "name": "Seedance 2.5",
+      "note": "按量付费"
+    }
+  },
+  "wan3": {
+    "wan3Page": {
+      "clip-length": {
+        "answer": "2 到 30 秒均可，一镜到底地连续生成 — 无需拼接。音频为原生生成，也可以关闭。",
+        "question": "片段可以有多长？"
+      },
+      "how-to-run": {
+        "question": "如何在 ComfyUI 中运行 Wan 3.0？"
+      },
+      "prompting": {
+        "answer": "先从简单开始：主体、场景、动作 — 一句话就足以生成完整片段。想要更多控制，可以再叠加运镜、光线、风格与声音，或用 @ 语法直接引用你上传的素材：\"@Image1 走进门并说出 @Audio1 中的台词。\"提示词越长、越精确，输出就越贴近你的意图 — 最多支持 20,000 个字符。",
+        "question": "如何为 Wan 3.0 编写提示词？"
+      },
+      "video-editing": {
+        "answer": "可以。只需描述你想要的改动 — 移除某个物体、重新布光、替换主体 — 画面中的其他部分都会保持不变。它也可以延展已有素材。",
+        "question": "Wan 3.0 可以编辑我已有的视频吗？"
+      },
+      "what-is-wan-3": {
+        "answer": "阿里巴巴最新的视频模型。给它一段提示词、最多 20 个参考素材，甚至一份文档，它就能生成最长 30 秒并带原生音频的视频。",
+        "question": "Wan 3.0 是什么？"
+      },
+      "whats-new": {
+        "answer": "原生 30 秒片段、最多 20 个参考输入，以及用于快速且低成本生成的 480p 输出。",
+        "question": "Wan 3.0 相比 Wan 2.7 有哪些新变化？"
+      }
+    }
+  },
+  "wanAnimate2": {
+    "wanAnimate2Page": {
+      "run-wan-animate-2": {
+        "description": "最终渲染",
+        "title": "运行 Wan Animate 2"
+      },
+      "upload-your-reference": {
+        "description": "一张角色参考图，加上一段你想要迁移的动作驱动视频。",
+        "title": "上传你的参考素材"
+      },
+      "write-the-shot": {
+        "description": "添加提示词，零积分消耗",
+        "title": "写下你的镜头"
+      }
+    }
+  }
+}

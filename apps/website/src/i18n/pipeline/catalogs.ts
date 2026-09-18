@@ -87,3 +87,16 @@ export function machineLayer(
     })
   )
 }
+
+export function translatedLayer(
+  filename: string,
+  locale: Locale
+): TranslationLayer {
+  const approved = Object.fromEntries(
+    catalogEntries(filename).flatMap((entry) => {
+      const value = entry.approved[locale]
+      return value === undefined ? [] : [[entry.key, value]]
+    })
+  )
+  return { ...machineLayer(filename, locale), ...approved }
+}

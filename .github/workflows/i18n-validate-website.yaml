@@ -54,7 +54,7 @@ jobs:
       - name: Validate translations
         run: |
           pnpm --filter @comfyorg/website i18n:build-source
-          pnpm locale:check:website
+          pnpm locale:website:check
           pnpm --filter @comfyorg/website i18n:validate
 
       # The English source the validator checks against is generated. If it is
@@ -78,3 +78,6 @@ jobs:
             echo "$drift"
             exit 1
           fi
+
+      - name: Check generated data content
+        run: pnpm --filter @comfyorg/website i18n:write-data --check

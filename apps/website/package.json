@@ -38,7 +38,8 @@
     "hub:backfill-media-type": "tsx ./scripts/backfill-template-media-type.ts",
     "hub:generate-join": "tsx ./scripts/generate-template-model-join.ts",
     "i18n:build-source": "tsx ./scripts/i18n/build-content-source.ts",
-    "i18n:validate": "tsx ./scripts/i18n/validate-translations.ts"
+    "i18n:validate": "tsx ./scripts/i18n/validate-translations.ts",
+    "i18n:write-data": "tsx ./scripts/i18n/write-data-japanese.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
