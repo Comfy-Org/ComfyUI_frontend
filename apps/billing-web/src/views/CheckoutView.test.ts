@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
@@ -10,9 +11,9 @@ import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
 import {
+  challengedPendingOperation,
   createFakeBillingClient,
   failedOperation,
-  challengedPendingOperation,
   hostedPendingOperation,
   pendingOperation,
   previewOf,
@@ -21,7 +22,8 @@ import {
 import CheckoutView from '@/views/CheckoutView.vue'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
-const CHECKOUT_PATH = `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
+const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 
 /** The two values the view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
@@ -177,7 +179,7 @@ describe('CheckoutView', () => {
     const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
     recordBillingEntry(parseBillingEntry(next))
     await fake.router.push(next)
-    await waitFor(() => expect(true).toBe(true))
+    await nextTick()
 
     // The operation is still running against creator_monthly, so the page
     // stays on the quote that produced it rather than pricing another plan.
@@ -190,6 +192,44 @@ describe('CheckoutView', () => {
 
     await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('Creator · Monthly')).toBeInTheDocument()
+  })
+
+  it('re-quotes the deferred plan once a settled operation is dismissed', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.publishOperation(failedOperation('card_declined'))
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).toBeNull()
+    )
+
+    const next = `${ENTRY_QUERY_PATH}&plan=creator_annual`
+    fake.previewSubscribe.mockResolvedValue({
+      status: 'ok',
+      value: previewOf({ quote_id: 'q_2', quote_version: 7 })
+    })
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+    await nextTick()
+
+    // Dismissing the decline puts the form back; it must not price the plan
+    // the customer navigated away from.
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() =>
+      expect(fake.previewSubscribe).toHaveBeenLastCalledWith(
+        { planSlug: 'creator_annual' },
+        expect.anything()
+      )
+    )
+
+    reportConfirm('ctoken_1')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    expect(fake.subscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ plan_slug: 'creator_annual', quote_id: 'q_2' })
+    )
   })
 
   it("hands the form the quote and this deployment's key", async () => {

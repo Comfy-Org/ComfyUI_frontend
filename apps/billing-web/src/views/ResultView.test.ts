@@ -16,7 +16,8 @@ import {
 } from '@/test/fakeBillingClient'
 import ResultView from '@/views/ResultView.vue'
 
-const RESULT_PATH = '/v1/result?product=comfyui&return_to=comfyui_workspace'
+const RESULT_QUERY = 'product=comfyui&return_to=comfyui_workspace'
+const RESULT_PATH = `/v1/result?${RESULT_QUERY}&plan=creator_monthly`
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createStripeChallengePort: () => ({
@@ -24,7 +25,7 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
   })
 }))
 
-function renderResult(options: FakeBillingClientOptions = {}) {
+async function renderResult(options: FakeBillingClientOptions = {}) {
   recordBillingEntry(parseBillingEntry(RESULT_PATH))
   const fake = createFakeBillingClient(options)
   const router = createRouter({
@@ -34,6 +35,8 @@ function renderResult(options: FakeBillingClientOptions = {}) {
       { path: '/v1/checkout', component: { template: '<div />' } }
     ]
   })
+  await router.push(RESULT_PATH)
+  await router.isReady()
   render(ResultView, {
     global: {
       plugins: [createBillingI18n(), router],
@@ -45,7 +48,7 @@ function renderResult(options: FakeBillingClientOptions = {}) {
 
 describe('ResultView', () => {
   it('recovers what the scope is waiting on and shows where it stands', async () => {
-    const fake = renderResult({
+    const fake = await renderResult({
       recover: {
         status: 'ok',
         value: pendingOperation()
@@ -64,7 +67,7 @@ describe('ResultView', () => {
   })
 
   it('says the recovery failed rather than that no payment exists', async () => {
-    renderResult({ recover: { status: 'error', code: 'REQUEST_FAILED' } })
+    await renderResult({ recover: { status: 'error', code: 'REQUEST_FAILED' } })
 
     expect(
       await screen.findByText(
@@ -78,17 +81,23 @@ describe('ResultView', () => {
 
   it('sends a retry to the payment form, which is where a new attempt starts', async () => {
     const user = userEvent.setup()
-    const { router } = renderResult({
+    const { router } = await renderResult({
       recover: { status: 'ok', value: failedOperation('card_declined') }
     })
 
     await user.click(await screen.findByRole('button', { name: 'Try again' }))
 
-    expect(router.currentRoute.value.path).toBe('/v1/checkout')
+    // The product, the return target and the plan have to survive the hop, or
+    // the customer lands on a checkout that cannot quote anything.
+    expect(router.currentRoute.value.fullPath).toBe(
+      `/v1/checkout?${RESULT_QUERY}&plan=creator_monthly`
+    )
   })
 
   it('reports success on the way back once the operation settled', async () => {
-    renderResult({ recover: { status: 'ok', value: succeededOperation() } })
+    await renderResult({
+      recover: { status: 'ok', value: succeededOperation() }
+    })
 
     const step = await screen.findByRole('region', {
       name: 'Payment complete'
@@ -103,7 +112,7 @@ describe('ResultView', () => {
   })
 
   it('says so when there is nothing to recover', async () => {
-    renderResult()
+    await renderResult()
 
     expect(
       await screen.findByText(

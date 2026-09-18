@@ -75,8 +75,10 @@ export const CLOUD_BASE_URL = cloudBaseUrlFor(BILLING_WEB_ENV)
 export const FIREBASE_OPTIONS = readFirebaseOptions(import.meta.env)
 
 /**
- * Absent on purpose in a deployment without a key: the checkout form then
- * reports itself unavailable and the lifecycle routes every payment hosted.
+ * Absent in a deployment that configures no key: the checkout form then
+ * reports itself unavailable and no payment can be started from this app. The
+ * lifecycle's hosted continuation resumes an operation that already exists; it
+ * is not a way to open one.
  */
 export const STRIPE_PUBLISHABLE_KEY = readString(
   import.meta.env,
