@@ -7,7 +7,7 @@ interface PopoverSizeOptions {
 }
 
 // Matches the highest existing Reka popover z-index (e.g. z-3000 on SearchAutocomplete).
-const PRIMEVUE_DIALOG_CHILD_Z_INDEX_FLOOR = 3000
+const DIALOG_CHILD_Z_INDEX_FLOOR = 3000
 
 /**
  * Composable for managing popover sizing styles
@@ -34,27 +34,23 @@ export function usePopoverSizing(
 }
 
 /**
- * Keeps portaled Reka popovers above their containing PrimeVue dialog.
- *
- * This is a temporary bridge while PrimeVue dialogs and controls are
- * incrementally migrated to Reka UI. Once the affected PrimeVue parents are
- * migrated, this helper should be removed with the compatibility patch.
+ * Keeps portaled popovers above their containing dialog or overlay.
  */
-export function usePrimeVueOverlayChildStyle(): {
+export function useOverlayChildStyle(): {
   overlayScopeRef: Ref<HTMLElement | null>
   contentStyle: ComputedRef<CSSProperties>
 } {
   const overlayScopeRef = ref<HTMLElement | null>(null)
   const contentStyle = computed<CSSProperties>(() => {
     const overlay = overlayScopeRef.value?.closest(
-      '.p-dialog-mask, .p-overlay-mask'
+      '[data-reka-dialog-content], .p-overlay-mask'
     )
     if (!overlay) return {}
 
     const zIndex = Number.parseInt(getComputedStyle(overlay).zIndex, 10)
     if (!Number.isFinite(zIndex)) return {}
 
-    return { zIndex: Math.max(PRIMEVUE_DIALOG_CHILD_Z_INDEX_FLOOR, zIndex + 1) }
+    return { zIndex: Math.max(DIALOG_CHILD_Z_INDEX_FLOOR, zIndex + 1) }
   })
 
   return { overlayScopeRef, contentStyle }
