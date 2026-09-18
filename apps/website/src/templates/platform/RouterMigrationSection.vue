@@ -120,9 +120,10 @@ async function copyPrompt() {
               />
               <Check
                 aria-hidden="true"
+                :stroke-width="2.5"
                 :class="
                   cn(
-                    'col-start-1 row-start-1 size-4 transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)]',
+                    'col-start-1 row-start-1 size-5 transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.2,0,0,1)]',
                     phase !== 'copied' && 'scale-25 opacity-0 blur-xs'
                   )
                 "
