@@ -53,4 +53,11 @@ describe('downloadReplyAsset', () => {
       credentials: 'omit'
     })
   })
+
+  it('rejects malformed URLs before starting a request', async () => {
+    await expect(downloadReplyAsset(asset('http://['))).rejects.toThrow()
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })
