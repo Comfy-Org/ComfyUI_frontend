@@ -6,20 +6,23 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { externalLinks } from '../../config/routes'
-import type { FileValue, FormValues } from '../../config/workshop-playground'
-import { schemaForModel } from '../../config/workshop-playground'
-import { formForContract } from '../../config/workshop-contract'
-import { workshopExampleFile } from '../../config/workshop-example-file'
-import { shouldRehostWorkshopUrl } from '../../config/workshop-url-input'
+import type {
+  FileValue,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
+import { schemaForModel } from '@comfyorg/router-playground/workshop-playground'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
+import { shouldRehostWorkshopUrl } from '@comfyorg/router-playground/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '../../config/models-snippets'
 import {
   SNIPPET_LANGUAGES,
   buildSnippet,
   hasOmittedCurlFiles
 } from '../../config/models-snippets'
-import type { WorkshopContract } from '../../config/workshop-contract'
-import { prepareWorkshopRouterInput } from '../../config/workshop-request'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'

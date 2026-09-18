@@ -179,6 +179,7 @@ export default defineConfig([
             'packages/design-system/vitest.config.ts',
             'packages/ingest-types/openapi-ts.config.ts',
             'packages/object-info-parser/vitest.config.ts',
+            'packages/router-playground/vitest.config.ts',
             'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',

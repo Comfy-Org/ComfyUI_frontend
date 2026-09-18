@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
 import rawModels from '../src/data/workshop-creator-models.json'
-import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
+import type { WorkshopCreatorForm } from '@comfyorg/router-playground/workshop-creator-form'
 import type { curateWorkshopInputs } from './workshop-input-presentation'
 import { createCreatorFields, schemaAt } from './workshop-creator-fields'
 import { wanCreatorRequest } from './workshop-creator-wan'

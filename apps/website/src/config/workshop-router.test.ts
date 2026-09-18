@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { runWorkshopRouter } from './workshop-router'
-import { prepareWorkshopRouterInput } from './workshop-request'
-import { WorkshopRouterError } from './workshop-router-errors'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 import { workshopContract } from './workshop-contract-catalog'
-import { workshopContractSchema } from './workshop-contract'
+import { workshopContractSchema } from '@comfyorg/router-playground/workshop-contract'
 import { z } from 'astro/zod'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
   validateForm
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import contracts from '../content/workshop-router-contracts.json'
 import bindings from '../data/workshop-router-bindings.json'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
 
 function contractFor(id: string) {
   const contract = workshopContract(id)

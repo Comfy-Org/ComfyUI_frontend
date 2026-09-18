@@ -4,10 +4,10 @@ import type {
   WorkshopModel,
   WorkshopModelDetail
 } from './models-catalogue'
-import { formForContract } from './workshop-contract'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
-import type { WorkshopContract } from './workshop-contract'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
 import { workshopExampleValues } from './workshop-example-values'
 import {
   routerContentBySlug,

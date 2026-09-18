@@ -1,8 +1,11 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import starterPrompts from '../data/workshop-starter-prompts.json'
 import type { WorkshopModelDetail } from './models-catalogue'
-import { schemaForModel, validateForm } from './workshop-playground'
-import { resolveSchemaReference } from './workshop-router-openapi'
+import {
+  schemaForModel,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
+import { resolveSchemaReference } from '@comfyorg/router-playground/workshop-router-openapi'
 
 const PROMPT_NAMES = new Set([
   'prompt',

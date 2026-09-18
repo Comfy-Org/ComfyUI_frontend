@@ -1,0 +1,30 @@
+{
+  "name": "@comfyorg/router-playground",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "The Comfy Router playground engine behind comfy.org/models: reads a model's page contract, derives and validates its form, encodes files, builds the provider request, and reads the response. Shared so the Developer Platform runs the same models the same way.",
+  "keywords": [],
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint src --type-aware && eslint src",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@comfyorg/registry-types": "workspace:*",
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

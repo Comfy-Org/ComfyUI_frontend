@@ -5,8 +5,8 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import { workshopModelSchema } from '../content/workshop-models.schema'
-import { deriveWorkshopFields } from './workshop-fields'
-import { parseWorkshopJsonInput } from './workshop-json-schema'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
+import { parseWorkshopJsonInput } from '@comfyorg/router-playground/workshop-json-schema'
 
 // The committed catalog: one packed array, a model per line. Read it the way
 // the content loader does rather than scanning a directory that no longer

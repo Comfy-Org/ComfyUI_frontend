@@ -6,7 +6,7 @@ import {
   workshopExampleState
 } from './workshop-page-state'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { validateForm } from './workshop-playground'
+import { validateForm } from '@comfyorg/router-playground/workshop-playground'
 
 const model: WorkshopModelDetail = {
   slug: 'example--model--generate-images',

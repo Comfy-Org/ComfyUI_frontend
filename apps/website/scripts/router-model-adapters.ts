@@ -1,11 +1,11 @@
 import { z } from 'astro/zod'
 
-import { valuesAtPointer } from '../src/config/workshop-json-pointer'
+import { valuesAtPointer } from '@comfyorg/router-playground/workshop-json-pointer'
 
 import type {
   WorkshopContract,
   WorkshopMediaBinding
-} from '../src/config/workshop-contract'
+} from '@comfyorg/router-playground/workshop-contract'
 
 const mediaBindings: Readonly<
   Partial<Record<string, readonly WorkshopMediaBinding[]>>

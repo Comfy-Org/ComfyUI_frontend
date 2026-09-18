@@ -1,23 +1,23 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { workshopModels, routerContentBySlug } from './workshop-browse-content'
-import { deriveWorkshopFields } from './workshop-fields'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,
   schemaForModel,
   validateForm
-} from './workshop-playground'
-import { prepareWorkshopRouterInput } from './workshop-request'
+} from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor
-} from './workshop-form-definition'
-import { resolveSchemaReference } from './workshop-router-openapi'
-import { formForContract } from './workshop-contract'
+} from '@comfyorg/router-playground/workshop-form-definition'
+import { resolveSchemaReference } from '@comfyorg/router-playground/workshop-router-openapi'
+import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
 import {
   prepareModelRouterRender,
   resolveModelRouterRender

@@ -1,7 +1,10 @@
 import { z } from 'astro/zod'
 
 import { MODALITIES, USE_CASES } from './models-catalogue'
-import { formForContract, workshopContractSchema } from './workshop-contract'
+import {
+  formForContract,
+  workshopContractSchema
+} from '@comfyorg/router-playground/workshop-contract'
 import { generatedModelSchema } from './workshop-generated-models'
 
 const modelSchema = z.object({

@@ -1,27 +1,42 @@
 import type { WorkshopModelDetail } from './models-catalogue'
 import { applyRouterDefaultInputs } from './router-default-inputs'
 import type {
+  FallbackFieldLabels,
   FieldSchema,
   FormValues,
   PlaygroundExample
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   defaultValues,
   exampleValues,
   examplesForModel,
   schemaForModel
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
+import { t } from '../i18n/translations'
+
+/** The fallback form's labels, in the site's language. */
+const fallbackFieldLabels: FallbackFieldLabels = {
+  prompt: t('workshop.field.prompt'),
+  promptPlaceholder: t('workshop.field.promptPlaceholder'),
+  seed: t('workshop.field.seed'),
+  image: t('workshop.field.image'),
+  aspectRatio: t('workshop.field.aspectRatio'),
+  duration: t('workshop.field.duration')
+}
 
 export function workshopPageSchema(
   model: WorkshopModelDetail,
   activeExample?: PlaygroundExample
 ): readonly FieldSchema[] {
-  return schemaForModel({
-    fields: activeExample?.fields ?? model.fields,
-    modality: model.modality,
-    incompleteReason: model.incompleteReason,
-    form: activeExample?.fields ? undefined : model.form
-  })
+  return schemaForModel(
+    {
+      fields: activeExample?.fields ?? model.fields,
+      modality: model.modality,
+      incompleteReason: model.incompleteReason,
+      form: activeExample?.fields ? undefined : model.form
+    },
+    fallbackFieldLabels
+  )
 }
 
 export interface InitialWorkshopPageState {

@@ -4,8 +4,11 @@ import {
   createRouterParameters,
   mapRouterParameters
 } from './router-parameters'
-import type { FieldSchema } from './workshop-playground'
-import { defaultValues, validateForm } from './workshop-playground'
+import type { FieldSchema } from '@comfyorg/router-playground/workshop-playground'
+import {
+  defaultValues,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
 
 const prompt: FieldSchema = {
   kind: 'text',

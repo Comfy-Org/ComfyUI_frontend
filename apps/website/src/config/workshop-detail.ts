@@ -1,6 +1,6 @@
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
-import type { WorkshopCatalogField } from './workshop-fields'
-import { deriveWorkshopFields } from './workshop-fields'
+import type { WorkshopCatalogField } from '@comfyorg/router-playground/workshop-fields'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
 
 /**
  * The form field union lives with the code that derives it. Re-exported under

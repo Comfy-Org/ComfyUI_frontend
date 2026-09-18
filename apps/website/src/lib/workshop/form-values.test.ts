@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FileValue, FormValues } from '../../config/workshop-playground'
+import type {
+  FileValue,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
 import { sameFormValues } from './form-values'
 
 const picked: FileValue = { name: 'a.webp', size: 12, type: 'image/webp' }

@@ -1,13 +1,16 @@
 import { expect, it, vi } from 'vitest'
 
 import { prepareModelRouterRender } from '../src/config/router-render'
-import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
+import { loadWorkshopExampleFile } from '@comfyorg/router-playground/workshop-example-file-loader'
 import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import { prepareWorkshopRequestCallback } from '../src/config/workshop-request-callbacks'
+import { prepareWorkshopRequestCallback } from '@comfyorg/router-playground/workshop-request-callbacks'
 
-vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
-  loadWorkshopExampleFile: vi.fn()
-}))
+vi.mock(
+  import('@comfyorg/router-playground/workshop-example-file-loader'),
+  () => ({
+    loadWorkshopExampleFile: vi.fn()
+  })
+)
 
 it.for([{}, { image_url: 'https://example.com/still.png' }])(
   'rejects an edit without source video even when an image is present',

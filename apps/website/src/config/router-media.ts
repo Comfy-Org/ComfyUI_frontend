@@ -1,7 +1,11 @@
-import type { FieldSchema, FieldValue, FileValue } from './workshop-playground'
-import { urlUploadField } from './workshop-playground'
-import { workshopExampleFile } from './workshop-example-file'
-import { WorkshopRouterError } from './workshop-router-errors'
+import type {
+  FieldSchema,
+  FieldValue,
+  FileValue
+} from '@comfyorg/router-playground/workshop-playground'
+import { urlUploadField } from '@comfyorg/router-playground/workshop-playground'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 
 export type RouterMedia =
   | string

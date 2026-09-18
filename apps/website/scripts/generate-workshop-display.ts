@@ -12,7 +12,7 @@ import type {
 } from '../src/content/workshop-display.schema'
 import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 import { workshopModelSchema } from '../src/content/workshop-models.schema'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
+import { deriveWorkshopFields } from '@comfyorg/router-playground/workshop-fields'
 import { workshopContract } from '../src/config/workshop-contract-catalog'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
 import { repairWorkshopExamples } from './workshop-example-repairs'

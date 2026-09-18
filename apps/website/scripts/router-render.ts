@@ -11,7 +11,7 @@ import {
 } from '../src/config/router-render'
 import { initialWorkshopPageState } from '../src/config/workshop-page-state'
 import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 
 function modelFor(slug: string) {
   const model = getRouterWorkshopModelDetail(slug)

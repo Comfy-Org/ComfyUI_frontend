@@ -3,9 +3,12 @@ import type {
   FieldValue,
   FileValue,
   FormValues
-} from './workshop-playground'
-import { urlUploadField, validateForm } from './workshop-playground'
-import { workshopExampleFile } from './workshop-example-file'
+} from '@comfyorg/router-playground/workshop-playground'
+import {
+  urlUploadField,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
 import { routerMediaValue } from './router-media'
 
 const MAX_DRAFT_BYTES = 100 * 1024 * 1024

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RouterRenderOptions } from './router-render'
 import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
-import { releaseRouterOutputs } from './workshop-response'
+import { releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function router_render(

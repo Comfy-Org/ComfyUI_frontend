@@ -20,7 +20,7 @@ import {
   defaultValues,
   schemaForModel,
   validateForm
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema

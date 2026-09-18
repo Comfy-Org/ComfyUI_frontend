@@ -1,14 +1,14 @@
-import type { WorkshopContract } from './workshop-contract'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
-import { serializeRouterInput } from './workshop-request'
-import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
+import { serializeRouterInput } from '@comfyorg/router-playground/workshop-request'
+import { parseRouterResponse, releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
 import {
   WorkshopRouterError,
   workshopResponseDetails
-} from './workshop-router-errors'
-import { validateWorkshopInput } from './workshop-json-schema'
-import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+} from '@comfyorg/router-playground/workshop-router-errors'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
+import type { WorkshopSvgRasterizer } from '@comfyorg/router-playground/workshop-svg-output'
 
 const RUN_TIMEOUT_MS = 660_000
 const TOTAL_RUN_TIMEOUT_MS = 2_700_000

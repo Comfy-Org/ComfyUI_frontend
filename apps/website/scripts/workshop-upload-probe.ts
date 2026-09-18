@@ -1,8 +1,10 @@
-import { createWorkshopUrlUploader } from '../src/config/workshop-url-upload'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+
+import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
 
 export async function runWorkshopUploadProbe(file: File, token: string) {
   try {
-    const url = await createWorkshopUrlUploader()(
+    const url = await createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)(
       file,
       token,
       'browser-upload-probe',

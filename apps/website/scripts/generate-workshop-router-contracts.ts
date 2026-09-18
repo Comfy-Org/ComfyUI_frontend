@@ -6,16 +6,16 @@ import {
   workshopBindingSchema,
   workshopContractRecordSchema,
   formForContract
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
+} from '@comfyorg/router-playground/workshop-contract'
+import { fieldsForDefinition } from '@comfyorg/router-playground/workshop-form-definition'
 import {
   validateWorkshopInput,
   validatorFor
-} from '../src/config/workshop-json-schema'
+} from '@comfyorg/router-playground/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
+} from '@comfyorg/router-playground/workshop-router-openapi'
 import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'

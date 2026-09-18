@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-import type { FileValue } from '../../config/workshop-playground'
+import type { FileValue } from '@comfyorg/router-playground/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ImageSourcePreview from './ImageSourcePreview.vue'

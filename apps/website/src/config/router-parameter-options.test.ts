@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FieldSchema } from './workshop-playground'
+import type { FieldSchema } from '@comfyorg/router-playground/workshop-playground'
 import { closestOption, snapToStep } from './router-parameter-options'
 
 describe('numeric parameter snapping', () => {

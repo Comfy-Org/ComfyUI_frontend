@@ -10,7 +10,7 @@ import { workshopContentInputs } from './workshop-content-inputs'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { modelOrderRank } from './workshop-model-order'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
-import { schemaForModel } from './workshop-playground'
+import { schemaForModel } from '@comfyorg/router-playground/workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
 import { decodeGeneratedModels } from './workshop-generated-models'
 import {

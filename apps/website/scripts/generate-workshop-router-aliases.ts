@@ -8,7 +8,7 @@ import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
 } from '../src/config/workshop-router-identity'
-import { parseRouterOpenApiSnapshot } from '../src/config/workshop-router-openapi'
+import { parseRouterOpenApiSnapshot } from '@comfyorg/router-playground/workshop-router-openapi'
 
 export function compileWorkshopAliases(
   rawAudit: unknown,

@@ -8,15 +8,15 @@ import {
   formForContract,
   workshopContractRecordSchema,
   workshopContractSchema
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
-import { validateWorkshopInput } from '../src/config/workshop-json-schema'
+} from '@comfyorg/router-playground/workshop-contract'
+import { fieldsForDefinition } from '@comfyorg/router-playground/workshop-form-definition'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
 import {
   defaultValues,
   schemaForModel
-} from '../src/config/workshop-playground'
-import type { FormValues } from '../src/config/workshop-playground'
-import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
+} from '@comfyorg/router-playground/workshop-playground'
+import type { FormValues } from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import { initialWorkshopPageState } from '../src/config/workshop-page-state'
 import { prepareModelRouterRender } from '../src/config/router-render'
@@ -24,7 +24,7 @@ import {
   parseRouterOpenApiSnapshot,
   routerInputSchema,
   resolveSchemaReference
-} from '../src/config/workshop-router-openapi'
+} from '@comfyorg/router-playground/workshop-router-openapi'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())

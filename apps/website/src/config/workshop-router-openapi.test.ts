@@ -2,23 +2,23 @@ import { describe, expect, it } from 'vitest'
 
 import snapshots from '../data/workshop-router-openapi.snapshot.json'
 import { packRouterSchemas } from '../../scripts/generate-workshop-router-snapshot'
-import { fieldsForDefinition } from './workshop-form-definition'
+import { fieldsForDefinition } from '@comfyorg/router-playground/workshop-form-definition'
 import {
   groupPlaygroundFields,
   schemaForModel,
   validateForm
-} from './workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   normalizeOpenApiSchema,
   validateWorkshopInput,
   validatorFor
-} from './workshop-json-schema'
+} from '@comfyorg/router-playground/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
   resolveSchemaReference,
   routerFormDefinition,
   routerInputSchema
-} from './workshop-router-openapi'
+} from '@comfyorg/router-playground/workshop-router-openapi'
 
 const first = snapshots[0]
 const referenced = parseRouterOpenApiSnapshot(

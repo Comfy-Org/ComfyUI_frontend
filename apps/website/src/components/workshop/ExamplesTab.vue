@@ -2,8 +2,8 @@
 import { Check, Music2 } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
-import { isVideoUrl } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@comfyorg/router-playground/workshop-playground'
+import { isVideoUrl } from '@comfyorg/router-playground/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

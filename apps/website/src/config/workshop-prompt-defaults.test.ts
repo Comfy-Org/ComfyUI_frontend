@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { workshopDisplaySchema } from '../content/workshop-display.schema'
 import type { WorkshopModelDetail } from './models-catalogue'
-import { schemaForModel, validateForm } from './workshop-playground'
+import {
+  schemaForModel,
+  validateForm
+} from '@comfyorg/router-playground/workshop-playground'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
 
 const model: WorkshopModelDetail = {

@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 
 import type { GeneratedModel } from './models-catalogue'
 import { MODALITIES } from './models-catalogue'
-import { workshopInputDefinitionSchema } from './workshop-input-definition'
+import { workshopInputDefinitionSchema } from '@comfyorg/router-playground/workshop-input-definition'
 
 /**
  * The shape the generator writes to `workshop-models.generated.json`.

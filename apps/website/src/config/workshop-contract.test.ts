@@ -13,17 +13,20 @@ import {
   formForContract,
   workshopContractRecordSchema,
   workshopContractSchema
-} from './workshop-contract'
+} from '@comfyorg/router-playground/workshop-contract'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor
-} from './workshop-form-definition'
-import { validateWorkshopInput } from './workshop-json-schema'
-import type { FormValues } from './workshop-playground'
-import { prepareWorkshopRouterInput } from './workshop-request'
-import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
+} from '@comfyorg/router-playground/workshop-form-definition'
+import { validateWorkshopInput } from '@comfyorg/router-playground/workshop-json-schema'
+import type { FormValues } from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import {
+  parseRouterResponse,
+  releaseRouterOutputs
+} from '@comfyorg/router-playground/workshop-response'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { parseRouterOpenApiSnapshot } from './workshop-router-openapi'
+import { parseRouterOpenApiSnapshot } from '@comfyorg/router-playground/workshop-router-openapi'
 
 const contracts = packedContracts.map((entry) =>
   workshopContractRecordSchema.parse(entry)

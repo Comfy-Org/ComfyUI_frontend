@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { prepareModelRouterRender, router_render } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
-import { prepareWorkshopRouterInput } from './workshop-request'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 
 function setup(slug = 'wan--reference-to-video-3.0--animate-images') {
   const model = getRouterWorkshopModelDetail(slug)
@@ -37,7 +38,7 @@ function storage() {
     })
   })
   vi.stubGlobal('fetch', requests)
-  const uploader = createWorkshopUrlUploader()
+  const uploader = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
   return {
     requests,
     grants: () => grants,

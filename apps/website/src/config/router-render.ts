@@ -7,20 +7,24 @@ import {
   mapRouterParameters,
   routerParameterMappings
 } from './router-parameters'
-import type { WorkshopContract } from './workshop-contract'
+import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
+import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { initialWorkshopPageState } from './workshop-page-state'
-import type { FieldSchema, FormValues } from './workshop-playground'
-import { validateForm } from './workshop-playground'
-import { prepareWorkshopRouterInput } from './workshop-request'
+import type {
+  FieldSchema,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
+import { validateForm } from '@comfyorg/router-playground/workshop-playground'
+import { prepareWorkshopRouterInput } from '@comfyorg/router-playground/workshop-request'
 import { runWorkshopRouter } from './workshop-router'
-import { WorkshopRouterError } from './workshop-router-errors'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
 import type { RunOutput } from './workshop-run'
-import type { WorkshopUrlEncoder } from './workshop-url-input'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
-import type { WorkshopSvgRasterizer } from './workshop-svg-output'
-import { releaseRouterOutputs } from './workshop-response'
+import type { WorkshopUrlEncoder } from '@comfyorg/router-playground/workshop-url-input'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import type { WorkshopSvgRasterizer } from '@comfyorg/router-playground/workshop-svg-output'
+import { releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
 
-const upload = createWorkshopUrlUploader()
+const upload = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
 
 export interface RouterRenderOptions {
   readonly token?: string | (() => Promise<string>)

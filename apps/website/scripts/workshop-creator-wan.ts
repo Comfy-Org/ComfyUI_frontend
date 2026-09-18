@@ -1,6 +1,6 @@
 import { z } from 'astro/zod'
 
-import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
+import type { WorkshopCreatorForm } from '@comfyorg/router-playground/workshop-creator-form'
 import type { createCreatorFields } from './workshop-creator-fields'
 import { schemaAt } from './workshop-creator-fields'
 

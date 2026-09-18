@@ -4,8 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import * as storage from '../config/workshop-draft-storage'
-import { workshopExampleFile } from '../config/workshop-example-file'
-import type { FieldSchema, FormValues } from '../config/workshop-playground'
+import { workshopExampleFile } from '@comfyorg/router-playground/workshop-example-file'
+import type {
+  FieldSchema,
+  FormValues
+} from '@comfyorg/router-playground/workshop-playground'
 import { useWorkshopFormDraft } from './useWorkshopFormDraft'
 
 const mediaKey = 'comfy-workshop-form:draft-test:media'

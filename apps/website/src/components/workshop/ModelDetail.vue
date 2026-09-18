@@ -24,12 +24,12 @@ import type {
   FieldErrors,
   FormValues,
   PlaygroundExample
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   isVideoUrl,
   schemaForModel,
   validateForm
-} from '../../config/workshop-playground'
+} from '@comfyorg/router-playground/workshop-playground'
 import {
   initialWorkshopPageState,
   workshopExampleState,
@@ -44,9 +44,9 @@ import {
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
-import { releaseRouterOutputs } from '../../config/workshop-response'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
+import { releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
@@ -56,6 +56,7 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { WORKSHOP_ROUTER_BASE_URL } from '../../config/workshop-env'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
@@ -365,7 +366,7 @@ interface ActiveRun {
 
 let activeRun: ActiveRun | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
-const uploadUrl = createWorkshopUrlUploader()
+const uploadUrl = createWorkshopUrlUploader(WORKSHOP_ROUTER_BASE_URL)
 
 const now = useTimestamp({ interval: 1000 })
 
