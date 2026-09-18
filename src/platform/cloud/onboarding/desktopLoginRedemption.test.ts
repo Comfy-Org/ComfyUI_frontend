@@ -14,6 +14,10 @@ import type { RouteRecordRaw } from 'vue-router'
  *
  */
 
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
+
 vi.mock(import('@/services/dialogService'))
 
 let useDialogService: typeof realUseDialogService

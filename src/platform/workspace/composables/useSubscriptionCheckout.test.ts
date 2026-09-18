@@ -1789,10 +1789,9 @@ describe('useSubscriptionCheckout', () => {
       ).not.toHaveBeenCalled()
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated'
-        })
+        'success',
+        'Subscription updated',
+        { duration: 5000 }
       )
     })
 
@@ -4179,10 +4178,9 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-3'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated'
-        })
+        'success',
+        'Subscription updated',
+        { duration: 5000 }
       )
     })
 
