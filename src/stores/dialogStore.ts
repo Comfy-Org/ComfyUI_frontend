@@ -137,10 +137,6 @@ interface UpdateDialogOptions {
   dialogComponentProps?: Partial<DialogComponentProps>
 }
 
-function notifyRemoved(dialog: DialogInstance | undefined) {
-  dialog?.dialogComponentProps.onRemoved?.()
-}
-
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
@@ -204,7 +200,7 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     updateCloseOnEscapeStates()
-    if (removed) notifyRemoved(targetDialog)
+    if (removed) targetDialog.dialogComponentProps.onRemoved?.()
   }
 
   function createDialog<
@@ -212,6 +208,7 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
+    const dialogComponentProps = options.dialogComponentProps ?? {}
     const evicted =
       dialogStack.value.length >= 10 ? dialogStack.value.shift() : undefined
 
@@ -237,8 +234,8 @@ export const useDialogStore = defineStore('dialog', () => {
         closeOnEscape: true,
         dismissableMask: true,
         renderer: 'reka' as DialogRenderer,
-        ...options.dialogComponentProps,
-        maximized: options.dialogComponentProps?.maximized ?? false,
+        ...dialogComponentProps,
+        maximized: dialogComponentProps.maximized ?? false,
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
@@ -248,7 +245,7 @@ export const useDialogStore = defineStore('dialog', () => {
         onAfterHide: () => {
           closeDialog(dialog)
         },
-        pt: merge(options.dialogComponentProps?.pt || {}, {
+        pt: merge(dialogComponentProps.pt || {}, {
           root: {
             onMousedown: () => {
               riseDialog(dialog)
@@ -261,7 +258,7 @@ export const useDialogStore = defineStore('dialog', () => {
     insertDialogByPriority(dialog)
     activeKey.value = options.key
     updateCloseOnEscapeStates()
-    notifyRemoved(evicted)
+    evicted?.dialogComponentProps.onRemoved?.()
 
     return dialog
   }
