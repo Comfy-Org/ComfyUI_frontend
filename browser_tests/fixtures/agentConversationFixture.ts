@@ -178,6 +178,40 @@ class AgentConversationHarness {
     this.vueNodes = new VueNodeHelpers(page)
   }
 
+  addedNodeIds(): string[] {
+    return this.conversation.turns
+      .flatMap((turn) => turn.response)
+      .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+      .filter((op) => op.op === 'add_node')
+      .map((op) => String(op.node_id))
+  }
+
+  async nodesOutsideVisibleCanvas(ids: readonly string[]): Promise<string[]> {
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('this assertion needs a sized page')
+    const panelBox = await this.panel.boundingBox()
+    const visible = {
+      right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
+      bottom: viewport.height
+    }
+    const seen = await Promise.all(
+      ids.map(async (id) => {
+        const box = await this.vueNodes.getNodeLocator(id).boundingBox()
+        const inside =
+          box !== null &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= visible.right &&
+          box.y + box.height <= visible.bottom
+        return { id, inside }
+      })
+    )
+    return seen
+      .filter((node) => !node.inside)
+      .map((node) => node.id)
+      .sort()
+  }
+
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
     // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
