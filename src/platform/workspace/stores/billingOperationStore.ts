@@ -71,7 +71,7 @@ type OperationStatus =
   | 'timeout'
   | 'reconciliation_needed'
 
-export interface StartOperationMetadata {
+interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
