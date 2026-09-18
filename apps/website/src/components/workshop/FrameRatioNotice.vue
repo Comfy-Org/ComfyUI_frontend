@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Info } from '@lucide/vue'
+import { AlertTriangle } from '@lucide/vue'
 import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
@@ -66,13 +66,23 @@ const shown = computed(() =>
 </script>
 
 <template>
-  <p
+  <!-- Announced politely, not as an alert: this follows the reader's own
+  choice of frame and costs them a better result, never the run. -->
+  <div
     v-if="shown"
     role="status"
     data-testid="frame-ratio-notice"
-    class="flex items-start gap-2 text-xs text-primary-warm-gray"
+    class="flex items-start gap-3 rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 p-4 text-sm text-primary-warm-white"
   >
-    <Info class="mt-px size-4 shrink-0" aria-hidden="true" />
-    {{ t('workshop.field.frameRatioMismatch', locale) }}
-  </p>
+    <AlertTriangle
+      class="mt-0.5 size-5 shrink-0 text-primary-comfy-orange"
+      aria-hidden="true"
+    />
+    <div class="flex min-w-0 flex-col gap-1">
+      <p class="font-bold">
+        {{ t('workshop.field.frameRatioMismatchTitle', locale) }}
+      </p>
+      <p>{{ t('workshop.field.frameRatioMismatch', locale) }}</p>
+    </div>
+  </div>
 </template>

@@ -9962,6 +9962,10 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
+  'workshop.field.frameRatioMismatchTitle': {
+    en: 'The frames are different shapes',
+    'zh-CN': '\u9996\u5e27\u4e0e\u5c3e\u5e27\u5f62\u72b6\u4e0d\u540c'
+  },
   'workshop.field.frameRatioMismatch': {
     en: 'The video uses the first frame\u2019s aspect ratio, so the last frame will be stretched to match it. Frames of the same shape avoid this.',
     'zh-CN':
