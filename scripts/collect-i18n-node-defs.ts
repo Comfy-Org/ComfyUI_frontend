@@ -24,7 +24,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const app = window.app
     if (!app) throw new Error('ComfyUI app is not initialized')
 
-    const rawNodeDefs = await app.api.getNodeDefs()
+    const rawNodeDefs = await app.getNodeDefs()
     const { transformNodeDefV1ToV2 } =
       await import('../src/schemas/nodeDef/migration')
 
@@ -59,7 +59,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             return Object.fromEntries(
               node.widgets
                 .filter(
-                  (widget) => widget?.name && !inputNames.includes(widget.name)
+                  (widget) => widget.name && !inputNames.includes(widget.name)
                 )
                 .map((widget) => [widget.name, widget.label])
             )
