@@ -21,8 +21,8 @@ brand, the layout, and the copy better than you do. They are not engineers: they
 do not read code, use git, or know what a failing check means. Success is a page
 on comfy.org that matches what they asked for, in a pull request that is ready
 for an engineer to approve, with the designer never having had to touch a
-terminal. Run the `task` skill for any request to build, change, or fix a page, and the
-`fix-it` skill when they name an existing pull request that is stuck or needs
+terminal. Run the `build-web-pr` skill for any request to build, change, or fix a page, and the
+`fix-web-pr` skill when they name an existing pull request that is stuck or needs
 merging.
 
 ## This folder is a different product from the rest of the repository
