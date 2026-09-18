@@ -114,8 +114,8 @@ test.describe('Models catalog', () => {
       '/models/vertexai--gemini-nano-banana-2--edit-images/',
       '/models/vertexai--gemini-3-pro-image--edit-images/',
       '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
+      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
+      '/models/byteplus--seedream-4-5--edit-images/'
     ])
 
     await sort.click()
@@ -671,6 +671,48 @@ test.describe('Model playground', () => {
     const list = page.getByTestId('examples-tab').locator('ul')
     await expect
       .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
+      .toBe(true)
+  })
+
+  // 320px is the narrowest phone the site supports, and it is where a fixed
+  // card width ran the next sample off the screen: a strip that scrolls with
+  // nothing showing past its edge reads as a single card.
+  test('the next sample shows past the edge at 320px @mobile', async ({
+    page
+  }) => {
+    const width = 320
+    await page.setViewportSize({ width, height: 720 })
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const box = await cards.nth(1).boundingBox()
+        if (!box) return false
+        // Far enough in to be seen, and still running off the edge: a card
+        // that fitted whole would say the strip ends there.
+        return box.x < width - 24 && box.x + box.width > width
+      })
+      .toBe(true)
+  })
+
+  test('a lone sample takes the phone row @mobile', async ({ page }) => {
+    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(1)
+
+    // The strip runs edge to edge behind a gutter of 24px on each side.
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(async () => {
+        const [listBox, cardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox()
+        ])
+        if (!listBox || !cardBox) return false
+        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
+      })
       .toBe(true)
   })
 })

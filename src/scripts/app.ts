@@ -121,6 +121,8 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
@@ -1288,6 +1290,7 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    useExecutionErrorStore().setActiveGraph(null)
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1460,6 +1463,8 @@ export class ComfyApp {
 
     ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
+    let reconcileResourceErrors: (() => void) | undefined
+    let resourceScanLoadCompleted = false
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
@@ -1601,17 +1606,37 @@ export class ComfyApp {
       )
 
       if (!skipAssetScans) {
+        const errorStore = useExecutionErrorStore()
+        const resourceScanKey = errorStore.captureRunErrorKey()
+        let models: MissingModelCandidate[] | undefined
+        let media: MissingMediaCandidate[] | undefined
+        const reconcile = () => {
+          if (!resourceScanLoadCompleted || (!models && !media)) return
+          errorStore.retireResolvedMissingResourceErrors(
+            { models, media },
+            resourceScanKey
+          )
+        }
+        reconcileResourceErrors = reconcile
         await runMissingModelPipeline({
           graph: this.rootGraph,
           graphData,
           missingModelStore: useMissingModelStore(),
           missingNodeTypes: activeMissingNodeTypes,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            models = candidates
+            reconcile()
+          }
         })
 
         await runMissingMediaPipeline({
           rootGraph: this.rootGraph,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            media = candidates
+            reconcile()
+          }
         })
       }
 
@@ -1620,6 +1645,7 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
       }
+      resourceScanLoadCompleted = true
 
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
@@ -1632,6 +1658,9 @@ export class ComfyApp {
         workflowNavigationId
       )
       ChangeTracker.isLoadingGraph = false
+      // The retirement watcher skips transitions made during the load.
+      useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      reconcileResourceErrors?.()
     }
   }
 

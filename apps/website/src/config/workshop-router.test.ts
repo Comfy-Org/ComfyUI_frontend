@@ -749,7 +749,7 @@ describe('native Router requests', () => {
           idempotencyKey: 'same-key',
           signal: new AbortController().signal
         })
-      ).rejects.toMatchObject({ reason: 'provider' })
+      ).rejects.toMatchObject({ reason: 'conflict' })
       expect(fetch).toHaveBeenCalledOnce()
     }
   )
@@ -850,7 +850,7 @@ describe('native Router requests', () => {
         idempotencyKey: 'one-key',
         signal: new AbortController().signal
       })
-    ).rejects.toMatchObject({ reason: 'provider' })
+    ).rejects.toMatchObject({ reason: 'conflict' })
     expect(fetch).toHaveBeenCalledOnce()
   })
 
@@ -868,7 +868,7 @@ describe('native Router requests', () => {
           idempotencyKey: 'one-key',
           signal: new AbortController().signal
         })
-      ).rejects.toMatchObject({ reason: 'provider' })
+      ).rejects.toMatchObject({ reason: 'response', response: { status: 200 } })
     }
   })
 })

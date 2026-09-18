@@ -424,7 +424,8 @@ describe('ModelDetail', () => {
           concurrencyCurrent: null,
           concurrencyRemaining: null,
           body: 'Private provider response'
-        }
+        },
+        'response'
       )
     )
     mountDetail({ model: runnable })
@@ -443,6 +444,7 @@ describe('ModelDetail', () => {
           request_id: 'request-failed',
           http_status: 503,
           router_error_type: 'provider_timeout',
+          failure_stage: 'response',
           workspace_id: credential.workspace.id
         })
       })
@@ -453,6 +455,34 @@ describe('ModelDetail', () => {
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('Private provider response')
+  })
+
+  it('reports empty output as a response-stage failure with its request ID', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: []
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'An image'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'response',
+          failure_stage: 'response',
+          request_id: routerResult.requestId
+        })
+      })
+    )
+    expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
   })
 
   it('omits an unrecognized Router error header from analytics', async () => {
@@ -1178,7 +1208,10 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'run_validation_failed',
-      properties: expect.objectContaining({ model_slug: runnable.slug })
+      properties: expect.objectContaining({
+        model_slug: runnable.slug,
+        field_error_codes: ['required']
+      })
     })
     expect(
       vi

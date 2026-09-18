@@ -38,6 +38,9 @@ import type {
   SubscriptionRailOutcome
 } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -333,11 +336,15 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
+    const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
     try {
-      const status = await workspaceApi.getBillingStatus()
-      if (isStaleStatusRead(requestId, workspaceId)) return
+      const status = rail
+        ? await readOnRail(rail.readStatus)
+        : await workspaceApi.getBillingStatus()
+      if (status === undefined || isStaleStatusRead(requestId, workspaceId))
+        return
 
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
@@ -358,11 +365,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function fetchBalance(): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
+    const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
     try {
-      const balance = await workspaceApi.getBillingBalance()
-      if (requestId === latestBillingReadIds.balance) {
+      const balance = rail
+        ? await readOnRail(rail.readBalance)
+        : await workspaceApi.getBillingBalance()
+      if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
       }
     } catch (err) {
