@@ -2715,7 +2715,8 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen Image 2.1",
-    "cloudNodes": "Comfy Cloud Nodes"
+    "cloudNodes": "Comfy Cloud Nodes",
+    "language": "Language"
   },
   "privacy": {
     "intro": {
