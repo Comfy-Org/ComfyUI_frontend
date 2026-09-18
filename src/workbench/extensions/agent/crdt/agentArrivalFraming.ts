@@ -73,7 +73,7 @@ export interface AgentArrivalFramer {
     canvas: LGraphCanvas,
     nodes: readonly LGraphNode[],
     options?: { select?: boolean }
-  ) => void
+  ) => boolean
   /** Forget the build in progress, e.g. when the document lineage breaks. */
   reset: () => void
 }
@@ -114,27 +114,29 @@ export function createAgentArrivalFramer(
 
   return {
     reveal(canvas, nodes, options = {}) {
-      if (nodes.length === 0) return
+      if (nodes.length === 0) return true
       const turnId = currentTurnId()
       if (turnId !== null && turnId !== buildTurnId) {
         buildTurnId = turnId
         build = []
         framingBuild = false
       }
-      build = [...build, ...nodes.map((node) => node.id)]
+      build = [...new Set([...build, ...nodes.map((node) => node.id)])]
       const liveBuild = build
         .map((id) => resolveNode(id, canvas))
         .filter((node) => node !== undefined)
       build = liveBuild.map((node) => node.id)
       if (options.select !== false) canvas.selectItems(liveBuild)
-      if (!framingBuild && !needsFraming(canvas, nodes)) return
+      if (!visibleGraphRect(canvas)) return false
+      if (!framingBuild && !needsFraming(canvas, nodes)) return true
       framingBuild = true
 
       const bounds = createPositionBounds(liveBuild, FRAME_PADDING)
-      if (!bounds) return
+      if (!bounds) return true
       canvas.animateToBounds(bounds, {
         viewport: visibleCanvasViewport(canvas)
       })
+      return true
     },
     reset() {
       buildTurnId = null

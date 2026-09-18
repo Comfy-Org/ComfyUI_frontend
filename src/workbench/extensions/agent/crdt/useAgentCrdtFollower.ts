@@ -214,6 +214,14 @@ function startAgentCrdtFollower(
     return app.canvas
   }
 
+  function scheduleArrivalReveal(): void {
+    if (arrivalRevealFrame !== undefined) return
+    arrivalRevealFrame = requestAnimationFrame(() => {
+      arrivalRevealFrame = undefined
+      revealArrivals([])
+    })
+  }
+
   /**
    * Show the user what just arrived.
    *
@@ -235,21 +243,22 @@ function startAgentCrdtFollower(
     const canvas = getMountedCanvas()
     const graph = getGraph()
     if (!canvas || !graph) {
-      if (arrivalRevealFrame === undefined) {
-        arrivalRevealFrame = requestAnimationFrame(() => {
-          arrivalRevealFrame = undefined
-          revealArrivals([])
-        })
-      }
+      scheduleArrivalReveal()
       return
     }
     const nodes = [...pendingArrivalIds]
       .map((id) => graph._nodes_by_id[id])
       .filter((node) => node !== undefined)
-    pendingArrivalIds.clear()
-    if (nodes.length === 0) return
+    if (nodes.length === 0) {
+      pendingArrivalIds.clear()
+      return
+    }
     const picking = useAgentNodeSelectionStore().isActive
-    framer.reveal(canvas, nodes, { select: !picking })
+    if (!framer.reveal(canvas, nodes, { select: !picking })) {
+      scheduleArrivalReveal()
+      return
+    }
+    pendingArrivalIds.clear()
   }
 
   function resetArrivalFraming(): void {

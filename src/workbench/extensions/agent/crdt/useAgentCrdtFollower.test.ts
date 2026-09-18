@@ -1034,16 +1034,18 @@ describe('useAgentCrdtFollower', () => {
     function stubCanvas(): {
       selectItems: ReturnType<typeof vi.fn>
       animateToBounds: ReturnType<typeof vi.fn>
+      canvas: { canvas: { width: number; height: number } }
     } {
       const selectItems = vi.fn()
       const animateToBounds = vi.fn()
-      appState.app.canvas = {
+      const canvas = {
         canvas: { width: 1000, height: 1000 },
         ds: { scale: 1, offset: [0, 0] },
         selectItems,
         animateToBounds
       }
-      return { selectItems, animateToBounds }
+      appState.app.canvas = canvas
+      return { selectItems, animateToBounds, canvas }
     }
 
     function graphWith(
@@ -1126,6 +1128,33 @@ describe('useAgentCrdtFollower', () => {
       retry?.(0)
 
       expect(selectItems).toHaveBeenCalledWith([offScreen])
+      unmount()
+    })
+
+    it('retries an arrival after the mounted canvas gains a viewport', () => {
+      let retry: FrameRequestCallback | undefined
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
+        (callback) => {
+          retry = callback
+          return 1
+        }
+      )
+      const offScreen = {
+        pos: [4000, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const graph = graphWith({ 1: offScreen })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { animateToBounds, canvas } = stubCanvas()
+      canvas.canvas.width = 0
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      expect(animateToBounds).not.toHaveBeenCalled()
+      canvas.canvas.width = 1000
+      retry?.(0)
+
+      expect(animateToBounds).toHaveBeenCalledOnce()
       unmount()
     })
 
