@@ -1,1 +1,847 @@
-{}
+{
+  "affiliateAudience": {
+    "affiliateAudienceCriteria": {
+      "ai-tool-reviewer": {
+        "label": "YouTube、TikTok、ブログで活動するAIツールレビュアー"
+      },
+      "audience-owner": {
+        "label": "AI画像・動画・3Dに関心のあるオーディエンスを持つ方"
+      },
+      "newsletter-operator": {
+        "label": "AI／クリエイティブ分野のニュースレター運営者"
+      },
+      "tech-blogger": {
+        "label": "AIクリエイティブツールを扱うテックブロガー"
+      },
+      "tutorial-creator": {
+        "label": "ComfyUIのチュートリアル制作者またはワークフロービルダー"
+      }
+    }
+  },
+  "affiliateBenefits": {
+    "cloud-no-gpu": {
+      "description": "Comfy Cloudなら、GPU不要で、事前ロード済みの全モデルを使ってブラウザでComfyUIを実行できます"
+    },
+    "custom-nodes": {
+      "description": "コミュニティ製カスタムノードパッケージ1,000種類以上"
+    },
+    "node-based-control": {
+      "description": "ノードベースのワークフローにより、プロンプトのみのツールよりも幅広いクリエイティブコントロールが可能"
+    },
+    "open-source-platform": {
+      "description": "ComfyUIは最も高機能なオープンソースAIクリエイティブプラットフォームです"
+    }
+  },
+  "affiliateBrandAssets": {
+    "amplified-logomark": {
+      "title": "アンプリファイド・ロゴマーク"
+    },
+    "core-logo": {
+      "title": "コアロゴ"
+    },
+    "icon": {
+      "title": "アイコン"
+    },
+    "logomark": {
+      "title": "ロゴマーク"
+    }
+  },
+  "affiliateFaq": {
+    "affiliateFaqs": {
+      "can-i-use-coupon-codes": {
+        "answer": "はい。トラッキングリンクと固有のクーポンコードの両方に対応しています。",
+        "question": "クーポンコードは使用できますか？"
+      },
+      "how-do-i-track-my-referrals": {
+        "answer": "パートナーポータルのリアルタイムダッシュボードで確認できます。",
+        "question": "紹介実績はどのように確認できますか？"
+      },
+      "how-long-to-get-approved": {
+        "answer": "ほとんどの申請は24時間以内に承認されます。",
+        "question": "承認までどのくらいかかりますか？"
+      },
+      "what-assets-do-you-provide": {
+        "answer": "このページのロゴとバナーに加え、承認後はアフィリエイトダッシュボードでスクリーンショットと訴求ポイントをご利用いただけます。",
+        "question": "どのような素材が提供されますか？"
+      },
+      "what-happens-if-referral-upgrades-or-downgrades": {
+        "answer": "紹介ユーザーがアップグレードすると、コミッションが増加します。ダウングレードした場合は、それに応じて調整されます。コミッションは返金額を差し引いた、Comfy.orgが実際に受領した金額に基づきます。",
+        "question": "紹介ユーザーがアップグレードまたはダウングレードした場合はどうなりますか？"
+      },
+      "what-if-my-referral-uses-an-ad-blocker": {
+        "answer": "サーバーサイドトラッキングを使用しているため、広告ブロッカーの利用にかかわらずコンバージョンを追跡できます。",
+        "question": "紹介ユーザーが広告ブロッカーを使用している場合はどうなりますか？"
+      },
+      "what-plans-qualify": {
+        "answer": "Comfy Cloudのすべての有料サブスクリプションプラン（Standard、Creator、Pro、Teams）。",
+        "question": "対象となるプランは？"
+      },
+      "when-do-i-get-paid": {
+        "answer": "毎月、最初の10営業日以内に支払われます。最低支払額は$100です。Stripe ExpressまたはPayPalで支払われます。",
+        "question": "報酬はいつ支払われますか？"
+      }
+    }
+  },
+  "affiliateHowItWorks": {
+    "affiliateHowItWorksSteps": {
+      "apply": {
+        "description": "簡単なフォームを送信。ほとんどの申請は当日中に承認されます。",
+        "label": "申請"
+      },
+      "earn": {
+        "description": "紹介した各Comfy Cloud契約者について、3か月間、継続報酬30%。リアルタイムで追跡し、毎月支払われます。",
+        "label": "報酬を獲得"
+      },
+      "share": {
+        "description": "専用のトラッキングリンクを取得。コンテンツ、SNS、メールなど、オーディエンスに届く方法で共有できます。",
+        "label": "共有"
+      }
+    }
+  },
+  "creatorReviews": {
+    "alan-m": {
+      "body": "ComfyUIのUIとUXは直感的で使いやすく、わかりやすく効率的に操作できます。他ツールとの連携でワークフローが整理され、全体の生産性が向上します。",
+      "role": "共同創業者"
+    },
+    "fred-c": {
+      "body": "ComfyUIは非常に高速で信頼性が高く、作りたいキャラクターを自由に制作できます。"
+    },
+    "kirk-h": {
+      "body": "アニメ番組のVFX制作にComfyUIを使っています。特に、クラウドでComfyパイプラインをインポートできるため使いやすく、すっきりしたUIとわかりやすさが気に入っています。"
+    },
+    "leonardo-s": {
+      "body": "GenAIプロセスを完全にコントロールでき、必要なときはいつでもワークフローに組み込んで、回数制限なく使えること。",
+      "role": "ソーシャルメディアマーケティング専門家"
+    },
+    "maryann-e": {
+      "body": "自分のコンピュータではもう扱えないモデルを使えるのがありがたいです。ブラックボックスではなく調整できる、ノードベースのアプローチを好んでいます。",
+      "role": "Pop RV'sのブローカー"
+    },
+    "matthew-p": {
+      "body": "ワンクリックのワークフローは、多くの工程を簡素化してくれるのでとても気に入っています。詳しくない私でも、セットアップはとても簡単でした。"
+    },
+    "nikolai-k": {
+      "body": "無限に広がるホワイトボードを通じた、包括的なアプローチと可視化。",
+      "role": "3Dアーティスト"
+    },
+    "richard-n": {
+      "body": "ノードベースのワークフローが特に気に入っています。多くの可能性があり、さまざまな組み合わせを試せます。最適化の選択肢や、メモリ制約の厳しいモデルでも使える自動メモリ管理も評価しています。",
+      "role": "オーナー"
+    },
+    "scott-belsky": {
+      "body": "Comfyは、クリエイティブコントロールを損なわずに創作できる新たなエコシステムを築きました。技術系アーティストや探究心のあるクリエイターがComfyを活用し、アイデアの可能性を幅広く探る姿を見るのは素晴らしいことです。",
+      "role": "Behance創設者"
+    },
+    "verified-user-in-depth": {
+      "body": "ComfyUIをどこまでも深く使い込める点が気に入っています。ソフトウェア自体に限界がないように感じられ、実験と学習を続ける励みになります。"
+    },
+    "verified-user-local": {
+      "body": "AIモデルをローカルで実行し、画像、動画、音声を無料で生成できます。",
+      "role": "コンピューターソフトウェア"
+    }
+  },
+  "drops": {
+    "app-mode": {
+      "description": "ワークフローをシンプルに表示。いつでもノードグラフに戻って、さらに詳しく作業できます。",
+      "media": "アプリモード",
+      "title": "アプリモード"
+    },
+    "CLOUD": "クラウド",
+    "comfy-api": {
+      "description": "あらゆるワークフローを本番環境のエンドポイントに。生成を自動化し、数千件の出力まで拡張できます。",
+      "media": "Comfy API",
+      "title": "開発者向けプラットフォーム"
+    },
+    "comfy-cloud-nodes": {
+      "description": "ご自身のComfyUI内から、当社のGPUで最新のオープンモデルを実行できます。サブスクリプションもダウンロードも不要です。",
+      "media": "Comfy Cloud ノード",
+      "title": "Comfy Cloud ノード"
+    },
+    "comfy-enterprise": {
+      "description": "組織内のクリエイティブエンジンを支えるエンタープライズ向けインフラストラクチャ。",
+      "media": "Comfy エンタープライズ",
+      "title": "Comfy エンタープライズ"
+    },
+    "comfy-mcp": {
+      "description": "どこからでもComfyUIの全機能を利用。セットアップ不要、GPU不要。",
+      "media": "Comfy MCP",
+      "title": "Comfy MCP"
+    },
+    "COMMUNITY": "コミュニティ",
+    "community-workflows": {
+      "description": "コミュニティ共有の数千のワークフローを閲覧・リミックス。実証済みのテンプレートから始められます。",
+      "media": "コミュニティワークフロー",
+      "title": "コミュニティワークフロー"
+    },
+    "desktop-client": {
+      "description": "ComfyUI向けに再設計された高速デスクトップアプリ。ワンクリックでインストールでき、アップデートも管理されます。",
+      "media": "新しいデスクトップクライアント",
+      "title": "新しいデスクトップクライアント"
+    },
+    "DEVELOPER": "開発者",
+    "EXPLORE": "探索",
+    "learning-hub": {
+      "cta": {
+        "label": "学習を始める"
+      },
+      "description": "初回レンダリングから本番パイプラインまで導く、解説とすぐに実行できるワークフロー。",
+      "media": "ラーニングハブ",
+      "title": "ラーニングハブ"
+    },
+    "MODELS_AND_NODES": "モデルとノード",
+    "NEW_BADGE": "新着",
+    "PLATFORM": "プラットフォーム",
+    "share-comfy": {
+      "cta": {
+        "label": "詳細を見る"
+      },
+      "description": "Comfyをオーディエンスに紹介し、参加したクリエイターごとに報酬を獲得。",
+      "media": "Comfy アフィリエイト",
+      "title": "Comfy アフィリエイト"
+    },
+    "supported-models": {
+      "description": "最新のオープンモデルとパートナーモデルを実行。すべてのチェックポイント、LoRA、ControlNetをグラフですぐに使用できます。",
+      "media": "対応モデル",
+      "title": "対応モデル"
+    },
+    "supported-nodes": {
+      "description": "Comfy Cloudで動作することを確認済みの、厳選された数千のコミュニティ・パートナーノード。",
+      "media": "対応ノード",
+      "title": "対応ノード"
+    }
+  },
+  "events": {
+    "beyond-the-models": {
+      "dateLabel": "2026年8月19日・PT 午前10時",
+      "description": "既製モデルの先へ。商業制作・映像制作向けのカスタムComfyUIワークフロー構築をライブで解説します。",
+      "featured": {
+        "media": "Comfyでモデルの先へ進む ライブ配信"
+      },
+      "location": "オンライン",
+      "media": "Comfyでモデルの先へ進む ライブ配信",
+      "title": "Comfyでモデルの先へ進む：商業・映像制作向けカスタムワークフロー"
+    },
+    "black-math-hackathon": {
+      "description": "デザイン・テクノロジースタジオのBlack Mathは、わずか3週間でComfyUIを使ったハッカソン体験を構築しました。共同創業者兼チーフ・クリエイティブ・オフィサーのJeremy Sahlmanがその方法を紹介します。",
+      "media": "Jeremy Sahlmanと語るBlack Math X Comfy ライブ配信",
+      "title": "エクスペリエンスデザイン：Black MathがComfyUIで3週間でハッカソンを構築した方法"
+    },
+    "comfy-agent-beta": {
+      "dateLabel": "2026年9月10日・PT 午前10時",
+      "featured": {
+        "media": "Comfy Agentベータ版：機能と開発の舞台裏 ライブ配信"
+      },
+      "location": "オンライン",
+      "media": "Comfy Agentベータ版：機能と開発の舞台裏 ライブ配信",
+      "title": "Comfy Agentベータ版：機能と開発の舞台裏"
+    },
+    "comfy-agent-ga": {
+      "dateLabel": "2026年9月15日・PT 午前10時",
+      "description": "PurzとAllysonが、VFX、3D、マーケティングでのComfy Agent活用例をライブデモで紹介します。",
+      "location": "オンライン"
+    },
+    "comfy-creatives-model-jam": {
+      "location": "オンライン",
+      "media": "Comfy Creativesモデルジャム ライブ配信アーカイブ",
+      "title": "Comfy Creatives モデルジャム：MiniMax H3、Seedance 2.5、Wan Animate 2 ほか"
+    },
+    "comfy-mcp-claude-cursor": {
+      "description": "Comfy MCP を使えば、すでに利用している Claude、Cursor、その他ほぼすべての AI エージェントで、実際の Comfy Cloud ワークフローを構築・実行・反復できます。Jo Zhangによるライブ解説にご参加ください。",
+      "media": "Comfy MCP で Claude/Cursor から ComfyUI を実行するライブ配信録画",
+      "title": "Comfy MCP で Claude/Cursor から ComfyUI を実行"
+    },
+    "dev-platform-101": {
+      "dateLabel": "2026年9月17日・PT 午前10時",
+      "description": "Comfy のプロダクトマネージャー、Jacob Segalが、AllysonとPurzとともに新しい Comfy 開発者向け API を使った開発を紹介します。",
+      "featured": {
+        "media": "Developer Platform 101：新しい Comfy API を使った開発ライブ配信"
+      },
+      "location": "オンライン",
+      "media": "Developer Platform 101：新しい Comfy API を使った開発ライブ配信",
+      "title": "Developer Platform 101：新しい Comfy API を使った開発"
+    },
+    "future-ai-post-production": {
+      "dateLabel": "2026年8月5日・PT 午前10時",
+      "description": "Ingi Erlingssonが、カスタム LoRA とモーショングラフィックスノードを活用した AI ポストプロダクションの未来を探ります。",
+      "featured": {
+        "media": "AI ポストプロダクションの未来 ライブ配信"
+      },
+      "location": "オンライン",
+      "title": "AI ポストプロダクションの未来"
+    },
+    "h3-sync-sound-challenge": {
+      "dateLabel": "2026年9月2日・PT 午前10時",
+      "description": "ゲスト審査員がライブで参加し、コミュニティから寄せられた優秀な MiniMax H3 同期サウンド作品をレビュー。生成された音声と映像が噛み合うポイントを解説します。",
+      "featured": {
+        "media": "Comfy H3 Sync Sound Challenge ゲスト審査員ライブ配信"
+      },
+      "location": "オンライン",
+      "media": "Comfy H3 Sync Sound Challenge ゲスト審査員ライブ配信",
+      "title": "Comfy H3 Sync Sound Challenge：ゲスト審査員ライブ配信"
+    },
+    "july-launches": {
+      "description": "最新の ComfyUI リリースとアップデートを紹介する月例ライブ配信。",
+      "media": "7月のリリース ライブ配信録画",
+      "title": "Claude Code で ComfyUI MCP を使う"
+    },
+    "june-launches": {
+      "description": "6月のリリースをまとめて紹介。プロダクトリーダーのJedrzej Kosinski、Alexis Rolland、Jo Zhang、Matt Millerが、デスクトップ、MCP、コアエンジンの改善点を解説します。",
+      "media": "6月ローンチのライブ配信録画",
+      "title": "6月のローンチ | Desktop、MCP、コアエンジンの改善"
+    },
+    "krea-founders-live": {
+      "description": "クリエイティブAIツールの構築について、Victor Perez（CEO、Krea）、Miguel Lara（Kreaチーム）、ComfyAnonymous（共同創業者、Comfy Org）が語る特別ライブ対談。",
+      "featured": {
+        "media": "Krea X Comfy 創業者ライブ"
+      },
+      "media": "Krea X Comfy 創業者ライブ録画",
+      "title": "Krea X Comfy：創業者ライブ"
+    },
+    "la-august-meetup": {
+      "ctaLabel": "登録",
+      "description": "カルバーシティにある新しいAI on the Lotオフィスで開催する、LAのComfyUI公式ミートアップにご参加ください。",
+      "location": "ロサンゼルス（カリフォルニア州）",
+      "media": "ComfyUI 公式LA 8月ミートアップ",
+      "title": "ComfyUI 公式LA 8月ミートアップ"
+    },
+    "local-mcp": {
+      "dateLabel": "2026年8月26日 · PT 10:00",
+      "location": "オンライン",
+      "media": "ローカルMCP：エージェントとハードウェアでComfyUIを実行するライブ配信",
+      "title": "ローカルMCP：エージェントとハードウェアでComfyUIを実行"
+    },
+    "mutek-3d-projection-mapping": {
+      "ctaLabel": "登録",
+      "dateLabel": "2026年8月27日 · ET 13:30",
+      "description": "Moment Factoryとの実践ワークショップ。ComfyUIを使って大規模な空間デザインに生成AIを取り入れ、最後にAI生成ビジュアルを実物のマケットへ投影します。",
+      "featured": {
+        "media": "MUTEK：3Dプロジェクションマッピングのための生成AI"
+      },
+      "location": "Édifice Wilder、モントリオール（ケベック州）",
+      "title": "MUTEK：Purz＆Moment Factoryによる3Dプロジェクションマッピングのための生成AI"
+    },
+    "production-pipeline": {
+      "description": "Erin Sarofsky（COO／オーナー、Sarofsky）とRyan Summers（クリエイティブイノベーション責任者、Sarofsky）が、チームがComfyUIでスタジオの制作パイプラインを再構築した方法を紹介します。",
+      "media": "制作パイプライン再構築ライブ配信録画",
+      "title": "プロダクションパイプラインの再構築"
+    },
+    "ucan-agentic-commerce": {
+      "ctaLabel": "参加登録",
+      "location": "Plug and Play Tech Center（カリフォルニア州サニーベール）"
+    },
+    "UPCOMING_LIVESTREAM": "今後のライブ配信",
+    "video-model-showdown": {
+      "description": "PurzとAllysonが、オープンソースと有料のAI動画モデルをライブで比較します。",
+      "location": "オンライン",
+      "media": "Video Model Showdown ライブ配信アーカイブ",
+      "title": "Video Model Showdown：オープンソース vs. 有料AI動画モデル"
+    }
+  },
+  "flux3": {
+    "flux3Page": {
+      "audio-control": {
+        "answer": "環境音、音楽、セリフのように、音声をレイヤーごとに分けて個別に指定してください。それぞれ独立したレイヤーになります。1つのフレーズにまとめると、ミックスのコントロールが弱まります。",
+        "question": "Flux 3で音声をコントロールするには？"
+      },
+      "bear-checkpoint": {
+        "description": "クマが検問所に迫り、ゲームエンジン風のルックを一貫して維持します。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      },
+      "burned-in-text": {
+        "answer": "話者が画面に見えない引用文は、画面上のテキストとして表示されがちです。セリフとして話させるには、セリフを引用し、カメラに映る話者を説明したうえで、「画面上のテキストなし、字幕なし」と追加してください。",
+        "question": "テキストがセリフではなく、動画に焼き付いた表示になるのはなぜですか？"
+      },
+      "cuts-not-reading": {
+        "answer": "連続するショットが似すぎていると、編集として認識されません。ショット間でスケール、場所、色を変えると、カットが明確に伝わります。",
+        "question": "カットがカットらしく見えないのはなぜですか？"
+      },
+      "drone-transition": {
+        "description": "ドローンがある環境から次の環境へ移動します。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      },
+      "lake-valley": {
+        "description": "穏やかなピクセル調の湖畔の谷を、カメラが寄っていきながら細部まで捉えます。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      },
+      "multi-shot": {
+        "answer": "はい。プロンプトを「ショット1 ... ハードカット。ショット2 ...」のように構成すると、1回の生成内で実際のカットを作れます。カットなしのテイクには、「途切れない1つの連続ショット」と明示してください。",
+        "question": "Flux 3は1回の生成で複数のショットを作れますか？"
+      },
+      "music-bed": {
+        "answer": "はい。ショット構成とともに、「3つのショットすべてに1本の連続した音楽トラック」のように直接指定してください。",
+        "question": "複数のショットで同じ音楽トラックを維持できますか？"
+      },
+      "outlaws": {
+        "description": "無法者たちが町へ乗り込み、蹄の音と群衆のざわめきが画面に重なります。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      },
+      "porcelain": {
+        "description": "砕けた磁器が白い背景の上で元に戻り、すべての破片を逆再生で追います。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      },
+      "prompt-examples": {
+        "answer": "すぐにコピー＆ペーストできる3つの例です。\n\nシンプルな指示：雨の東京の夜にある居心地のよいラーメン店。スープから湯気が立ち上り、窓際の水たまりにはネオンが反射し、店主は落ち着いて調理している。雨音と静かな厨房の音。\n\nセリフ：様式化された嵐の地図を背に、カメラの前でレンズに向かって話す気象キャスター。「嵐の季節が来ました。ですが今回は、準備ができています。」自信のある話し方、クリーンなスタジオ照明。画面上のテキストなし、字幕なし。\n\nマルチショット：ショット1：夜明けの砂漠のハイウェイを空撮のワイドで捉え、1台の赤い車が疾走する。ハードカット。ショット2：車内のクローズアップ。運転手の手がラジオに合わせてハンドルを叩く。ハードカット。ショット3：路肩から、陽炎の中へ小さくなっていく車を捉える。3つのショット全体を通して、連続した1つの音楽の下に暖かなエンジン音が流れる。",
+        "question": "良いFlux 3プロンプトとは？"
+      },
+      "prompt-rewriting": {
+        "answer": "書き換えは行われますが、明示した内容は維持されます。シーンを具体的に記述するほど、出力はモデル任せではなく、自分で決められる部分が増えます。曖昧なプロンプトでは、書き換え側に主導権が渡ります。",
+        "question": "Flux 3はプロンプトを変更しますか？指定内容は上書きされますか？"
+      },
+      "prompt-syntax": {
+        "answer": "いいえ。Flux 3は生成前にプロンプトを解釈して書き換えるため、自然な文章で問題ありません。同僚に指示するようにシーンを説明してください。キーワードの羅列やキャプション調の文章は効果を高めません。",
+        "question": "Flux 3に特別なプロンプト構文やキーワードは必要ですか？"
+      },
+      "three-dancers": {
+        "description": "3人のダンサー、3つの部屋、1つのリズム。すべてのパネルでタイミングが揃う。",
+        "name": "Flux 3",
+        "note": "従量課金"
+      }
+    }
+  },
+  "geminiOmni": {
+    "geminiOmniPage": {
+      "cavemen-discover-fire": {
+        "description": "原始人が未来に出会う",
+        "name": "原始人が火を発見"
+      },
+      "commercial-use": {
+        "answer": "はい。ComfyUIのパートナーノードを通じて生成した出力は、ComfyUIの利用規約およびGoogleの利用ポリシーに従う限り、商用利用できます。すべての動画にはSynthIDウォーターマークが付与されます。視聴者には見えませんが、来歴確認のためプログラムで検出できます。",
+        "question": "Gemini Omni 1.1 Flashは商用利用できますか？"
+      },
+      "compared-to-previous-omni-flash": {
+        "answer": "Gemini Omni 1.1 Flashは、従来のOmni Flashバージョンを完全に置き換えるモデルです。同じ生成・編集ワークフローで、より高速に生成できます。1.1リリースでは、360pで効率よく動画を下書きし、4K解像度へアップスケールし、シーンを延長してより長いストーリーを作成できます。"
+      },
+      "cost-in-comfyui": {
+        "answer": "Gemini Omni 1.1 FlashはComfyUIクレジットで生成ごとに課金され、料金は解像度によって異なります。最新の料金はComfyUIの料金ページをご確認ください。Googleの別途サブスクリプションは不要です。",
+        "question": "ComfyUIでGemini Omni 1.1 Flashを使う料金はいくらですか？"
+      },
+      "dog-with-hot-dog": {
+        "description": "ホットドッグを持つ犬",
+        "name": "ホットドッグのコスチュームを着た犬"
+      },
+      "edit-an-existing-video": {
+        "answer": "はい。クリップをノードの動画入力に接続して変更内容を記述すると、Gemini Omni 1.1 Flashがそれ以外を維持したまま適用します。短いプロンプトが効果的です。「この動画をアニメ風にする」「照明をもっとドラマチックに変える」。1つの要素だけを変更する場合は、「それ以外はすべて同じに保つ」を加えてください。",
+        "question": "Gemini Omni 1.1 Flashで既存の動画を編集できますか？"
+      },
+      "extend-a-video": {
+        "answer": "はい。task typeをextendに設定すると、Gemini Omni 1.1 Flashがクリップの前の動きと構図を読み取り、キャラクターの同一性と照明を維持しながらショットを続けます。「ショットを続ける：女性がバイオリンのソロを弾き終え、お辞儀をする」のようなプロンプトで、クリップの終わりから続きを作成できます。",
+        "question": "Gemini Omni 1.1 Flashで動画を延長できますか？"
+      },
+      "floor-robot": {
+        "description": "床掃除ロボットへのゆっくりしたプッシュイン",
+        "name": "床掃除ロボットの広告"
+      },
+      "generate-your-shot": {
+        "description": "4Kで最大10秒。",
+        "title": "ショットを生成"
+      },
+      "prompt-the-scene": {
+        "description": "カメラ、アクション、タイミング、台詞",
+        "title": "シーンをプロンプト"
+      },
+      "resolutions-and-aspect-ratios": {
+        "answer": "Gemini Video Omniノードは、Gemini Omni 1.1 Flashの動画を360p、720p、1080p、4K、アスペクト比16:9または9:16で出力します。デフォルトは横長です。縦長クリップには9:16を設定してください。高解像度ほど生成に時間がかかります。",
+        "question": "ComfyUIでGemini Omni 1.1 Flashが対応する解像度とアスペクト比は？"
+      },
+      "saxophone-halftone": {
+        "description": "ハーフトーンのサックスソロ",
+        "name": "サックスソロ"
+      },
+      "seasonal-timelapse": {
+        "description": "冬から春、そして再び冬へ",
+        "name": "季節のタイムラプス"
+      },
+      "stone-head-speaks": {
+        "description": "石の頭部が話す",
+        "name": "石の頭部が話す"
+      },
+      "upload-references": {
+        "title": "参照アセットをアップロード"
+      },
+      "what-is-omni-flash": {
+        "answer": "Gemini Omni 1.1 Flashは、迅速な動画生成、編集、シネマティックな制御向けに設計されたGoogleのマルチモーダル動画モデルです。テキスト、画像、音声、動画をまとめて処理し、音声トラック付きのクリップを生成できます。自然言語の指示で既存動画を編集することも可能です。以前のGemini Omni Flashバージョンに代わるモデルです。",
+        "question": "Gemini Omni 1.1 Flashとは？"
+      }
+    },
+    "premiumNote": "従量課金"
+  },
+  "learningTutorials": {
+    "ad_broll_creation": {
+      "description": "1つのComfyUIワークフローで、Bロールを3つの方法で作成・編集できます。プロンプトからクリップを生成、被写体を参照シーンに配置、または既存映像を変更します。",
+      "title": "Bロール作成"
+    },
+    "ad_moodboard_creation": {
+      "description": "このComfyUIワークフローで、ムードボードから選んだ素材を新しいブランドに沿った広告ビジュアルに変換します。Recraftでスタイルを抽出するか、GPT Image 2で要素を変更できます。",
+      "title": "ムードボード作成"
+    },
+    "ad_ooh_visualization": {
+      "description": "このComfyUIワークフローで、ポスターを実在する屋外広告枠に配置します。Gemini Image 2を使い、ビルボード、交通広告、建物ラッピングのモックアップを自動生成できます。",
+      "title": "OOHビジュアライゼーション"
+    },
+    "ad_product_photography": {
+      "description": "1つのComfyUIワークフローで商品写真を生成・レタッチ・アニメーション化。GPT Imageで商品を配置し、マスク編集で細部を調整してから、ヒーロー動画を作成します。",
+      "title": "商品写真"
+    },
+    "ad_storyboard_creation": {
+      "description": "ショットリストから広告用ストーリーボードを生成し、洗練されたスタイルフレームをレンダリング。GPT ImageとNanoBanana Proを2段階で使うComfyUIワークフローです。",
+      "title": "ストーリーボード作成"
+    },
+    "ad_talent_casting": {
+      "description": "撮影前にシーン内の出演者をプレビューするComfyUIワークフロー。Gemini Image 2でプリビズ用スチルを生成し、Klingでクリップにアニメーション化します。",
+      "title": "タレントキャスティング"
+    },
+    "animation_background_and_asset_generation": {
+      "description": "プロダクションフレームのスタイルを背景や小道具に適用するComfyUIワークフロー。GPT Image 2がスケッチをスタイルに合わせて描画し、背景を自動で削除します。",
+      "title": "背景・アセット生成"
+    },
+    "animation_background_and_compositing": {
+      "description": "背景をアニメーション化し、キャラクターを合成するComfyUIワークフロー。Cdanceで静止背景をループさせ、照明を合わせてキャラクターを合成します。",
+      "title": "背景とコンポジット"
+    },
+    "animation_character_sheet": {
+      "description": "コンセプトアートからキャラクターシートを作成するComfyUIワークフロー。GPT Image 2でターンアラウンドと顔のクローズアップを生成し、自動でつなぎ合わせます。",
+      "title": "キャラクターシート"
+    },
+    "animation_concept_exploration": {
+      "description": "コンセプトアートをポーズ可能な3Dプロキシに変換するComfyUIワークフロー。Tripoでモデルを作成し、任意のアングルからスタイル付きスチルまたはカメラ移動動画を生成します。",
+      "title": "コンセプト探索"
+    },
+    "animation_in_betweening": {
+      "description": "キーフレームの連続から中割りフレームを生成するComfyUIワークフロー。Wan 2.2が各ペアを補間し、1本のキャラクターアニメーションにまとめます。",
+      "title": "中割り"
+    },
+    "animation_keyframe_exploration": {
+      "description": "任意のカメラアングルでキャラクターのキーフレームを生成するComfyUIワークフロー。方向・高さ・距離を設定してから、GPT Image 2でショットをレンダリングします。",
+      "title": "キーフレーム探索"
+    },
+    "basics_image_to_video": {
+      "description": "静止画をショットに変換。image-to-videoワークフローを構築し、モーションコントロールで結果を調整して、アップスケーリングで高解像度に仕上げます。",
+      "title": "ComfyUI初心者向けチュートリアル：Image-to-Video、モーションコントロール、アップスケーリング（2026）"
+    },
+    "basics_inpainting": {
+      "description": "ComfyUIで画像を編集・拡大。インペインティングでマスク箇所を再描画し、アウトペインティングでフレームを拡張、アップスケーリングで解像度を高めます。",
+      "title": "ComfyUI初心者向けチュートリアル：インペインティング、アウトペインティング、アップスケーリング（2026）"
+    },
+    "basics_loras_style_controlnets": {
+      "description": "LoRA、スタイル転送、ControlNetをさらに活用。それぞれの役割と、ComfyUIワークフローへの接続方法を解説します。",
+      "title": "ComfyUI初心者向けチュートリアル：LoRA、スタイル転送、ControlNet（2026）"
+    },
+    "basics_node_graph": {
+      "description": "ComfyUIのノードグラフを初心者向けに解説。ノード、リンク、実行キューの仕組みを理解し、最初の動作するパイプラインを構築します。",
+      "title": "初心者向けComfyUIチュートリアル：ノードグラフの基本を完全解説（2026年）"
+    },
+    "basics_text_to_image": {
+      "description": "最初のテキストから画像生成ワークフローを構築し、画像から画像生成向けに調整します。プロンプト、サンプラー、ノイズ除去強度、それぞれの使い分けを解説します。",
+      "title": "初心者向けComfyUIチュートリアル：テキストから画像・画像から画像ワークフロー（2026年）"
+    },
+    "cleanplate_walkthrough_v03": {
+      "title": "クリーンプレート解説"
+    },
+    "deaging_workflow_v03": {
+      "title": "若返りワークフロー"
+    },
+    "dougHogan": {
+      "name": "Doug Hogan"
+    },
+    "frame_adjustments_demo_v03": {
+      "title": "フレーム調整デモ"
+    },
+    "mattes_and_utilities_v03": {
+      "title": "マットとユーティリティ"
+    },
+    "seedance_demo_comfyui_v03": {
+      "title": "Seedanceデモ ComfyUI"
+    },
+    "shaneFu": {
+      "name": "Shane Fu"
+    },
+    "skyreplacement_smaller_v06": {
+      "title": "空の置き換え"
+    }
+  },
+  "ltx": {
+    "freeNote": "無料で付属",
+    "ltxPage": {
+      "astronaut": {
+        "description": "霜に覆われた宇宙飛行士がオーロラを見上げる。"
+      },
+      "blackbird": {
+        "description": "戦闘機が月明かりに照らされた荒れた海の上で急旋回する。"
+      },
+      "circuitry": {
+        "description": "光を放つ人物が花で満たされたグラスから飲む。"
+      },
+      "clip-length": {
+        "answer": "パートナーノードでは、Fastは2～20秒で実行でき、10秒を超えるクリップは720pまたは1080p、24または25 FPSに制限されます。Proは2～10秒です。LTX-2.5には、プロンプト内のアクションを読み取り、拡散開始前にクリップ長を設定する実験的なデュレーションヘッドも搭載されています。",
+        "question": "LTX-2.5の動画は最長何秒ですか？"
+      },
+      "diffusion-fidelity-rendering": {
+        "answer": "このリリースにおける中心的な変更です。シーン全体に計算リソースを均等に割り当てるのではなく、モデルが複雑さに応じて配分します。まず構造を生成します。モーション、構図、フレーミングは、時間方向に8倍圧縮された潜在空間で、高忠実度キーフレーム群とともに生成されます。複雑なシーンではキーフレームを増やし、単純なシーンでは減らします。続く専用のピクセル拡散ステージで、構造とキーフレームを組み合わせて最終動画をレンダリングします。テクスチャ、素材、複雑なオブジェクト、顔をピクセルレベルの精度で描画し、動きの多いショットには静的なショットより多くのレンダリング計算リソースを割り当てます。",
+        "question": "Diffusion Fidelity Renderingとは？"
+      },
+      "drones": {
+        "description": "重量物運搬ドローンが霧深い山脈を越えてヤギを運ぶ。"
+      },
+      "fine-tuning": {
+        "answer": "はい。ベースチェックポイントは適応を前提に構築されているため、自分のデータで元のモデルをファインチューニングできます。",
+        "question": "LTX-2.5はファインチューニングできますか？"
+      },
+      "horseman": {
+        "description": "コートをまとった騎手と馬が、地球上空の雲の上に立つ。"
+      },
+      "is-it-free": {
+        "question": "LTX-2.5は無料で使えますか？"
+      },
+      "multi-shot": {
+        "answer": "はい。1回の生成で複数のつながったショットを生成でき、カットをまたいでキャラクター、環境、照明、音声、スタイルを維持します。個別に生成した結果を後から合わせるのではなく、1回の実行でシーケンスを取得できます。",
+        "question": "LTX-2.5は複数のショットを生成できますか？"
+      },
+      "native-audio": {
+        "answer": "はい。LTX-2.3から同期音声・映像を継承しており、複数ショット生成でもカット間で声を維持します。",
+        "question": "LTX-2.5は音声を生成しますか？"
+      },
+      "portrait": {
+        "description": "風雨にさらされた顔が、深い影からこちらを見つめます。"
+      },
+      "run-in-comfyui": {
+        "question": "ComfyUIでLTX-2.5を実行するには？"
+      },
+      "what-is-ltx": {
+        "question": "LTX-2.5とは？"
+      },
+      "whats-new": {
+        "question": "LTX-2.5とLTX-2.3の違いは？"
+      },
+      "which-variant": {
+        "question": "どのLTX-2.5バリアントを使うべきですか？"
+      }
+    },
+    "modelName": "LTX 2.5",
+    "premiumNote": "従量課金"
+  },
+  "minimax": {
+    "minimaxPage": {
+      "backyard-hero": {
+        "description": "1枚の参照画像からキャラクターの一貫性を保ち、小さなスーパーヒーローがそびえ立つ街の怪物に立ち向かいます。",
+        "name": "庭のヒーロー",
+        "note": "参照画像から動画へ"
+      },
+      "cost-per-generation": {
+        "answer": "従量課金またはサブスクリプションクレジットで利用できます。まずWan 2.2で同じショットを無料で試作し、最終レンダリングにのみクレジットを使えます。",
+        "question": "MiniMax H3の1回の生成にかかる料金は？"
+      },
+      "ice-rider": {
+        "description": "孤独なライダーが氷河の峡谷をワンカットで駆け抜けます。カメラワークとネイティブ音声はH3で生成されています。",
+        "name": "氷の峡谷のライダー",
+        "note": "テキストから動画へ"
+      },
+      "liquid-chrome": {
+        "description": "ティールとアンバーの光の下でクロームの液体が波打つ、反射と微細なディテールのストレステスト。",
+        "name": "リキッドクローム",
+        "note": "テキストから動画へ"
+      },
+      "native-audio": {
+        "answer": "はい。すべてのクリップにネイティブのステレオ音声が含まれます。入力音声を与えると、H3はそのトラックを条件として使用し、上書きや削除はしません。",
+        "question": "MiniMax H3は音声を生成しますか？"
+      },
+      "night-ascent": {
+        "description": "ヘッドランプを付けた登山者が月明かりの砂丘を登ります。暗闇に近い環境でも、細かな粒子感と動きをクリアに保ちます。",
+        "name": "夜の登攀",
+        "note": "テキストから動画"
+      },
+      "open-weights": {
+        "answer": "はい。H3はOpen Weightsとして提供されているため、自分で実行でき、Comfy CloudではPartner Nodesからも利用できます。ローカルで作成したものを商用利用するには、[Comfyを通じてH3の商用ライセンスを取得](https://comfy.org/minimax/license)してください。",
+        "question": "MiniMax H3はOpen Weightsで利用できますか？"
+      },
+      "resolution-length": {
+        "answer": "最大2K、1回の生成につき5〜15秒です。",
+        "question": "MiniMax H3はどの解像度とクリップ長に対応していますか？"
+      },
+      "run-in-comfyui": {
+        "question": "ComfyUIでMiniMax H3を実行するには？"
+      },
+      "stay-comfy-can": {
+        "description": "1枚の商品写真からフルシーンへ。滝のそばで缶から飲料が注がれても、ラベルはくっきり保たれます。",
+        "name": "Stay Comfy缶",
+        "note": "リファレンスから動画"
+      },
+      "sunken-temple": {
+        "description": "彫刻を施した金の水没神殿に差し込む光芒。ショット全体で光と奥行きを安定して保ちます。",
+        "name": "水没した神殿",
+        "note": "テキストから動画"
+      },
+      "what-is-minimax": {
+        "question": "MiniMax H3とは？"
+      }
+    }
+  },
+  "minimaxMusic3": {
+    "minimaxMusic3Page": {
+      "audio-quality": {
+        "answer": "32 kHz、16ビットステレオWAV。",
+        "question": "MiniMax Music 3の出力音質は？"
+      },
+      "commercial-use": {
+        "answer": "はい。年間売上高が2,000万米ドル未満の企業は、MiniMax Community Licenseに基づき商用利用できます。この基準を超える場合はMiniMaxの承認が必要ですが、[Comfyを通じたMiniMaxの商用ライセンス](https://comfy.org/minimax/license)で対応できます。",
+        "question": "MiniMax Music 3を商用利用できますか？"
+      },
+      "control-vocals": {
+        "answer": "はい。性別、声質、歌唱スタイル、ハーモニー、バッキングボーカル、エフェクトを設定できます。",
+        "question": "ボーカルをコントロールできますか？"
+      },
+      "describe-the-sound": {
+        "description": "スタイル、ムード、楽器",
+        "title": "サウンドを説明"
+      },
+      "free-to-use": {
+        "answer": "はい。MiniMax Music 3は[MiniMax Community License](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)に基づくオープンウェイトで、年間売上高が2,000万米ドル未満の企業は商用利用を含め無料で使用できます。",
+        "question": "MiniMax Music 3は無料で使えますか？"
+      },
+      "generate-your-song": {
+        "description": "最長5分のフルトラック",
+        "title": "楽曲を生成"
+      },
+      "how-to-prompt": {
+        "question": "MiniMax Music 3へのプロンプトはどう書けばよいですか？"
+      },
+      "how-to-use": {
+        "answer": "MiniMax Music 3を試す最も簡単な方法は、Comfy Cloudに接続し、サンプルワークフローで該当するワークフローを検索して実行することです。ローカルでモデルを使用するには、Comfy Desktopをダウンロードし、新しいComfyUIインスタンスを作成するか既存のインスタンスを更新します。サンプルワークフローでMiniMax Music 3を検索し、モデルをダウンロードして実行してください。",
+        "question": "MiniMax Music 3の使い方を教えてください。"
+      },
+      "sample-01": {
+        "description": "ゴスペル・ソウル"
+      },
+      "sample-02": {
+        "description": "ロック（インストゥルメンタル）"
+      },
+      "song-length": {
+        "answer": "1回の生成で最長5分です。曲全体で構成が維持されるため、イントロからアウトロまでメロディ、リズム、ボーカルの個性を一貫させられます。",
+        "question": "MiniMax Music 3で生成できる曲の長さは？"
+      },
+      "what-is-minimax-music-3": {
+        "answer": "完全な楽曲を書き出せるオープンウェイトの音楽生成モデルです。歌詞とサウンドの説明を指定すると、ボーカルとフルアレンジを含む完成トラックが出力されます。",
+        "question": "MiniMax Music 3とは？"
+      },
+      "write-your-lyrics": {
+        "description": "自作の歌詞、またはテーマから自動作成",
+        "title": "歌詞を書く"
+      }
+    }
+  },
+  "seedance": {
+    "clips": {
+      "balloons": {
+        "description": "風船の文字の下、雨で濡れた街路を横断する動物たち。"
+      },
+      "city": {
+        "description": "地面すれすれの視点で、濡れた街路の上を通過するショット。"
+      },
+      "giraffe": {
+        "description": "炎の輪を一跳びで越えるキリン。"
+      },
+      "grass": {
+        "description": "無人のオフィスフロア中央を走る草原。"
+      },
+      "shark": {
+        "description": "背後でサメが跳ね上がる中、フリスビーを取ってくる犬。"
+      },
+      "worldcup": {
+        "description": "スタンドから手持ち撮影した、満員のスタジアム観衆。"
+      }
+    },
+    "seedancePage": {
+      "clip-length": {
+        "answer": "ネイティブで最長30秒です。より長い映像が必要な場合は、キャンバス上でショットをつなげられます。",
+        "question": "Seedance 2.5で生成できる動画の長さは？"
+      },
+      "commercial-use": {
+        "answer": "はい。レンダリングには商用利用権が含まれ、ウォーターマークは付きません。",
+        "question": "動画を商用利用できますか？"
+      },
+      "draft-free": {
+        "description": "同じワークフロー、クレジット不要",
+        "title": "他のモデルで無料ドラフト"
+      },
+      "is-it-free": {
+        "answer": "Seedanceは従量課金またはサブスクリプションのクレジットで利用できます。まずWan 2.2で同じショットを無料でドラフトし、最終レンダリング時だけクレジットを使えます。",
+        "question": "Seedance 2.5は無料で使えますか？"
+      },
+      "native-audio": {
+        "answer": "はい。会話、音楽、効果音はフレームと同時に生成されるため、後からクリップに音を付ける必要はありません。",
+        "question": "Seedance 2.5は音声を生成できますか？"
+      },
+      "run-in-comfyui": {
+        "answer": "Seedanceのワークフローテンプレートを開くか、キャンバス上の任意のワークフローにSeedanceを追加します。Comfy Cloudで実行されるため、ローカルのGPUは不要です。",
+        "question": "ComfyUIでSeedance 2.5を実行するには？"
+      },
+      "switch-to-seedance": {
+        "description": "最終レンダリング、ネイティブ音声",
+        "title": "Seedance 2.5に切り替え"
+      },
+      "what-is-seedance": {
+        "answer": "ByteDanceのシネマティック動画モデルです。テキストプロンプトまたは参照画像を渡すと、ネイティブ音声付きでショットをレンダリングします。Comfyでは、他のすべてのモデルと並べてキャンバス上で指示できます。",
+        "question": "Seedance 2.5とは？"
+      },
+      "whats-new-in-25": {
+        "answer": "2.0より長いネイティブクリップと、より多くの参照入力に対応。",
+        "question": "Seedance 2.5はSeedance 2.0から何が変わりましたか？"
+      },
+      "write-the-shot": {
+        "description": "カメラ、被写体、フレーミング",
+        "title": "ショットを書く"
+      }
+    },
+    "sharedCardIdentity": {
+      "name": "Seedance 2.5",
+      "note": "従量課金"
+    }
+  },
+  "wan3": {
+    "wan3Page": {
+      "clip-length": {
+        "answer": "2〜30秒を、つなぎ合わせなしの連続テイクで生成できます。音声はネイティブで生成するか、オフにできます。",
+        "question": "クリップの長さは？"
+      },
+      "how-to-run": {
+        "question": "ComfyUIでWan 3.0を実行するには？"
+      },
+      "prompting": {
+        "answer": "まずはシンプルに、被写体、シーン、動きから始めましょう。1文でクリップ全体を指示できます。さらに細かく制御するには、カメラワーク、照明、スタイル、音を追加するか、@構文でアップロードした素材を直接指定します。「@Image1がドアを通り抜け、@Audio1のセリフを話す。」プロンプトが長く正確であるほど、出力は意図に近づきます。最大20,000文字まで入力できます。",
+        "question": "Wan 3.0へのプロンプトはどう書きますか？"
+      },
+      "video-editing": {
+        "answer": "はい。変更内容を指定するだけです。オブジェクトの削除、シーンの再ライティング、被写体の入れ替えなどを行っても、フレーム内の他の部分はそのまま保たれます。既存の映像を延長することもできます。",
+        "question": "Wan 3.0で手持ちの動画を編集できますか？"
+      },
+      "what-is-wan-3": {
+        "answer": "Alibabaの最新動画モデルです。プロンプト、最大20件の参照アセット、またはドキュメントを渡すと、ネイティブ音声付きで最大30秒の動画を生成します。",
+        "question": "Wan 3.0とは？"
+      },
+      "whats-new": {
+        "answer": "ネイティブの30秒クリップ、最大20件の参照入力、迅速でコスト効率のよい生成向けの480p生成。",
+        "question": "Wan 3.0 は Wan 2.7 から何が新しくなりましたか？"
+      }
+    }
+  },
+  "wanAnimate2": {
+    "wanAnimate2Page": {
+      "run-wan-animate-2": {
+        "description": "最終レンダリング",
+        "title": "Wan Animate 2 を実行"
+      },
+      "upload-your-reference": {
+        "description": "キャラクターの参照画像と、転送したい動きを含むドライビング動画。",
+        "title": "参照素材をアップロード"
+      },
+      "write-the-shot": {
+        "description": "プロンプトを追加、クレジット不要",
+        "title": "ショットを書く"
+      }
+    }
+  }
+}

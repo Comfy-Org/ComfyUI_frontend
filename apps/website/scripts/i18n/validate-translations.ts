@@ -15,6 +15,7 @@ import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
+import { machineLayer } from '../../src/i18n/pipeline/catalogs'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
 import { parsePreserveTerms } from './config'
 import type { Violation } from '../../src/i18n/pipeline/validate'
@@ -60,9 +61,10 @@ function main(): void {
   }
 
   const all = LOCALIZED_CODES.flatMap((locale) => {
-    const translated = readTranslationLayer(
-      path.join(CONTENT_DIR, `${locale}.json`)
-    )
+    const translated = {
+      ...machineLayer('main.json', locale),
+      ...machineLayer('content.json', locale)
+    }
     return collectViolations(english, translated, locale, preserveTerms)
   })
 
