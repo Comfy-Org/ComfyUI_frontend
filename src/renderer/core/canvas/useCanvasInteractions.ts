@@ -16,7 +16,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const { getCanvas } = canvasStore
 
   const isStandardNavMode = computed(
     () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
@@ -90,8 +89,7 @@ export function useCanvasInteractions() {
   }
 
   const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
-    const canvas = getCanvas()
-    if (canvas.read_only && event.buttons === 1) {
+    if (canvasStore.canvas?.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
