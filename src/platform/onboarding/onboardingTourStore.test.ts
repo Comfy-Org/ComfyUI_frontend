@@ -1,7 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { DetachedWindowAPI } from 'happy-dom'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -15,6 +13,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
+import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 
 import {
   clearCoachmarks,
@@ -45,13 +44,7 @@ function seenTours(): string[] {
 }
 
 function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
-    window
-  ).happyDOM
-  if (!happyDOM) {
-    throw new Error('window.happyDOM is unavailable to set viewport')
-  }
-  happyDOM.setViewport(viewport)
+  setHappyDomViewport(viewport)
 }
 
 function mountStore() {
