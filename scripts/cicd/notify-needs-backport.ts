@@ -15,7 +15,7 @@
  * therefore states which of those three the PR is currently missing — the
  * part a watcher would otherwise have to open the PR to work out.
  */
-import { appendFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
 /** `pr-backport.yaml` is `on: pull_request_target: branches: [main]`. */
@@ -91,41 +91,58 @@ export function parseSlackRecipients(raw: string | undefined): SlackRecipients {
   return { valid: [...new Set(valid)], invalid }
 }
 
-export interface NeedsBackportEvent {
-  prNumber: number
-  prTitle: string
-  prUrl: string
-  prAuthor: string
+/**
+ * The REST API reports `state` and `merged` separately; a backport turns on
+ * the difference between the two ways a PR is closed.
+ */
+export type PullRequestState = 'OPEN' | 'CLOSED' | 'MERGED'
+
+export interface PullRequest {
+  number: number
+  title: string
+  url: string
+  author: string
   baseRef: string
-  merged: boolean
-  labeledBy: string
+  state: PullRequestState
   /** Every label on the PR, not just the one that was added. */
   labels: readonly string[]
 }
 
+export interface NeedsBackportEvent {
+  pullRequest: PullRequest
+  labeledBy: string
+}
+
 /** What `pr-backport.yaml` will do with this PR, and when. */
-function backportOutlook(event: NeedsBackportEvent, targets: string[]): string {
-  if (event.baseRef !== BACKPORT_SOURCE_BRANCH) {
-    return `:warning: The base branch is \`${escapeSlackText(event.baseRef)}\`, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
+function backportOutlook(pr: PullRequest, targets: string[]): string {
+  if (pr.baseRef !== BACKPORT_SOURCE_BRANCH) {
+    return `:warning: The base branch is \`${escapeSlackText(pr.baseRef)}\`, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
+  }
+
+  if (pr.state === 'CLOSED') {
+    return ':warning: The PR was closed without merging, so *PR Backport* will not run.'
   }
 
   if (targets.length === 0) {
-    return ':warning: No target branch label yet — *PR Backport* fails without one. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
+    return ':warning: No target branch label — *PR Backport* fails without one. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
   }
 
   const list = targets
     .map((target) => `\`${escapeSlackText(target)}\``)
     .join(', ')
-  return event.merged
+  return pr.state === 'MERGED'
     ? `The PR is merged, so *PR Backport* is cherry-picking into ${list} now.`
     : `The PR is still open — *PR Backport* will cherry-pick into ${list} once it merges.`
 }
 
-export function buildNeedsBackportText(event: NeedsBackportEvent): string {
+export function buildNeedsBackportText({
+  pullRequest,
+  labeledBy
+}: NeedsBackportEvent): string {
   return [
-    `:label: \`needs-backport\` was added to <${event.prUrl}|#${event.prNumber} ${escapeSlackText(event.prTitle)}>`,
-    `Author: ${escapeSlackText(event.prAuthor)} · Labelled by: ${escapeSlackText(event.labeledBy)} · Base: \`${escapeSlackText(event.baseRef)}\``,
-    backportOutlook(event, backportTargetsFromLabels(event.labels))
+    `:label: \`needs-backport\` was added to <${pullRequest.url}|#${pullRequest.number} ${escapeSlackText(pullRequest.title)}>`,
+    `Author: ${escapeSlackText(pullRequest.author)} · Labelled by: ${escapeSlackText(labeledBy)} · Base: \`${escapeSlackText(pullRequest.baseRef)}\``,
+    backportOutlook(pullRequest, backportTargetsFromLabels(pullRequest.labels))
   ].join('\n')
 }
 
@@ -152,46 +169,71 @@ function setOutput(name: string, value: string) {
   appendFileSync(file, `${name}=${value}\n`)
 }
 
+/** The subset of `GET /repos/{owner}/{repo}/pulls/{number}` this reads. */
+interface PullRequestResponse {
+  number?: number
+  title?: string
+  html_url?: string
+  user?: { login?: string }
+  base?: { ref?: string }
+  state?: string
+  merged?: boolean
+  labels?: { name?: string }[]
+}
+
+/**
+ * Reads one REST pull request payload.
+ *
+ * The PR is read live rather than taken from the webhook payload, so these
+ * fields are the script's contract with the API and every one of them is
+ * checked: a field read as undefined would otherwise reach Slack as
+ * `#NaN undefined`.
+ */
+export function parsePullRequest(json: string): PullRequest {
+  const pr = JSON.parse(json) as PullRequestResponse
+
+  const missing = (field: string): never => {
+    throw new Error(`The pull request payload has no ${field}: ${json}`)
+  }
+
+  const state = (): PullRequestState => {
+    if (pr.merged) return 'MERGED'
+    if (pr.state === 'closed') return 'CLOSED'
+    if (pr.state === 'open') return 'OPEN'
+    return missing(`known state (got "${pr.state}")`)
+  }
+
+  return {
+    number: Number.isInteger(pr.number) ? pr.number! : missing('number'),
+    title: pr.title ?? missing('title'),
+    url: pr.html_url ?? missing('html_url'),
+    author: pr.user?.login ?? missing('user.login'),
+    baseRef: pr.base?.ref ?? missing('base.ref'),
+    state: state(),
+    labels: (pr.labels ?? []).map(
+      (label) => label.name ?? missing('label name')
+    )
+  }
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name]
   if (!value) throw new Error(`${name} is empty; the workflow must set it.`)
   return value
 }
 
-function readLabels(): string[] {
-  const raw = process.env.PR_LABELS?.trim()
-  if (!raw) return []
-  const parsed: unknown = JSON.parse(raw)
-  if (!Array.isArray(parsed)) {
-    throw new Error(`PR_LABELS is not a JSON array: ${raw}`)
-  }
-  return parsed.map(String)
-}
-
-function readEvent(): NeedsBackportEvent {
-  const prNumber = Number(requireEnv('PR_NUMBER'))
-  if (!Number.isInteger(prNumber) || prNumber <= 0) {
-    throw new Error(`PR_NUMBER is not a pull request number: ${prNumber}`)
-  }
-
-  return {
-    prNumber,
-    prTitle: requireEnv('PR_TITLE'),
-    prUrl: requireEnv('PR_URL'),
-    prAuthor: requireEnv('PR_AUTHOR'),
-    baseRef: requireEnv('PR_BASE_REF'),
-    merged: process.env.PR_MERGED === 'true',
-    labeledBy: requireEnv('LABELED_BY'),
-    labels: readLabels()
-  }
-}
-
 function main() {
   const { values } = parseArgs({
-    options: { out: { type: 'string', default: 'slack-dms.json' } }
+    options: {
+      pr: { type: 'string', default: 'pr.json' },
+      out: { type: 'string', default: 'slack-dms.json' }
+    }
   })
 
-  const event = readEvent()
+  const event: NeedsBackportEvent = {
+    pullRequest: parsePullRequest(readFileSync(values.pr, 'utf8')),
+    labeledBy: requireEnv('LABELED_BY')
+  }
   const { valid, invalid } = parseSlackRecipients(
     process.env.SLACK_NEEDS_BACKPORT_WATCHERS
   )

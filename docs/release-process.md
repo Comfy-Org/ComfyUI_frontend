@@ -63,9 +63,15 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 `pr-notify-needs-backport.yaml` DMs the backport watchers as soon as
 `needs-backport` is added, so a backport decision is heard while its context is
 fresh rather than when the next release cut lists it. The DM says whether
-`pr-backport.yaml` is cherry-picking already, waiting on the merge, or blocked —
-a PR based on a release branch or carrying no version label never reaches the
-cherry-pick, and that is the case worth hearing about early.
+`pr-backport.yaml` is cherry-picking already, waiting on the merge, or will
+never start — a PR carrying no version label never reaches the cherry-pick, and
+that is the case worth hearing about early. The PR is read live rather than
+taken from the label webhook, so the labels it reports are the ones that had
+landed by the time the DM was sent.
+
+It covers pull requests into `main`. A `pull_request_target` workflow is loaded
+from the PR's base branch, so release lines only get these DMs once they are
+cut from a `main` that already contains the workflow.
 
 The recipients are the repository **variable**
 `SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs

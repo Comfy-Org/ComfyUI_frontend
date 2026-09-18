@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 # Removing and re-adding the label is how `pr-backport.yaml`'s own failure
 # comment tells you to re-run a conflicted backport, so two events for one PR
@@ -49,26 +50,41 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      # Read the PR rather than trust the webhook payload. The documented
+      # process (docs/release-process.md) adds `needs-backport` first and the
+      # target label second, so the payload's label list is a snapshot taken
+      # before the target arrived and the DM would warn about a missing target
+      # that landed a second later. By the time this runs the labelling is
+      # long finished.
+      #
+      # REST rather than `gh pr view`: pr-backport.yaml records that `gh pr view`
+      # fails under the auto-provided token, and backport-token-scopes.test.ts
+      # pins that path to REST so the GraphQL scope requirement cannot creep
+      # back in. This endpoint needs only `pull-requests: read`.
+      - name: Read the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GH_REPO}/pulls/${PR_NUMBER}" > pr.json
+
       - name: Build the direct messages
         id: build
-        # Every PR-controlled value reaches the script through the environment.
-        # This job runs under pull_request_target, so it holds SLACK_BOT_TOKEN
-        # on a PR anyone can open: interpolating a title into `run:` would hand
-        # whoever wrote that title a shell next to the secret.
+        # Every PR-controlled value reaches the script through a file or the
+        # environment. This job runs under pull_request_target, so it holds
+        # SLACK_BOT_TOKEN on a PR anyone can open: interpolating a title into
+        # `run:` would hand whoever wrote that title a shell next to the secret.
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          PR_MERGED: ${{ github.event.pull_request.merged }}
-          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           LABELED_BY: ${{ github.event.sender.login }}
           # Space- or comma-separated Slack member IDs. Default: @huang47, who
           # asked to be notified on the label rather than on the release cut.
           SLACK_NEEDS_BACKPORT_WATCHERS: >-
             ${{ vars.SLACK_NEEDS_BACKPORT_WATCHERS || 'U0BA79D8R1T' }}
-        run: pnpm exec tsx scripts/cicd/notify-needs-backport.ts --out dms.json
+        run: |
+          pnpm exec tsx scripts/cicd/notify-needs-backport.ts \
+            --pr pr.json --out dms.json
 
       # A step with an `if` loses the implicit success() guard, so it is spelled
       # out: without it a failed build step would still reach the send below.
@@ -86,19 +102,28 @@ jobs:
           # survives the loop.
           while IFS= read -r BODY; do
             CHANNEL=$(jq -r '.channel' <<<"$BODY")
-            # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
-            # scope and recipient errors, so the status code alone would
-            # report a dropped DM as a success.
-            RESPONSE=$(curl -sS -X POST \
+            # Every failure below is caught rather than left to `set -e`:
+            # under it, one unreachable recipient would abort the loop and
+            # the rest would go unnotified with no annotation at all.
+            if ! RESPONSE=$(curl -sS -X POST \
               --connect-timeout 10 --max-time 30 \
               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
               -H 'Content-Type: application/json' \
               -d "$BODY" \
-              https://slack.com/api/chat.postMessage)
-            if jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+              https://slack.com/api/chat.postMessage); then
+              echo "::warning::Could not reach Slack to DM ${CHANNEL}"
+              FAILED=1
+              continue
+            fi
+            # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
+            # scope and recipient errors, so the status code alone would
+            # report a dropped DM as a success.
+            if jq -e '.ok == true' <<<"$RESPONSE" >/dev/null 2>&1; then
               echo "Notified ${CHANNEL}"
             else
-              ERROR=$(jq -r '.error // "unparseable response"' <<<"$RESPONSE")
+              # An HTML error page is not JSON, so jq exits non-zero here.
+              ERROR=$(jq -r '.error // "no error field"' <<<"$RESPONSE" \
+                2>/dev/null) || ERROR='unparseable response'
               echo "::warning::Slack rejected the DM to ${CHANNEL}: ${ERROR}"
               FAILED=1
             fi

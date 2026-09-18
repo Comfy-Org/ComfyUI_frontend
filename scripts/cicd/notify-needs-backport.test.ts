@@ -3,29 +3,30 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
-import type { NeedsBackportEvent } from './notify-needs-backport'
+import type { NeedsBackportEvent, PullRequest } from './notify-needs-backport'
 import {
   BACKPORT_SOURCE_BRANCH,
   backportTargetsFromLabels,
   buildDirectMessages,
   buildNeedsBackportText,
   escapeSlackText,
+  parsePullRequest,
   parseSlackRecipients
 } from './notify-needs-backport'
 
-function event(
-  overrides: Partial<NeedsBackportEvent> = {}
-): NeedsBackportEvent {
+function event(overrides: Partial<PullRequest> = {}): NeedsBackportEvent {
   return {
-    prNumber: 15102,
-    prTitle: 'fix: restore the widget dropdown',
-    prUrl: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/15102',
-    prAuthor: 'jaeone94',
-    baseRef: 'main',
-    merged: true,
-    labeledBy: 'huang47',
-    labels: ['needs-backport', 'core/1.47'],
-    ...overrides
+    pullRequest: {
+      number: 15102,
+      title: 'fix: restore the widget dropdown',
+      url: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/15102',
+      author: 'jaeone94',
+      baseRef: 'main',
+      state: 'MERGED',
+      labels: ['needs-backport', 'core/1.47'],
+      ...overrides
+    },
+    labeledBy: 'huang47'
   }
 }
 
@@ -144,29 +145,34 @@ describe('buildNeedsBackportText', () => {
 
   // What the recipient needs from the DM is whether a backport is now under
   // way, waiting on a merge, or not going to happen at all. Each row is one of
-  // pr-backport.yaml's three preconditions: merged, based on main, targeted.
+  // pr-backport.yaml's preconditions: merged, based on main, targeted.
   it.for([
     {
-      state: 'merged with a target',
-      overrides: { merged: true },
+      situation: 'merged with a target',
+      overrides: { state: 'MERGED' as const },
       expected: 'is cherry-picking into `core/1.47` now'
     },
     {
-      state: 'still open',
-      overrides: { merged: false },
+      situation: 'still open',
+      overrides: { state: 'OPEN' as const },
       expected: 'will cherry-pick into `core/1.47` once it merges'
     },
     {
-      state: 'labelled with no target',
-      overrides: { labels: ['needs-backport'] },
-      expected: 'No target branch label yet'
+      situation: 'closed without merging',
+      overrides: { state: 'CLOSED' as const },
+      expected: 'closed without merging'
     },
     {
-      state: 'not based on main',
+      situation: 'labelled with no target',
+      overrides: { labels: ['needs-backport'] },
+      expected: 'No target branch label'
+    },
+    {
+      situation: 'not based on main',
       overrides: { baseRef: 'core/1.47' },
       expected: 'only runs on pull requests into `main`'
     }
-  ])('says what happens next when $state', ({ overrides, expected }) => {
+  ])('says what happens next when $situation', ({ overrides, expected }) => {
     expect(buildNeedsBackportText(event(overrides))).toContain(expected)
   })
 
@@ -178,15 +184,104 @@ describe('buildNeedsBackportText', () => {
     )
 
     expect(text).toContain('only runs on pull requests into `main`')
-    expect(text).not.toContain('No target branch label yet')
+    expect(text).not.toContain('No target branch label')
   })
 
   it('escapes a PR title so it cannot end the link early', () => {
     const text = buildNeedsBackportText(
-      event({ prTitle: 'fix: treat a < b && c > d' })
+      event({ title: 'fix: treat a < b && c > d' })
     )
 
     expect(text).toContain('|#15102 fix: treat a &lt; b &amp;&amp; c &gt; d>\n')
+  })
+})
+
+describe('parsePullRequest', () => {
+  // Shaped after `GET /repos/{owner}/{repo}/pulls/{number}`, keeping a few of
+  // the fields the script ignores. These names are the contract with the API:
+  // one read as undefined reaches Slack as "#NaN undefined" unless it throws.
+  const REST_PULL_REQUEST = JSON.stringify({
+    number: 15102,
+    state: 'closed',
+    merged: true,
+    title: 'fix: restore the widget dropdown',
+    html_url: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/15102',
+    url: 'https://api.github.com/repos/Comfy-Org/ComfyUI_frontend/pulls/15102',
+    user: { login: 'jaeone94', id: 1, type: 'User' },
+    base: { ref: 'main', sha: 'abc123' },
+    head: { ref: 'fix/widget-dropdown', sha: 'def456' },
+    labels: [
+      { id: 1, name: 'needs-backport', color: 'ededed' },
+      { id: 2, name: 'core/1.47', color: 'ededed' }
+    ]
+  })
+
+  const withoutField = (field: string) => {
+    const payload: Record<string, unknown> = JSON.parse(REST_PULL_REQUEST)
+    delete payload[field]
+    return JSON.stringify(payload)
+  }
+
+  it('reads the fields the DM is built from', () => {
+    expect(parsePullRequest(REST_PULL_REQUEST)).toEqual({
+      number: 15102,
+      title: 'fix: restore the widget dropdown',
+      url: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/15102',
+      author: 'jaeone94',
+      baseRef: 'main',
+      state: 'MERGED',
+      labels: ['needs-backport', 'core/1.47']
+    })
+  })
+
+  // REST spells the three states across two fields, and a backport turns on
+  // telling the two closed ones apart.
+  it.for([
+    { rest: { state: 'open', merged: false }, state: 'OPEN' },
+    { rest: { state: 'closed', merged: true }, state: 'MERGED' },
+    { rest: { state: 'closed', merged: false }, state: 'CLOSED' }
+  ])('reads $rest as $state', ({ rest, state }) => {
+    const payload = { ...JSON.parse(REST_PULL_REQUEST), ...rest }
+
+    expect(parsePullRequest(JSON.stringify(payload)).state).toBe(state)
+  })
+
+  it('reads an unlabelled PR as having no labels', () => {
+    const payload = { ...JSON.parse(REST_PULL_REQUEST), labels: [] }
+
+    expect(parsePullRequest(JSON.stringify(payload)).labels).toEqual([])
+  })
+
+  it.for([
+    { field: 'number' },
+    { field: 'title' },
+    { field: 'html_url' },
+    { field: 'user' },
+    { field: 'base' }
+  ])('refuses to build a message without $field', ({ field }) => {
+    expect(() => parsePullRequest(withoutField(field))).toThrow()
+  })
+
+  it('reads a merged PR as merged even with no state field', () => {
+    expect(parsePullRequest(withoutField('state')).state).toBe('MERGED')
+  })
+
+  it('refuses a payload that is neither open, closed nor merged', () => {
+    const payload: Record<string, unknown> = JSON.parse(REST_PULL_REQUEST)
+    delete payload.state
+    delete payload.merged
+
+    expect(() => parsePullRequest(JSON.stringify(payload))).toThrow()
+  })
+
+  it('refuses a state it cannot reason about', () => {
+    const payload = {
+      ...JSON.parse(REST_PULL_REQUEST),
+      state: 'locked',
+      merged: false
+    }
+
+    expect(() => parsePullRequest(JSON.stringify(payload))).toThrow(/locked/)
   })
 })
 
@@ -232,7 +327,7 @@ const NOTIFY_WORKFLOW = '.github/workflows/pr-notify-needs-backport.yaml'
 describe('pr-notify-needs-backport.yaml', () => {
   const workflow = readWorkflow(NOTIFY_WORKFLOW)
   const steps = Object.values(workflow.jobs ?? {}).flatMap(
-    (job) => job.steps ?? []
+    (job) => job?.steps ?? []
   )
 
   // `pull_request` hands a fork PR a read-only token with no secrets, so the
@@ -250,17 +345,18 @@ describe('pr-notify-needs-backport.yaml', () => {
     )
   })
 
-  // This job holds SLACK_BOT_TOKEN on a PR anyone can open. A PR title or
-  // branch name expanded into `run:` is a shell for its author.
-  it('passes PR-controlled values through the environment only', () => {
+  // This job holds SLACK_BOT_TOKEN on a PR anyone can open. A PR title, a
+  // branch name or a label expanded into `run:` is a shell for whoever wrote
+  // it, so nothing off the webhook may reach a script body directly.
+  it('passes webhook values through the environment only', () => {
     const interpolated = steps
-      .filter((step) => step.run?.includes('${{ github.event.pull_request'))
+      .filter((step) => step.run?.includes('${{ github.event'))
       .map((step) => step.name ?? '<unnamed step>')
 
     expect(interpolated).toEqual([])
     expect(
-      steps.find((step) => step.name === 'Build the direct messages')?.env
-    ).toMatchObject({ PR_TITLE: '${{ github.event.pull_request.title }}' })
+      steps.find((step) => step.name === 'Read the pull request')?.env
+    ).toMatchObject({ PR_NUMBER: '${{ github.event.pull_request.number }}' })
   })
 
   // Slack answers HTTP 200 with {"ok":false} on auth, scope and recipient
@@ -272,6 +368,17 @@ describe('pr-notify-needs-backport.yaml', () => {
 
     expect(send).toContain('.ok == true')
     expect(send).toContain('FAILED=1')
+  })
+
+  // The loop runs under `set -e`, where an unreachable Slack would abort it
+  // at the first recipient and the rest would go unnotified and unannotated —
+  // the per-recipient accounting exists precisely for that case.
+  it('keeps going when one recipient cannot be reached', () => {
+    const send =
+      steps.find((step) => step.name === 'Send the direct messages')?.run ?? ''
+
+    expect(send).toMatch(/if !\s+RESPONSE=\$\(curl/)
+    expect(send).toContain('continue')
   })
 
   // A step with an `if` loses the implicit success() guard, so the send step
