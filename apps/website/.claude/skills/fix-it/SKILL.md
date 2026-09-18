@@ -88,12 +88,16 @@ contradicts.
 Goal: the pull request goes to the merge queue only when merging is what its
 author, its reviewers, and its content all call for.
 
-Take one reading with `gh pr view <number> --json
-reviewDecision,mergeStateStatus,headRefOid,isDraft,title,labels` after your
-last push and after every check has finished, and keep the `headRefOid` it
-returns. Send the pull request to merge with
+Take the gate reading immediately before the merge command, after your last
+push and after every check has finished, and take all of it together: `gh pr
+view <number> --json reviewDecision,mergeStateStatus,headRefOid,isDraft,title,
+labels,body`, `gh pr checks <number>`, the review threads with their resolved
+state, and the issue comments on the pull request. Nothing read earlier in the
+session counts, because checks, threads, holds, and the description can all
+change while you work. Keep the `headRefOid` from that reading. Send the pull
+request to merge with
 `gh pr merge <number> --squash --match-head-commit <that sha>`, so a commit
-that lands between your reading and the merge is refused rather than queued
+that lands between the reading and the merge is refused rather than queued
 unread, and only when every line below is true in that one reading:
 
 - `reviewDecision` is `APPROVED` and `mergeStateStatus` is `CLEAN`. GitHub
