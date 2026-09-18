@@ -360,16 +360,30 @@ export class LayoutFollowerBridge extends EventTarget {
    * the intent/reality disagreement so the next `reconcile()` (any status
    * frame) retries, instead of the bridge holding a subscription that does not
    * exist server-side and going silently deaf.
+   *
+   * A malformed ack is `ok: true` with no usable `seq` — the parser strips an
+   * invalid `seq` rather than rejecting the frame. It is re-dispatched as
+   * `ok: false` so consumers branching on `ok` take the retry path the bridge
+   * itself took, and the subscription the server did accept is released first.
    */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) {
-      this.ackSeq = subscribed.seq ?? null
-      this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
-    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+    const ackedSeq = subscribed.ok ? (subscribed.seq ?? null) : null
+    if (ackedSeq !== null) {
+      this.ackSeq = ackedSeq
+      this.catchUpPending = true
+      this.dispatchEvent(new CustomEvent(event.type, { detail: subscribed }))
+      return
+    }
+    if (subscribed.ok)
+      trySend(() => this.client.unsubscribe(subscribed.workflowId))
+    this.sentWorkflowId = null
+    const detail: DocSubscribed = subscribed.ok
+      ? { ...subscribed, ok: false, code: subscribed.code ?? 'malformed_ack' }
+      : subscribed
+    this.dispatchEvent(new CustomEvent(event.type, { detail }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
