@@ -204,8 +204,13 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe()
   )
   const framer = createAgentArrivalFramer(
-    () => useAgentConversationStore().activeTurnId
+    () => useAgentConversationStore().activeTurnId,
+    (id) => getGraph()?._nodes_by_id[id]
   )
+
+  function getMountedCanvas(): typeof app.canvas | undefined {
+    return app.canvas
+  }
 
   /**
    * Show the user what just arrived.
@@ -224,7 +229,7 @@ function startAgentCrdtFollower(
     // the store's own update. Widened because the definite-assignment
     // assertion on `app.canvas` does not hold until that host mounts, and a
     // frame can land first.
-    const canvas: typeof app.canvas | undefined = app.canvas
+    const canvas = getMountedCanvas()
     const graph = getGraph()
     if (!canvas || !graph) return
     const nodes = nodeIds

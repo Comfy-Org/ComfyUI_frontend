@@ -1,6 +1,7 @@
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
@@ -101,10 +102,14 @@ export interface AgentArrivalFramer {
  * started (it is cleared between turns), so it never splits a build.
  */
 export function createAgentArrivalFramer(
-  currentTurnId: () => string | null
+  currentTurnId: () => string | null,
+  resolveNode: (id: NodeId, canvas: LGraphCanvas) => LGraphNode | undefined = (
+    id,
+    canvas
+  ) => canvas.graph?._nodes_by_id[id]
 ): AgentArrivalFramer {
   let buildTurnId: string | null = null
-  let build: LGraphNode[] = []
+  let build: NodeId[] = []
 
   return {
     reveal(canvas, nodes, options = {}) {
@@ -114,11 +119,15 @@ export function createAgentArrivalFramer(
         buildTurnId = turnId
         build = []
       }
-      build = [...build, ...nodes]
-      if (options.select !== false) canvas.selectItems([...build])
+      build = [...build, ...nodes.map((node) => node.id)]
+      const liveBuild = build
+        .map((id) => resolveNode(id, canvas))
+        .filter((node) => node !== undefined)
+      build = liveBuild.map((node) => node.id)
+      if (options.select !== false) canvas.selectItems(liveBuild)
       if (!needsFraming(canvas, nodes)) return
 
-      const bounds = createPositionBounds(build, FRAME_PADDING)
+      const bounds = createPositionBounds(liveBuild, FRAME_PADDING)
       if (!bounds) return
       canvas.animateToBounds(bounds, {
         viewport: visibleCanvasViewport(canvas)

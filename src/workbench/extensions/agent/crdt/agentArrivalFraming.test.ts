@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import { createPositionBounds } from '@/utils/positionBounds'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { AgentArrivalFramer } from './agentArrivalFraming'
 import { createAgentArrivalFramer } from './agentArrivalFraming'
 
 vi.mock(import('@/platform/telemetry'))
@@ -20,13 +21,15 @@ function stubCanvas({
 } = {}) {
   const animateToBounds = vi.fn()
   const selectItems = vi.fn()
+  const nodesById: Record<string, LGraphNode> = {}
   const canvas = fromPartial<LGraphCanvas>({
     canvas: { width, height },
     ds: { scale, offset },
+    graph: { _nodes_by_id: nodesById },
     animateToBounds,
     selectItems
   })
-  return { canvas, animateToBounds, selectItems }
+  return { canvas, animateToBounds, selectItems, nodesById }
 }
 
 let nextNodeId = 1
@@ -37,6 +40,16 @@ function node(pos: [number, number], size: [number, number] = [240, 86]) {
   item.pos = pos
   item.size = size
   return item
+}
+
+function reveal(
+  build: AgentArrivalFramer,
+  canvas: LGraphCanvas,
+  nodes: LGraphNode[],
+  options?: { select?: boolean }
+) {
+  for (const item of nodes) canvas.graph!._nodes_by_id[item.id] = item
+  build.reveal(canvas, nodes, options)
 }
 
 /** The docked panel, at its minimum width, covering the right of the canvas. */
@@ -81,7 +94,7 @@ describe('createAgentArrivalFramer', () => {
   it('frames a build that landed off screen', () => {
     const { canvas, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [node([3000, 0], [240, 86])])
+    reveal(framer(), canvas, [node([3000, 0], [240, 86])])
 
     expect(animateToBounds).toHaveBeenCalledOnce()
     expect(animateToBounds.mock.calls[0][0]).toEqual([2960, -40, 320, 166])
@@ -95,7 +108,7 @@ describe('createAgentArrivalFramer', () => {
   it('does not move the camera when the work landed in view', () => {
     const { canvas, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [node([700, 200])])
+    reveal(framer(), canvas, [node([700, 200])])
 
     expect(animateToBounds).not.toHaveBeenCalled()
   })
@@ -104,7 +117,7 @@ describe('createAgentArrivalFramer', () => {
   it('does not move the camera when only part of the arrival is in view', () => {
     const { canvas, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [node([700, 200]), node([9000, 0])])
+    reveal(framer(), canvas, [node([700, 200]), node([9000, 0])])
 
     expect(animateToBounds).not.toHaveBeenCalled()
   })
@@ -114,7 +127,7 @@ describe('createAgentArrivalFramer', () => {
     openPanel()
     const { canvas, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [node([2200, 0])])
+    reveal(framer(), canvas, [node([2200, 0])])
 
     expect(animateToBounds).toHaveBeenCalledOnce()
     expect(animateToBounds.mock.calls[0][1]).toEqual({
@@ -125,7 +138,7 @@ describe('createAgentArrivalFramer', () => {
   it('frames nothing but the build', () => {
     const { canvas, animateToBounds } = stubCanvas({ offset: [-4000, 0] })
 
-    framer().reveal(canvas, [node([9000, 0], [240, 86])])
+    reveal(framer(), canvas, [node([9000, 0], [240, 86])])
 
     expect(animateToBounds.mock.calls[0][0]).toEqual([8960, -40, 320, 166])
   })
@@ -136,8 +149,8 @@ describe('createAgentArrivalFramer', () => {
     const { canvas, animateToBounds } = stubCanvas()
     const build = framer()
 
-    build.reveal(canvas, [node([3000, 0], [240, 86])])
-    build.reveal(canvas, [node([3400, 0], [240, 86])])
+    reveal(build, canvas, [node([3000, 0], [240, 86])])
+    reveal(build, canvas, [node([3400, 0], [240, 86])])
 
     expect(animateToBounds).toHaveBeenCalledTimes(2)
     expect(animateToBounds.mock.calls[1][0]).toEqual([2960, -40, 720, 166])
@@ -148,9 +161,9 @@ describe('createAgentArrivalFramer', () => {
     let turn = 'turn-1'
     const build = framer(() => turn)
 
-    build.reveal(canvas, [node([3000, 0], [240, 86])])
+    reveal(build, canvas, [node([3000, 0], [240, 86])])
     turn = 'turn-2'
-    build.reveal(canvas, [node([3400, 0], [240, 86])])
+    reveal(build, canvas, [node([3400, 0], [240, 86])])
 
     expect(animateToBounds.mock.calls[1][0]).toEqual([3360, -40, 320, 166])
   })
@@ -162,9 +175,9 @@ describe('createAgentArrivalFramer', () => {
     let turn: string | null = 'turn-1'
     const build = framer(() => turn)
 
-    build.reveal(canvas, [node([3000, 0], [240, 86])])
+    reveal(build, canvas, [node([3000, 0], [240, 86])])
     turn = null
-    build.reveal(canvas, [node([3400, 0], [240, 86])])
+    reveal(build, canvas, [node([3400, 0], [240, 86])])
 
     expect(animateToBounds.mock.calls[1][0]).toEqual([2960, -40, 720, 166])
   })
@@ -173,9 +186,9 @@ describe('createAgentArrivalFramer', () => {
     const { canvas, animateToBounds } = stubCanvas()
     const build = framer()
 
-    build.reveal(canvas, [node([3000, 0], [240, 86])])
+    reveal(build, canvas, [node([3000, 0], [240, 86])])
     build.reset()
-    build.reveal(canvas, [node([3400, 0], [240, 86])])
+    reveal(build, canvas, [node([3400, 0], [240, 86])])
 
     expect(animateToBounds.mock.calls[1][0]).toEqual([3360, -40, 320, 166])
   })
@@ -186,16 +199,29 @@ describe('createAgentArrivalFramer', () => {
     const second = node([900, 200])
     const build = framer()
 
-    build.reveal(canvas, [first])
-    build.reveal(canvas, [second])
+    reveal(build, canvas, [first])
+    reveal(build, canvas, [second])
 
     expect(selectItems).toHaveBeenLastCalledWith([first, second])
+  })
+
+  it('drops deleted nodes before selecting and framing the retained build', () => {
+    const { canvas, selectItems, nodesById } = stubCanvas()
+    const first = node([3000, 0])
+    const second = node([3400, 0])
+    const build = framer()
+
+    reveal(build, canvas, [first])
+    delete nodesById[first.id]
+    reveal(build, canvas, [second])
+
+    expect(selectItems).toHaveBeenLastCalledWith([second])
   })
 
   it('leaves the selection alone when asked, and still frames', () => {
     const { canvas, selectItems, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [node([3000, 0])], { select: false })
+    reveal(framer(), canvas, [node([3000, 0])], { select: false })
 
     expect(selectItems).not.toHaveBeenCalled()
     expect(animateToBounds).toHaveBeenCalledOnce()
@@ -204,7 +230,7 @@ describe('createAgentArrivalFramer', () => {
   it('ignores a frame that materialized nothing', () => {
     const { canvas, selectItems, animateToBounds } = stubCanvas()
 
-    framer().reveal(canvas, [])
+    reveal(framer(), canvas, [])
 
     expect(selectItems).not.toHaveBeenCalled()
     expect(animateToBounds).not.toHaveBeenCalled()
@@ -213,7 +239,7 @@ describe('createAgentArrivalFramer', () => {
   it('makes no camera decision on an unsized canvas', () => {
     const { canvas, animateToBounds } = stubCanvas({ width: 0, height: 0 })
 
-    framer().reveal(canvas, [node([3000, 0])])
+    reveal(framer(), canvas, [node([3000, 0])])
 
     expect(animateToBounds).not.toHaveBeenCalled()
   })

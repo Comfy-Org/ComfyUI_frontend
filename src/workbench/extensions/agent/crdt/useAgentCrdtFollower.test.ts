@@ -1049,6 +1049,9 @@ describe('useAgentCrdtFollower', () => {
     function graphWith(
       nodes: Record<number, { pos: [number, number]; size: [number, number] }>
     ): MaterializableGraph {
+      for (const [id, node] of Object.entries(nodes)) {
+        Object.assign(node, { id: toNodeId(Number(id)) })
+      }
       return fromPartial<MaterializableGraph>({
         rootGraph: { subgraphs: new Map() },
         _nodes_by_id: nodes,
