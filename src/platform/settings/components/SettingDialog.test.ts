@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -9,15 +8,22 @@ import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
 
-const settingUiMocks = vi.hoisted(() => ({
-  navGroups: fromAny<Ref<NavGroupData[]>, unknown>(null)
-}))
-const searchMocks = vi.hoisted(() => ({
-  inSearch: fromAny<Ref<boolean>, unknown>(null),
-  matchedNavItemKeys: fromAny<Ref<Set<string>>, unknown>(null),
-  searchQuery: fromAny<Ref<string>, unknown>(null),
-  searchResultsCategories: fromAny<Ref<Set<string>>, unknown>(null)
-}))
+const settingUiMocks = vi.hoisted(
+  (): { navGroups: Ref<NavGroupData[]> | null } => ({ navGroups: null })
+)
+const searchMocks = vi.hoisted(
+  (): {
+    inSearch: Ref<boolean> | null
+    matchedNavItemKeys: Ref<Set<string>> | null
+    searchQuery: Ref<string> | null
+    searchResultsCategories: Ref<Set<string>> | null
+  } => ({
+    inSearch: null,
+    matchedNavItemKeys: null,
+    searchQuery: null,
+    searchResultsCategories: null
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),
@@ -31,14 +37,14 @@ vi.mock<unknown>(
         }
       },
       settingCategories: { value: [] },
-      navGroups: settingUiMocks.navGroups,
+      navGroups: settingUiMocks.navGroups!,
       findCategoryByKey: (key: string) =>
-        settingUiMocks.navGroups.value
-          .flatMap(({ items }) => items)
+        settingUiMocks
+          .navGroups!.value.flatMap(({ items }) => items)
           .find(({ id }) => id === key) ?? null,
       findPanelByKey: (key: string) => {
-        const item = settingUiMocks.navGroups.value
-          .flatMap(({ items }) => items)
+        const item = settingUiMocks
+          .navGroups!.value.flatMap(({ items }) => items)
           .find(({ id }) => id === key)
         return item
           ? {
@@ -55,10 +61,10 @@ vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingSearch'),
   () => ({
     useSettingSearch: () => ({
-      searchQuery: searchMocks.searchQuery,
-      inSearch: searchMocks.inSearch,
-      searchResultsCategories: searchMocks.searchResultsCategories,
-      matchedNavItemKeys: searchMocks.matchedNavItemKeys,
+      searchQuery: searchMocks.searchQuery!,
+      inSearch: searchMocks.inSearch!,
+      searchResultsCategories: searchMocks.searchResultsCategories!,
+      matchedNavItemKeys: searchMocks.matchedNavItemKeys!,
       handleSearch: vi.fn(),
       getSearchResults: () => []
     })
@@ -117,7 +123,7 @@ it('falls back when the active navigation item becomes unavailable', async () =>
     await screen.findByText('workspace-allowlist panel')
   ).toBeInTheDocument()
 
-  settingUiMocks.navGroups.value = [
+  settingUiMocks.navGroups!.value = [
     {
       title: 'Workspace',
       items: [
