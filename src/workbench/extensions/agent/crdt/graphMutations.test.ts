@@ -2,16 +2,34 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetStateInit } from '@/types/widgetState'
 
 import { createGraphMutations } from './graphMutations'
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+class ContractSampler extends LGraphNode {
+  static override title = 'Contract Sampler'
+  constructor() {
+    super('Contract Sampler')
+  }
+}
 
 const scope = {
   rootGraphId: toRootGraphId('root'),
@@ -38,6 +56,22 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
   }
 }
 
+type LiveWidget = WidgetStateInit & { name: string }
+
+const samplerWidgets: readonly LiveWidget[] = [
+  { name: 'steps', type: 'number', value: 20, options: { min: 1, max: 100 } },
+  { name: 'seed', type: 'number', value: 7, options: { min: 0 } },
+  { name: 'run', type: 'button', value: null, options: {}, serialize: false }
+]
+const noteWidgets: readonly LiveWidget[] = [
+  {
+    name: 'text',
+    type: 'markdown',
+    value: '# Draft',
+    options: { multiline: true }
+  }
+]
+
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
@@ -46,6 +80,8 @@ describe('graphMutations', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     createLayout.mockReset()
     deleteLayouts.mockReset()
+    mockReportError.mockReset()
+    LiteGraph.registerNodeType('ContractSampler', ContractSampler)
   })
 
   function mutations() {
@@ -54,6 +90,174 @@ describe('graphMutations', () => {
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
   }
+
+  function registerLiveWidgets(id: number, widgets: readonly LiveWidget[]) {
+    const store = useWidgetValueStore()
+    for (const { name, ...init } of widgets) {
+      store.registerWidget(widgetId('root', toNodeId(id), name), init)
+    }
+    return store.getNodeWidgets('root', toNodeId(id))
+  }
+
+  function widgetTuples(id: number) {
+    return useWidgetValueStore()
+      .getNodeWidgets('root', toNodeId(id))
+      .map(({ name, type, options, value }) => [name, type, options, value])
+  }
+
+  describe('doc widget payload applied to a live node', () => {
+    it.for([
+      {
+        payload: 'omitted',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: undefined,
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 20],
+          ['seed', 'number', { min: 0 }, 7],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'empty positional',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: [],
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 20],
+          ['seed', 'number', { min: 0 }, 7],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'empty named',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: {},
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 20],
+          ['seed', 'number', { min: 0 }, 7],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'positional',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: [21, 8],
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 21],
+          ['seed', 'number', { min: 0 }, 8],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'positional past the serialized slots',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: [21, 8, 99],
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 21],
+          ['seed', 'number', { min: 0 }, 8],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'complete named',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: { steps: 21, seed: 8 },
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 21],
+          ['seed', 'number', { min: 0 }, 8],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'partial named',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: { steps: 21 },
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 21],
+          ['seed', 'number', { min: 0 }, 7],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'named with a widget the node lacks',
+        via: 'reconcileNode',
+        live: samplerWidgets,
+        widgets_values: { steps: 21, extra: 'x' },
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 21],
+          ['seed', 'number', { min: 0 }, 7],
+          ['run', 'button', {}, null],
+          ['extra', 'string', {}, 'x']
+        ]
+      },
+      {
+        payload: 'partial named through a field resync',
+        via: 'reconcileNodeFields',
+        live: samplerWidgets,
+        widgets_values: { seed: 8 },
+        expected: [
+          ['steps', 'number', { min: 1, max: 100 }, 20],
+          ['seed', 'number', { min: 0 }, 8],
+          ['run', 'button', {}, null]
+        ]
+      },
+      {
+        payload: 'opaque positional for a frontend-only node',
+        via: 'reconcileNode',
+        live: noteWidgets,
+        widgets_values: ['# Final'],
+        expected: [['text', 'markdown', { multiline: true }, '# Final']]
+      }
+    ] as const)(
+      '$payload payload via $via',
+      ({ via, live, widgets_values, expected }) => {
+        const graph = mutations()
+        graph.addNode(node(1), context)
+        const before = registerLiveWidgets(1, live)
+
+        expect(
+          graph.batch(context, (batch) => {
+            batch[via]({ ...node(1), widgets_values })
+          })
+        ).toBe(true)
+
+        expect(widgetTuples(1)).toEqual(expected)
+        const after = useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
+        for (const [index, state] of before.entries()) {
+          expect(after[index]).toBe(state)
+        }
+      }
+    )
+  })
+
+  it.for([
+    { title: undefined, type: 'ContractSampler', expected: 'Contract Sampler' },
+    { title: '', type: 'ContractSampler', expected: 'Contract Sampler' },
+    { title: 'Custom', type: 'ContractSampler', expected: 'Custom' },
+    { title: undefined, type: 'Unregistered', expected: 'Unregistered' }
+  ])(
+    'titles a reconciled $type node with $title as $expected',
+    ({ title, type, expected }) => {
+      const graph = mutations()
+      graph.addNode({ ...node(1), type, title: 'Before' }, context)
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), type, title })
+        })
+      ).toBe(true)
+
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+      ).toBe(expected)
+    }
+  )
 
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
@@ -249,7 +453,8 @@ describe('graphMutations', () => {
     ).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
-    ).toBeUndefined()
+        ?.value
+    ).toBe('old')
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).not.toHaveBeenCalled()
   })
@@ -695,5 +900,40 @@ describe('graphMutations', () => {
 
     expect(nodeContexts).toEqual([context])
     expect(widgetContexts).toEqual([context])
+  })
+
+  function graphWithStoreOnlyNode() {
+    const graph = new LGraph()
+    createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    }).addNode(
+      {
+        id: 1,
+        type: 'dummy',
+        pos: [0, 0],
+        size: [100, 80],
+        inputs: [],
+        outputs: []
+      },
+      context
+    )
+    return graph
+  }
+
+  it('registers a doc node under a live graph scope without an LGraphNode', () => {
+    const graph = graphWithStoreOnlyNode()
+
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
+    ).toHaveLength(1)
+    expect(graph.nodes).toHaveLength(0)
+  })
+
+  it.fails('keeps a store-only node in LGraph.serialize() without reporting a mismatch', () => {
+    const graph = graphWithStoreOnlyNode()
+
+    expect(graph.serialize().nodes).toHaveLength(1)
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 })
