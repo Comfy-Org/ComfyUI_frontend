@@ -39,7 +39,7 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
 
   await first.setInputFiles(frame('first.png', LANDSCAPE_16_9))
   await last.setInputFiles(frame('last.png', PORTRAIT_9_16))
-  await expect(notice).toContainText('first frame\u2019s aspect ratio')
+  await expect(notice).toContainText('The last frame will be stretched')
 
   // Replacing the last frame with the same shape retires the notice on its own.
   await last.setInputFiles(frame('last.png', WIDER_LANDSCAPE_16_9))
