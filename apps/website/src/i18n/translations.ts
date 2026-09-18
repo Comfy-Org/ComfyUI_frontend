@@ -9886,7 +9886,10 @@ Enterprise`
     en: 'How this price is estimated',
     'zh-CN': '此估算的计算方式'
   },
-  'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
+  'workshop.field.uploadLimit': {
+    en: 'up to {limit}',
+    'zh-CN': '最大 {limit}'
+  },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
   'workshop.field.providerDefault': {
     en: 'Provider default',
@@ -9910,8 +9913,8 @@ Enterprise`
     'zh-CN': '此字段为必填项'
   },
   'workshop.form.tooLarge': {
-    en: 'File is over 25 MB',
-    'zh-CN': '文件超过 25 MB'
+    en: 'File is over {limit}',
+    'zh-CN': '文件超过 {limit}'
   },
   'workshop.form.uploadFailed': {
     en: 'Upload failed. Try again, or paste a public link instead.',
@@ -9922,9 +9925,9 @@ Enterprise`
     'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'Your images and prompt add up to more than 10 MB. Use smaller images, or a shorter prompt.',
+    en: 'Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '文件和提示词编码后超过 10 MiB 请求限制。编码会使文件增大约三分之一。请使用更小的文件或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -10116,8 +10119,35 @@ Enterprise`
   },
   'workshop.output.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
   'workshop.error.provider': {
-    en: 'We could not fetch your result. Try again without changing anything, so you are not charged for a second run.',
-    'zh-CN': '未能获取结果。请重试未更改的请求，以免提交新的运行。'
+    en: 'The run failed. Keep your inputs unchanged when retrying. If credits were deducted without a result, contact support with the request ID.',
+    'zh-CN':
+      '运行失败。重试时请保持输入不变。若已扣费但未获得结果，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.upload': {
+    en: 'Your file could not be uploaded. The model has not run. Try again or paste a public link.',
+    'zh-CN': '文件上传失败，模型尚未运行。请重试或粘贴可访问的网址。'
+  },
+  'workshop.error.network': {
+    en: 'The connection was interrupted. The run may still complete and be billed. Keep your inputs unchanged when retrying.',
+    'zh-CN': '连接中断，运行仍可能完成并扣费。重试时请保持输入不变。'
+  },
+  'workshop.error.response': {
+    en: 'Comfy returned a response, but we could not read the result. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 已返回响应，但无法读取结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
+  },
+  'workshop.error.client': {
+    en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
+    'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.concurrency': {
+    en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',
+    'zh-CN': '此工作区已达到同时运行数量上限。请等待正在进行的运行完成后重试。'
+  },
+  'workshop.error.conflict': {
+    en: 'Comfy could not return this request’s result yet. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.',
+    'zh-CN':
+      'Comfy 暂时无法返回此请求的结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。'
   },
   'workshop.error.rateLimit': {
     en: 'Too many runs right now. Wait a moment and try again.',
@@ -10141,9 +10171,9 @@ Enterprise`
   },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
-    en: 'The provider took too long to answer. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
+    en: 'We stopped waiting for the result. A run that finishes later is still billed, so retry the unchanged request rather than starting a new one.',
     'zh-CN':
-      '提供方响应超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
+      '等待结果已超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。'
   },
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',

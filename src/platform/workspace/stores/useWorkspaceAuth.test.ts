@@ -2980,6 +2980,43 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
+    it('refuses a mint that parked on the identity before the flag went off', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+
+      // A port that never replays on its own, so the mint parks on
+      // unifiedUser() until we deliver the user by hand.
+      const heldPort = replayIdentityPort(() => null)
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockImplementation(
+        heldPort.register
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-1' } })
+      const parked = store.mintAtLogin()
+
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+      await nextTick()
+      heldPort.emit(portUser({ uid: 'user-1' }))
+
+      await expect(
+        parked,
+        'a mint that resumes after the rollback must fail closed'
+      ).resolves.toBe(false)
+      expect(
+        mockFetch,
+        'no /auth/token exchange may fire for a disabled feature'
+      ).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
+    })
+
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
