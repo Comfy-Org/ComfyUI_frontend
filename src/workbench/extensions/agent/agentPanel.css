@@ -73,6 +73,11 @@
    dropdowns, drawer carry .agent-scope). :where() holds the selectors at zero specificity so
    each element's own bg-* / border utilities still win. */
 @layer base {
+  :where(#agent-panel-root, .agent-scope) {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   /* Thin the scrollbar and drop the UA track fill, leaving the thumb as the
      only mark on the surface. The scope carriers themselves scroll too (the
      portaled menus), so they are part of the selector, not just ancestors. */
