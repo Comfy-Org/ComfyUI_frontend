@@ -223,6 +223,26 @@ function withNamedValuesRestore<T>(fn: () => T): T {
   }
 }
 
+function isOrphanedMaterialization(scope: GraphScope, node: LGraphNode) {
+  const registeredType = LiteGraph.registered_node_types[node.type]
+  return (
+    !useNodeDataStore().ownsNode(scope, node._state) ||
+    Object.getPrototypeOf(node).constructor !== registeredType
+  )
+}
+
+function isCurrentMaterialization(
+  scope: GraphScope,
+  node: LGraphNode | undefined,
+  orphansById: Map<NodeId, LGraphNode>
+) {
+  return Boolean(
+    node &&
+    useNodeDataStore().ownsNode(scope, node._state) &&
+    !orphansById.has(node.id)
+  )
+}
+
 /**
  * @param pendingDefinitions definition ids the document seeds but the root
  * graph could not register. Nodes typed by one stay unmaterialized rather
@@ -247,25 +267,15 @@ function reconcile(
     scope.rootGraphId,
     scope.owningGraphId
   )
-  const orphans = graph._nodes.filter((node) => {
-    const registeredType = LiteGraph.registered_node_types[node.type]
-    return (
-      !nodeStore.ownsNode(scope, node._state) ||
-      Object.getPrototypeOf(node).constructor !== registeredType
-    )
-  })
+  const orphans = graph._nodes.filter((node) =>
+    isOrphanedMaterialization(scope, node)
+  )
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
 
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (
-      live &&
-      nodeStore.ownsNode(scope, live._state) &&
-      !orphansById.has(state.id)
-    ) {
-      continue
-    }
+    if (isCurrentMaterialization(scope, live, orphansById)) continue
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
