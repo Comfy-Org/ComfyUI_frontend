@@ -86,8 +86,17 @@ function choose(action: 'accept' | 'reject'): void {
           playsinline
           @error="videoFailed = true"
         >
-          <source :src="videoSrc" type="video/webm" />
-          <source v-if="videoSrcMp4" :src="videoSrcMp4" type="video/mp4" />
+          <source
+            :src="videoSrc"
+            type="video/webm"
+            @error="videoFailed = !videoSrcMp4"
+          />
+          <source
+            v-if="videoSrcMp4"
+            :src="videoSrcMp4"
+            type="video/mp4"
+            @error="videoFailed = true"
+          />
         </video>
         <div
           v-else
@@ -125,26 +134,30 @@ function choose(action: 'accept' | 'reject'): void {
         </div>
 
         <footer
-          class="flex flex-col gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
+          class="flex flex-col gap-2.5 @xl:flex-row @xl:flex-wrap @xl:items-center @xl:justify-end"
         >
           <ReuseDocsLink v-if="docsUrl && isWide" />
 
-          <Button
-            v-for="action in actions"
-            :key="action"
-            :variant="action === 'accept' ? 'inverted' : 'secondary'"
-            size="lg"
-            class="w-full @xl:w-auto"
-            :loading="action === 'accept' && accepting"
-            :disabled="accepting"
-            @click="choose(action)"
+          <div
+            class="flex max-w-full flex-col gap-2.5 @xl:flex-row @xl:flex-wrap @xl:justify-end"
           >
-            {{
-              action === 'accept'
-                ? $t('agent.consent.accept')
-                : $t('agent.consent.reject')
-            }}
-          </Button>
+            <Button
+              v-for="action in actions"
+              :key="action"
+              :variant="action === 'accept' ? 'inverted' : 'secondary'"
+              size="lg"
+              class="w-full @xl:w-auto"
+              :loading="action === 'accept' && accepting"
+              :disabled="accepting"
+              @click="choose(action)"
+            >
+              {{
+                action === 'accept'
+                  ? $t('agent.consent.accept')
+                  : $t('agent.consent.reject')
+              }}
+            </Button>
+          </div>
         </footer>
       </section>
     </div>
