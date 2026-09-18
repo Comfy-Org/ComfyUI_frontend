@@ -325,6 +325,8 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
     expect('__agentCrdtPoc' in window).toBe(false)
     unmount()
+  })
+
   it('resubscribes when the transport reports its socket (re)connected', () => {
     // The server drops a connection's follows when the socket closes, while
     // the bridge still believes it is subscribed — so a plain reconcile

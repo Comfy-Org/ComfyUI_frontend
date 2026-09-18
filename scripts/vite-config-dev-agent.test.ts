@@ -78,6 +78,8 @@ describe('dev agent comfy credential', () => {
       '{"headers":{"Authorization":"Bearer test-session-token"}}'
     )
   })
+})
+
 describe('standalone agent harness distribution guard', () => {
   // VITE_AGENT_STANDALONE forces the agent panel on for every user of the
   // bundle it is baked into (extensions/core/agentPanel.ts), independent of

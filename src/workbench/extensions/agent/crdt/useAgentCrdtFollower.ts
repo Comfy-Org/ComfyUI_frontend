@@ -137,6 +137,7 @@ export function useAgentCrdtFollower(
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
+    terminal: null,
     outcomes: {
       received: 0,
       applied: 0,
@@ -164,7 +165,8 @@ export function useAgentCrdtFollower(
           graphMutations,
           userId,
           isTargetActive,
-          getGraph
+          getGraph,
+          baseTransport
         )
       )
     },
@@ -191,7 +193,8 @@ function startAgentCrdtFollower(
   graphMutations: MutationsForTarget,
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
-  getGraph: () => MaterializableGraph | null
+  getGraph: () => MaterializableGraph | null,
+  baseTransport: DocFrameTransport
 ) {
   const connected = ref(false)
   const terminal = ref<AgentCrdtTerminalState>(null)

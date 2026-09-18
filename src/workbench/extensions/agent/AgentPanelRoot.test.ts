@@ -6530,6 +6530,7 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
       .mockImplementation(identityResponse)
     stubStandaloneFetch(identity)
     bindActiveTab('wf-42')
+    useAgentPanelStore().enabled = true
 
     await renderAndSend('first message')
     await vi.advanceTimersByTimeAsync(0)
