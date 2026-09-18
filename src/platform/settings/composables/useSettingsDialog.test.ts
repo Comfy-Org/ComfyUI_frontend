@@ -4,8 +4,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
  * open the Reka-renderer path with sizing that matches the previous
- * `BaseModalLayout size="sm"` (960px × 80vh). Catches accidental reverts of
- * the Phase 3 renderer flip.
+ * `BaseModalLayout size="sm"`, at the width of record (1280px, DES 3253-16079)
+ * and 90vh. Catches accidental reverts of the Phase 3 renderer flip.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -58,7 +58,7 @@ describe('useSettingsDialog', () => {
     expect(args.dialogComponentProps.contentClass).not.toContain(
       'max-w-[960px]'
     )
-    expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
+    expect(args.dialogComponentProps.contentClass).toContain('h-[90vh]')
   })
 
   it('show() uses non-modal Reka so nested PrimeVue dialogs keep focus and pointer events', () => {
