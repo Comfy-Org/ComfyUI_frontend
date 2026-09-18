@@ -3,7 +3,11 @@ import { zodTextFormat } from 'openai/helpers/zod'
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 import { z } from 'zod'
 
-import type { OutputLocale, TranslationPipelineConfig } from './config'
+import type {
+  MessageFormat,
+  OutputLocale,
+  TranslationPipelineConfig
+} from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -12,6 +16,7 @@ export interface TranslationItem {
   source: string
   preserve: string[]
   retryNote?: string
+  messageFormat?: MessageFormat
 }
 
 export type TranslateBatch = (
@@ -88,8 +93,9 @@ under its item's id.
 
 Use context to resolve meaning. Preserve the source's meaning,
 tone, and level of detail. Keep code identifiers and every substring
-in preserve unchanged. Retain the number and order of | separated
-plural forms.
+in preserve unchanged. Items marked messageFormat "text" contain plain text
+or Markdown: keep literal characters rather than encoding Intlify syntax.
+For other items, retain the number and order of | separated plural forms.
 
 ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
@@ -269,7 +275,7 @@ export async function translateLocaleItems(
           ? ['no translation returned']
           : value.trim().length === 0
             ? ['empty translation']
-            : tokenErrors(item.source, value, true)
+            : tokenErrors(item.source, value, true, item.messageFormat)
       if (value !== undefined && errors.length === 0) {
         results.set(item.id, value)
       } else {

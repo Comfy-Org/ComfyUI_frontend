@@ -1,3 +1,4 @@
+import type { MessageFormat } from './config'
 import type { LocaleChanges, LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves, getLeaf, pathKey } from './locale-tree'
 
@@ -34,7 +35,8 @@ export function protectedTokens(
 export function tokenErrors(
   source: string,
   target: string,
-  includeInterpolation: boolean
+  includeInterpolation: boolean,
+  format: MessageFormat = 'intlify'
 ): string[] {
   const sourceTokens = protectedTokens(source, includeInterpolation)
   const targetTokens = protectedTokens(target, includeInterpolation)
@@ -46,11 +48,14 @@ export function tokenErrors(
     ...(source.trim().length > 0 && target.trim().length === 0
       ? ['empty translation']
       : []),
-    ...(pluralSeparatorPattern.test(target) &&
+    ...(format === 'intlify' &&
+    pluralSeparatorPattern.test(target) &&
     !pluralSeparatorPattern.test(source)
       ? ['added plural separator |']
       : []),
-    ...(linkedMessagePattern.test(target) && !linkedMessagePattern.test(source)
+    ...(format === 'intlify' &&
+    linkedMessagePattern.test(target) &&
+    !linkedMessagePattern.test(source)
       ? ['added linked message @']
       : [])
   ]
@@ -59,11 +64,14 @@ export function tokenErrors(
 function leafTokenErrors(
   source: LocaleValue,
   target: LocaleValue | undefined,
-  label: string
+  label: string,
+  format: MessageFormat
 ): string[] {
   if (typeof source === 'string') {
     return typeof target === 'string'
-      ? tokenErrors(source, target, true).map((error) => `${label}: ${error}`)
+      ? tokenErrors(source, target, true, format).map(
+          (error) => `${label}: ${error}`
+        )
       : [`${label}: leaf type changed`]
   }
   if (Array.isArray(source)) {
@@ -71,7 +79,7 @@ function leafTokenErrors(
     if (source.length !== target.length)
       return [`${label}: array length changed`]
     return source.flatMap((element, index) =>
-      leafTokenErrors(element, target[index], `${label}.${index}`)
+      leafTokenErrors(element, target[index], `${label}.${index}`, format)
     )
   }
   return JSON.stringify(source) === JSON.stringify(target)
@@ -81,15 +89,17 @@ function leafTokenErrors(
 
 export function leafTokensDiffer(
   source: LocaleValue,
-  target: LocaleValue | undefined
+  target: LocaleValue | undefined,
+  format: MessageFormat = 'intlify'
 ): boolean {
-  return leafTokenErrors(source, target, 'leaf').length > 0
+  return leafTokenErrors(source, target, 'leaf', format).length > 0
 }
 
 export function validateLocale(
   source: LocaleObject,
   locale: LocaleObject,
-  changes: LocaleChanges
+  changes: LocaleChanges,
+  format: MessageFormat = 'intlify'
 ): string[] {
   const errors: string[] = []
   const sourceLeaves = collectLeaves(source)
@@ -106,7 +116,7 @@ export function validateLocale(
       errors.push(`${label}: translation was not regenerated`)
       continue
     }
-    errors.push(...leafTokenErrors(sourceValue, targetValue, label))
+    errors.push(...leafTokenErrors(sourceValue, targetValue, label, format))
   }
 
   for (const path of changes.deleted) {
@@ -121,7 +131,9 @@ export function validateLocale(
     }
   }
 
-  errors.push(...auditProtectedLiterals(source, locale, regeneratedKeys))
+  errors.push(
+    ...auditProtectedLiterals(source, locale, regeneratedKeys, format)
+  )
 
   return errors
 }
@@ -129,13 +141,19 @@ export function validateLocale(
 export function auditProtectedLiterals(
   source: LocaleObject,
   target: LocaleObject,
-  skipKeys: ReadonlySet<string>
+  skipKeys: ReadonlySet<string>,
+  format: MessageFormat = 'intlify'
 ): string[] {
   const targetLeaves = collectLeaves(target)
   return [...collectLeaves(source)].flatMap(([key, leaf]) => {
     if (skipKeys.has(key)) return []
     const targetLeaf = targetLeaves.get(key)
     if (targetLeaf === undefined) return []
-    return leafTokenErrors(leaf.value, targetLeaf.value, leaf.path.join('.'))
+    return leafTokenErrors(
+      leaf.value,
+      targetLeaf.value,
+      leaf.path.join('.'),
+      format
+    )
   })
 }
