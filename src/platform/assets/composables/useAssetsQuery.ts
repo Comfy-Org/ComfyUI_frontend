@@ -27,6 +27,7 @@ function assetsQueryInternal(
 
   let nextCursor: string | undefined
   const seenCursors = new Set<string | undefined>()
+  let loadGeneration = 0
   const morePages = ref(true)
   const backingOff = refAutoReset(false, 2000)
   const hasMore = computed(() => morePages.value && !backingOff.value)
@@ -35,31 +36,43 @@ function assetsQueryInternal(
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
-    if (seenCursors.has(nextCursor)) {
-      morePages.value = false
-      return
-    }
+    const requestedCursor = nextCursor ?? params.after
+    if (seenCursors.has(requestedCursor)) return
 
     const assetResponse = await doQuery(
       {
-        after: nextCursor ?? params.after
+        after: requestedCursor
       },
       signal
     )
     if (!assetResponse) return
-    seenCursors.add(nextCursor)
+
+    const knownIds = new Set(items.value.map(({ id }) => id))
+    const newItems = assetResponse.assets.filter(({ id }) => {
+      if (knownIds.has(id)) return false
+      knownIds.add(id)
+      return true
+    })
+    seenCursors.add(requestedCursor)
     nextCursor = assetResponse.next_cursor
-    morePages.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
+    morePages.value =
+      assetResponse.has_more &&
+      nextCursor !== undefined &&
+      !seenCursors.has(nextCursor)
+    items.value.push(...newItems)
+    loadGeneration++
   }
 
-  function loadMore() {
-    return enqueue('loadMore', doLoadMore)
+  async function loadMore() {
+    const startingGeneration = loadGeneration
+    await enqueue('loadMore', doLoadMore)
+    return loadGeneration > startingGeneration
   }
 
   function loadNew() {
     return enqueue('loadNew', async function (signal: AbortSignal) {
       const knownIds = new Set(items.value.map((item) => item.id))
+      const seenIds = new Set(knownIds)
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
       const seenHeadCursors = new Set<string | undefined>()
@@ -71,10 +84,18 @@ function assetsQueryInternal(
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
+        let reachedKnownId = false
+        for (const asset of assets) {
+          if (knownIds.has(asset.id)) {
+            reachedKnownId = true
+            break
+          }
+          if (seenIds.has(asset.id)) continue
+          seenIds.add(asset.id)
+          newItems.push(asset)
+        }
+        if (reachedKnownId || !has_more || next_cursor === undefined) break
         headCursor = next_cursor
-        const newFromPage = assets.filter(({ id }) => !knownIds.has(id))
-        newItems.push(...newFromPage)
-        if (newFromPage.length !== assets.length || !has_more) break
       }
       items.value.splice(0, 0, ...newItems)
     })
@@ -131,7 +152,14 @@ function assetsQueryInternal(
   }
 
   void loadMore()
-  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
+  return {
+    hasMore,
+    invalidate,
+    isLoading,
+    items,
+    loadMore,
+    loadNew
+  }
 }
 
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
