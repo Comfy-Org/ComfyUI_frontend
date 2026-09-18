@@ -188,7 +188,7 @@ const LABEL_HINT =
 function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
   if (pr.baseRef !== BACKPORT_SOURCE_BRANCH) {
     return [
-      `:warning: The base branch is \`${escapeSlackText(pr.baseRef)}\`, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
+      `:warning: The base branch is ${code([pr.baseRef])}, but *PR Backport* only runs on pull requests into \`${BACKPORT_SOURCE_BRANCH}\`, so this label will not start one.`
     ]
   }
 
@@ -224,10 +224,16 @@ function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
     ]
   }
 
+  // "Attempt", because two of pr-backport.yaml's later gates are not modelled
+  // here: it skips a target that already has an open backport PR, and reports
+  // "No backport needed" when the merge commit is already on the target — the
+  // dual-homed case docs/release-process.md describes as routine right after
+  // a minor bump. Both are outcomes a watcher is content with; promising a
+  // cherry-pick that then does not appear is not.
   return [
     merged
-      ? `The PR is merged, so *PR Backport* will cherry-pick into ${code(targets.known)}.`
-      : `The PR is still open — *PR Backport* will cherry-pick into ${code(targets.known)} once it merges.`,
+      ? `The PR is merged, so *PR Backport* will attempt a cherry-pick into ${code(targets.known)}.`
+      : `The PR is still open — *PR Backport* will attempt a cherry-pick into ${code(targets.known)} once it merges.`,
     ...uncut
   ]
 }
@@ -239,7 +245,7 @@ export function buildNeedsBackportText({
 }: NeedsBackportEvent): string {
   return [
     `:label: \`needs-backport\` was added to <${pullRequest.url}|#${pullRequest.number} ${escapeSlackText(pullRequest.title)}>`,
-    `Author: ${escapeSlackText(pullRequest.author)} · Labelled by: ${escapeSlackText(labeledBy)} · Base: \`${escapeSlackText(pullRequest.baseRef)}\``,
+    `Author: ${escapeSlackText(pullRequest.author)} · Labelled by: ${escapeSlackText(labeledBy)} · Base: ${code([pullRequest.baseRef])}`,
     ...backportOutlook(
       pullRequest,
       splitBackportTargets(pullRequest.labels, remoteBranches)

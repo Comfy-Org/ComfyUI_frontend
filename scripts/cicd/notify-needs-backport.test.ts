@@ -291,9 +291,9 @@ describe('parseSlackRecipients', () => {
     })
   })
 
-  // `DISABLED` is a `D` and seven more characters, so the obvious way to
-  // write the off-switch down parses as a DM channel unless it is recognised
-  // first — and a posted-to non-channel fails the run with channel_not_found.
+  // Recognised by name rather than left to "not an ID": an unusable entry
+  // fails the run, so without this the documented way to turn the
+  // notification off would redden every labelled PR instead.
   it.for([
     { raw: 'none' },
     { raw: 'off' },
@@ -330,12 +330,13 @@ describe('buildNeedsBackportText', () => {
     {
       situation: 'merged with a target',
       overrides: { state: 'MERGED' as const },
-      expected: 'merged, so *PR Backport* will cherry-pick into `core/1.47`'
+      expected:
+        'merged, so *PR Backport* will attempt a cherry-pick into `core/1.47`'
     },
     {
       situation: 'still open',
       overrides: { state: 'OPEN' as const },
-      expected: 'will cherry-pick into `core/1.47` once it merges'
+      expected: 'will attempt a cherry-pick into `core/1.47` once it merges'
     },
     {
       situation: 'closed without merging',
@@ -396,7 +397,7 @@ describe('buildNeedsBackportText', () => {
       event({ labels: ['needs-backport', 'core/1.47', '1.99'] })
     )
 
-    expect(text).toContain('will cherry-pick into `core/1.47`')
+    expect(text).toContain('will attempt a cherry-pick into `core/1.47`')
     expect(text).toContain('`core/1.99` has no branch on the remote')
   })
 
@@ -438,7 +439,7 @@ describe('buildNeedsBackportText', () => {
       event({ labels: ['needs-backport', '1.99'] }, null)
     )
 
-    expect(text).toContain('will cherry-pick into `core/1.99`')
+    expect(text).toContain('will attempt a cherry-pick into `core/1.99`')
     expect(text).not.toContain('no branch on the remote')
   })
 

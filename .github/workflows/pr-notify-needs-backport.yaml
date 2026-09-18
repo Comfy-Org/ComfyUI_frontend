@@ -187,8 +187,8 @@ jobs:
           # ID, a missing scope, a revoked token — and it will silence this
           # watcher on every PR until they do, so it fails the check.
           #
-          # An outage that outlasted the retries does not: nobody reading the
-          # PR can act on it, and failing would put a red cross on a
+          # An outage does not: nobody reading the PR can act on it, and
+          # failing would put a red cross on a
           # contributor's PR for something they did not cause. Be clear about
           # the cost, because it is not nothing: that DM is dropped, not
           # deferred. A non-zero exit would not recover it either — Actions
