@@ -45,7 +45,8 @@ describe('createBillingEventsReader', () => {
 
     const result = await createBillingEventsReader({
       transport,
-      scopeSource
+      scopeSource,
+      now: () => 1_700
     }).read({ page: 2, limit: 20 })
 
     expect(calls).toEqual([
@@ -56,6 +57,7 @@ describe('createBillingEventsReader', () => {
     expect(result.value.events).toEqual([EVENT])
     expect(result.value.page).toBe(2)
     expect(result.value.totalPages).toBe(2)
+    expect(result.value.readAt).toBe(1_700)
     expect(result.value.scope).toEqual({
       userId: 'uid-1',
       workspaceId: 'ws-1',
