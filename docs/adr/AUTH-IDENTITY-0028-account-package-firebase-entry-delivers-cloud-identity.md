@@ -6,6 +6,9 @@ Date: 2026-09-09
 
 Proposed
 
+Amended 2026-09-16: rules 1 and 4 follow the session client taking identity at
+construction (FE-2196).
+
 ## Context
 
 The cloud app holds two consumers of Firebase identity:
@@ -28,8 +31,9 @@ is not a contract to build on.
 
 1. Identity reaches the session client through the package entry bound to
    the app's own `Auth` instance: `authStore` creates
-   `createFirebaseIdentity({ auth })` and `workspaceAuthStore` attaches it
-   as the client's `IdentityPort`. No hand-rolled port exists in `src/`.
+   `createFirebaseIdentity({ auth })` and `workspaceAuthStore` passes it to
+   `createSessionClient` at construction. No hand-rolled port exists in
+   `src/`.
 2. The Pinia `authStore` is a projection for app-wide side effects. It is
    not an identity authority for the session client and pushes nothing
    into it.
@@ -44,10 +48,27 @@ is not a contract to build on.
    port's user is what mints. The wait is bounded, so a silent port fails
    the mint closed instead of hanging the auth gate. Mints stay
    host-driven (`autoMint: false`), so telemetry and coalescing are
-   unchanged.
-4. `syncUnifiedIdentity` is gone; the flag rule stays: with
-   `unified_cloud_auth` off the port is never attached and no state is
-   held.
+   unchanged. The two stores construct each other (`workspaceAuthStore`
+   reads `useAuthStore().identity` in its setup, `authStore`'s listener
+   calls `useWorkspaceAuthStore()`), which holds only because the SDK
+   delivers a new observer's first emission asynchronously, after
+   persistence resolves; a synchronous identity source in its place would
+   re-enter a half-built store: built workspace-first it throws a boot-time
+   `TypeError` from `authStore`'s listener against the half-assigned store,
+   built auth-first it leaves the client unsubscribed and every mint waiting
+   its ceiling. The "store construction order" test in `authStore.test.ts`
+   pins the working microtask order.
+4. `syncUnifiedIdentity` is gone, and the flag gates minting, not
+   subscription: identity is bound to the session client for the store's
+   lifetime. With `unified_cloud_auth` off the port stays subscribed but
+   inert. The store drives every mint explicitly (`autoMint: false`), so an
+   identity event mints nothing, and `clearUnifiedContext()` invalidates the
+   credential and stops the scheduler and cross-tab lease. A mint already
+   parked on `unifiedUser()` when the flag flips is caught by the flag-gated
+   helpers re-checking the flag after that await, so it commits nothing
+   either: no unified token, network call or timer exists. The residue is the
+   snapshot's user and a `minting`/`pending` phase that no flag-off consumer
+   reads.
 5. Nothing in `src/` may initialize a second Firebase app through
    `createFirebaseIdentity({ options })` while the app runs on vuefire; a
    second auth instance diverges the session. Package-initialized Firebase

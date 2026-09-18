@@ -37,7 +37,12 @@ import {
   collectCrdtDebugReport
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import {
+  DEV_EVENT_KINDS,
+  clearDevEvents,
+  devEvents,
+  stringifyDevEvents
+} from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -159,24 +164,6 @@ const STATUS_ROWS = [
 ] as const
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
-
-const EVENT_KINDS: readonly DevEventKind[] = [
-  'ws_out',
-  'doc_subscribed',
-  'doc_update',
-  'doc_ops_result',
-  'human_ops_settled',
-  'doc_reset',
-  'doc_nodes_changed',
-  'schema_error',
-  'reconnected',
-  'subscribe_retry',
-  'stale_probe',
-  'rebind',
-  'doc_gap',
-  'doc_stale',
-  'frame_send_failed'
-]
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-success-background border-success-background',
@@ -836,7 +823,7 @@ function fmtTime(at: number): string {
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
-              <option v-for="kind in EVENT_KINDS" :key="kind" :value="kind">
+              <option v-for="kind in DEV_EVENT_KINDS" :key="kind" :value="kind">
                 {{ kind }}
               </option>
             </select>

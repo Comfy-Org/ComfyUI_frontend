@@ -4,7 +4,9 @@ import { nextTick } from 'vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useBillingSdkStore } from './billingSdkStore'
@@ -38,13 +40,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -78,6 +74,9 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
+
 const mockLoadStripe = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
@@ -87,6 +86,7 @@ let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   flagState.embeddedCheckoutEnabled = false
   flagState.hostedBillingDestination = 'stripe'
   harness = fakeBillingSdk()
@@ -149,7 +149,7 @@ describe('useBillingSdkStore', () => {
       status: 'completed',
       amount_cents: 1000
     })
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reports a decline without touching capabilities', async () => {
@@ -161,7 +161,7 @@ describe('useBillingSdkStore', () => {
     await expect(useBillingSdkStore().createTopup(1000)).resolves.toMatchObject(
       { status: 'failed' }
     )
-    expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
   })
 
   it('rejects a refused purchase with the error code the dialog reads', async () => {
@@ -274,7 +274,7 @@ describe('useBillingSdkStore', () => {
     )
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })
@@ -450,7 +450,7 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reconciles the subscription after a resubscribe settles', async () => {
@@ -461,7 +461,7 @@ describe('useBillingSdkStore subscription commands', () => {
       value: undefined
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('stops sending to a route the backend answered 404, for every action', async () => {
@@ -512,7 +512,7 @@ describe('useBillingSdkStore subscription commands', () => {
       plan_slug: 'pro-yearly'
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('hands back the quote without refreshing anything', async () => {

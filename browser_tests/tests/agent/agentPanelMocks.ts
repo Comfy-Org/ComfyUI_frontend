@@ -181,12 +181,19 @@ async function mockAgentBoot(
 
   await mockBilling(page)
   await page.route(
-    'https://media.comfy.org/website/mcp/launch-film.mp4',
-    (route) =>
-      route.fulfill({
-        contentType: 'video/mp4',
-        path: assetPath('plain_video.mp4')
-      })
+    'https://media.comfy.org/website/comfy-agent/**',
+    (route) => {
+      const url = route.request().url()
+      if (url.endsWith('.mp4')) {
+        return route.fulfill({ path: assetPath('plain_video.mp4') })
+      }
+      if (url.endsWith('.webm')) {
+        return route.fulfill({
+          path: assetPath('video/video-preview-wide.webm')
+        })
+      }
+      return route.fulfill({ path: assetPath('image64x64.webp') })
+    }
   )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))

@@ -26,6 +26,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
+import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
@@ -119,7 +121,7 @@ describe('useAuthStore', () => {
     delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
@@ -131,18 +133,10 @@ describe('useAuthStore', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
-    // Every observer registered on the Auth instance (the store's listener
-    // and the package port) gets each auth-state event, as Firebase does.
-    const authStateObservers: Array<(user: User | null) => void> = []
-    authStateCallback = (user) =>
-      authStateObservers.forEach((observer) => observer(user))
+    const port = replayIdentityPort(() => mockUser)
+    authStateCallback = port.emit
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_, callback) => {
-        const observer = callback as (user: User | null) => void
-        authStateObservers.push(observer)
-        observer(mockUser)
-        return vi.fn()
-      }
+      (_, callback) => port.register(callback as IdentityObserver)
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
       (_auth, callback) => {
@@ -169,6 +163,7 @@ describe('useAuthStore', () => {
     })
 
     store = useAuthStore()
+    await vi.waitFor(() => expect(store.isInitialized).toBe(true))
 
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
@@ -338,14 +333,26 @@ describe('useAuthStore', () => {
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
+      const observedAuths = () =>
+        vi
+          .mocked(firebaseAuth.onAuthStateChanged)
+          .mock.calls.map(([auth]) => auth)
+      const registeredAtConstruction = observedAuths().length
+      expect(
+        registeredAtConstruction,
+        'the store listener and the port both registered'
+      ).toBe(2)
+      expect(
+        new Set(observedAuths()),
+        'every observer, the port included, targets the one Auth instance; identity is not pushed from this store'
+      ).toEqual(new Set([mockAuth]))
 
       await useWorkspaceAuthStore().mintAtLogin()
 
       expect(
-        vi.mocked(firebaseAuth.onAuthStateChanged),
-        'the port registers its own observer on the same Auth instance; identity is not pushed from this store'
-      ).toHaveBeenCalledExactlyOnceWith(mockAuth, expect.any(Function))
+        observedAuths(),
+        'a mint reuses the port subscribed at construction'
+      ).toHaveLength(registeredAtConstruction)
     })
   })
 
@@ -2339,7 +2346,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
@@ -2352,12 +2359,10 @@ describe('useAuthStore in local/desktop distribution', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
+    const port = replayIdentityPort(() => mockUser)
+    authStateCallback = port.emit
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
-      (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        ;(callback as (user: User | null) => void)(mockUser)
-        return vi.fn()
-      }
+      (_, callback) => port.register(callback as IdentityObserver)
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
 
@@ -2369,6 +2374,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     })
 
     store = useAuthStore()
+    await vi.waitFor(() => expect(store.isInitialized).toBe(true))
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
     mockResetSocket.mockClear()
   })
@@ -2430,5 +2436,66 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+})
+
+describe('store construction order', () => {
+  const mockAuth: MockAuth = {}
+  const mockUser: MockUser = {
+    uid: 'construction-user-id',
+    email: 'construction@example.com',
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
+  } as Partial<User> as MockUser
+  const tokenResponse = {
+    token: 'construction-token',
+    expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    permissions: ['owner:*']
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+      mockAuth as Partial<
+        ReturnType<typeof vuefire.useFirebaseAuth>
+      > as ReturnType<typeof vuefire.useFirebaseAuth>
+    )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+    mockUser.getIdToken.mockResolvedValue('mock-id-token')
+    mockFetch.mockImplementation((url: string) => {
+      if (url.endsWith('/customers')) {
+        return Promise.resolve(mockCreateCustomerResponse)
+      }
+      if (url.endsWith('/auth/token')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(tokenResponse)
+        })
+      }
+      return Promise.reject(new Error('Unexpected API call'))
+    })
+  })
+
+  it('building the workspace store first subscribes its port and mints once Firebase delivers on its microtask', async () => {
+    const port = replayIdentityPort(() => mockUser)
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => port.register(callback as IdentityObserver)
+    )
+
+    const workspaceAuth = useWorkspaceAuthStore()
+    await vi.waitFor(() => expect(useAuthStore().isInitialized).toBe(true))
+
+    expect(
+      port.observers.size,
+      'the authStore listener and the session client port'
+    ).toBe(2)
+    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+    expect(workspaceAuth.getUnifiedToken()).toBe('construction-token')
   })
 })

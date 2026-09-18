@@ -186,7 +186,19 @@ const status = computed(() => {
         "
       >
         <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-        <span>{{ group.part.text }}</span>
+        <span class="flex flex-col gap-0.5">
+          <span>{{ group.part.text }}</span>
+          <span
+            v-if="group.part.retryAfterSeconds !== undefined"
+            class="text-xs text-muted-foreground"
+          >
+            {{
+              t('agent.retryAfterSeconds', {
+                seconds: group.part.retryAfterSeconds
+              })
+            }}
+          </span>
+        </span>
       </div>
     </template>
 
