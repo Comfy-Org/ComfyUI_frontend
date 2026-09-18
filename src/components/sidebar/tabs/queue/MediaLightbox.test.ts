@@ -50,6 +50,12 @@ describe('MediaLightbox', () => {
     props: ['result']
   }
 
+  const mockResultText = {
+    name: 'ResultText',
+    template: '<div class="mock-result-text" data-testid="result-text"></div>',
+    props: ['result']
+  }
+
   const mockGalleryItems: MockResultItem[] = [
     {
       filename: 'image1.jpg',
@@ -86,12 +92,11 @@ describe('MediaLightbox', () => {
     const { rerender, container } = render(MediaLightbox, {
       global: {
         plugins: [i18n],
-        components: {
+        stubs: {
           ComfyImage: mockComfyImage,
           ResultVideo: mockResultVideo,
-          ResultAudio: mockResultAudio
-        },
-        stubs: {
+          ResultAudio: mockResultAudio,
+          ResultText: mockResultText,
           teleport: true,
           ...stubs
         }
@@ -188,6 +193,75 @@ describe('MediaLightbox', () => {
     await user.click(screen.getByLabelText('Close'))
 
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      filename: 'output.mp4',
+      mediaType: 'video',
+      expectedTestId: 'result-video'
+    },
+    {
+      filename: 'output.mp3',
+      mediaType: 'audio',
+      expectedTestId: 'result-audio'
+    },
+    {
+      filename: 'output.txt',
+      mediaType: 'text',
+      expectedTestId: 'result-text'
+    }
+  ])(
+    'routes $mediaType assets to their dedicated viewer',
+    async ({ filename, mediaType, expectedTestId }) => {
+      renderGallery({
+        allGalleryItems: [
+          {
+            ...mockGalleryItems[0],
+            filename,
+            mediaType
+          }
+        ]
+      })
+      await nextTick()
+
+      expect(screen.getByTestId(expectedTestId)).toBeInTheDocument()
+      for (const testId of [
+        'comfy-image',
+        'result-video',
+        'result-audio',
+        'result-text'
+      ]) {
+        if (testId !== expectedTestId) {
+          expect(screen.queryByTestId(testId)).not.toBeInTheDocument()
+        }
+      }
+    }
+  )
+
+  it('unmounts active media and restores focus when closed', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    const { user } = renderGallery({
+      allGalleryItems: [
+        {
+          ...mockGalleryItems[0],
+          filename: 'output.mp4',
+          mediaType: 'video'
+        }
+      ]
+    })
+    await nextTick()
+
+    expect(screen.getByRole('dialog')).toHaveFocus()
+    expect(screen.getByTestId('result-video')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Close'))
+
+    expect(screen.queryByTestId('result-video')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+    trigger.remove()
   })
 
   /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
