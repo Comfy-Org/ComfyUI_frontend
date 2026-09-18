@@ -28,6 +28,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         poster="https://media.comfy.org/website/careers/recruiting-v03-poster.webp"
         :aria-label="t('careers.hero.videoLabel', locale)"
         :locale
+        autoplay
+        loop
       />
       <div class="space-y-6 p-8 text-base/relaxed text-primary-comfy-canvas">
         <p>{{ t('careers.hero.body1', locale) }}</p>
