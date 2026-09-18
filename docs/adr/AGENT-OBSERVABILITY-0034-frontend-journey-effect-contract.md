@@ -55,6 +55,11 @@ must be versioned, and readers must reject unsupported versions. Sink adapters, 
 own pseudonymization, retention, access controls, and vendor mappings.
 
 The future serializer must allowlist named fields and reject content-shaped correlation values.
+Operation correlation must use an authoritative upstream identifier type or factory that makes
+content unrepresentable; if no such contract exists when the emitter lands, the sink boundary must
+pseudonymize the values before serialization. Prompts, responses, tool inputs or results, workflow
+JSON, Yjs bytes, node and widget content, filenames, URLs, emails, credentials, raw errors, and
+arbitrary context are forbidden in every correlation field, including operation identifiers.
 Stable identifiers may be event attributes but never metric tags or event-name components.
 
 Alternatives rejected:
