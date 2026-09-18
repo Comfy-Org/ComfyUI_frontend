@@ -29,12 +29,7 @@ vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   blankGraph: {}
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn(),
-    confirm: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
@@ -51,13 +46,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackDefaultViewSet: vi.fn(),
-    trackWorkflowSaved: vi.fn(),
-    trackEnterLinear: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 

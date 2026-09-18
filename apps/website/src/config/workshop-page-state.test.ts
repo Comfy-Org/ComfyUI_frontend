@@ -66,6 +66,27 @@ describe('initialWorkshopPageState', () => {
     expect(state.values).toEqual({ prompt: 'First example' })
   })
 
+  it('lets the first example own its media slots instead of authored page defaults', () => {
+    // The Kling page has authored template defaults (three reference images);
+    // its native example supplies one reference image, so the other slots stay
+    // empty rather than being topped up with template files.
+    const page = getRouterWorkshopModelDetail(
+      'kling--omni-pro-image-to-video--animate-images'
+    )
+    if (!page?.execution) throw new Error('Missing page')
+    const state = initialWorkshopPageState({
+      ...page,
+      execution: page.execution
+    })
+    expect(state.values.reference_image_url).toMatch(
+      /^https:\/\/media\.comfy\.org\//
+    )
+    expect(state.values.reference_image_url_2).toBeUndefined()
+    expect(state.values.reference_image_url_3).toBeUndefined()
+    expect(state.values.prompt).not.toContain('quokka')
+    expect(validateForm(state.schema, state.values)).toEqual({})
+  })
+
   it('keeps page defaults when the first example is output-only', () => {
     const state = initialWorkshopPageState({
       ...model,

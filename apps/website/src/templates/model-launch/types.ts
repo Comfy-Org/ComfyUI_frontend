@@ -34,6 +34,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Overlay pages without videoSrc only: spins the extruded Comfy C in the
+  // media cell and shows this image through its body, with
+  // placeholderImageSrc as the reduced-motion and pre-WebGL still.
+  logoMaskImageSrc?: string
   // Still shown instead of the video below the 768px breakpoint, so phones
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.

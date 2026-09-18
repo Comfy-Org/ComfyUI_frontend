@@ -11,7 +11,7 @@ const mockGetAuthHeader = vi.fn<
 >(async () => null)
 const originalFetch = globalThis.fetch
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 

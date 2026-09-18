@@ -5,6 +5,12 @@ parameter mappings, media conversion, temporary uploads, Router client and
 response parser as the model pages. A pass requires downloading and decoding
 an image, video or audio file. The [results grid](MODELS_TEST_RESULTS.md) lists
 every published page, its latest result and its last successful generation.
+It verifies the Run-button request path for the customer that owns
+`COMFY_API_KEY`; it does not verify another signed-in customer's credits,
+entitlements or concurrency settings.
+
+This is a Node request-path test, not a browser E2E pass. It cannot certify
+live upload CORS, browser session authentication or browser output display.
 
 ## Setup
 
@@ -28,17 +34,18 @@ run the page's SVG-to-PNG renderer before checking the image:
 pnpm --filter @comfyorg/website exec playwright install chromium
 ```
 
-Load the key into the exported `COMFY_KEY` variable through your secret manager
+Load the key into the exported `COMFY_API_KEY` variable through your secret manager
 or shell profile. To enter it without displaying it or putting its value into
 shell history, use this in zsh (the macOS default shell):
 
 ```zsh
-read -rs 'COMFY_KEY?Comfy API key: '
+read -rs 'COMFY_API_KEY?Comfy API key: '
 printf '\n'
-export COMFY_KEY
+export COMFY_API_KEY
 ```
 
-In Bash, replace the `read` line with `read -rsp 'Comfy API key: ' COMFY_KEY`.
+In Bash, replace the `read` line with
+`read -rsp 'Comfy API key: ' COMFY_API_KEY`.
 Use lowercase `export`; the tester reads the process environment and does not
 load `.env` files or shell profiles itself. Keep the key out of committed files.
 
@@ -55,15 +62,14 @@ requires an explicit valid environment.
 ## Give your account maximum concurrency
 
 These steps require Comfy admin access. Change the customer account that owns
-`COMFY_KEY`, which may differ from the account you use to sign into admin.
+`COMFY_API_KEY`, which may differ from the account you use to sign into admin.
 
 1. Open [Comfy Admin → Users](https://admin.engcomfy.com/users).
 2. Select **prod**, matching the tester's environment.
 3. Search by the key owner's email or Firebase UID and open the matching user.
 4. Find **Partner-node concurrency**.
-5. Enter **200** in **Set override** and click **Save**. This is the maximum
-   finite override and was used for the September 11, 2026 sweep.
-6. Check that **Effective limit** shows **200 concurrent** with reason
+5. Enter **-1** in **Set override** and click **Save**.
+6. Check that **Effective limit** shows **Unlimited** with reason
    **manual_override**.
 
 | Admin value | Meaning                                                              |
@@ -74,8 +80,8 @@ These steps require Comfy admin access. Change the customer account that owns
 | `0`         | Block Partner Node calls                                             |
 | **Clear**   | Remove the override and restore the spend-based limit shown in admin |
 
-For an unlimited account setting, enter **-1** instead of 200. The override
-persists until changed or cleared. If the panel says **Not configured for this
+Use 200 instead for the maximum finite account setting. The override persists
+until changed or cleared. If the panel says **Not configured for this
 environment**, the admin service needs its backend configuration completed;
 the tester's API key cannot set the admin override.
 
@@ -96,7 +102,7 @@ origins = {
 request = urllib.request.Request(
     origins[os.environ['PUBLIC_WORKSHOP_CLOUD_ENV']]
     + '/customers/me/partner-node-concurrency',
-    headers={'Authorization': 'Bearer ' + os.environ['COMFY_KEY']},
+    headers={'Authorization': 'Bearer ' + os.environ['COMFY_API_KEY']},
 )
 with urllib.request.urlopen(request, timeout=30) as response:
     result = json.load(response)
@@ -104,9 +110,8 @@ print(json.dumps({name: result[name] for name in ('limit', 'reason')}))
 PY
 ```
 
-Expected after setting 200: `{"limit": 200, "reason": "manual_override"}`.
-Unlimited reports `limit: -1`. If the value differs, check the environment,
-selected customer and API-key owner.
+Expected: `{"limit": -1, "reason": "manual_override"}`. If the value differs,
+check the environment, selected customer and API-key owner.
 
 The account limit is shared with its other Partner Node calls. Cloud workflow
 job limits are separate. Credits, provider restrictions and other rate/spend
@@ -175,13 +180,36 @@ submitted generation. The shared Router client, used by both the page's Run
 button and the tester, repeats the identical request with the same idempotency
 key up to three times; Router hands back the original generation instead of
 starting and billing another. It also waits out a `409` that carries
-`Retry-After` while the original request is still settling. Any other failure is
-reported without a retry. The September 11
+`Retry-After` while the original request is still settling. An interrupted fetch
+or response body gets one recovery attempt with the identical body and key.
+Other HTTP errors, malformed results and conflicts without retry advice are
+reported without automatic resubmission. The September 11
 [backend investigation](reviews/2026-09-11-backend-model-failures.md) documents
 the parking behaviour. The grid labels passes that needed collection
 `Collected after initial timeout` (`completion: "collected-after-timeout"`).
 
 ## Results, separate campaigns and commits
+
+### Verify live browser uploads separately
+
+```sh
+PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:workshop-upload \
+  --origin https://comfy.org
+```
+
+This explicit live check uses `COMFY_API_KEY` and the actual upload client in
+Chromium. Only an empty probe page is locally fulfilled under the specified
+origin; the storage grant, signed PUT and image download are real. It creates
+one tiny PNG in temporary storage, verifies that it decodes, and never submits
+a paid generation. It prints the environment, origin and failed stage without
+credentials or signed URLs. A Node upload or HTTP 200 preflight alone does not
+establish browser CORS success. This is separate from network-isolated E2E CI.
+
+As of September 17, the production `comfy.org` probe fails at `upload_put`.
+The storage CORS allowlist must be corrected and this check must pass before
+reopening uploads. Do not interpret a Node generation pass as clearing it.
+
+### Persistent result files
 
 The default public files update after each result:
 
