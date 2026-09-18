@@ -10154,8 +10154,9 @@ Enterprise`
     'zh-CN': '当前运行过多。请稍后重试。'
   },
   'workshop.error.policy': {
-    en: 'A content or workspace policy blocked this request.',
-    'zh-CN': '内容或工作区策略阻止了此请求。'
+    en: 'The model provider blocked the input or generated output under its content policy. Review your prompt and reference files before running again.',
+    'zh-CN':
+      '模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。'
   },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
@@ -10168,6 +10169,11 @@ Enterprise`
   'workshop.error.validation': {
     en: 'Check the highlighted fields.',
     'zh-CN': '请检查高亮的字段。'
+  },
+  'workshop.error.inputRejected': {
+    en: 'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.',
+    'zh-CN':
+      '模型拒绝了这些输入，但未指出具体字段。请检查模型的输入要求，或提供请求 ID 联系支持。'
   },
   'workshop.error.retry': { en: 'Try again', 'zh-CN': '重试' },
   'workshop.error.timeout': {
