@@ -28,6 +28,13 @@ describe('agent journey effect contract', () => {
     )
   })
 
+  it.for(['constructor', '__proto__', 'toString', 'unknown'])(
+    'rejects the unrecognized %s event name',
+    (outcome) => {
+      expect(getAgentJourneyEventName({ outcome })).toBeNull()
+    }
+  )
+
   it('serializes the allowlisted version-one golden vector', () => {
     expect(serializeAgentJourneyEvent(baseEvent)).toEqual({
       schema_version: 1,

@@ -50,15 +50,15 @@ export type SerializedAgentJourneyEvent = Readonly<{
   outcome: AgentJourneyEffectOutcome
   observed_at: string
   release_channel: AgentJourneyReleaseChannel
-  correlation: {
-    operation_ids: string[]
+  correlation: Readonly<{
+    operation_ids: readonly string[]
     target_ref: string
     session_id?: string
     thread_id?: string
     turn_id?: string
     mutation_id?: string
     run_id?: string
-  }
+  }>
   operation_count: number
   effect_kind: AgentJourneyEffectKind
   recovery_mode: AgentJourneyRecoveryMode
@@ -66,6 +66,16 @@ export type SerializedAgentJourneyEvent = Readonly<{
 
 export type AgentJourneyEventName =
   `agent.journey.frontend_semantic_effect.${AgentJourneyEffectOutcome}`
+
+type MutableAgentJourneyCorrelation = {
+  operation_ids: string[]
+  target_ref: string
+  session_id?: string
+  thread_id?: string
+  turn_id?: string
+  mutation_id?: string
+  run_id?: string
+}
 
 const EFFECT_EVENT_NAMES = {
   observed: 'agent.journey.frontend_semantic_effect.observed'
@@ -97,8 +107,9 @@ function isCanonicalTimestamp(value: string): boolean {
 }
 
 export function getAgentJourneyEventName(
-  event: AgentJourneyEvent
-): AgentJourneyEventName {
+  event: Readonly<{ outcome: unknown }>
+): AgentJourneyEventName | null {
+  if (event.outcome !== 'observed') return null
   return EFFECT_EVENT_NAMES[event.outcome]
 }
 
@@ -115,7 +126,7 @@ export function serializeAgentJourneyEvent(
     return null
   }
 
-  const correlation: SerializedAgentJourneyEvent['correlation'] = {
+  const correlation: MutableAgentJourneyCorrelation = {
     operation_ids: operationIds,
     target_ref: event.correlation.target_ref
   }
