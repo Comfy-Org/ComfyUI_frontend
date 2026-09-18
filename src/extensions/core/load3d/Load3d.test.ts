@@ -892,6 +892,43 @@ describe('Load3d', () => {
 
       await expect(idle).resolves.toBeUndefined()
     })
+
+    it('waits for a load accepted while the current load is still pending', async () => {
+      let resolveFirst!: () => void
+      let resolveSecond!: () => void
+      const first = new Promise<void>((resolve) => {
+        resolveFirst = resolve
+      })
+      const second = new Promise<void>((resolve) => {
+        resolveSecond = resolve
+      })
+      const internal = vi
+        .fn()
+        .mockImplementationOnce(() => first)
+        .mockImplementationOnce(() => second)
+      Object.assign(ctx.load3d, {
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const loadA = ctx.load3d.loadModel('api/view?filename=a.glb')
+      const idle = ctx.load3d.whenLoadIdle()
+      const loadB = ctx.load3d.loadModel('api/view?filename=b.glb')
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      resolveFirst()
+      await loadA
+      await Promise.resolve()
+      expect(internal).toHaveBeenCalledTimes(2)
+      expect(settled).toBe(false)
+
+      resolveSecond()
+      await Promise.all([idle, loadB])
+      expect(settled).toBe(true)
+    })
   })
 
   describe('currentLoadGeneration', () => {

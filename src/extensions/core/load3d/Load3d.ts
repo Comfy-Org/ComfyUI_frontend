@@ -336,20 +336,25 @@ class Load3d extends Viewport3d {
   ): Promise<void> {
     this._loadGeneration += 1
 
-    if (this.loadingPromise) {
+    const previousLoad = this.loadingPromise
+    const acceptedLoad = (async () => {
       try {
-        await this.loadingPromise
+        await previousLoad
       } catch {
         // Serialization only: the rejection already reached the loadModel caller.
       }
-    }
 
-    this.loadingPromise = this._loadModelInternal(
-      url,
-      originalFileName,
-      options
-    )
-    return this.loadingPromise
+      await this._loadModelInternal(url, originalFileName, options)
+    })()
+
+    // Publish the tail before waiting so every accepted load is visible to
+    // whenLoadIdle(), including loads queued behind the current one.
+    this.loadingPromise = acceptedLoad
+    try {
+      await acceptedLoad
+    } finally {
+      if (this.loadingPromise === acceptedLoad) this.loadingPromise = null
+    }
   }
 
   async whenLoadIdle(): Promise<void> {
@@ -403,8 +408,6 @@ class Load3d extends Viewport3d {
     }
 
     this.handleResize()
-
-    this.loadingPromise = null
   }
 
   isSplatModel(): boolean {
