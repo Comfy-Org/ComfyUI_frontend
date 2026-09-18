@@ -125,7 +125,15 @@ export class Topbar {
     }
   }
 
+  async dismissWorkflowPopover() {
+    await this.page
+      .locator('.workflow-popover-fade')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {})
+  }
+
   async openTopbarMenu() {
+    await this.dismissWorkflowPopover()
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
