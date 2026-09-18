@@ -38,6 +38,8 @@ describe('verifyFaqDocument', () => {
   })
 
   it('points a link at the locale path when the locale serves that route', () => {
+    // Japanese publishes /pricing. Preserving the link verbatim would send a
+    // Japanese reader to the English pricing page; the writer localizes it.
     const withPricing = parseFaqDocument(
       'pricing/en/plans',
       [
@@ -46,16 +48,16 @@ describe('verifyFaqDocument', () => {
         'order: 1',
         '---',
         '',
-        'See [home](/) and [contact](/contact).',
+        'See [pricing](/pricing) and [contact](/contact).',
         ''
       ].join('\n')
     )
     const built = buildFaqDocument(withPricing, {
       question: 'どのプラン？',
-      body: '[ホーム](/)と[お問い合わせ](/contact)をご覧ください。'
+      body: '[料金](/pricing)と[お問い合わせ](/contact)をご覧ください。'
     })
 
-    expect(built).toContain('](/ja/)')
+    expect(built).toContain('](/ja/pricing)')
     expect(built).toContain('](/contact)')
     expect(verifyFaqDocument(withPricing, built)).toEqual([])
   })

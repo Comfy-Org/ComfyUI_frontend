@@ -116,7 +116,7 @@ export function isLocale(value: string | undefined): value is Locale {
 export const PARTIAL_LOCALE_ROUTES: Partial<
   Record<Locale, ReadonlySet<string>>
 > = {
-  ja: new Set(['/'])
+  ja: new Set(['/', '/download', '/cloud', '/platform', '/about', '/pricing'])
 }
 
 /**

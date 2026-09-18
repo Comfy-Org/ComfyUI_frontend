@@ -753,7 +753,8 @@
     },
     "meta": {
       "description": "完整 ComfyUI 引擎的命令行。在 Claude Code、Codex、Cursor 或任意 shell 中生成图像、视频、音频和 3D，在 Comfy Cloud 上运行，或就在你自己的 GPU 上。",
-      "title": "Comfy CLI - 在终端和任何编程智能体中驱动 ComfyUI"
+      "title": "Comfy CLI - 在终端和任何编程智能体中驱动 ComfyUI",
+      "keywords": "Comfy CLI、ComfyUI CLI、ComfyUI 命令行、ComfyUI 终端、ComfyUI 自动化、ComfyUI CI、面向编程智能体的 AI CLI、Claude Code 图像生成、ComfyUI 批量生成"
     },
     "session": {
       "alt": "终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行、自带技能列表，以及会话保存的两张图像",
@@ -1727,7 +1728,8 @@
         "subtitle": "Builder 是自助打包和测试环境的方式。Managed Builds 在此之上增加团队共享与企业级治理。",
         "included": "包含",
         "notIncluded": "不包含",
-        "enterpriseOnly": "仅限 Enterprise"
+        "enterpriseOnly": "仅限 Enterprise",
+        "exploreBuilds": "浏览构建"
       },
       "fdcBand": {
         "text": "是建设者，而不是顾问。Forward Deployed Creatives 在受批准的环境中构建生产级 Comfy Workflows，并与将要拥有和扩展这些工作流的团队并肩工作。"
@@ -1749,6 +1751,20 @@
         "deploy": {
           "title": "发布到整个团队",
           "description": "通过 Comfy Desktop 或您的 GPU 服务器分配构建。通过 Developer Platform 部署端点。"
+        }
+      },
+      "industries": {
+        "games": {
+          "description": "让美术、用户获取和营销团队使用同一套固定版本的工具链，同时各团队在为其工作打造的 Comfy Workflows 中开展工作。",
+          "title": "游戏工作室"
+        },
+        "onboarding": {
+          "description": "为新工作室或客户提供符合其技术栈的已批准构建版本，再有计划地发布更新，无需反复手动配置。",
+          "title": "您接入的工作室"
+        },
+        "vfx": {
+          "description": "按项目锁定环境，将私有节点和模型保留在构建中，并在您可控的基础设施上运行涉及敏感 IP 的工作。",
+          "title": "视觉特效与动画"
         }
       }
     },
@@ -2947,6 +2963,10 @@
       "heading": "为什么选择\n",
       "headingHighlight": "Comfy MCP？",
       "subtitle": "首个为生产管线打造的 MCP：值得信赖的基础设施，让工程师和专业人士交付更快。"
+    },
+    "agentBanner": {
+      "linkTitle": "加入候补名单",
+      "title": "Comfy Agent 现处于测试阶段。抢先体验。"
     }
   },
   "minimax": {
@@ -5151,6 +5171,17 @@
   "videos": {
     "meta": {
       "title": "视频 - Comfy"
+    }
+  },
+  "meta": {
+    "defaultDescription": "Comfy 是专为追求控制力的视觉专业人士打造的 AI 创作引擎。"
+  },
+  "notFound": {
+    "a11y": {
+      "pageLabel": "404 页面未找到"
+    },
+    "meta": {
+      "title": "404 - 页面未找到 - Comfy"
     }
   }
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import machineJa from './content/ja.json'
+import { resolveTranslation, sourceTranslationKeys } from './source'
 import { LOCALE_CODES } from '../config/locales'
 import { hasKey, t, tAround, tPlural, translationKeys } from './translations'
 
@@ -22,7 +24,7 @@ describe('t()', () => {
   })
 
   it('falls back to English when Japanese copy is missing', () => {
-    expect(t('tags.partnerNodes', 'ja')).toBe('Partner Nodes')
+    expect(t('tos.effectiveDateLabel', 'ja')).toBe('Effective Date')
   })
 
   it('interpolates named values in the locale word order', () => {
@@ -88,5 +90,46 @@ describe('hasKey', () => {
     expect(hasKey('hero.title')).toBe(true)
     expect(hasKey('hero')).toBe(false)
     expect(hasKey('toString')).toBe(false)
+  })
+})
+
+describe('resolveTranslation provenance', () => {
+  it('reports English as the source, never as a translation', () => {
+    expect(resolveTranslation('tags.partnerNodes', 'en')).toEqual({
+      value: 'Partner Nodes',
+      provenance: 'english'
+    })
+  })
+
+  it('reports hand-written Chinese as approved', () => {
+    const resolved = resolveTranslation('tags.partnerNodes', 'zh-CN')
+    expect(resolved.provenance).toBe('approved')
+    expect(resolved.value).toBe('合作伙伴节点')
+  })
+
+  it('reports hand-written Japanese as approved', () => {
+    expect(resolveTranslation('hero.title', 'ja').provenance).toBe('approved')
+  })
+
+  it('reports an untranslated key as English, not as a translation', () => {
+    expect(resolveTranslation('tos.effectiveDateLabel', 'ja')).toEqual({
+      value: 'Effective Date',
+      provenance: 'english'
+    })
+  })
+
+  it('reports machine-filled Japanese as machine, not as approved', () => {
+    const inMachineLayer = sourceTranslationKeys.filter((key) =>
+      Object.hasOwn(machineJa, key)
+    )
+    const provenances = inMachineLayer.map(
+      (key) => resolveTranslation(key, 'ja').provenance
+    )
+
+    expect(inMachineLayer.length).toBeGreaterThan(100)
+    expect(
+      provenances.filter((provenance) => provenance === 'english')
+    ).toEqual([])
+    expect(provenances).toContain('machine')
   })
 })

@@ -79,6 +79,13 @@ export default defineConfig({
      * `hreflangAlternates` refuses to cluster it, so each canonicals to its
      * English original and is advertised nowhere.
      *
+     * Japanese is held back the same way, but by a different gate.
+     * `PARTIAL_LOCALE_ROUTES.ja` names the six routes it publishes — `/`,
+     * `/download`, `/cloud`, `/platform`, `/about`, `/pricing` — and everything
+     * else is built, unadvertised and unlinked. `INDEXABLE_PAGES.ja` is `'all'`
+     * because that gate has already decided; the two would otherwise have to
+     * agree about the same list twice. Widening Japanese means adding routes
+     * there, in a reviewed change of its own.
      */
     fallback: { ja: DEFAULT_LOCALE, 'zh-CN': DEFAULT_LOCALE },
     routing: {

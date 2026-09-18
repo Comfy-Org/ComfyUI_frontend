@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { translationTargets } from '@comfyorg/comfyui-frontend/scripts/i18n/config'
@@ -20,8 +21,9 @@ import {
 import type { Locale } from '../../config/locales'
 import type { SourceEntry, TranslationLayer } from './types'
 
-const repoRoot = fileURLToPath(new URL('../../../../../', import.meta.url))
-const catalogDir = fileURLToPath(new URL('../../locales/', import.meta.url))
+const moduleDir = dirname(fileURLToPath(import.meta.url))
+const repoRoot = resolve(moduleDir, '../../../../..')
+const catalogDir = `${resolve(moduleDir, '../../locales')}/`
 
 export function catalogEntries(filename: string): SourceEntry[] {
   const source = readLocale(`${catalogDir}en/${filename}`)
