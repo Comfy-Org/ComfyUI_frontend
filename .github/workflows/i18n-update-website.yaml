@@ -1,0 +1,75 @@
+name: 'i18n: Update Website'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-update-website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-locales:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Extract content into shared catalogs
+        run: pnpm --filter @comfyorg/website i18n:build-source
+
+      - name: Generate translations
+        run: pnpm locale:website
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Validate and reconcile generated content
+        working-directory: apps/website
+        run: |
+          pnpm i18n:build-source
+          pnpm i18n:validate
+          pnpm i18n:write-data
+          pnpm i18n:write-faq
+          pnpm i18n:write-story
+          pnpm i18n:build-resolved
+          pnpm i18n:report
+
+      - name: Open a translation pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          base: ${{ github.ref_name }}
+          branch: i18n/website-translations/${{ github.ref_name }}
+          title: 'chore(website): update translations'
+          commit-message: 'chore(website): update translations'
+          add-paths: |
+            apps/website/src/locales
+            apps/website/src/i18n/content
+            apps/website/src/i18n/resolved
+            apps/website/src/data
+            apps/website/src/content/faq
+            apps/website/src/content/customers
+          body: |
+            ## Summary
+
+            Update website translations through the shared locale generator.
+
+            ## Changes
+
+            - Include catalogs, ownership/source metadata, browser dictionaries, and generated data/MDX together.
+            - Preserve reviewed values and withdraw stale generated content.
+
+            ## Review Focus
+
+            Review translated copy and any generated-content withdrawals. Route publication and indexing remain separate reviewed changes.

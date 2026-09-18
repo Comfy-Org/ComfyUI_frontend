@@ -48,10 +48,12 @@ as the application's `src/locales/` at the repository root:
   written as `{'@'}` and `{'|'}`. A bare `@` fails to compile; a bare `|`
   silently truncates the message at the pipe.
 
-`src/i18n/translations.ts` wraps a vue-i18n instance whose locale is passed
-explicitly on every call (`t(key, locale, named?)`), never switched globally,
-because the site is rendered statically per locale. Any key the requested
-locale lacks falls back to English. A unit test compiles every message in
+`src/i18n/translations.ts` wraps a vue-i18n composer for each loaded locale.
+Every call passes its locale (`t(key, locale, named?)`); rendering never
+switches global locale state. Static rendering loads all locales; the browser
+loads only the document locale. Committed `src/i18n/resolved/<locale>.json`
+dictionaries already contain reviewed copy, eligible generated copy, or English
+fallback, so the browser does not fetch another locale to fill missing keys. A unit test compiles every message in
 every locale, so a syntax mistake fails `pnpm test:unit` rather than a page.
 
 Add new English copy to `src/locales/en/main.json`. Use `pnpm locale:check`
@@ -72,6 +74,45 @@ Legal namespaces and opted-out pages are excluded from generation. Reviewed
 translations there remain intact; missing or machine-owned excluded values
 fall back to English. New generation does not activate routes or indexing.
 The app target keeps its existing policy.
+
+### Data and content collections
+
+`i18n:build-source` extracts English and reviewed localized fields from
+TypeScript data, FAQ MDX and customer-story MDX into nested
+`src/locales/<locale>/content.json`. These catalogs use plain/Markdown text,
+not Intlify syntax; the shared generator still checks placeholders and
+protected literals. Human-authored data and MDX remain the source for reviewed
+content. Writer hashes distinguish generated fields from manual edits.
+
+The flat files under `src/i18n/content` are derived projections for content
+writers and quality checks. `src/i18n/source.ts` is a build-time catalog adapter,
+not another editable message store or translation engine. The shared source
+manifest and machine ownership hashes remain authoritative.
+
+After editing copy, run from this package:
+
+```sh
+pnpm i18n:build-source
+pnpm locale:check
+pnpm i18n:validate
+pnpm i18n:write-data
+pnpm i18n:write-faq
+pnpm i18n:write-story
+pnpm i18n:build-resolved
+pnpm i18n:report
+```
+
+Generation is optional and separate: `pnpm locale` calls the shared generator
+using `OPENAI_API_KEY`. Run it after extraction and before projection/writing.
+Do not manually advance source-manifest hashes; the shared generation pipeline
+records them when it reconciles translations. Fetch full Git history when
+reconstructing translations from older source blobs.
+
+The manual **i18n: Update Website** workflow runs this sequence and opens one
+PR containing catalogs, metadata, generated content and browser dictionaries.
+CI checks their freshness and the content writers' `--check` modes. Route
+publication and indexing still require a separate policy change; translation
+coverage is advisory. Hosted translation management remains a follow-up.
 
 ## Ashby careers integration
 

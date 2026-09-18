@@ -18,7 +18,7 @@ export const sourceTranslationKeys = entries.map(
   ({ key }) => key
 ) as TranslationKey[]
 
-export function localizedEntry(key: TranslationKey): LocalizedText {
+function localizedEntry(key: TranslationKey): LocalizedText {
   const entry = entryByKey.get(key)
   if (!entry) throw new Error(`Unknown translation key: ${key}`)
   return { en: entry.english, ...entry.approved }
