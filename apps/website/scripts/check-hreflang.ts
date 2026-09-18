@@ -100,7 +100,7 @@ for (const file of files) {
   pages.set(route, alternatesIn(html))
 
   const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1]
-  if (canonical && new URL(canonical).pathname === route) {
+  if (canonical === `${ORIGIN}${route}`) {
     selfCanonical.add(route)
   }
 }
