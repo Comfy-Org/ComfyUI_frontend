@@ -116,6 +116,50 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
 
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()
   })
+  /**
+   * The gutter is a margin class and happy-dom does no layout, so there is
+   * nothing to measure here. The class is the whole behaviour: whether the
+   * graph keeps a right gutter turns on what is drawn beside it.
+   */
+  const renderGraphGutter = (offsideOpen: boolean) => {
+    const agentPanelStore = useAgentPanelStore()
+    agentPanelStore.enabled = true
+    agentPanelStore.isOpen = true
+    agentPanelStore.consentAccepted = true
+
+    vi.mocked(useSettingStore().get).mockImplementation((id) => {
+      if (id === 'Comfy.Sidebar.Location') return 'left'
+      if (id === 'Comfy.UseNewMenu') return 'Top'
+      if (id === 'Comfy.RightSidePanel.IsOpen') return offsideOpen
+      return false
+    })
+
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { sideToolbar: { sidebar: 'Sidebar' } } }
+    })
+
+    render(LiteGraphCanvasSplitterOverlay, {
+      global: {
+        plugins: [getActivePinia()!, i18n],
+        stubs: {
+          Splitter: { template: '<div><slot /></div>' },
+          SplitterPanel: { template: '<div><slot /></div>' }
+        }
+      }
+    })
+    return screen.getByTestId('graph-canvas-gutter').className
+  }
+
+  it('drops the graph right gutter where the Agent panel meets the canvas', () => {
+    expect(renderGraphGutter(false)).not.toContain('mr-')
+  })
+
+  it('keeps the graph right gutter when a panel is drawn between', () => {
+    expect(renderGraphGutter(true)).toContain('mr-')
+  })
+
   it('refreshes the splitter only when the Agent panel becomes visible', async () => {
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true

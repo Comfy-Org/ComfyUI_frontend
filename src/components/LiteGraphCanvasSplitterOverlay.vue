@@ -64,10 +64,18 @@
 
           <!-- Main panel (always present) -->
           <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
-            <slot name="topmenu" :sidebar-panel-visible />
+            <div :class="!graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'">
+              <slot name="topmenu" :sidebar-panel-visible />
+            </div>
 
             <Splitter
-              class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
+              data-testid="graph-canvas-gutter"
+              :class="
+                cn(
+                  'splitter-overlay-bottom pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) flex-1 border-none bg-transparent',
+                  !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
+                )
+              "
               layout="vertical"
               :pt:gutter="
                 cn(
@@ -202,6 +210,15 @@ const agentPanelHasOpaqueNeighbor = computed(
     (showOffsideSplitter.value &&
       !agentNodeSelectionActive.value &&
       !focusMode.value)
+)
+
+/**
+ * The graph's right gutter is what separates it from whatever is drawn beside
+ * it. When that is the agent panel, the panel's own gutter already spaces the
+ * two and a second one reads as a gap.
+ */
+const graphMeetsAgentPanel = computed(
+  () => agentPanelOpen.value && !agentPanelHasOpaqueNeighbor.value
 )
 
 const sidebarPanelVisible = computed(

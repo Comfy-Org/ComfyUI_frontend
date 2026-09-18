@@ -114,23 +114,11 @@
           data-testid="agent-entry-separator"
           class="h-5 w-px shrink-0 bg-border-subtle"
         />
-        <Button
-          variant="muted-textonly"
-          size="sm"
-          :class="
-            cn(
-              'no-drag shrink-0 gap-1 rounded-lg hover:text-base-foreground',
-              agentPanelStore.isVisible
-                ? 'bg-secondary-background-hover text-base-foreground'
-                : 'bg-secondary-background'
-            )
-          "
-          :aria-pressed="agentPanelStore.isVisible"
+        <AgentEntryButton
+          :active="agentPanelStore.isVisible"
+          :inviting="!agentPanelStore.hasEverOpened"
           @click="onAgentEntryClick"
-        >
-          <i class="icon-[lucide--mouse-pointer-2] size-3" />
-          <span>{{ $t('agent.entryButton') }}</span>
-        </Button>
+        />
       </template>
     </div>
     <div v-else class="ml-auto flex h-full shrink-0 items-center">
@@ -146,6 +134,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
