@@ -1,22 +1,10 @@
+import { datadogRum } from '@datadog/browser-rum'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const hoisted = vi.hoisted(() => {
-  const context: Record<string, unknown> = {}
+const context: Record<string, unknown> = {}
+const fetchMock = vi.fn<typeof fetch>()
 
-  return {
-    context,
-    fetch: vi.fn<typeof fetch>(),
-    getInitConfiguration: vi.fn(),
-    init: vi.fn(),
-    setGlobalContextProperty: vi.fn((key: string, value: unknown) => {
-      context[key] = value
-    })
-  }
-})
-
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: hoisted
-}))
+vi.mock(import('@datadog/browser-rum'))
 vi.mock(import('./manualRefreshTracker'), () => ({
   trackUserManualRefresh: vi.fn()
 }))
@@ -27,15 +15,17 @@ import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
-    for (const key of Object.keys(hoisted.context)) {
-      delete hoisted.context[key]
+    for (const key of Object.keys(context)) {
+      delete context[key]
     }
-    hoisted.setGlobalContextProperty.mockImplementation((key, value) => {
-      hoisted.context[key] = value
-    })
-    hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
-    hoisted.getInitConfiguration.mockReturnValue(undefined)
-    vi.stubGlobal('fetch', hoisted.fetch)
+    vi.mocked(datadogRum.setGlobalContextProperty).mockImplementation(
+      (key, value) => {
+        context[key] = value
+      }
+    )
+    fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(undefined)
+    vi.stubGlobal('fetch', fetchMock)
   })
 
   it.for([
@@ -48,7 +38,7 @@ describe('initDatadogRum', () => {
     async ({ hostname, env }) => {
       await initDatadogRum(hostname)
 
-      expect(hoisted.init).toHaveBeenCalledWith({
+      expect(datadogRum.init).toHaveBeenCalledWith({
         clientToken: 'pub7704486e5b64eb4ff6f62891cda45559',
         applicationId: '041a9897-5516-4b1f-a245-1a9aa6895488',
         site: 'us5.datadoghq.com',
@@ -71,13 +61,13 @@ describe('initDatadogRum', () => {
 
   it('tags canary traffic with its bucket and frontend version', async () => {
     let resolveProbe: (response: Response) => void
-    hoisted.fetch.mockReturnValue(
+    fetchMock.mockReturnValue(
       new Promise((resolve) => {
         resolveProbe = resolve
       })
     )
-    hoisted.init.mockImplementation(() => {
-      expect(hoisted.context).toEqual({
+    vi.mocked(datadogRum.init).mockImplementation(() => {
+      expect(context).toEqual({
         bucket: 'canary',
         comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
         version: __COMFYUI_FRONTEND_COMMIT__
@@ -86,7 +76,7 @@ describe('initDatadogRum', () => {
 
     const initialization = initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.init).not.toHaveBeenCalled()
+    expect(datadogRum.init).not.toHaveBeenCalled()
     resolveProbe!(
       new Response(null, {
         headers: {
@@ -97,17 +87,17 @@ describe('initDatadogRum', () => {
     )
     await initialization
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       bucket: 'canary',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
     })
-    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(datadogRum.init).toHaveBeenCalledOnce()
   })
 
   it('serializes concurrent initialization', async () => {
     let resolveProbe: (response: Response) => void
-    hoisted.fetch.mockReturnValue(
+    fetchMock.mockReturnValue(
       new Promise((resolve) => {
         resolveProbe = resolve
       })
@@ -126,9 +116,9 @@ describe('initDatadogRum', () => {
     )
     await Promise.all([firstInitialization, secondInitialization])
 
-    expect(hoisted.fetch).toHaveBeenCalledOnce()
-    expect(hoisted.init).toHaveBeenCalledOnce()
-    expect(hoisted.context).toEqual({
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(datadogRum.init).toHaveBeenCalledOnce()
+    expect(context).toEqual({
       bucket: 'canary',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
@@ -136,7 +126,7 @@ describe('initDatadogRum', () => {
   })
 
   it('defaults the bucket to stable and tracks its frontend version', async () => {
-    hoisted.fetch.mockResolvedValue(
+    fetchMock.mockResolvedValue(
       new Response(null, {
         headers: { 'X-Frontend-Version': __COMFYUI_FRONTEND_COMMIT__ }
       })
@@ -144,7 +134,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       bucket: 'stable',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
@@ -152,7 +142,7 @@ describe('initDatadogRum', () => {
   })
 
   it('leaves traffic unclassified when the frontend version is absent', async () => {
-    hoisted.fetch.mockResolvedValue(
+    fetchMock.mockResolvedValue(
       new Response(null, {
         headers: { 'X-Frontend-Bucket': 'canary' }
       })
@@ -160,13 +150,13 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
   })
 
   it('leaves traffic unclassified when the probe reaches another version', async () => {
-    hoisted.fetch.mockResolvedValue(
+    fetchMock.mockResolvedValue(
       new Response(null, {
         headers: {
           'X-Frontend-Bucket': 'stable',
@@ -177,37 +167,37 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
   })
 
   it('leaves traffic unclassified when the header probe fails', async () => {
-    hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
+    fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
-    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(datadogRum.init).toHaveBeenCalledOnce()
   })
 
   it('initializes RUM when the header probe rejects', async () => {
-    hoisted.fetch.mockRejectedValue(new Error('network error'))
+    fetchMock.mockRejectedValue(new Error('network error'))
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
-    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(datadogRum.init).toHaveBeenCalledOnce()
   })
 
   it('initializes RUM when the header probe times out', async () => {
     const abortController = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(abortController.signal)
-    hoisted.fetch.mockImplementation(
+    fetchMock.mockImplementation(
       (_input, init) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () => {
@@ -220,10 +210,10 @@ describe('initDatadogRum', () => {
     abortController.abort()
     await initialization
 
-    expect(hoisted.context).toEqual({
+    expect(context).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
-    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(datadogRum.init).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -234,15 +224,18 @@ describe('initDatadogRum', () => {
   ])('does not initialize on unknown hostname %s', async (hostname) => {
     await initDatadogRum(hostname)
 
-    expect(hoisted.init).not.toHaveBeenCalled()
+    expect(datadogRum.init).not.toHaveBeenCalled()
   })
 
   it('does not initialize twice', async () => {
-    hoisted.getInitConfiguration.mockReturnValue({})
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      applicationId: 'initialized',
+      clientToken: 'initialized'
+    })
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(hoisted.init).not.toHaveBeenCalled()
+    expect(datadogRum.init).not.toHaveBeenCalled()
   })
 
   it('tracks manual refreshes only once RUM is initialized', async () => {
