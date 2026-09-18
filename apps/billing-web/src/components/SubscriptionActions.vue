@@ -101,8 +101,14 @@ async function resubscribe() {
     v-if="allowed?.can_cancel || allowed?.can_reactivate"
     class="flex flex-col gap-3"
   >
-    <p v-if="notice" class="m-0 text-sm text-base-foreground">{{ notice }}</p>
-    <p v-if="failure" class="m-0 text-sm text-destructive-background">
+    <p v-if="notice" role="status" class="m-0 text-sm text-base-foreground">
+      {{ notice }}
+    </p>
+    <p
+      v-if="failure"
+      role="alert"
+      class="m-0 text-sm text-destructive-background"
+    >
       {{ failure }}
     </p>
 

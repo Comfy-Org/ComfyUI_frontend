@@ -21,7 +21,11 @@ const { n, t } = useI18n()
 </script>
 
 <template>
-  <p v-if="failure" class="mb-3 text-sm text-destructive-background">
+  <p
+    v-if="failure"
+    role="alert"
+    class="mb-3 text-sm text-destructive-background"
+  >
     {{ failure }}
   </p>
   <label

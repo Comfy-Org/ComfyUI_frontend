@@ -267,6 +267,11 @@ describe('SubscriptionView', () => {
       await screen.findByRole('button', { name: 'Resubscribe' })
     )
 
+    // The outcome type carries only a terminal operation, so a pending
+    // continuation cannot ride back on the command and the lifecycle stands in
+    // for it here. Asserting the command ran is what keeps this a test of the
+    // button rather than of the publish.
+    expect(fake.resubscribe).toHaveBeenCalledOnce()
     fake.publishOperation(
       hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
     )
@@ -288,6 +293,7 @@ describe('SubscriptionView', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Resubscribe' })
     )
+    expect(fake.resubscribe).toHaveBeenCalledOnce()
     fake.publishOperation(challengedPendingOperation('pi_1_secret'))
 
     await waitFor(() =>
