@@ -69,7 +69,8 @@ test.describe('enabled workshop', () => {
 
 for (const { path, heading } of [
   { path: MODEL_PATH, heading: 'Grok Image and Video Creations' },
-  { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' }
+  { path: '/zh-CN/models/', heading: 'Grok 图像与视频创作' },
+  { path: `/zh-CN${MODEL_PATH}`, heading: 'Grok 图像与视频创作' }
 ]) {
   test(`a disabled visitor gets localized marketing at ${path}`, async ({
     context,

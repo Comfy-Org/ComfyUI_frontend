@@ -4,16 +4,28 @@ import { expect } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 
 test.describe('canonical redirects', () => {
-  test('builds the untranslated terms redirect with its canonical URL', () => {
-    const redirectPage = readFileSync(
-      'dist/zh-CN/terms-of-service/index.html',
-      'utf8'
-    )
+  /**
+   * This used to assert a redirect stub. It cannot be one any more.
+   *
+   * Chinese is served by Astro's i18n fallback rather than by its own page
+   * files, and a fallback route and a redirect cannot both own the same URL —
+   * the route wins, and the redirect is dropped from the build silently.
+   *
+   * The SEO contract is unchanged and is what is asserted instead: the page
+   * canonicals to the English document, is noindex, and is absent from the
+   * sitemap. A reader who lands here gets the terms rather than a bounce.
+   */
+  test('serves the untranslated terms at its canonical English document', () => {
+    const page = readFileSync('dist/zh-CN/terms-of-service/index.html', 'utf8')
 
-    expect(redirectPage).toContain('url=/terms-of-service/')
-    expect(redirectPage).toContain(
+    expect(page).toContain(
       'rel="canonical" href="https://comfy.org/terms-of-service/"'
     )
+    expect(page).toContain('content="noindex')
+    expect(page).not.toContain('url=/terms-of-service/')
+
+    const sitemap = readFileSync('dist/sitemap-0.xml', 'utf8')
+    expect(sitemap).not.toContain('comfy.org/zh-CN/terms-of-service')
   })
 
   test('builds a model alias redirect with its canonical URL', () => {

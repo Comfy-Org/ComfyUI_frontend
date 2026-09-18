@@ -1,14 +1,14 @@
-// @vitest-environment node
-import { existsSync, readdirSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it, vi } from 'vitest'
 
 import { isNoindexPathname } from '../config/indexing'
+import { PARTIAL_LOCALE_ROUTES } from '../config/locales'
+import { isLocaleInvariantPath } from '../config/routes'
 import { redirects } from '../config/redirects'
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
-import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
+import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
   canonicalPath,
@@ -256,15 +256,25 @@ describe('ogLocaleAlternate', () => {
 })
 
 /**
- * `isLocaleInvariantPath` is a hand-maintained list, and the page tree is the
- * thing it is meant to describe. Reading the tree back catches the entry nobody
- * added: an English page whose Chinese twin does not exist still advertises one,
- * which is a cluster pointing at a 404.
+ * The partial-locale allowlist is hand-maintained, and the page tree is the
+ * thing it is meant to describe.
  *
- * Static routes only. A dynamic route's two `getStaticPaths` are free to produce
- * different slug sets, which the file tree cannot see.
+ * What that means changed in P3. The tree used to hold one file per locale, so
+ * the check was "does the twin exist". Every localized page is now served from
+ * the English one through the i18n fallback, so a localized URL exists exactly
+ * when its English page does, and the rot moved with it: the allowlist is now
+ * the only thing deciding which localized URLs are linked, indexed and listed
+ * in the sitemap, so a wrong entry there is what advertises a URL that 404s.
+ *
+ * The four tests this replaced all read the tree for locale-named files, and
+ * three of them could not fail once those files were gone: two iterated a set
+ * that is now always empty, and one filtered the English routes by whether they
+ * were absent from the English routes.
+ *
+ * Static routes only. A dynamic route's `getStaticPaths` can produce any slug
+ * set, which the file tree cannot see.
  */
-describe('the emitter agrees with the page tree', () => {
+describe('the allowlist agrees with the page tree', () => {
   const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
   const astroFiles = (dir: string): string[] =>
@@ -274,54 +284,58 @@ describe('the emitter agrees with the page tree', () => {
       return entry.name.endsWith('.astro') ? [full] : []
     })
 
-  const english = new Set<string>()
-  const chinese = new Set<string>()
-  const pageRoutes = astroFiles(pagesDir)
-    .map((file) => relative(pagesDir, file).split(sep).join('/'))
-    .filter((file) => !file.includes('['))
-    .map((file) => routeOf(`/src/pages/${file}`))
-  const injectedRoutes = [false, true]
-    .flatMap(modelsBuildRoutes)
-    .filter(
-      ({ pattern, entrypoint }) =>
-        !pattern.includes('[') &&
-        entrypoint.endsWith('.astro') &&
-        existsSync(entrypoint)
-    )
-    .map(({ pattern }) => `${pattern}/`)
-  for (const route of [...pageRoutes, ...injectedRoutes]) {
-    if (route.startsWith(`${ZH_PREFIX}/`)) {
-      chinese.add(route.slice(ZH_PREFIX.length) || '/')
-    } else if (!route.startsWith('/ja/')) {
-      english.add(route)
-    }
-  }
+  /** `routeOf` trails a slash and the allowlist does not, so one side gives. */
+  const withoutTrailingSlash = (route: string) => route.replace(/(.)\/$/, '$1')
 
-  const redirected = new Set(
-    Object.keys(redirects).map((source) => source.replace(/\/$/, ''))
+  const english = new Set(
+    astroFiles(pagesDir)
+      .map((file) => relative(pagesDir, file).split(sep).join('/'))
+      .filter((rel) => !rel.includes('['))
+      .map((rel) => withoutTrailingSlash(routeOf(`/src/pages/${rel}`)))
   )
 
-  /** What `BaseLayout` ends up emitting for a route that was actually built. */
-  const clusters = (pathname: string): boolean =>
-    !redirected.has(pathname.replace(/\/$/, '')) &&
-    !isNoindexPathname(pathname) &&
-    hreflangAlternates(pathname, ORIGIN).length > 0
+  const published = Object.entries(PARTIAL_LOCALE_ROUTES).flatMap(
+    ([locale, routes]) => [...routes].map((route) => ({ locale, route }))
+  )
 
-  it('never advertises a zh-CN page that does not exist', () => {
-    const lying = [...english].filter(
-      (route) => clusters(route) && !chinese.has(route)
-    )
+  it('reads a page tree and an allowlist to check', () => {
+    expect(english.size).toBeGreaterThan(50)
+    expect(published.length).toBeGreaterThan(0)
+  })
+
+  it('backs every published route with an English page', () => {
+    const unbacked = published
+      .filter(({ route }) => !english.has(route))
+      .map(({ locale, route }) => `${locale}: ${route}`)
+
     expect(
-      lying,
-      'add a zh-CN page or mark the route locale-invariant'
+      unbacked,
+      'no page exists to serve this locale from, so the URL 404s'
     ).toEqual([])
   })
 
-  it('never advertises an English page that does not exist', () => {
-    const lying = [...chinese].filter(
-      (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
-    )
-    expect(lying, 'the English twin was moved or removed').toEqual([])
+  /**
+   * An entry for a route that is never localized does nothing at all: the
+   * redirect wins, the noindex wins, or `localizeHref` refuses to prefix it. The
+   * legal documents are all one of the three — the contracts are locale-invariant
+   * and the policies are noindexed — so this is also what keeps them out of a
+   * localized tree if someone widens the allowlist by hand.
+   */
+  it('never publishes a route that cannot be localized anyway', () => {
+    const redirected = new Set(Object.keys(redirects).map(withoutTrailingSlash))
+    const inert = published
+      .filter(
+        ({ route }) =>
+          redirected.has(route) ||
+          isNoindexPathname(route) ||
+          isLocaleInvariantPath(route)
+      )
+      .map(({ locale, route }) => `${locale}: ${route}`)
+
+    expect(
+      inert,
+      'the entry does nothing: the route is redirected, held out of the index, or never localized'
+    ).toEqual([])
   })
 })
 

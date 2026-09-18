@@ -41,7 +41,8 @@
     "i18n:validate": "tsx ./scripts/i18n/validate-translations.ts",
     "i18n:write-data": "tsx ./scripts/i18n/write-data-japanese.ts",
     "i18n:write-faq": "tsx ./scripts/i18n/write-faq-japanese.ts",
-    "i18n:write-story": "tsx ./scripts/i18n/write-story-japanese.ts"
+    "i18n:write-story": "tsx ./scripts/i18n/write-story-japanese.ts",
+    "check:localized-pages": "tsx ./scripts/check-localized-pages.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

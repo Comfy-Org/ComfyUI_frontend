@@ -113,7 +113,9 @@ export function isLocale(value: string | undefined): value is Locale {
  *
  * Paths carry no trailing slash, matching `baseRoutes` and `englishPath`.
  */
-const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
+export const PARTIAL_LOCALE_ROUTES: Partial<
+  Record<Locale, ReadonlySet<string>>
+> = {
   ja: new Set(['/'])
 }
 
