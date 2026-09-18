@@ -2,7 +2,11 @@ import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { CoachStep } from './useOnboarding'
-import { useOnboarding } from './useOnboarding'
+import {
+  adoptSharedOnboardingFlag,
+  scopedOnboardingKey,
+  useOnboarding
+} from './useOnboarding'
 
 const KEY = 'test.onboarded'
 const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
@@ -72,6 +76,39 @@ describe('useOnboarding', () => {
     }))
     expect(tour.index.value).toBe(1)
     expect(tour.step.value.title).toBe('Translated Card 2')
+  })
+
+  it('scopes the stored flag to the account and workspace', () => {
+    expect(scopedOnboardingKey('user-a', 'workspace-a')).toBe(
+      'Comfy.AgentPanel.onboarded.user-a.workspace-a'
+    )
+  })
+
+  it('has no scope until both the account and workspace are known', () => {
+    expect(scopedOnboardingKey(undefined, 'workspace-a')).toBeNull()
+    expect(scopedOnboardingKey('user-a', null)).toBeNull()
+  })
+
+  it('carries a device-wide flag onto the scope in front of the user', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+
+    expect(
+      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+    ).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+  })
+
+  it('leaves a workspace the user has not seen clear of the old flag', () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+
+    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-b')
+
+    expect(
+      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-b')
+    ).toBeNull()
   })
 
   it('does not complete when there are no cards', () => {

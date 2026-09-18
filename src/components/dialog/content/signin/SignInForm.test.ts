@@ -16,7 +16,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 import SignInForm from './SignInForm.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 // Mock the auth composables and stores
 vi.mock(import('@/composables/auth/useAuthActions'))

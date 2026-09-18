@@ -13,7 +13,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 import ApiKeyForm from './ApiKeyForm.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const i18n = createI18n({
   legacy: false,

@@ -103,8 +103,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
         SelectTrigger: stub('stub-select-trigger'),
         SelectValue: stub('stub-select-value'),
         SelectContent: stub('stub-select-content'),
-        SelectItem: stub('stub-select-item'),
-        Button: stub('stub-lock-button')
+        SelectItem: stub('stub-select-item')
       }
     }
   })
