@@ -31,7 +31,7 @@ const TERMINAL = [
 export class LocalDesktopTarget {
   async getObjectInfo(page: Page): Promise<ObjectInfo> {
     return await page.evaluate(async () => {
-      const defs = await window.app!.api.getNodeDefs()
+      const defs = await window.app!.getNodeDefs()
       const out: Record<
         string,
         { input?: { required?: Record<string, unknown> } }

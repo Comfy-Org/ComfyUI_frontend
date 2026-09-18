@@ -45,7 +45,7 @@ test.describe('manifest covers every registered pack @custom-nodes', () => {
     comfyPage
   }) => {
     const defs = fromPartial<Record<string, RawNodeDef>>(
-      await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+      await comfyPage.page.evaluate(() => window.app!.getNodeDefs())
     )
     const uncovered = unmanifestedPackNames(defs, ALL_NODES_MANIFEST_ENTRIES)
     expect(
@@ -83,7 +83,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
         )
 
         const defs = fromPartial<Record<string, RawNodeDef>>(
-          await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+          await comfyPage.page.evaluate(() => window.app!.getNodeDefs())
         )
         const failures: string[] = []
         for (const entry of tierEntries) {

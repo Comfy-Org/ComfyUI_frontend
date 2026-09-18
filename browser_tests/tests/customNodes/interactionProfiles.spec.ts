@@ -45,7 +45,7 @@ for (const entry of interactionProfileEntries) {
   }) => {
     test.setTimeout(entry.timeoutMs + 120_000)
     const defs = fromPartial<Record<string, RawNodeDef>>(
-      await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+      await comfyPage.page.evaluate(() => window.app!.getNodeDefs())
     )
     const plans = planInteractionProbes(defs, entry.pack)
     expect(
