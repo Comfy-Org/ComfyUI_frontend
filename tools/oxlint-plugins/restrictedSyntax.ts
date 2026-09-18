@@ -208,7 +208,7 @@ export const noUnknownDoubleAssertion = {
       },
       ImportDeclaration(node: ImportDeclaration) {
         if (node.source.value !== '@total-typescript/shoehorn') return
-        fromAny = importedLocalName(node, 'fromAny')
+        fromAny ??= importedLocalName(node, 'fromAny')
       },
       TSAsExpression(node: TypeAssertion) {
         if (node.expression.type !== 'TSAsExpression') return
