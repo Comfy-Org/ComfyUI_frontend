@@ -1205,6 +1205,31 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     expect(refreshed?.image).toBe('threed/scene-4.png [temp]')
   })
 
+  it('re-captures when the scene changes during an upload', async () => {
+    const { load3d, serialize, uploadTempImage } = await setup()
+    let releaseUploads!: () => void
+    const uploadsBlocked = new Promise<void>((resolve) => {
+      releaseUploads = resolve
+    })
+    uploadTempImage.mockImplementationOnce(async () => {
+      await uploadsBlocked
+      return { name: 'stale-scene.png' }
+    })
+
+    const pending = serialize()
+    await flush()
+
+    const configuration = configureMock.mock.calls.at(-1)?.[0]
+    configuration.onSceneInvalidated()
+    releaseUploads()
+
+    const refreshed = await pending
+
+    expect(load3d.captureScene).toHaveBeenCalledTimes(2)
+    expect(uploadTempImage).toHaveBeenCalledTimes(6)
+    expect(refreshed?.image).toBe('threed/scene-3.png [temp]')
+  })
+
   it('returns null when no load3d instance is registered for the node', async () => {
     const widgets: FakeWidget[] = [
       { name: 'model_file', value: 'm.glb' },

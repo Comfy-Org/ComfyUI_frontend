@@ -68,6 +68,13 @@ const inputSpecPreview3D: CustomInputSpec = {
   isPreview: true
 }
 
+const load3dSceneRevisions = new WeakMap<LGraphNode, number>()
+
+function invalidateLoad3dScene(node: LGraphNode): void {
+  load3dSceneRevisions.set(node, (load3dSceneRevisions.get(node) ?? 0) + 1)
+  markLoad3dSceneDirty(node)
+}
+
 async function handleModelUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
@@ -112,7 +119,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       modelWidget.value = uploadPath
     }
 
-    markLoad3dSceneDirty(node)
+    invalidateLoad3dScene(node)
   } catch (error) {
     console.error('Model upload failed:', error)
     useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
@@ -130,7 +137,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
       : '3d'
 
     await Load3dUtils.uploadMultipleFiles(files, subfolder)
-    markLoad3dSceneDirty(node)
+    invalidateLoad3dScene(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
     useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
@@ -342,7 +349,7 @@ useExtensionService().registerExtension({
             if (modelWidget) {
               modelWidget.value = LOAD3D_NONE_MODEL
             }
-            markLoad3dSceneDirty(node)
+            invalidateLoad3dScene(node)
           })
         }
 
@@ -402,7 +409,7 @@ useExtensionService().registerExtension({
         cameraState,
         width,
         height,
-        onSceneInvalidated: () => markLoad3dSceneDirty(node)
+        onSceneInvalidated: () => invalidateLoad3dScene(node)
       })
     })
 
@@ -420,58 +427,66 @@ useExtensionService().registerExtension({
             return null
           }
 
-          if (!isLoad3dSceneDirty(node)) {
-            const cached = getLoad3dOutputCache(node)
-            if (cached) return cached
-          }
+          while (true) {
+            if (!isLoad3dSceneDirty(node)) {
+              const cached = getLoad3dOutputCache(node)
+              if (cached) return cached
+            }
 
-          // A model swap (user or agent) may still be loading. Capture the
-          // scene the queue will actually run, not the one being replaced.
-          await currentLoad3d.whenLoadIdle()
+            const sceneRevision = load3dSceneRevisions.get(node) ?? 0
 
-          const { camera_info, model_3d_info } = snapshotLoad3dState(
-            node,
-            currentLoad3d
-          )
+            // A model swap (user or agent) may still be loading. Capture the
+            // scene the queue will actually run, not the one being replaced.
+            await currentLoad3d.whenLoadIdle()
 
-          const {
-            scene: imageData,
-            mask: maskData,
-            normal: normalData
-          } = await currentLoad3d.captureScene(
-            width.value as number,
-            height.value as number
-          )
+            const { camera_info, model_3d_info } = snapshotLoad3dState(
+              node,
+              currentLoad3d
+            )
 
-          const [data, dataMask, dataNormal] = await Promise.all([
-            Load3dUtils.uploadTempImage(imageData, 'scene'),
-            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-          ])
+            const {
+              scene: imageData,
+              mask: maskData,
+              normal: normalData
+            } = await currentLoad3d.captureScene(
+              width.value as number,
+              height.value as number
+            )
 
-          currentLoad3d.handleResize()
-
-          const returnVal: Load3dCachedOutput = {
-            image: `threed/${data.name} [temp]`,
-            mask: `threed/${dataMask.name} [temp]`,
-            normal: `threed/${dataNormal.name} [temp]`,
-            camera_info,
-            recording: '',
-            model_3d_info
-          }
-
-          const recordingData = currentLoad3d.getRecordingData()
-
-          if (recordingData) {
-            const [recording] = await Promise.all([
-              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            const [data, dataMask, dataNormal] = await Promise.all([
+              Load3dUtils.uploadTempImage(imageData, 'scene'),
+              Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+              Load3dUtils.uploadTempImage(normalData, 'scene_normal')
             ])
-            returnVal.recording = `threed/${recording.name} [temp]`
+
+            currentLoad3d.handleResize()
+
+            const returnVal: Load3dCachedOutput = {
+              image: `threed/${data.name} [temp]`,
+              mask: `threed/${dataMask.name} [temp]`,
+              normal: `threed/${dataNormal.name} [temp]`,
+              camera_info,
+              recording: '',
+              model_3d_info
+            }
+
+            const recordingData = currentLoad3d.getRecordingData()
+
+            if (recordingData) {
+              const [recording] = await Promise.all([
+                Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+              ])
+              returnVal.recording = `threed/${recording.name} [temp]`
+            }
+
+            if ((load3dSceneRevisions.get(node) ?? 0) !== sceneRevision) {
+              continue
+            }
+
+            setLoad3dOutputCache(node, returnVal)
+
+            return returnVal
           }
-
-          setLoad3dOutputCache(node, returnVal)
-
-          return returnVal
         }
       }
     })
