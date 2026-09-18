@@ -3,6 +3,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -17,13 +18,10 @@ import { createGraphMutations } from './graphMutations'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
-  readonly steps = this.addWidget('number', 'steps', 20, () => {}, {
-    min: 1,
-    max: 100
-  })
-  readonly seed = this.addWidget('number', 'seed', 7, () => {}, { min: 0 })
   constructor() {
     super('Test Source')
+    this.addWidget('number', 'steps', 20, () => {}, { min: 1, max: 100 })
+    this.addWidget('number', 'seed', 7, () => {}, { min: 0 })
     this.addOutput('image', 'IMAGE')
     this.serialize_widgets = true
   }
@@ -31,14 +29,17 @@ class TestSource extends LGraphNode {
 
 class TestNote extends LGraphNode {
   static override title = 'Note'
-  readonly text = this.addWidget('markdown', 'text', '', () => {}, {
-    multiline: true
-  })
   constructor() {
     super('Note')
     this.addInput('image', 'IMAGE')
+    this.addWidget('markdown', 'text', '', () => {}, { multiline: true })
     this.serialize_widgets = true
   }
+}
+
+function widgetsOf(node: LGraphNode) {
+  assert(node.widgets, 'test node registers widgets', { title: node.title })
+  return node.widgets
 }
 
 const WORKFLOW_ID = 'wf-a'
@@ -78,8 +79,8 @@ function buildLiveGraph() {
   source.pos = [10, 20]
   note.pos = [400, 20]
   note.title = 'Release notes'
-  source.steps.value = 21
-  note.text.value = '# Draft'
+  widgetsOf(source)[0].value = 21
+  widgetsOf(note)[0].value = '# Draft'
   source.connect(0, note, 0)
   return { graph, source, note }
 }
@@ -230,7 +231,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       node.set('widgets', new Y.Map([['steps', 30]]))
     })
 
-    expect([source.steps.value, source.seed.value]).toEqual([30, 7])
+    expect(widgetsOf(source).map(({ value }) => value)).toEqual([30, 7])
     const saved = structuredClone(graph.serialize())
     expect(saved.nodes[0].widgets_values).toEqual([30, 7])
 
