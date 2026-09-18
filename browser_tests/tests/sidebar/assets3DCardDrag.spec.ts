@@ -87,10 +87,16 @@ test.describe('3D asset card drag', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
-    await tab.open()
-    await tab.waitForAssets(1)
+    // The default `open()` wait targets the generic asset-card locator, and
+    // this spec seeds only a single 3D-kind asset with no other card to
+    // satisfy it. The 3D preview card has known slower/flakier initial-mount
+    // behavior in VirtualGrid (#11635), so skip that built-in wait and poll
+    // for this specific card with a longer timeout instead, mirroring
+    // assets-filter.spec.ts's handling of the same 3D-card flakiness.
+    await tab.open({ waitForAssets: false })
 
     const card = tab.getAssetCardByName(THREE_D_CARD_NAME)
+    await expect(card).toBeVisible({ timeout: 10_000 })
     const thumbnail = card.locator('img')
     await expect(thumbnail).toBeVisible()
     const box = await thumbnail.boundingBox()
