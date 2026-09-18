@@ -8,16 +8,20 @@ import {
 } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 export function useNodePointerInteractions(
-  nodeStateRef: MaybeRefOrGetter<NodeState>
+  nodeStateRef: MaybeRefOrGetter<NodeState>,
+  lgraphNodeRef?: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -26,6 +30,7 @@ export function useNodePointerInteractions(
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
   const agentNodeSelectionStore = useAgentNodeSelectionStore()
+  const canvasStore = useCanvasStore()
   const isPinned = () => !!toValue(nodeStateRef).flags.pinned
 
   const forwardMiddlePointerIfNeeded = (
@@ -101,6 +106,25 @@ export function useNodePointerInteractions(
     if (layoutStore.isDraggingVueNodes.value) {
       handleDrag(event, nodeId)
     }
+  }
+
+  function forwardHoverEvent(
+    event: PointerEvent,
+    callback: 'onMouseEnter' | 'onMouseLeave'
+  ) {
+    const node = lgraphNodeRef && toValue(lgraphNodeRef)
+    const canvas = canvasStore.canvas
+    if (!node || !canvas || !node[callback]) return
+    augmentToCanvasPointerEvent(event, node, canvas)
+    node[callback]?.(event)
+  }
+
+  function onPointerenter(event: PointerEvent) {
+    forwardHoverEvent(event, 'onMouseEnter')
+  }
+
+  function onPointerleave(event: PointerEvent) {
+    forwardHoverEvent(event, 'onMouseLeave')
   }
 
   function cleanupDragState() {
@@ -181,6 +205,8 @@ export function useNodePointerInteractions(
   const pointerHandlers = {
     onPointerdown,
     onPointermove,
+    onPointerenter,
+    onPointerleave,
     onPointerup,
     onPointercancel,
     onContextmenu

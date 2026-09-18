@@ -39,6 +39,30 @@ function findLegacyWidget():
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
+function getLegacyWidgetHeight(width: number) {
+  if (!widgetInstance || !node) return 20
+  if (widgetInstance.computedHeight) return widgetInstance.computedHeight
+  if (widgetInstance.computeLayoutSize)
+    return widgetInstance.computeLayoutSize(node).minHeight
+  return widgetInstance.computeSize?.(width)[1] ?? 20
+}
+
+function getLegacyWidgetPaintHeight(height: number) {
+  if (!widgetInstance || !node) return height
+  const widgetY = widgetInstance.y ?? widgetInstance.last_y
+  if (widgetInstance.computedHeight === undefined || widgetY === undefined)
+    return height
+
+  const layoutWidgets = node.getLayoutWidgets()
+  const widgetIndex = layoutWidgets.indexOf(widgetInstance)
+  const nextWidgetY = layoutWidgets
+    .slice(widgetIndex + 1)
+    .map((widget) => widget.y ?? widget.last_y)
+    .find((y) => y !== undefined && y > widgetY)
+  const paintBoundary = nextWidgetY ?? node.size[1]
+  return Math.max(height, paintBoundary - widgetY)
+}
+
 function bindWidget() {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 
@@ -77,31 +101,31 @@ whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
-  if (!widgetInstance || !node) return
+  if (!widgetInstance || !node || !canvasEl.value) return
   const width =
     canvasEl.value.getBoundingClientRect().width ||
     canvasEl.value.parentElement.clientWidth
-  // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
-  let height = 20
-  if (widgetInstance.computedHeight) {
-    height = widgetInstance.computedHeight
-  } else if (widgetInstance.computeLayoutSize) {
-    height = widgetInstance.computeLayoutSize(node).minHeight
-  } else if (widgetInstance.computeSize) {
-    height = widgetInstance.computeSize(width)[1]
-  }
+  const height = getLegacyWidgetPaintHeight(getLegacyWidgetHeight(width))
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
   // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
+  const originalY = widgetInstance.y
   widgetInstance.y = 0
   widgetInstance.width = width
   canvasEl.value.height = (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value?.getContext('2d')
-  if (!ctx) return
+  if (!ctx) {
+    widgetInstance.y = originalY
+    return
+  }
   ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+  try {
+    widgetInstance.draw?.(ctx, node, width, 1, height)
+  } finally {
+    widgetInstance.y = originalY
+  }
 }
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {
@@ -121,18 +145,28 @@ function handleUp(e: PointerEvent) {
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
-  if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  if (!pointer) return
+  const currentNode = findLegacyWidget()?.node
+  if (!currentNode) return
+  node = currentNode
+  augmentToCanvasPointerEvent(e, currentNode, canvas)
+  currentNode.onMouseMove?.(
+    e,
+    [e.canvasX - currentNode.pos[0], e.canvasY - currentNode.pos[1]],
+    canvas
+  )
   pointer.move(e)
+  draw()
 }
 </script>
 <template>
   <div
-    class="relative mx-[-12px] w-full min-w-0"
+    class="relative -mx-3 w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
       ref="canvasEl"
+      data-testid="legacy-widget-canvas"
       class="absolute w-full cursor-crosshair"
       @pointerdown.stop="handleDown"
       @pointerup.stop="handleUp"

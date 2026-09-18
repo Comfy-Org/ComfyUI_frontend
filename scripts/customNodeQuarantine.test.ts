@@ -19,7 +19,7 @@ it('reports only exclusions applicable to the Core manifest', () => {
   const output = `${result.stdout}${result.stderr}`
 
   expect(result.status, output).toBe(0)
-  expect(output).toContain('Pack-level coverage exclusions - **0 of 6 packs**')
+  expect(output).toContain('Pack-level coverage exclusions - **0 of 9 packs**')
   expect(output).toContain(
     'Tier-scoped node coverage exclusions - **0 node, 0 S-tier surfaces**'
   )

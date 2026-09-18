@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  hasInstalledPack,
   ownedQueueEntries,
   runWithCollectedCleanup
 } from '@e2e/fixtures/utils/customNodeSuite'
+
+describe('hasInstalledPack', () => {
+  const installed = [{ pack: 'VHS' }, { pack: 'Impact-Pack' }]
+
+  it('matches installed packs case-insensitively', () => {
+    expect(hasInstalledPack('vhs', installed)).toBe(true)
+    expect(hasInstalledPack('IMPACT-PACK', installed)).toBe(true)
+  })
+
+  it('rejects missing and unrelated packs', () => {
+    expect(hasInstalledPack('rgthree', installed)).toBe(false)
+    expect(hasInstalledPack('EasyUse', installed)).toBe(false)
+  })
+})
 
 describe('runWithCollectedCleanup', () => {
   it('preserves the test failure while every cleanup runs', async () => {
