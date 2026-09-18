@@ -2,8 +2,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
-import { createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
@@ -35,13 +36,8 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockImportPublishedAssets = vi.fn()
-const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: mockIsLoggedIn
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -199,7 +195,6 @@ beforeEach(() => {
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
-    mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     vi.mocked(useDialogStore().updateDialog).mockImplementation(
@@ -278,7 +273,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
   it('does not capture share auth attribution for authenticated users', async () => {
     mockQueryParams = { share: 'share-id-1' }
-    mockIsLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
     })

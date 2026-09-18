@@ -536,17 +536,8 @@ export function creatorFormFor(
       request = { kind: 'callback', callback: 'flat', options: {} }
       break
     case 'gpt-image':
-      // Same root parameters as the flat form; the edit page adds the source
-      // image(s) the Router accepts as `medias`, the generate page hides them.
       addRoot()
       required.add('prompt')
-      if (model.options.mode !== 'generate')
-        file(
-          'images',
-          model.options.mode === 'edit' ? 'Source images' : 'Reference images',
-          10,
-          model.options.mode === 'edit'
-        )
       request = { kind: 'callback', callback: 'gpt-image', options: {} }
       break
     case 'ideogram':
