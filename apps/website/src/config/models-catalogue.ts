@@ -11,14 +11,6 @@ import type {
 } from '@comfyorg/router-playground/workshop-types'
 import { MODALITIES } from '@comfyorg/router-playground/workshop-types'
 
-export { MODALITIES }
-export type {
-  GeneratedExample,
-  GeneratedField,
-  Modality,
-  WorkshopExampleValues
-}
-
 const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
 export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 

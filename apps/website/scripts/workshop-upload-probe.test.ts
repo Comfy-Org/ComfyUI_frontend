@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
-import { createWorkshopUrlUploader } from '../src/config/workshop-url-upload'
+import { WorkshopRouterError } from '@comfyorg/router-playground/workshop-router-errors'
+import { createWorkshopUrlUploader } from '@comfyorg/router-playground/workshop-url-upload'
 import { runWorkshopUploadProbe } from './workshop-upload-probe'
 
-vi.mock(import('../src/config/workshop-url-upload'))
+vi.mock(import('@comfyorg/router-playground/workshop-url-upload'))
 
 describe('browser upload diagnostic', () => {
   it.for(['upload_grant', 'upload_put'] as const)(

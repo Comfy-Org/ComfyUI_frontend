@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
-import { MODALITIES, USE_CASES } from './models-catalogue'
+import { USE_CASES } from './models-catalogue'
+import { MODALITIES } from '@comfyorg/router-playground/workshop-types'
 import {
   formForContract,
   workshopContractSchema

@@ -16,13 +16,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
-import type { Modality } from '../../config/models-catalogue'
+import type { RunRecord, RunState } from '../../config/workshop-run'
 import type {
+  Modality,
   RunFailure,
-  RunOutput,
-  RunRecord,
-  RunState
-} from '../../config/workshop-run'
+  RunOutput
+} from '@comfyorg/router-playground/workshop-types'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
 import { outputLabels } from '../../lib/workshop/output-labels'

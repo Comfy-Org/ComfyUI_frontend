@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   WorkshopRouterError,
   workshopResponseDetails
-} from '../config/workshop-router-errors'
+} from '@comfyorg/router-playground/workshop-router-errors'
 import {
   workshopFailureAnalytics,
   workshopRouterErrorType

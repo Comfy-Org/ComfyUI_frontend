@@ -11,7 +11,8 @@ import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { modelOrderRank } from './workshop-model-order'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from '@comfyorg/router-playground/workshop-playground'
-import type { GeneratedField, WorkshopModel } from './models-catalogue'
+import type { WorkshopModel } from './models-catalogue'
+import type { GeneratedField } from '@comfyorg/router-playground/workshop-types'
 import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,

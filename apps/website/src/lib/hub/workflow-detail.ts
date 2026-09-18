@@ -1,9 +1,9 @@
+import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type {
   GeneratedExample,
   GeneratedField,
-  Modality,
-  WorkshopModelDetail
-} from '../../config/models-catalogue'
+  Modality
+} from '@comfyorg/router-playground/workshop-types'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { tagDisplayName } from './tag-aliases'

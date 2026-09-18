@@ -1,8 +1,14 @@
 import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from '@comfyorg/router-playground/workshop-request'
-import { parseRouterResponse, releaseRouterOutputs } from '@comfyorg/router-playground/workshop-response'
-import type { RunFailure, RunOutput } from './workshop-run'
+import {
+  parseRouterResponse,
+  releaseRouterOutputs
+} from '@comfyorg/router-playground/workshop-response'
+import type {
+  RunFailure,
+  RunOutput
+} from '@comfyorg/router-playground/workshop-types'
 import {
   WorkshopRouterError,
   workshopResponseDetails

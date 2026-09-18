@@ -35,7 +35,8 @@ import {
   workshopExampleState,
   workshopPageSchema
 } from '../../config/workshop-page-state'
-import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
+import type { RunRecord, RunState } from '../../config/workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 import { IDLE, transition } from '../../config/workshop-run'
 import {
   refreshWorkshopCredits,
@@ -108,7 +109,7 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
-const initialPageState = initialWorkshopPageState(model)
+const initialPageState = initialWorkshopPageState(model, locale)
 const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
@@ -131,7 +132,7 @@ const schema = computed(() =>
           advancedFields: []
         }
       })
-    : workshopPageSchema(model, activeExample.value)
+    : workshopPageSchema(model, activeExample.value, locale)
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
@@ -629,7 +630,7 @@ function applyExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = workshopExampleState(model, example).values
+    values.value = workshopExampleState(model, example, locale).values
     // Agreeing settles both records: the reader has let the example win.
     markSettled()
   }

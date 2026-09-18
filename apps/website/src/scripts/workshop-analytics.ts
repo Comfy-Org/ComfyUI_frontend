@@ -1,10 +1,17 @@
-import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
-import type { FieldErrorCode, FieldErrors } from '../config/workshop-playground'
+import type { WorkshopModel } from '../config/models-catalogue'
+import type {
+  Modality,
+  RunFailure,
+  RunOutput
+} from '@comfyorg/router-playground/workshop-types'
+import type {
+  FieldErrorCode,
+  FieldErrors
+} from '@comfyorg/router-playground/workshop-playground'
 import type {
   WorkshopFailureStage,
   WorkshopRouterError
-} from '../config/workshop-router-errors'
+} from '@comfyorg/router-playground/workshop-router-errors'
 
 interface WorkshopModelAnalytics {
   model_slug: string

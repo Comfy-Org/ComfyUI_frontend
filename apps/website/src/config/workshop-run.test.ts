@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RunOutput, RunState } from './workshop-run'
+import type { RunState } from './workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 import {
   IDLE,
   OUTPUT_TTL_MS,

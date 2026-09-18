@@ -1,4 +1,4 @@
-import type { RunOutput } from '../../config/workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 import type { TranslationKey } from '../../i18n/translations'
 
 const KIND_KEYS: Record<RunOutput['kind'], TranslationKey> = {

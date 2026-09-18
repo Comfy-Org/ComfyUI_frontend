@@ -7,8 +7,6 @@ import type {
 
 export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 
-export type { RunFailure, RunOutput }
-
 /** One Router request, including any additional media and raw response. */
 export interface RunRecord {
   readonly output: RunOutput

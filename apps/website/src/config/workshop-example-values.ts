@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
 import type { WorkshopContract } from '@comfyorg/router-playground/workshop-contract'
-import type { WorkshopExampleValues } from './models-catalogue'
+import type { WorkshopExampleValues } from '@comfyorg/router-playground/workshop-types'
 import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 import {
   schemaForModel,

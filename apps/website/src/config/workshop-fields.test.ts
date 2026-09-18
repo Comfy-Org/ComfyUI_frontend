@@ -83,7 +83,6 @@ describe('deriveWorkshopFields', () => {
             role: 'reference_image',
             required: true,
             cardinality: 'single',
-            minItems: 1,
             maxItems: 1
           }
         ]
@@ -168,27 +167,23 @@ describe('deriveWorkshopFields', () => {
           role: 'source_video',
           required: true,
           cardinality: 'single',
-          minItems: 1,
           maxItems: 1
         },
         {
           role: 'reference_audio',
           required: false,
-          cardinality: 'many',
-          minItems: 0
+          cardinality: 'many'
         },
         {
           role: 'document',
           required: false,
           cardinality: 'single',
-          minItems: 0,
           maxItems: 1
         },
         {
           role: 'mask',
           required: false,
           cardinality: 'single',
-          minItems: 0,
           maxItems: 1
         }
       ])
@@ -416,8 +411,8 @@ describe('open-ended and free-precision inputs', () => {
     // picker, and kling/dual-character-effect has only those two roles, so it
     // would offer no image picker at all.
     const fields = deriveWorkshopFields({ type: 'object', properties: {} }, [
-      { role: 'view_left', required: true, cardinality: 'single', minItems: 1 },
-      { role: 'view_right', required: true, cardinality: 'single', minItems: 1 }
+      { role: 'view_left', required: true, cardinality: 'single' },
+      { role: 'view_right', required: true, cardinality: 'single' }
     ])
 
     expect(

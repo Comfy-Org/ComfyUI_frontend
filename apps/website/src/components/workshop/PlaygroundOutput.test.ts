@@ -3,7 +3,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RunOutput, RunState } from '../../config/workshop-run'
+import type { RunState } from '../../config/workshop-run'
+import type { RunOutput } from '@comfyorg/router-playground/workshop-types'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import { downloadOutput } from '../../config/workshop-output-download'
 

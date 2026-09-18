@@ -12,21 +12,25 @@ import {
   examplesForModel,
   schemaForModel
 } from '@comfyorg/router-playground/workshop-playground'
+import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 
-/** The fallback form's labels, in the site's language. */
-const fallbackFieldLabels: FallbackFieldLabels = {
-  prompt: t('workshop.field.prompt'),
-  promptPlaceholder: t('workshop.field.promptPlaceholder'),
-  seed: t('workshop.field.seed'),
-  image: t('workshop.field.image'),
-  aspectRatio: t('workshop.field.aspectRatio'),
-  duration: t('workshop.field.duration')
+/** The fallback form's labels, in the page's language. */
+function fallbackFieldLabels(locale: Locale): FallbackFieldLabels {
+  return {
+    prompt: t('workshop.field.prompt', locale),
+    promptPlaceholder: t('workshop.field.promptPlaceholder', locale),
+    seed: t('workshop.field.seed', locale),
+    image: t('workshop.field.image', locale),
+    aspectRatio: t('workshop.field.aspectRatio', locale),
+    duration: t('workshop.field.duration', locale)
+  }
 }
 
 export function workshopPageSchema(
   model: WorkshopModelDetail,
-  activeExample?: PlaygroundExample
+  activeExample?: PlaygroundExample,
+  locale: Locale = 'en'
 ): readonly FieldSchema[] {
   return schemaForModel(
     {
@@ -35,7 +39,7 @@ export function workshopPageSchema(
       incompleteReason: model.incompleteReason,
       form: activeExample?.fields ? undefined : model.form
     },
-    fallbackFieldLabels
+    fallbackFieldLabels(locale)
   )
 }
 
@@ -49,9 +53,10 @@ export interface InitialWorkshopPageState {
 
 export function workshopExampleState(
   model: WorkshopModelDetail,
-  example: PlaygroundExample
+  example: PlaygroundExample,
+  locale: Locale = 'en'
 ) {
-  const schema = workshopPageSchema(model, example)
+  const schema = workshopPageSchema(model, example, locale)
   const exampleState = exampleValues(schema, example)
   const seeded = applyRouterDefaultInputs(model, schema, exampleState)
   // The example owns every field it sets, including the indexed siblings of
@@ -77,16 +82,17 @@ function baseFieldName(name: string): string {
 
 /** The exact form state a model page presents before the visitor changes it. */
 export function initialWorkshopPageState(
-  model: WorkshopModelDetail
+  model: WorkshopModelDetail,
+  locale: Locale = 'en'
 ): InitialWorkshopPageState {
   const examples = examplesForModel(model)
   const firstExample = examples.at(0)
   const activeExample =
     firstExample?.fields && !firstExample.sampleOnly ? firstExample : undefined
-  const schema = workshopPageSchema(model, activeExample)
+  const schema = workshopPageSchema(model, activeExample, locale)
   const state =
     firstExample && !firstExample.sampleOnly
-      ? workshopExampleState(model, firstExample)
+      ? workshopExampleState(model, firstExample, locale)
       : {
           schema,
           values: applyRouterDefaultInputs(

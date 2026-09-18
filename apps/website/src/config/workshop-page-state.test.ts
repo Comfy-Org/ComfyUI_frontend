@@ -6,6 +6,7 @@ import {
   workshopExampleState
 } from './workshop-page-state'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { t } from '../i18n/translations'
 import { validateForm } from '@comfyorg/router-playground/workshop-playground'
 
 const model: WorkshopModelDetail = {
@@ -39,6 +40,17 @@ const model: WorkshopModelDetail = {
 }
 
 describe('initialWorkshopPageState', () => {
+  it('labels the fallback form in the page locale', () => {
+    const { schema } = initialWorkshopPageState(
+      { ...model, fields: [], examples: [] },
+      'zh-CN'
+    )
+    expect(schema.find((field) => field.name === 'prompt')?.label).toBe(
+      t('workshop.field.prompt', 'zh-CN')
+    )
+    expect(schema.map((field) => field.label)).not.toContain('Prompt')
+  })
+
   it.for([
     'freepik--magnific-upscaler-precise-v2--edit-images',
     'gemini--omni-1.1-flash--animate-images',

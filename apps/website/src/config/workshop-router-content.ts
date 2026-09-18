@@ -1,9 +1,6 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
-import type {
-  GeneratedExample,
-  WorkshopModel,
-  WorkshopModelDetail
-} from './models-catalogue'
+import type { WorkshopModel, WorkshopModelDetail } from './models-catalogue'
+import type { GeneratedExample } from '@comfyorg/router-playground/workshop-types'
 import { formForContract } from '@comfyorg/router-playground/workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
