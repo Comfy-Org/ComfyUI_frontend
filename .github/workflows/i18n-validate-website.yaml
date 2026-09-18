@@ -84,3 +84,6 @@ jobs:
 
       - name: Check generated faq content
         run: pnpm --filter @comfyorg/website i18n:write-faq --check
+
+      - name: Check generated story content
+        run: pnpm --filter @comfyorg/website i18n:write-story --check

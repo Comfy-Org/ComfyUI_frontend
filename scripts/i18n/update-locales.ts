@@ -1,3 +1,9 @@
+import type {
+  MessageFormat,
+  OutputLocale,
+  TranslationPipelineConfig,
+  TranslationTarget
+} from './config'
 import { execFileSync } from 'node:child_process'
 import {
   existsSync,
@@ -13,11 +19,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 
-import type {
-  OutputLocale,
-  TranslationPipelineConfig,
-  TranslationTarget
-} from './config'
 import { translationTargets } from './config'
 import type {
   LocaleChanges,
@@ -69,6 +70,7 @@ interface SourceManifest {
 
 interface SourcePlan {
   filename: string
+  messageFormat: MessageFormat
   source: LocaleObject
   changes: LocaleChanges
   invalidated: Set<string>
@@ -100,7 +102,8 @@ export interface TranslationPlan {
 
 export function buildTranslationItems(
   filename: string,
-  pendingLeaves: readonly LocaleLeafEntry[]
+  pendingLeaves: readonly LocaleLeafEntry[],
+  messageFormat: MessageFormat = 'intlify'
 ): TranslationPlan {
   const items: TranslationItem[] = []
   const refs = new Map<string, ItemRef>()
@@ -116,7 +119,8 @@ export function buildTranslationItems(
       id,
       context: `${filename}: ${leaf.path.join('.')}${indexSuffix}`,
       source,
-      preserve: protectedTokens(source, true)
+      preserve: protectedTokens(source, true),
+      ...(messageFormat === 'text' ? { messageFormat } : {})
     })
     refs.set(id, { leafKey: pathKey(leaf.path), indices })
   }
@@ -346,7 +350,8 @@ function loadLocaleFileStates(
           source,
           existing,
           plan.invalidated,
-          leafTokensDiffer
+          (source, target) =>
+            leafTokensDiffer(source, target, plan.messageFormat)
         ),
         strayPaths
       }
@@ -410,10 +415,19 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     ])
     const machineErrors = state.plan.degraded
       ? []
-      : auditProtectedLiterals(state.source, state.existing, skipKeys)
+      : auditProtectedLiterals(
+          state.source,
+          state.existing,
+          skipKeys,
+          state.plan.messageFormat
+        )
     for (const error of [
       ...machineErrors,
-      ...auditRetainedTranslations(state.plan.source, state.retained)
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        state.plan.messageFormat
+      )
     ]) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -492,6 +506,7 @@ async function run(argv: readonly string[]): Promise<void> {
     const changes = diffLocaleSources(previous, source)
     return {
       filename,
+      messageFormat: config.messageFormats?.[filename] ?? 'intlify',
       source,
       changes,
       invalidated: new Set(
@@ -523,7 +538,11 @@ async function run(argv: readonly string[]): Promise<void> {
   const translationPlans = new Map(
     states.map((state) => [
       state,
-      buildTranslationItems(state.plan.filename, state.pendingLeaves)
+      buildTranslationItems(
+        state.plan.filename,
+        state.pendingLeaves,
+        state.plan.messageFormat
+      )
     ])
   )
   const pendingTotal = [...translationPlans.values()].reduce(
@@ -667,8 +686,17 @@ async function run(argv: readonly string[]): Promise<void> {
   )
   for (const { state, generated } of rebuilt) {
     for (const error of [
-      ...validateLocale(state.source, generated, state.plan.changes),
-      ...auditRetainedTranslations(state.plan.source, state.retained)
+      ...validateLocale(
+        state.source,
+        generated,
+        state.plan.changes,
+        state.plan.messageFormat
+      ),
+      ...auditRetainedTranslations(
+        state.plan.source,
+        state.retained,
+        state.plan.messageFormat
+      )
     ]) {
       addFailure(
         state.plan.filename,

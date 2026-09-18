@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 
+import type { MessageFormat } from './config'
 import type {
   LocaleObject,
   LocaleTrackedLeaf,
@@ -77,7 +78,8 @@ export function partitionOwnedLocale(
 
 export function auditRetainedTranslations(
   source: LocaleObject,
-  retained: ReadonlyMap<string, LocaleTrackedLeaf>
+  retained: ReadonlyMap<string, LocaleTrackedLeaf>,
+  format: MessageFormat = 'intlify'
 ): string[] {
   const intentionalEmptyKeys = [...retained]
     .filter(([, value]) => value === '')
@@ -85,6 +87,7 @@ export function auditRetainedTranslations(
   return auditProtectedLiterals(
     source,
     projectLocale(source, retained),
-    new Set(intentionalEmptyKeys)
+    new Set(intentionalEmptyKeys),
+    format
   )
 }

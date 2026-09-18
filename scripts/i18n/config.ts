@@ -1,5 +1,7 @@
 import type { Reasoning } from 'openai/resources/shared'
 
+export type MessageFormat = 'intlify' | 'text'
+
 export interface OutputLocale {
   code: string
   name: string
@@ -21,6 +23,7 @@ export interface TranslationPipelineConfig {
   outputLocales: OutputLocale[]
   preserveReviewedTranslations?: boolean
   excludedKeyPrefixes?: readonly string[]
+  messageFormats?: Readonly<Record<string, MessageFormat>>
 }
 
 const glossary = `Keep these names untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream, Civitai, Hugging Face.
@@ -93,6 +96,7 @@ const websiteTranslationPipelineConfig: TranslationPipelineConfig = {
   output: 'apps/website/src/locales',
   glossary: websiteGlossary,
   preserveReviewedTranslations: true,
+  messageFormats: { 'content.json': 'text' },
   excludedKeyPrefixes: [
     'tos',
     'enterprise-msa',
