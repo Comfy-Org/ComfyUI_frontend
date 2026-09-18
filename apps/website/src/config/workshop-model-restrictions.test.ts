@@ -4,7 +4,8 @@ import type { FrameSource } from './workshop-model-restrictions'
 import {
   frameRatioRule,
   frameSource,
-  framesDisagreeOnRatio
+  framesDisagreeOnRatio,
+  takesFirstFrameRatio
 } from './workshop-model-restrictions'
 import type { FieldValue } from './workshop-playground'
 
@@ -12,7 +13,11 @@ describe('frameRatioRule', () => {
   it('names the frame fields on the page the rule was read for', () => {
     expect(
       frameRatioRule('byteplus--seedance-2-5-first-last-frame--animate-images')
-    ).toEqual({ first: 'first_frame_url', last: 'last_frame_url' })
+    ).toEqual({
+      first: 'first_frame_url',
+      last: 'last_frame_url',
+      outputRatio: { field: 'ratio', adaptive: 'adaptive' }
+    })
   })
 
   // The rule comes from one model's documentation. Its siblings share a
@@ -98,5 +103,34 @@ describe('framesDisagreeOnRatio', () => {
     ['a non-finite dimension', landscape, { width: Number.NaN, height: 50 }]
   ] as const)('stays quiet on %s', ([, first, last]) => {
     expect(framesDisagreeOnRatio(first, last)).toBe(false)
+  })
+})
+
+describe('takesFirstFrameRatio', () => {
+  const rule = {
+    first: 'first_frame_url',
+    last: 'last_frame_url',
+    outputRatio: { field: 'ratio', adaptive: 'adaptive' }
+  }
+
+  // Picking a ratio is the reader setting the video's shape themselves. The
+  // first frame stops deciding it, and so does anything said about it.
+  it.for([
+    ['the ratio is left adaptive', 'adaptive', true],
+    ['the ratio was never set', undefined, true],
+    ['the reader picked a portrait ratio', '9:16', false],
+    ['the reader picked the shape the first frame already has', '16:9', false]
+  ] as const)('reads %s', ([, ratio, expected]) => {
+    expect(takesFirstFrameRatio(rule, { ratio })).toBe(expected)
+  })
+
+  // A rule read for a page with no such control is about the frames alone.
+  it('holds when the rule names no ratio field', () => {
+    expect(
+      takesFirstFrameRatio(
+        { first: 'first_frame_url', last: 'last_frame_url' },
+        { ratio: '9:16' }
+      )
+    ).toBe(true)
   })
 })

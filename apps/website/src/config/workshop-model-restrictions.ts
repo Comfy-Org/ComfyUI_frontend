@@ -14,6 +14,16 @@ import type { FieldValue } from './workshop-playground'
 export interface FrameRatioRule {
   readonly first: string
   readonly last: string
+  /**
+   * The stretch only happens while the output ratio is left adaptive. Choose
+   * an explicit ratio and the reader has set the video's shape themselves, so
+   * saying it comes from the first frame would be describing something that is
+   * no longer true.
+   */
+  readonly outputRatio?: {
+    readonly field: string
+    readonly adaptive: string
+  }
 }
 
 interface RestrictionRecord {
@@ -26,7 +36,11 @@ const RESTRICTIONS: Readonly<Record<string, RestrictionRecord>> = {
   // The video takes the first frame's aspect ratio, and a last frame shaped
   // differently is stretched to fit it.
   'byteplus--seedance-2-5-first-last-frame--animate-images': {
-    frameRatio: { first: 'first_frame_url', last: 'last_frame_url' },
+    frameRatio: {
+      first: 'first_frame_url',
+      last: 'last_frame_url',
+      outputRatio: { field: 'ratio', adaptive: 'adaptive' }
+    },
     source: 'https://docs.byteplus.com/en/docs/ModelArk/2607689',
     reviewed: '2026-08-31'
   }
@@ -54,6 +68,19 @@ export function frameSource(
   return value.file || value.previewUrl
     ? { file: value.file, url: value.previewUrl }
     : undefined
+}
+
+/**
+ * An unset ratio is the provider's own default, which is the adaptive one, so
+ * it counts as adaptive rather than as an override.
+ */
+export function takesFirstFrameRatio(
+  rule: FrameRatioRule,
+  values: Readonly<Record<string, FieldValue>>
+): boolean {
+  if (!rule.outputRatio) return true
+  const chosen = values[rule.outputRatio.field]
+  return chosen === undefined || chosen === rule.outputRatio.adaptive
 }
 
 export interface FrameSize {

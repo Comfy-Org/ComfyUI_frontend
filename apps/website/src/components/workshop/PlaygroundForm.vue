@@ -10,7 +10,10 @@ import type {
 import { groupPlaygroundFields } from '../../config/workshop-playground'
 import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
 import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
-import { frameSource } from '../../config/workshop-model-restrictions'
+import {
+  frameSource,
+  takesFirstFrameRatio
+} from '../../config/workshop-model-restrictions'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FrameRatioNotice from './FrameRatioNotice.vue'
@@ -41,8 +44,11 @@ const groups = computed(() => groupPlaygroundFields(schema))
 
 // The frames are ordinary fields, so the pair is read off the values their own
 // controls already write rather than given state of its own.
+// Only while the output ratio is left adaptive: an explicit ratio is the
+// reader setting the video's shape themselves, and the first frame stops
+// deciding it.
 const frames = computed(() =>
-  frameRatio
+  frameRatio && takesFirstFrameRatio(frameRatio, values.value)
     ? {
         first: frameSource(values.value[frameRatio.first]),
         last: frameSource(values.value[frameRatio.last])

@@ -297,6 +297,29 @@ describe('First and last frame ratios', () => {
     )
   })
 
+  // Picking a ratio sets the video's shape directly, so the first frame stops
+  // deciding it and the warning would be describing something untrue.
+  it('retires the warning once the reader picks an explicit ratio', async () => {
+    const values = ref<FormValues>({
+      ratio: 'adaptive',
+      first_frame_url: frame('https://example.com/first.png', 1920, 1080),
+      last_frame_url: frame('https://example.com/last.png', 1080, 1920)
+    })
+    renderForm(values)
+
+    // Established present first: a mismatch this page would warn about, so
+    // the disappearance below is the ratio's doing and cannot pass vacuously.
+    await screen.findByTestId('frame-ratio-notice')
+    expect(upload('Last frame')).toHaveAttribute('data-attention')
+
+    values.value = { ...values.value, ratio: '9:16' }
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
+    )
+    expect(upload('Last frame')).not.toHaveAttribute('data-attention')
+  })
+
   // Same mismatched frames, a page the rule was not read for: no notice.
   it('leaves an unrestricted page alone', async () => {
     const model = getRouterWorkshopModelDetail(
