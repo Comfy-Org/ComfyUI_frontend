@@ -199,9 +199,7 @@ class ManageTemplates extends ComfyDialog {
           const importFile = JSON.parse(reader.result as string)
           if (importFile?.templates && this.canModifyTemplates()) {
             for (const template of importFile.templates) {
-              if (template?.name && template?.data) {
-                this.templates.push(template)
-              }
+              if (isNodeTemplate(template)) this.templates.push(template)
             }
             await this.store()
           }

@@ -200,7 +200,10 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
       const name = templateName('shared', testInfo)
       const { manageDialog } = nodeTemplates
       const payload = {
-        templates: [{ name, data: JSON.stringify({ nodes: [] }) }]
+        templates: [
+          { name, data: JSON.stringify({ nodes: [] }) },
+          { name: `${name}-invalid`, data: {} }
+        ]
       }
 
       await nodeTemplates.openManageDialog()
@@ -214,11 +217,19 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify(payload))
       })
-      expect((await storeResponse).ok()).toBe(true)
+      const response = await storeResponse
+      expect(response.ok()).toBe(true)
+      const stored = JSON.parse(response.request().postData() ?? '') as {
+        name: string
+      }[]
+      expect(stored.filter((t) => t.name.startsWith(name))).toEqual([
+        payload.templates[0]
+      ])
       await manageDialog.waitForHidden()
 
       await nodeTemplates.openManageDialog()
       await expect(manageDialog.rowByName(name)).toHaveCount(1)
+      await expect(manageDialog.rowByName(`${name}-invalid`)).toHaveCount(0)
       await manageDialog.close()
     })
   })
