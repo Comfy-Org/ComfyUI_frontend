@@ -1,0 +1,164 @@
+# Description: Informational alarm for skew between the pinned
+# @comfyorg/comfy-multi-player release and that package's `main` branch.
+#
+# It reinstalls this repo against the tip of comfy-multi-player `main` and re-runs the
+# agent CRDT follower suite, so a breaking upstream change surfaces on a schedule rather
+# than at the next pin bump.
+#
+# NON-BLOCKING BY CONSTRUCTION: there is no `pull_request`, `push` or `merge_group`
+# trigger, so this workflow can never gate a pull request or the merge queue. A red run
+# is the alarm ringing, not a broken main.
+#
+# PREMISE (today): pin-vs-remote. The root package.json depends on a published
+# @comfyorg/comfy-multi-player version and this job overrides that resolution with a
+# tarball of upstream `main`. Once #16644 moves comfy-multi-player into the pnpm
+# workspace the premise becomes workspace-package-vs-release-tag, and the override step
+# should be replaced by a workspace-vs-tag comparison.
+name: 'CI: CRDT Skew Alarm'
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  CMP_PACKAGE: '@comfyorg/comfy-multi-player'
+  CMP_REMOTE: https://github.com/Comfy-Org/comfy-multi-player.git
+  CRDT_TEST_DIR: src/workbench/extensions/agent/crdt/
+
+jobs:
+  skew-alarm:
+    name: follower suite against comfy-multi-player main
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Resolve upstream comfy-multi-player main
+        id: upstream
+        run: |
+          set -euo pipefail
+          sha="$(git ls-remote "$CMP_REMOTE" refs/heads/main | cut -f1)"
+          if [ -z "$sha" ]; then
+            echo "::error::could not resolve $CMP_REMOTE refs/heads/main"
+            exit 1
+          fi
+          {
+            echo "sha=$sha"
+            echo "spec=https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/$sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      # No pnpm store cache: this job installs and builds an unreviewed upstream
+      # revision, and setup-node's post step would write it into a lockfile-keyed cache
+      # that the publish workflows restore.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Read the pinned version
+        id: pin
+        run: |
+          set -euo pipefail
+          version="$(node -p "
+            const pkg = require('./package.json');
+            pkg.dependencies?.[process.env.CMP_PACKAGE]
+              ?? pkg.devDependencies?.[process.env.CMP_PACKAGE]
+              ?? ''
+          ")"
+          if [ -z "$version" ]; then
+            echo "::error::$CMP_PACKAGE is not a direct dependency of package.json; the alarm's pin-vs-remote premise no longer holds (see the header comment about #16644)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Override the pin with upstream main
+        run: |
+          node .github/scripts/crdt-skew-override.mjs --spec "${{ steps.upstream.outputs.spec }}"
+          git --no-pager diff -- pnpm-workspace.yaml
+
+      # pipefail matters here: without it `tee` would swallow a failed install and the
+      # verify step below would be the first thing to notice.
+      - name: Install against upstream main
+        run: |
+          set -euo pipefail
+          pnpm install --no-frozen-lockfile 2>&1 | tee "$RUNNER_TEMP/install.log"
+
+      # A pass only counts as "no skew" once the resolved tree provably references the
+      # upstream SHA. Without this gate the suite can quietly re-confirm the pin and
+      # report a cheerful all-clear that tested nothing.
+      - name: Verify the override took effect
+        env:
+          CMP_SHA: ${{ steps.upstream.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if grep -qi 'keys were ignored' "$RUNNER_TEMP/install.log"; then
+            echo "::error::pnpm ignored the override keys; the installed tree is still the pin"
+            exit 1
+          fi
+          if ! grep -q "$CMP_SHA" pnpm-lock.yaml; then
+            echo "::error::pnpm-lock.yaml does not resolve $CMP_PACKAGE at $CMP_SHA; any test result would be about the pin, not the skew"
+            exit 1
+          fi
+          if [ ! -d "node_modules/$CMP_PACKAGE/dist" ]; then
+            echo "::error::node_modules/$CMP_PACKAGE/dist is missing; the prepare build did not run"
+            exit 1
+          fi
+          echo "override verified: pnpm-lock.yaml resolves $CMP_PACKAGE at $CMP_SHA"
+
+      - name: Run the agent CRDT follower suite
+        id: tests
+        continue-on-error: true
+        run: pnpm test:unit --reporter=json --outputFile="$RUNNER_TEMP/vitest.json" "$CRDT_TEST_DIR"
+
+      # `!cancelled()` rather than the implicit `success()`: when upstream resolution,
+      # install, or the override verification fails there is no vitest report, and the
+      # inconclusive verdict for that is exactly what the alarm should record. Under the
+      # implicit check this step is skipped and the run produces no artifact at all.
+      - name: Publish pass/fail counts
+        id: verdict
+        if: ${{ !cancelled() }}
+        env:
+          CMP_SHA: ${{ steps.upstream.outputs.sha }}
+          CMP_SPEC: ${{ steps.upstream.outputs.spec }}
+          PINNED_VERSION: ${{ steps.pin.outputs.version }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+        run: |
+          node .github/scripts/crdt-skew-report.mjs \
+            --report "$RUNNER_TEMP/vitest.json" \
+            --out "$RUNNER_TEMP/crdt-skew-alarm.json"
+
+      - name: Upload the skew report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: crdt-skew-alarm
+          path: |
+            ${{ runner.temp }}/crdt-skew-alarm.json
+            ${{ runner.temp }}/vitest.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Ring the alarm
+        if: ${{ !cancelled() && steps.verdict.outputs.verdict != 'no-skew-signal' }}
+        env:
+          VERDICT: ${{ steps.verdict.outputs.verdict }}
+          FAILED: ${{ steps.verdict.outputs.failed }}
+          FILES_FAILED_TO_COLLECT: ${{ steps.verdict.outputs.files_failed_to_collect }}
+          PINNED_VERSION: ${{ steps.pin.outputs.version }}
+          CMP_SHA: ${{ steps.upstream.outputs.sha }}
+        run: |
+          echo "::error::$VERDICT ($FAILED failing, $FILES_FAILED_TO_COLLECT files failed to collect) - $CMP_PACKAGE pinned at $PINNED_VERSION vs main $CMP_SHA"
+          exit 1
