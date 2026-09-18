@@ -7,7 +7,7 @@ import RouterProviderLogoRow from './RouterProviderLogoRow.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const providerRows: FeatureRow[] = [
+const rows: FeatureRow[] = [
   {
     id: 'integrate',
     title: t('platform.router.section1.heading', locale),
@@ -27,10 +27,7 @@ const providerRows: FeatureRow[] = [
       src: '/images/router/choose-route.svg',
       fit: 'cover'
     }
-  }
-]
-
-const queueRows: FeatureRow[] = [
+  },
   {
     id: 'queue',
     title: t('platform.router.section3.heading', locale),
@@ -45,14 +42,14 @@ const queueRows: FeatureRow[] = [
 
 const supportedProviders = [
   {
-    name: 'fal',
-    src: '/icons/router-providers/fal.svg',
-    logoClass: 'h-10 w-auto'
-  },
-  {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
     logoClass: 'h-8.25 w-auto'
+  },
+  {
+    name: 'fal',
+    src: '/icons/router-providers/fal.svg',
+    logoClass: 'h-10 w-auto'
   },
   {
     name: 'WaveSpeed',
@@ -65,11 +62,11 @@ const supportedProviders = [
 <template>
   <FeatureRows01
     :locale="locale"
-    :rows="providerRows"
+    :rows="rows"
     title-class="text-primary-warm-white"
   />
 
-  <section class="mx-auto max-w-4xl px-6">
+  <section class="mx-auto max-w-4xl px-6 py-16 md:py-24">
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
@@ -78,13 +75,7 @@ const supportedProviders = [
     <RouterProviderLogoRow
       :animated="false"
       :providers="supportedProviders"
-      class="mt-5"
+      class="mt-6"
     />
   </section>
-
-  <FeatureRows01
-    :locale="locale"
-    :rows="queueRows"
-    title-class="text-primary-warm-white"
-  />
 </template>

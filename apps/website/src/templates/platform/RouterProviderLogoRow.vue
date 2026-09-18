@@ -11,7 +11,7 @@ const mobileRow2Providers = providers.slice(Math.ceil(providers.length / 2))
 </script>
 
 <template>
-  <section class="overflow-hidden py-8 md:py-12">
+  <section class="overflow-hidden">
     <ul
       v-if="!animated"
       class="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 md:flex-nowrap md:gap-x-24"
