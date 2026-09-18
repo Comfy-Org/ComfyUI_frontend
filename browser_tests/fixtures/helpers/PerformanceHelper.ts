@@ -84,10 +84,7 @@ export class PerformanceHelper {
    */
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
-      const state = (window as unknown as Record<string, unknown>)
-        .__perfLongtaskState as
-        | { observer: PerformanceObserver; tbtMs: number }
-        | undefined
+      const state = window.__perfLongtaskState
       if (!state) return 0
 
       // Flush any queued-but-undelivered entries into our accumulator
@@ -142,15 +139,12 @@ export class PerformanceHelper {
     // Install longtask observer if not already present, then reset the
     // accumulator so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
-      const win = window as unknown as Record<string, unknown>
+      const win = window
       if (!win.__perfLongtaskState) {
         const state: { observer: PerformanceObserver; tbtMs: number } = {
           observer: new PerformanceObserver((list) => {
-            const self = (window as unknown as Record<string, unknown>)
-              .__perfLongtaskState as {
-              observer: PerformanceObserver
-              tbtMs: number
-            }
+            const self = window.__perfLongtaskState
+            if (!self) return
             for (const entry of list.getEntries()) {
               if (entry.duration > 50) self.tbtMs += entry.duration - 50
             }
@@ -160,10 +154,7 @@ export class PerformanceHelper {
         state.observer.observe({ type: 'longtask', buffered: true })
         win.__perfLongtaskState = state
       }
-      const state = win.__perfLongtaskState as {
-        observer: PerformanceObserver
-        tbtMs: number
-      }
+      const state = win.__perfLongtaskState
       state.tbtMs = 0
       state.observer.takeRecords()
     })

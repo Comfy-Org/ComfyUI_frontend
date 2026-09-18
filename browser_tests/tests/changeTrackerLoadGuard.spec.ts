@@ -32,7 +32,7 @@ test.describe(
               .workflow.activeWorkflow
             if (!workflow) throw new Error('No workflow found')
             // Bypass the guard to reproduce the corruption bug:
-            // ; (workflow.changeTracker.constructor as unknown as { isLoadingGraph: boolean }).isLoadingGraph = false
+            // ; Reflect.set(workflow.changeTracker.constructor, 'isLoadingGraph', false)
 
             // Simulate the user clicking during graph loading
             workflow.changeTracker.captureCanvasState()

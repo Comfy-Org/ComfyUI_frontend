@@ -57,11 +57,9 @@ export class LocalDesktopTarget {
   ): Promise<RunResult> {
     await page.evaluate(
       (types) => {
-        const sink = window as unknown as {
-          __cnEvents: RawPromptEvent[]
-          __cnTapInstalled?: boolean
-        }
-        sink.__cnEvents = []
+        const events: RawPromptEvent[] = []
+        const sink = window
+        sink.__cnEvents = events
         if (sink.__cnTapInstalled) return
         sink.__cnTapInstalled = true
         for (const type of types)
@@ -72,7 +70,7 @@ export class LocalDesktopTarget {
               // `executing` dispatches a bare node-id string (api.ts
               // dispatchCustomEvent('executing', msg.data.node)); the other
               // events dispatch object payloads.
-              sink.__cnEvents.push(
+              events.push(
                 detail !== null && typeof detail === 'object'
                   ? { type, ...(detail as Record<string, unknown>) }
                   : { type, node: (detail as string | undefined) ?? null }
@@ -168,16 +166,7 @@ export class LocalDesktopTarget {
     await page
       .waitForFunction(
         ([terminal, activePromptId]) => {
-          const events =
-            (
-              window as unknown as {
-                __cnEvents?: {
-                  type: string
-                  prompt_id?: string
-                  node_id?: string
-                }[]
-              }
-            ).__cnEvents ?? []
+          const events = window.__cnEvents ?? []
           return events.some(
             (event) =>
               terminal.includes(event.type) &&
@@ -196,11 +185,7 @@ export class LocalDesktopTarget {
       })
     stopCapture()
 
-    const captured = await page.evaluate(
-      () =>
-        (window as unknown as { __cnEvents?: RawPromptEvent[] }).__cnEvents ??
-        []
-    )
+    const captured = await page.evaluate(() => window.__cnEvents ?? [])
     const raw = eventsForPrompt(captured, promptId)
     const timedOut = !raw.some((event) => TERMINAL.includes(event.type))
     return classifyRun({

@@ -6,6 +6,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -689,11 +690,8 @@ test.describe('Workflow Persistence', () => {
 
     // Trigger changeTracker to capture current state including outputs
     await comfyPage.page.evaluate(() => {
-      const em = window.app!.extensionManager as unknown as Record<
-        string,
-        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
-      >
-      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      const workspaceStore = window.app!.extensionManager as WorkspaceStore
+      workspaceStore.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
@@ -1085,11 +1083,8 @@ test.describe('Workflow Persistence', () => {
 
     // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
-      const em = window.app!.extensionManager as unknown as Record<
-        string,
-        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
-      >
-      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      const workspaceStore = window.app!.extensionManager as WorkspaceStore
+      workspaceStore.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     // Switch to A via topbar tab (making B inactive)
@@ -1154,11 +1149,8 @@ test.describe('Workflow Persistence', () => {
 
     // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
-      const em = window.app!.extensionManager as unknown as Record<
-        string,
-        { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
-      >
-      em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      const workspaceStore = window.app!.extensionManager as WorkspaceStore
+      workspaceStore.workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
