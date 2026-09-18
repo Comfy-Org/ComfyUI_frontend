@@ -1,4 +1,5 @@
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * Helpers for the shareable per-invite links (DES-1010).
@@ -28,10 +29,9 @@ export function formatInviteLinksForCopy(
 }
 
 /**
- * Copies text to the clipboard without surfacing a toast — invite-link copy
- * affordances give inline feedback (the button label swaps to "Copied")
- * instead. Returns whether the copy succeeded so callers can skip the
- * feedback on failure.
+ * Copies text to the clipboard with no built-in user feedback — each caller
+ * owns its own affordance (inline label swap in the dialog, a toast on the
+ * pending tab). Returns whether the copy succeeded.
  */
 export async function copyTextSilently(text: string): Promise<boolean> {
   try {
@@ -45,9 +45,15 @@ export async function copyTextSilently(text: string): Promise<boolean> {
     document.body.appendChild(el)
     try {
       el.select()
-      return document.execCommand('copy')
+      const copied = document.execCommand('copy')
+      if (!copied) {
+        reportError(new Error('execCommand copy reported failure'), {
+          errorType: 'error_copying_invite_link'
+        })
+      }
+      return copied
     } catch (error) {
-      console.error('Failed to copy invite link to clipboard', error)
+      reportError(error, { errorType: 'error_copying_invite_link' })
       return false
     } finally {
       el.remove()
