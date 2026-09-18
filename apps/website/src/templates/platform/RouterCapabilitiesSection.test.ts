@@ -15,6 +15,11 @@ describe('RouterCapabilitiesSection', () => {
         name: 'Better availability. Better prices. Your choice.'
       })
     ).toBeTruthy()
+    expect(
+      screen.getByRole('img', {
+        name: 'Hit a concurrency limit? Queue the job.'
+      })
+    ).toBeTruthy()
   })
 
   it('identifies supported providers with logos', () => {
