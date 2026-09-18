@@ -1237,7 +1237,7 @@ importers:
   packages/account-ui:
     dependencies:
       '@comfyorg/account-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../account-core
     devDependencies:
       '@stripe/stripe-js':

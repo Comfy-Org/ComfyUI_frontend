@@ -1,5 +1,5 @@
 /**
- * Packs the three publishable packages, installs the tarballs into a throwaway
+ * Packs the four publishable packages, installs the tarballs into a throwaway
  * npm project alongside their declared peers, and proves the published shape
  * from there: plain node imports every built entry and constructs a session
  * client, and tsc under nodenext resolves a type and a value from each entry
