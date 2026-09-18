@@ -170,6 +170,21 @@ describe('resolveWatchers', () => {
       situation: 'one good ID and one typo',
       recipients: ['U0BA79D8R1T'],
       failed: true
+    },
+    // Muting the quick way, without deleting IDs you would have to retype.
+    // Honouring the IDs and ignoring the `none` does the opposite of what
+    // was asked, so the contradiction is reported rather than resolved.
+    {
+      raw: 'none U0BA79D8R1T',
+      situation: 'the off switch alongside a watcher',
+      recipients: ['U0BA79D8R1T'],
+      failed: true
+    },
+    {
+      raw: 'off @huang47',
+      situation: 'the off switch alongside a typo',
+      recipients: [],
+      failed: true
     }
   ])('resolves $situation', ({ raw, recipients, failed }) => {
     expect(resolveWatchers(raw)).toMatchObject({ recipients, failed })
@@ -243,7 +258,6 @@ describe('parseSlackRecipients', () => {
     { raw: 'u0ba79d8r1t', valid: ['U0BA79D8R1T'] },
     { raw: 'U0BA79D8R1T,U0BA79D8R1T', valid: ['U0BA79D8R1T'] },
     { raw: 'W0BA79D8R1T', valid: ['W0BA79D8R1T'] },
-    { raw: 'D0BA79D8R1T', valid: ['D0BA79D8R1T'] },
     { raw: '', valid: [] },
     { raw: undefined, valid: [] }
   ])('reads $raw as $valid', ({ raw, valid }) => {
@@ -258,7 +272,10 @@ describe('parseSlackRecipients', () => {
     { raw: '#frontend-releases' },
     { raw: 'huang47' },
     { raw: 'U123' },
-    { raw: 'C09K9TPU2G7' }
+    { raw: 'C09K9TPU2G7' },
+    // A DM channel is a thing Slack would accept and nobody would configure;
+    // every extra shape accepted here is a mistyped word that reaches Slack.
+    { raw: 'D0BA79D8R1T' }
   ])('reports $raw as unusable', ({ raw }) => {
     expect(parseSlackRecipients(raw)).toEqual({
       valid: [],
@@ -423,6 +440,16 @@ describe('buildNeedsBackportText', () => {
 
     expect(text).toContain('will cherry-pick into `core/1.99`')
     expect(text).not.toContain('no branch on the remote')
+  })
+
+  // Slack has no escape for a backtick inside a code span, so one carried in
+  // by a label would close the span and spill the rest of the line out of it.
+  it('keeps a backtick in a label out of the code span', () => {
+    const text = buildNeedsBackportText(
+      event({ labels: ['needs-backport', 'branch:foo`bar'] }, ['main'])
+    )
+
+    expect(text).toContain('`foobar`')
   })
 
   it('escapes a PR title so it cannot end the link early', () => {

@@ -88,8 +88,10 @@ which.
 
 Clearing the variable restores the default watcher — currently `U0BA79D8R1T`
 (@huang47), as set in the workflow — rather than silencing the DM. To stop the
-DMs, set it to exactly `none`, `off` or `disabled`; anything else unrecognised
-fails the run instead.
+DMs, set the whole value to `none`, `off` or `disabled`. Anything else
+unrecognised fails the run, as does one of those words alongside a watcher —
+that combination says two opposite things, so it is reported rather than
+guessed at.
 
 ## Release Sheriff Assignment
 

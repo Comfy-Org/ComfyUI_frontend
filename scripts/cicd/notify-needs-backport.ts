@@ -98,15 +98,17 @@ export function escapeSlackText(text: string): string {
     .replaceAll('>', '&gt;')
 }
 
-/** Member (`U`/`W`) or already-open DM channel (`D`). */
-const SLACK_ID_PATTERN = /^[UWD][A-Z0-9]{7,}$/
+/** A member ID, `W…` on Enterprise Grid. Not a `D…` DM channel: nobody has
+ * reason to configure one, and every extra accepted shape is one more way a
+ * mistyped word reaches Slack as a recipient. */
+const SLACK_ID_PATTERN = /^[UW][A-Z0-9]{7,}$/
 
 /**
  * Turns the notification off, because an empty repository variable restores
- * the default watcher instead. Spelled out rather than left to "any value
- * that is not an ID": `DISABLED` is a `D` followed by seven characters, so
- * the obvious way to write this down parses as a DM channel, gets posted to,
- * and fails the check with `channel_not_found`.
+ * the default watcher instead. Recognised by name rather than left to "any
+ * value that is not an ID", which would otherwise fail the run: an entry
+ * nobody can DM is exactly what this script is elsewhere required to be loud
+ * about.
  */
 const DISABLED_VALUES = new Set(['NONE', 'OFF', 'DISABLED'])
 
@@ -166,8 +168,13 @@ export interface NeedsBackportEvent {
   remoteBranches: readonly string[] | null
 }
 
+// Backticks are dropped rather than escaped: Slack has no escape for one
+// inside a code span, so a label carrying one would close the span early and
+// spill the rest of the line out of it.
 const code = (values: readonly string[]) =>
-  values.map((value) => `\`${escapeSlackText(value)}\``).join(', ')
+  values
+    .map((value) => `\`${escapeSlackText(value).replaceAll('`', '')}\``)
+    .join(', ')
 
 /**
  * Shapes rather than a sample version, which would read as stale guidance
@@ -287,7 +294,11 @@ export function parsePullRequest(json: string): PullRequest {
   const pr = JSON.parse(json) as PullRequestResponse
 
   const missing = (field: string): never => {
-    throw new Error(`The pull request payload has no ${field}: ${json}`)
+    // Truncated: the whole payload runs to kilobytes of nested JSON, and the
+    // field name is the part worth reading.
+    throw new Error(
+      `The pull request payload has no ${field}: ${json.slice(0, 200)}`
+    )
   }
 
   const state = (): PullRequestState => {
@@ -359,14 +370,29 @@ export function resolveWatchers(raw: string | undefined): WatcherResolution {
     (entry) => `::warning::Ignoring watcher "${entry}": not a Slack member ID.`
   )
 
-  if (disabled && valid.length === 0) {
+  // Only as the sole entry. `none U0BA79D8R1T` is somebody muting the
+  // notification the quick way, without deleting IDs they would have to
+  // retype — and honouring the IDs while ignoring the `none` silently does
+  // the opposite of what they asked. Treated as the contradiction it is:
+  // the watchers are notified, and the run says the list needs deciding.
+  if (disabled) {
+    if (valid.length === 0 && invalid.length === 0) {
+      return {
+        recipients: [],
+        notices: [
+          'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.'
+        ],
+        failed: false
+      }
+    }
+
     return {
-      recipients: [],
+      recipients: valid,
       notices: [
         ...notices,
-        'SLACK_NEEDS_BACKPORT_WATCHERS turns the notification off; sending nothing.'
+        '::error::SLACK_NEEDS_BACKPORT_WATCHERS both turns the notification off and names watchers; it has to be one or the other.'
       ],
-      failed: false
+      failed: true
     }
   }
 
