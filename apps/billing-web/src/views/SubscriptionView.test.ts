@@ -10,11 +10,31 @@ import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
 import {
+  challengedPendingOperation,
   createFakeBillingClient,
+  hostedPendingOperation,
   planOf,
   previewOf
 } from '@/test/fakeBillingClient'
 import SubscriptionView from '@/views/SubscriptionView.vue'
+
+/** The two values this surface reads; a test-family key stands in for a deployment's. */
+vi.mock<unknown>(import('@/config/env'), () => ({
+  BILLING_WEB_ENV: 'test',
+  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+}))
+
+const challengeMocks = vi.hoisted(() => ({
+  createPort: vi.fn(),
+  handleNextAction: vi.fn(async () => ({}))
+}))
+
+vi.mock(import('@/session/stripeChallengePort'), () => ({
+  createStripeChallengePort: (key: string) => {
+    challengeMocks.createPort(key)
+    return { handleNextAction: challengeMocks.handleNextAction }
+  }
+}))
 
 const CATALOG: BillingPlansData = {
   current_plan_slug: 'free_monthly',
@@ -234,6 +254,47 @@ describe('SubscriptionView', () => {
     landRefresh()
     await waitFor(() => expect(button).toBeEnabled())
     expect(fake.resubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('redirects this tab when resubscribing needs a hosted payment step', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Resubscribe' })
+    )
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        'https://hooks.stripe.test/redirect/op_1'
+      )
+    )
+  })
+
+  it('drives a 3DS challenge in place when resubscribing raises one', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    expect(challengeMocks.createPort).toHaveBeenCalledWith('pk_test_example')
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Resubscribe' })
+    )
+    fake.publishOperation(challengedPendingOperation('pi_1_secret'))
+
+    await waitFor(() =>
+      expect(challengeMocks.handleNextAction).toHaveBeenCalledWith(
+        'pi_1_secret'
+      )
+    )
   })
 
   it('explains a change the server refused in our own words', async () => {
