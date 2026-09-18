@@ -79,21 +79,29 @@ const anchorStyle = computed<CSSProperties>(() => ({
   pointerEvents: 'none'
 }))
 
+function getSafeScale(scale: number): number {
+  return Number.isFinite(scale) && scale !== 0 ? scale : 1
+}
+
 function updateAnchorPosition() {
   const { scale, offset } = lgCanvas.ds
+  const safeScale = getSafeScale(scale)
   screenPosition.value = {
-    x: (worldPosition.value.x + offset[0]) * scale + canvasLeft.value,
-    y: (worldPosition.value.y + offset[1]) * scale + canvasTop.value
+    x: (worldPosition.value.x + offset[0]) * safeScale + canvasLeft.value,
+    y: (worldPosition.value.y + offset[1]) * safeScale + canvasTop.value
   }
   if (isOpen.value) dispatchContextMenuEvent()
 }
 
 function dispatchContextMenuEvent() {
+  const { x, y } = screenPosition.value
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return
+
   contextMenuTrigger.value?.dispatchEvent(
     new MouseEvent('contextmenu', {
       bubbles: true,
-      clientX: screenPosition.value.x,
-      clientY: screenPosition.value.y
+      clientX: x,
+      clientY: y
     })
   )
 }
@@ -145,9 +153,10 @@ const menuItems = computed<SlotMenuItem[]>(() => {
 async function show(event: MouseEvent, context: SlotMenuContext) {
   activeContext.value = context
   const { scale, offset } = lgCanvas.ds
+  const safeScale = getSafeScale(scale)
   worldPosition.value = {
-    x: (event.clientX - canvasLeft.value) / scale - offset[0],
-    y: (event.clientY - canvasTop.value) / scale - offset[1]
+    x: (event.clientX - canvasLeft.value) / safeScale - offset[0],
+    y: (event.clientY - canvasTop.value) / safeScale - offset[1]
   }
   updateAnchorPosition()
 

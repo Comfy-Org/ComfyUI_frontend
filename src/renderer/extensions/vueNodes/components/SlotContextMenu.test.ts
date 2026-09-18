@@ -101,6 +101,29 @@ describe('SlotContextMenu', () => {
     expect(screen.queryByText('No compatible nodes')).not.toBeInTheDocument()
   })
 
+  it('falls back to a finite position instead of dispatching a non-finite contextmenu event when scale is invalid', async () => {
+    canvasTransform.scale = 0
+    renderMenu()
+    const menu = registerSlotMenuInstance.mock.calls[0][0] as {
+      show: (event: MouseEvent, context: object) => Promise<void>
+    }
+
+    await menu.show(
+      new MouseEvent('contextmenu', { clientX: 40, clientY: 60 }),
+      {
+        nodeId: toNodeId('1'),
+        slotIndex: 0,
+        isInput: true
+      }
+    )
+    await nextTick()
+
+    expect(screen.getByTestId('slot-context-menu-anchor')).toHaveStyle({
+      left: '40px',
+      top: '60px'
+    })
+  })
+
   it('keeps the popup anchor out of ordinary pointer hit testing', () => {
     renderMenu()
 
