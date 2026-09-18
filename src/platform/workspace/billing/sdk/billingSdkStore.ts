@@ -32,6 +32,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   BillingBalanceResponse,
+  BillingPlansResponse,
   BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
@@ -43,6 +44,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+import { projectBillingPlans } from './billingPlansView'
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { projectBillingStatus } from './billingStatusView'
 import { createBillingSdk } from './createBillingSdk'
@@ -395,6 +397,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       : result
   }
 
+  async function readPlans(): Promise<BillingResult<BillingPlansResponse>> {
+    const result = await sdk.plans.read()
+    if (result.status === 'error') return result
+    const plans = projectBillingPlans(result.value.data)
+    return plans === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: plans }
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -420,6 +431,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recover,
     readStatus,
     readBalance,
+    readPlans,
     retryPaymentAuthentication,
     dismissOperation
   }
