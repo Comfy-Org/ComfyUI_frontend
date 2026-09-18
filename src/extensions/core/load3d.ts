@@ -425,6 +425,10 @@ useExtensionService().registerExtension({
             if (cached) return cached
           }
 
+          // A model swap (user or agent) may still be loading. Capture the
+          // scene the queue will actually run, not the one being replaced.
+          await currentLoad3d.whenLoadIdle()
+
           const { camera_info, model_3d_info } = snapshotLoad3dState(
             node,
             currentLoad3d

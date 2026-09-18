@@ -1109,6 +1109,7 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
 
   function makeFullFakeLoad3d() {
     return {
+      whenLoadIdle: vi.fn(async () => {}),
       getCurrentCameraType: vi.fn(() => 'perspective'),
       cameraManager: { perspectiveCamera: { fov: 35 } },
       getCameraState: vi.fn(() => ({ position: { x: 0, y: 0, z: 0 } })),
@@ -1144,15 +1145,38 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
       { name: 'image', value: '' }
     ]
     const node = makeLoad3DNode({ widgets, properties: {} })
-    useLoad3dModule.nodeToLoad3dMap.set(node, makeFullFakeLoad3d() as never)
+    const load3d = makeFullFakeLoad3d()
+    useLoad3dModule.nodeToLoad3dMap.set(node, load3d as never)
 
     await load3DExt.nodeCreated!(node, app)
     const serialize = widgets[3].serializeValue! as () => Promise<{
       image: string
     } | null>
 
-    return { node, serialize, uploadTempImage, useLoad3dModule }
+    return { node, load3d, serialize, uploadTempImage, useLoad3dModule }
   }
+
+  it('waits for a pending model load before capturing the scene', async () => {
+    const { load3d, serialize } = await setup()
+    let releaseLoad!: () => void
+    load3d.whenLoadIdle.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve
+        })
+    )
+
+    const pending = serialize()
+    await flush()
+    expect(load3d.whenLoadIdle).toHaveBeenCalledTimes(1)
+    expect(load3d.captureScene).not.toHaveBeenCalled()
+
+    releaseLoad()
+    const result = await pending
+
+    expect(load3d.captureScene).toHaveBeenCalledTimes(1)
+    expect(result?.image).toBe('threed/scene-1.png [temp]')
+  })
 
   it('reuses the cached output when the scene has not been dirtied', async () => {
     const { node, serialize, uploadTempImage, useLoad3dModule } = await setup()
