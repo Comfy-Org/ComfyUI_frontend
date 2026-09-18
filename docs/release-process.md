@@ -69,14 +69,16 @@ that is the case worth hearing about early. The PR is read live rather than
 taken from the label webhook, so the labels it reports are the ones that had
 landed by the time the DM was sent.
 
-It covers pull requests into `main`. A `pull_request_target` workflow is loaded
-from the PR's base branch, so release lines only get these DMs once they are
-cut from a `main` that already contains the workflow.
+It fires for a PR into any base branch, and says so when the base is not
+`main` — `pr-backport.yaml` only runs on PRs into `main`, so the label does
+nothing there and that is worth hearing rather than assuming.
 
 The recipients are the repository **variable**
 `SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
-(`U…`), which is also how you subscribe or unsubscribe without a PR. Leaving it
-unset falls back to the default in the workflow.
+(`U…`), which is how you subscribe without a PR. Clearing it restores the
+default watcher rather than silencing the DM; to stop the DMs entirely, set it
+to a non-ID value such as `none`, which the run reports as an ignored watcher
+and sends nothing.
 
 ## Release Sheriff Assignment
 

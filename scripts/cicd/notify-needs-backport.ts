@@ -16,6 +16,7 @@
  * part a watcher would otherwise have to open the PR to work out.
  */
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 /** `pr-backport.yaml` is `on: pull_request_target: branches: [main]`. */
@@ -130,8 +131,12 @@ function backportOutlook(pr: PullRequest, targets: string[]): string {
   const list = targets
     .map((target) => `\`${escapeSlackText(target)}\``)
     .join(', ')
+  // Future tense even for a merged PR: the labels say which branches are
+  // wanted, but pr-backport.yaml also drops a target whose branch does not
+  // exist yet and skips one that already has an open backport PR, so "is
+  // cherry-picking now" would over-claim on a PR labelled for an uncut line.
   return pr.state === 'MERGED'
-    ? `The PR is merged, so *PR Backport* is cherry-picking into ${list} now.`
+    ? `The PR is merged, so *PR Backport* will cherry-pick into ${list}.`
     : `The PR is still open — *PR Backport* will cherry-pick into ${list} once it merges.`
 }
 
@@ -258,6 +263,9 @@ function main() {
   )
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   main()
 }

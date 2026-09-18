@@ -150,7 +150,7 @@ describe('buildNeedsBackportText', () => {
     {
       situation: 'merged with a target',
       overrides: { state: 'MERGED' as const },
-      expected: 'is cherry-picking into `core/1.47` now'
+      expected: 'merged, so *PR Backport* will cherry-pick into `core/1.47`'
     },
     {
       situation: 'still open',
@@ -185,6 +185,15 @@ describe('buildNeedsBackportText', () => {
 
     expect(text).toContain('only runs on pull requests into `main`')
     expect(text).not.toContain('No target branch label')
+  })
+
+  // pr-backport.yaml drops a target whose branch is not cut yet and skips one
+  // that already has an open backport PR, so a merged PR cannot be promised a
+  // cherry-pick that is already happening.
+  it('does not claim a merged PR is being cherry-picked already', () => {
+    expect(buildNeedsBackportText(event({ state: 'MERGED' }))).not.toContain(
+      'cherry-picking'
+    )
   })
 
   it('escapes a PR title so it cannot end the link early', () => {
@@ -379,6 +388,18 @@ describe('pr-notify-needs-backport.yaml', () => {
 
     expect(send).toMatch(/if !\s+RESPONSE=\$\(curl/)
     expect(send).toContain('continue')
+  })
+
+  // continue-on-error keeps the run green, so the annotation is the only
+  // signal. A rejected DM is a permanent misconfiguration and has to outrank
+  // a transient outage, or the feature stops working without anyone noticing.
+  it('raises a rejected DM above a transport blip', () => {
+    const send =
+      steps.find((step) => step.name === 'Send the direct messages')?.run ?? ''
+
+    expect(send).toContain('::error::Slack rejected the DM')
+    expect(send).toContain('GITHUB_STEP_SUMMARY')
+    expect(send).toContain('::warning::Could not reach Slack')
   })
 
   // A step with an `if` loses the implicit success() guard, so the send step

@@ -43,7 +43,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      # pull_request_target checks out the base branch, never PR head code.
+      # pull_request_target checks out the default branch, never PR head code.
       - name: Checkout repository
         uses: actions/checkout@v7
 
@@ -120,13 +120,22 @@ jobs:
             # report a dropped DM as a success.
             if jq -e '.ok == true' <<<"$RESPONSE" >/dev/null 2>&1; then
               echo "Notified ${CHANNEL}"
-            else
-              # An HTML error page is not JSON, so jq exits non-zero here.
-              ERROR=$(jq -r '.error // "no error field"' <<<"$RESPONSE" \
-                2>/dev/null) || ERROR='unparseable response'
-              echo "::warning::Slack rejected the DM to ${CHANNEL}: ${ERROR}"
-              FAILED=1
+              continue
             fi
+
+            # An HTML error page is not JSON, so jq exits non-zero here.
+            ERROR=$(jq -r '.error // "no error field"' <<<"$RESPONSE" \
+              2>/dev/null) || ERROR='unparseable response'
+            # Louder than the transport warning above, and on purpose. A
+            # rejection is a permanent misconfiguration — a wrong member ID, a
+            # missing scope, a revoked token — that never resolves on its own,
+            # and continue-on-error keeps the run green either way. A warning
+            # on a run nobody opens is how this feature would quietly stop
+            # working, which is the failure it exists to end.
+            echo "::error::Slack rejected the DM to ${CHANNEL}: ${ERROR}"
+            echo "Slack rejected the DM to \`${CHANNEL}\`: ${ERROR}" \
+              >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
           done < <(jq -c '.[]' dms.json)
 
           exit "$FAILED"
