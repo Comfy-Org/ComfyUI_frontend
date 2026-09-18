@@ -336,29 +336,6 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/agentPanel.ts",
-        "src/extensions/core/clipspace.ts",
-        "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
-        "src/extensions/core/contextMenuFilter.ts",
-        "src/extensions/core/groupOptions.ts",
-        "src/extensions/core/imageCompositor.ts",
-        "src/extensions/core/layerEditor.ts",
-        "src/extensions/core/maskeditor.ts",
-        "src/extensions/core/nodeTemplates.ts",
-        "src/extensions/core/noteNode.ts",
-        "src/extensions/core/rerouteNode.ts",
-        "src/extensions/core/saveImageExtraOutput.ts",
-        "src/extensions/core/simpleTouchSupport.ts",
-        "src/extensions/core/uploadAudio.test.ts",
-        "src/extensions/core/uploadAudio.ts",
-        "src/extensions/core/uploadImage.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/tests/**/*.spec.ts"],
       "rules": {
         "comfy/prefer-initial-settings": "error"
