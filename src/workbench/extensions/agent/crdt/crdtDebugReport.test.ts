@@ -545,6 +545,35 @@ describe('collectCrdtDebugReport', () => {
     expect(report.length).toBeLessThan(70_000)
   })
 
+  it('includes the tool section wrapper in its character limit', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-boundary')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-boundary',
+              name: 'x'.repeat(59_800),
+              state: 'done'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (0/1 retained calls)'
+    )
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    expect(section.length).toBeLessThanOrEqual(60_000)
+  })
+
   it.for([
     { enabled: true, status: 'failed (see source section)' },
     { enabled: false, status: 'turned off' }

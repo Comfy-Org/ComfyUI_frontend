@@ -481,14 +481,16 @@ type RetainedToolCall = Pick<
   turnId: AssistantMessage['id']
 }
 
-function fitToolCalls(calls: readonly RetainedToolCall[]) {
+function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
   let start = 0
   let body = json(redactSecrets(calls))
-  while (body.length > MAX_SECTION_CHARS) {
+  let section = [context, fence('json', body)].join('\n\n')
+  while (section.length > MAX_SECTION_CHARS) {
     start++
     body = json(redactSecrets(calls.slice(start)))
+    section = [context, fence('json', body)].join('\n\n')
   }
-  return { body, retained: calls.length - start }
+  return { section, retained: calls.length - start }
 }
 
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
@@ -520,9 +522,9 @@ function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
   }
 
   const { calls, total } = collectAgentToolCalls(messages)
-  const fitted = fitToolCalls(calls)
+  const fitted = fitToolCalls(calls, context)
   return {
-    section: [context, fence('json', fitted.body)].join('\n\n'),
+    section: fitted.section,
     status:
       total === 0
         ? 'no retained calls'
