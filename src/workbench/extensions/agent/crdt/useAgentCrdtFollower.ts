@@ -207,6 +207,8 @@ function startAgentCrdtFollower(
     () => useAgentConversationStore().activeTurnId,
     (id) => getGraph()?._nodes_by_id[id]
   )
+  const pendingArrivalIds = new Set<NodeId>()
+  let arrivalRevealFrame: number | undefined
 
   function getMountedCanvas(): typeof app.canvas | undefined {
     return app.canvas
@@ -222,7 +224,8 @@ function startAgentCrdtFollower(
    * their references.
    */
   function revealArrivals(nodeIds: NodeId[]): void {
-    if (nodeIds.length === 0) return
+    for (const id of nodeIds) pendingArrivalIds.add(id)
+    if (pendingArrivalIds.size === 0) return
     // `app.canvas`, not the canvas store: this layer cannot import from
     // renderer/. The store's `selectedItems` mirror stays in sync anyway -
     // `selectItems` fires `onSelectionChange`, which the canvas host chains to
@@ -231,13 +234,31 @@ function startAgentCrdtFollower(
     // frame can land first.
     const canvas = getMountedCanvas()
     const graph = getGraph()
-    if (!canvas || !graph) return
-    const nodes = nodeIds
+    if (!canvas || !graph) {
+      if (arrivalRevealFrame === undefined) {
+        arrivalRevealFrame = requestAnimationFrame(() => {
+          arrivalRevealFrame = undefined
+          revealArrivals([])
+        })
+      }
+      return
+    }
+    const nodes = [...pendingArrivalIds]
       .map((id) => graph._nodes_by_id[id])
       .filter((node) => node !== undefined)
+    pendingArrivalIds.clear()
     if (nodes.length === 0) return
     const picking = useAgentNodeSelectionStore().isActive
     framer.reveal(canvas, nodes, { select: !picking })
+  }
+
+  function resetArrivalFraming(): void {
+    framer.reset()
+    pendingArrivalIds.clear()
+    if (arrivalRevealFrame !== undefined) {
+      cancelAnimationFrame(arrivalRevealFrame)
+      arrivalRevealFrame = undefined
+    }
   }
   const tabId = createUuidv4()
   const sender = createOpSender({
@@ -379,7 +400,7 @@ function startAgentCrdtFollower(
     knownDocNodeIds = new Set()
     // The nodes that build was made of are gone; framing it now would point
     // the camera at an address the new lineage does not use.
-    framer.reset()
+    resetArrivalFraming()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -400,7 +421,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      framer.reset()
+      resetArrivalFraming()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -491,7 +512,7 @@ function startAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      projection.reconcileLiveGraph(boundWorkflowId)
+      revealArrivals(projection.reconcileLiveGraph(boundWorkflowId))
     }
   })
   // Drive the bridge's intent, then give the sender the same eager signal the
@@ -499,7 +520,7 @@ function startAgentCrdtFollower(
   // the desired doc changes, and a batch minted for the old doc would
   // otherwise wait out the 10 s result-silence window before noticing.
   const retarget = (next: string | null): void => {
-    framer.reset()
+    resetArrivalFraming()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     sender.abortIfUnbound()
@@ -539,7 +560,8 @@ function startAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
-          if (justActivated) projection.reconcileLiveGraph(persisted)
+          if (justActivated)
+            revealArrivals(projection.reconcileLiveGraph(persisted))
           return
         }
         lifecycle.clearPersistedDocId()
@@ -559,7 +581,7 @@ function startAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
-      if (justActivated) projection.reconcileLiveGraph(next)
+      if (justActivated) revealArrivals(projection.reconcileLiveGraph(next))
     },
     { immediate: true }
   )
@@ -568,6 +590,7 @@ function startAgentCrdtFollower(
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
     runFollowerTeardown([
+      () => resetArrivalFraming(),
       () => lifecycle.destroy(),
       () => api.removeEventListener('reconnected', onReconnected),
       () => api.removeEventListener('status', onSocketActivity),

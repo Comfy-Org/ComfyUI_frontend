@@ -1105,6 +1105,30 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reveals materialized nodes after the canvas mounts', () => {
+      let retry: FrameRequestCallback | undefined
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
+        (callback) => {
+          retry = callback
+          return 1
+        }
+      )
+      const offScreen = {
+        pos: [4000, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const graph = graphWith({ 1: offScreen })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      const { selectItems } = stubCanvas()
+      retry?.(0)
+
+      expect(selectItems).toHaveBeenCalledWith([offScreen])
+      unmount()
+    })
+
     // The selection is the user's reference basket while they are picking
     // nodes for a prompt. Replacing it there would drop their references.
     it('does not touch the selection while the user is picking nodes', () => {
