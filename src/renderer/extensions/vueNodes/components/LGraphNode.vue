@@ -72,7 +72,7 @@
       :class="
         cn(
           'flex flex-1 flex-col bg-node-component-header-surface',
-          'w-(--node-width)',
+          'w-(--node-width) contain-layout contain-style',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
@@ -111,17 +111,6 @@
           @update:title="handleHeaderTitleUpdate"
         />
       </div>
-
-      <div
-        v-if="isCollapsed && executing && progress !== undefined"
-        :class="
-          cn(
-            'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-            progressClasses
-          )
-        "
-        :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-      />
 
       <template v-if="!isCollapsed && isRerouteNode">
         <NodeSlots :node-data />
@@ -181,6 +170,17 @@
         </div>
       </template>
     </div>
+    <div
+      v-if="isCollapsed && executing && progress !== undefined"
+      data-testid="node-collapsed-progress"
+      :class="
+        cn(
+          'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
+          progressClasses
+        )
+      "
+      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+    />
     <NodeFooter
       v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
