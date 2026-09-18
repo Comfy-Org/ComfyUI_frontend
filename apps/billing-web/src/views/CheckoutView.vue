@@ -10,7 +10,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import type {
+  SubscribeInput,
+  SubscriptionPreview
+} from '@comfyorg/account-core/billing'
 import {
   CheckoutSteps,
   useCheckout,
@@ -180,13 +183,15 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-async function confirm(confirmationToken: string) {
-  const quoted = preview.value
-  if (planSlug.value === undefined || !quoted || loading.value) return
+/** The quote's identity travels with the charge, so the server prices what the customer saw. */
+function subscribeRequest(
+  plan: string,
+  confirmationToken: string,
+  quoted: SubscriptionPreview
+): SubscribeInput {
   const returnUrl = resultUrl()
-  submitFailure.value = undefined
-  const result = await checkout.subscribe({
-    plan_slug: planSlug.value,
+  return {
+    plan_slug: plan,
     confirmation_token: confirmationToken,
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
@@ -194,7 +199,16 @@ async function confirm(confirmationToken: string) {
       : { quote_version: quoted.quote_version }),
     ...(returnUrl === undefined ? {} : { return_url: returnUrl }),
     ...(reactivationConfirmed.value ? { confirm_reactivation: true } : {})
-  })
+  }
+}
+
+async function confirm(confirmationToken: string) {
+  const quoted = preview.value
+  if (planSlug.value === undefined || !quoted || loading.value) return
+  submitFailure.value = undefined
+  const result = await checkout.subscribe(
+    subscribeRequest(planSlug.value, confirmationToken, quoted)
+  )
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
     // The quote did not say so, the server did: price it again and ask.
