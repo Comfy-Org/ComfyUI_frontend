@@ -77,11 +77,16 @@ test(
       .getByTestId('user-message-bubble')
       .allTextContents()
     const historyReadsBeforeReload = promptHistory.historyReads()
+    const persistedThreadId = await page.evaluate(() =>
+      localStorage.getItem('Comfy.Agent.ThreadId')
+    )
+    expect(persistedThreadId).not.toBeNull()
 
     await page.reload()
     await expect
       .poll(() => promptHistory.historyReads())
       .toBeGreaterThan(historyReadsBeforeReload)
+    expect(promptHistory.historyRequestThreadIds.at(-1)).toBe(persistedThreadId)
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
