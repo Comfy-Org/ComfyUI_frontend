@@ -381,3 +381,10 @@ If you have questions about contributing:
 - Open a new issue for clarification
 
 Thank you for contributing to the ComfyUI Frontend!
+
+## Website translation changes
+
+Follow the [website localization workflow](apps/website/README.md#localization).
+Review catalogs, source/ownership metadata, generated content and resolved
+browser dictionaries together. Publishing a language or indexing a route is
+a separate review decision from generating its translations.

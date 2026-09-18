@@ -44,7 +44,8 @@
     "i18n:write-story": "tsx ./scripts/i18n/write-story-japanese.ts",
     "check:localized-pages": "tsx ./scripts/check-localized-pages.ts",
     "i18n:build-resolved": "tsx ./scripts/i18n/build-resolved.ts",
-    "check:hardcoded-copy": "tsx ./scripts/check-hardcoded-copy.ts"
+    "check:hardcoded-copy": "tsx ./scripts/check-hardcoded-copy.ts",
+    "i18n:report": "tsx ./scripts/i18n/report-coverage.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

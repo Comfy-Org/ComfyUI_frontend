@@ -64,7 +64,7 @@ existing script, parameterised by target.
   machine output, while untracked or human-edited values survive source
   changes. Excluded keys are removed from generation before batching.
 - `apps/website/src/i18n/translations.ts` keeps its API and import path and
-  now reads the JSON catalogs. Locale identity and publication policy remain
+  now reads derived per-locale dictionaries. Locale identity and publication policy remain
   in `apps/website/src/config/locales.ts`, shared with routes and SEO.
 - `pnpm locale:website:check` joins the shared lint/format CI step; an
   `i18n: Update Website` workflow runs the translation on demand, mirroring
@@ -74,6 +74,18 @@ existing script, parameterised by target.
   half) becomes a single message with a `{brand}` placeholder that the
   component splits on. It was the only existing translation the pipeline's
   placeholder audit rejected.
+
+- Content adapters extract TypeScript and MDX into nested `content.json`
+  catalogs. The shared pipeline treats them as text, preserving Markdown and
+  literal pipes without applying Intlify message syntax. Writer hashes keep
+  human edits distinct from generated fields. Flat writer inputs and browser
+  dictionaries are derived artifacts, never competing editable catalogs.
+- Browser dictionaries resolve reviewed, eligible generated, then English copy
+  at build time. Only the document locale is imported in the browser; static
+  rendering loads all locales with separate composers. This preserves fallback
+  without requiring visitors to download every catalog.
+- One manual workflow invokes the shared generator and website content writers,
+  then opens a PR containing all related artifacts. It cannot activate routes.
 
 Alternatives considered:
 
@@ -122,10 +134,10 @@ Alternatives considered:
 - The website's `zh-CN` code differs from the app's `zh`; the URL prefix is
   public, so the website keeps its code and the target config maps it.
 - Every island that imports `translations.ts` now bundles the vue-i18n
-  runtime and compiler alongside the catalogs.
+  runtime and compiler alongside the active locale dictionary.
 
 ### Follow-ups
 
 - Route activation and Japanese publication remain separate review units.
-- Content collections (MDX, `src/data/*.ts`) still hold locale copy outside
-  the catalogs; they are out of scope here and remain hand-translated.
+- Hosted translation management and the wider app/package migration remain
+  separate work under FE-2045.
