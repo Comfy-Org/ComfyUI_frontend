@@ -26,6 +26,7 @@ import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
+  workshopIdentity,
   workshopSessionClient
 } from './workshop-account'
 
@@ -44,17 +45,16 @@ const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let running = false
 const lifecycle = createLifecycleScope()
 const operation = createBoundedOperation()
-let detachIdentity: (() => void) | undefined
 let stopSnapshot: (() => void) | undefined
 let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
   running = false
-  detachIdentity?.()
-  detachIdentity = undefined
+  // deactivate() publishes a signed-out frame; the host must be unsubscribed first.
   stopSnapshot?.()
   stopSnapshot = undefined
+  workshopIdentity.deactivate()
   stopTelemetry?.()
   stopTelemetry = undefined
   stopFocusListener?.()
@@ -88,7 +88,7 @@ const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
  * every authenticated snapshot, restored with one targeted re-mint on the
  * first snapshot after a reload, and dropped if that restore is refused.
  */
-const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+export const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
 
 const zRememberedWorkspace = z.object({
   uid: z.string(),
@@ -212,7 +212,7 @@ function holdsForRestore(next: SessionSnapshot<User>): boolean {
 }
 
 async function begin(attempt: OperationHandle): Promise<void> {
-  const firebase = await import('./workshop-firebase')
+  await workshopIdentity.activate()
   if (!attempt.live()) return
 
   running = true
@@ -224,9 +224,6 @@ async function begin(attempt: OperationHandle): Promise<void> {
     snapshot.value = next
     keepWorkspaceRemembered()
   })
-  detachIdentity = workshopSessionClient.attachIdentity(
-    firebase.workshopIdentity
-  )
   // Auth-refresh telemetry starts and stops with this lifecycle; credits and
   // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()
