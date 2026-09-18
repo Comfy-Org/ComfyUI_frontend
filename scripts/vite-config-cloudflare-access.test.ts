@@ -54,4 +54,14 @@ describe('Cloudflare Access service token on the backend proxy', () => {
   it('sends no headers when no service token is configured', async () => {
     await expect(apiProxyHeaders({})).resolves.toBeNull()
   }, 60_000)
+
+  it('refuses to expose an authenticated proxy through remote development', async () => {
+    await expect(
+      apiProxyHeaders({
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: 'client-id.access',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: 'client-secret',
+        VITE_REMOTE_DEV: 'true'
+      })
+    ).rejects.toThrow('cannot be used with VITE_REMOTE_DEV')
+  }, 60_000)
 })

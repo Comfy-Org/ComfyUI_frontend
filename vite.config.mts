@@ -235,6 +235,12 @@ const accessHeaders = cloudflareAccessHeaders(
   DEV_SERVER_COMFYUI_URL
 )
 
+if (accessHeaders && VITE_REMOTE_DEV) {
+  throw new Error(
+    'Cloudflare Access credentials cannot be used with VITE_REMOTE_DEV; bind the authenticated proxy to loopback.'
+  )
+}
+
 // Cloudflare routes on the Host header, so a token is only usable on a request
 // that carries the backend's host rather than the dev server's.
 const backendProxyConfig: ProxyOptions = {
