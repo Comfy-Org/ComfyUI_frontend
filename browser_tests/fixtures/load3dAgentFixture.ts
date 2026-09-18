@@ -245,9 +245,9 @@ class Load3dAgentHarness {
       this.uploadsByName.set(name, route.request())
       return route.fulfill(jsonRoute({ name, subfolder: 'temp', type: 'temp' }))
     })
-    for (const model of Object.keys(MODEL_ASSETS) as AgentModelFile[]) {
+    for (const [model, asset] of Object.entries(MODEL_ASSETS)) {
       await page.route(`**/api/view?*filename=${model}*`, (route) =>
-        route.fulfill({ path: assetPath(MODEL_ASSETS[model]) })
+        route.fulfill({ path: assetPath(asset) })
       )
     }
     await page.route(/\/api\/prompt$/, (route) => {
