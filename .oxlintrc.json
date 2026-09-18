@@ -28,7 +28,7 @@
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-render-in-watch-effect": "error",
-    "comfy/no-unknown-double-assertion": "warn",
+    "comfy/no-unknown-double-assertion": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
