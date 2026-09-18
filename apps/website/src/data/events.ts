@@ -388,7 +388,7 @@ const events: readonly ComfyEvent[] = [
       newTab: true
     },
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
-    media: eventImage('nyc-creative-ai-september-forum.jpg', {
+    media: eventImage('nyc-creative-ai-september-forum.png', {
       en: 'ZeroSpace: NYC Creative AI September Forum',
       'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
     })
