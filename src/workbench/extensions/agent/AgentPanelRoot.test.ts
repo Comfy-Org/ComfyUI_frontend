@@ -10,7 +10,6 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
-import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
 
@@ -193,9 +192,13 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
-
-vi.mock(import('@vueuse/core'), { spy: true })
+const clipboard = vi.hoisted(() => ({ copyToClipboard: vi.fn() }))
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
@@ -266,14 +269,6 @@ beforeEach(() => {
     fromPartial<ComfyWorkflowJSON>(
       typeof content === 'object' && content !== null ? content : {}
     )
-  )
-  vi.mocked(useClipboard).mockReturnValue(
-    fromPartial({
-      copy: clipboard.copy,
-      copied: computed(() => false),
-      isSupported: ref(true),
-      text: ref('')
-    })
   )
   vi.mocked(useWorkspaceUI).mockReturnValue(
     fromPartial({
@@ -2125,7 +2120,7 @@ describe('AgentPanelRoot history', () => {
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
     ws.clear()
-    clipboard.copy.mockClear()
+    clipboard.copyToClipboard.mockClear()
   })
 
   it('copies the active session from chat history as formatted markdown', async () => {
@@ -2205,7 +2200,7 @@ describe('AgentPanelRoot transcript copy', () => {
       })
     )
 
-    expect(clipboard.copy).toHaveBeenCalledWith(
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith(
       '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
     )
   })
