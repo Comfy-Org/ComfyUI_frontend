@@ -1,7 +1,7 @@
 import { onTestFinished } from 'vitest'
 import { computed, customRef } from 'vue'
 
-import * as realRemoteConfig from '../remoteConfig'
+import type * as realRemoteConfig from '../remoteConfig'
 
 function testScopedRef<T>(defaultValue: T) {
   let value = defaultValue
@@ -53,13 +53,15 @@ const cachedV1PaymentRecoveryRef = testScopedRemovableRef<boolean | undefined>(
 )
 
 const remoteConfigModule: typeof realRemoteConfig = {
-  ...realRemoteConfig,
   remoteConfig: remoteConfigRef,
   remoteConfigState: remoteConfigStateRef,
   remoteConfigErrorStatus: remoteConfigErrorStatusRef,
   isAuthenticatedConfigLoaded: computed(
     () => remoteConfigStateRef.value === 'authenticated'
   ),
+  configValueOrDefault(remoteConfig, key, defaultValue) {
+    return remoteConfig[key] || defaultValue
+  },
   cachedBillingControlEnabled: cachedBillingControlEnabledRef,
   cachedLegacyBillingMigrationEnabled: cachedLegacyBillingMigrationEnabledRef,
   cachedV1PaymentRecovery: cachedV1PaymentRecoveryRef
