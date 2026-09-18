@@ -1,5 +1,10 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
 import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { FieldErrorCode, FieldErrors } from '../config/workshop-playground'
+import type {
+  WorkshopFailureStage,
+  WorkshopRouterError
+} from '../config/workshop-router-errors'
 
 interface WorkshopModelAnalytics {
   model_slug: string
@@ -45,20 +50,33 @@ const WORKSHOP_CHECKOUT_ERROR_CODES: Readonly<
   SUPERSEDED: 'SUPERSEDED'
 }
 
+const WORKSHOP_ROUTER_ERROR_TYPES = [
+  'concurrency_limit_exceeded',
+  'rate_limit_exceeded',
+  'invalid_input',
+  'content_policy_violation',
+  'deadline_exceeded',
+  'forbidden',
+  'insufficient_credits',
+  'not_enabled',
+  'provider_error',
+  'provider_timeout'
+] as const
+
 export type WorkshopRouterErrorType =
-  | 'content_policy_violation'
-  | 'deadline_exceeded'
-  | 'forbidden'
-  | 'insufficient_credits'
-  | 'not_enabled'
-  | 'provider_error'
-  | 'provider_timeout'
+  (typeof WORKSHOP_ROUTER_ERROR_TYPES)[number]
 
 export type WorkshopAnalyticsEvent =
   | { name: 'catalogue_viewed'; properties: { model_count: number } }
   | {
-      name: 'model_viewed' | 'api_viewed' | 'run_validation_failed'
+      name: 'model_viewed' | 'api_viewed'
       properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'run_validation_failed'
+      properties: WorkshopModelAnalytics & {
+        field_error_codes?: FieldErrorCode[]
+      }
     }
   | { name: 'run_started'; properties: WorkshopRunAnalytics }
   | {
@@ -73,6 +91,8 @@ export type WorkshopAnalyticsEvent =
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
+              failure_stage?: WorkshopFailureStage
+              field_error_codes?: FieldErrorCode[]
             }
           | { status: 'cancelled' }
         )
@@ -118,17 +138,26 @@ export function workshopHttpStatus(
 export function workshopRouterErrorType(
   errorType: string | null | undefined
 ): WorkshopRouterErrorType | undefined {
-  switch (errorType) {
-    case 'content_policy_violation':
-    case 'deadline_exceeded':
-    case 'forbidden':
-    case 'insufficient_credits':
-    case 'not_enabled':
-    case 'provider_error':
-    case 'provider_timeout':
-      return errorType
-    default:
-      return undefined
+  return WORKSHOP_ROUTER_ERROR_TYPES.find((value) => value === errorType)
+}
+
+export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
+  return [...new Set(Object.values(errors))]
+}
+
+export function workshopFailureAnalytics(failure: WorkshopRouterError) {
+  const httpStatus = workshopHttpStatus(failure.response?.status)
+  const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
+  const fieldErrorCodes = workshopFieldErrorCodes(failure.fieldErrors)
+  return {
+    reason: failure.reason,
+    request_id: failure.requestId ?? undefined,
+    ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
+    ...(routerErrorType === undefined
+      ? {}
+      : { router_error_type: routerErrorType }),
+    ...(failure.stage ? { failure_stage: failure.stage } : {}),
+    ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
   }
 }
 

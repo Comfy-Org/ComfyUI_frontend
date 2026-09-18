@@ -72,6 +72,12 @@ const mediaControlClass =
 const failureKey: Record<RunFailure, TranslationKey> = {
   validation: 'workshop.error.validation',
   provider: 'workshop.error.provider',
+  upload: 'workshop.error.upload',
+  network: 'workshop.error.network',
+  response: 'workshop.error.response',
+  client: 'workshop.error.client',
+  concurrency: 'workshop.error.concurrency',
+  conflict: 'workshop.error.conflict',
   rateLimit: 'workshop.error.rateLimit',
   policy: 'workshop.error.policy',
   noCredits: 'workshop.error.noCredits',

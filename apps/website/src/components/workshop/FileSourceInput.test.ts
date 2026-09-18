@@ -52,6 +52,33 @@ async function drop(files: File[]) {
 }
 
 describe('file source selection', () => {
+  it('shows and enforces the configured video size instead of the image limit', async () => {
+    const values = mountInput(false, {
+      ...field,
+      accept: ['video/mp4'],
+      maxBytes: 100_000_000
+    })
+    const visitor = userEvent.setup()
+    expect(screen.getByText('MP4 · up to 100 MB')).toBeTruthy()
+    const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      file
+    )
+    expect(values.value).toMatchObject([{ file }])
+    const oversized = new File([new Uint8Array(100_000_001)], 'oversized.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      oversized
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('File is over 100 MB')
+    expect(values.value).toMatchObject([{ file }])
+  })
+
   it.for([
     { name: 'price-$&.fbx', type: 'application/octet-stream', label: 'FBX' },
     { name: 'clip.mp4', type: 'video/mp4', label: 'MP4' },
@@ -211,7 +238,7 @@ describe('file source selection', () => {
       file: new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'large.png', {
         type: 'image/png'
       }),
-      error: 'File is over 25 MB'
+      error: 'File is over 25 MiB'
     }
   ])(
     'keeps valid images when a drop is rejected: $error',
