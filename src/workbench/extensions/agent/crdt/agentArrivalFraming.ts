@@ -2,6 +2,7 @@ import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewpor
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
 
 /** Graph units left around the framed nodes so none sits flush with an edge. */
 const FRAME_PADDING = 40
@@ -39,29 +40,6 @@ export function visibleGraphRect(canvas: LGraphCanvas): ReadOnlyRect | null {
     -offset[1] + y / scale,
     width / scale,
     height / scale
-  ]
-}
-
-/** Padded bounds enclosing every node, or `null` when there are none. */
-export function framingBounds(
-  nodes: readonly FramableNode[]
-): ReadOnlyRect | null {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const node of nodes) {
-    minX = Math.min(minX, node.pos[0])
-    minY = Math.min(minY, node.pos[1])
-    maxX = Math.max(maxX, node.pos[0] + node.size[0])
-    maxY = Math.max(maxY, node.pos[1] + node.size[1])
-  }
-  if (!Number.isFinite(minX)) return null
-  return [
-    minX - FRAME_PADDING,
-    minY - FRAME_PADDING,
-    maxX - minX + FRAME_PADDING * 2,
-    maxY - minY + FRAME_PADDING * 2
   ]
 }
 
@@ -140,7 +118,7 @@ export function createAgentArrivalFramer(
       if (options.select !== false) canvas.selectItems([...build])
       if (!needsFraming(canvas, nodes)) return
 
-      const bounds = framingBounds(build)
+      const bounds = createPositionBounds(build, FRAME_PADDING)
       if (!bounds) return
       canvas.animateToBounds(bounds, {
         viewport: visibleCanvasViewport(canvas)

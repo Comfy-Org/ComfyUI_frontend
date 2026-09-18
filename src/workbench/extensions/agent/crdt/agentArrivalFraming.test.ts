@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createPositionBounds } from '@/utils/positionBounds'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import {
   createAgentArrivalFramer,
-  framingBounds,
   needsFraming,
   visibleGraphRect
 } from './agentArrivalFraming'
@@ -78,15 +78,18 @@ describe('visibleGraphRect', () => {
   })
 })
 
-describe('framingBounds', () => {
+describe('createPositionBounds', () => {
   it('pads the union of every node', () => {
     expect(
-      framingBounds([node([100, 100], [200, 50]), node([400, 300], [100, 100])])
+      createPositionBounds(
+        [node([100, 100], [200, 50]), node([400, 300], [100, 100])],
+        40
+      )
     ).toEqual([60, 60, 480, 380])
   })
 
   it('is null with nothing to frame', () => {
-    expect(framingBounds([])).toBeNull()
+    expect(createPositionBounds([], 40)).toBeNull()
   })
 })
 
