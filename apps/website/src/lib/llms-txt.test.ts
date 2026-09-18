@@ -1,3 +1,9 @@
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -112,7 +118,7 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://comfy.org/enterprise/'
     )
@@ -120,6 +126,7 @@ describe('findCanonicalDrift', () => {
     expect(drift).toEqual([
       { link: links[0], canonical: 'https://comfy.org/enterprise/' }
     ])
+    expect(checked).toBe(1)
   })
 
   it('leaves a link whose canonical matches its own URL alone', () => {
@@ -131,12 +138,13 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://comfy.org/enterprise/'
     )
 
     expect(drift).toEqual([])
+    expect(checked).toBe(1)
   })
 
   it('skips a link with no built page (e.g. the external workflows app)', () => {
@@ -148,9 +156,10 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(links, () => undefined)
+    const { drift, checked } = findCanonicalDrift(links, () => undefined)
 
     expect(drift).toEqual([])
+    expect(checked).toBe(0)
   })
 
   it('flags a same-path canonical on a different origin', () => {
@@ -162,7 +171,7 @@ describe('findCanonicalDrift', () => {
       }
     ]
 
-    const drift = findCanonicalDrift(
+    const { drift, checked } = findCanonicalDrift(
       links,
       () => 'https://evil.example.com/enterprise/'
     )
@@ -170,5 +179,56 @@ describe('findCanonicalDrift', () => {
     expect(drift).toEqual([
       { link: links[0], canonical: 'https://evil.example.com/enterprise/' }
     ])
+    expect(checked).toBe(1)
+  })
+
+  it('reports zero checked when every link is skipped (vacuous-pass guard)', () => {
+    const links = [
+      {
+        title: 'Enterprise',
+        url: 'https://comfy.org/enterprise/',
+        description: ''
+      },
+      {
+        title: 'Pricing',
+        url: 'https://comfy.org/pricing/',
+        description: ''
+      }
+    ]
+
+    const { drift, checked } = findCanonicalDrift(links, () => undefined)
+
+    expect(drift).toEqual([])
+    expect(checked).toBe(0)
+  })
+})
+
+describe('validate-llms-txt-links', () => {
+  it('fails when no links can be checked against a built canonical', () => {
+    const workingDirectory = mkdtempSync(join(tmpdir(), 'llms-txt-validator-'))
+    mkdirSync(join(workingDirectory, 'dist'))
+    mkdirSync(join(workingDirectory, 'public'))
+    writeFileSync(
+      join(workingDirectory, 'public', 'llms.txt'),
+      '- [Enterprise](https://comfy.org/enterprise/): Enterprise.\n'
+    )
+
+    try {
+      const validatorPath = fileURLToPath(
+        new URL('../../scripts/validate-llms-txt-links.ts', import.meta.url)
+      )
+      const result = spawnSync(
+        process.execPath,
+        ['--import', import.meta.resolve('tsx'), validatorPath],
+        { cwd: workingDirectory, encoding: 'utf8' }
+      )
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toBe(
+        'llms.txt link validation failed: 0 of 1 link(s) were checked against a built canonical.\n'
+      )
+    } finally {
+      rmSync(workingDirectory, { recursive: true, force: true })
+    }
   })
 })
