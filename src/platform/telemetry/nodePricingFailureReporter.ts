@@ -86,10 +86,7 @@ export function reportNodePricingFailure({
       node_type: nodeType,
       jsonata_code: jsonataError?.code
     },
-    context: {
-      occurrenceCount,
-      jsonataPosition: jsonataError?.position
-    },
+    context: { source },
     level: 'warning'
   })
 }

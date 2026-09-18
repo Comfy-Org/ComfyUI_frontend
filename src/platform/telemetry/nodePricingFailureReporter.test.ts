@@ -50,10 +50,7 @@ describe('reportNodePricingFailure', () => {
           node_type: 'BrokenNode',
           jsonata_code: 'T1006'
         }),
-        context: {
-          occurrenceCount: 1,
-          jsonataPosition: 14
-        },
+        context: { source: 'live_node' },
         level: 'warning'
       }
     )
@@ -95,11 +92,6 @@ describe('reportNodePricingFailure', () => {
     }
 
     expect(mockReportError).toHaveBeenCalledTimes(3)
-    expect(
-      mockReportError.mock.calls.map(
-        ([, options]) => options.context.occurrenceCount
-      )
-    ).toEqual([1, 10, 100])
   })
 
   it('caps the number of distinct failing rules per session', async () => {
