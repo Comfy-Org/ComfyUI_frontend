@@ -36,7 +36,9 @@ Forces that shape the answer:
 - Consumers filled placeholders with `String.replace('{name}', …)` on the
   raw message, and 21 messages carried a literal `@` or `|`, both of which
   vue-i18n's compiler treats as syntax.
-- Approved Chinese copy must not be rewritten by the first pipeline run.
+- Reviewed copy and intentional empty values must survive generation, even
+  after English changes. Legal and opted-out copy remain excluded from
+  machine generation.
 
 ## Decision
 
@@ -57,11 +59,11 @@ existing script, parameterised by target.
 - `scripts/i18n/config.ts` gains a `website` entry in `translationTargets`
   with the website's entry and output directories, output locales (`zh-CN`,
   `ja`) and glossary; `update-locales.ts` selects it with `--target website`.
-  Everything else (manifest, diffing, validation, chunking, retries) is
-  unchanged and shared.
+  This is enabled in the next stack change together with ownership and
+  exclusion policy. Catalog migration alone does not enable generation.
 - `apps/website/src/i18n/translations.ts` keeps its API and import path and
-  now reads the JSON catalogs, so consumers are untouched. Locale codes live
-  in `apps/website/src/locales/localeConfig.ts`, mirroring the app.
+  now reads the JSON catalogs. Locale identity and publication policy remain
+  in `apps/website/src/config/locales.ts`, shared with routes and SEO.
 - `pnpm locale:website:check` joins the shared lint/format CI step; an
   `i18n: Update Website` workflow runs the translation on demand, mirroring
   the core workflow's checkout-and-commit pattern.
@@ -116,7 +118,7 @@ Alternatives considered:
 
 ### Follow-ups
 
-- Run the website workflow once to fill Japanese, then review the output with
-  a native speaker as the app's locales are.
+- Enable shared generation with explicit ownership and exclusion policy.
+  Route activation and Japanese publication remain separate review units.
 - Content collections (MDX, `src/data/*.ts`) still hold locale copy outside
   the catalogs; they are out of scope here and remain hand-translated.

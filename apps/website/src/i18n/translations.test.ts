@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LOCALE_CODES } from '../config/locales'
-import { hasKey, t, tAround, translationKeys } from './translations'
+import { hasKey, t, tAround, tPlural, translationKeys } from './translations'
 
 describe('translation keys', () => {
   it('never uses a key as the prefix of another key', () => {
@@ -35,6 +35,12 @@ describe('t()', () => {
     expect(t('auth.errors.signupBlocked')).toContain('support@comfy.org')
   })
 
+  it('keeps interleaved page locales isolated', () => {
+    expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
+    expect(t('hero.title', 'en')).toBe('Professional Control\nof Visual AI')
+    expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
+  })
+
   it.for(LOCALE_CODES)('compiles every %s message', (locale) => {
     const failing = translationKeys.filter((key) => {
       try {
@@ -45,6 +51,21 @@ describe('t()', () => {
       }
     })
     expect(failing).toEqual([])
+  })
+})
+
+describe('tPlural', () => {
+  it.for([
+    ['en', 0, '0 nodes'],
+    ['en', 1, '1 node'],
+    ['en', 3, '3 nodes'],
+    ['ja', 0, '0 nodes'],
+    ['ja', 1, '1 node'],
+    ['ja', 3, '3 nodes']
+  ] as const)('renders %s count %s', ([locale, count, expected]) => {
+    expect(tPlural('cloudNodesLaunch.models.nodeCount', count, locale)).toBe(
+      expected
+    )
   })
 })
 
