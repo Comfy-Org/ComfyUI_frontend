@@ -112,10 +112,31 @@ queued unread, and only when every line below is true in that one reading:
   "unblock it" is not that; ask once, as the last step, when every other line
   is true.
 
-You have merged it when `gh pr view <number>` reports the state as merged;
-entering the queue is not the same, so wait and read again, and if the queue
-removes it, read why and return to clearing blockers. Never bypass the queue,
-never use an admin override, and never dismiss a review.
+## After the merge command: stay until it is merged
+
+The merge command only adds the pull request to the queue. You have merged it
+when `gh pr view <number>` reports the state as `MERGED`, and nothing short of
+that counts: not "added to the merge queue", not `mergeStateStatus` of
+`QUEUED`, not a green queue run. Keep reading `gh pr view <number>` (state,
+`mergeStateStatus`, head sha) and the issue comments every few minutes until
+the state is `MERGED`; the queue runs the required checks again on a merge
+group, so this can take as long as a full check run.
+
+The queue can remove the pull request: a check fails in the merge group, `main`
+moves so the branch conflicts, an approval is dismissed, or a person pulls it.
+You see this as the state back at `OPEN` with `mergeStateStatus` no longer
+`QUEUED`, usually with a comment or timeline entry saying it was removed and
+why. When that happens, do not stop and do not report it as merged or queued:
+read the reason, treat it as a new blocker, run the review loop on it (a queue
+check failure is read from its run log the same way; a conflict is settled the
+same way), then take the whole gate reading again and, when every line holds,
+run the merge command again with the new head sha. Count each removal. After
+three removals for the same reason, or when the reason is one only a person
+can fix (a dismissed approval, a queue that is paused), stop and escalate with
+the reason and the link, per `review-loop.md`.
+
+Never bypass the queue, never use an admin override, and never dismiss a
+review.
 
 When any line is false, do not merge. Each false line that needs a person is
 its own blocker; several can be open at once (two team approvals, a hold, a

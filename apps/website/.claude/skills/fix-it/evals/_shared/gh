@@ -3,6 +3,13 @@
 # from the fixture files the case scaffold copied next to it and records every
 # invocation, so graders can check which commands the skill ran and whether a
 # merge was attempted against the inspected head.
+#
+# A case's state/ holds flat fixture files. A case may instead hold
+# state/phases/<n>/ directories: phase 0 is served until the first merge
+# command, each merge command advances the phase, and inside a phase the k-th
+# `pr view` is answered by pr_view.<k>.json when it exists (the highest
+# numbered file at or below k otherwise), so a case can script "queued, then
+# removed from the queue, then clean again".
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 state="$here/state"
@@ -16,14 +23,37 @@ require_number() {
   [[ "$n" =~ ^[0-9]+$ ]] || fail "pull request number required (got '${n:-nothing}'); this stand-in never infers the pull request from the branch"
   [[ "$n" == "$(pr_number)" ]] || fail "no pull request #$n"
 }
+phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
+# Resolve a fixture file for the current phase, falling back to the flat file.
+fixture() {
+  local name="$1" p
+  p="$(phase)"
+  if [[ -d "$state/phases" ]]; then
+    if [[ -f "$state/phases/$p/$name" ]]; then echo "$state/phases/$p/$name"; return; fi
+  fi
+  echo "$state/$name"
+}
+view_file() {
+  local p k f
+  p="$(phase)"
+  k=$(( $(cat "$state/view_count" 2>/dev/null || echo 0) + 1 ))
+  echo "$k" > "$state/view_count"
+  if [[ -d "$state/phases/$p" ]]; then
+    for (( i=k; i>=1; i-- )); do
+      f="$state/phases/$p/pr_view.$i.json"
+      if [[ -f "$f" ]]; then echo "$f"; return; fi
+    done
+  fi
+  fixture pr_view.json
+}
 
 case "${1:-} ${2:-}" in
   "pr view")
     require_number "${3:-}"
-    cat "$state/pr_view.json" ;;
+    cat "$(view_file)" ;;
   "pr checks")
     require_number "${3:-}"
-    if [[ " $* " == *" --required "* ]]; then cat "$state/checks_required.tsv"; else cat "$state/checks.tsv"; fi ;;
+    if [[ " $* " == *" --required "* ]]; then cat "$(fixture checks_required.tsv)"; else cat "$(fixture checks.tsv)"; fi ;;
   "pr checkout")
     require_number "${3:-}"
     git checkout -q "$(cat "$state/branch")"
@@ -41,16 +71,22 @@ case "${1:-} ${2:-}" in
     done
     [[ -n "$sha" ]] || fail "refusing to merge without --match-head-commit"
     [[ "$sha" == "$(cat "$state/head_sha")" ]] || fail "head commit mismatch: pull request head is $(cat "$state/head_sha"), you passed $sha"
-    if [[ -f "$state/merge_outcome" ]]; then cp "$state/merge_outcome" "$state/pr_view.json"; fi
-    cat "$state/merge_message" ;;
+    msg="$(fixture merge_message)"
+    if [[ -d "$state/phases" ]]; then
+      echo $(( $(phase) + 1 )) > "$state/phase"
+      echo 0 > "$state/view_count"
+    elif [[ -f "$state/merge_outcome" ]]; then
+      cp "$state/merge_outcome" "$state/pr_view.json"
+    fi
+    cat "$msg" ;;
   "api user")
     printf '{"login":"%s"}\n' "$(cat "$state/login")" ;;
   "api graphql")
-    cat "$state/threads.json" ;;
+    cat "$(fixture threads.json)" ;;
   api\ repos/*)
     case "$2" in
-      */comments*) cat "$state/comments.json" ;;
-      */commits*) cat "$state/commits.json" ;;
+      */comments*) cat "$(fixture comments.json)" ;;
+      */commits*) cat "$(fixture commits.json)" ;;
       *) fail "unsupported api path $2" ;;
     esac ;;
   "pr comment"|"pr edit"|"pr review")

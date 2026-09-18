@@ -1,0 +1,38 @@
+{
+ "number": 4242,
+ "title": "feat(website): add the pricing subheading",
+ "state": "MERGED",
+ "isDraft": false,
+ "author": {
+  "login": "dana-comfy"
+ },
+ "labels": [],
+ "headRefName": "website/pricing-subheading",
+ "headRefOid": "__HEAD__",
+ "baseRefName": "main",
+ "mergeable": "MERGEABLE",
+ "mergeStateStatus": "CLEAN",
+ "reviewDecision": "APPROVED",
+ "body": "Adds the pricing subheading the design team asked for.\n\n## Changes\n- pricing.astro: one new paragraph under the heading",
+ "latestReviews": [
+  {
+   "author": {
+    "login": "frontend-reviewer"
+   },
+   "state": "APPROVED"
+  },
+  {
+   "author": {
+    "login": "website-reviewer"
+   },
+   "state": "APPROVED"
+  },
+  {
+   "author": {
+    "login": "coderabbitai"
+   },
+   "state": "APPROVED"
+  }
+ ],
+ "url": "https://github.com/example/site/pull/4242"
+}

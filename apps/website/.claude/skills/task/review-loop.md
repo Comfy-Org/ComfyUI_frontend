@@ -67,7 +67,8 @@ Do not loop on them. Hand each one over with the message format below.
 - Signing the CLA: the pull request's author must comment, word for word,
   `I have read and agree to the Contributor License Agreement`.
 - A missing secret, token, permission, or repository access.
-- A merge queue or deploy that is stuck.
+- A merge queue that is paused, or a deploy that is stuck. A pull request the
+  queue removed is not that: `fix-it` reads the reason and works it.
 - Media that must be uploaded outside this repository.
 - A check failing on code outside `apps/website` that the task never touched,
   after one re-run.

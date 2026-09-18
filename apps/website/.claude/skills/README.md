@@ -17,7 +17,9 @@ The `fix-it` cases need a repository and a GitHub CLI, and eval runs are
 offline, so each case ships a `fixture.sh` that builds a small git repository
 and installs `evals/_shared/gh`, a stand-in that answers from the case's
 `state/` files, refuses any `gh pr` call without a number, and refuses a merge
-whose `--match-head-commit` does not equal the branch head. Fixture setup and
+whose `--match-head-commit` does not equal the branch head. A case may script
+phases under `state/phases/<n>/` so that each merge command advances the
+fixture (queued, removed from the queue, merged). Fixture setup and
 shell access are off by default, so pass the flags:
 
 ```bash
@@ -34,7 +36,7 @@ roughly 40 agent sessions.
 On 2026-09-17 the three `task` cases and the `asks-for-number` and
 `does-not-trigger-on-summary` cases ran green on Claude Code 2.1.275 (the
 summary case failed once before the `fix-it` description gained its "do not
-use it to read, summarize, review" clause, and passed 2/2 after). The three
+use it to read, summarize, review" clause, and passed 2/2 after). The four
 merge-gate cases have not run yet: the sandbox refuses a Bash grant on a
 machine whose Docker credential store contains a symlink, so run them where
 `claude plugin eval --allow-tools Bash` is accepted, such as a CI runner.
@@ -46,6 +48,7 @@ What the cases cover:
 | `fix-it` | `hold-blocks-merge`            | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold |
 | `fix-it` | `merges-on-fresh-head`         | Reads checks before merging, merges with `--match-head-commit <head>`, reports merged                     |
 | `fix-it` | `queued-is-not-merged`         | Re-reads after the merge command and does not report a queued PR as merged                                |
+| `fix-it` | `requeues-after-pop`          | The queue drops the PR once; the skill reads the reason, merges again with the head sha, and reports merged only at state MERGED |
 | `fix-it` | `asks-for-number`              | With no PR named, runs no `gh pr` command and asks which one                                              |
 | `fix-it` | `does-not-trigger-on-summary`  | A read-only summary request does not fire the skill or push anything                                      |
 | `task`   | `triggers-on-mock-request`     | Fires on a mock-matching request; with read-only tools it invents no preview or PR                        |
