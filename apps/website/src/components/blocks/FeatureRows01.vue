@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
+import { splitInlineCode } from '../../lib/inline-code'
 import GlassCard from '../common/GlassCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
@@ -81,7 +82,15 @@ const {
             {{ row.title }}
           </h3>
           <p class="text-sm text-smoke-700 lg:text-base">
-            {{ row.description }}
+            <template
+              v-for="(part, partIndex) in splitInlineCode(row.description)"
+              :key="partIndex"
+              ><code
+                v-if="part.code"
+                class="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary-comfy-canvas"
+                >{{ part.text }}</code
+              ><template v-else>{{ part.text }}</template></template
+            >
           </p>
         </div>
 

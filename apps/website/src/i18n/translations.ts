@@ -9015,6 +9015,10 @@ Enterprise`
     en: 'Provider',
     'zh-CN': '供应商'
   },
+  'platform.router.video.alt': {
+    en: 'Comfy Router explained: one API, your choice of provider for every job',
+    'zh-CN': 'Comfy Router 介绍：一个 API，每个任务都由你选择供应商'
+  },
   'platform.router.section1.heading': {
     en: 'Integrate once. Add models as you go.',
     'zh-CN': '集成一次，模型随时添加。'
@@ -9041,14 +9045,14 @@ Enterprise`
     en: 'fal · Runware · Wavespeed',
     'zh-CN': 'fal · Runware · Wavespeed'
   },
-  'platform.router.section2.calloutHeading': {
+  'platform.router.section3.heading': {
     en: 'Hit a concurrency limit? Queue the job.',
     'zh-CN': '遇到并发限制？把任务排入队列。'
   },
-  'platform.router.section2.calloutBody': {
-    en: 'Submit a request and get an ID back immediately. Your job runs when a slot opens, across all supported models.',
+  'platform.router.section3.body': {
+    en: 'And let Comfy handle the wait. Use `submit` to get a request ID immediately. The job runs when a slot opens, and you can use the ID to check progress and retrieve the result. Or use `subscribe` to submit the job and wait until it completes.',
     'zh-CN':
-      '提交请求后立即获得一个 ID。一旦有空闲槽位，任务就会运行，适用于所有受支持的模型。'
+      '让 Comfy 替你等待。使用 `submit` 立即获得请求 ID。任务会在有空闲槽位时运行，你可以用这个 ID 查询进度并获取结果。或者使用 `subscribe` 提交任务并等待其完成。'
   },
   'platform.router.roadmap.eyebrow': {
     en: 'Roadmap',

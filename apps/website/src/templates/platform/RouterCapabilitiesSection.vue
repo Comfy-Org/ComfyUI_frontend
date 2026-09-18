@@ -7,7 +7,7 @@ import RouterProviderLogoRow from './RouterProviderLogoRow.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const rows: FeatureRow[] = [
+const providerRows: FeatureRow[] = [
   {
     id: 'integrate',
     title: t('platform.router.section1.heading', locale),
@@ -25,6 +25,19 @@ const rows: FeatureRow[] = [
     media: {
       type: 'image',
       src: '/images/router/choose-route.svg',
+      fit: 'cover'
+    }
+  }
+]
+
+const queueRows: FeatureRow[] = [
+  {
+    id: 'queue',
+    title: t('platform.router.section3.heading', locale),
+    description: t('platform.router.section3.body', locale),
+    media: {
+      type: 'image',
+      src: '/images/router/queue-job.svg',
       fit: 'cover'
     }
   }
@@ -52,11 +65,11 @@ const supportedProviders = [
 <template>
   <FeatureRows01
     :locale="locale"
-    :rows="rows"
+    :rows="providerRows"
     title-class="text-primary-warm-white"
   />
 
-  <section class="mx-auto max-w-4xl px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-4xl px-6">
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
@@ -67,16 +80,11 @@ const supportedProviders = [
       :providers="supportedProviders"
       class="mt-5"
     />
-
-    <div
-      class="mt-10 rounded-3xl border border-white/10 bg-transparency-white-t4 p-6 lg:p-8"
-    >
-      <h3 class="text-lg font-normal text-primary-warm-white">
-        {{ t('platform.router.section2.calloutHeading', locale) }}
-      </h3>
-      <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas/80">
-        {{ t('platform.router.section2.calloutBody', locale) }}
-      </p>
-    </div>
   </section>
+
+  <FeatureRows01
+    :locale="locale"
+    :rows="queueRows"
+    title-class="text-primary-warm-white"
+  />
 </template>
