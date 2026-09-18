@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-
 import type { GraphOperation } from './graphOperations'
 import {
   attachMintPortWiring,
@@ -83,10 +81,9 @@ describe('attachMintPortWiring undo/redo restore', () => {
   const graph: MintableGraph = {
     id: ROOT_ID,
     rootGraph: { id: ROOT_ID },
-    getNodeById: (id) =>
-      (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
+    getNodeById: (id) => graphNodes.get(String(id)) ?? null,
     get _nodes() {
-      return [...graphNodes.values()] as unknown as LGraphNode[]
+      return [...graphNodes.values()]
     },
     links: {
       values: () => graphLinks.values()

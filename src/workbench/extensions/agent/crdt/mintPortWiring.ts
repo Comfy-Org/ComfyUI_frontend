@@ -7,7 +7,6 @@
  * suppressed until the next load's pair recloses.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -26,12 +25,19 @@ import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
+/** Node fields required to serialize an undo/redo restore snapshot. */
+export interface MintableNode {
+  id: string | number
+  widgets?: { name: string; type: string; serialize?: boolean }[]
+  serialize(): unknown
+}
+
 /** The graph surface the wiring reads for snapshots and scope. */
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
-  getNodeById(id: NodeId): LGraphNode | null
-  _nodes: LGraphNode[]
+  getNodeById(id: NodeId): MintableNode | null
+  _nodes: MintableNode[]
   /** Root-graph links; read only to diff an undo/redo restore. */
   links?: { values(): Iterable<MintableLink> }
 }
@@ -121,10 +127,10 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
  * control widgets like a `button` serialize a named entry but are not in
  * `widget_order`, and any extra key is an opaque server-side 500).
  */
-function serializeForMint(node: LGraphNode): WorkflowNode | null {
+function serializeForMint(node: MintableNode): WorkflowNode | null {
   let serialized: Record<string, unknown>
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    serialized = node.serialize() as Record<string, unknown>
   } catch {
     return null
   }
