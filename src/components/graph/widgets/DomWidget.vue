@@ -31,6 +31,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
+
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState
 }>()
@@ -177,17 +179,21 @@ const mountElementIfVisible = () => {
     return
   }
 
-  widget.element.classList.add('h-full', 'w-full')
-  widgetElement.value.appendChild(widget.element)
+  try {
+    widget.element.classList.add('h-full', 'w-full')
+    widgetElement.value.appendChild(widget.element)
+  } catch (error) {
+    reportDomWidgetMountFailure(error, {
+      nodeId: widget.node.id,
+      nodeType: widget.node.type,
+      widgetName: widget.name
+    })
+  }
 }
 
 // Check on mount - but only after next tick to ensure visibility is calculated
 onMounted(() => {
-  nextTick(() => {
-    mountElementIfVisible()
-  }).catch((error) => {
-    console.error('Error mounting DOM widget element:', error)
-  })
+  void nextTick(mountElementIfVisible)
 })
 
 // And watch for visibility changes
