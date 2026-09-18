@@ -147,6 +147,7 @@ class AgentConversationHarness {
   private readonly expectations: ExpectedTurn[]
   private socket: WebSocketRoute | null = null
   private postedTurns = 0
+  private subscribes = 0
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -621,7 +622,14 @@ class AgentConversationHarness {
       return
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(state_vector_b64))
+    this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  // Rises once per follower subscribe; a tab return re-subscribes and the
+  // host answers with the catch-up frame this counter has just sent.
+  subscribeCount(): number {
+    return this.subscribes
   }
 
   private waitForSubscribe(): Promise<void> {
