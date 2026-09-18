@@ -5,7 +5,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
-// Reproduces the Sentry error CLOUD-FRONTEND-STAGING-4J4:
+// Regression test for the Sentry error CLOUD-FRONTEND-STAGING-4J4:
 // `NotSupportedError: Failed to execute 'add' on 'DataTransferItemList':
 // An item already exists for type 'text/uri-list'.`
 //
@@ -13,12 +13,12 @@ import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 // `dataTransfer.items.add(url, 'text/uri-list')` once per drag. That is safe
 // only when the card's own draggable div is the native drag source.
 // MediaImageTop.vue's <img> sets `:draggable="false"` so the browser never
-// treats the thumbnail itself as a drag source. Media3DTop.vue's <img> has
-// no such guard, so when a real drag gesture starts on the thumbnail image
-// (not the card div), Chromium's built-in "drag an image" behavior pre-fills
-// the DataTransfer with its own `text/uri-list` entry before the bubbled
-// `dragstart` reaches the card's handler, and the handler's own
-// `items.add(..., 'text/uri-list')` call then throws.
+// treats the thumbnail itself as a drag source. Media3DTop.vue's <img> now
+// carries the same guard, so a real drag gesture starting on the thumbnail
+// image (not the card div) no longer triggers Chromium's built-in
+// "drag an image" behavior, which used to pre-fill the DataTransfer with its
+// own `text/uri-list` entry before the bubbled `dragstart` reached the
+// card's handler.
 const PREVIEW_FILENAME = 'preview_3d-thumbnail.png'
 const THREE_D_ASSET: Asset = {
   id: '3d-asset-001',
@@ -86,8 +86,6 @@ test.describe('3D asset card drag', { tag: '@cloud' }, () => {
   test('dragging the 3D thumbnail image does not throw NotSupportedError', async ({
     comfyPage
   }) => {
-    test.fail()
-
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     await tab.waitForAssets(1)
