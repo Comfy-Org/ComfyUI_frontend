@@ -16,9 +16,7 @@ export type TranslationKey = LeafPaths<typeof en>
 
 export type NamedValues = Record<string, string | number>
 
-export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
-  Record<Locale, string>
->
+export type LocalizedText = { en: string } & Partial<Record<Locale, string>>
 
 const i18n = createI18n({
   legacy: false,
