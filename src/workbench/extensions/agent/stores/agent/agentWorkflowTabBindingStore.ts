@@ -4,14 +4,19 @@ import { toRaw, watch } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 
-const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
+const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
 
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
     const tabByWorkflow = useLocalStorage<Record<string, string>>(
-      STORAGE_KEY,
+      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
       {}
     )
 

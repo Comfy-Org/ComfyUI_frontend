@@ -39,6 +39,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -2607,7 +2608,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
+      StorageKeys.agentWorkflowTabBindings('personal'),
       JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
     )
     const restored = addTab('workflows/minted.json', { isTemporary: true })
@@ -4870,7 +4871,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
+      StorageKeys.agentWorkflowTabBindings('personal'),
       JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
     )
     makeTab('wf-42')
