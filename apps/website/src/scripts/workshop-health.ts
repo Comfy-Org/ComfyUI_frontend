@@ -2,6 +2,20 @@ import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 
 type ServiceHealth = 'success' | 'failure' | 'excluded' | 'pending'
 
+type FailedRun = Extract<
+  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
+  { status: 'failed' }
+>
+
+function isAccountRefusal(failure: FailedRun): boolean {
+  if (failure.reason !== 'unavailable') return false
+  return (
+    failure.failure_stage === 'credential' ||
+    [401, 403].includes(failure.http_status ?? 0) ||
+    ['forbidden', 'not_enabled'].includes(failure.router_error_type ?? '')
+  )
+}
+
 function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.name === 'delivery_finished') {
     if (event.properties.status === 'succeeded') return 'success'
@@ -10,6 +24,7 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.name !== 'run_finished') return 'excluded'
   if (event.properties.status === 'succeeded') return 'pending'
   if (event.properties.status === 'cancelled') return 'excluded'
+  if (isAccountRefusal(event.properties)) return 'excluded'
   return ['noCredits', 'policy', 'validation', 'concurrency'].includes(
     event.properties.reason
   )

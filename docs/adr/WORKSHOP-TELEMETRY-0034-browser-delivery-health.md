@@ -12,11 +12,13 @@ Models can return Router/provider HTTP 200 while the browser fails to parse or d
 
 ## Decision
 
-Extend the accepted TELEMETRY-ROUTING-0013 responsibility split to the standalone website: the existing Workshop capture boundary sends an allowlisted run record to Datadog Browser Logs independently of PostHog initialization. Use the existing public Datadog client token, 100% session sampling, and no automatic error, console or network collection. Remove SDK page/referrer/identity context. No credentials, prompts, media URLs, raw errors or user/workspace IDs enter this contract.
+Extend the accepted TELEMETRY-ROUTING-0013 responsibility split to the standalone website: the existing Workshop capture boundary sends an allowlisted run record to Datadog Browser Logs independently of PostHog initialization. Use the existing public Datadog client token, 100% session sampling, and no automatic error, console or network collection. Remove SDK page/referrer/identity context, including both session ID fields. No credentials, prompts, media URLs, raw errors or user/workspace IDs enter this contract.
 
 Use Browser Logs for this bounded operational stream instead of importing the Cloud application's RUM/TelemetryRegistry into the separate Astro app. Ingested-log metrics support counts before index exclusions and share the responder's Router log workflow. This is a website-specific transport extension, not a replacement for Cloud RUM or `reportError`.
 
 A parsed response remains pending for health until the primary media element loads: image load, or decoded video/audio data. A delivery error/visible-page timeout is a service failure; navigation, hidden-page timeout, protected output and non-media output stay excluded/unverified. Attachments and subsequent full playback are outside this initial readiness signal. PostHog's existing run-finished semantics remain unchanged; delivery is a separate event.
+
+Account and authentication refusals are excluded from service health using the credential stage or Router refusal metadata. Missing endpoints and storage upload failures remain service failures.
 
 Each browser attempt sends an UUID and Models source header to Router. Recovery preserves the attempt ID and idempotency behavior; a fresh Run click starts a new attempt. These labels are diagnostic and self-reported, never billing or authorization inputs. Private infrastructure owns metrics, dashboard, thresholds and notification routing. IDs stay in logs, not metric dimensions.
 

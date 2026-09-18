@@ -24,6 +24,19 @@ const png = Uint8Array.from(
 )
 
 describe('shared Router rendering', () => {
+  it('identifies a missing credential without submitting a model request', async () => {
+    const requests = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', requests)
+    await expect(
+      router_render(
+        'bfl--flux-2-pro--generate-images',
+        { prompt: 'A landscape' },
+        { token: '' }
+      )
+    ).rejects.toMatchObject({ reason: 'unavailable', stage: 'credential' })
+    expect(requests).not.toHaveBeenCalled()
+  })
+
   it('reuses uploaded bytes and the same request body for an explicit retry', async () => {
     const source = new Blob([png], { type: 'image/png' })
     let grants = 0

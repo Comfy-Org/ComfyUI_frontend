@@ -99,7 +99,14 @@ export function resolveModelRouterRender(
 async function credential(options: RouterRenderOptions): Promise<string> {
   const token =
     typeof options.token === 'function' ? await options.token() : options.token
-  if (!token) throw new WorkshopRouterError('unavailable')
+  if (!token)
+    throw new WorkshopRouterError(
+      'unavailable',
+      null,
+      {},
+      undefined,
+      'credential'
+    )
   return token
 }
 

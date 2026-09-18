@@ -17,6 +17,8 @@ export function redactWorkshopLog(log: LogsEvent) {
   delete log.error
   delete log.usr
   delete log.account
+  delete log.session_id
+  delete log.session
   return true
 }
 

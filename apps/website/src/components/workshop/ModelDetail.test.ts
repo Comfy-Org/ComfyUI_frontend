@@ -384,6 +384,7 @@ describe('ModelDetail', () => {
       'Private prompt'
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await fireEvent.load(await screen.findByRole('img', { name: 'Output' }))
     const download = await screen.findByTestId('output-download')
     download.addEventListener('click', (event) => event.preventDefault(), {
       once: true
@@ -398,6 +399,7 @@ describe('ModelDetail', () => {
       'model_viewed',
       'run_started',
       'run_finished',
+      'delivery_finished',
       'output_download_clicked',
       'api_viewed'
     ])
@@ -427,6 +429,16 @@ describe('ModelDetail', () => {
         output_count: 1
       }
     })
+    expect(events.find((event) => event.name === 'delivery_finished')).toEqual({
+      name: 'delivery_finished',
+      properties: {
+        ...started?.properties,
+        status: 'succeeded',
+        duration_ms: expect.any(Number),
+        request_id: routerResult.requestId,
+        output_kind: 'image'
+      }
+    })
     expect(
       events.find((event) => event.name === 'output_download_clicked')
     ).toEqual({
@@ -436,6 +448,79 @@ describe('ModelDetail', () => {
     expect(JSON.stringify(events)).not.toContain('Private prompt')
     expect(JSON.stringify(events)).not.toContain(credential.token)
     expect(JSON.stringify(events)).not.toContain(routerResult.outputs[0].url)
+  })
+
+  it.for([
+    {
+      name: 'leaving the Playground',
+      abandon: () => user().click(screen.getByRole('tab', { name: 'API' }))
+    },
+    {
+      name: 'replacing the result with an example',
+      abandon: () => user().click(screen.getByTestId('example-card'))
+    }
+  ])('excludes delivery after $name', async ({ abandon }) => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({
+      model: {
+        ...runnable,
+        defaults: { prompt: 'A landscape' },
+        examples: [{ ...model.examples[0], sampleOnly: true }]
+      }
+    })
+    await user().click(await screen.findByRole('button', { name: 'Run' }))
+    await screen.findByRole('img', { name: 'Output' })
+
+    await abandon()
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    const deliveries = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'delivery_finished')
+    expect(deliveries).toEqual([
+      {
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          request_id: routerResult.requestId,
+          status: 'cancelled'
+        })
+      }
+    ])
+  })
+
+  it('excludes delivery when a response arrives after leaving the Playground', async () => {
+    auth.session.value = credential
+    const response = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(response.promise)
+    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
+    await user().click(await screen.findByRole('button', { name: 'Run' }))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    await user().click(screen.getByRole('tab', { name: 'API' }))
+
+    response.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({ status: 'succeeded' })
+      })
+    )
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    const deliveries = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'delivery_finished')
+    expect(deliveries).toEqual([
+      {
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          request_id: routerResult.requestId,
+          status: 'cancelled'
+        })
+      }
+    ])
   })
 
   it('reports a failed attempt with a bounded reason and no error payload', async () => {
@@ -1505,6 +1590,14 @@ describe('ModelDetail', () => {
       ).toBe('failed')
     )
     expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'failed',
+        reason: 'unavailable',
+        failure_stage: 'credential'
+      })
+    })
   })
 
   it('keeps execution disabled when the run opt-in is absent', () => {

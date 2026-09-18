@@ -366,6 +366,9 @@ interface ActiveRun {
 
 let activeRun: ActiveRun | undefined
 const delivery = useWorkshopDelivery()
+watch(activeSection, (section) => {
+  if (section !== 'playground') delivery.cancel()
+})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
@@ -456,7 +459,13 @@ async function freshCredentialFor(
     credential.session.uid !== startedFor.uid ||
     credential.session.workspace.id !== startedFor.workspace.id
   )
-    throw new WorkshopRouterError('unavailable')
+    throw new WorkshopRouterError(
+      'unavailable',
+      null,
+      {},
+      undefined,
+      'credential'
+    )
   return credential.session
 }
 
@@ -531,6 +540,7 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
     discarded.flatMap((run) => [run.output, ...run.attachments])
   )
   delivery.start(attempt.analytics, result.requestId, output)
+  if (activeSection.value !== 'playground') delivery.cancel()
   runState.value = transition(runState.value, {
     type: 'complete',
     at: Date.now(),
@@ -631,6 +641,7 @@ function reset() {
 }
 
 function applyExample(example: PlaygroundExample) {
+  delivery.cancel()
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined

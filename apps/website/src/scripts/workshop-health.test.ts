@@ -42,6 +42,65 @@ describe('Workshop health', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'local credential refusal',
+      failure: { reason: 'unavailable', failure_stage: 'credential' },
+      expected: 'excluded'
+    },
+    {
+      name: 'Router HTTP 401',
+      failure: { reason: 'unavailable', http_status: 401 },
+      expected: 'excluded'
+    },
+    {
+      name: 'Router HTTP 403',
+      failure: { reason: 'unavailable', http_status: 403 },
+      expected: 'excluded'
+    },
+    {
+      name: 'Router forbidden',
+      failure: { reason: 'unavailable', router_error_type: 'forbidden' },
+      expected: 'excluded'
+    },
+    {
+      name: 'Router not enabled',
+      failure: { reason: 'unavailable', router_error_type: 'not_enabled' },
+      expected: 'excluded'
+    },
+    {
+      name: 'missing Router endpoint',
+      failure: { reason: 'unavailable', http_status: 404 },
+      expected: 'failure'
+    },
+    {
+      name: 'unknown unavailability',
+      failure: { reason: 'unavailable' },
+      expected: 'failure'
+    },
+    {
+      name: 'storage upload forbidden',
+      failure: {
+        reason: 'upload',
+        http_status: 403,
+        failure_stage: 'upload_put'
+      },
+      expected: 'failure'
+    }
+  ] as const)('classifies $name for paging', ({ failure, expected }) => {
+    expect(
+      workshopHealthLog({
+        name: 'run_finished',
+        properties: {
+          ...run,
+          status: 'failed',
+          duration_ms: 10,
+          ...failure
+        }
+      })?.service_health
+    ).toBe(expected)
+  })
+
   it('does not call an HTTP 200 a delivered image', () => {
     const event: WorkshopAnalyticsEvent = {
       name: 'run_finished',
@@ -98,6 +157,8 @@ describe('Workshop health', () => {
       },
       usr: { email: 'private@example.com' },
       account: { id: 'private-workspace' },
+      session_id: 'private-session',
+      session: { id: 'private-session' },
       error: { stack: 'private input' },
       http: {
         url: 'https://example.com/?signed=private',
@@ -106,6 +167,8 @@ describe('Workshop health', () => {
       }
     }
     expect(redactWorkshopLog(event)).toBe(true)
+    expect(event).not.toHaveProperty('session_id')
+    expect(event).not.toHaveProperty('session')
     expect(JSON.stringify(event)).not.toContain('private')
   })
 })
