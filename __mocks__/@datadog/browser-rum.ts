@@ -1,11 +1,29 @@
-import { vi } from 'vitest'
-import type { datadogRum as realDatadogRum } from '@datadog/browser-rum'
+import { onTestFinished, vi } from 'vitest'
+import type { DatadogRum as RealDatadogRum } from '@datadog/browser-rum'
 
-export const datadogRum: Pick<
-  typeof realDatadogRum,
-  'getInitConfiguration' | 'init' | 'setGlobalContextProperty'
-> = {
-  getInitConfiguration: vi.fn(),
-  init: vi.fn(),
-  setGlobalContextProperty: vi.fn()
-}
+type DatadogRum = Pick<
+  RealDatadogRum,
+  | 'getGlobalContext'
+  | 'getInitConfiguration'
+  | 'init'
+  | 'setGlobalContextProperty'
+>
+
+const context: ReturnType<DatadogRum['getGlobalContext']> = {}
+
+export const datadogRum = vi.mockObject<DatadogRum>(
+  {
+    getGlobalContext: () => {
+      onTestFinished(() => {
+        for (const key of Object.keys(context)) delete context[key]
+      })
+      return context
+    },
+    getInitConfiguration: () => undefined,
+    init: () => {},
+    setGlobalContextProperty: (key, value) => {
+      context[key] = value
+    }
+  },
+  { spy: true }
+)

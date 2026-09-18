@@ -3,22 +3,19 @@ import type { useMediaAssetActions as realUseMediaAssetActions } from '../useMed
 
 type MediaAssetActions = ReturnType<typeof realUseMediaAssetActions>
 
-const mediaAssetActions: MediaAssetActions = {
-  downloadAssets: vi.fn<MediaAssetActions['downloadAssets']>(() => {}),
-  deleteAssets: vi.fn<MediaAssetActions['deleteAssets']>(async () => false),
-  copyJobId: vi.fn<MediaAssetActions['copyJobId']>(async () => {}),
-  addWorkflow: vi.fn<MediaAssetActions['addWorkflow']>(async () => {}),
-  addMultipleToWorkflow: vi.fn<MediaAssetActions['addMultipleToWorkflow']>(
-    async () => {}
-  ),
-  openWorkflow: vi.fn<MediaAssetActions['openWorkflow']>(async () => {}),
-  openMultipleWorkflows: vi.fn<MediaAssetActions['openMultipleWorkflows']>(
-    async () => {}
-  ),
-  exportWorkflow: vi.fn<MediaAssetActions['exportWorkflow']>(async () => {}),
-  exportMultipleWorkflows: vi.fn<MediaAssetActions['exportMultipleWorkflows']>(
-    async () => {}
-  )
-}
+const mediaAssetActions = vi.mockObject<MediaAssetActions>(
+  {
+    downloadAssets: () => {},
+    deleteAssets: async () => false,
+    copyJobId: async () => {},
+    addWorkflow: async () => {},
+    addMultipleToWorkflow: async () => {},
+    openWorkflow: async () => {},
+    openMultipleWorkflows: async () => {},
+    exportWorkflow: async () => {},
+    exportMultipleWorkflows: async () => {}
+  },
+  { spy: true }
+)
 
 export const useMediaAssetActions = vi.fn(() => mediaAssetActions)

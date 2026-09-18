@@ -1,7 +1,6 @@
 import { datadogRum } from '@datadog/browser-rum'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const context: Record<string, unknown> = {}
 const fetchMock = vi.fn<typeof fetch>()
 
 vi.mock(import('@datadog/browser-rum'))
@@ -15,14 +14,6 @@ import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
-    for (const key of Object.keys(context)) {
-      delete context[key]
-    }
-    vi.mocked(datadogRum.setGlobalContextProperty).mockImplementation(
-      (key, value) => {
-        context[key] = value
-      }
-    )
     fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
     vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(undefined)
     vi.stubGlobal('fetch', fetchMock)
@@ -67,7 +58,7 @@ describe('initDatadogRum', () => {
       })
     )
     vi.mocked(datadogRum.init).mockImplementation(() => {
-      expect(context).toEqual({
+      expect(datadogRum.getGlobalContext()).toEqual({
         bucket: 'canary',
         comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
         version: __COMFYUI_FRONTEND_COMMIT__
@@ -87,7 +78,7 @@ describe('initDatadogRum', () => {
     )
     await initialization
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       bucket: 'canary',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
@@ -118,7 +109,7 @@ describe('initDatadogRum', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(datadogRum.init).toHaveBeenCalledOnce()
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       bucket: 'canary',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
@@ -134,7 +125,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       bucket: 'stable',
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
@@ -150,7 +141,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
   })
@@ -167,7 +158,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
   })
@@ -177,7 +168,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
     expect(datadogRum.init).toHaveBeenCalledOnce()
@@ -188,7 +179,7 @@ describe('initDatadogRum', () => {
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
     expect(datadogRum.init).toHaveBeenCalledOnce()
@@ -210,7 +201,7 @@ describe('initDatadogRum', () => {
     abortController.abort()
     await initialization
 
-    expect(context).toEqual({
+    expect(datadogRum.getGlobalContext()).toEqual({
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__
     })
     expect(datadogRum.init).toHaveBeenCalledOnce()
