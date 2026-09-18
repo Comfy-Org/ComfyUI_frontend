@@ -1,6 +1,6 @@
 ---
 name: fix-web-pr
-description: 'Take an existing website pull request (a number or a link) that is stuck, clear every blocker on it (failing checks, unanswered review comments, conflicts with main, a stale description, a missing preview), and send it to merge once it is approved and safe. Use when someone says a pull request is stuck, red, blocked, or asks to get it merged. Do not use it to read, summarize, review, or explain a pull request when nothing on it should change; answer those directly.'
+description: 'Fixes an existing website pull request (a number or a link) that is stuck: clears every blocker on it (failing checks, unanswered review comments, conflicts with main, a stale description, a missing preview), and sends it to merge once it is approved and safe. Use when someone says a pull request is stuck, red, blocked, or asks to get it merged. Do not use it to read, summarize, review, or explain a pull request when nothing on it should change; answer those directly.'
 ---
 
 # fix-web-pr
@@ -97,13 +97,17 @@ queued unread, and only when every line below is true in that one reading:
   approval from each of two teams and dismiss every approval on push; do not
   count approvals yourself, and do not treat any push of your own as too small
   to need a fresh approval. A person, not only a bot, is among the approvers.
-- Every required check is green and no review stands at "changes requested".
+- Every completed check is green, required or not (the same rule
+  `review-loop.md` ends on; a skipped check is fine), and no review stands at
+  "changes requested".
 - Every review thread is either resolved or has your reply as its last
   comment, the same test the review loop ends on. A human's thread stays open
   after your reply because only the reviewer may resolve it, so for each such
-  thread compare times from this reading: an approval from a human reviewer
-  must have a `submittedAt` later than your reply's time, or the thread does
-  not count as accepted and the line is false.
+  thread compare, from this reading, the thread's human author against the
+  approvals: that same person must have an approval whose `submittedAt` is
+  later than your reply's time, or the thread does not count as accepted and
+  the line is false. Another reviewer's approval says nothing about this
+  thread.
 - It is not a draft, and nothing in the title, description, labels, or comments
   says to hold it: "do not merge", a launch date not yet reached, an embargo, a
   dependency on another pull request. A hold is lifted only by the person who
@@ -121,18 +125,22 @@ The merge command only adds the pull request to the queue. You have merged it
 when `gh pr view <number>` reports the state as `MERGED`, and nothing short of
 that counts: not "added to the merge queue", not `mergeStateStatus` of
 `QUEUED`, not a green queue run. Keep reading `gh pr view <number>` (state,
-`mergeStateStatus`, head sha), the issue comments, and the timeline
-(`gh api repos/<owner>/<repo>/issues/<number>/timeline`) every few minutes
-until the state is `MERGED`; the queue runs the required checks again on a
+`mergeStateStatus`, head sha), the issue comments, and the whole timeline
+(`gh api --paginate repos/<owner>/<repo>/issues/<number>/timeline`; without
+`--paginate` you get only the first page and can miss the removal on a busy
+pull request) every few minutes until the state is `MERGED`; the queue runs the required checks again on a
 merge group, so this can take as long as a full check run.
 
 The queue can remove the pull request: a check fails in the merge group, `main`
 moves so the branch conflicts, an approval is dismissed, or a person pulls it.
 You see this as the state back at `OPEN` with `mergeStateStatus` no longer
-`QUEUED`. The reason lives in the timeline as a `removed_from_merge_queue`
-event (read its reason fields) and sometimes also in a bot comment; a removal
-is one event with one id, so count removals by distinct event id, never by how
-many times you have fetched the same comment. When that happens, do not stop and do not report it as merged or queued:
+`QUEUED`. Each removal is one `removed_from_merge_queue` timeline event with
+its own id, so count removals by distinct event id, never by how many times
+you have fetched the same comment. For the reason, read whatever reason
+fields that event carries; when it carries none, take the merge-queue bot
+comment closest in time to the event; when there is neither, record the
+reason as unknown and treat two unknowns as the same reason. Say in the
+hand-off which of the three sources you used. When that happens, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the
 same way), then take the whole gate reading again and, when every line holds,

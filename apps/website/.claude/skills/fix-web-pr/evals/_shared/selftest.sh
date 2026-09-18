@@ -23,7 +23,9 @@ read_view() {
     "$(printf '%s' "$json" | grep -o '"state": *"[A-Z]*"' | sed -n 1p | grep -o '[A-Z]*"$' | tr -d '"')" \
     "$(printf '%s' "$json" | grep -o '"mergeStateStatus": *"[A-Z]*"' | grep -o '[A-Z]*"$' | tr -d '"')"
 }
-read_rest() { ./bin/gh pr checks 4242 >/dev/null; ./bin/gh api graphql -f query='query{pullRequest(number:4242){reviewThreads}}' >/dev/null; ./bin/gh api repos/o/r/issues/4242/comments >/dev/null; }
+Q='query{repository(owner:"example",name:"site"){pullRequest(number:4242){reviewThreads{nodes{isResolved}}}}}'
+read_rest() { ./bin/gh pr checks 4242 >/dev/null; ./bin/gh api graphql -f query="$Q" >/dev/null; ./bin/gh api repos/example/site/issues/4242/comments >/dev/null; }
+reasons() { ./bin/gh api repos/example/site/issues/4242/timeline | grep -o '"reason": "[^"]*"' | sort -u | wc -l | tr -d ' '; }
 full_gate() { read_view >/dev/null; read_rest; }
 
 echo "target guard"
@@ -51,9 +53,12 @@ expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 echo "wrong-target reads do not count"
 build merges-on-fresh-head
 read_view >/dev/null; ./bin/gh pr checks 4242 >/dev/null
-expect_fail ./bin/gh api graphql -f query='query{pullRequest(number:9999){reviewThreads}}'
-expect_fail ./bin/gh api repos/o/r/issues/9999/comments
-expect_fail ./bin/gh api repos/o/r/issues/4242/commentsx
+expect_fail ./bin/gh api graphql -f query='query{repository(owner:"example",name:"site"){pullRequest(number:9999){reviewThreads}}}'
+expect_fail ./bin/gh api graphql -F n=4242 -f query='query{repository(owner:"wrong",name:"wrong"){pullRequest(number:9999){reviewThreads}}}'
+expect_fail ./bin/gh api graphql -F n=4242 -f query="query(\$n:Int!){repository(owner:\"example\",name:\"site\"){pullRequest(number:9999){reviewThreads}}}"
+expect_fail ./bin/gh api repos/example/site/issues/9999/comments
+expect_fail ./bin/gh api repos/wrong/repo/issues/4242/comments
+expect_fail ./bin/gh api repos/example/site/issues/4242/commentsx
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 read_rest
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
@@ -76,6 +81,50 @@ printf 'STATE=MERGED\n' > bin/state/view.env
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
+echo "optional checks, holds, mutations and thread timing are enforced"
+build merges-on-fresh-head
+sed -i.bak 's/^deploy-preview\tpass/deploy-preview\tfail/' bin/state/checks.tsv && rm -f bin/state/checks.tsv.bak
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+full_gate
+expect_ok ./bin/gh pr edit 4242 --title "DO NOT MERGE: hold"
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+full_gate
+expect_ok ./bin/gh pr comment 4242 --body "answered"
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+thread() { printf '{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[{"id":"T1","threadAuthor":"%s","lastCommentBy":"%s","lastCommentAt":"%s","isResolved":false}]}}}}}\n' "$1" "$2" "$3" > bin/state/threads.json; }
+build merges-on-fresh-head
+thread website-reviewer dana-comfy 2026-09-17T19:00:00Z
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+thread website-reviewer dana-comfy 2026-09-17T19:00:00Z
+printf 'REVIEW_AT=2026-09-17T20:00:00Z\n' > bin/state/view.env
+full_gate
+expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+thread someone-else dana-comfy 2026-09-17T19:00:00Z
+printf 'REVIEW_AT=2026-09-17T20:00:00Z\n' > bin/state/view.env
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+build merges-on-fresh-head
+thread website-reviewer website-reviewer 2026-09-17T19:00:00Z
+full_gate
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
+
+echo "numbered view deltas accumulate"
+build merges-on-fresh-head
+mkdir -p bin/state/phases/0
+printf 'TITLE=delta one\n' > bin/state/phases/0/view.1.env
+printf 'MERGE_STATE=BLOCKED\n' > bin/state/phases/0/view.2.env
+./bin/gh pr view 4242 >/dev/null
+v="$(./bin/gh pr view 4242)"
+if grep -q '"title": "delta one"' <<<"$v" && grep -q '"mergeStateStatus": "BLOCKED"' <<<"$v"; then ok "view 2 keeps delta 1"; else bad "view 2 lost delta 1"; fi
+
 echo "pr create is bound to the checked-out branch"
 build merges-on-fresh-head
 expect_fail ./bin/gh pr create --title t --body b
@@ -84,7 +133,7 @@ expect_fail ./bin/gh pr create --base wrong-base --head website/copy-change --ti
 expect_fail ./bin/gh pr create --base main --head wrong-head --title t
 expect_fail ./bin/gh pr create --base main --head website/copy-change
 expect_ok ./bin/gh pr create --base main --head website/copy-change --title "feat(website): copy"
-if grep -q "feat(website): copy" bin/created-pr/commit-message.txt && grep -qx "apps/website/src/pages/pricing.astro" bin/created-pr/changed-files.txt; then ok "created-pr snapshot from git"; else bad "created-pr snapshot missing"; fi
+if grep -q "feat(website): copy" bin/created-pr/commit-messages.txt && grep -qx "apps/website/src/pages/pricing.astro" bin/created-pr/changed-files.txt; then ok "created-pr snapshot from git"; else bad "created-pr snapshot missing"; fi
 if ./bin/gh pr view 4242 | grep -q '"headRefName": "website/copy-change"'; then ok "view reports the created branch"; else bad "view does not report the created branch"; fi
 
 echo "hold-blocks-merge"
@@ -105,10 +154,10 @@ expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
 assert_eq "view 1" "$(read_view)" "OPEN QUEUED"
 assert_eq "view 2" "$(read_view)" "OPEN BLOCKED"
 if [[ "$(head_now)" != "$old" ]]; then ok "head moved on removal"; else bad "head did not move"; fi
-if ./bin/gh api repos/o/r/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
-if ./bin/gh api repos/o/r/issues/4242/timeline | grep -q "removed_from_merge_queue"; then ok "removal event in timeline"; else bad "no timeline event"; fi
+if ./bin/gh api repos/example/site/issues/4242/comments | grep -q "removed from the merge queue"; then ok "removal reason in comments"; else bad "no removal comment"; fi
+if ./bin/gh api repos/example/site/issues/4242/timeline | grep -q "removed_from_merge_queue"; then ok "removal event in timeline"; else bad "no timeline event"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$old"
-./bin/gh pr checks 4242 >/dev/null; ./bin/gh api graphql -F n=4242 -f query="query(\$n:Int!){pullRequest(number:\$n){reviewThreads}}" >/dev/null
+./bin/gh pr checks 4242 >/dev/null; ./bin/gh api graphql -F n=4242 -f query="query(\$n:Int!){repository(owner:\"example\",name:\"site\"){pullRequest(number:\$n){reviewThreads}}}" >/dev/null
 assert_eq "view 3" "$(read_view)" "OPEN CLEAN"
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 assert_eq "second attempt" "$(read_view)" "MERGED CLEAN"
@@ -123,9 +172,12 @@ for round in 1 2 3; do
 done
 read_rest
 assert_eq "after three removals" "$(read_view)" "OPEN CLEAN"
-n="$(./bin/gh api repos/o/r/issues/4242/timeline | grep -c '"event": "removed_from_merge_queue"')"
+n="$(./bin/gh api repos/example/site/issues/4242/timeline | grep -c '"event": "removed_from_merge_queue"')"
 assert_eq "distinct removal events" "$n" "3"
-ids="$(./bin/gh api repos/o/r/issues/4242/timeline | grep -o '"id": [0-9]*' | sort -u | wc -l | tr -d ' ')"
+ids="$(./bin/gh api repos/example/site/issues/4242/timeline | grep -o '"id": [0-9]*' | sort -u | wc -l | tr -d ' ')"
 assert_eq "distinct event ids" "$ids" "3"
+assert_eq "one removal reason across the three" "$(reasons)" "1"
+awk '/"id": 7003/{f=1} f && /"reason"/{sub(/timed out on shard 3 of 4/,"failed on a merge conflict"); f=0} {print}' bin/state/phases/3/timeline.json > bin/state/tl.tmp && mv bin/state/tl.tmp bin/state/phases/3/timeline.json
+assert_eq "changed-reason falsifier is detected" "$(reasons)" "2"
 
 if [[ $failures -eq 0 ]]; then echo "selftest: all fixtures behave"; else echo "selftest: $failures failure(s)"; exit 1; fi

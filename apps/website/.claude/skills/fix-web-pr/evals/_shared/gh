@@ -40,6 +40,9 @@ fail() { printf 'gh stand-in: %s\n' "$1" >&2; exit 1; }
 head_sha() { cat "$state/head_sha"; }
 pr_number() { cat "$state/pr_number"; }
 branch() { cat "$state/branch"; }
+owner() { cat "$state/owner"; }
+repo_name() { cat "$state/repo"; }
+login() { cat "$state/login"; }
 phase() { if [[ -f "$state/phase" ]]; then cat "$state/phase"; else echo 0; fi; }
 touch_gate() { mkdir -p "$gate"; : > "$gate/$1"; }
 reset_gate() { rm -rf "$gate"; mkdir -p "$gate"; }
@@ -61,12 +64,11 @@ fixture() {
 load_env() { local f; for f in "$@"; do [[ -f "$f" ]] || continue; while IFS='=' read -r k v; do [[ -n "$k" && "$k" != \#* ]] && printf -v "V_$k" '%s' "$v"; done < "$f"; done; }
 
 render_view() {
-  local p k i last="" envs=("$state/defaults.env" "$state/view.env")
+  local p k i envs=("$state/defaults.env" "$state/view.env")
   p="$(phase)"
   k="${1:-0}"
   [[ -f "$state/phases/$p/view.env" ]] && envs+=("$state/phases/$p/view.env")
-  for (( i=1; i<=k; i++ )); do [[ -f "$state/phases/$p/view.$i.env" ]] && last="$state/phases/$p/view.$i.env"; done
-  [[ -n "${last:-}" ]] && envs+=("$last")
+  for (( i=1; i<=k; i++ )); do [[ -f "$state/phases/$p/view.$i.env" ]] && envs+=("$state/phases/$p/view.$i.env"); done
   [[ -f "$state/merged.env" ]] && envs+=("$state/merged.env")
   load_env "${envs[@]}"
   sed -e "s#__TITLE__#$V_TITLE#" -e "s#__STATE__#$V_STATE#" -e "s#__MERGE_STATE__#$V_MERGE_STATE#" \
@@ -89,10 +91,10 @@ snapshot_created_pr() {
   [[ -f "$state/created_pr_branch" ]] || return 0
   local b; b="$(cat "$state/created_pr_branch")"
   mkdir -p "$here/created-pr"
-  git -C "$repo" log -1 --format=%B "$b" > "$here/created-pr/commit-message.txt" 2>/dev/null || true
-  git -C "$repo" diff --name-only "main...$b" > "$here/created-pr/changed-files.txt" 2>/dev/null || true
-  git -C "$repo" diff "main...$b" > "$here/created-pr/diff.patch" 2>/dev/null || true
-  git -C "$repo" rev-parse "$b" | tr -d '\n' > "$state/head_sha" 2>/dev/null || true
+  git -C "$repo" log --format='--- %h%n%B' "main..$b" > "$here/created-pr/commit-messages.txt"
+  git -C "$repo" diff --name-only "main...$b" > "$here/created-pr/changed-files.txt"
+  git -C "$repo" diff "main...$b" > "$here/created-pr/diff.patch"
+  git -C "$repo" rev-parse "$b" | tr -d '\n' > "$state/head_sha"
 }
 
 # Refuse a merge that the served state does not allow.
@@ -103,12 +105,38 @@ check_served_gate() {
   grep -q '"isDraft": *false' <<<"$view" || fail "merge refused: the pull request is a draft"
   grep -q '"reviewDecision": *"APPROVED"' <<<"$view" || fail "merge refused: reviewDecision is not APPROVED"
   grep -q '"mergeStateStatus": *"CLEAN"' <<<"$view" || fail "merge refused: mergeStateStatus is not CLEAN"
+  grep -qiE '"title": *"[^"]*(do not merge|don.t merge|DO NOT MERGE)' <<<"$view" && fail "merge refused: the title carries a hold"
   checks="$(fixture checks.tsv)"; req="$(fixture checks_required.tsv)"
+  while IFS=$'\t' read -r name status _rest; do
+    [[ -n "$name" ]] || continue
+    case "$status" in pass|skipping|skipped|pending) ;; *) fail "merge refused: check $name is $status; every completed check must pass" ;; esac
+  done < "$checks"
   while IFS=$'\t' read -r name _rest; do
     [[ -n "$name" ]] || continue
     status="$(awk -F'\t' -v n="$name" '$1==n{print $2}' "$checks")"
     [[ "$status" == "pass" ]] || fail "merge refused: required check $name is ${status:-missing}"
   done < "$req"
+  check_thread_timing "$view"
+}
+
+# Each unresolved thread whose last comment is ours needs an approval from
+# that thread's human author submitted after our comment. Threads are read
+# from the served threads.json, one node per line group with threadAuthor,
+# lastCommentBy, lastCommentAt and isResolved fields.
+check_thread_timing() {
+  local view="$1" tfile author by at resolved approved_at
+  tfile="$(fixture threads.json)"
+  while IFS='|' read -r author by at resolved; do
+    [[ -n "$author" ]] || continue
+    [[ "$resolved" == "true" ]] && continue
+    if [[ "$by" == "$(login)" ]]; then
+      approved_at="$(tr -d '\n' <<<"$view" | grep -oE "\"login\": *\"$author\" *\}, *\"state\": *\"APPROVED\", *\"submittedAt\": *\"[^\"]*\"" | grep -oE '"submittedAt": *"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort | tail -1)"
+      [[ -n "$approved_at" ]] || fail "merge refused: thread by $author is answered by us but $author has not approved"
+      [[ "$approved_at" > "$at" ]] || fail "merge refused: $author approved at $approved_at, before our reply at $at in their thread"
+    else
+      fail "merge refused: thread by $author has an unanswered last comment by $by"
+    fi
+  done < <(awk 'BEGIN{RS="}"} /"threadAuthor"/ {a="";b="";t="";r=""; if (match($0,/"threadAuthor": *"[^"]*"/)) a=substr($0,RSTART,RLENGTH); if (match($0,/"lastCommentBy": *"[^"]*"/)) b=substr($0,RSTART,RLENGTH); if (match($0,/"lastCommentAt": *"[^"]*"/)) t=substr($0,RSTART,RLENGTH); if (match($0,/"isResolved": *(true|false)/)) r=substr($0,RSTART,RLENGTH); gsub(/"[a-zA-Z]*": */,"",a); gsub(/"[a-zA-Z]*": */,"",b); gsub(/"[a-zA-Z]*": */,"",t); gsub(/"[a-zA-Z]*": */,"",r); gsub(/"/,"",a); gsub(/"/,"",b); gsub(/"/,"",t); print a"|"b"|"t"|"r}' "$tfile")
 }
 
 snapshot_created_pr
@@ -184,20 +212,47 @@ case "${1:-} ${2:-}" in
     echo "https://github.com/example/site/pull/$(pr_number)" ;;
   "pr comment"|"pr edit"|"pr review"|"pr ready"|"pr close"|"pr reopen")
     require_number "${3:-}"
-    echo "ok (stand-in recorded: $*)" ;;
+    if [[ "$2" == "edit" ]]; then
+      shift 3
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --title|-t) printf 'TITLE=%s\n' "${2:-}" >> "$state/view.env"; shift 2 ;;
+          *) shift ;;
+        esac
+      done
+    fi
+    reset_gate
+    echo "ok (stand-in recorded; gate invalidated)" ;;
   "api user")
     printf '{"login":"%s"}\n' "$(cat "$state/login")" ;;
   "api graphql")
-    if [[ "$*" =~ (number|n|pr)[\"\']?[[:space:]]*[:=][[:space:]]*[\"\']?$(pr_number)([^0-9]|$) ]]; then touch_gate threads; else fail "threads query does not name pull request #$(pr_number); pass it as a variable or literal"; fi
+    query=""; vars=""
+    shift 2
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        -f|--raw-field) [[ "${2:-}" == query=* ]] && query="${2#query=}"; [[ "${2:-}" != query=* ]] && vars="$vars ${2:-}"; shift 2 ;;
+        -F|--field) vars="$vars ${2:-}"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    [[ -n "$query" ]] || fail "threads query missing (-f query=...)"
+    q_owner="$(grep -oE 'owner: *"[^"]*"' <<<"$query" | head -1 | sed -E 's/.*"([^"]*)"/\1/')"
+    q_repo="$(grep -oE 'name: *"[^"]*"' <<<"$query" | head -1 | sed -E 's/.*"([^"]*)"/\1/')"
+    q_num="$(grep -oE 'pullRequest\(number: *([0-9]+|\$[A-Za-z_]+)' <<<"$query" | head -1 | sed -E 's/.*number: *//')"
+    if [[ "$q_num" == \$* ]]; then v="${q_num#\$}"; q_num="$(grep -oE "(^| )$v=[0-9]+" <<<"$vars" | head -1 | sed 's/.*=//')"; fi
+    [[ "$q_owner" == "$(owner)" && "$q_repo" == "$(repo_name)" ]] || fail "threads query targets ${q_owner:-?}/${q_repo:-?}, not $(owner)/$(repo_name)"
+    [[ "$q_num" == "$(pr_number)" ]] || fail "threads query resolves pullRequest(number: ${q_num:-?}), not #$(pr_number)"
+    touch_gate threads
     serve "$(fixture threads.json)" ;;
   api\ repos/*)
     path="${2%%\?*}"
+    prefix="repos/$(owner)/$(repo_name)"
     case "$path" in
-      repos/*/*/issues/$(pr_number)/comments) touch_gate comments; serve "$(fixture comments.json)" ;;
-      repos/*/*/issues/$(pr_number)/timeline) serve "$(fixture timeline.json)" ;;
-      repos/*/*/pulls/$(pr_number)/commits) serve "$(fixture commits.json)" ;;
-      repos/*/*/pulls/$(pr_number)/reviews) render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | sed -n '/"latestReviews"/,/\]/p' ;;
-      repos/*/issues/*|repos/*/pulls/*) fail "path $path does not name pull request #$(pr_number)" ;;
+      "$prefix/issues/$(pr_number)/comments") touch_gate comments; serve "$(fixture comments.json)" ;;
+      "$prefix/issues/$(pr_number)/timeline") serve "$(fixture timeline.json)" ;;
+      "$prefix/pulls/$(pr_number)/commits") serve "$(fixture commits.json)" ;;
+      "$prefix/pulls/$(pr_number)/reviews") render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | sed -n '/"latestReviews"/,/\]/p' ;;
+      repos/*/issues/*|repos/*/pulls/*) fail "path $path does not name $(owner)/$(repo_name) pull request #$(pr_number)" ;;
       *) fail "unsupported api path $path" ;;
     esac ;;
   "run view"|"run rerun")

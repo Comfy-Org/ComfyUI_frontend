@@ -18,22 +18,32 @@ cases ship a `fixture.sh` that calls `fix-web-pr/evals/_shared/scaffold.sh`. It
 builds a small git repository (signing disabled, `bin/` excluded from git),
 copies the website skills into place, and installs `_shared/gh`, a stand-in
 for the GitHub CLI that answers from `_shared/base/` overlaid with the case's
-`state/` overrides. The stand-in enforces what the skills must get right:
-every `gh pr` subcommand, mutating ones included, needs the pull request
-number, and a threads query or issue path that names another number does not
-count as a read; a merge needs `--match-head-commit` equal to the current
-head, a complete gate reading (`pr view`, `pr checks`, threads, comments) for
-this pull request since the last change, and served state that allows it
-(every required check `pass`, `APPROVED`, `CLEAN`, open, not a draft). The one
+`state/` overrides. The stand-in checks these conditions and nothing else:
+every `gh pr` subcommand, mutating ones included, names the pull request
+number; a threads query or REST path counts as a read only when its owner,
+repository and number are the fixture's; a merge carries
+`--match-head-commit` equal to the current head; since the last invalidation
+(a merge command, a head move, or any accepted mutation) `pr view`,
+`pr checks`, threads and comments were all read; and the served state allows
+the merge (every completed check `pass`, every required check present and
+`pass`, `APPROVED`, `CLEAN`, open, not a draft, no "do not merge" in the
+title, and for each unresolved thread the last comment is ours and the
+thread's own author approved after it). It does not check the body or labels
+for holds, unpublished routes, or whether the designer authorized the merge
+in the session; those are graded from the transcript and the final message
+by each case's `regex`, `tool_used`, `tool_order` and `llm` graders. The one
 `pr_view.json` is a template rendered from `defaults.env` plus each case's or
 phase's small `view.env` deltas, with the head filled in at serve time. A case
 may script phases under `state/phases/<n>/` so each merge command advances the
 fixture; `advance_head.<k>` moves the branch head on the k-th view of a phase,
 so a stale sha from an earlier reading no longer merges; comments and
 timeline events are cumulative with distinct ids. `pr create` must name the
-checked-out branch and `main`, and from then on every call snapshots that
-branch's commit message and diff into `bin/created-pr/` for the workflow
-graders. Every refusal starts with `merge refused`, and the merge cases grade
+checked-out branch and `main`, and from then on every call snapshots every
+`main..branch` commit message and the diff into `bin/created-pr/` for the
+workflow graders. The snapshot is only as fresh as the last `gh` call, so a
+commit made after the skill's final `gh pr view` is invisible to those
+graders; the hand-off's mandatory final read narrows that window but does not
+close it. Every refusal starts with `merge refused`, and the merge cases grade
 its absence from the transcript.
 
 `bash fix-web-pr/evals/_shared/selftest.sh` drives every fixture through its

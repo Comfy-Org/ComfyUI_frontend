@@ -1,6 +1,6 @@
 ---
 name: build-web-pr
-description: 'Take a comfy.org website request from a designer (a mock to match, a copy change, a new page, a visual bug) to a pull request that is green and answered, or to a clear hand-off naming what is still open and who must act. Loops on the live page until it matches, opens the pull request, then loops on review comments and failing checks. Use for any request to build, change, or fix something under apps/website.'
+description: 'Builds a comfy.org website change from a design-team request (a mock to match, a copy change, a new page, a visual bug) and takes it to a pull request that is green and answered, or to a clear hand-off naming what is still open and who must act. Loops on the live page until it matches, opens the pull request, then loops on review comments and failing checks. Use for any request to build, change, or fix something under apps/website.'
 ---
 
 # build-web-pr
