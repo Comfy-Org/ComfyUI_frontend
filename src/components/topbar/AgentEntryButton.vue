@@ -12,7 +12,12 @@
     :aria-pressed="active"
   >
     <i
-      class="icon-[lucide--astroid] size-3 transition-transform duration-300 ease-out group-hover:rotate-360 group-hover:duration-500 motion-reduce:transition-none"
+      :class="
+        cn(
+          'size-3 transition-transform duration-300 ease-out group-hover:rotate-360 group-hover:duration-500 motion-reduce:transition-none',
+          active ? 'icon-[comfy--astroid-filled]' : 'icon-[lucide--astroid]'
+        )
+      "
     />
     <span>{{ $t('agent.entryButton') }}</span>
   </Button>

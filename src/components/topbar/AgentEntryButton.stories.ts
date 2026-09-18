@@ -63,7 +63,7 @@ export const Active: Story = {
     docs: {
       description: {
         story:
-          'Panel open. The outline shine stops so the topbar is not animating while the agent is in use; the icon still turns on hover.'
+          'Panel open. The icon fills, so the pressed state reads without relying on the background alone. The outline shine stops as well, so the topbar is not animating while the agent is in use. The icon still turns on hover.'
       }
     }
   }
