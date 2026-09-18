@@ -241,11 +241,11 @@ describe('restricted syntax rules', () => {
     )
   })
 
-  it('warns on unknown double assertions and fixes partial literal fixtures', () => {
+  it('rejects unknown double assertions and fixes test fixtures', () => {
     const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
     expect(doubleAssertionFindings).toHaveLength(2)
     expect(
-      doubleAssertionFindings.every(({ severity }) => severity === 'warning')
+      doubleAssertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
 
     const fixture = path.join(probeDirs.source, 'doubleAssertion.test.ts')
@@ -263,7 +263,7 @@ describe('restricted syntax rules', () => {
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(0)
     expect(readFileSync(fixture, 'utf8')).toContain(
-      "const fixture = fromPartial<Fixture>({ value: 'ok' })"
+      "const fixture = fromAny<Fixture, unknown>({ value: 'ok' })"
     )
     expect(readFileSync(fixture, 'utf8')).toContain(
       'const unresolved = fromAny<Fixture, unknown>(value)'

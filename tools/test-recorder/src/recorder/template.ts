@@ -123,19 +123,13 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
   // If a future Playwright version removes/renames it, the catch below
   // falls back to an ordinary pause — recording still works, just without
   // the autosave.
-  interface RecorderEnabledContext {
-    _enableRecorder(params: {
-      language: string
-      mode: string
-      pauseOnNextStatement: boolean
-      outputFile: string
-    }): Promise<void>
-  }
   try {
+    const context = ${pageExpr}.context()
+    if (!('_enableRecorder' in context) || typeof context._enableRecorder !== 'function') {
+      throw new Error('Playwright recorder is unavailable')
+    }
     // eslint-disable-next-line no-underscore-dangle
-    await (
-      ${pageExpr}.context() as unknown as RecorderEnabledContext
-    )._enableRecorder({
+    await context._enableRecorder({
       language: 'playwright-test',
       // Standby: NOTHING is captured until the Record button is pressed.
       // Signing in, exploring, and getting set up all stay off the record —
