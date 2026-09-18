@@ -142,7 +142,7 @@ const status = computed(() => {
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <template v-else-if="group.kind === 'trace'">
-        <ActivityTrace v-if="message.streaming" :parts="activityParts" />
+        <ActivityTrace v-if="message.streaming" :parts="activityParts" live />
         <WorkSummary v-else :parts="activityParts" />
       </template>
       <div
