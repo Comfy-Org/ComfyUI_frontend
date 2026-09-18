@@ -96,20 +96,18 @@ const connections: Record<ConnectionId, CliConnection> = {
     tagline: t('cli.setup.connections.cloud.tagline', locale),
     installDescription: t('cli.setup.install.cloudDescription', locale),
     manualCommand: 'comfy setup --where cloud\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandCloud', locale).replace(
-      '{url}',
-      externalLinks.docsCliMd
-    )
+    agentCommand: t('cli.setup.agent.commandCloud', locale, {
+      url: externalLinks.docsCliMd
+    })
   },
   local: {
     name: t('cli.setup.connections.local.name', locale),
     tagline: t('cli.setup.connections.local.tagline', locale),
     installDescription: t('cli.setup.install.localDescription', locale),
     manualCommand: 'comfy setup\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandLocal', locale).replace(
-      '{url}',
-      externalLinks.docsCliMd
-    )
+    agentCommand: t('cli.setup.agent.commandLocal', locale, {
+      url: externalLinks.docsCliMd
+    })
   }
 }
 
@@ -126,17 +124,15 @@ function activeClientFor(connId: ConnectionId): CliClient {
 }
 
 function agentTitleFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.title', locale).replace(
-    '{client}',
-    activeClientFor(connId).name
-  )
+  return t('cli.setup.agent.title', locale, {
+    client: activeClientFor(connId).name
+  })
 }
 
 function agentDescriptionFor(connId: ConnectionId): string {
-  return t('cli.setup.agent.description', locale).replace(
-    '{client}',
-    activeClientFor(connId).name
-  )
+  return t('cli.setup.agent.description', locale, {
+    client: activeClientFor(connId).name
+  })
 }
 
 function isConnectionId(value: unknown): value is ConnectionId {

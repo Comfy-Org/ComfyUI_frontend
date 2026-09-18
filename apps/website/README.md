@@ -33,6 +33,45 @@ to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
 
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/main.json` in the same nested JSON
+layout and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', locale, { n })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `tPlural('cloudNodesLaunch.models.nodeCount', count, locale)`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'@'}` and `{'|'}`. A bare `@` fails to compile; a bare `|`
+  silently truncates the message at the pipe.
+
+`src/i18n/translations.ts` wraps a vue-i18n instance whose locale is passed
+explicitly on every call (`t(key, locale, named?)`), never switched globally,
+because the site is rendered statically per locale. Any key the requested
+locale lacks falls back to English. A unit test compiles every message in
+every locale, so a syntax mistake fails `pnpm test:unit` rather than a page.
+
+Add new copy to `src/locales/en/main.json` only. The other catalogs are
+written by the shared translation pipeline (`scripts/i18n/` at the repository
+root, selected with `--target website`):
+
+- `pnpm locale:check` reports strings that still need translating and fails on
+  translations whose placeholders no longer match the English source. It runs
+  in the shared lint/format CI job and needs a clone with full history (a
+  blobless partial clone works).
+- `pnpm locale` translates pending strings with OpenAI (`OPENAI_API_KEY`),
+  prunes keys removed from English, and records the English source it
+  translated in `src/locales/.source-manifest.json`. Maintainers usually run
+  it through the `i18n: Update Website` GitHub workflow instead.
+
+Hand-edited translations survive pipeline runs as long as the English string
+is unchanged; editing an English string re-queues that key in every locale.
+Oxfmt ignores the locale JSON so the pipeline stays the sole writer of those
+bytes.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
