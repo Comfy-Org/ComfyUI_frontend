@@ -7,6 +7,7 @@ import type {
   IngestSubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   BeginCheckoutMetadata,
@@ -152,7 +153,7 @@ const getTierFromStatus = (
 const getCycleFromStatus = (
   status: SubscriptionStatusSnapshot
 ): BillingCycle | null => {
-  if (status.subscription_duration === 'ANNUAL') {
+  if (isAnnualDuration(status.subscription_duration ?? undefined)) {
     return 'yearly'
   }
 
