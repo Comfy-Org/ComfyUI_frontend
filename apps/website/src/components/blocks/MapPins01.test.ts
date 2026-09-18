@@ -127,9 +127,10 @@ vi.mock(import('leaflet'), () => {
     return record
   }
   const popup = () => {
+    const content: HTMLElement = document.createElement('div')
     const record = {
       latLng: undefined as unknown,
-      content: fromAny<HTMLElement, unknown>(undefined),
+      content,
       setLatLng(latLng: unknown) {
         record.latLng = latLng
         return record
