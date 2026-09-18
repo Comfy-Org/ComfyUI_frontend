@@ -26,6 +26,84 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it('slows the estimated meter at 95% and waits for a real result', async () => {
+    const { rerender } = render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedance',
+        state: { status: 'running', startedAt: 1_000 },
+        now: 61_000,
+        estimatedSeconds: 120
+      }
+    })
+    const progress = screen.getByRole('progressbar', {
+      name: 'Estimated generation progress'
+    })
+    expect(progress).toHaveAttribute('aria-valuenow', '48')
+    expect(screen.getByText('Estimated time: 2 min')).toBeVisible()
+    expect(screen.getByTestId('run-elapsed')).toHaveTextContent('1:00')
+
+    await rerender({ now: 121_000 })
+    expect(progress).toHaveAttribute('aria-valuenow', '95')
+    await rerender({ now: 601_000 })
+    expect(progress).toHaveAttribute('aria-valuenow', '99')
+    expect(
+      screen.getByText(
+        'Taking longer than estimated. Still waiting for the result.'
+      )
+    ).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent('Generating')
+
+    await rerender({
+      state: {
+        ...succeeded(output('ready')),
+        completedAt: 601_000,
+        expiresAt: 999_000
+      }
+    })
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('Generation complete.')
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://example.com/ready.webp'
+    )
+  })
+
+  it.for([
+    { status: 'cancelled' },
+    { status: 'failed', reason: 'provider', fieldErrors: {} }
+  ] as const)(
+    'removes the estimated meter on $status and resets it on a new run',
+    async (state) => {
+      const { rerender } = render(PlaygroundOutput, {
+        props: {
+          modelName: 'Seedance',
+          state: { status: 'running', startedAt: 1_000 },
+          now: 121_000,
+          estimatedSeconds: 120
+        }
+      })
+      await rerender({ state })
+      expect(screen.queryByRole('progressbar')).toBeNull()
+      await rerender({ state: { status: 'running', startedAt: 121_000 } })
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '0'
+      )
+    }
+  )
+
+  it('keeps an untimed model indeterminate without inventing an estimate', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Untimed',
+        state: { status: 'running', startedAt: 1_000 },
+        now: 61_000
+      }
+    })
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.getByTestId('run-elapsed')).toHaveTextContent('1:00')
+  })
+
   it('contains focus in the expanded image and restores it on Escape', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

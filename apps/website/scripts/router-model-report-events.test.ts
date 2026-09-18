@@ -173,6 +173,7 @@ describe('public Router result events', () => {
       at,
       phase: 'generation',
       status: 'passed',
+      elapsedMs: 74_140,
       artifacts: [
         {
           kind: 'image',
@@ -187,6 +188,7 @@ describe('public Router result events', () => {
     })
     expect(update?.live).toMatchObject({
       status: 'passed',
+      elapsedMs: 74_140,
       artifacts: [{ kind: 'image', width: 64, height: 64, bytes: 100 }]
     })
     expect(JSON.stringify(update)).not.toMatch(/private|signed/)

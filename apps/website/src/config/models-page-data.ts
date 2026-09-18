@@ -42,6 +42,7 @@ const modelSchema = z.object({
 const detailSchema = generatedModelSchema
   .extend(modelSchema.shape)
   .extend({
+    estimatedSeconds: z.number().int().positive().optional(),
     nodeDisplayName: z.string().optional(),
     execution: workshopContractSchema.optional()
   })

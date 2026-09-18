@@ -901,6 +901,7 @@ function useInCode() {
           :attachments
           :now
           :model-name="model.name"
+          :estimated-seconds="model.estimatedSeconds"
           :modality="model.modality"
           :locale
           :member-workspace="
