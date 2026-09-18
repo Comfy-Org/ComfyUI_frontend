@@ -38,8 +38,10 @@ Read all of these fresh: `gh pr view <number>` with title, draft state,
 author, labels, body, review decision, merge state, and head sha; the file
 list; every commit's author and message; `gh pr checks <number>`; the review
 threads with their resolved state; and the issue comments. Run
-`gh pr checkout <number>`, then compare the description against
-`git diff origin/main...HEAD` line by line; a description that claims something
+`gh pr checkout <number>`, read the pull request's `baseRefName`, fetch that
+branch (`git fetch origin <base>`) so the comparison is against the live
+base, then compare the description against
+`git diff origin/<base>...HEAD` line by line; a description that claims something
 the diff does not show is a blocker, and the diff is the truth. Open the
 preview address and look at the pages the pull request changes.
 
@@ -53,8 +55,11 @@ and carry on without waiting.
 ## Clear the blockers
 
 When the reading shows a current approval, the pull request is not stuck on
-its comments: answer them in their threads, leave the code alone, and go to
-the gate. A push here dismisses the approval and costs a fresh review from
+its comments: answer them in their threads and leave the code alone. Each
+thread you answered now needs its author's approval dated after your reply
+(the approval that exists is earlier), so name that person and that approval
+as the remaining person-only blocker, wait for it, and only then take the
+gate reading. A push here dismisses the approval and costs a fresh review from
 both teams; make one only when a reviewer says a comment blocks or a comment
 shows the change is unsafe to ship, and say in the hand-off why you spent the
 approval. Without an approval, run the loop in `review-loop.md`,
@@ -71,9 +76,9 @@ investigators and all, with one push per round. Three rules are specific to a pu
   commits and leave history alone; when that cannot clear the blocker, as with
   an AI trailer in someone else's commit, escalate to the branch's author with
   the exact command from `git-workflow.md` in the forward-to-an-engineer block.
-- After any push, regenerate the description from the diff, keeping the
-  author's summary of intent and correcting every statement the diff
-  contradicts.
+- After any push, fetch the base branch again and regenerate the description
+  from `git diff origin/<base>...HEAD`, keeping the author's summary of
+  intent and correcting every statement the diff contradicts.
 
 ## Merge, or name who it waits on
 
@@ -119,8 +124,11 @@ queued unread, and only when every line below is true in that one reading:
 - It is not a draft, and nothing in the title, description, labels, or comments
   says to hold it: "do not merge", a launch date not yet reached, an embargo, a
   dependency on another pull request. A hold is lifted only by the person who
-  set it or by the designer telling you so in this session, never by your
-  judgement that the date has probably passed.
+  set it, in writing on the pull request; the designer can lift a hold they
+  set themselves and no one else's (a partner embargo or a maintainer's
+  dependency hold is theirs to lift, whatever the designer says), and a date
+  having probably passed lifts nothing. When the hold's owner is unclear, the
+  hold stands and the owner question goes to a person.
 - The diff contains nothing the description or a partner rule says must stay
   unpublished. Check every new route by loading it on the preview.
 - The designer asked for it to be merged, in this session. "Fix it" or

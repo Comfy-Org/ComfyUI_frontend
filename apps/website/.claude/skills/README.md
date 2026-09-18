@@ -26,9 +26,9 @@ a self-test case:
 - The threads read counts only when the query equals, ignoring whitespace,
   the query `review-loop.md` prints (the self-test extracts the published
   read, reply and resolve commands from that file and runs them as written,
-  the reply body read from a file and compared byte for byte after a
-  multiline body with an apostrophe, quotes, a dollar sign, a backslash and
-  the old heredoc delimiter), is run with `--paginate`, and its
+  the reply body read from a file with `-F body=@file` and compared with
+  `cmp` after a multiline body with an apostrophe, quotes, a dollar sign, a
+  backslash, one and two trailing newlines; `-f body=@file` stays literal), is run with `--paginate`, and its
   `owner`, `name` and `number` variables match the fixture. Thread author
   and last comment come from the aliased `first` and `last` fields.
 - A reply or resolve counts only when the mutation equals, ignoring
@@ -56,9 +56,11 @@ a self-test case:
   `bin/created-pr/`, so the workflow graders read the branch's final state.
 
 It does not check the body or labels for holds, unpublished routes, or
-whether the designer authorized the merge in the session; those are graded
-from the transcript and the final message by each case's `regex`,
-`tool_used`, `tool_order` and `llm` graders. The one `pr_view.json` is a
+whether the designer authorized the merge in the session. No case grades
+those yet either: every merge prompt authorizes the merge and the only hold
+case uses the title. Model-facing falsifiers for a body, label or comment
+hold, an unpublished route, and a request that says only "fix" or "unblock"
+are owed, alongside the first runs of the six Bash-granting cases. The one `pr_view.json` is a
 template rendered from `defaults.env` plus each case's or phase's small
 `view.env` deltas, with the head filled in at serve time. A case may script
 phases under `state/phases/<n>/` so each merge command advances the fixture;

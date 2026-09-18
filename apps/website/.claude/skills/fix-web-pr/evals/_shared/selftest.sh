@@ -186,7 +186,14 @@ expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OL
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
 nasty_body="$(printf "It's fixed: the stale copy is gone, and \"quotes\" survive\nREPLY\n\$HOME and a back\\slash, a | pipe and an & ampersand\nlast line, no newline")"
 expect_ok published_reply T1 "$nasty_body"
-if [[ "$(cat bin/state/last-reply-body.txt)" == "$nasty_body" ]]; then ok "reply body received byte for byte (multiline, apostrophe, quotes, dollar, backslash, delimiters)"; else bad "reply body altered in transit"; fi
+if cmp -s bin/reply-body.txt bin/state/last-reply-body.txt; then ok "reply body received byte for byte (multiline, apostrophe, quotes, dollar, backslash, delimiters)"; else bad "reply body altered in transit"; fi
+for nl in 1 2; do printf 'trailing newlines%s' "$(printf '\n%.0s' $(seq "$nl"))" > bin/reply-body.txt; expect_ok published_reply T1 "$(cat bin/reply-body.txt)"; done
+printf 'two trailing\n\n' > bin/reply-body.txt
+cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=T1; bodyFile=$PWD/bin/reply-body.txt|")"
+env PATH="$PWD/bin:$PATH" bash -c "$cmd" >/dev/null
+if cmp -s bin/reply-body.txt bin/state/last-reply-body.txt; then ok "two trailing newlines preserved"; else bad "trailing newlines lost"; fi
+expect_ok ./bin/gh api graphql -F threadId=T1 -f body="@$PWD/bin/reply-body.txt" -f query="$REPLY_Q"
+if [[ "$(cat bin/state/last-reply-body.txt)" == "@$PWD/bin/reply-body.txt" ]]; then ok "-f body=@file is taken literally"; else bad "-f body=@file was dereferenced"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 if read_all_threads | jq -e '.[0].last.nodes[0].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
 # shellcheck disable=SC2016

@@ -162,7 +162,8 @@ parse_api_args() {
   shift 1
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -f|--raw-field|-F|--field) api_fields+=("${2:-}"); shift 2 ;;
+      -f|--raw-field) api_fields+=("raw:${2:-}"); shift 2 ;;
+      -F|--field) api_fields+=("typed:${2:-}"); shift 2 ;;
       --paginate) api_paginate=1; shift ;;
       -X|--method|-H|--header|--jq|-q|--template|-t|--input|--cache) shift 2 ;;
       -*) shift ;;
@@ -170,19 +171,21 @@ parse_api_args() {
     esac
   done
 }
-# -F key=@file reads the value from the file, as gh does.
-field() { local f v; for f in "${api_fields[@]}"; do if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$v" == @* ]]; then cat "${v#@}"; else printf '%s' "$v"; fi; return; fi; done; printf ''; }
+# -F key=@file reads the value from the file, as gh does; -f never does.
+# Prints the value with a trailing marker so callers can keep trailing
+# newlines: use field_file to get it into a file byte for byte.
+field() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cat "${v#@}"; else printf '%s' "$v"; fi; return; fi; done; printf ''; }
+field_file() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cp "${v#@}" "$2"; else printf '%s' "$v" > "$2"; fi; return; fi; done; : > "$2"; }
 
 graphql() {
-  local query owner_v name_v number_v thread_id body
+  local query owner_v name_v number_v thread_id
   query="$(field query)"
   [[ -n "$query" ]] || fail "graphql: query missing (-f query=...)"
   if [[ "$(squash "$query")" == "$(squash "$CANONICAL_REPLY_MUTATION")" ]]; then
     require_bindings "$query"
-    thread_id="$(field threadId)"; body="$(field body)"
-    [[ -n "$thread_id" && -n "$body" ]] || fail "reply mutation needs -F threadId=<id> and -f body=<text>"
+    thread_id="$(field threadId)"; field_file body "$state/last-reply-body.txt"
+    [[ -n "$thread_id" && -s "$state/last-reply-body.txt" ]] || fail "reply mutation needs -F threadId=<id> and -F body=@<file>"
     jq -e --arg t "$thread_id" '.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)' "$(fixture threads.json)" >/dev/null || fail "no review thread with id $thread_id"
-    printf '%s' "$body" > "$state/last-reply-body.txt"
     jq --arg t "$thread_id" --arg me "$(login)" --arg at "2026-09-17T21:00:00Z" \
       '(.data.repository.pullRequest.reviewThreads.nodes[] | select(.id == $t)).last.nodes = [{"author":{"login":$me},"createdAt":$at}]' \
       "$(fixture threads.json)" > "$state/threads.live.json.tmp" && mv "$state/threads.live.json.tmp" "$state/threads.live.json"

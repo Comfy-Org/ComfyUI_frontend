@@ -35,8 +35,11 @@ A thread's author is the author of its `first` comment; its last comment is
 the `last` node, whatever the thread's length. Reply in a thread and resolve
 one with these two commands, exactly as written, after setting `threadId` to
 the thread's `id` from the query and writing your reply, any characters over
-any number of lines, to a file (use your file-writing tool; the shell never
-sees the text):
+any number of lines, to a new file under `/temp/` named for the thread (use
+your file-writing tool; the shell never sees the text). `/temp/` is
+git-ignored in this repository; delete the file right after the command,
+whether it succeeded or failed, so reviewer text never sits in the checkout
+or reaches a commit:
 
 ```bash
 threadId=<id>; bodyFile=<path to the file holding your reply>
@@ -96,7 +99,8 @@ sides are inside files changed for this task; anything else is an escalation.
 Apply all of a round's fixes together and push once, because every push
 restarts every check, dismisses every approval, and quick pushes make the
 review bot pause. After any push that changed what the pull request contains,
-regenerate the description from `git diff origin/main...HEAD`. When a review
+fetch the base branch and regenerate the description from
+`git diff origin/<base>...HEAD`. When a review
 bot's "changes requested" still stands after its threads are answered, follow
 "CodeRabbit is blocking" in `git-workflow.md`.
 
