@@ -120,7 +120,9 @@ export function registerAgentPanelExtension(): void {
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         if (!prepareAutoShow(key)) return
 
+        const offeredIdentity = consentStore.identity
         autoShowInFlight = true
+        agentPanelStore.suppressRestoredOpen()
         void withConsent(
           () => {
             if (!agentPanelStore.enabled) return
@@ -131,6 +133,7 @@ export function registerAgentPanelExtension(): void {
           }
         ).finally(() => {
           autoShowInFlight = false
+          if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
         })
       }
 

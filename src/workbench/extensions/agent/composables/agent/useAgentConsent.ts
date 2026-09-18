@@ -95,7 +95,10 @@ export function useAgentConsent() {
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
-          onVnodeMounted: onShown,
+          onVnodeMounted: () => {
+            if (expectedIdentity && identity.value !== expectedIdentity) return
+            onShown?.()
+          },
           onAccept: () => void accept(),
           onReject: () => closeWith(false)
         },

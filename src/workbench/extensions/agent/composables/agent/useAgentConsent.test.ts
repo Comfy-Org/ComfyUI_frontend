@@ -232,6 +232,54 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { scope: 'account', user: null, workspaceId: 'workspace-a' },
+    {
+      scope: 'workspace',
+      user: { id: 'account-a' },
+      workspaceId: 'workspace-b'
+    }
+  ])(
+    'does not consume the automatic offer when the $scope changes before mount',
+    async ({ user, workspaceId }) => {
+      const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
+      vi.spyOn(
+        useCurrentUser().resolvedUserInfo,
+        'value',
+        'get'
+      ).mockImplementation(() => currentUser.value)
+      const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
+      const onOpen = vi.fn()
+      const request = useAgentConsent().withConsent(onOpen, () => {
+        localStorage.setItem(key, 'true')
+      })
+      const dialog = await waitForConsentDialog()
+      currentUser.value = user
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: workspaceId })
+
+      render(
+        defineComponent({
+          setup: () => () => h(dialog.component, dialog.contentProps)
+        }),
+        { global: { plugins: [i18n] } }
+      )
+      expect(
+        await screen.findByRole('heading', {
+          name: i18n.global.t('agent.consent.title')
+        })
+      ).toBeInTheDocument()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.consent.reject')
+        })
+      )
+      await request
+
+      expect(localStorage.getItem(key)).toBeNull()
+      expect(onOpen).not.toHaveBeenCalled()
+    }
+  )
+
   it('keeps the card retryable and the panel closed when saving fails', async () => {
     fetchWithUnifiedRemint
       .mockResolvedValueOnce(settingResponse(false))

@@ -11,6 +11,7 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 import type { ComfyExtension } from '@/types/comfy'
 import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -43,6 +44,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
@@ -170,15 +172,34 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  it('offers the consent card without a click when the account has not accepted', async () => {
+  it('attributes automatic acceptance with a restored open preference to the consent card', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
+    const trackAgentPanelOpened = vi.fn()
+    vi.mocked(useTelemetry).mockReturnValue(
+      fromPartial<NonNullable<ReturnType<typeof useTelemetry>>>({
+        trackAgentPanelOpened
+      })
+    )
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (onAccept, onShown) => {
+        onShown?.()
+        await Promise.resolve().then(() => {
+          Object.assign(consentStore, { accepted: true })
+        })
+        onAccept()
+      }
+    )
+    expect(agentStore.isOpen).toBe(true)
 
     await loadEntryAndSetup()
-    await flush()
+    await vi.waitFor(() => expect(agentStore.isVisible).toBe(true))
 
     expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('automatic_consent')
+    expect(trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
+      source: 'automatic_consent'
+    })
   })
 
   it('keeps the panel closed if the feature is disabled before acceptance', async () => {
@@ -267,6 +288,53 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      outcome: 'succeeds',
+      load: () => Promise.resolve(false),
+      offers: 2,
+      shown: 'true'
+    },
+    {
+      outcome: 'fails',
+      load: () => Promise.reject(new Error('offline')),
+      offers: 1,
+      shown: null
+    }
+  ])(
+    'rechecks a missed account change once when the next consent load $outcome',
+    async ({ load, offers, shown }) => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let finish = () => {}
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      vi.mocked(useAgentConsent().withConsent).mockReturnValueOnce(pending)
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      )
+      vi.mocked(consentStore.load).mockClear()
+      currentUser.value = { id: 'account-b' }
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+
+      vi.mocked(consentStore.load).mockImplementation(load)
+      finish()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledTimes(2))
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(offers)
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentConsent.AutoShown.account-b.workspace-a'
+        )
+      ).toBe(shown)
+    }
+  )
 
   it.for([
     { userId: 'account-b', workspaceId: 'workspace-a' },
