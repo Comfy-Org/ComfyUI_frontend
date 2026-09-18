@@ -24,8 +24,9 @@ a self-test case:
 - Every `gh pr` subcommand, mutating ones included, names the pull request
   number.
 - The threads read counts only when the query equals, ignoring whitespace,
-  the query `review-loop.md` prints (the self-test runs the published
-  commands themselves, extracted from that file), is run with `--paginate`, and its
+  the query `review-loop.md` prints (the self-test extracts the published
+  read, reply and resolve commands from that file and runs them as written,
+  the reply with an apostrophe, quotes and a dollar sign in the body), is run with `--paginate`, and its
   `owner`, `name` and `number` variables match the fixture. Thread author
   and last comment come from the aliased `first` and `last` fields.
 - A reply or resolve counts only when the mutation equals, ignoring
@@ -64,8 +65,13 @@ and timeline events are cumulative with distinct ids. Every refusal starts
 with `merge refused`, and the merge cases grade its absence from the
 transcript.
 
-`bash fix-web-pr/evals/_shared/selftest.sh` drives every fixture through its
-expected sequence with the stand-in alone and costs nothing: the target
+`bash fix-web-pr/evals/_shared/selftest.sh` costs nothing and covers three
+things: it scaffolds every fixture under both skills and checks the stand-in
+is installed; it checks every markdown file under the skill tree for balanced
+code fences; and it drives the five stateful `fix-web-pr` sequences
+(`hold-blocks-merge`, `queued-is-not-merged`, `requeues-after-pop`,
+`escalates-after-three-removals`, and `merges-on-fresh-head` as the base for
+the rule checks) through the stand-in: the target
 guard, the gate, wrong-target and wrong-shape reads, mutations of the served
 state (a failed required check, a failed or pending optional check, blocked,
 changes requested, already merged, a hold edited into the title), thread

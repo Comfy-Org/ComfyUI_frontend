@@ -47,12 +47,17 @@ read_rest() { ./bin/gh pr checks 4242 >/dev/null; ./bin/gh pr checks 4242 --requ
 # exercises what the skill prints rather than a copy.
 skills_dir="$(cd "$evals/../.." && pwd)"
 loop_md="$skills_dir/build-web-pr/review-loop.md"
-published_block() { awk '/^```bash/{n++; next} n==2&&/^```$/{exit} n==2{print}' "$loop_md" | grep -v '^threadId=<id>'; }
-published_reply_cmd() { published_block | awk 'NF==0{exit} {print}'; }
-published_resolve_cmd() { published_block | awk 'f{print} NF==0{f=1}'; }
-published_reply() { local threadId="$1" body="$2" cmd; cmd="$(published_reply_cmd)"; env PATH="$PWD/bin:$PATH" threadId="$threadId" body="$body" bash -c "$cmd"; }
-published_resolve() { local threadId="$1" cmd; cmd="$(published_resolve_cmd)"; env PATH="$PWD/bin:$PATH" threadId="$threadId" bash -c "$cmd"; }
-md_fences_balanced() { local f n; for f in "$skills_dir"/*/*.md "$skills_dir"/*.md "$skills_dir/../../AGENTS.md"; do n="$(grep -c '^```' "$f" || true)"; if (( n % 2 )); then bad "unbalanced code fence in $f"; fi; if grep -q '^````' "$f"; then bad "four-backtick fence in $f"; fi; done; ok "markdown fences balanced in every skill file"; }
+# fence N of review-loop.md, verbatim
+published_fence() { awk -v want="$1" '/^```bash/{n++; next} n==want&&/^```$/{exit} n==want{print}' "$loop_md"; }
+# The published thread read, with the placeholder assignment line replaced by real values.
+published_threads_read() { local cmd; cmd="$(published_fence 1 | sed "s/^owner=<owner>; name=<repo>; number=<number>$/owner=$1; name=$2; number=$3/")"; env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
+# The published reply, with the placeholder id and the heredoc body replaced; the body is
+# passed as a file so any characters, apostrophes included, go through the documented setup.
+published_reply() { local threadId="$1" body="$2" cmd; printf '%s' "$body" > "$PWD/bin/reply-body.txt"
+  cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s/^threadId=<id>$/threadId=$threadId/" | sed "s|^<your reply.*>$|$(sed 's/[&|]/\\&/g' "$PWD/bin/reply-body.txt")|")"
+  env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
+published_resolve() { local threadId="$1" cmd; cmd="$(published_fence 2 | awk 'f{print} NF==0{f=1}')"; env PATH="$PWD/bin:$PATH" threadId="$threadId" bash -c "$cmd"; }
+md_fences_balanced() { local f n c=0; while IFS= read -r f; do c=$((c+1)); n="$(grep -c '^```' "$f" || true)"; if (( n % 2 )); then bad "unbalanced code fence in $f"; fi; if grep -q '^````' "$f"; then bad "four-backtick fence in $f"; fi; done < <(find "$skills_dir" "$skills_dir/../../AGENTS.md" -name '*.md' -not -path '*/results/*' | sort); ok "markdown fences balanced in $c markdown files under the skill tree"; }
 md_fences_balanced
 reasons() { ./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.reason) | unique | length'; }
 full_gate() { read_view >/dev/null; read_rest; }
@@ -180,7 +185,7 @@ full_gate
 OLD_REPLY_Q='mutation($t:ID!,$b:String!){addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$t,body:$b}){comment{id}}}'
 expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OLD_REPLY_Q"
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
-expect_ok published_reply T1 "Fixed the stale copy in place"
+expect_ok published_reply T1 "It's fixed: the stale copy is gone, and \"quotes\" survive"
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 if read_all_threads | jq -e '.[0].last.nodes[0].author.login == "dana-comfy"' >/dev/null; then ok "reply recorded as the thread's last comment"; else bad "reply not recorded"; fi
 # shellcheck disable=SC2016
@@ -209,6 +214,7 @@ build merges-on-fresh-head
 { thread_node T1 website-reviewer website-reviewer 2026-09-17T17:00:00Z true; thread_node T2 website-reviewer website-reviewer 2026-09-17T17:00:00Z true; thread_node T3 frontend-reviewer frontend-reviewer 2026-09-17T19:00:00Z; } | threads_file
 pages="$(threads_read example site 4242 | wc -l | tr -d ' ')"
 assert_eq "threads: one document per page" "$pages" "2"
+assert_eq "published thread read matches the copy the tests use" "$(published_threads_read example site 4242 | wc -l | tr -d ' ')" "2"
 assert_eq "threads: pages compose in order" "$(read_all_threads | jq -c 'map(.id)')" '["T1","T2","T3"]'
 assert_eq "threads: page one says there is a next page" "$(threads_read example site 4242 | head -1 | jq -c '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')" "true"
 full_gate
@@ -257,6 +263,9 @@ if [[ -f bin/created-pr/commit-messages.txt ]]; then ok "post-checkout hook rege
 git checkout -q -b side main && echo s > side.ts && git add side.ts && git commit -q -m "chore: side" && git checkout -q website/copy-change && git merge -q --no-ff -m "chore: merge side" side
 if grep -q "chore: merge side" bin/created-pr/commit-messages.txt && grep -qx "side.ts" bin/created-pr/changed-files.txt; then ok "post-merge hook refreshed the snapshot"; else bad "post-merge hook did not run"; fi
 if ./bin/gh pr view 4242 | grep -q '"headRefName": "website/copy-change"'; then ok "view reports the created branch"; else bad "view does not report the created branch"; fi
+
+echo "every fixture scaffolds"
+while IFS= read -r fx; do d="$(dirname "$fx")"; w="$tmp/scaffold-$(basename "$d")"; rm -rf "$w"; mkdir -p "$w"; if (cd "$w" && bash "$fx" >/dev/null 2>&1 && test -x bin/gh && test -f bin/state/pr_number); then ok "scaffolds: $(basename "$(dirname "$d")")/$(basename "$d")"; else bad "scaffold failed: $fx"; fi; done < <(find "$skills_dir" -name fixture.sh -not -path '*/results/*' | sort)
 
 echo "hold-blocks-merge"
 build hold-blocks-merge

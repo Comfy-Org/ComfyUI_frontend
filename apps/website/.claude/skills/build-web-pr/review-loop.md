@@ -37,7 +37,10 @@ one with these two commands, exactly as written, after setting `threadId` to
 the thread's `id` from the query and `body` to your reply:
 
 ```bash
-threadId=<id>; body='<your reply>'
+threadId=<id>
+IFS= read -r -d '' body <<'REPLY' || true
+<your reply, any characters, over as many lines as you like>
+REPLY
 gh api graphql -F threadId="$threadId" -f body="$body" -f query='
 mutation($threadId:ID!,$body:String!){
   addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'
