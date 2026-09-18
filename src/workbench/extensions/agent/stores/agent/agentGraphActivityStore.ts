@@ -5,7 +5,7 @@ import type { NodeId } from '@/types/nodeId'
 
 const SETTLE_MS = 1_000
 
-export interface AgentGraphTarget {
+interface AgentGraphTarget {
   workflowId: string
   rootGraphId: string
 }
