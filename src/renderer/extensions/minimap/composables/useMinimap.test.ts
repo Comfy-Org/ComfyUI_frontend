@@ -249,10 +249,6 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    // Callbacks registered by an earlier test belong to a torn-down pinia, and
-    // triggerRAF() drives every entry in the map.
-    for (const id of Object.keys(rafCallbacks)) delete rafCallbacks[id]
-
     setupVueUseMocks()
     registerMockLink(1, 'node2')
 

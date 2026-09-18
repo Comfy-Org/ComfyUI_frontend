@@ -3,18 +3,8 @@ import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-import { agentHighlightAt } from './agentHighlight'
-import type { AgentHighlight } from './agentHighlight'
 import { MinimapDataSource } from './data/MinimapDataSource'
 import type { MinimapNodeData, MinimapRenderContext } from './types'
-
-/** Screen pixels the halo travels beyond the node as it pops in. */
-const AGENT_HALO_PX = 5
-/**
- * Agent nodes stay findable on a graph large enough to render every node as a
- * sub-pixel speck, which is exactly when a new one is hardest to spot.
- */
-const AGENT_MIN_MARKER_PX = 3
 
 /**
  * Get theme-aware colors for the minimap
@@ -24,7 +14,7 @@ function getMinimapColors() {
   const isLightTheme = colorPaletteStore.completedActivePalette.light_theme
 
   return {
-    nodeColor: isLightTheme ? '#31B9F4' : '#0B8CE9',
+    nodeColor: isLightTheme ? '#3DA8E099' : '#0B8CE999',
     nodeColorDefault: isLightTheme ? '#D9D9D9' : '#353535',
     linkColor: isLightTheme ? '#616161' : '#B3B3B3',
     slotColor: isLightTheme ? '#616161' : '#B3B3B3',
@@ -34,7 +24,6 @@ function getMinimapColors() {
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
-    agentColor: isLightTheme ? '#FD9903' : '#FDAB34',
     isLightTheme
   }
 }
@@ -98,52 +87,6 @@ function renderGroups(
   }
 }
 
-interface AgentHighlightEntry {
-  x: number
-  y: number
-  w: number
-  h: number
-  highlight: AgentHighlight
-}
-
-/**
- * Draw the agent treatment over the ordinary fill: a gold block that scales up
- * behind an expanding halo and then holds, marking the node as the agent's for
- * as long as it exists.
- */
-function renderAgentHighlights(
-  ctx: CanvasRenderingContext2D,
-  entries: readonly AgentHighlightEntry[],
-  colors: ReturnType<typeof getMinimapColors>
-) {
-  ctx.fillStyle = colors.agentColor
-  ctx.strokeStyle = colors.agentColor
-  ctx.lineWidth = 1
-
-  for (const { x, y, w, h, highlight } of entries) {
-    const markerW = Math.max(w, AGENT_MIN_MARKER_PX)
-    const markerH = Math.max(h, AGENT_MIN_MARKER_PX)
-    const centerX = x + w / 2
-    const centerY = y + h / 2
-    const grown = markerW * (0.35 + 0.65 * highlight.pop)
-    const grownH = markerH * (0.35 + 0.65 * highlight.pop)
-
-    ctx.fillRect(centerX - grown / 2, centerY - grownH / 2, grown, grownH)
-
-    if (highlight.pop < 1) {
-      const halo = AGENT_HALO_PX * highlight.pop
-      ctx.globalAlpha = 1 - highlight.pop
-      ctx.strokeRect(
-        centerX - grown / 2 - halo,
-        centerY - grownH / 2 - halo,
-        grown + halo * 2,
-        grownH + halo * 2
-      )
-      ctx.globalAlpha = 1
-    }
-  }
-}
-
 /**
  * Render nodes on the minimap with performance optimizations
  */
@@ -159,9 +102,6 @@ function renderNodes(
   if (nodes.length === 0) return
 
   ctx.save()
-
-  const now = Date.now()
-  const agentEntries: AgentHighlightEntry[] = []
 
   // Group nodes by color for batch rendering (performance optimization)
   const nodesByColor = new Map<
@@ -196,16 +136,6 @@ function renderNodes(
       hasErrors: node.hasErrors,
       executionState: node.executionState
     })
-
-    if (node.agentGeneratedAt !== undefined) {
-      agentEntries.push({
-        x,
-        y,
-        w,
-        h,
-        highlight: agentHighlightAt(node.agentGeneratedAt, now)
-      })
-    }
   }
 
   // Batch render nodes by color
@@ -215,8 +145,6 @@ function renderNodes(
       ctx.fillRect(node.x, node.y, node.w, node.h)
     }
   }
-
-  renderAgentHighlights(ctx, agentEntries, colors)
 
   ctx.lineWidth = 0.3
   for (const nodes of nodesByColor.values()) {

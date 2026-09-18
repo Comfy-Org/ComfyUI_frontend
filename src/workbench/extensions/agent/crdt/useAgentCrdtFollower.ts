@@ -12,6 +12,8 @@ import type { Ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -81,6 +83,15 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
+export interface AgentCrdtFollowerEvents {
+  onMaterialized?: (event: {
+    workflowId: string
+    actor: string | undefined
+    nodeIds: readonly NodeId[]
+  }) => void
+  onReset?: (workflowId: string) => void
+}
+
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
 // logError, which re-throws in dev/test builds (this app registers no
 // app.config.errorHandler) and aborts the rest of unmountComponent - leaving
@@ -107,7 +118,8 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: AgentCrdtFollowerEvents = {}
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -144,7 +156,8 @@ export function useAgentCrdtFollower(
           graphMutations,
           userId,
           isTargetActive,
-          getGraph
+          getGraph,
+          events
         )
       )
     },
@@ -171,7 +184,8 @@ function startAgentCrdtFollower(
   graphMutations: MutationsForTarget,
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
-  getGraph: () => MaterializableGraph | null
+  getGraph: () => MaterializableGraph | null,
+  events: AgentCrdtFollowerEvents
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -261,7 +275,7 @@ function startAgentCrdtFollower(
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const update = event.detail as DocUpdate
+    const update = event.detail as DocUpdate & { catchUp?: boolean }
     outcomes.value = {
       ...outcomes.value,
       received: outcomes.value.received + 1
@@ -283,7 +297,9 @@ function startAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    const materialized = applied
+      ? projection.reconcileLiveGraph(update.workflowId)
+      : []
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -295,6 +311,24 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
+    if (
+      update.catchUp !== true &&
+      update.actor?.startsWith('agent:') &&
+      (added.length > 0 || materialized.length > 0)
+    ) {
+      const graph = getGraph()
+      const addedLiveNodeIds = added.flatMap((id) => {
+        const nodeId = parseNodeId(id)
+        return nodeId && graph?._nodes_by_id[nodeId] ? [nodeId] : []
+      })
+      const nodeIds = [...new Set([...materialized, ...addedLiveNodeIds])]
+      if (nodeIds.length > 0)
+        events.onMaterialized?.({
+          workflowId: update.workflowId,
+          actor: update.actor,
+          nodeIds
+        })
+    }
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -330,6 +364,7 @@ function startAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
