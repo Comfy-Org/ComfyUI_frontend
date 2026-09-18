@@ -345,6 +345,35 @@ describe('ModelDetail', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
+  it.for(['load', 'error'] as const)(
+    'correlates an HTTP success with the primary image %s outcome',
+    async (event) => {
+      auth.session.value = credential
+      vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+      mountDetail({ model: runnable })
+      const visitor = user()
+      await visitor.type(
+        screen.getByRole('textbox', { name: 'Prompt' }),
+        'A landscape'
+      )
+      await visitor.click(await screen.findByRole('button', { name: 'Run' }))
+      const image = await screen.findByRole('img', { name: 'Output' })
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'delivery_finished' })
+      )
+      await fireEvent(image, new Event(event))
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          attempt_id:
+            vi.mocked(runWorkshopRouter).mock.calls[0][0].clientAttemptId,
+          request_id: routerResult.requestId,
+          status: event === 'load' ? 'succeeded' : 'failed'
+        })
+      })
+    }
+  )
+
   it('tracks the render funnel and actions without sending inputs or output contents', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)

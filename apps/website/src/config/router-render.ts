@@ -28,6 +28,7 @@ export interface RouterRenderOptions {
     | string
     | ((body: Readonly<Record<string, unknown>>) => string)
   readonly signal?: AbortSignal
+  readonly clientAttemptId?: string
   readonly model?: WorkshopModelDetail
   readonly form?: {
     readonly schema: readonly FieldSchema[]
@@ -151,6 +152,7 @@ export async function router_render(
     token,
     idempotencyKey,
     signal,
+    clientAttemptId: options.clientAttemptId,
     rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })

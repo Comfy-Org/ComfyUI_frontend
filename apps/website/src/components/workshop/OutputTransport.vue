@@ -8,6 +8,10 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
+const emit = defineEmits<{
+  loaded: [src: string]
+  failed: [src: string]
+}>()
 const audio = useTemplateRef<HTMLAudioElement>('audio')
 const { playing, currentTime, duration, muted } = useMediaControls(audio)
 const seconds = computed(() =>
@@ -29,9 +33,11 @@ const buttonClass =
     <audio
       ref="audio"
       :src
-      preload="metadata"
+      preload="auto"
       :aria-label="t('workshop.output.title', locale)"
       data-testid="output-audio"
+      @loadeddata="emit('loaded', src)"
+      @error="emit('failed', src)"
     />
     <button
       type="button"
