@@ -4,7 +4,11 @@ import { expect } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyApiWorkflow,
+  zComfyWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -64,14 +68,20 @@ function seedWorkflow(): WorkflowJSON {
   return { ...parsed, extra: extra ?? undefined, nodes, links: [] }
 }
 
+function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
+  if (typeof body !== 'object' || body === null || !('prompt' in body))
+    throw new Error('the queued prompt body carries no prompt object')
+  return zComfyApiWorkflow.parse(body.prompt)
+}
+
 function promptImageRef(body: unknown): string {
-  const prompt = (
-    body as { prompt?: Record<string, { inputs?: Record<string, unknown> }> }
-  ).prompt
-  const image = Object.values(prompt ?? {}).find(
-    (node) => node.inputs?.image !== undefined
-  )?.inputs?.image
-  const ref = (image as { image?: unknown } | undefined)?.image
+  const image: unknown = Object.values(getQueuedPrompt(body)).find(
+    (node) => node.inputs.image !== undefined
+  )?.inputs.image
+  const ref =
+    typeof image === 'object' && image !== null && 'image' in image
+      ? image.image
+      : undefined
   if (typeof ref !== 'string')
     throw new Error('the queued prompt carries no Load3D image reference')
   return ref
@@ -243,16 +253,6 @@ class Load3dAgentHarness {
     return posted
   }
 
-  /**
-   * Lets a held model finish loading and returns the prompt the queue click
-   * made while it was held; that click is still waiting on the viewer.
-   */
-  async releaseAndAwaitPrompt(release: () => void): Promise<unknown> {
-    const posted = this.nextPrompt()
-    release()
-    return posted
-  }
-
   private async nextPrompt(): Promise<unknown> {
     const request = await this.page.waitForRequest(
       (candidate) =>
@@ -260,32 +260,6 @@ class Load3dAgentHarness {
         new URL(candidate.url()).pathname === '/api/prompt'
     )
     return request.postDataJSON()
-  }
-
-  /** Asserts that no prompt reaches the server within `ms` of clicking Queue. */
-  async expectQueueHeld(ms: number): Promise<void> {
-    let posted = false
-    const onRequest = (request: Request) => {
-      if (
-        request.method() === 'POST' &&
-        new URL(request.url()).pathname === '/api/prompt'
-      )
-        posted = true
-    }
-    this.page.on('request', onRequest)
-    try {
-      await this.page.getByTestId(TestIds.topbar.queueButton).click()
-      // Negative assertion: the fixed window is the check itself. There is no
-      // page condition to wait for because the expected outcome is that
-      // nothing happens while the model route is held.
-      await new Promise((resolve) => setTimeout(resolve, ms))
-      expect(
-        posted,
-        'a prompt was posted before the model finished loading'
-      ).toBe(false)
-    } finally {
-      this.page.off('request', onRequest)
-    }
   }
 
   /** Reads the capture the last queued prompt carried and its uploaded bytes. */

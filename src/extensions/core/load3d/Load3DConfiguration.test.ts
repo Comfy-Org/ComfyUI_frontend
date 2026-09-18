@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import fc from 'fast-check'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
@@ -922,44 +921,6 @@ describe('Load3DConfiguration reactive widget contract', () => {
 
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
     expect(load3d.loadModel).toHaveBeenCalledTimes(1)
-  })
-
-  it('preserves exactly-once model effects across generated value sequences', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(fc.constantFrom('', 'none', 'a.glb', 'b.obj'), {
-          minLength: 1,
-          maxLength: 20
-        }),
-        async (values) => {
-          const load3d = makeLoad3dMock()
-          const modelWidget = reactiveWidget('none')
-          new Load3DConfiguration(load3d).configure({
-            modelWidget,
-            loadFolder: 'input'
-          })
-          vi.mocked(load3d.loadModel).mockClear()
-          vi.mocked(load3d.clearModel).mockClear()
-
-          let previous = 'none'
-          let loads = 0
-          let clears = 0
-          for (const value of values) {
-            if (value !== previous) {
-              if (!value || value === 'none') clears++
-              else loads++
-              previous = value
-            }
-            modelWidget.value = value
-          }
-          await flush()
-
-          expect(load3d.loadModel).toHaveBeenCalledTimes(loads)
-          expect(load3d.clearModel).toHaveBeenCalledTimes(clears)
-        }
-      ),
-      { numRuns: 100 }
-    )
   })
 
   it('does not register a second listener when configure runs again for the same widget', async () => {

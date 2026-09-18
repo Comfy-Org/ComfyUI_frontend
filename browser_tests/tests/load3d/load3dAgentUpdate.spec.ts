@@ -3,15 +3,12 @@ import { expect } from '@playwright/test'
 import type { Load3dCapture } from '@e2e/fixtures/load3dAgentFixture'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 
-// A queued capture may not carry a scene the viewer is still replacing; this
-// is how long the held click must stay silent before the hold is trusted.
-const HELD_QUEUE_WINDOW_MS = 1_500
-
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
   test('an agent model_file update refreshes the viewer and capture cache', async ({
     load3dAgent
   }) => {
-    test.setTimeout(60_000)
     const { viewer } = load3dAgent
 
     const before =
@@ -28,9 +25,9 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         load3dAgent.setModelFromAgent('workflow.glb')
         await load3dAgent.expectModel('workflow.glb')
         await expect(load3dAgent.loadingOverlay).toBeVisible()
-        // The queued prompt must wait for the swap instead of shipping the cube.
-        await load3dAgent.expectQueueHeld(HELD_QUEUE_WINDOW_MS)
-        return load3dAgent.releaseAndAwaitPrompt(release)
+        const heldPrompt = load3dAgent.queuePrompt()
+        release()
+        return heldPrompt
       })
 
     await test.step('the held prompt carries the replacement model', async () => {

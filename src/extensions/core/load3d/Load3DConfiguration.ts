@@ -26,8 +26,8 @@ type Load3DConfigurationSettings = {
   bgImagePath?: string
   silentOnNotFound?: boolean
   /**
-   * Called when a user-driven change to one of the wired widgets
-   * (model_file, width, height) makes the previously captured scene stale.
+   * Called when any change to one of the wired widgets (model_file, width,
+   * height), local or remote, makes the previously captured scene stale.
    * Backend caching covers these inputs by themselves; this hook lets the
    * caller invalidate any frontend-side capture cache so the next serialize
    * re-renders at the new state.
