@@ -174,6 +174,38 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.route('**/api/agent/threads/*/messages', (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Add credits to continue.',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        })
+      })
+    )
+
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    const panel = page.locator('#agent-panel-root')
+    await selectAgentWorkflow(page)
+
+    const prompt = 'Build a product photo workflow'
+    await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    await expect(panel.getByText(prompt, { exact: true })).toBeVisible()
+    const paywall = panel.getByRole('alert')
+    await expect(paywall).toContainText(enMessages.agent.paywall.title)
+    await expect(paywall).toContainText('Add credits to continue.')
+  })
+
   test.describe('composer sizing', () => {
     test.use({
       viewport: { width: 1920, height: 1080 },
