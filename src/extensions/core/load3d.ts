@@ -74,7 +74,7 @@ function invalidateLoad3dScene(node: LGraphNode): void {
 }
 
 async function handleModelUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
     | IStringWidget
@@ -110,8 +110,8 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     })
 
     if (uploadPath && modelWidget) {
-      if (!modelWidget.options?.values?.includes(uploadPath)) {
-        modelWidget.options?.values?.push(uploadPath)
+      if (!modelWidget.options.values?.includes(uploadPath)) {
+        modelWidget.options.values?.push(uploadPath)
       }
 
       modelWidget.value = uploadPath
@@ -125,7 +125,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 }
 
 async function handleResourcesUpload(files: FileList, node: LGraphNode) {
-  if (!files?.length) return
+  if (!files.length) return
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -264,7 +264,7 @@ useExtensionService().registerExtension({
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
         const selectedNodes = app.canvas.selected_nodes
-        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+        if (Object.keys(selectedNodes).length !== 1) return
 
         const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
 
@@ -425,7 +425,7 @@ useExtensionService().registerExtension({
             return null
           }
 
-          while (true) {
+          for (;;) {
             if (!isLoad3dSceneDirty(node)) {
               const cached = getLoad3dOutputCache(node)
               if (cached) return cached
@@ -857,7 +857,8 @@ function createPreview3DAdvancedExtension(
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
-          cameraConfig.state = currentLoad3d.getCameraState()
+          const cameraState = currentLoad3d.getCameraState()
+          cameraConfig.state = cameraState
           node.properties['Camera Config'] = cameraConfig
 
           const modelInfo = currentLoad3d.getModelInfo()
@@ -867,7 +868,7 @@ function createPreview3DAdvancedExtension(
             image: '',
             mask: '',
             normal: '',
-            camera_info: cameraConfig.state || null,
+            camera_info: cameraState,
             recording: '',
             model_3d_info
           }

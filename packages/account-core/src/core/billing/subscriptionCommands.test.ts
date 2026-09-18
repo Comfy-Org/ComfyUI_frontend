@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi
+} from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
@@ -26,6 +34,7 @@ import type {
   BillingStatusReader,
   BillingStatusSnapshot
 } from './status.js'
+import type { SubscriptionPreview } from './subscriptionCommands.js'
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
@@ -253,7 +262,7 @@ beforeEach(() => {
 })
 
 describe('createBillingCommands', () => {
-  describe('eligibility from the status snapshot', () => {
+  describe('each command against the subscription state', () => {
     it('FREE: subscribe issues the checkout and settles the operation', async () => {
       const h = harness({
         status: FREE,
@@ -307,14 +316,43 @@ describe('createBillingCommands', () => {
       expect(h.lifecycle.getSnapshot()).toEqual([])
     })
 
-    it('PRO active: subscribe is a no-op success without a request', async () => {
-      const h = harness({ status: PRO_ACTIVE })
+    it('PRO active: subscribe issues the plan change the server has to price', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: { [POST_SUBSCRIBE]: [subscribed], [GET_OP]: settledOk }
+      })
+
+      const result = await h.commands.subscribe({ plan_slug: 'pro-yearly' })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { phase: 'succeeded', operation: { id: 'op-1' } }
+      })
+      expect(h.posts()).toEqual([
+        expect.objectContaining({
+          route: SUBSCRIBE_ROUTE,
+          body: { plan_slug: 'pro-yearly', idempotency_key: 'key-1' }
+        })
+      ])
+      expect(h.invalidate).toHaveBeenCalledOnce()
+    })
+
+    it('PRO active: subscribe leaves the server to refuse a transition, code intact', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: {
+          [POST_SUBSCRIBE]: [serverError(409, 'TRANSITION_NOT_ALLOWED')]
+        }
+      })
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toEqual({ status: 'ok', value: { phase: 'succeeded' } })
-      expect(h.calls).toEqual([])
-      expect(h.invalidate).not.toHaveBeenCalled()
+      expect(result).toMatchObject({
+        status: 'error',
+        serverCode: 'TRANSITION_NOT_ALLOWED',
+        httpStatus: 409
+      })
+      expect(h.posts().map((call) => call.route)).toEqual([SUBSCRIBE_ROUTE])
     })
 
     it('PRO active: resubscribe already holds and re-reads status', async () => {
@@ -364,24 +402,50 @@ describe('createBillingCommands', () => {
       expect(h.invalidate).toHaveBeenCalledOnce()
     })
 
-    it('PRO canceled: subscribe routes to the resubscribe endpoint', async () => {
+    it('PRO canceled: subscribe carries the requested plan to the subscribe route', async () => {
+      const h = harness({
+        status: PRO_CANCELED,
+        script: { [POST_SUBSCRIBE]: [subscribed], [GET_OP]: settledOk }
+      })
+
+      const result = await h.commands.subscribe({
+        plan_slug: 'pro-yearly',
+        confirm_reactivation: true
+      })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { phase: 'succeeded', operation: { id: 'op-1' } }
+      })
+      expect(h.posts()).toEqual([
+        expect.objectContaining({
+          route: SUBSCRIBE_ROUTE,
+          body: {
+            plan_slug: 'pro-yearly',
+            confirm_reactivation: true,
+            idempotency_key: 'key-1'
+          }
+        })
+      ])
+    })
+
+    it('PRO canceled: subscribe hands the server its reactivation block back', async () => {
       const h = harness({
         status: PRO_CANCELED,
         script: {
-          [POST_RESUBSCRIBE]: [
-            http(200, { billing_op_id: 'op-1', status: 'active' })
-          ],
-          [GET_OP]: settledOk
+          [POST_SUBSCRIBE]: [
+            serverError(409, 'REACTIVATION_CONFIRMATION_REQUIRED')
+          ]
         }
       })
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toMatchObject({
-        status: 'ok',
-        value: { phase: 'succeeded', operation: { kind: 'subscription' } }
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REACTIVATION_CONFIRMATION_REQUIRED'
       })
-      expect(h.posts().map((call) => call.route)).toEqual([RESUBSCRIBE_ROUTE])
+      expect(h.posts().map((call) => call.route)).toEqual([SUBSCRIBE_ROUTE])
     })
 
     it('PRO canceled: resubscribe settles a pending reactivation through the lifecycle', async () => {
@@ -531,8 +595,8 @@ describe('createBillingCommands', () => {
         status: 'ok',
         value: {
           allowed: true,
-          cost_today_cents: 1500n,
-          new_plan: { slug: 'pro-monthly', price_cents: 2000n },
+          cost_today_cents: 1500,
+          new_plan: { slug: 'pro-monthly', price_cents: 2000 },
           transition_type: 'upgrade'
         }
       })
@@ -579,7 +643,7 @@ describe('createBillingCommands', () => {
         value: expect.objectContaining({
           discounts: [
             {
-              amount_off_cents: 500n,
+              amount_off_cents: 500,
               code: 'LAUNCH',
               kind: 'promotion',
               name: 'Launch offer'
@@ -671,6 +735,122 @@ describe('createBillingCommands', () => {
         httpStatus: 200
       })
     })
+
+    const QUOTE_CENT_FIELDS = [
+      'amount_due_cents',
+      'cost_next_period_cents',
+      'cost_today_cents',
+      'credits_next_period_cents',
+      'credits_today_cents',
+      'renewal_amount_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview)[]
+
+    const PLAN_CENT_FIELDS = [
+      'credits_cents',
+      'price_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
+
+    const SEAT_CENT_FIELDS = [
+      'total_cost_cents',
+      'total_credits_cents'
+    ] as const satisfies readonly (keyof SubscriptionPreview['new_plan']['seat_summary'])[]
+
+    type PreviewDiscount = NonNullable<SubscriptionPreview['discounts']>[number]
+
+    const DISCOUNT_CENT_FIELDS = [
+      'amount_off_cents'
+    ] as const satisfies readonly (keyof PreviewDiscount)[]
+
+    // Compile-time pins: an amount a regen adds fails the package typecheck
+    // until it reaches a row below.
+    expectTypeOf<(typeof QUOTE_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof SubscriptionPreview, `${string}_cents`>
+    >()
+    expectTypeOf<(typeof PLAN_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof SubscriptionPreview['new_plan'], `${string}_cents`>
+    >()
+    expectTypeOf<(typeof SEAT_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<
+        keyof SubscriptionPreview['new_plan']['seat_summary'],
+        `${string}_cents`
+      >
+    >()
+    expectTypeOf<(typeof DISCOUNT_CENT_FIELDS)[number]>().toEqualTypeOf<
+      Extract<keyof PreviewDiscount, `${string}_cents`>
+    >()
+
+    const rejectsQuote = async (patch: object) => {
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [http(200, { ...QUOTE_BODY, ...patch })] }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+    }
+
+    const FRACTION_OF_A_CENT = 1500.5
+
+    it.for(QUOTE_CENT_FIELDS)('refuses a fraction of a cent at %s', (field) =>
+      rejectsQuote({ [field]: FRACTION_OF_A_CENT })
+    )
+
+    it.for(PLAN_CENT_FIELDS)(
+      'refuses a fraction of a cent at new_plan.%s',
+      (field) =>
+        rejectsQuote({
+          new_plan: { ...PREVIEW_PLAN, [field]: FRACTION_OF_A_CENT }
+        })
+    )
+
+    it.for(PLAN_CENT_FIELDS)(
+      'refuses a fraction of a cent at current_plan.%s',
+      (field) =>
+        rejectsQuote({
+          current_plan: { ...PREVIEW_PLAN, [field]: FRACTION_OF_A_CENT }
+        })
+    )
+
+    it.for(SEAT_CENT_FIELDS)(
+      'refuses a fraction of a cent at new_plan.seat_summary.%s',
+      (field) =>
+        rejectsQuote({
+          new_plan: {
+            ...PREVIEW_PLAN,
+            seat_summary: {
+              ...PREVIEW_PLAN.seat_summary,
+              [field]: FRACTION_OF_A_CENT
+            }
+          }
+        })
+    )
+
+    it.for(DISCOUNT_CENT_FIELDS)(
+      'refuses a fraction of a cent at discounts[].%s',
+      (field) =>
+        rejectsQuote({
+          discounts: [
+            {
+              code: 'LAUNCH',
+              kind: 'promotion',
+              name: 'Launch offer',
+              [field]: FRACTION_OF_A_CENT
+            }
+          ]
+        })
+    )
+
+    it.for([
+      ['past the safe integers', Number.MAX_SAFE_INTEGER + 2],
+      ['with no finite value at all', Number.POSITIVE_INFINITY]
+    ] as const)('refuses an amount %s', ([, cents]) =>
+      rejectsQuote({ cost_today_cents: cents })
+    )
 
     it('forwards the caller signal and timeout, releasing an abandoned read as transient', async () => {
       const controller = new AbortController()
@@ -841,6 +1021,56 @@ describe('createBillingCommands', () => {
         status: 'ok',
         value: { phase: 'succeeded' }
       })
+    })
+
+    it.for([
+      ['subscribed', subscribed],
+      ['pending_payment', pendingPayment],
+      [
+        'needs_payment_method',
+        http(200, {
+          billing_op_id: 'op-1',
+          status: 'needs_payment_method',
+          payment_method_url: 'https://checkout.example/pay'
+        })
+      ]
+    ] as const)(
+      'settles a %s subscribe under the status the server issued it with',
+      async ([issuedStatus, response]) => {
+        const h = harness({
+          status: FREE,
+          script: { [POST_SUBSCRIBE]: [response], [GET_OP]: settledOk }
+        })
+
+        const result = h.commands.subscribe(PLAN)
+        await flush()
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+        await expect(result).resolves.toMatchObject({
+          status: 'ok',
+          value: { phase: 'succeeded', issuedStatus }
+        })
+      }
+    )
+
+    it('leaves a cancel without an issued subscribe status', async () => {
+      const h = harness({
+        status: PRO_ACTIVE,
+        script: {
+          [POST_CANCEL]: [
+            http(200, {
+              billing_op_id: 'op-1',
+              cancel_at: '2026-10-01T00:00:00.000Z'
+            })
+          ],
+          [GET_OP]: settledOk
+        }
+      })
+
+      const result = await h.commands.cancelSubscription()
+
+      assert(result.status === 'ok')
+      expect(result.value.issuedStatus).toBeUndefined()
     })
 
     it('reports a hosted payment step without a page as MISSING_PAYMENT_METHOD_URL', async () => {
@@ -1055,10 +1285,13 @@ describe('createBillingCommands', () => {
 
       const result = await h.commands.subscribe(PLAN)
 
-      expect(result).toMatchObject({
-        status: 'ok',
-        value: { phase: 'succeeded', operation: { id: 'op-1' } }
+      assert(result.status === 'ok')
+      expect(result.value).toMatchObject({
+        phase: 'succeeded',
+        operation: { id: 'op-1' }
       })
+      // No subscribe response was read, so there is no status to carry out.
+      expect(result.value.issuedStatus).toBeUndefined()
       expect(h.posts()).toEqual([])
       expect(h.invalidate).toHaveBeenCalledOnce()
     })

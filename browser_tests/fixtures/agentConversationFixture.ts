@@ -20,6 +20,7 @@ import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -66,6 +67,13 @@ interface RecordedWidgetValue {
   nodeId: string
   widget: string
   value: string | number
+}
+
+interface RenderedWidgetRow {
+  nodeId: string
+  label: string
+  value: string
+  invalid: boolean
 }
 
 interface PanelCounts {
@@ -133,7 +141,6 @@ class AgentConversationHarness {
   private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
   private readonly summaries: Locator
-  private readonly seedIds: Set<string>
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
@@ -156,8 +163,7 @@ class AgentConversationHarness {
       this.host,
       SOCKET_SID
     )
-    this.seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
-    this.seenIds = new Set(this.seedIds)
+    this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
     const recorded = expectations?.length ?? 0
     if (recorded !== conversation.turns.length)
@@ -363,20 +369,8 @@ class AgentConversationHarness {
     return name
   }
 
-  // A recorded title renders verbatim and a node the agent added shows its
-  // display name. A node the catch-up materialized is not settled today:
-  // the follower's reconcile titles it by type in most replays and by
-  // display name in some (#17171), so that path accepts either spelling of
-  // the same identity until the fix lands, and then narrows to the name.
-  private expectedTitle(
-    id: string,
-    node: { type: string; title?: string }
-  ): string | RegExp {
-    if (node.title) return node.title
-    const name = this.displayName(node.type)
-    if (!this.seedIds.has(id)) return name
-    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`^(?:${escape(name)}|${escape(node.type)})$`)
+  private expectedTitle(node: { type: string; title?: string }): string {
+    return node.title || this.displayName(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -437,6 +431,30 @@ class AgentConversationHarness {
     }
   }
 
+  renderedWidgetRows(): Promise<RenderedWidgetRow[]> {
+    return this.page.getByTestId(TestIds.widgets.widget).evaluateAll(
+      (rows, labelTestId) =>
+        rows.map((row) => {
+          const control = row.querySelector('input, textarea')
+          return {
+            nodeId:
+              row.closest('[data-node-id]')?.getAttribute('data-node-id') ?? '',
+            label:
+              row
+                .querySelector(`[data-testid="${labelTestId}"]`)
+                ?.textContent.trim() ?? '',
+            value:
+              control instanceof HTMLInputElement ||
+              control instanceof HTMLTextAreaElement
+                ? control.value
+                : row.textContent.trim(),
+            invalid: row.querySelector('[aria-invalid="true"]') !== null
+          }
+        }),
+      TestIds.widgets.layoutFieldLabel
+    )
+  }
+
   // What the canvas shows after the given turn, judged the way a user would
   // (which nodes, under which titles, with which widget values, wired on
   // both slot rows) against the workflow the production library projects.
@@ -452,7 +470,7 @@ class AgentConversationHarness {
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
       await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(id, node)
+        this.expectedTitle(node)
       )
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
@@ -560,6 +578,12 @@ class AgentConversationHarness {
         `recorded ${event.type} frame is not a valid agent event: ${parsed.error.message}`
       )
     return parsed.data
+  }
+
+  // Rises once per follower subscribe; a tab return re-subscribes and the
+  // host answers with the catch-up frame this counter has just sent.
+  subscribeCount(): number {
+    return this.hostSocket.subscribeCount()
   }
 }
 

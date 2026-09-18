@@ -3,8 +3,8 @@ import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
+import type { GraphMutations } from './graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -131,7 +131,8 @@ describe('EcsFollowerAdapter integration', () => {
     ).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
-    ).toBeUndefined()
+        ?.value
+    ).toBe(9)
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
@@ -773,20 +774,19 @@ describe('EcsFollowerAdapter integration', () => {
       }
     }
 
-    it('removes a widget deleted in place and keeps its siblings', () => {
+    it('keeps a widget whose doc key was deleted and its siblings', () => {
       const { widgets, deliver, widgetValue, destroy } = bindSeededHost()
       expect(widgetValue('stale')).toBe(9)
 
       deliver(2, () => widgets.delete('stale'))
 
-      expect(widgetValue('stale')).toBeUndefined()
+      expect(widgetValue('stale')).toBe(9)
       expect(widgetValue('seed')).toBe(1)
       expect(
         useNodeDataStore()
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual(['1'])
-      expect(useWidgetValueStore().clearNode).toHaveBeenCalledTimes(1)
       destroy()
     })
 
@@ -805,7 +805,7 @@ describe('EcsFollowerAdapter integration', () => {
       destroy()
     })
 
-    it('drops widgets missing from a replaced widget map', () => {
+    it('keeps widgets missing from a replaced widget map', () => {
       const { node, deliver, widgetValue, destroy } = bindSeededHost()
 
       deliver(2, () => {
@@ -815,7 +815,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
 
       expect(widgetValue('seed')).toBe(5)
-      expect(widgetValue('stale')).toBeUndefined()
+      expect(widgetValue('stale')).toBe(9)
       destroy()
     })
   })

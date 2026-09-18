@@ -13,7 +13,7 @@ import type {
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
 import {
   LGraph,
   LGraphNode,
@@ -650,25 +650,21 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     )
 
     const after = state.graph.getNodeById(toNodeId(3))!
-    expect(after).not.toBeInstanceOf(SubgraphNode)
-    // `reconcileNode` registers an array payload under positional names
-    // (`widgetEntries` in graphMutations) and clears the named entries. The
-    // store is the authoritative contract here; projecting positional values
-    // onto a plain node's litegraph widgets is the materializer's concern and
-    // out of scope for the follower (see agentNodeMaterializer.ts).
+    expect(after).toBe(rootWidget)
+    // A positional payload binds to the live node's serialized widgets in
+    // order, so the opaque write lands on the existing `value` widget.
     const stored = useWidgetValueStore()
       .getNodeWidgets(graphScopeOf(state.graph).rootGraphId, toNodeId(3))
       .map((w) => [w.name, w.value])
-    expect(stored).toEqual([['0', 9]])
+    expect(stored).toEqual([['value', 9]])
+    expect(rootWidget.widgets?.[0]?.value).toBe(9)
     // The host is untouched: the fallback must not bleed into promoted state.
     expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
   })
 
   it('S1e keeps promoted host widgets when the opaque payload is malformed', () => {
     // A non-array `__widgets_opaque` on a host must be skipped, not routed to
-    // `reconcileNode`: `widgetEntries` yields no entries for it and `commit`
-    // clears the node's widget store first, which would wipe every promoted
-    // value.
+    // `reconcileNode`, which would replace the host's promoted slot list.
     const state = startFollower()
     const widgetId = state.instance.inputs[0]?.widgetId
     expect(widgetId).toBeDefined()

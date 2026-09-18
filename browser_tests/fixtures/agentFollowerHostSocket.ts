@@ -11,6 +11,7 @@ const SUBSCRIBE_TIMEOUT = 15_000
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private socket: WebSocketRoute | null = null
+  private subscribes = 0
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -84,6 +85,12 @@ export class AgentFollowerHostSocket {
       return
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(state_vector_b64))
+    this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  /** Rises once per follower subscribe, after the catch-up frame was sent. */
+  subscribeCount(): number {
+    return this.subscribes
   }
 }

@@ -24,7 +24,10 @@ import {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
+import type {
+  BillingOpStatus,
+  HostedBillingDestination
+} from './operationState.js'
 import type {
   BillingStatusData,
   BillingStatusReader,
@@ -189,9 +192,11 @@ function harness(options: {
   answers?: TransportAnswer[]
   status?: BillingResult<BillingStatusSnapshot>
   embedded?: boolean
+  destination?: HostedBillingDestination
   session?: ReturnType<typeof fakeSession>
   storage?: BillingOperationPointerStorage
 }) {
+  const destination = { current: options.destination ?? 'stripe' }
   const session = options.session ?? fakeSession()
   const status = fakeStatusReader(options.status ?? statusSnapshot())
   const { transport, calls } = fakeTransport(
@@ -205,10 +210,14 @@ function harness(options: {
     statusReader: status.reader,
     pointerStorage: storage,
     embeddedCheckoutAvailable: () => options.embedded === true,
+    ...(options.destination === undefined
+      ? {}
+      : { hostedDestination: () => destination.current }),
     onTelemetry: (event) => telemetry.push(event)
   }
   return {
     lifecycle: createBillingOperationLifecycle(lifecycleOptions),
+    destination,
     session,
     status,
     calls,
@@ -840,6 +849,87 @@ describe('createBillingOperationLifecycle', () => {
       })
       if (began.status !== 'ok' || began.value.phase !== 'pending') return
       expect(began.value.challenge).toBeUndefined()
+    })
+
+    it.for([
+      { port: 'absent', destination: undefined, expected: 'stripe' },
+      {
+        port: 'reporting the billing app',
+        destination: 'billing_web',
+        expected: 'billing_web'
+      }
+    ] as const)(
+      'reports $expected as the hosted destination when the port is $port',
+      async ({ destination, expected }) => {
+        const { lifecycle } = harness({ embedded: false, destination })
+
+        await lifecycle.begin(
+          'topup',
+          issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+        )
+
+        expect(lifecycle.get('op-1')).toMatchObject({
+          presentation: 'hosted',
+          hostedDestination: expected
+        })
+      }
+    )
+
+    it('re-reads the destination for an operation recovered from the pointer', async () => {
+      const storage = memoryStorage()
+      storage.setItem(
+        operationPointerKey(SCOPE),
+        JSON.stringify({
+          operationId: 'op-1',
+          kind: 'topup',
+          presentation: 'hosted',
+          attemptStartedAt: NOW - 30_000
+        })
+      )
+      const { lifecycle, destination } = harness({
+        storage,
+        destination: 'stripe',
+        status: { status: 'error', code: 'REQUEST_FAILED' }
+      })
+
+      destination.current = 'billing_web'
+
+      await expect(lifecycle.recover()).resolves.toMatchObject({
+        status: 'ok',
+        value: { presentation: 'hosted', hostedDestination: 'billing_web' }
+      })
+    })
+
+    it('takes on the destination when it moves to the hosted page, and drops it on the way back', async () => {
+      const { lifecycle } = harness({
+        embedded: true,
+        destination: 'billing_web',
+        answers: [
+          httpOk(
+            opStatus({
+              authentication_state: 'requires_action',
+              payment_intent_client_secret: 'pi_secret',
+              action_url: 'https://billing.example/continue'
+            })
+          )
+        ]
+      })
+      await lifecycle.begin(
+        'topup',
+        issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+      )
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({ presentation: 'embedded' })
+      expect(lifecycle.get('op-1')?.hostedDestination).toBeUndefined()
+
+      expect(lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
+      expect(lifecycle.get('op-1')).toMatchObject({
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      })
+
+      expect(lifecycle.switchPresentation('op-1', 'embedded')).toBe('switched')
+      expect(lifecycle.get('op-1')?.hostedDestination).toBeUndefined()
     })
 
     it('moves a failed embedded challenge to the hosted page under the same id, and back', async () => {
