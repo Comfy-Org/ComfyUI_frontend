@@ -53,9 +53,12 @@ function touchedNodes(op: WireOp): string[] {
       return [String(op.from_node), String(op.to_node)];
     case "disconnect":
       return [String(op.to_node)];
+    case "insert_workflow":
+      return op.workflow.nodes.map((node) => String(node.id));
     case "clear":
     case "delete_node":
     case "reset_doc":
+    case "define_subgraph":
       // Graph-wide / unbounded ops. `reorderableWindows` treats them as window
       // breakers and never calls this helper for them; listed explicitly so
       // the guard below is a guard and not a catch-all (#21).

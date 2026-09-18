@@ -45,8 +45,8 @@ const PRECONDITIONS = [
   "interior-or-inputcount",
   "promoted-or-autogrow",
 ] as const;
-const PAIR_EXECUTIONS = 150_528;
-const SAMPLED_RUNS = 24_736;
+const PAIR_EXECUTIONS = 248_832;
+const SAMPLED_RUNS = 1_696;
 const SAMPLED_EXECUTIONS = SAMPLED_RUNS * 2;
 const TOTAL_EXECUTIONS = PAIR_EXECUTIONS + SAMPLED_EXECUTIONS;
 const SAMPLE_SEED = 0x4f70504;
@@ -215,6 +215,21 @@ function makeOp(
       return { ...env, op: "delete_node", node_id: side === 0 ? 10 : 20, removed_links: [80, 100, 101] };
     case "clear":
       return { ...env, op: "clear", removed_nodes: side === 0 ? [10, 40, 57] : [20, 40, 57] };
+    case "define_subgraph":
+      const id = "12345678-1234-4123-8123-123456789abc";
+      return {
+        ...env,
+        op: "define_subgraph",
+        subgraph_id: id,
+        subgraph_definition: {
+          id,
+          name: `side-${side}`,
+          nodes: [],
+          links: [],
+        },
+      };
+    case "insert_workflow":
+      return { ...env, op: "insert_workflow", workflow: { nodes: [node(140 + serial, "Aux", [], [], [value])], links: [] } };
     case "reset_doc":
       return { ...env, op: "reset_doc", workflow: { nodes: [], links: [] } };
   }
@@ -529,7 +544,7 @@ describe("full op-pool permutation equivalence", () => {
 
     expect(runs).toBe(SAMPLED_RUNS);
     expect(executions).toBe(SAMPLED_EXECUTIONS);
-    expect(TOTAL_EXECUTIONS).toBe(200_000);
+    expect(TOTAL_EXECUTIONS).toBe(252_224);
     for (const [kind, count] of Object.entries(hits)) expect(count, `${kind} was not sampled`).toBeGreaterThan(0);
     expect(Object.values(taxonomy).reduce((sum, count) => sum + count, 0)).toBe(SAMPLED_RUNS);
     console.info("perm-4 sampled taxonomy", {

@@ -18,6 +18,14 @@ still cheap. That will not stay true.
 
 ## Part 1 — decisions to ratify
 
+### D0. Workflow templates insert as one standalone op
+
+**Accepted by ADR-022.** `insert_workflow` requires `nodes`; `links`, `groups`, and `definitions`
+are optional and default to empty. Producers send raw workflows. The applier remaps every carried
+id and internal reference deterministically from the op envelope id plus the original id and graph
+scope. Different ops therefore cannot collide or depend on arrival order, while exact replay derives
+the same ids and is idempotent. The op is stamped and not batchable.
+
 ### D1. Widgets are addressed by name, not by position
 
 **Proposal.** A node's widget values live in a map keyed by widget name. The

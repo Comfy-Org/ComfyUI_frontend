@@ -49,6 +49,7 @@ import {
   type WorkflowJSON,
 } from "../src/index.js";
 import { appliedMap } from "../src/doc.js";
+import { remapInsertedWorkflowIds } from "../src/remap.js";
 
 const catalog: WidgetCatalog = {
   types: {
@@ -108,6 +109,7 @@ interface Row {
   /** The rejected outcome code the applier must return. */
   code: string;
   build: () => Op;
+  seed?: (op: Op) => WorkflowJSON;
 }
 
 const CASES: Row[] = [
@@ -185,6 +187,60 @@ const CASES: Row[] = [
         node_id: 9,
         node: { id: 9, type: "Src", [OPAQUE_WIDGETS_KEY]: [1] },
       }) as unknown as Op,
+  },
+
+  // ---- insert_workflow ----------------------------------------------------
+  {
+    kind: "insert_workflow",
+    why: "duplicate raw node ids are ambiguous before deterministic remapping",
+    code: "malformed_op",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [{ id: 1, type: "Src" }, { id: 1, type: "Src" }] } }) as Op,
+  },
+  {
+    kind: "insert_workflow",
+    why: "duplicate raw link ids are ambiguous before deterministic remapping",
+    code: "malformed_op",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [], links: [[7, 2, 0, 3, 0, "X"], [7, 2, 0, 3, 0, "X"]] } }) as Op,
+  },
+  {
+    kind: "insert_workflow",
+    why: "remapped node id collides with the live tree",
+    code: "node_id_collision",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [{ id: 1, type: "Src" }], links: [] } }) as Op,
+    seed: (op) => {
+      const workflow = baseWorkflow();
+      const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);
+      workflow.nodes!.push({ id: remapped.nodes![0]!.id, type: "Src" });
+      return workflow;
+    },
+  },
+  {
+    kind: "insert_workflow",
+    why: "remapped link id collides with the live tree",
+    code: "link_id_collision",
+    build: () =>
+      ({
+        op: "insert_workflow",
+        ...env(),
+        workflow: { nodes: [{ id: 2, type: "Src" }, { id: 3, type: "Sink" }], links: [[7, 2, 0, 3, 0, "X"]] },
+      }) as Op,
+    seed: (op) => {
+      const workflow = baseWorkflow();
+      const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);
+      const [remappedLinkId] = remapped.links![0] as [string, number, number, number, number, string];
+      workflow.links!.push([remappedLinkId, 2, 0, 3, 0, "X"]);
+      return workflow;
+    },
+  },
+  {
+    kind: "insert_workflow",
+    why: "duplicate remapped definition ids violate define_subgraph tree uniqueness",
+    code: "malformed_op",
+    build: () => ({
+      op: "insert_workflow",
+      ...env(),
+      workflow: { nodes: [], definitions: { subgraphs: [{ id: "d", nodes: [], links: [] }, { id: "d", nodes: [], links: [] }] } },
+    }) as Op,
   },
 
   // ---- set_widget ----------------------------------------------------------
@@ -469,10 +525,10 @@ const KNOWN_KA4_VIOLATIONS: readonly string[] = [];
 
 describe("KA-4: a rejected op leaves the doc byte-identical and does not consume its op_id", () => {
   it.each(CASES.map((c) => [`${c.kind}: ${c.why} → ${c.code}`, c] as const))("%s", (_name, row) => {
-    const doc = mint(baseWorkflow(), catalog);
+    const op = row.build();
+    const doc = mint(row.seed?.(op) ?? baseWorkflow(), catalog);
     const before = bytes(doc);
     const beforeProjection = project(doc, catalog);
-    const op = row.build();
 
     const res = applyOps(doc, [op], catalog);
 
@@ -592,11 +648,35 @@ function sharedDefinitionCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; 
   };
 }
 
+function definitionConflictCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; code: string } {
+  const id = "12345678-1234-4123-8123-123456789abc";
+  const nested = "abcdefab-cdef-4abc-8def-abcdefabcdef";
+  const doc = mint({
+    nodes: [],
+    links: [],
+    definitions: { subgraphs: [{ id, name: "outer", nodes: [], links: [], definitions: {
+      subgraphs: [{ id: nested, name: "nested", nodes: [], links: [] }],
+    } }] },
+  } as unknown as WorkflowJSON, catalog);
+  return {
+    doc,
+    op: {
+      op: "define_subgraph",
+      ...env(),
+      subgraph_id: nested,
+      subgraph_definition: { id: nested, name: "different", nodes: [], links: [] },
+    } as unknown as Op,
+    catalog,
+    code: "definition_conflict",
+  };
+}
+
 const FIXTURE_CASES = [
   ["add_node without a catalog", catalogRequiredCase],
   ["promoted host write without a catalog", promotedCatalogRequiredCase],
   ["interior set_widget past the positional length", widgetOutOfRangeCase],
   ["interior set_widget into a definition two nodes instantiate", sharedDefinitionCase],
+  ["define_subgraph whose root id collides with a nested definition", definitionConflictCase],
 ] as const;
 
 describe("KA-4: the rejection codes that need their own fixture", () => {
@@ -633,6 +713,9 @@ const ALL_REJECTION_CODES = [
   "op_deferred",
   "catalog_required",
   "invalid_node_payload",
+  "node_id_collision",
+  "link_id_collision",
+  "definition_conflict",
   "unknown_widget",
   "opaque_widgets",
   "widget_out_of_range",
@@ -642,6 +725,7 @@ const ALL_REJECTION_CODES = [
   "not_a_subgraph",
   "interior_node_not_found",
   "shared_definition_unforked",
+  "definition_conflict",
 ] as const;
 
 // These require an already-consumed op_id or an intentionally deep payload;
