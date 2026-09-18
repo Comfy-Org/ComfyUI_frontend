@@ -38,7 +38,7 @@ a self-test case:
 - A merge carries `--match-head-commit` equal to the current head.
 - Since the last invalidation (a merge command, a head move, an accepted
   mutation or a thread reply), `pr view`, `pr checks`, `pr checks
-  --required`, threads and comments were all read, each tracked separately.
+--required`, threads and comments were all read, each tracked separately.
 - Every completed check is `pass` and none is `pending`; every required
   check is present and `pass`.
 - `reviewDecision` is `APPROVED`, `mergeStateStatus` is `CLEAN`, the pull
