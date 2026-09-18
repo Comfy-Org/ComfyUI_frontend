@@ -15,7 +15,7 @@ function createFile(name: string, type = 'image/png'): File {
 }
 
 describe('useNodePaste', () => {
-  it('pasteFiles calls onPaste with filtered files', () => {
+  it('pasteFiles calls onPaste with filtered files', async () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()
     const keep = createFile('keep.png')
@@ -27,13 +27,13 @@ describe('useNodePaste', () => {
       allow_batch: true
     })
 
-    const result = node.pasteFiles?.([keep, skip])
+    const result = await node.pasteFiles?.([keep, skip])
 
     expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([keep])
   })
 
-  it('pasteFiles returns false when no files match filter', () => {
+  it('pasteFiles returns false when no files match filter', async () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()
 
@@ -42,13 +42,13 @@ describe('useNodePaste', () => {
       fileFilter: () => false
     })
 
-    const result = node.pasteFiles?.([createFile('ignored.png')])
+    const result = await node.pasteFiles?.([createFile('ignored.png')])
 
     expect(result).toBe(false)
     expect(onPaste).not.toHaveBeenCalled()
   })
 
-  it('pasteFiles limits to first file when allow_batch is false', () => {
+  it('pasteFiles limits to first file when allow_batch is false', async () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()
     const first = createFile('first.png')
@@ -56,13 +56,13 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: false })
 
-    const result = node.pasteFiles?.([first, second])
+    const result = await node.pasteFiles?.([first, second])
 
     expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first])
   })
 
-  it('pasteFiles passes all files when allow_batch is true', () => {
+  it('pasteFiles passes all files when allow_batch is true', async () => {
     const onPaste = vi.fn().mockResolvedValue('ok')
     const node = createNode()
     const first = createFile('first.png')
@@ -70,7 +70,7 @@ describe('useNodePaste', () => {
 
     useNodePaste(node, { onPaste, allow_batch: true })
 
-    const result = node.pasteFiles?.([first, second])
+    const result = await node.pasteFiles?.([first, second])
 
     expect(result).toBe(true)
     expect(onPaste).toHaveBeenCalledWith([first, second])

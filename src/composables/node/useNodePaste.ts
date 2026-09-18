@@ -18,13 +18,13 @@ export const useNodePaste = <T>(
 ) => {
   const { onPaste, fileFilter = () => true, allow_batch = false } = options
 
-  const installedPasteFiles = function (files: File[]) {
+  const installedPasteFiles = async function (files: File[]) {
     const filteredFiles = Array.from(files).filter(fileFilter)
     if (!filteredFiles.length) return false
 
     const paste = allow_batch ? filteredFiles : filteredFiles.slice(0, 1)
 
-    void onPaste(paste)
+    await onPaste(paste)
     return true
   }
   node.pasteFiles = installedPasteFiles
