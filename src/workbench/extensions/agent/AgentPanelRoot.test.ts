@@ -284,15 +284,13 @@ beforeEach(() => {
       tier: computed(() => paywallBilling.tier)
     })
   )
-  vi.mocked(useBillingCapabilities).mockReturnValue(
-    fromPartial({
-      canTopUp: computed(() => paywallCapabilities.canTopUp),
-      canSubscribeSelfServe: computed(
-        () => paywallCapabilities.canSubscribeSelfServe
-      ),
-      isReady: computed(() => paywallCapabilities.isReady)
-    })
+  useBillingCapabilities().canTopUp = computed(
+    () => paywallCapabilities.canTopUp
   )
+  useBillingCapabilities().canSubscribeSelfServe = computed(
+    () => paywallCapabilities.canSubscribeSelfServe
+  )
+  useBillingCapabilities().isReady = computed(() => paywallCapabilities.isReady)
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
