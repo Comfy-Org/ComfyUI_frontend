@@ -938,9 +938,11 @@ describe('Load3d', () => {
         resolveLoad = resolve
       })
       const loadedModel = new THREE.Group()
-      const modelManager = {
+      const modelManager: typeof ctx.modelManager & {
+        currentModel: THREE.Object3D | null
+      } = {
         ...ctx.modelManager,
-        currentModel: null as THREE.Object3D | null,
+        currentModel: null,
         originalModel: null,
         clearModel: vi.fn(() => {
           modelManager.currentModel = null
