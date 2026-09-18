@@ -143,6 +143,22 @@ const primeVueRemovalPlugin = {
   }
 }
 
+const websiteLocaleRestrictions = [
+  ['t', 1],
+  ['tPlural', 2]
+].flatMap(([name, index]) => [
+  {
+    selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='Literal']`,
+    message: 'Use the page locale instead of a literal locale.'
+  },
+  {
+    selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='TemplateLiteral'][arguments.${index}.expressions.length=0]`,
+    message: 'Use the page locale instead of a literal locale.'
+  }
+])
+const outsideStaticPaths =
+  ":not(FunctionDeclaration[id.name='getStaticPaths'] *):not(VariableDeclarator[id.name='getStaticPaths'] *)"
+
 export default defineConfig([
   {
     ignores: [
@@ -571,6 +587,44 @@ export default defineConfig([
       'better-tailwindcss': {
         entryPoint: 'apps/website/src/styles/global.css'
       }
+    }
+  },
+  {
+    files: ['apps/website/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts', '**/*.stories.ts', 'apps/website/src/i18n/**'],
+    rules: {
+      'no-restricted-syntax': ['error', ...websiteLocaleRestrictions],
+      'vue/no-restricted-syntax': ['error', ...websiteLocaleRestrictions]
+    }
+  },
+  {
+    files: ['apps/website/src/**/*.astro'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...websiteLocaleRestrictions.map((restriction) => ({
+          ...restriction,
+          selector: restriction.selector + outsideStaticPaths
+        })),
+        {
+          selector: "JSXAttribute[name.name='locale'] Literal",
+          message: 'Pass the page locale to components.'
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='keywords'] > JSXExpressionContainer > ArrayExpression",
+          message: 'Keep translated keywords in the dictionary.'
+        },
+        ...[
+          ['getRoutes', 0],
+          ['loadStories', 0],
+          ['localizeHref', 1],
+          ['createBannerVersion', 1]
+        ].map(([name, index]) => ({
+          selector: `CallExpression[callee.name='${name}'][arguments.${index}.type='Literal']${outsideStaticPaths}`,
+          message: 'Use the page locale when requesting routes or content.'
+        }))
+      ]
     }
   },
   // The website resolves vue-i18n messages with an explicit locale per call;
