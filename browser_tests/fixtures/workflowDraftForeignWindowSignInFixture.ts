@@ -105,19 +105,33 @@ class WorkflowDraftForeignWindowSignInHelper {
     )
   }
 
-  async triggerForeignWindowAuthChange(): Promise<void> {
-    const secondWindow = await this.page.context().newPage()
-    await this.bootWindow(secondWindow)
-    await secondWindow.evaluate(() => {
-      const key = Object.keys(localStorage).find((candidate) =>
-        candidate.startsWith('firebase:authUser:')
+  seedIdentityScopedDrafts(): Promise<{
+    departingKey: string
+    otherIdentityKey: string
+  }> {
+    return this.page.evaluate(() => {
+      const departingKey = Object.keys(localStorage).find((key) =>
+        key.startsWith('Comfy.Workflow.Draft.v2:')
       )
-      if (!key || !localStorage.getItem(key)) {
-        throw new Error('no shared Firebase auth record')
-      }
-
-      localStorage.removeItem(key)
+      if (!departingKey) throw new Error('no departing identity draft')
+      const otherIdentityKey =
+        'Comfy.Workflow.Draft.v2:other-user:ws-personal:other'
+      localStorage.setItem(otherIdentityKey, '{"data":"{}","updatedAt":1}')
+      return { departingKey, otherIdentityKey }
     })
+  }
+
+  hasStorageValue(key: string): Promise<boolean> {
+    return this.page.evaluate(
+      (storageKey) => localStorage.getItem(storageKey) !== null,
+      key
+    )
+  }
+
+  async logout(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Current user' }).click()
+    await this.page.getByTestId('logout-menu-item').click()
+    await this.page.getByRole('button', { name: 'Sign out anyway' }).click()
   }
 
   private async bootWindow(page: Page): Promise<void> {
@@ -128,6 +142,25 @@ class WorkflowDraftForeignWindowSignInHelper {
     await bootCloud(page)
     await page.goto(APP_URL)
     await waitForCloudApp(page)
+    await page.evaluate(() => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner',
+          created_at: '2026-01-01T00:00:00Z',
+          joined_at: '2026-01-01T00:00:00Z'
+        })
+      )
+      sessionStorage.setItem('Comfy.Workspace.Token', 'mock-workspace-token')
+      sessionStorage.setItem(
+        'Comfy.Workspace.ExpiresAt',
+        String(Date.now() + 60 * 60 * 1000)
+      )
+      sessionStorage.setItem('Comfy.Workspace.OwnerUid', 'test-user-e2e')
+    })
     await page.waitForFunction(
       () =>
         !!(window.app!.extensionManager as WorkspaceStore).workflow
