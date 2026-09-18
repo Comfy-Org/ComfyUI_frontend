@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     name: 'router-playground',
     environment: 'happy-dom',
+    // The moved suites ran under the website's timer setup; keep it.
+    setupFiles: ['../../vitest.timer.setup.ts'],
+    fakeTimers: { shouldAdvanceTime: true },
     include: ['src/**/*.{test,spec}.ts'],
     mockReset: true,
     restoreMocks: true,
