@@ -681,6 +681,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:packages/ingest-types
+      '@comfyorg/website':
+        specifier: workspace:*
+        version: link:apps/website
       '@eslint/js':
         specifier: 'catalog:'
         version: 10.0.1(eslint@10.10.0(jiti@2.7.0))
