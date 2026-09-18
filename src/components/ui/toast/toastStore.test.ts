@@ -55,4 +55,20 @@ describe('useToast', () => {
 
     expect(toast.toasts).toEqual([])
   })
+
+  it('does not replay dismissed progress but replays other queued warnings', async () => {
+    const selection = useAgentNodeSelectionStore()
+    const toast = useToast()
+    selection.isActive = true
+    const progressId = toast.loading('Preparing samples')
+    toast.warning('Missing sample')
+
+    toast.dismiss(progressId)
+    selection.isActive = false
+    await nextTick()
+
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'Missing sample' })
+    ])
+  })
 })

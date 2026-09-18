@@ -417,11 +417,9 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData(), false, true, null)
 
       await vi.waitFor(() => {
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'warn',
-            summary: t('toastMessages.missingMediaVerificationFailed')
-          })
+        expect(useToast().warning).toHaveBeenCalledWith(
+          t('toastMessages.missingMediaVerificationFailed'),
+          { duration: 5000 }
         )
       })
       expect(store.lastNodeErrors).toEqual({

@@ -571,9 +571,9 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await flush()
 
     expect(load3d.loadModel).toHaveBeenCalledWith('/view')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.failedToLoadModel'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.failedToLoadModel'
+    })
   })
 
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {

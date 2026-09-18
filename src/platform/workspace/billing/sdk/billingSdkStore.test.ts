@@ -540,7 +540,7 @@ describe('useBillingSdkStore subscription commands', () => {
   it('warns once and keeps a blocked payment page reachable however long it polls', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
-    const toasts = useToastStore()
+    const toasts = useToast()
 
     harness.publish(
       pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
@@ -563,9 +563,7 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(toasts.messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'warn' })
-    ])
+    expect(toasts.warning).toHaveBeenCalledOnce()
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 

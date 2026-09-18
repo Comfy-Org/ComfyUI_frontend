@@ -1431,10 +1431,8 @@ export function useSubscriptionCheckout(
       // The poller announced every subscription operation it settled, whatever
       // the caller was tracking; on this rail there is no poller to do it.
       if (response.requiredPayment) {
-        toast.add({
-          severity: 'success',
-          summary: t('billingOperation.subscriptionSuccess'),
-          life: 5000
+        toast.success(t('billingOperation.subscriptionSuccess'), {
+          duration: 5000
         })
       }
       checkoutStep.value = 'success'

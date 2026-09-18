@@ -270,18 +270,16 @@ describe('missingModelPipeline', () => {
         ])
       else expect(onVerified).not.toHaveBeenCalled()
       if (outcome === 'failed') {
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'warn',
-            summary: t('toastMessages.missingModelVerificationFailed')
-          })
+        expect(useToast().warning).toHaveBeenCalledWith(
+          t('toastMessages.missingModelVerificationFailed'),
+          { duration: 5000 }
         )
         expect(reportError).toHaveBeenCalledWith(
           new Error('asset service unavailable'),
           { errorType: 'missing_model_verification_failed' }
         )
       } else {
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().warning).not.toHaveBeenCalled()
         expect(reportError).not.toHaveBeenCalled()
       }
     }
