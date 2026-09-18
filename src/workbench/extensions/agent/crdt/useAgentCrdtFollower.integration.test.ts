@@ -6,6 +6,8 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 
 const apiState = vi.hoisted(() => {
   const docFrames = new EventTarget()
@@ -17,7 +19,7 @@ const apiState = vi.hoisted(() => {
     socketEvents,
     send,
     api: {
-      socket: { readyState: 1, send },
+      socket: { readyState: 1 as const, send },
       addCustomEventListener: (type: string, listener: EventListener) =>
         docFrames.addEventListener(type, listener),
       removeCustomEventListener: (type: string, listener: EventListener) =>
@@ -30,8 +32,12 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>(apiState.api)
+}))
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({})
+}))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
