@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -48,21 +47,10 @@ vi.mock<unknown>(
 
 const mockShowConfirmDialog = vi.mocked(showConfirmDialog)
 
-interface CapturedConfirmOptions {
-  headerProps: { title: string }
-  props: { promptText: string }
-  footerProps: {
-    confirmText: string
-    confirmVariant: string
-    onCancel: () => void
-    onConfirm: () => Promise<void>
-  }
-}
-
-function capturedOptions(): CapturedConfirmOptions {
-  return fromAny<CapturedConfirmOptions, unknown>(
-    mockShowConfirmDialog.mock.calls[0][0]
-  )
+function capturedOptions() {
+  const options = mockShowConfirmDialog.mock.calls[0]?.[0]
+  if (!options) throw new Error('showConfirmDialog was not called')
+  return options
 }
 
 const i18n = createI18n({
@@ -122,10 +110,10 @@ describe('SecretsPanel', () => {
 
     expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
     const opts = capturedOptions()
-    expect(opts.headerProps.title).toBe('Delete secret')
-    expect(opts.props.promptText).toBe('Delete My API Key?')
-    expect(opts.footerProps.confirmText).toBe('Delete')
-    expect(opts.footerProps.confirmVariant).toBe('destructive')
+    expect(opts.headerProps?.title).toBe('Delete secret')
+    expect(opts.props?.promptText).toBe('Delete My API Key?')
+    expect(opts.footerProps?.confirmText).toBe('Delete')
+    expect(opts.footerProps?.confirmVariant).toBe('destructive')
   })
 
   it('onConfirm closes the dialog with the helper handle and deletes the secret', async () => {
@@ -133,7 +121,9 @@ describe('SecretsPanel', () => {
     renderPanel()
     await user.click(screen.getByTestId('delete-trigger'))
 
-    await capturedOptions().footerProps.onConfirm()
+    const onConfirm = capturedOptions().footerProps?.onConfirm
+    if (typeof onConfirm !== 'function') throw new Error('onConfirm is missing')
+    await onConfirm()
 
     expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(mockDeleteSecret).toHaveBeenCalledWith(mockSecret)
@@ -144,7 +134,9 @@ describe('SecretsPanel', () => {
     renderPanel()
     await user.click(screen.getByTestId('delete-trigger'))
 
-    capturedOptions().footerProps.onCancel()
+    const onCancel = capturedOptions().footerProps?.onCancel
+    if (typeof onCancel !== 'function') throw new Error('onCancel is missing')
+    onCancel()
 
     expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(mockDeleteSecret).not.toHaveBeenCalled()

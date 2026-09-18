@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
 
@@ -11,12 +12,12 @@ function makeNode(props: Record<string, unknown> = {}): LGraphNode {
   return fromAny<LGraphNode, unknown>({ properties: { ...props } })
 }
 
-const baseCameraState: CameraState = fromAny<CameraState, unknown>({
-  position: { x: 1, y: 2, z: 3 },
-  target: { x: 0, y: 0, z: 0 },
+const baseCameraState: CameraState = {
+  position: new THREE.Vector3(1, 2, 3),
+  target: new THREE.Vector3(),
   zoom: 1,
   cameraType: 'perspective'
-})
+}
 
 function makeLoad3d({
   cameraType = 'perspective',

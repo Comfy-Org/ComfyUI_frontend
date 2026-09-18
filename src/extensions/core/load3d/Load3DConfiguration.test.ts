@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
@@ -271,17 +272,15 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const load3d = makeLoad3dMock()
     const config = new Load3DConfiguration(load3d)
     const cameraState = {
-      position: { x: 1, y: 2, z: 3 },
-      target: { x: 0, y: 0, z: 0 },
+      position: new THREE.Vector3(1, 2, 3),
+      target: new THREE.Vector3(),
       zoom: 1,
       cameraType: 'perspective' as const
     }
     config.configure({
       modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
       loadFolder: 'output',
-      cameraState: cameraState as unknown as Parameters<
-        Load3DConfiguration['configure']
-      >[0]['cameraState']
+      cameraState
     })
     await flush()
 

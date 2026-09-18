@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { api } from '@/scripts/api'
@@ -92,10 +93,13 @@ describe('useVideoSourceUrl', () => {
 
     connected = true
     outputStore.nodeOutputs['upstream'] = { images: [{ filename: 'out.mp4' }] }
-    const fireConnectionsChange = fromAny<() => void, unknown>(
-      node.onConnectionsChange
+    node.onConnectionsChange?.(
+      NodeSlotType.INPUT,
+      0,
+      true,
+      null,
+      node.inputs[0]
     )
-    fireConnectionsChange()
     await nextTick()
 
     expect(videoUrl.value).toBe('/api/view?filename=out.mp4&type=temp')
