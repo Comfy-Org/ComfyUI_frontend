@@ -127,9 +127,9 @@ function convertToMenuItem(option: MenuOption): MenuItem {
       label: sub.label,
       icon: sub.icon,
       color: sub.color,
-      checked:
-        Boolean(option.isShapePicker) &&
-        getCurrentShape()?.localizedName === sub.label,
+      checked: option.isShapePicker
+        ? getCurrentShape()?.localizedName === sub.label
+        : undefined,
       isShapeSubmenuItem: Boolean(option.isShapePicker),
       disabled: sub.disabled,
       command: sub.action

@@ -43,7 +43,7 @@ test.describe(
 
       await openMoreOptions(comfyPage)
       await comfyPage.contextMenu.menuItem('Shape').click()
-      const boxItem = comfyPage.page.getByRole('menuitem', {
+      const boxItem = comfyPage.page.getByRole('menuitemcheckbox', {
         name: 'Box',
         exact: true
       })
