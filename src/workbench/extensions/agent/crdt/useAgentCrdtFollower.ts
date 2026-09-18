@@ -23,20 +23,33 @@ import { createOpSender } from './opSender'
 
 export { apiTransport, STALE_AFTER_MS }
 
+function stringProperty(
+  value: object,
+  property: 'op_id' | 'code' | 'message'
+): string | undefined {
+  if (property === 'op_id')
+    return 'op_id' in value && typeof value.op_id === 'string'
+      ? value.op_id
+      : undefined
+  if (property === 'code')
+    return 'code' in value && typeof value.code === 'string'
+      ? value.code
+      : undefined
+  return 'message' in value && typeof value.message === 'string'
+    ? value.message
+    : undefined
+}
+
 function failureView(failed: unknown): OpsResultView['failure'] | undefined {
   if (typeof failed !== 'object' || failed === null) return undefined
   const view = {
-    ...('op_id' in failed && typeof failed.op_id === 'string'
-      ? { op_id: failed.op_id }
-      : {}),
-    ...('code' in failed && typeof failed.code === 'string'
-      ? { code: failed.code }
-      : {}),
-    ...('message' in failed && typeof failed.message === 'string'
-      ? { message: failed.message }
-      : {})
+    op_id: stringProperty(failed, 'op_id'),
+    code: stringProperty(failed, 'code'),
+    message: stringProperty(failed, 'message')
   }
-  return Object.keys(view).length > 0 ? view : undefined
+  return Object.values(view).some((value) => value !== undefined)
+    ? view
+    : undefined
 }
 
 export interface OpNack {
@@ -319,6 +332,78 @@ export function useAgentCrdtFollower(
   const onUpdateError = (): void => {
     updatesErrored.value += 1
   }
+  function recordOpsResult(
+    detail: Partial<DocOpsResult>,
+    workflowId: string,
+    failed: OpsResultView['failure'] | undefined
+  ): void {
+    recordDevEvent('doc_ops_result', {
+      workflowId,
+      ok: detail.ok,
+      seq: detail.seq,
+      applied: detail.applied ?? [],
+      skipped: detail.skipped ?? [],
+      code: detail.code,
+      message: detail.message,
+      failed: failed ?? null
+    })
+  }
+  function reportOpNack(nack: OpNack): void {
+    if (opNackReported) return
+    opNackReported = true
+    reportError(new Error('Host rejected CRDT operations'), {
+      errorType: 'agent_crdt_host_operation_rejected',
+      tags: {
+        workflow_id: nack.workflowId,
+        applied_ops: nack.applied,
+        skipped_ops: nack.skipped
+      },
+      context: {
+        failed: nack.failed,
+        host_code: nack.code,
+        host_message: nack.message
+      }
+    })
+  }
+  function createOpNack(
+    detail: Partial<DocOpsResult>,
+    workflowId: string,
+    failed: OpsResultView['failure'] | undefined
+  ): OpNack {
+    return {
+      workflowId,
+      code: detail.code ?? null,
+      message: detail.message ?? null,
+      failed: failed ?? null,
+      applied: detail.applied?.length ?? 0,
+      skipped: detail.skipped?.length ?? 0
+    }
+  }
+  function opNackMessage(nack: OpNack): string {
+    const candidates = [
+      nack.message,
+      nack.failed?.message,
+      nack.code,
+      nack.failed?.code
+    ]
+    return (
+      candidates.find(
+        (candidate): candidate is string => typeof candidate === 'string'
+      ) ?? 'The host rejected the workflow edit.'
+    )
+  }
+  function handleOpNack(
+    detail: Partial<DocOpsResult>,
+    workflowId: string,
+    failed: OpsResultView['failure'] | undefined
+  ): void {
+    const nack = createOpNack(detail, workflowId, failed)
+    opNacks.value += 1
+    lastOpNack.value = nack
+    recordDevEvent('op_nack', nack)
+    onFailure('op_rejected', opNackMessage(nack))
+    reportOpNack(nack)
+  }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as Partial<DocOpsResult> | null
@@ -333,53 +418,9 @@ export function useAgentCrdtFollower(
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
     const failed = failureView(detail.failed)
-    recordDevEvent('doc_ops_result', {
-      workflowId: resultWorkflowId,
-      ok: detail.ok,
-      seq: detail.seq,
-      applied: detail.applied ?? [],
-      skipped: detail.skipped ?? [],
-      code: detail.code,
-      message: detail.message,
-      failed: failed ?? null
-    })
+    recordOpsResult(detail, resultWorkflowId, failed)
     if (detail.ok !== false) return
-
-    const nack: OpNack = {
-      workflowId: resultWorkflowId,
-      code: detail.code ?? null,
-      message: detail.message ?? null,
-      failed: failed ?? null,
-      applied: detail.applied?.length ?? 0,
-      skipped: detail.skipped?.length ?? 0
-    }
-    opNacks.value += 1
-    lastOpNack.value = nack
-    recordDevEvent('op_nack', nack)
-    onFailure(
-      'op_rejected',
-      nack.message ??
-        nack.failed?.message ??
-        nack.code ??
-        nack.failed?.code ??
-        'The host rejected the workflow edit.'
-    )
-    if (!opNackReported) {
-      opNackReported = true
-      reportError(new Error('Host rejected CRDT operations'), {
-        errorType: 'agent_crdt_host_operation_rejected',
-        tags: {
-          workflow_id: nack.workflowId,
-          applied_ops: nack.applied,
-          skipped_ops: nack.skipped
-        },
-        context: {
-          failed: nack.failed,
-          host_code: nack.code,
-          host_message: nack.message
-        }
-      })
-    }
+    handleOpNack(detail, resultWorkflowId, failed)
   }
   const onDocReset: EventListener = (event) => {
     const detail =

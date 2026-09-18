@@ -245,6 +245,68 @@ export class LayoutFollowerBridge extends EventTarget {
     }
   }
 
+  private skipUpdate(update: DocUpdate, reason: 'stale' | 'gap'): void {
+    this.dispatchEvent(
+      new CustomEvent('doc_update_skipped', {
+        detail: { workflowId: update.workflowId, seq: update.seq, reason }
+      })
+    )
+  }
+
+  private rejectGap(update: DocUpdate): boolean {
+    const baseline = this.lastSeq ?? this.ackSeq
+    if (baseline === null || update.seq <= baseline + 1) return false
+    this.skipUpdate(update, 'gap')
+    this.dispatchEvent(
+      new CustomEvent('doc_gap', {
+        detail: {
+          workflowId: update.workflowId,
+          expected: baseline + 1,
+          received: update.seq
+        }
+      })
+    )
+    this.resubscribe()
+    return true
+  }
+
+  private applyUpdate(update: DocUpdate): boolean {
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+      return true
+    } catch {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_error', {
+          detail: { workflowId: update.workflowId, seq: update.seq }
+        })
+      )
+      return false
+    }
+  }
+
+  private advanceSequence(update: DocUpdate, isCatchUp: boolean): void {
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
+  }
+
+  private schemaIsReadable(update: DocUpdate, isCatchUp: boolean): boolean {
+    try {
+      assertReadableSchema(this.follower.doc)
+      return true
+    } catch (error) {
+      if (!(error instanceof FollowerSchemaError)) throw error
+      this.advanceSequence(update, isCatchUp)
+      this.schemaError = error
+      this.dispatchEvent(
+        new CustomEvent('schema_error', {
+          detail: { workflowId: update.workflowId, found: error.found }
+        })
+      )
+      return false
+    }
+  }
+
   private readonly onDocUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
@@ -269,15 +331,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchEvent(
-        new CustomEvent('doc_update_skipped', {
-          detail: {
-            workflowId: update.workflowId,
-            seq: update.seq,
-            reason: 'stale'
-          }
-        })
-      )
+      this.skipUpdate(update, 'stale')
       this.dispatchEvent(
         new CustomEvent('doc_stale', {
           detail: { workflowId: update.workflowId, seq: update.seq }
@@ -294,68 +348,20 @@ export class LayoutFollowerBridge extends EventTarget {
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
     // both contiguous with it, so neither trips it, while a first frame at
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
-    const baseline = this.lastSeq ?? this.ackSeq
-    if (baseline !== null && update.seq > baseline + 1) {
-      this.dispatchEvent(
-        new CustomEvent('doc_update_skipped', {
-          detail: {
-            workflowId: update.workflowId,
-            seq: update.seq,
-            reason: 'gap'
-          }
-        })
-      )
-      this.dispatchEvent(
-        new CustomEvent('doc_gap', {
-          detail: {
-            workflowId: update.workflowId,
-            expected: baseline + 1,
-            received: update.seq
-          }
-        })
-      )
-      this.resubscribe()
-      return
-    }
-    try {
-      this.follower.applyRemoteUpdate(update.update)
-    } catch {
-      this.dispatchEvent(
-        new CustomEvent('doc_update_error', {
-          detail: { workflowId: update.workflowId, seq: update.seq }
-        })
-      )
-      return
-    }
+    if (this.rejectGap(update) || !this.applyUpdate(update)) return
     // KA-11 read-time gate. The frame must merge before its schema can be
     // checked, but nothing downstream may READ a doc whose declared schema
     // this build was not written against. Failing closed here, before the
     // frame is re-dispatched, is what keeps a v2 doc from being half-projected
     // onto the canvas by a v1 reader.
-    try {
-      assertReadableSchema(this.follower.doc)
-    } catch (error) {
-      if (!(error instanceof FollowerSchemaError)) throw error
-      if (this.lastSeq === null || update.seq > this.lastSeq)
-        this.lastSeq = update.seq
-      if (isCatchUp) this.catchUpPending = false
-      this.schemaError = error
-      this.dispatchEvent(
-        new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
-        })
-      )
-      return
-    }
+    if (!this.schemaIsReadable(update, isCatchUp)) return
 
     const accepted = this.dispatchEvent(
       new CustomEvent('doc_update', { detail: update, cancelable: true })
     )
     if (!accepted) return
 
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
+    this.advanceSequence(update, isCatchUp)
   }
 
   /**
