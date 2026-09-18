@@ -131,8 +131,13 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    state.inputs = slots.inputs
-    state.outputs = slots.outputs
+    // Splice in place, never reassign: a live node's `inputs`/`outputs` ARE
+    // these arrays (`LGraphNode` binds `_inputs = _state.inputs`). Replacing
+    // them detached the canvas node, so slots an agent grew afterwards
+    // (`videos.video0`) never reached it and their links resolved against
+    // stale entries — the queued prompt wired VIDEO into `codec`.
+    state.inputs.splice(0, state.inputs.length, ...slots.inputs)
+    state.outputs.splice(0, state.outputs.length, ...slots.outputs)
     return true
   }
 
