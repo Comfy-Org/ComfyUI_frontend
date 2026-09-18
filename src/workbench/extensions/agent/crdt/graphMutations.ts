@@ -1,4 +1,3 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -18,6 +17,15 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
+
+import type { PlaceholderWidget, WidgetValuePayload } from './nodePayload'
+import {
+  cloneWidgetValue,
+  nodeTitle,
+  parseWidgetValues,
+  placeholderWidgets,
+  widgetType
+} from './nodePayload'
 
 export interface SemanticNodePayload extends Record<string, unknown> {
   id: string | number
@@ -127,22 +135,6 @@ type QueuedMutation =
     }
   | { kind: 'clearSemanticGraph' }
 
-/**
- * The `widgets_values` of a doc node entry. cmp stores catalog nodes by
- * widget name and frontend-only nodes positionally; a serialized node that
- * declares no widgets omits the key altogether.
- */
-type WidgetValuePayload =
-  | { kind: 'omitted' }
-  | { kind: 'positional'; values: readonly WidgetValue[] }
-  | { kind: 'named'; values: ReadonlyMap<string, WidgetValue> }
-
-interface PlaceholderWidget {
-  name: string
-  value: WidgetValue
-  type: string
-}
-
 interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
@@ -234,79 +226,6 @@ function readPair(
     : fallback
 }
 
-function widgetType(value: unknown): string {
-  switch (typeof value) {
-    case 'boolean':
-      return 'boolean'
-    case 'number':
-      return 'number'
-    case 'string':
-      return 'string'
-    default:
-      return 'legacy'
-  }
-}
-
-function cloneWidgetValue(value: unknown): WidgetValue {
-  switch (typeof value) {
-    case 'string':
-    case 'number':
-    case 'boolean':
-    case 'undefined':
-      return value
-    case 'object':
-      return structuredClone(value)
-    default:
-      return null
-  }
-}
-
-function parseWidgetValues(value: unknown): WidgetValuePayload {
-  if (Array.isArray(value)) {
-    return { kind: 'positional', values: value.map(cloneWidgetValue) }
-  }
-  if (isRecord(value)) {
-    return {
-      kind: 'named',
-      values: new Map(
-        Object.entries(value).map(([name, entry]) => [
-          name,
-          cloneWidgetValue(entry)
-        ])
-      )
-    }
-  }
-  return { kind: 'omitted' }
-}
-
-/** Store records for a node no live widget has registered yet. */
-function placeholderWidgets(
-  widgets: WidgetValuePayload
-): readonly PlaceholderWidget[] {
-  switch (widgets.kind) {
-    case 'omitted':
-      return []
-    case 'positional':
-      return widgets.values.map((value, index) => ({
-        name: String(index),
-        value,
-        type: widgetType(value)
-      }))
-    case 'named':
-      return [...widgets.values].map(([name, value]) => ({
-        name,
-        value,
-        type: widgetType(value)
-      }))
-  }
-}
-
-function registeredTitle(type: string): string | undefined {
-  return Object.hasOwn(LiteGraph.registered_node_types, type)
-    ? LiteGraph.registered_node_types[type].title
-    : undefined
-}
-
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -320,10 +239,7 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title:
-      (typeof payload.title === 'string' && payload.title) ||
-      registeredTitle(payload.type) ||
-      payload.type,
+    title: nodeTitle(payload.title, payload.type),
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
@@ -856,6 +772,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             context
           )
         }
+        return
+      }
+      default: {
+        const unhandled: never = widgets
+        return unhandled
       }
     }
   }
