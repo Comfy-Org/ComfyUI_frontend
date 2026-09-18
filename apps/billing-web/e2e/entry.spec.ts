@@ -26,8 +26,16 @@ for (const { link, path, reason } of BAD_LINKS) {
       page.getByRole('heading', { name: "We couldn't open that billing page" })
     ).toBeVisible()
     await expect(page.getByText(reason)).toBeVisible()
-    // The name of this test is the assertion: a bad link explains itself where
-    // it landed, and bouncing the customer elsewhere would hide the misdirection.
-    expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(path)
+    // Explaining the failure is only half of not redirecting: the misdirected
+    // link has to stay legible. These visitors are signed out, so the guard
+    // sends them to sign-in and carries the link in `returnTo`; a signed-in one
+    // stays put. Either way the URL still names the link that failed, and a
+    // bounce to another billing surface would lose it.
+    const landed = new URL(page.url())
+    const shown =
+      landed.pathname === '/sign-in'
+        ? landed.searchParams.get('returnTo')
+        : landed.pathname + landed.search
+    expect(shown).toBe(path)
   })
 }
