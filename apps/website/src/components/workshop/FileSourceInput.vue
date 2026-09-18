@@ -6,6 +6,7 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FieldSchema, FileValue } from '../../config/workshop-playground'
+import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'
@@ -37,6 +38,9 @@ const imageOnly = computed(
     field.accept.every((type) => type.startsWith('image/'))
 )
 const limit = computed(() => (field.multiple ? field.maxItems : 1))
+const uploadLimit = computed(() =>
+  formatWorkshopUploadLimit(field.maxBytes, locale)
+)
 const rejection = ref<TranslationKey>()
 const replacement = ref<number>()
 const input = useTemplateRef<HTMLInputElement>('input')
@@ -89,7 +93,7 @@ const rejectionMessage = computed(() => {
   const unchanged = imageOnly.value
     ? 'workshop.field.imagesUnchanged'
     : 'workshop.field.filesUnchanged'
-  return `${t(rejection.value, locale).replace('{count}', String(limit.value))} ${t(unchanged, locale)}`
+  return `${t(rejection.value, locale).replace('{count}', String(limit.value)).replace('{limit}', uploadLimit.value)} ${t(unchanged, locale)}`
 })
 
 function accepts(file: File): boolean {
@@ -201,7 +205,12 @@ function remove(index: number) {
       <span>{{ prompt }}</span>
       <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{ t('workshop.field.uploadLimit', locale) }}
+        {{
+          t('workshop.field.uploadLimit', locale).replace(
+            '{limit}',
+            uploadLimit
+          )
+        }}
       </span>
     </label>
     <input

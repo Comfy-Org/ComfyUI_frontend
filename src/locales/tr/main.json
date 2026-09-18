@@ -419,9 +419,9 @@
       "contactSupport": "Hesabınızı silmek için lütfen {email} adresiyle iletişime geçin"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Bu e-posta adresiyle zaten bir hesap var, ancak farklı bir oturum açma yöntemi kullanıyor. Lütfen başlangıçta kullandığınız yöntemle oturum açın.",
+      "auth/account-exists-with-different-credential": "Bu yöntemle giriş yapamadık. Başka bir giriş seçeneği deneyin veya devam etmek için şifrenizi sıfırlayın.",
       "auth/cancelled-popup-request": "Başka bir oturum açma penceresi zaten açık olduğundan bu pencere iptal edildi. Lütfen tekrar deneyin.",
-      "auth/email-already-in-use": "Bu e-posta ile zaten bir hesap mevcut. Bunun yerine giriş yapmayı deneyin.",
+      "auth/email-already-in-use": "Bu e-posta ile bir hesap oluşturamadık. Bunun yerine giriş yapmayı veya şifrenizi sıfırlayın.",
       "auth/invalid-credential": "Geçersiz giriş bilgileri. Lütfen e-posta adresinizi ve parolanızı kontrol edin.",
       "auth/invalid-email": "Lütfen geçerli bir e-posta adresi girin.",
       "auth/network-request-failed": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
@@ -430,9 +430,7 @@
       "auth/popup-closed-by-user": "Oturum açma tamamlanmadan oturum açma penceresi kapatıldı. Lütfen tekrar deneyin.",
       "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
-      "auth/user-not-found": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
-      "auth/wrong-password": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
       "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
     },
