@@ -109,6 +109,16 @@ interface WidgetDefinition {
 
 const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
+    'dynamic_group_row',
+    {
+      component: defineAsyncComponent(
+        () => import('../components/WidgetDynamicGroupRow.vue')
+      ),
+      aliases: [],
+      essential: false
+    }
+  ],
+  [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
   ],
