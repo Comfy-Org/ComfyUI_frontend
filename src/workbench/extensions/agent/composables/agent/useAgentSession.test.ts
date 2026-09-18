@@ -1086,11 +1086,11 @@ describe('useAgentSession (v1 composition root)', () => {
   )
 
   it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -1146,11 +1146,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     let releasePrepare: () => void = () => undefined
@@ -1199,11 +1199,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-b'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
