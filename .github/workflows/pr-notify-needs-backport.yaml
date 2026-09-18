@@ -48,12 +48,12 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      # Read the PR rather than trust the webhook payload. The documented
-      # process (docs/release-process.md) adds `needs-backport` first and the
-      # target label second, so the payload's label list is a snapshot taken
-      # before the target arrived and the DM would warn about a missing target
-      # that landed a second later. By the time this runs the labelling is
-      # long finished.
+      # Read the PR rather than trust the webhook payload. `needs-backport`
+      # and the target label are applied together but arrive as separate
+      # events, so the payload's label list is a snapshot that can be missing
+      # whichever of the two landed second — and the DM would then warn about
+      # a target that was already there. By the time this runs the labelling
+      # is long finished.
       #
       # REST rather than `gh pr view`, which pr-backport.yaml records as
       # failing under the auto-provided token: its GraphQL selection wants
@@ -69,8 +69,11 @@ jobs:
           gh api "repos/${GH_REPO}/pulls/${PR_NUMBER}" > pr.json
 
           # pr-backport.yaml drops a target label whose branch does not exist,
-          # so the DM checks the same list before promising a cherry-pick into
-          # a release line that has not been cut yet.
+          # so the DM checks for itself before promising a cherry-pick into a
+          # release line that has not been cut yet. Branches only, where
+          # pr-backport.yaml's `git ls-remote --exit-code` would take any ref
+          # — a target label colliding with a tag would fail its checkout
+          # later anyway.
           #
           # Failing soft, unlike the read above: the branch list only sharpens
           # the message, and the script treats an empty file as "unknown" and
@@ -165,6 +168,11 @@ jobs:
                 | fatal_error | request_timeout)
                 echo "::warning::Slack could not deliver the DM to" \
                   "${CHANNEL}: ${ERROR:-no usable response}"
+                # On the run page too, not just as an annotation: the label
+                # event happens once, so this DM is simply gone and this line
+                # is the only lasting record that it was owed.
+                echo "Slack did not take the DM to \`${CHANNEL}\`:" \
+                  "${ERROR:-no usable response}" >> "$GITHUB_STEP_SUMMARY"
                 UNDELIVERED=1
                 ;;
               *)
@@ -177,16 +185,23 @@ jobs:
           done < <(jq -c '.[]' dms.json)
 
           # The two outcomes are not the same kind of thing, and neither is
-          # `continue-on-error` for both. Slack being down outlasted the
-          # retries but still fixes itself, and is not worth a red cross on
-          # somebody's pull request. A rejection does not fix itself — a wrong
-          # member ID, a missing scope, a revoked token leaves every DM
-          # undelivered until a human changes something — and a green run
-          # carrying only an annotation is precisely how this feature would
-          # stop working without anyone finding out.
+          # `continue-on-error` for both.
+          #
+          # A rejection names something a human must change — a wrong member
+          # ID, a missing scope, a revoked token — and it will silence this
+          # watcher on every PR until they do, so it fails the check.
+          #
+          # An outage that outlasted the retries does not: nobody reading the
+          # PR can act on it, and failing would put a red cross on a
+          # contributor's PR for something they did not cause. Be clear about
+          # the cost, because it is not nothing: that DM is dropped, not
+          # deferred. A non-zero exit would not recover it either — Actions
+          # retries nothing on its own, and a manual re-run rebuilds the whole
+          # list and would DM everyone who already got it. The label stays on
+          # the PR, so the release-cut digest still reports it.
           if [ "$REJECTED" = 1 ]; then
             exit 1
           fi
           if [ "$UNDELIVERED" = 1 ]; then
-            echo "::warning::Slack did not take a DM; it was not delivered."
+            echo "::warning::A DM was dropped; see the summary for which."
           fi

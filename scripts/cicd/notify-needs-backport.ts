@@ -169,6 +169,14 @@ export interface NeedsBackportEvent {
 const code = (values: readonly string[]) =>
   values.map((value) => `\`${escapeSlackText(value)}\``).join(', ')
 
+/**
+ * Shapes rather than a sample version, which would read as stale guidance
+ * once the line moves on. No angle-bracket placeholders: Slack reads `<…>` as
+ * a link and would swallow the very thing being pointed at.
+ */
+const LABEL_HINT =
+  'Add a target label: a `major.minor` version, `core/major.minor`, `cloud/major.minor`, or `branch:` followed by a branch name.'
+
 /** What `pr-backport.yaml` will do with this PR, and when. */
 function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
   if (pr.baseRef !== BACKPORT_SOURCE_BRANCH) {
@@ -190,20 +198,21 @@ function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
   // branches then, so nothing is yet wrong with an open PR.
   const merged = pr.state === 'MERGED'
 
+  const one = targets.unknown.length === 1
   const uncut =
     targets.unknown.length === 0
       ? []
       : [
           merged
-            ? `:warning: ${code(targets.unknown)} has no branch on the remote, so *PR Backport* drops it.`
-            : `:warning: ${code(targets.unknown)} has no branch on the remote yet, and needs one by the time this merges.`
+            ? `:warning: ${code(targets.unknown)} ${one ? 'has' : 'have'} no branch on the remote, so *PR Backport* drops ${one ? 'it' : 'them'}.`
+            : `:warning: ${code(targets.unknown)} ${one ? 'has' : 'have'} no branch on the remote yet, and ${one ? 'needs' : 'need'} one by the time this merges.`
         ]
 
   if (targets.known.length === 0) {
     return [
       merged
-        ? ':warning: The PR is merged with no usable target branch label, so *PR Backport* fails. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.'
-        : ':warning: The PR is still open and has no usable target branch label yet — *PR Backport* needs one by the time it merges. Add `1.47`, `core/1.47`, `cloud/1.47` or `branch:<branch>`.',
+        ? `:warning: The PR is merged with no usable target branch label, so *PR Backport* fails. ${LABEL_HINT}`
+        : `:warning: The PR is still open and has no usable target branch label yet — *PR Backport* needs one by the time it merges. ${LABEL_HINT}`,
       ...uncut
     ]
   }

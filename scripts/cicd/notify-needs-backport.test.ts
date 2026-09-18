@@ -250,6 +250,28 @@ describe('buildNeedsBackportText', () => {
     expect(text).toContain('`core/1.99` has no branch on the remote')
   })
 
+  it('agrees in number when more than one target is uncut', () => {
+    const text = buildNeedsBackportText(
+      event({ labels: ['needs-backport', 'core/1.47', '1.99', '2.0'] })
+    )
+
+    expect(text).toContain(
+      '`core/1.99`, `core/2.0` have no branch on the remote'
+    )
+    expect(text).toContain('drops them')
+  })
+
+  // Slack reads `<…>` as a link, so an angle bracket in the remediation hint
+  // would swallow the placeholder it is there to show. Only the first line
+  // may contain one, where the PR link is deliberate.
+  it('keeps angle brackets out of everything but the PR link', () => {
+    const [, ...rest] = buildNeedsBackportText(
+      event({ labels: ['needs-backport'] })
+    ).split('\n')
+
+    expect(rest.join('\n')).not.toContain('<')
+  })
+
   it('says a backport cannot start when every target is uncut', () => {
     const text = buildNeedsBackportText(
       event({ labels: ['needs-backport', '1.99'] })
