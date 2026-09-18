@@ -373,7 +373,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await expect(dialog).toBeVisible()
 
     const nav = dialog.locator('nav')
-    await expect(nav.getByText('All Extensions')).toBeVisible()
+    await expect(nav.getByText('All Custom Nodes')).toBeVisible()
     await expect(nav.getByText('Not Installed')).toBeVisible()
     await expect(nav.getByText('All Installed')).toBeVisible()
     await expect(nav.getByText('Updates Available')).toBeVisible()
