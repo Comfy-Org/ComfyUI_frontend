@@ -210,6 +210,19 @@ The follower code on this branch splits into a durable core and a disposable spi
   apply-remote-update→store adapter lands. Coverage or review findings on these files
   route to the store-adapter work, not to polishing the spike.
 
+## Amendment (2026-09-18): `graphMutations` is the store adapter's mutation layer
+
+The store adapter anticipated above landed as `ecsFollowerAdapter`, and
+`semanticProjector`, `diffSnapshots`, and `litegraphMutator` were deleted with
+the spike. `graphMutations` was not: the adapter applies every doc node, link,
+and widget entry through its validated `prepare`/`commit` batch, so it is
+durable and lives beside the adapter in `src/workbench/extensions/agent/crdt/`.
+Its doc-entry handling is Agent-boundary policy: a catch-up reconcile of a live
+node patches widget values and titles in place rather than re-creating the
+node. `LGraph`, the shared stores, and `LiteGraphGlobal` stay unaware of the
+Agent. This supersedes the 2026-08-21 "Dispose" classification for
+`graphMutations`; the other Dispose entries are already gone.
+
 ## Amendment (2026-09-12): product gate and developer diagnostics
 
 The runtime product flag, not a build flag, controls follower transport. The

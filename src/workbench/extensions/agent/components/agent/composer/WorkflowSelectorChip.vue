@@ -146,7 +146,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <span
                 v-else
                 data-testid="workflow-selector-icon"
-                class="icon-[comfy--workflow] size-3.5 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+                class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
               />
               <span class="min-w-0 truncate">{{
                 current?.name ?? t('agent.selectWorkflowForAgent')

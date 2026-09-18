@@ -15,6 +15,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 
 import {
+  UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
   useWorkspaceAuthStore,
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -24,6 +25,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -32,13 +34,14 @@ vi.mock(import('firebase/auth'), { spy: true })
  * `value` moves the store's user AND fires the port, the way a real
  * auth-state event reaches both; `deliver` fires the port alone.
  */
-const portListeners = new Set<(user: User | null) => void>()
 const portUser = (user: { uid: string } | null): User | null =>
   user &&
   ({
     ...user,
     getIdToken: () => useAuthStore().getIdToken()
   } as Partial<User> as User)
+const port = replayIdentityPort(() => portUser(useAuthStore().currentUser))
+const portListeners = port.observers
 const mockCurrentUser = {
   listeners: portListeners,
   get value(): { uid: string } | null {
@@ -46,10 +49,10 @@ const mockCurrentUser = {
   },
   set value(user: { uid: string } | null) {
     Object.assign(useAuthStore(), { currentUser: user })
-    portListeners.forEach((listener) => listener(portUser(user)))
+    port.emit(portUser(user))
   },
   deliver(user: { uid: string } | null) {
-    portListeners.forEach((listener) => listener(portUser(user)))
+    port.emit(portUser(user))
   }
 }
 
@@ -123,11 +126,7 @@ beforeEach(() => {
 beforeEach(() => {
   portListeners.clear()
   vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
-    (listener) => {
-      portListeners.add(listener)
-      listener(portUser(useAuthStore().currentUser))
-      return () => portListeners.delete(listener)
-    }
+    port.register
   )
   vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
   vi.mocked(useAuthStore().notifyTokenRefreshed).mockImplementation(() => {})
@@ -2055,6 +2054,32 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBeNull()
     })
 
+    it('a port that delivers synchronously inside onUserChanged still leaves the store subscribed and minting for that user', async () => {
+      const syncPort = replayIdentityPort(
+        () => portUser(useAuthStore().currentUser),
+        'sync'
+      )
+      vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
+        syncPort.register
+      )
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      expect(syncPort.observers.size, 'the port stays subscribed').toBe(1)
+      await expect(store.mintAtLogin()).resolves.toBe(true)
+      expect(store.getUnifiedToken()).toBe('unified-token-1')
+    })
+
     it('mints the personal default once into the dormant unifiedToken slot when flag ON', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
@@ -2123,9 +2148,8 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
     })
 
-    it('attaches and mints the current target when the flag flips on', async () => {
+    it('mints the current target when the flag flips on', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
-
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2834,7 +2858,8 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('destroy detaches the unified identity and drops the token', async () => {
+    it('destroy disposes the session client and drops the token', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2857,11 +2882,18 @@ describe('useWorkspaceAuthStore', () => {
       mockFetch.mockClear()
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
       expect(mockFetch).not.toHaveBeenCalled()
+
+      const mintAfterDestroy = store.mintAtLogin()
+      await vi.advanceTimersByTimeAsync(UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
+      await expect(
+        mintAfterDestroy,
+        'destroy detaches identity with no path back, so a mint waits the settle ceiling and fails closed'
+      ).resolves.toBe(false)
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('destroy stops the flag watcher so a later flag flip cannot reattach or mint', async () => {
+    it('destroy stops the flag watcher so a later flag flip cannot resubscribe or mint', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2876,9 +2908,10 @@ describe('useWorkspaceAuthStore', () => {
       expect(portListeners.size).toBe(1)
 
       store.destroy()
-      expect(portListeners.size, 'destroy must detach the identity port').toBe(
-        0
-      )
+      expect(
+        portListeners.size,
+        'destroy must unsubscribe the identity port'
+      ).toBe(0)
 
       mockFetch.mockClear()
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
@@ -2889,7 +2922,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(
         portListeners.size,
-        'a destroyed store must not reattach identity when the flag flips'
+        'a destroyed store must not resubscribe identity when the flag flips'
       ).toBe(0)
       expect(
         mockFetch,
@@ -2898,9 +2931,8 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.getUnifiedToken()).toBeUndefined()
     })
 
-    it('turning the flag OFF detaches the identity, clears the slot, and stops refreshing', async () => {
+    it('turning the flag OFF keeps the identity subscribed, clears the slot, and does not mint or refresh while the flag is off', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -2927,14 +2959,63 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value, 'the slot must empty on rollback').toBeNull()
       expect(
         portListeners.size,
-        'the port must be detached, not left listening for the legacy rail'
-      ).toBe(0)
+        'the port outlives the flag: identity is bound for the store lifetime'
+      ).toBe(1)
       await vi.advanceTimersByTimeAsync(expiresInMs)
       expect(
         mockFetch,
         'no scheduled refresh may run for a disabled feature'
       ).toHaveBeenCalledTimes(1)
       expect(useAuthStore().notifyTokenRefreshed).not.toHaveBeenCalled()
+
+      expect(
+        await store.mintAtLogin(),
+        'the login mint is the gate: it must refuse while the flag is off'
+      ).toBe(false)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(unifiedToken.value).toBeNull()
+
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      expect(await store.mintAtLogin()).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(unifiedToken.value).toBe('unified-token-1')
+    })
+
+    it('refuses a mint that parked on the identity before the flag went off', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+
+      // A port that never replays on its own, so the mint parks on
+      // unifiedUser() until we deliver the user by hand.
+      const heldPort = replayIdentityPort(() => null)
+      vi.spyOn(useAuthStore().identity, 'onUserChanged').mockImplementation(
+        heldPort.register
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-1' } })
+      const parked = store.mintAtLogin()
+
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+      await nextTick()
+      heldPort.emit(portUser({ uid: 'user-1' }))
+
+      await expect(
+        parked,
+        'a mint that resumes after the rollback must fail closed'
+      ).resolves.toBe(false)
+      expect(
+        mockFetch,
+        'no /auth/token exchange may fire for a disabled feature'
+      ).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
     })
 
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
@@ -3290,7 +3371,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(store.unifiedToken).toBeNull()
 
       const pending = store.mintAtLogin()
-      await vi.advanceTimersByTimeAsync(15_000)
+      await vi.advanceTimersByTimeAsync(UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
 
       expect(
         await pending,
