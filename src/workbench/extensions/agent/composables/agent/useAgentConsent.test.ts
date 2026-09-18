@@ -1,5 +1,7 @@
+import { useDialogService } from '@/services/dialogService'
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+import { computed, reactive, ref } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -7,30 +9,13 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setImmediate } from 'node:timers/promises'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 
 import { useAgentConsent } from './useAgentConsent'
 
-const authState = await vi.hoisted(async () => {
-  const { reactive } = await import('vue')
-  return reactive<{ loggedIn: boolean; identity: string | null }>({
-    loggedIn: false,
-    identity: 'account-a'
-  })
-})
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    get isLoggedIn() {
-      return { value: authState.loggedIn }
-    },
-    resolvedUserInfo: {
-      get value() {
-        return authState.identity ? { id: authState.identity } : null
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
@@ -50,10 +35,7 @@ vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 
-const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -106,9 +88,9 @@ async function startConsent() {
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     localStorage.clear()
-    authState.loggedIn = true
-    authState.identity = 'account-a'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
@@ -119,7 +101,6 @@ describe('useAgentConsent', () => {
     fetchApi.mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
-    showSignInDialog.mockReset()
     reportError.mockReset()
     vi.mocked(useToastStore().add).mockReset()
   })
@@ -264,11 +245,13 @@ describe('useAgentConsent', () => {
   })
 
   it('does not apply an open consent card to a different account', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
 
-    authState.identity = 'account-b'
+    identity.value = 'account-b'
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
@@ -279,8 +262,14 @@ describe('useAgentConsent', () => {
   })
 
   it('authenticates signed-out Local users before saving to their account', async () => {
-    authState.loggedIn = false
-    authState.identity = null
+    const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
+      loggedIn: false,
+      identity: null
+    })
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
+    )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementationOnce(
       async () => {
@@ -289,11 +278,13 @@ describe('useAgentConsent', () => {
         })
       }
     )
-    showSignInDialog.mockImplementationOnce(async () => {
-      authState.loggedIn = true
-      authState.identity = 'account-a'
-      return true
-    })
+    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+      async () => {
+        authState.loggedIn = true
+        authState.identity = 'account-a'
+        return true
+      }
+    )
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     const onOpen = vi.fn()
 
@@ -302,7 +293,7 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
     await request
 
-    expect(showSignInDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
     expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
@@ -317,9 +308,9 @@ describe('useAgentConsent', () => {
   })
 
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
-    authState.loggedIn = false
-    authState.identity = null
-    showSignInDialog.mockResolvedValueOnce(false)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent(onOpen)
@@ -334,10 +325,16 @@ describe('useAgentConsent', () => {
   })
 
   it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {
-    authState.loggedIn = false
-    authState.identity = null
+    const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
+      loggedIn: false,
+      identity: null
+    })
+    useCurrentUser().isLoggedIn = computed(() => authState.loggedIn)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      authState.identity ? { id: authState.identity } : null
+    )
     const error = new Error('Sign-in chunk could not load')
-    showSignInDialog.mockRejectedValueOnce(error)
+    vi.mocked(useDialogService().showSignInDialog).mockRejectedValueOnce(error)
     const onOpen = vi.fn()
 
     const request = useAgentConsent().withConsent(onOpen)
@@ -357,11 +354,13 @@ describe('useAgentConsent', () => {
       })
     )
 
-    showSignInDialog.mockImplementationOnce(async () => {
-      authState.loggedIn = true
-      authState.identity = 'account-a'
-      return true
-    })
+    vi.mocked(useDialogService().showSignInDialog).mockImplementationOnce(
+      async () => {
+        authState.loggedIn = true
+        authState.identity = 'account-a'
+        return true
+      }
+    )
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     const retry = useAgentConsent().withConsent(onOpen)
     await startConsent()

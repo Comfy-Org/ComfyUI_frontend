@@ -5,7 +5,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import type {
   BillingHttpResponse,
   BillingResult
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import {
   BASELINE_MICROS,

@@ -16,7 +16,7 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
 })
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
   return {
     workshopIdentity: createTestIdentity({
       onUserChanged: () => () => undefined

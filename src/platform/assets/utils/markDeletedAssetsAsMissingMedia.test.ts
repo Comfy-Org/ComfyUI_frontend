@@ -181,6 +181,12 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
         nodeId: '50',
         nodeType: 'LoadImage',
         widgetName: 'outer_image',
+        promotedSources: [
+          {
+            executionId: '50:100',
+            widgetName: 'image'
+          }
+        ],
         mediaType: 'image',
         name: deletedValue,
         isMissing: true

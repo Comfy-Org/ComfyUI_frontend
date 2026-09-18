@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -448,6 +449,192 @@ describe('HeaderAccount workspace switcher', () => {
       signal: expect.any(AbortSignal),
       timeoutMs: 15_000
     })
+  })
+
+  // A run belongs to the workspace paying for it. The playground guards every
+  // way off the page, and this is the way off the workspace.
+  it('asks before a switch throws away a run, and lets the reader stay', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+    expect(h.remint).not.toHaveBeenCalled()
+
+    await user.click(screen.getByTestId('run-leave-stay'))
+
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.remint).not.toHaveBeenCalled()
+  })
+
+  it('cancels the run and switches once the reader accepts', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const team = {
+      token: 'team-jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-1', name: 'Comfy team', type: 'team' as const },
+      role: 'member'
+    }
+    h.remint.mockImplementationOnce(async () => {
+      h.session!.value = team
+      return { status: 'ok', session: team }
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    await user.click(await screen.findByTestId('run-leave-confirm'))
+
+    expect(cancel).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+  })
+
+  it('carries the switch through when the run ends under the dialog', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1',
+        preserveCredentialOnTransientFailure: true
+      })
+    )
+    expect(cancel).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+  })
+
+  it('drops a pending switch when the authenticated session changes', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    const replacement = {
+      token: 'other-jwt',
+      uid: 'user-2',
+      workspace: { id: 'other', name: 'Other', type: 'personal' as const },
+      role: 'owner'
+    }
+    h.user!.value = {
+      uid: 'user-2',
+      email: 'other@b.co',
+      displayName: 'Other'
+    }
+    h.session!.value = replacement
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.session!.value).toEqual(replacement)
+  })
+
+  // The other arm of the same scope check: the reader stays signed in, and only
+  // the workspace moves under the dialog. ModelDetail watches uid and workspace
+  // separately, and this is the arm where a stale answer would overwrite the
+  // newer workspace rather than reach for another account's.
+  it('drops a pending switch when only the workspace changes', async () => {
+    signIn()
+    const cancel = vi.fn()
+    reportWorkshopRun(cancel)
+    onTestFinished(() => reportWorkshopRun(undefined))
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+    expect(await screen.findByTestId('run-leave-dialog')).toBeTruthy()
+
+    const moved = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace: { id: 'team-2', name: 'Other team', type: 'team' as const },
+      role: 'owner'
+    }
+    h.session!.value = moved
+    reportWorkshopRun(undefined)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(h.remint).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(h.session!.value).toEqual(moved)
   })
 
   it('switches by reminting for the picked workspace', async () => {
