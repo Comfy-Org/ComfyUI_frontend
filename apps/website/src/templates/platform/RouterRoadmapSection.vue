@@ -67,7 +67,7 @@ function toggle(id: RouterRoadmapCardId): void {
       </template>
     </SectionHeader>
 
-    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
+    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
       <FeatureCard
         v-for="card in cards"
         :key="card.id"

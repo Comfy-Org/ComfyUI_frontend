@@ -19,7 +19,8 @@ const routes = getRoutes(locale)
     :badge-text="t('platform.router.badge.label', locale)"
     :title="t('platform.modelsHero.heading', locale)"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
-    media-wrapper-class="hidden min-w-0 lg:block"
+    class="lg:items-stretch"
+    media-wrapper-class="hidden min-w-0 lg:flex lg:flex-col"
     :subtitle="t('platform.modelsHero.subtitle', locale)"
     :primary-cta="{
       label: t('platform.router.cta.getApiKey', locale),
@@ -49,6 +50,7 @@ const routes = getRoutes(locale)
         content-class="bg-[#2a2230]"
         :copy-label="t('ui.copy', locale)"
         :copied-label="t('ui.copied', locale)"
+        fill
       />
     </template>
   </HeroSplit01>

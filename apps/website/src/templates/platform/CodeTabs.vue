@@ -28,7 +28,8 @@ const {
   tabs,
   label,
   contentClass = 'bg-primary-comfy-ink',
-  selectedIndex
+  selectedIndex,
+  fill = false
 } = defineProps<{
   tabs: Record<string, CodeTab>
   label: string
@@ -39,6 +40,8 @@ const {
   copiedLabel?: string
   /** Pins every cycling segment to this value index instead of cycling. */
   selectedIndex?: number
+  /** Fill the parent's height instead of sizing the panel to its longest sample. */
+  fill?: boolean
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -129,7 +132,7 @@ const groupsByTab = computed(() =>
     ref="root"
     v-model="activeTab"
     activation-mode="manual"
-    class="block"
+    :class="fill ? 'flex h-full flex-col' : 'block'"
   >
     <div class="flex flex-wrap items-center justify-between gap-4">
       <TabsList
@@ -162,7 +165,7 @@ const groupsByTab = computed(() =>
       v-for="(tab, tabId) in tabs"
       :key="tabId"
       :value="tabId"
-      class="relative mt-4 block"
+      :class="cn('relative mt-4 block', fill && 'flex min-h-0 flex-1 flex-col')"
     >
       <button
         v-if="copyLabel && copiedLabel"
@@ -176,7 +179,10 @@ const groupsByTab = computed(() =>
       <pre
         :class="
           cn(
-            'scrollbar-none h-[calc(var(--code-panel-h)*0.9)] overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
+            'scrollbar-none overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed lg:p-6 lg:text-sm/relaxed',
+            fill
+              ? 'min-h-0 flex-1'
+              : 'h-[calc(var(--code-panel-h)*0.9)] lg:h-(--code-panel-h)',
             tab.wrap && 'wrap-anywhere sm:whitespace-pre-wrap',
             copyLabel && 'pr-14',
             contentClass
