@@ -2,6 +2,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   findOutputAsset,
   findServerPreviewUrl,
@@ -13,7 +14,6 @@ const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188${path}`)
 )
-const mockAssetsEnabled = vi.hoisted(() => ({ value: false }))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
@@ -27,16 +27,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockAssetsEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     uploadAssetFromBase64: mockUploadAssetFromBase64,
@@ -95,12 +86,11 @@ beforeEach(() => {
 
 describe('isAssetPreviewSupported', () => {
   it('returns true when the assets feature flag is enabled', () => {
-    mockAssetsEnabled.value = true
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 
   it('returns false when the assets feature flag is disabled', () => {
-    mockAssetsEnabled.value = false
     expect(isAssetPreviewSupported()).toBe(false)
   })
 })

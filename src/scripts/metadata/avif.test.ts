@@ -248,7 +248,7 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
 
   const ftyp = buildFtypBox(ftypBrand)
   if (omitMeta) {
-    return ftyp.slice().buffer as ArrayBuffer
+    return ftyp.slice().buffer
   }
 
   const exifData = buildExifBlob(exifEntries, endian)
@@ -275,7 +275,7 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   buf.set(meta, p)
   p += meta.length
   buf.set(exifData, p)
-  return buf.slice().buffer as ArrayBuffer
+  return buf.slice().buffer
 }
 
 const fileFromBuffer = (buffer: ArrayBuffer, name = 'test.avif'): File =>

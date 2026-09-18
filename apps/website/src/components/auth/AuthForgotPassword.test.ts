@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +8,6 @@ import AuthForgotPassword from './AuthForgotPassword.vue'
 
 const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  settled: undefined as { value: boolean } | undefined,
   sendReset: vi.fn(),
   captureAuthFailed: vi.fn()
 }))
@@ -17,12 +15,9 @@ const h = vi.hoisted(() => ({
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
-  const settled = ref(true)
   h.flag = flag
-  h.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
-    useWorkshopAuthFlagSettled: () => settled,
     captureAuthFailed: h.captureAuthFailed
   }
 })
@@ -34,8 +29,11 @@ vi.mock<unknown>(import('../../config/workshop-firebase'), () => ({
 const { messages: toasts } = useAuthToasts()
 const assign = vi.fn<(url: string | URL) => void>()
 
-const typeEmail = (value: string) =>
-  userEvent.setup().type(screen.getByLabelText(/email/i), value)
+async function typeEmail(value: string) {
+  const input = screen.getByLabelText(/email/i)
+  await waitFor(() => expect(input).toBeEnabled())
+  await userEvent.setup().type(input, value)
+}
 const clickSend = () =>
   userEvent
     .setup()
@@ -50,7 +48,6 @@ const flushMicrotasks = async () => {
 
 beforeEach(() => {
   h.flag!.value = true
-  h.settled!.value = true
   h.sendReset.mockReset().mockResolvedValue(undefined)
   h.captureAuthFailed.mockClear()
   removeAllToasts()
@@ -133,6 +130,7 @@ describe('AuthForgotPassword', () => {
       await waitFor(() =>
         expect(toasts.value[0]).toMatchObject({
           severity: 'error',
+          summary: 'Error',
           detail: expect.stringContaining(detail)
         })
       )
@@ -151,6 +149,23 @@ describe('AuthForgotPassword', () => {
       ).toBe(false)
     }
   )
+
+  it('surfaces a dismissed-popup failure as a warning, not an error', async () => {
+    h.sendReset.mockRejectedValue({
+      code: 'auth/popup-closed-by-user',
+      message: 'x'
+    })
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    await waitFor(() =>
+      expect(toasts.value[0]).toMatchObject({
+        severity: 'warn',
+        summary: 'Warning'
+      })
+    )
+  })
 
   it('rejects a malformed address before asking Firebase', async () => {
     render(AuthForgotPassword)
@@ -173,35 +188,6 @@ describe('AuthForgotPassword', () => {
     expect(send.hasAttribute('disabled')).toBe(true)
     await clickSend()
     expect(h.sendReset).toHaveBeenCalledOnce()
-  })
-
-  it("shows the cloud app's timeout copy when the flag never answers", async () => {
-    h.flag!.value = false
-    h.settled!.value = false
-    render(AuthForgotPassword)
-
-    await vi.advanceTimersByTimeAsync(16_000)
-
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      'Connection Taking Too Long'
-    )
-  })
-
-  it('drops the timeout screen when a late answer says the flag is off', async () => {
-    h.flag!.value = false
-    h.settled!.value = false
-    render(AuthForgotPassword)
-    await vi.advanceTimersByTimeAsync(16_000)
-    await screen.findByRole('alert')
-
-    h.settled!.value = true
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Connection Taking Too Long'),
-        'a flag that answered off renders nothing, not a troubleshooting screen'
-      ).toBeNull()
-    )
   })
 
   it('blocks a double submit while a send is in flight', async () => {
@@ -240,6 +226,40 @@ describe('AuthForgotPassword', () => {
     expect(
       assign,
       'and must not schedule a redirect back to login'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('drops a send abandoned by a flag flicker even after the flag returns, staying retryable', async () => {
+    let release: (() => void) | undefined
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    const flag = h.flag
+    if (!flag) throw new Error('workshop auth flag was not initialized')
+    flag.value = false
+    flag.value = true
+    await nextTick()
+
+    if (!release) throw new Error('sendReset was not called')
+    release()
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'the flag returns before the send resolves, so only the generation guard - not the still-true enabled flag - can drop the stale resolve: it must not toast success'
+    ).toEqual([])
+    expect(
+      screen.getByRole('button', { name: /send/i }).hasAttribute('disabled'),
+      'the abandoned attempt left the form idle, so the returned flag makes it retryable, not stuck sending'
+    ).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      assign,
+      'and an abandoned attempt must not schedule a redirect'
     ).not.toHaveBeenCalled()
   })
 
@@ -309,8 +329,11 @@ describe('AuthForgotPassword', () => {
     ).toEqual([])
   })
 
-  it('re-enables the send after a stalled reset so it stays retryable', async () => {
-    h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
+  it('re-enables the send after a stalled reset, then drops its late resolve', async () => {
+    let release!: () => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
@@ -322,8 +345,21 @@ describe('AuthForgotPassword', () => {
 
     expect(
       send.hasAttribute('disabled'),
-      'a reset that never resolves must not leave the control disabled forever'
+      'a reset that stalls past the bound must not leave the control disabled forever'
     ).toBe(false)
+
+    release()
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'a send that resolves after the bounding timeout was abandoned and must not toast success'
+    ).toEqual([])
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      assign,
+      'and an abandoned late resolve must not schedule a redirect back to login'
+    ).not.toHaveBeenCalled()
   })
 
   it('re-enables the send after a stalled Firebase load so it stays retryable', async () => {

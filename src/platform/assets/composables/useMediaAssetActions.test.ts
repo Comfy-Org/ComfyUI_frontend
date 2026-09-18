@@ -29,7 +29,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: mockDownloadFile
 }))
 
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -86,11 +86,10 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  }))
+vi.mock(import('@/utils/loaderNodeUtil'), () => ({
+  detectNodeTypeFromFilename: vi.fn(
+    () => ({ nodeType: 'LoadImage', widgetName: 'image' }) as const
+  )
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
@@ -1338,9 +1337,9 @@ describe('useMediaAssetActions', () => {
         ({
           dialogComponentProps
         }: {
-          dialogComponentProps: { onClose: () => void }
+          dialogComponentProps: { onRemoved: () => void }
         }) => {
-          dialogComponentProps.onClose()
+          dialogComponentProps.onRemoved()
         }
       )
       const { actions, unmount } = mountMediaActions()
@@ -1390,9 +1389,18 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockImplementation(
+        ({
+          dialogComponentProps
+        }: {
+          dialogComponentProps: { onRemoved: () => void }
+        }) => {
+          dialogComponentProps.onRemoved()
+        }
+      )
     })
 
-    it('should show user_metadata display names instead of hash filenames', () => {
+    it('should show user_metadata display names instead of hash filenames', async () => {
       const actions = useMediaAssetActions()
 
       const assets = [
@@ -1408,7 +1416,7 @@ describe('useMediaAssetActions', () => {
         })
       ]
 
-      void actions.deleteAssets(assets)
+      await actions.deleteAssets(assets)
 
       expect(mockShowDialog).toHaveBeenCalledTimes(1)
       const dialogProps = mockShowDialog.mock.calls[0][0].props as {
@@ -1420,7 +1428,7 @@ describe('useMediaAssetActions', () => {
       ])
     })
 
-    it('should fall back to asset.name when no display name is available', () => {
+    it('should fall back to asset.name when no display name is available', async () => {
       const actions = useMediaAssetActions()
 
       const asset = createMockAsset({
@@ -1428,7 +1436,7 @@ describe('useMediaAssetActions', () => {
         name: 'fallback-image.png'
       })
 
-      void actions.deleteAssets(asset)
+      await actions.deleteAssets(asset)
 
       const dialogProps = mockShowDialog.mock.calls[0][0].props as {
         itemList: string[]

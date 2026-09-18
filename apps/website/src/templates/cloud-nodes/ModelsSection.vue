@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader max-width="xl">
       {{ t('cloudNodesLaunch.models.heading', locale) }}
       <template #subtitle>

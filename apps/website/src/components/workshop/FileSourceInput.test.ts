@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -53,6 +52,33 @@ async function drop(files: File[]) {
 }
 
 describe('file source selection', () => {
+  it('shows and enforces the configured video size instead of the image limit', async () => {
+    const values = mountInput(false, {
+      ...field,
+      accept: ['video/mp4'],
+      maxBytes: 100_000_000
+    })
+    const visitor = userEvent.setup()
+    expect(screen.getByText('MP4 · up to 100 MB')).toBeTruthy()
+    const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      file
+    )
+    expect(values.value).toMatchObject([{ file }])
+    const oversized = new File([new Uint8Array(100_000_001)], 'oversized.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      oversized
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('File is over 100 MB')
+    expect(values.value).toMatchObject([{ file }])
+  })
+
   it.for([
     { name: 'price-$&.fbx', type: 'application/octet-stream', label: 'FBX' },
     { name: 'clip.mp4', type: 'video/mp4', label: 'MP4' },
@@ -81,7 +107,7 @@ describe('file source selection', () => {
       expect(screen.getByText('2 KB')).toBeTruthy()
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
-      expect(screen.getByText('Choose files or drop them here')).toBeTruthy()
+      expect(screen.getByText('Select or drop up to 2 files')).toBeTruthy()
       await user.click(screen.getByRole('button', { name: `Replace ${name}` }))
       const replacement = new File(['replacement bytes'], 'replacement.fbx', {
         type: 'application/octet-stream'
@@ -212,7 +238,7 @@ describe('file source selection', () => {
       file: new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'large.png', {
         type: 'image/png'
       }),
-      error: 'File is over 25 MB'
+      error: 'File is over 25 MiB'
     }
   ])(
     'keeps valid images when a drop is rejected: $error',
@@ -243,6 +269,16 @@ describe('file source selection', () => {
     )
     expect(value.value).toMatchObject([{ file: first }])
     expect(screen.getAllByRole('img')).toHaveLength(1)
+  })
+
+  it('promises one image where a second would replace the first', async () => {
+    const single = { ...field, multiple: false, maxItems: 1 }
+    const value = mountInput(false, single)
+    expect(screen.getByText('Select or drop an image')).toBeTruthy()
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.getByText('Select or drop to replace')).toBeTruthy()
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(value.value).toMatchObject({ name: 'two.png' })
   })
 
   it('ignores file drops while disabled', async () => {

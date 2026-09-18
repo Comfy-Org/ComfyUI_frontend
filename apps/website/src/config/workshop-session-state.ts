@@ -1,8 +1,6 @@
 /**
  * Shared signed-in state for the website's Vue islands, projected from the
- * @comfyorg/account session client. Firebase is loaded only after the
- * Workshop auth flag becomes true; a release-shape page does not download
- * or initialize it.
+ * @comfyorg/account-core session client.
  *
  * One `SessionSnapshot` ref is the single source of truth; the views below
  * derive from it, so the illegal combinations a set of parallel refs could
@@ -17,25 +15,25 @@
 import { z } from 'zod'
 
 import type { User } from 'firebase/auth'
-import { computed, effectScope, shallowRef, watch } from 'vue'
-import type { EffectScope } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
-import type { SessionSnapshot } from '@comfyorg/account/session'
-import { isPermanentSessionError } from '@comfyorg/account/session'
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
+import { isPermanentSessionError } from '@comfyorg/account-core/session'
+import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
-import {
-  useWorkshopAuthFlag,
-  useWorkshopAuthFlagSettled
-} from '../scripts/posthog'
+import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
+  workshopIdentity,
   workshopSessionClient
 } from './workshop-account'
 
 export type {
   AccountCredential as WorkshopSession,
   AccountUser as WorkshopSessionUser
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 const PENDING: SessionSnapshot<User> = {
   phase: 'pending',
@@ -44,21 +42,19 @@ const PENDING: SessionSnapshot<User> = {
 }
 
 const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
-let started = false
 let running = false
-let lifecycle: EffectScope | undefined
-let generation = 0
-let detachIdentity: (() => void) | undefined
+const lifecycle = createLifecycleScope()
+const operation = createBoundedOperation()
 let stopSnapshot: (() => void) | undefined
 let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
   running = false
-  detachIdentity?.()
-  detachIdentity = undefined
+  // deactivate() publishes a signed-out frame; the host must be unsubscribed first.
   stopSnapshot?.()
   stopSnapshot = undefined
+  workshopIdentity.deactivate()
   stopTelemetry?.()
   stopTelemetry = undefined
   stopFocusListener?.()
@@ -92,7 +88,7 @@ const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
  * every authenticated snapshot, restored with one targeted re-mint on the
  * first snapshot after a reload, and dropped if that restore is refused.
  */
-const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+export const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
 
 const zRememberedWorkspace = z.object({
   uid: z.string(),
@@ -173,7 +169,7 @@ async function settleFailedWorkspaceRestore(
 async function restoreRememberedWorkspace(
   next: AuthenticatedSnapshot,
   remembered: string,
-  restoreGeneration: number
+  attempt: OperationHandle
 ): Promise<void> {
   let result: Awaited<ReturnType<typeof workshopSessionClient.remint>>
   try {
@@ -184,7 +180,7 @@ async function restoreRememberedWorkspace(
   } catch {
     return
   }
-  if (result?.status !== 'error' || generation !== restoreGeneration) return
+  if (result?.status !== 'error' || !attempt.live()) return
   await settleFailedWorkspaceRestore(next, isPermanentSessionError(result.code))
 }
 
@@ -211,24 +207,23 @@ function holdsForRestore(next: SessionSnapshot<User>): boolean {
   restoredForUid = uid
   const remembered = rememberedWorkspace(uid)
   if (!remembered || remembered === workspace.id) return false
-  const restoreGeneration = generation
-  void restoreRememberedWorkspace(next, remembered, restoreGeneration)
+  void restoreRememberedWorkspace(next, remembered, operation.capture())
   return true
 }
 
-async function begin(expectedGeneration: number): Promise<void> {
-  const firebase = await import('./workshop-firebase')
-  if (generation !== expectedGeneration) return
+async function begin(attempt: OperationHandle): Promise<void> {
+  await workshopIdentity.activate()
+  if (!attempt.live()) return
 
   running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
+    if (next.phase !== 'pending') {
+      identifyWorkshopUser(next.user ?? null)
+    }
     if (holdsForRestore(next)) return
     snapshot.value = next
     keepWorkspaceRemembered()
   })
-  detachIdentity = workshopSessionClient.attachIdentity(
-    firebase.workshopIdentity
-  )
   // Auth-refresh telemetry starts and stops with this lifecycle; credits and
   // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()
@@ -239,41 +234,30 @@ async function begin(expectedGeneration: number): Promise<void> {
 }
 
 function start(): void {
-  if (started || typeof window === 'undefined') return
-  started = true
-  // This detached scope gives the module singleton its own lifetime instead
-  // of binding its watcher to whichever component calls this first.
-  lifecycle = effectScope(true)
-  const enabled = useWorkshopAuthFlag()
-  const settled = useWorkshopAuthFlagSettled()
-  lifecycle.run(() => {
+  lifecycle.start(() => {
+    const enabled = useWorkshopAuthFlag()
     watch(
-      [enabled, settled],
-      ([on, isSettled]) => {
-        // A settlement-only change while a session is already live must not
-        // tear it down; only enabling from a stopped state begins a lifecycle.
+      enabled,
+      (on) => {
         if (on && running) return
-        const expectedGeneration = ++generation
+        operation.abandon()
+        const attempt = operation.capture()
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
-          // Retain the cached credential while the flag is unresolved; only a
-          // settled-off answer means Workshop is disabled and it must go.
-          if (isSettled) {
-            restoredForUid = undefined
-            workshopSessionClient.clearStoredCredential()
-          }
+          restoredForUid = undefined
+          workshopSessionClient.clearStoredCredential()
           return
         }
-        void begin(expectedGeneration).catch((error: unknown) => {
-          if (generation !== expectedGeneration) return
+        void begin(attempt).catch((error: unknown) => {
+          if (!attempt.live()) return
           console.error('Workshop auth initialization failed', error)
-          // Nothing half-installed survives, and the latch opens again so
-          // the next caller retries instead of waiting out the timeout.
+          // Nothing half-installed survives: abandon invalidates a restore
+          // captured before begin threw, and the latch reopens so the next
+          // caller retries instead of waiting out the timeout.
+          operation.abandon()
           stopListeners()
-          lifecycle?.stop()
-          lifecycle = undefined
-          started = false
+          lifecycle.stop()
         })
       },
       { immediate: true }

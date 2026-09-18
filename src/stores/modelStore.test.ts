@@ -18,17 +18,14 @@ const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
 
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  () => mockDistribution
-)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 const remoteConfigHolder = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return { current: ref<RemoteConfig>({}) }
 })
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
+vi.mock(import('@/platform/remoteConfig/remoteConfig'), () => ({
   get remoteConfig() {
     return remoteConfigHolder.current
   }

@@ -3,6 +3,7 @@ import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -43,7 +44,6 @@ const {
   mockFetchPlans,
   mockLegacyFetchStatus,
   mockLegacySubscribe,
-  mockPurchaseCredits,
   mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => {
@@ -60,7 +60,6 @@ const {
     mockFetchPlans: vi.fn(async () => undefined),
     mockLegacyFetchStatus: vi.fn(async () => undefined),
     mockLegacySubscribe: vi.fn(async () => undefined),
-    mockPurchaseCredits: vi.fn(),
     mockLegacyStatus: {
       value: {
         is_active: true,
@@ -112,11 +111,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    purchaseCredits: mockPurchaseCredits
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -291,7 +286,7 @@ describe('useBillingContext', () => {
     const { topup } = useBillingContext()
     await topup(500)
 
-    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+    expect(useAuthActions().purchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('uses workspace checkout while keeping legacy topups on legacy Stripe', async () => {
@@ -339,7 +334,7 @@ describe('useBillingContext', () => {
       undefined
     )
     expect(mockLegacySubscribe).not.toHaveBeenCalled()
-    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+    expect(useAuthActions().purchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
@@ -355,7 +350,7 @@ describe('useBillingContext', () => {
     await context.topup(500)
 
     expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
-    expect(mockPurchaseCredits).not.toHaveBeenCalled()
+    expect(useAuthActions().purchaseCredits).not.toHaveBeenCalled()
   })
 
   it('switches billing adapters before refreshing a migrated balance', async () => {

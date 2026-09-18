@@ -87,6 +87,20 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('attributes automatic consent to its own source without duplicate opens', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+
+    store.open('automatic_consent')
+    await nextTick()
+    store.open('automatic_consent')
+
+    expect(store.isVisible).toBe(true)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
+      source: 'automatic_consent'
+    })
+  })
+
   it('never emits for a rehydrated-open panel while the feature stays disabled', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     useAgentPanelStore()
