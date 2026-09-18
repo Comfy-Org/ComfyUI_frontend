@@ -71,8 +71,10 @@ interface BaseConfirmOptions {
   itemList?: string[]
   hint?: string
   /**
-   * Requests sharing a key are shown in order. Use a distinct key to open
-   * independently of the shared `global-prompt` queue.
+   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
+   * reuses an existing entry with the same key and discards the new resolver,
+   * leaving the caller's promise pending forever — a flow whose confirmation
+   * must survive an already-open shared prompt passes its own key.
    */
   key?: string
 }
@@ -109,7 +111,7 @@ const GLOBAL_PROMPT_KEY = 'global-prompt'
 // dialogStore.showDialog raises an existing dialog with the same key instead of
 // wiring the new caller's callbacks, so a second concurrent caller on that key
 // would never settle. Serialize FIFO per key; distinct keys stay concurrent.
-const promptTails = new Map<string, Promise<void>>()
+const promptTails = new Map<string, Promise<unknown>>()
 
 function enqueuePrompt<T>(
   key: string,
@@ -338,8 +340,8 @@ export const useDialogService = () => {
     denyLabel,
     key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
-    return enqueuePrompt<boolean | null>(key, (resolve) => {
-      dialogStore.showDialog({
+    const show = (resolve: (value: boolean | null) => void) => {
+      const options: ShowDialogOptions = {
         key,
         title,
         component: ConfirmationDialogContent,
@@ -356,8 +358,12 @@ export const useDialogService = () => {
           size: 'md',
           onRemoved: () => resolve(null)
         }
-      })
-    })
+      }
+
+      dialogStore.showDialog(options)
+    }
+
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
   async function showTopUpCreditsDialog(options?: {

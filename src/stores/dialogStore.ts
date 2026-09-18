@@ -137,6 +137,10 @@ interface UpdateDialogOptions {
   dialogComponentProps?: Partial<DialogComponentProps>
 }
 
+function notifyRemoved(dialog: DialogInstance | undefined) {
+  dialog?.dialogComponentProps.onRemoved?.()
+}
+
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
@@ -200,7 +204,7 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     updateCloseOnEscapeStates()
-    if (removed) targetDialog.dialogComponentProps.onRemoved?.()
+    if (removed) notifyRemoved(targetDialog)
   }
 
   function createDialog<
@@ -257,7 +261,7 @@ export const useDialogStore = defineStore('dialog', () => {
     insertDialogByPriority(dialog)
     activeKey.value = options.key
     updateCloseOnEscapeStates()
-    evicted?.dialogComponentProps.onRemoved?.()
+    notifyRemoved(evicted)
 
     return dialog
   }

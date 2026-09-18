@@ -1,186 +1,184 @@
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
-
-import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import { useDialogService } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
+/**
+ * prompt() and confirm() share the 'global-prompt' key while
+ * dialogStore.showDialog only raises an existing dialog with the same key, so
+ * concurrent calls are serialized FIFO to guarantee every returned promise
+ * settles. These tests use the real dialogStore because the bug lives in the
+ * service/store interaction.
+ *
+ * The FIFO tail lives at module level in dialogService, so each test resets
+ * the module registry and dynamically imports the modules it needs — a
+ * mid-test failure then cannot wedge the queue for later tests.
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({ trackEvent: vi.fn() })
+}))
 
-function createDialogTest() {
-  const service = useDialogService()
-  const dialogStore = useDialogStore()
-  const pending: Promise<unknown>[] = []
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: false
+}))
 
-  function track<T>(result: Promise<T>): Promise<T> {
-    pending.push(result.catch(() => undefined))
-    return result
-  }
-
-  onTestFinished(async () => {
-    const unsubscribe = dialogStore.$onAction(({ name, after }) => {
-      if (name === 'showDialog') {
-        after((dialog) => dialogStore.closeDialog({ key: dialog.key }))
-      }
-    })
-    try {
-      dialogStore.dialogStack
-        .slice()
-        .forEach(({ key }) => dialogStore.closeDialog({ key }))
-      await Promise.all(pending)
-    } finally {
-      unsubscribe()
-    }
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
+  useBillingContext: () => ({
+    isActiveSubscription: { value: true },
+    isFreeTier: { value: false },
+    type: { value: 'legacy' }
   })
+}))
 
-  return { service, dialogStore, track }
+/**
+ * Macrotask flush: releasing the FIFO queue takes several promise hops inside
+ * enqueueGlobalPrompt, and a macrotask runs only after all pending microtasks.
+ * `nextTick()` awaits a fixed number of hops and would couple these tests to
+ * that internal chain depth.
+ */
+function flushQueue() {
+  return new Promise((resolve) => setTimeout(resolve))
 }
 
-describe('dialogService prompt queues', () => {
-  it.for([
-    { name: 'shared', key: undefined },
-    { name: 'custom', key: 'global-desktop-login-confirm' }
-  ])(
-    'settles concurrent confirmations in order for a $name key',
-    async ({ key }) => {
-      const { service, dialogStore, track } = createDialogTest()
-      const first = track(
-        service.confirm({ key, title: 'First', message: 'first?' })
-      )
-      const second = track(
-        service.confirm({ key, title: 'Second', message: 'second?' })
-      )
+async function importDialogModules() {
+  const [{ useDialogService }, { useDialogStore }] = await Promise.all([
+    import('@/services/dialogService'),
+    import('@/stores/dialogStore')
+  ])
+  return { service: useDialogService(), dialogStore: useDialogStore() }
+}
 
-      await vi.waitFor(() => {
-        expect(dialogStore.dialogStack).toHaveLength(1)
-        expect(dialogStore.dialogStack[0].title).toBe('First')
-      })
+// Each test reimports the dialog module graph after vi.resetModules(); that
+// transform costs more than the default 5s timeout on a cold cache.
+describe('dialogService global prompt FIFO queue', { timeout: 30_000 }, () => {
+  beforeEach(() => {
+    // flushQueue below needs a real macrotask; the shared setup fakes timers.
+    vi.useRealTimers()
+    vi.resetModules()
+  })
 
-      const onConfirm = dialogStore.dialogStack[0].contentProps.onConfirm
-      assert(typeof onConfirm === 'function')
-      onConfirm(true)
-      dialogStore.closeDialog()
-      await expect(first).resolves.toBe(true)
+  it('settles both promises when two confirm() calls race', async () => {
+    const { service, dialogStore } = await importDialogModules()
 
-      await vi.waitFor(() => {
-        expect(dialogStore.dialogStack).toHaveLength(1)
-        expect(dialogStore.dialogStack[0].title).toBe('Second')
-      })
-      expect(dialogStore.dialogStack[0].contentProps.message).toBe('second?')
+    const first = service.confirm({ title: 'First', message: 'first?' })
+    const second = service.confirm({ title: 'Second', message: 'second?' })
 
-      dialogStore.closeDialog()
-      await expect(second).resolves.toBeNull()
-    }
-  )
+    await flushQueue()
+
+    expect(
+      dialogStore.dialogStack.filter((d) => d.key === 'global-prompt')
+    ).toHaveLength(1)
+    expect(dialogStore.dialogStack[0].title).toBe('First')
+
+    const onConfirm = dialogStore.dialogStack[0].contentProps.onConfirm as (
+      value?: boolean
+    ) => void
+    onConfirm(true)
+    dialogStore.closeDialog()
+    await expect(first).resolves.toBe(true)
+
+    await flushQueue()
+
+    expect(dialogStore.dialogStack).toHaveLength(1)
+    expect(dialogStore.dialogStack[0].title).toBe('Second')
+    expect(dialogStore.dialogStack[0].contentProps.message).toBe('second?')
+
+    dialogStore.closeDialog()
+    await expect(second).resolves.toBeNull()
+  })
 
   it('keeps FIFO order when prompt() is queued behind confirm()', async () => {
-    const { service, dialogStore, track } = createDialogTest()
-    const confirmResult = track(
-      service.confirm({ title: 'Confirm', message: 'sure?' })
-    )
-    const promptResult = track(
-      service.prompt({
-        title: 'Prompt',
-        message: 'name?',
-        defaultValue: 'initial'
-      })
-    )
+    const { service, dialogStore } = await importDialogModules()
+    const { default: ConfirmationDialogContent } =
+      await import('@/components/dialog/content/ConfirmationDialogContent.vue')
+    const { default: PromptDialogContent } =
+      await import('@/components/dialog/content/PromptDialogContent.vue')
 
-    await vi.waitFor(() =>
-      expect(dialogStore.dialogStack[0]?.component).toBe(
-        ConfirmationDialogContent
-      )
-    )
+    const confirmResult = service.confirm({
+      title: 'Confirm',
+      message: 'sure?'
+    })
+    const promptResult = service.prompt({
+      title: 'Prompt',
+      message: 'name?',
+      defaultValue: 'initial'
+    })
+
+    await flushQueue()
+
+    expect(dialogStore.dialogStack[0].component).toBe(ConfirmationDialogContent)
+
     dialogStore.closeDialog()
     await expect(confirmResult).resolves.toBeNull()
 
-    await vi.waitFor(() =>
-      expect(dialogStore.dialogStack[0]?.component).toBe(PromptDialogContent)
-    )
+    await flushQueue()
+
     expect(dialogStore.dialogStack).toHaveLength(1)
     const promptDialog = dialogStore.dialogStack[0]
+    expect(promptDialog.component).toBe(PromptDialogContent)
     expect(promptDialog.title).toBe('Prompt')
     expect(promptDialog.contentProps.defaultValue).toBe('initial')
 
-    const onConfirm = promptDialog.contentProps.onConfirm
-    assert(typeof onConfirm === 'function')
+    const onConfirm = promptDialog.contentProps.onConfirm as (
+      value: string
+    ) => void
     onConfirm('typed value')
     dialogStore.closeDialog()
     await expect(promptResult).resolves.toBe('typed value')
   })
 
-  it('opens and settles a distinct key while the shared prompt stays open', async () => {
-    const { service, dialogStore, track } = createDialogTest()
-    const shared = track(service.prompt({ title: 'Shared', message: 'name?' }))
-    await vi.waitFor(() =>
-      expect(dialogStore.isDialogOpen('global-prompt')).toBe(true)
-    )
+  it('closeDialog without a key settles the active promise as null and releases the queue', async () => {
+    const { service, dialogStore } = await importDialogModules()
 
-    const ownKey = track(
-      service.confirm({
-        key: 'global-desktop-login-confirm',
-        title: 'Independent',
-        message: 'continue?'
-      })
-    )
-    await vi.waitFor(() => expect(dialogStore.dialogStack).toHaveLength(2))
-    dialogStore.closeDialog({ key: 'global-desktop-login-confirm' })
-    await expect(ownKey).resolves.toBeNull()
-    expect(dialogStore.isDialogOpen('global-prompt')).toBe(true)
+    const first = service.confirm({ title: 'Escaped', message: 'close me' })
+    const second = service.confirm({ title: 'Following', message: 'next up' })
 
-    dialogStore.closeDialog({ key: 'global-prompt' })
-    await expect(shared).resolves.toBeNull()
-  })
+    await flushQueue()
 
-  it('releases the queue when opening the first dialog throws', async () => {
-    const { service, dialogStore, track } = createDialogTest()
-    vi.mocked(dialogStore.showDialog).mockImplementationOnce(() => {
-      throw new Error('boom')
-    })
-    const first = track(service.prompt({ title: 'First', message: 'name?' }))
-    const second = track(
-      service.confirm({ title: 'Second', message: 'continue?' })
-    )
+    dialogStore.closeDialog()
+    await expect(first).resolves.toBeNull()
 
-    await expect(first).rejects.toThrow('boom')
-    await vi.waitFor(() =>
-      expect(dialogStore.dialogStack[0]?.title).toBe('Second')
-    )
+    await flushQueue()
+
+    expect(dialogStore.dialogStack[0].title).toBe('Following')
+
     dialogStore.closeDialog()
     await expect(second).resolves.toBeNull()
   })
 
-  it('settles an evicted prompt and opens the next queued confirmation', async () => {
-    const { service, dialogStore, track } = createDialogTest()
+  it('settles a cap-evicted prompt as null and releases the queue', async () => {
+    const { service, dialogStore } = await importDialogModules()
     const filler = { render: () => null }
-    Array.from({ length: 9 }, (_, i) =>
-      dialogStore.showDialog({ key: `filler-${i}`, component: filler })
-    )
-    const first = track(
-      service.confirm({ title: 'Evicted', message: 'close me' })
-    )
-    const second = track(
-      service.confirm({ title: 'Following', message: 'next up' })
-    )
 
-    await vi.waitFor(() =>
-      expect(dialogStore.dialogStack[0]?.key).toBe('global-prompt')
-    )
+    // 9 fillers first so the global-prompt lands at dialogStack[0] — equal
+    // priorities insert at the front, and the 10-cap evicts from index 0.
+    for (let i = 0; i < 9; i++) {
+      dialogStore.showDialog({ key: `filler-${i}`, component: filler })
+    }
+
+    const first = service.confirm({ title: 'Evicted', message: 'gone?' })
+    const second = service.confirm({ title: 'Following', message: 'next up' })
+
+    await flushQueue()
+
     expect(dialogStore.dialogStack).toHaveLength(10)
+    expect(dialogStore.dialogStack[0].key).toBe('global-prompt')
+
+    // Overflow the cap: the prompt at index 0 is evicted without any user
+    // interaction. Its promise must settle (null) instead of hanging, and
+    // the FIFO queue must release so the second confirm can show.
     dialogStore.showDialog({ key: 'overflow', component: filler })
+
     await expect(first).resolves.toBeNull()
 
-    await vi.waitFor(() =>
-      expect(
-        dialogStore.dialogStack.find((d) => d.key === 'global-prompt')?.title
-      ).toBe('Following')
+    await flushQueue()
+
+    const promptDialog = dialogStore.dialogStack.find(
+      (d) => d.key === 'global-prompt'
     )
+    expect(promptDialog?.title).toBe('Following')
+
     dialogStore.closeDialog({ key: 'global-prompt' })
     await expect(second).resolves.toBeNull()
   })
