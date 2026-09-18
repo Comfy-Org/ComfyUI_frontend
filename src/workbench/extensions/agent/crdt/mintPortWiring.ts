@@ -7,6 +7,7 @@
  * suppressed until the next load's pair recloses.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -26,10 +27,15 @@ import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
 /** Node fields required to serialize an undo/redo restore snapshot. */
+type MintableNodeSerialization = Pick<
+  ISerialisedNode,
+  'id' | 'type' | 'pos' | 'widgets_values_named'
+>
+
 export interface MintableNode {
   id: string | number
   widgets?: { name: string; type: string; serialize?: boolean }[]
-  serialize(): unknown
+  serialize(): MintableNodeSerialization
 }
 
 /** The graph surface the wiring reads for snapshots and scope. */
@@ -130,7 +136,7 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
 function serializeForMint(node: MintableNode): WorkflowNode | null {
   let serialized: Record<string, unknown>
   try {
-    serialized = node.serialize() as Record<string, unknown>
+    serialized = { ...node.serialize() }
   } catch {
     return null
   }

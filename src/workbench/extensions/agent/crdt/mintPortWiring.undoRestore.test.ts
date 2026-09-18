@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+
 import type { GraphOperation } from './graphOperations'
 import {
   attachMintPortWiring,
@@ -13,21 +15,25 @@ import type {
 } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
+type FakeWidgetValues = NonNullable<ISerialisedNode['widgets_values_named']>
 
 /** Save-format shape the wiring reads back through `serialize()`. */
 interface FakeGraphNode {
   id: number
   type: string
-  pos?: [number, number]
+  pos: [number, number]
   widgets?: { name: string; type: string; serialize?: boolean }[]
-  widgets_values_named?: Record<string, unknown>
-  serialize(): unknown
+  widgets_values_named?: FakeWidgetValues
+  serialize(): Pick<
+    ISerialisedNode,
+    'id' | 'type' | 'pos' | 'widgets_values_named'
+  >
 }
 
 function fakeNode(
   id: number,
   type: string,
-  widgets: Record<string, unknown> = {}
+  widgets: FakeWidgetValues = {}
 ): FakeGraphNode {
   const node: FakeGraphNode = {
     id,
