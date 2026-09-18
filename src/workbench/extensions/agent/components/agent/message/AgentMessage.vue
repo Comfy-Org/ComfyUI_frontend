@@ -190,7 +190,7 @@ const status = computed(() => {
           <span>{{ group.part.text }}</span>
           <span
             v-if="group.part.retryAfterSeconds !== undefined"
-            class="text-agent-fg-muted text-xs"
+            class="text-xs text-muted-foreground"
           >
             {{
               t('agent.retryAfterSeconds', {
