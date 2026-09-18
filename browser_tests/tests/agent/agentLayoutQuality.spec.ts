@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   nodesOutsideViewport,
+  nodesWithoutGeometry,
   overlappingNodePairs
 } from '@e2e/fixtures/utils/nodeLayoutGeometry'
 
@@ -27,6 +28,9 @@ test.describe('Agent layout quality', { tag: '@cloud' }, () => {
 
       const nodes = agentConversation.vueNodes.nodes
       expect(await nodes.count()).toBeGreaterThan(1)
+      await expect
+        .poll(() => nodesWithoutGeometry(nodes), { timeout: SETTLE })
+        .toEqual([])
 
       test.fail()
       await expect
