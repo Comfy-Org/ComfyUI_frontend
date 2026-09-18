@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
 import type {
@@ -13,6 +14,7 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -174,5 +176,123 @@ describe('Advanced form values', () => {
       seed: 100001
     })
     expect(validateForm(schema, values.value)).toEqual({})
+  })
+})
+
+describe('First and last frame ratios', () => {
+  const SLUG = 'byteplus--seedance-2-5-first-last-frame--animate-images'
+  const sizes = new Map<string, { width: number; height: number }>()
+
+  class StubImage {
+    onload: (() => void) | null = null
+    naturalWidth = 0
+    naturalHeight = 0
+    #src = ''
+    set src(value: string) {
+      this.#src = value
+      const size = sizes.get(value)
+      if (!size) return
+      this.naturalWidth = size.width
+      this.naturalHeight = size.height
+      queueMicrotask(() => this.onload?.())
+    }
+    get src(): string {
+      return this.#src
+    }
+  }
+
+  function frame(url: string, width: number, height: number): string {
+    sizes.set(url, { width, height })
+    return url
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('Image', StubImage)
+  })
+
+  afterEach(() => {
+    sizes.clear()
+  })
+
+  function renderForm(values: Ref<FormValues>) {
+    const model = getRouterWorkshopModelDetail(SLUG)
+    if (!model) throw new Error('Missing first/last frame test model')
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(PlaygroundForm, {
+            schema: schemaForModel(model),
+            errors: {},
+            frameRatio: frameRatioRule(SLUG),
+            modelValue: values.value,
+            'onUpdate:modelValue': (next: FormValues) => {
+              values.value = next
+            }
+          })
+      })
+    )
+  }
+
+  // The rule is keyed to this page by field name, so a rename on either side
+  // silently stops the notice. Reading the real schema is what catches that.
+  it('names the fields the model actually renders', () => {
+    const model = getRouterWorkshopModelDetail(SLUG)
+    const rule = frameRatioRule(SLUG)
+    if (!model || !rule) throw new Error('Missing first/last frame test model')
+    const names = schemaForModel(model).map((field) => field.name)
+    expect(names).toContain(rule.first)
+    expect(names).toContain(rule.last)
+  })
+
+  it('warns about the stretch once both frames are chosen', async () => {
+    const values = ref<FormValues>({
+      first_frame_url: frame('https://example.com/first.png', 1920, 1080),
+      last_frame_url: frame('https://example.com/last.png', 1080, 1920)
+    })
+    renderForm(values)
+
+    expect(
+      (await screen.findByTestId('frame-ratio-notice')).textContent
+    ).toContain('first frame')
+  })
+
+  it('says nothing when the frames share a shape', async () => {
+    const values = ref<FormValues>({
+      first_frame_url: frame('https://example.com/first.png', 1920, 1080),
+      last_frame_url: frame('https://example.com/last.png', 1280, 720)
+    })
+    renderForm(values)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
+    )
+  })
+
+  // Same mismatched frames, a page the rule was not read for: no notice.
+  it('leaves an unrestricted page alone', async () => {
+    const model = getRouterWorkshopModelDetail(
+      'kling--omni-pro-first-last-frame--animate-images'
+    )
+    if (!model) throw new Error('Missing Kling test model')
+    const values = ref<FormValues>({
+      first_frame_url: frame('https://example.com/first.png', 1920, 1080),
+      last_frame_url: frame('https://example.com/last.png', 1080, 1920)
+    })
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(PlaygroundForm, {
+            schema: schemaForModel(model),
+            errors: {},
+            frameRatio: frameRatioRule(model.slug),
+            modelValue: values.value,
+            'onUpdate:modelValue': () => {}
+          })
+      })
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('frame-ratio-notice')).toBeNull()
+    )
   })
 })

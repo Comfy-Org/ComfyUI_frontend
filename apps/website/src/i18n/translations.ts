@@ -9962,6 +9962,11 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
+  'workshop.field.frameRatioMismatch': {
+    en: 'The video uses the first frame\u2019s aspect ratio, so the last frame will be stretched to match it. Frames of the same shape avoid this.',
+    'zh-CN':
+      '\u89c6\u9891\u4f7f\u7528\u9996\u5e27\u7684\u5bbd\u9ad8\u6bd4\uff0c\u56e0\u6b64\u5c3e\u5e27\u4f1a\u88ab\u62c9\u4f38\u4ee5\u5339\u914d\u3002\u4f7f\u7528\u5f62\u72b6\u76f8\u540c\u7684\u9996\u5c3e\u5e27\u53ef\u907f\u514d\u6b64\u95ee\u9898\u3002'
+  },
   'workshop.field.selectOrDropReplacement': {
     en: 'Select or drop to replace',
     'zh-CN': '选择或拖入以替换'
