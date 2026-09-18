@@ -63,9 +63,12 @@ is not a contract to build on.
    lifetime. With `unified_cloud_auth` off the port stays subscribed but
    inert. The store drives every mint explicitly (`autoMint: false`), so an
    identity event mints nothing, and `clearUnifiedContext()` invalidates the
-   credential and stops the scheduler and cross-tab lease, so no unified
-   token, network call or timer exists. The residue is the snapshot's user
-   and a `minting`/`pending` phase that no flag-off consumer reads.
+   credential and stops the scheduler and cross-tab lease. A mint already
+   parked on `unifiedUser()` when the flag flips is caught by the flag-gated
+   helpers re-checking the flag after that await, so it commits nothing
+   either: no unified token, network call or timer exists. The residue is the
+   snapshot's user and a `minting`/`pending` phase that no flag-off consumer
+   reads.
 5. Nothing in `src/` may initialize a second Firebase app through
    `createFirebaseIdentity({ options })` while the app runs on vuefire; a
    second auth instance diverges the session. Package-initialized Firebase
