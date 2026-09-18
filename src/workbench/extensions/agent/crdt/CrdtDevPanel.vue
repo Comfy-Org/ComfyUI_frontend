@@ -44,7 +44,7 @@ import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
-import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
+import type { CrdtLogScope, DevEvent } from './devPanelLog'
 import {
   DEV_EVENT_KINDS,
   clearDevEvents,
