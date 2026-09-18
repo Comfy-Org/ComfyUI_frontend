@@ -15,7 +15,7 @@ import { app } from '@/scripts/app'
 import { useAgentGeneratedNodesStore } from '@/stores/agentGeneratedNodesStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { frameBounds } from '@/utils/frameBoundsUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
@@ -226,7 +226,7 @@ function viewNodes(locators: readonly NodeLocatorId[]): void {
     const node = getNodeByLocatorId(app.rootGraph, locatorId)
     return node && node.graph === canvas.graph ? [node] : []
   })
-  const bounds = frameBounds(nodes)
+  const bounds = createPositionBounds(nodes, 40)
   if (bounds)
     canvas.animateToBounds(bounds, {
       viewport: framingViewport(canvas, panelEl.getBoundingClientRect())
