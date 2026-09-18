@@ -868,6 +868,39 @@ describe('useLoad3dViewer', () => {
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
     })
+
+    it('completes viewer setup when a concurrent call supersedes the first load', async () => {
+      let settleFirstLoad!: (accepted: boolean) => void
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              settleFirstLoad = resolve
+            })
+        )
+        .mockResolvedValueOnce(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      const first = viewer.initializeStandaloneViewer(containerRef, 'a.glb')
+      const replacement = viewer.initializeStandaloneViewer(
+        containerRef,
+        'b.glb'
+      )
+      settleFirstLoad(false)
+      await Promise.all([first, replacement])
+
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+      expect(viewer.isPreview.value).toBe(true)
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationListChange',
+        expect.any(Function)
+      )
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationProgressChange',
+        expect.any(Function)
+      )
+    })
   })
 
   describe('gizmo controls', () => {

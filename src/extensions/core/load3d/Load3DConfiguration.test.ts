@@ -191,10 +191,10 @@ describe('Load3DConfiguration.loadModelConfig', () => {
 })
 
 describe('Load3DConfiguration.silentOnNotFound propagation', () => {
-  let loadModelSpy: ReturnType<typeof vi.fn>
+  let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
     return {
       loadModel: loadModelSpy,
       clearModel: vi.fn(),
@@ -538,7 +538,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
   function makeLoad3dMock(): Load3d {
     return fromPartial<Load3d>({
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -625,12 +625,12 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
 describe('Load3DConfiguration "none" model handling', () => {
   let load3d: Load3d
-  let loadModelSpy: ReturnType<typeof vi.fn>
+  let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
   let clearModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
     let cleanup: (() => void) | undefined
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
     clearModelSpy = vi.fn()
     return fromPartial<Load3d>({
       loadModel: loadModelSpy,
@@ -802,7 +802,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),

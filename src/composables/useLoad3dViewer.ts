@@ -495,15 +495,17 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
+      // Viewer-lifetime setup belongs to instance creation, not to this
+      // request: a concurrent initializeStandaloneViewer() call reuses the
+      // instance through loadStandaloneModel() and can supersede this load.
+      isPreview.value = true
+      setupAnimationEvents()
+
       const accepted = await load3d.loadModel(modelUrl)
       if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
-
-      isPreview.value = true
-
-      setupAnimationEvents()
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
