@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -30,8 +31,6 @@ const state = vi.hoisted(() => ({
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
   type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
@@ -81,15 +80,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -228,8 +219,7 @@ describe('CreditsTile', () => {
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
+
     state.type = 'workspace'
     state.customerEventsError = null
     state.telemetryUnavailable = false
@@ -478,7 +468,6 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
     // self-serve plan must keep this state on tier alone.
-    state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -493,7 +482,6 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // A sales-managed plan has no self-serve reactivation to sell, so the
     // reactivate-to-use-credits treatment must not apply.
-    state.canTopUp = true
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -630,8 +618,8 @@ describe('CreditsTile', () => {
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
@@ -650,7 +638,6 @@ describe('CreditsTile', () => {
   it('uses the fail-open capability fallback on legacy billing', () => {
     activeProSubscription()
     state.type = 'legacy'
-    state.canTopUp = true
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })

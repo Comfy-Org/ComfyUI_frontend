@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({
+  useFirebaseAuth: vi.fn(() => ({}))
+}))
+
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import type {
   BillingStatusResponse,

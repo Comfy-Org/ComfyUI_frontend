@@ -21,23 +21,26 @@ import type { CrdtLogLevel } from './crdtDebugGate'
  */
 export type CrdtLogScope = 'wire' | 'doc'
 
-export type DevEventKind =
-  | 'ws_out'
-  | 'doc_subscribed'
-  | 'doc_update'
-  | 'doc_ops_result'
-  | 'human_ops_settled'
-  | 'doc_reset'
-  | 'schema_error'
-  | 'reconnected'
-  | 'subscribe_retry'
-  | 'doc_nodes_changed'
-  | 'rebind'
-  | 'stale_probe'
-  | 'doc_gap'
-  | 'doc_stale'
-  | 'frame_send_failed'
-  | 'agent_node_adapters_materialized'
+export const DEV_EVENT_KINDS = [
+  'ws_out',
+  'doc_subscribed',
+  'doc_update',
+  'doc_ops_result',
+  'human_ops_settled',
+  'doc_reset',
+  'doc_nodes_changed',
+  'schema_error',
+  'reconnected',
+  'subscribe_retry',
+  'stale_probe',
+  'rebind',
+  'doc_gap',
+  'doc_stale',
+  'frame_send_failed',
+  'agent_node_adapters_materialized'
+] as const
+
+export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]
 
 export interface DevEvent {
   seq: number

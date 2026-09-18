@@ -13,7 +13,8 @@ import type {
   GizmoConfig,
   LightConfig,
   ModelConfig,
-  SceneConfig
+  SceneConfig,
+  StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
@@ -134,13 +135,13 @@ describe('Load3DConfiguration.loadModelConfig', () => {
   })
 
   it('backfills scale on legacy gizmo config missing the scale field', () => {
-    const legacyGizmo = fromPartial<GizmoConfig>({
+    const legacyGizmo: Partial<GizmoConfig> = {
       enabled: true,
       mode: 'rotate',
       position: { x: 1, y: 2, z: 3 },
       rotation: { x: 0.1, y: 0.2, z: 0.3 }
-    })
-    const stored: ModelConfig = {
+    }
+    const stored: StoredModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
       showSkeleton: false,

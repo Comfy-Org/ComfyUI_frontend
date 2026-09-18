@@ -1,8 +1,9 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
-import { toRef, computed, ref } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
@@ -91,13 +92,11 @@ const mockIsActiveSubscription = ref(true)
 
 const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
-const mockCanCancel = ref(true)
-const mockCanReactivate = ref(true)
+
 const mockCanReactivatePlan = ref(true)
 const mockCanOpenPricingSurface = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
-const mockCanChangeSeats = ref(true)
-const mockCanSubscribeSelfServe = ref(true)
+
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
@@ -219,17 +218,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: mockCanCancel,
-      canReactivate: mockCanReactivate,
-      canChangeSeats: mockCanChangeSeats,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -336,12 +325,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     mockCanManageSubscription.value = true
     mockCanManageSubscriptionLifecycle.value = true
-    mockCanCancel.value = true
-    mockCanReactivate.value = true
+    useBillingCapabilities().canCancel = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     mockCanReactivatePlan.value = true
     mockShouldUseWorkspaceBilling.value = true
-    mockCanChangeSeats.value = true
-    mockCanSubscribeSelfServe.value = true
     mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
@@ -387,8 +376,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('hides verification from users without billing permission', () => {
     Object.assign(useBillingOperationStore(), { isSettingUp: true })
     mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: {
         actionUrl: 'https://verify.example/sensitive-token'
@@ -427,11 +416,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
     // self-serve catalog close, credit top-up stays open.
     function useSalesManagedCapabilities() {
-      mockCanCancel.value = false
-      mockCanReactivate.value = false
+      useBillingCapabilities().canCancel = computed(() => false)
+      useBillingCapabilities().canReactivate = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       mockCanReactivatePlan.value = false
-      mockCanChangeSeats.value = false
-      mockCanSubscribeSelfServe.value = false
       mockCanOpenPricingSurface.value = false
     }
 
@@ -516,7 +505,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       mockIsActiveSubscription.value = false
       mockSubscriptionStatus.value = 'ended'
       mockBillingStatus.value = 'inactive'
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       renderComponent()
 
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
@@ -668,7 +657,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
     mockCanManageSubscription.value = true
-    mockCanChangeSeats.value = false
+    useBillingCapabilities().canChangeSeats = computed(() => false)
     renderComponent()
 
     expect(
@@ -697,10 +686,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
@@ -931,7 +920,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
@@ -1071,7 +1060,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
     mockCanManageSubscription.value = true
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1085,10 +1074,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasSubscription.value = false
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1270,10 +1259,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers members only Leave Workspace in the menu', () => {
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -1295,10 +1284,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
