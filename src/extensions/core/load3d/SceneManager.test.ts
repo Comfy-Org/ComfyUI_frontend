@@ -1,5 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,7 +42,7 @@ function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
     clientWidth: 400,
     clientHeight: 300
   }
-  return fromAny<THREE.WebGLRenderer, unknown>({
+  return fromPartial<THREE.WebGLRenderer>({
     domElement,
     outputColorSpace: THREE.SRGBColorSpace,
     toneMapping: THREE.ACESFilmicToneMapping,
@@ -84,7 +84,7 @@ function makeView(
     configurable: true,
     value: height
   })
-  return fromAny<RendererView, unknown>({
+  return fromPartial<RendererView>({
     renderer,
     canvas,
     state: createRendererViewState(),
@@ -109,7 +109,7 @@ function makeRenderer() {
   canvas.width = 800
   canvas.height = 600
   vi.spyOn(canvas, 'toDataURL').mockReturnValue('data:image/png;base64,FAKE')
-  return fromAny<THREE.WebGLRenderer, unknown>({
+  return fromPartial<THREE.WebGLRenderer>({
     domElement: canvas,
     setClearColor: vi.fn(),
     setSize: vi.fn(),
@@ -153,7 +153,7 @@ describe('SceneManager', () => {
     manager = new SceneManager(
       makeView(renderer),
       () => camera,
-      () => fromAny<OrbitControls, unknown>({}),
+      () => fromPartial<OrbitControls>({}),
       events
     )
   })

@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -33,7 +33,7 @@ function makeLoad3d(
     .fn()
     .mockResolvedValue(undefined)
 ): Load3d {
-  return fromAny<Load3d, unknown>({ exportModel: exportImpl })
+  return fromPartial<Load3d>({ exportModel: exportImpl })
 }
 
 describe('createExportMenuItems', () => {

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
@@ -1231,7 +1231,7 @@ describe('Load3d', () => {
 
     it('routes fbx through SkeletonUtils.clone and attaches the source animations', async () => {
       const model = new THREE.Object3D()
-      const clip = fromAny<THREE.AnimationClip, unknown>({ name: 'walk' })
+      const clip = fromPartial<THREE.AnimationClip>({ name: 'walk' })
       model.animations = [clip]
       const cloned = new THREE.Object3D()
       cloneSkinnedMock.mockReturnValueOnce(cloned)
@@ -1261,7 +1261,7 @@ describe('Load3d', () => {
     it('falls back to originalModel.animations when the working model has none (fbx)', async () => {
       const model = new THREE.Object3D()
       const original = new THREE.Object3D()
-      const clip = fromAny<THREE.AnimationClip, unknown>({ name: 'idle' })
+      const clip = fromPartial<THREE.AnimationClip>({ name: 'idle' })
       original.animations = [clip]
       const cloned = new THREE.Object3D()
       cloneSkinnedMock.mockReturnValueOnce(cloned)
@@ -1454,7 +1454,7 @@ describe('Load3d', () => {
       }
       return {
         container,
-        deps: fromAny<Load3dDeps, unknown>(deps),
+        deps: fromPartial<Load3dDeps>(deps),
         gizmoManager
       }
     }
