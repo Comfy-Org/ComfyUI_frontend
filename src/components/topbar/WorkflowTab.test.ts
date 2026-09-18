@@ -130,10 +130,7 @@ function renderTab({
     global: {
       plugins: [i18n],
       stubs: {
-        WorkflowActionsList: true,
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
+        WorkflowActionsList: true
       }
     },
     props: {

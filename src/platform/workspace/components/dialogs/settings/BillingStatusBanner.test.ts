@@ -150,15 +150,7 @@ const i18n = createI18n({
 })
 
 const globalOptions = {
-  plugins: [i18n],
-  stubs: {
-    Button: {
-      template:
-        '<button v-bind="$attrs" @click="$emit(\'click\')"><slot/></button>',
-      props: ['variant', 'size', 'loading'],
-      emits: ['click']
-    }
-  }
+  plugins: [i18n]
 }
 
 function renderBanner() {
