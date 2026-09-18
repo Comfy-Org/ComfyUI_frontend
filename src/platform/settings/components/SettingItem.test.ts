@@ -56,7 +56,7 @@ describe('SettingItem', () => {
 
   it('persists setting updates through the setting store', async () => {
     const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
+      id: 'Comfy.Locale',
       name: 'Visible Setting',
       type: 'text',
       defaultValue: 'default'
@@ -71,6 +71,6 @@ describe('SettingItem', () => {
 
     await flushPromises()
 
-    expect(mockSet).toHaveBeenCalledWith('main.sub.setting.name', 'newvalue')
+    expect(mockSet).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
   })
 })

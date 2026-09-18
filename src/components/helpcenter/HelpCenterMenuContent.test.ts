@@ -33,17 +33,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    staticUrls: {
-      discord: '',
-      github: '',
-      status: 'https://status.comfy.org/'
-    },
-    buildDocsUrl: () => 'https://docs.comfy.org'
-  })
-}))
-
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({

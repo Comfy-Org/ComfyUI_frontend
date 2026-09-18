@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

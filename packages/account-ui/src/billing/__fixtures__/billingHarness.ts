@@ -82,6 +82,7 @@ function fakeSession() {
       return () => listeners.delete(listener)
     },
     attachIdentity: outsideBillingContract('attachIdentity'),
+    dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),

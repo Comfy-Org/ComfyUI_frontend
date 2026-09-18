@@ -1,71 +1,29 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createTestIdentity } from '../testing.js'
+import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import {
+  EXCHANGE_URL,
+  jsonResponse,
+  manualIdentity,
+  memoryStorage,
+  mintBody,
+  okFetch,
+  testUser
+} from './__fixtures__/sessionFakes.js'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  SessionClientOptions,
-  SessionErrorCode
+  SessionErrorCode,
+  SessionSnapshot
 } from './session.js'
+import { createTestIdentity } from '../testing.js'
 import {
-  SESSION_ERROR_MESSAGES,
+  SESSION_ERROR_CODES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
 } from './session.js'
-
-const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
-
-function memoryStorage(): CredentialStorage & { raw: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
-    },
-    clear: () => {
-      value = null
-    },
-    raw: () => value
-  }
-}
-
-function makeClient(overrides: Partial<SessionClientOptions> = {}) {
-  const storage = memoryStorage()
-  const client = createSessionClient({
-    exchangeUrl: EXCHANGE_URL,
-    storage,
-    ...overrides
-  })
-  return { client, storage }
-}
-
-function testUser(uid = 'uid-1', idToken = 'id-token-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => idToken) }
-}
-
-function mintBody(overrides: Record<string, unknown> = {}) {
-  return {
-    token: 'workspace-jwt',
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    ...overrides
-  }
-}
-
-function jsonResponse(status: number, body: unknown) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
-
-function okFetch(token = 'workspace-jwt') {
-  return vi.fn<typeof fetch>(async () => jsonResponse(200, mintBody({ token })))
-}
 
 function seedCache(
   storage: CredentialStorage,
@@ -83,22 +41,6 @@ function seedCache(
   }
   storage.write(JSON.stringify({ ...credential, target }))
   return credential
-}
-
-function manualIdentity() {
-  let deliver: ((user: AccountUser | null) => void) | undefined
-  const unsubscribe = vi.fn()
-  const port = createTestIdentity<AccountUser>({
-    onUserChanged: (callback) => {
-      deliver = callback
-      return unsubscribe
-    }
-  })
-  return {
-    port,
-    fire: (user: AccountUser | null) => deliver?.(user),
-    unsubscribe
-  }
 }
 
 function hangingFetch() {
@@ -824,6 +766,27 @@ describe('storage outage', () => {
   })
 })
 
+describe('stored credential reads', () => {
+  it('serves a fresh in-memory credential without touching storage', async () => {
+    const storage = memoryStorage()
+    const read = vi.spyOn(storage, 'read')
+    const { client } = makeClient({ fetchImpl: okFetch(), storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+    await client.ensureFresh(user, {})
+    read.mockClear()
+
+    await client.ensureFresh(user, {})
+
+    expect(
+      read,
+      'a fresh live credential must not cost a storage read, parse and schema check on every call'
+    ).not.toHaveBeenCalled()
+  })
+})
+
 describe('stale storage', () => {
   it('serves the fresh in-memory credential when the stored record is stale because its write failed', async () => {
     const storage = memoryStorage()
@@ -1004,7 +967,7 @@ describe('identity brand', () => {
         // @ts-expect-error an unbranded port is not an AccountIdentity
         { onUserChanged: () => () => undefined }
       )
-    ).toThrow('attachIdentity needs the identity')
+    ).toThrow('the session client needs the identity')
   })
 
   it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {
@@ -1469,6 +1432,35 @@ describe('sign-in state ownership', () => {
     expect(client.getSnapshot().phase).toBe('pending')
     expect(fetchImpl).not.toHaveBeenCalled()
   })
+
+  it('detaches a subscription disposed from inside its first synchronous delivery', () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const { client } = makeClient({ fetchImpl })
+    const first = testUser()
+    let deliver: ((user: AccountUser | null) => void) | undefined
+    const unsubscribe = vi.fn()
+    const port = createTestIdentity<AccountUser>({
+      onUserChanged: (callback) => {
+        deliver = callback
+        callback(first)
+        return unsubscribe
+      }
+    })
+    const seen: SessionSnapshot['phase'][] = []
+    client.subscribe((snapshot) => {
+      seen.push(snapshot.phase)
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    client.attachIdentity(port)
+    deliver?.(testUser('uid-2', 'id-token-2'))
+
+    expect(seen).toEqual(['pending', 'minting', 'pending'])
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(first.getIdToken).not.toHaveBeenCalled()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
 })
 
 describe('storage writes after identity changes', () => {
@@ -1667,17 +1659,30 @@ describe('settled sign-out blocks an explicit remint', () => {
   })
 })
 
-describe('shared session copy', () => {
-  it('covers every session error code and both success states', () => {
-    const codes: SessionErrorCode[] = [
-      'NOT_AUTHENTICATED',
-      'INVALID_FIREBASE_TOKEN',
-      'ACCESS_DENIED',
-      'WORKSPACE_NOT_FOUND',
-      'TOKEN_EXCHANGE_FAILED'
-    ]
-    for (const code of codes) {
-      expect(SESSION_ERROR_MESSAGES[code]).toBeTruthy()
-    }
+describe('session error code vocabulary', () => {
+  it('narrows an arbitrary code to a known one and rejects the rest', () => {
+    const known: SessionErrorCode = 'ACCESS_DENIED'
+    expect(known in SESSION_ERROR_CODES).toBe(true)
+    expect('SOMETHING_ELSE' in SESSION_ERROR_CODES).toBe(false)
+  })
+})
+
+describe('subscribe', () => {
+  it('drops a listener whose immediate replay throws, so a later commit never calls it', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    const flaky = vi.fn(() => {
+      if (flaky.mock.calls.length === 1) throw new Error('listener exploded')
+    })
+    expect(() => client.subscribe(flaky)).toThrow('listener exploded')
+
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    expect(
+      flaky,
+      'a listener removed for throwing on replay is never called by a later commit'
+    ).toHaveBeenCalledTimes(1)
   })
 })

@@ -4,10 +4,10 @@
  * consumer reads both back and must work when neither is there, because a
  * customer can close the tab or arrive by bookmark at any point.
  */
-import type { BillingEnvironment } from './contract'
-import { isContractIdentifier } from './identifiers'
-import { resolveReturnTarget } from './returnTargets'
-import { CONTRACT_PARSE_BASE, parseUrl } from './url'
+import type { BillingEnvironment } from './contract.js'
+import { isContractIdentifier } from './identifiers.js'
+import { resolveReturnTarget } from './returnTargets.js'
+import { CONTRACT_PARSE_BASE, parseUrl } from './url.js'
 
 /** Names are provisional; see `contract.ts`. */
 const RETURN_PARAM_OUTCOME = 'billing_result'

@@ -1,20 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  AUTH_ERROR_COPY,
-  AUTH_ERROR_MESSAGES,
-  AUTH_TOAST_SUMMARIES,
-  UNAUTHORIZED_DOMAIN_MESSAGES,
   authErrorMessage,
   classifyAuthError,
-  severityForAuthError,
-  unauthorizedDomainMessage
+  severityForAuthError
 } from './firebaseAuthError'
+import type { AuthErrorCopy } from './firebaseAuthError'
 
 const firebaseError = (code: string, message = 'Firebase: error.') => ({
   code,
   message
 })
+
+const hostCopy: AuthErrorCopy = {
+  'auth/invalid-credential': 'Invalid login credentials.',
+  'auth/popup-blocked': 'Pop-up blocked.',
+  'auth/too-many-requests': 'Slow down.',
+  generic: 'Something went wrong.',
+  signupBlocked: "We couldn't create your account."
+}
 
 describe('classifyAuthError', () => {
   it.for([
@@ -75,22 +79,7 @@ describe('classifyAuthError', () => {
   })
 })
 
-describe('shared auth error copy and severity', () => {
-  it('carries a message for every popup-dismissal code and the named fallbacks', () => {
-    for (const code of [
-      'auth/popup-closed-by-user',
-      'auth/cancelled-popup-request',
-      'auth/popup-blocked'
-    ]) {
-      expect(
-        AUTH_ERROR_MESSAGES[code],
-        `each dismissal shape has its own copy in the cloud app; ${code} losing its entry silently degrades to the generic string`
-      ).toBeTruthy()
-    }
-    expect(AUTH_ERROR_MESSAGES['generic']).toBeTruthy()
-    expect(AUTH_ERROR_MESSAGES['signupBlocked']).toBeTruthy()
-  })
-
+describe('severityForAuthError', () => {
   it('marks a dismissed popup as a warning and every real failure as an error', () => {
     expect(
       severityForAuthError({
@@ -110,67 +99,40 @@ describe('shared auth error copy and severity', () => {
   })
 })
 
-describe('AUTH_ERROR_COPY', () => {
-  it.for(['zh-CN', 'ja'] as const)(
-    '%s carries every key the English table has, and nothing else',
-    (locale) => {
-      expect(Object.keys(AUTH_ERROR_COPY[locale]).sort()).toEqual(
-        Object.keys(AUTH_ERROR_MESSAGES).sort()
-      )
-    }
-  )
-
-  it('keeps the English table as the en entry', () => {
-    expect(AUTH_ERROR_COPY.en).toBe(AUTH_ERROR_MESSAGES)
-  })
-
-  it.for(['en', 'zh-CN', 'ja'] as const)(
-    '%s sign-in failures do not reveal whether the email has an account',
-    (locale) => {
-      const copy = AUTH_ERROR_COPY[locale]
-      expect(
-        new Set([
-          copy['auth/user-not-found'],
-          copy['auth/wrong-password'],
-          copy['auth/invalid-credential']
-        ]).size,
-        'distinct unknown-email and wrong-password copy is an account enumeration oracle'
-      ).toBe(1)
-    }
-  )
-})
-
-describe('authErrorMessage', () => {
-  it('returns the coded line for a known code in the requested locale', () => {
+describe('authErrorMessage resolves a classification against host copy', () => {
+  it('returns the host line for a known code', () => {
     expect(
       authErrorMessage(
         classifyAuthError(firebaseError('auth/popup-blocked')),
-        'ja'
+        hostCopy
       )
-    ).toBe(AUTH_ERROR_COPY.ja['auth/popup-blocked'])
+    ).toBe(hostCopy['auth/popup-blocked'])
   })
 
-  it('falls back to the generic line for an unknown auth code', () => {
+  it('falls back to the host generic line for an unknown auth code', () => {
     expect(
-      authErrorMessage(classifyAuthError(firebaseError('auth/some-new-code')))
-    ).toBe(AUTH_ERROR_MESSAGES.generic)
+      authErrorMessage(
+        classifyAuthError(firebaseError('auth/some-new-code')),
+        hostCopy
+      )
+    ).toBe(hostCopy.generic)
   })
 
-  it('uses the signup-blocked copy regardless of the collapsed code', () => {
+  it('uses the host signup-blocked copy regardless of the collapsed code', () => {
     expect(
       authErrorMessage(
         classifyAuthError(
           firebaseError('auth/internal-error', 'SIGNUP_BLOCKED')
         ),
-        'zh-CN'
+        hostCopy
       )
-    ).toBe(AUTH_ERROR_COPY['zh-CN'].signupBlocked)
+    ).toBe(hostCopy.signupBlocked)
   })
 
   it.for(['auth/user-not-found', 'auth/wrong-password'] as const)(
     'resolves %s to the invalid-credential line even when a host table distinguishes it',
     (code) => {
-      const hostCopy = {
+      const distinguishing = {
         'auth/user-not-found': 'No account with this email',
         'auth/wrong-password': 'Wrong password',
         'auth/invalid-credential': 'Invalid login credentials.',
@@ -179,76 +141,27 @@ describe('authErrorMessage', () => {
       }
 
       expect(
-        authErrorMessage(classifyAuthError(firebaseError(code)), hostCopy),
-        'the collapse is the package rule, not a property of its own tables; a host table must not reopen the oracle'
+        authErrorMessage(
+          classifyAuthError(firebaseError(code)),
+          distinguishing
+        ),
+        'the collapse is the package rule, not a property of any table; a host table must not reopen the oracle'
       ).toBe('Invalid login credentials.')
     }
   )
 
-  it('gives the generic line for a non-Firebase failure', () => {
-    expect(authErrorMessage(classifyAuthError(new Error('boom')))).toBe(
-      AUTH_ERROR_MESSAGES.generic
-    )
+  it('gives the host generic line for a non-Firebase failure', () => {
+    expect(
+      authErrorMessage(classifyAuthError(new Error('boom')), hostCopy)
+    ).toBe(hostCopy.generic)
   })
 
-  it('resolves against a table the host brings instead of a shipped locale', () => {
-    const hostCopy = {
-      'auth/too-many-requests': 'host slow down',
-      generic: 'host generic',
-      signupBlocked: 'host blocked'
-    }
-
+  it('leaves the unauthorized-domain line to the host, which interpolates it', () => {
     expect(
       authErrorMessage(
-        classifyAuthError(firebaseError('auth/too-many-requests')),
+        classifyAuthError(firebaseError('auth/unauthorized-domain')),
         hostCopy
       )
-    ).toBe('host slow down')
-    expect(
-      authErrorMessage(
-        classifyAuthError(firebaseError('auth/some-new-code')),
-        hostCopy
-      ),
-      'the host table falls back to its own generic line'
-    ).toBe('host generic')
-  })
-
-  it('does not pretend to know the unauthorized-domain copy without the host values', () => {
-    expect(
-      authErrorMessage(
-        classifyAuthError(firebaseError('auth/unauthorized-domain'))
-      ),
-      'the domain line needs {domain} and {email}; hosts call unauthorizedDomainMessage'
-    ).toBe(AUTH_ERROR_MESSAGES.generic)
-  })
-})
-
-describe('unauthorizedDomainMessage', () => {
-  it('interpolates the host domain and support address', () => {
-    expect(
-      unauthorizedDomainMessage({
-        domain: 'comfy.org',
-        email: 'support@comfy.org'
-      })
-    ).toBe(
-      'Your domain comfy.org is not authorized to use this service. Please contact support@comfy.org to add your domain to the whitelist.'
-    )
-  })
-
-  it.for(['en', 'zh-CN', 'ja'] as const)(
-    '%s template carries both placeholders',
-    (locale) => {
-      expect(UNAUTHORIZED_DOMAIN_MESSAGES[locale]).toContain('{domain}')
-      expect(UNAUTHORIZED_DOMAIN_MESSAGES[locale]).toContain('{email}')
-    }
-  )
-})
-
-describe('AUTH_TOAST_SUMMARIES', () => {
-  it('pairs every severity with a summary in every locale', () => {
-    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
-      expect(AUTH_TOAST_SUMMARIES[locale].error).toBeTruthy()
-      expect(AUTH_TOAST_SUMMARIES[locale].warn).toBeTruthy()
-    }
+    ).toBe(hostCopy.generic)
   })
 })

@@ -165,7 +165,7 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useRegionGate } from '@comfyorg/account-core/vue/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import Button from '@/components/ui/button/Button.vue'

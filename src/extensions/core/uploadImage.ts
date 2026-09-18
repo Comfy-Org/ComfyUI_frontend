@@ -20,7 +20,7 @@ const createUploadInput = (
 app.registerExtension({
   name: 'Comfy.UploadImage',
   beforeRegisterNodeDef(_nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
-    const { input } = nodeData ?? {}
+    const { input } = nodeData
     const { required } = input ?? {}
     if (!required) return
 

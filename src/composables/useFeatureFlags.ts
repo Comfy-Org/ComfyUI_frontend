@@ -43,6 +43,7 @@ export enum ServerFeatureFlag {
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
+  BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -273,6 +274,14 @@ export function useFeatureFlags() {
     get billingSdkTopupRailEnabled() {
       return this.billingSdkTopupEnabled && this.unifiedCloudAuthEnabled
     },
+    get billingSdkSubscriptionEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED
+      )
+    },
+    get billingSdkSubscriptionRailEnabled() {
+      return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
+    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
@@ -372,6 +381,8 @@ export function startFeatureFlagTelemetry() {
         flags.embeddedCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
+      [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
+        flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,
