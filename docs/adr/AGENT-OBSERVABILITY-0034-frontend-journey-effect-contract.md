@@ -49,13 +49,20 @@ meaning. Follower-side inactive-target and projection results are not remapped o
 owner, source field, precedence rule, and terminality rule exist.
 
 Correlated effect events require a non-empty, deduplicated list of creator-minted operation IDs and
-an opaque target reference. Optional session, thread, turn, mutation, and run identifiers are copied
-only when upstream provides them. Readers reject unsupported schema versions. Sink adapters, added
-separately, own pseudonymization, retention, access controls, and vendor mappings.
+an opaque target reference. Operation IDs use the authoritative host-frame grammar: non-empty, at
+most 128 UTF-8 bytes, and without null, newline, carriage-return, or tab characters. Their creator
+owns the guarantee that they are identifiers rather than content. Optional session, thread, turn,
+mutation, and run identifiers are copied only when upstream provides privacy-safe opaque values.
+`observed_at` must be a canonical UTC timestamp with millisecond precision. `operation_count` is
+derived from the deduplicated operation IDs rather than accepted from a caller. Readers reject
+unsupported schema versions. Sink adapters, added separately, own pseudonymization, retention,
+access controls, and vendor mappings.
 
-The contract forbids prompts, responses, tool inputs or results, workflow JSON, Yjs bytes, node and
-widget content, filenames, URLs, emails, credentials, raw errors, and arbitrary context. Stable
-identifiers may be event attributes but never metric tags or event-name components.
+The serializer allowlists named fields, validates the canonical timestamp and correlation shapes,
+and rejects content in non-operation correlation fields. Event creators must never put prompts,
+responses, tool inputs or results, workflow JSON, Yjs bytes, node and widget content, filenames,
+URLs, emails, credentials, raw errors, or arbitrary context into operation IDs. Stable identifiers
+may be event attributes but never metric tags or event-name components.
 
 Alternatives rejected:
 

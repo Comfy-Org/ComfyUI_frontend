@@ -38,7 +38,6 @@ export type FrontendSemanticEffectEvent = Readonly<{
   observed_at: string
   release_channel: AgentJourneyReleaseChannel
   correlation: AgentJourneyCorrelation
-  operation_count: number
   effect_kind: AgentJourneyEffectKind
   recovery_mode: AgentJourneyRecoveryMode
 }>
@@ -73,9 +72,28 @@ const EFFECT_EVENT_NAMES = {
 } as const satisfies Record<AgentJourneyEffectOutcome, AgentJourneyEventName>
 
 const OPAQUE_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
+const MAX_OPERATION_ID_BYTES = 128
+const CANONICAL_TIMESTAMP_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
 function isOpaqueIdentifier(value: string): boolean {
   return OPAQUE_IDENTIFIER_PATTERN.test(value)
+}
+
+function isValidOperationId(value: string): boolean {
+  return (
+    value.length > 0 &&
+    new TextEncoder().encode(value).length <= MAX_OPERATION_ID_BYTES &&
+    !/[\0\n\r\t]/.test(value)
+  )
+}
+
+function isCanonicalTimestamp(value: string): boolean {
+  if (!CANONICAL_TIMESTAMP_PATTERN.test(value)) return false
+  const timestamp = Date.parse(value)
+  return (
+    Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value
+  )
 }
 
 export function getAgentJourneyEventName(
@@ -90,8 +108,9 @@ export function serializeAgentJourneyEvent(
   const operationIds = [...new Set(event.correlation.operation_ids)]
   if (
     operationIds.length === 0 ||
-    !operationIds.every(isOpaqueIdentifier) ||
-    !isOpaqueIdentifier(event.correlation.target_ref)
+    !operationIds.every(isValidOperationId) ||
+    !isOpaqueIdentifier(event.correlation.target_ref) ||
+    !isCanonicalTimestamp(event.observed_at)
   ) {
     return null
   }
@@ -121,7 +140,7 @@ export function serializeAgentJourneyEvent(
     observed_at: event.observed_at,
     release_channel: event.release_channel,
     correlation,
-    operation_count: event.operation_count,
+    operation_count: operationIds.length,
     effect_kind: event.effect_kind,
     recovery_mode: event.recovery_mode
   }

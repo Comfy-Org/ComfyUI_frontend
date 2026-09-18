@@ -17,7 +17,6 @@ const baseEvent: FrontendSemanticEffectEvent = {
     operation_ids: ['op-1'],
     target_ref: 'rotating-target-ref'
   },
-  operation_count: 1,
   effect_kind: 'node',
   recovery_mode: 'live'
 }
@@ -54,6 +53,7 @@ describe('agent journey effect contract', () => {
     })
 
     expect(serialized?.correlation.operation_ids).toEqual(['op-2', 'op-1'])
+    expect(serialized?.operation_count).toBe(2)
     expect(operationIds).toEqual(['op-2', 'op-1', 'op-2'])
   })
 
@@ -67,28 +67,58 @@ describe('agent journey effect contract', () => {
   })
 
   it.for([
-    'operation_ids',
-    'target_ref',
-    'session_id',
-    'thread_id',
-    'turn_id',
-    'mutation_id',
-    'run_id'
-  ] as const)('rejects non-opaque values in %s', (key) => {
-    for (const value of [
-      'person@example.com',
-      'https://example.com/workflow/1',
-      'workflow with arbitrary context'
-    ]) {
-      const correlation =
-        key === 'operation_ids'
-          ? { ...baseEvent.correlation, operation_ids: [value] }
-          : { ...baseEvent.correlation, [key]: value }
+    ['email in target_ref', 'target_ref', 'person@example.com'],
+    ['URL in target_ref', 'target_ref', 'https://example.com/workflow/1'],
+    ['context in target_ref', 'target_ref', 'workflow with arbitrary context'],
+    ['email in session_id', 'session_id', 'person@example.com'],
+    ['URL in thread_id', 'thread_id', 'https://example.com/workflow/1'],
+    ['context in turn_id', 'turn_id', 'workflow with arbitrary context'],
+    ['email in mutation_id', 'mutation_id', 'person@example.com'],
+    ['URL in run_id', 'run_id', 'https://example.com/workflow/1']
+  ] as const)('rejects %s', ([, key, value]) => {
+    const correlation = { ...baseEvent.correlation, [key]: value }
 
-      expect(
-        serializeAgentJourneyEvent({ ...baseEvent, correlation })
-      ).toBeNull()
-    }
+    expect(serializeAgentJourneyEvent({ ...baseEvent, correlation })).toBeNull()
+  })
+
+  it.for([
+    ['periods', 'agent.op.123'],
+    ['namespaces', 'agent:abc'],
+    ['leading punctuation', '_leading'],
+    ['spaces', 'op 1'],
+    ['Unicode', '오퍼레이션']
+  ] as const)('accepts host-valid operation IDs with %s', ([, operationId]) => {
+    const serialized = serializeAgentJourneyEvent({
+      ...baseEvent,
+      correlation: { ...baseEvent.correlation, operation_ids: [operationId] }
+    })
+
+    expect(serialized?.correlation.operation_ids).toEqual([operationId])
+  })
+
+  it.for([
+    ['empty', ''],
+    ['tab', 'op\t1'],
+    ['newline', 'op\n1'],
+    ['over 128 UTF-8 bytes', '오'.repeat(43)]
+  ] as const)('rejects %s operation IDs', ([, operationId]) => {
+    expect(
+      serializeAgentJourneyEvent({
+        ...baseEvent,
+        correlation: { ...baseEvent.correlation, operation_ids: [operationId] }
+      })
+    ).toBeNull()
+  })
+
+  it.for([
+    ['email', 'person@example.com'],
+    ['URL', 'https://example.com/workflow/1'],
+    ['noncanonical timestamp', '2026-09-17T23:30:00Z'],
+    ['invalid date', '2026-02-30T23:30:00.000Z']
+  ] as const)('rejects %s in observed_at', ([, observedAt]) => {
+    expect(
+      serializeAgentJourneyEvent({ ...baseEvent, observed_at: observedAt })
+    ).toBeNull()
   })
 
   it('omits unavailable optional correlation instead of fabricating it', () => {
