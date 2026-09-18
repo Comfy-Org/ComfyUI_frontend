@@ -150,10 +150,12 @@ export class Topbar {
    */
   async setVueNodesEnabled(enabled: boolean) {
     await this.openTopbarMenu()
-    const nodes2Switch = this.page.getByRole('switch', { name: 'Nodes 2.0' })
-    await nodes2Switch.waitFor({ state: 'visible' })
-    if ((await nodes2Switch.isChecked()) !== enabled) {
-      await nodes2Switch.click()
+    const nodes2Toggle = this.page.getByRole('menuitemcheckbox', {
+      name: 'Nodes 2.0'
+    })
+    await nodes2Toggle.waitFor({ state: 'visible' })
+    if ((await nodes2Toggle.isChecked()) !== enabled) {
+      await nodes2Toggle.click()
       await this.page.waitForFunction(
         (wantEnabled) =>
           window.app!.ui.settings.getSettingValue('Comfy.VueNodes.Enabled') ===

@@ -43,27 +43,23 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
     user,
     settingStore,
     row: screen.getByTestId('nodes-2-toggle-item'),
-    label: screen.getByText(NODES_2_LABEL),
-    toggle: screen.getByRole('switch', { name: NODES_2_LABEL })
+    label: screen.getByText(NODES_2_LABEL)
   }
 }
 
 describe('ComfyMenuButton', () => {
-  describe.for(['row', 'label', 'toggle'] as const)(
-    'clicking the %s',
-    (target) => {
-      it('toggles Nodes 2.0 exactly once', async () => {
-        const menu = await openMenu()
+  describe.for(['row', 'label'] as const)('clicking the %s', (target) => {
+    it('toggles Nodes 2.0 exactly once', async () => {
+      const menu = await openMenu()
 
-        await menu.user.click(menu[target])
+      await menu.user.click(menu[target])
 
-        expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
-          'Comfy.VueNodes.Enabled',
-          true
-        )
-      })
-    }
-  )
+      expect(menu.settingStore.set).toHaveBeenCalledExactlyOnceWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+    })
+  })
 
   describe.for([
     { enabled: false, written: true },
@@ -79,7 +75,9 @@ describe('ComfyMenuButton', () => {
         written
       )
       await nextTick()
-      expect(menu.toggle).toHaveAttribute('aria-checked', String(written))
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: NODES_2_LABEL })
+      ).toHaveAttribute('aria-checked', String(written))
     })
   })
 

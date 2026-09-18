@@ -27,6 +27,7 @@
   <TieredMenu
     ref="menuRef"
     :model="translatedItems"
+    :pt="{ item: nodes2MenuItemProps }"
     :popup="true"
     class="comfy-command-menu"
     @show="onMenuShow"
@@ -81,10 +82,10 @@
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
         <Switch
           :model-value="nodes2Enabled"
-          class="ml-4"
-          :aria-label="item.label"
-          @click.stop
-          @update:model-value="onNodes2ToggleChange"
+          class="pointer-events-none ml-4"
+          aria-hidden="true"
+          readonly
+          tabindex="-1"
         />
       </div>
     </template>
@@ -94,7 +95,11 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
 import TieredMenu from 'primevue/tieredmenu'
-import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
+import type {
+  TieredMenuMethods,
+  TieredMenuPassThroughMethodOptions,
+  TieredMenuState
+} from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -315,6 +320,17 @@ const onNodes2ToggleChange = async (value: boolean) => {
     button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`,
     element_group: 'sidebar'
   })
+}
+
+function nodes2MenuItemProps({
+  context
+}: TieredMenuPassThroughMethodOptions<unknown>) {
+  if (context.item.key !== 'nodes-2.0-toggle') return
+
+  return {
+    'aria-checked': nodes2Enabled.value,
+    role: 'menuitemcheckbox'
+  }
 }
 </script>
 
