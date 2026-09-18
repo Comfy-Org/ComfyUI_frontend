@@ -75,10 +75,7 @@ function openDetail(index: number) {
   modalOpen.value = true
 }
 
-const title = t('models.list.creations.title', locale).replace(
-  '{name}',
-  modelName
-)
+const title = t('models.list.creations.title', locale, { name: modelName })
 const ctaLabel = t('models.list.creations.cta', locale)
 </script>
 

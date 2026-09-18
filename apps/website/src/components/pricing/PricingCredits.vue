@@ -20,8 +20,9 @@ const {
 
 const estimate = computed(() => {
   if (!estimateKey) return undefined
-  const text = t(estimateKey, locale)
-  return estimateCount ? text.replace('{count}', estimateCount) : text
+  return estimateCount
+    ? t(estimateKey, locale, { count: estimateCount })
+    : t(estimateKey, locale)
 })
 </script>
 

@@ -15,11 +15,13 @@ export function getWhatIsDescription(
     isCloudOnly(model)
       ? 'models.faq.whatIs.cloudAnswer'
       : 'models.faq.whatIs.localAnswer',
-    locale
+    locale,
+    {
+      name: model.displayName,
+      description: dirDesc,
+      count: model.workflowCount
+    }
   )
-    .replaceAll('{name}', model.displayName)
-    .replace('{description}', dirDesc)
-    .replace('{count}', String(model.workflowCount))
 }
 
 export function getPageDescription(model: Model): string {
@@ -37,6 +39,7 @@ export function getFaqPricingAnswer(
     isCloudOnly(model)
       ? 'models.faq.isFree.cloudAnswer'
       : 'models.faq.isFree.localAnswer',
-    locale
-  ).replace('{name}', model.displayName)
+    locale,
+    { name: model.displayName }
+  )
 }

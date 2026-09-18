@@ -126,9 +126,9 @@ const toolbarLabels: ToolbarLabels = {
   noResults: t('workshop.hub.facets.noResults', locale),
   typeAll: t('workshop.hub.kind.all', locale),
   less: t('workshop.hub.facets.less', locale),
-  selected: t('workshop.hub.facets.selected', locale),
-  showResults: t('workshop.hub.facets.show', locale),
-  showModels: t('workshop.search.show', locale),
+  selected: (n) => t('workshop.hub.facets.selected', locale, { n }),
+  showResults: (n) => t('workshop.hub.facets.show', locale, { n }),
+  showModels: (n) => t('workshop.search.show', locale, { n }),
   resize: t('workshop.filter.resize', locale)
 }
 // Workflows are dated and models are priced, so a tab offers what the things
@@ -189,7 +189,7 @@ const gridLabels: GridLabels = {
   loadMore: t('workshop.hub.loadMore', locale),
   empty: t('workshop.hub.empty', locale),
   emptyHint: t('workshop.hub.emptyHint', locale),
-  showing: t('workshop.hub.showing', locale)
+  showing: (shown, total) => t('workshop.hub.showing', locale, { shown, total })
 }
 
 // A Hub entry tagged as a partner node whose model matches a Workshop model
