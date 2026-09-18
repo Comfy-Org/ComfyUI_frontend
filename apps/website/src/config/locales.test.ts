@@ -68,8 +68,10 @@ describe('isPageIndexable', () => {
     expect(isPageIndexable('ja', '/mcp')).toBe(false)
   })
 
-  it('holds back Japanese pricing until it is published', () => {
-    expect(isPageIndexable('ja', '/pricing')).toBe(false)
+  it('allows one the locale does serve', () => {
+    // Without this the pair above would still pass if the list denied
+    // everything, which is the failure mode an allowlist is prone to.
+    expect(isPageIndexable('ja', '/pricing')).toBe(true)
   })
 })
 
@@ -92,7 +94,7 @@ describe('localeHasRoute', () => {
    */
   it('is true only for the Japanese routes that exist', () => {
     expect(localeHasRoute('ja', '/')).toBe(true)
-    expect(localeHasRoute('ja', '/pricing')).toBe(false)
+    expect(localeHasRoute('ja', '/pricing')).toBe(true)
     expect(localeHasRoute('ja', '/cli')).toBe(false)
     expect(localeHasRoute('ja', '/mcp')).toBe(false)
   })

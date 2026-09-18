@@ -367,12 +367,17 @@ describe('a page whose own locale is held back', () => {
     ).toEqual(['en', 'zh-CN', 'x-default'])
   })
 
-  it('does not advertise Japanese pricing before publication', () => {
+  /**
+   * The other half of the same rule, and the one that only became observable
+   * when `/pricing` joined the Japanese allowlist: a cluster grows as soon as
+   * another locale publishes the page, without anything else being edited.
+   */
+  it('names Japanese once Japanese publishes the page', () => {
     expect(
       hreflangAlternates('/zh-CN/pricing/', ORIGIN, 'zh-CN').map(
         (a) => a.hreflang
       )
-    ).toEqual(['en', 'zh-CN', 'x-default'])
+    ).toEqual(['en', 'zh-CN', 'ja', 'x-default'])
   })
 })
 
@@ -401,8 +406,11 @@ describe('canonicalPath', () => {
     expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
   })
 
-  it('holds Japanese pricing at its English original', () => {
-    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
+  it('points a published Japanese page at itself', () => {
+    // `/pricing` joined the allowlist once its FAQ had Japanese. Without a case
+    // like this the canonical rule could point every Japanese page at English
+    // and still pass.
+    expect(canonicalPath('/pricing/', 'ja')).toBe('/ja/pricing/')
   })
 
   it('points the published Japanese home page at itself', () => {

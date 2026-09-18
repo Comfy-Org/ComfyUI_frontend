@@ -230,9 +230,10 @@ describe('localizeMarkdownLinks', () => {
    * a route the locale does not serve.
    */
   it('localizes an internal link only where the locale serves it', () => {
+    // Japanese publishes /pricing but not /contact.
     expect(
-      localizeMarkdownLinks('See [home](/) and [us](/contact).', 'ja')
-    ).toBe('See [home](/ja/) and [us](/contact).')
+      localizeMarkdownLinks('See [pricing](/pricing) and [us](/contact).', 'ja')
+    ).toBe('See [pricing](/ja/pricing) and [us](/contact).')
   })
 
   it('localizes every internal link for a complete locale', () => {

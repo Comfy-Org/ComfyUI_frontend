@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
   )
 })
 
-for (const locale of ['zh-CN']) {
+for (const locale of ['zh-CN', 'ja']) {
   test(`${locale} analytics keeps the locale through client navigation`, async ({
     page
   }) => {
