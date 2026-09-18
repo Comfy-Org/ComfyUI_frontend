@@ -15,6 +15,7 @@ import { render } from '@testing-library/vue'
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -73,6 +74,10 @@ const definitionsState = vi.hoisted(() => ({
 
 const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
+}))
+
+const appState = vi.hoisted(() => ({
+  app: { graph: null } as { graph: null; canvas: unknown }
 }))
 
 const apiState = vi.hoisted(() => {
@@ -138,9 +143,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { graph: null, canvas: null }
-}))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appState.app }))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -223,6 +226,8 @@ function dispatchFrame(type: string, detail: unknown): void {
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
+    appState.app.canvas = null
+    useAgentNodeSelectionStore().isActive = false
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
@@ -1014,6 +1019,105 @@ describe('useAgentCrdtFollower', () => {
           { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
         ]
       ])
+      unmount()
+    })
+  })
+
+  /**
+   * The agent positions nodes from the graph bounding box, with no access to
+   * the camera, so on a wide graph its work lands off screen. These cover the
+   * composable's half of the fix: it resolves the ids the reconcile pass
+   * materialized to live nodes and hands only those to the framer.
+   */
+  describe('arrival reveal', () => {
+    function stubCanvas(): {
+      selectItems: ReturnType<typeof vi.fn>
+      animateToBounds: ReturnType<typeof vi.fn>
+    } {
+      const selectItems = vi.fn()
+      const animateToBounds = vi.fn()
+      appState.app.canvas = {
+        canvas: { width: 1000, height: 1000 },
+        ds: { scale: 1, offset: [0, 0] },
+        selectItems,
+        animateToBounds
+      }
+      return { selectItems, animateToBounds }
+    }
+
+    function graphWith(
+      nodes: Record<number, { pos: [number, number]; size: [number, number] }>
+    ): MaterializableGraph {
+      return {
+        rootGraph: { subgraphs: new Map() },
+        _nodes_by_id: nodes,
+        setDirtyCanvas: vi.fn()
+      } as unknown as MaterializableGraph
+    }
+
+    it('selects and frames a node the agent built off screen', () => {
+      const { selectItems, animateToBounds } = stubCanvas()
+      const offScreen = {
+        pos: [4000, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const graph = graphWith({ 1: offScreen })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(selectItems).toHaveBeenCalledWith([offScreen])
+      expect(animateToBounds).toHaveBeenCalledOnce()
+      unmount()
+    })
+
+    it('leaves the camera alone when the new node landed in view', () => {
+      const { selectItems, animateToBounds } = stubCanvas()
+      const inView = {
+        pos: [100, 100] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const graph = graphWith({ 1: inView })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(selectItems).toHaveBeenCalledWith([inView])
+      expect(animateToBounds).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('touches nothing on a frame that materialized no node', () => {
+      const { selectItems, animateToBounds } = stubCanvas()
+      const graph = graphWith({})
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(selectItems).not.toHaveBeenCalled()
+      expect(animateToBounds).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    // The selection is the user's reference basket while they are picking
+    // nodes for a prompt. Replacing it there would drop their references.
+    it('does not touch the selection while the user is picking nodes', () => {
+      const { selectItems, animateToBounds } = stubCanvas()
+      const offScreen = {
+        pos: [4000, 0] as [number, number],
+        size: [240, 86] as [number, number]
+      }
+      const graph = graphWith({ 1: offScreen })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      useAgentNodeSelectionStore().isActive = true
+      const { unmount } = mountFollower('wf-1', true, () => graph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(selectItems).not.toHaveBeenCalled()
+      expect(animateToBounds).toHaveBeenCalledOnce()
       unmount()
     })
   })

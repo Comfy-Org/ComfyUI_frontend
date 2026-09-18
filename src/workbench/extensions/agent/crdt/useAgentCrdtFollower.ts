@@ -9,13 +9,19 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import { createAgentArrivalFramer } from './agentArrivalFraming'
 import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
@@ -198,6 +204,37 @@ function startAgentCrdtFollower(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe()
   )
+  const framer = createAgentArrivalFramer(
+    () => useAgentConversationStore().activeTurnId
+  )
+
+  /**
+   * Show the user what just arrived.
+   *
+   * The ids come from the reconcile pass that built the live nodes, so the
+   * framer is only ever handed the work this frame added - never the rest of
+   * the graph. The selection is left alone while the user is picking nodes for
+   * a prompt: that selection is their basket, and replacing it would drop
+   * their references.
+   */
+  const revealArrivals = (nodeIds: NodeId[]): void => {
+    if (nodeIds.length === 0) return
+    // `app.canvas`, not the canvas store: this layer cannot import from
+    // renderer/. The store's `selectedItems` mirror stays in sync anyway -
+    // `selectItems` fires `onSelectionChange`, which the canvas host chains to
+    // the store's own update. Widened because the definite-assignment
+    // assertion on `app.canvas` does not hold until that host mounts, and a
+    // frame can land first.
+    const canvas = app.canvas as LGraphCanvas | undefined
+    const graph = getGraph()
+    if (!canvas || !graph) return
+    const nodes = nodeIds
+      .map((id) => graph._nodes_by_id[id])
+      .filter((node) => node !== undefined)
+    if (nodes.length === 0) return
+    const picking = useAgentNodeSelectionStore().isActive
+    framer.reveal(canvas, nodes, { select: !picking })
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -283,7 +320,8 @@ function startAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    if (applied)
+      revealArrivals(projection.reconcileLiveGraph(update.workflowId))
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -335,6 +373,9 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
+    // The nodes that build was made of are gone; framing it now would point
+    // the camera at an address the new lineage does not use.
+    framer.reset()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -355,6 +396,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      framer.reset()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
