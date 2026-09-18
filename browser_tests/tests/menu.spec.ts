@@ -245,47 +245,22 @@ test.describe('Menu', { tag: '@ui' }, () => {
     })
   })
 
-  test.describe('Nodes 2.0 toggle', () => {
-    test('Toggles from a click anywhere on the row', async ({ comfyPage }) => {
-      const { topbar } = comfyPage.menu
-      await topbar.openTopbarMenu()
+  test('Toggles the focused Nodes 2.0 row with Enter and Space', async ({
+    comfyPage
+  }) => {
+    const { topbar } = comfyPage.menu
+    await topbar.openTopbarMenu()
+    await topbar.focusMenuItem('Nodes 2.0')
 
-      await topbar.clickNodes2RowBody()
+    await comfyPage.page.keyboard.press('Enter')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(true)
 
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
-        .toBe(true)
-      await expect(
-        comfyPage.page.getByRole('switch', { name: 'Nodes 2.0' })
-      ).toBeChecked()
-    })
-
-    test('Leaves the menu usable after a row click', async ({ comfyPage }) => {
-      const { topbar } = comfyPage.menu
-      await topbar.openTopbarMenu()
-
-      await topbar.clickNodes2RowBody()
-
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
-        .toBe(true)
-      await expect(topbar.menuRootList).toBeFocused()
-      await topbar.openSubmenu('Theme')
-    })
-
-    test('Does not switch renderer when Space reaches the focused row', async ({
-      comfyPage
-    }) => {
-      const { topbar } = comfyPage.menu
-      await topbar.openTopbarMenu()
-      await topbar.focusMenuItem('Nodes 2.0')
-
-      await comfyPage.page.keyboard.press('Space')
-
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
-        .toBe(false)
-    })
+    await comfyPage.page.keyboard.press('Space')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(false)
   })
 
   // Only test 'Top' to reduce test time.

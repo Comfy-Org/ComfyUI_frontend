@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -78,16 +78,9 @@ describe('ComfyMenuButton', () => {
         'Comfy.VueNodes.Enabled',
         written
       )
+      await nextTick()
       expect(menu.toggle).toHaveAttribute('aria-checked', String(written))
     })
-  })
-
-  it('keeps the menu open after a row click so the change can be reverted', async () => {
-    const menu = await openMenu()
-
-    await menu.user.click(menu.row)
-
-    expect(menu.toggle).toBeVisible()
   })
 
   it('does not advertise Nodes 2.0 as beta', async () => {

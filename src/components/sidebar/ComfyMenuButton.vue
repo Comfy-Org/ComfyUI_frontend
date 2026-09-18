@@ -72,9 +72,11 @@
       </a>
       <div
         v-else
+        v-bind="props.action"
         class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
         data-testid="nodes-2-toggle-item"
-        @click.stop="toggleNodes2"
+        @mousedown.prevent
+        @click.stop="onNodes2ToggleChange(!nodes2Enabled)"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
         <Switch
@@ -313,10 +315,6 @@ const onNodes2ToggleChange = async (value: boolean) => {
     button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`,
     element_group: 'sidebar'
   })
-}
-
-const toggleNodes2 = async () => {
-  await onNodes2ToggleChange(!nodes2Enabled.value)
 }
 </script>
 

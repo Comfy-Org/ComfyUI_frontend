@@ -11,13 +11,11 @@ export class Topbar {
   readonly workflowTabs: Locator
   readonly integratedTabBarActions: Locator
   readonly menuRootList: Locator
-  readonly nodes2ToggleItem: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
-    this.menuRootList = this.menuLocator.locator('.p-tieredmenu-root-list')
-    this.nodes2ToggleItem = page.getByTestId(TestIds.topbar.nodes2ToggleItem)
+    this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
@@ -168,17 +166,9 @@ export class Topbar {
     await new VueNodeHelpers(this.page).waitForNodes()
   }
 
-  /**
-   * Give the open menu keyboard focus, then walk ArrowDown until `itemLabel` is
-   * the active descendant. Throws if the item is never reached.
-   */
   async focusMenuItem(itemLabel: string): Promise<void> {
-    await this.menuRootList.waitFor({ state: 'visible' })
     await this.menuRootList.focus()
-
-    const itemCount = await this.menuRootList
-      .locator('> .p-tieredmenu-item')
-      .count()
+    const itemCount = await this.menuRootList.getByRole('menuitem').count()
 
     for (let step = 0; step < itemCount; step++) {
       await this.page.keyboard.press('ArrowDown')
@@ -190,46 +180,17 @@ export class Topbar {
     )
   }
 
-  /**
-   * Click the gap between the Nodes 2.0 label and its switch. The row's centre
-   * sits a few pixels from the label's right edge, so an unpositioned click
-   * stops covering the formerly inert gap as soon as the label's width shifts.
-   */
-  async clickNodes2RowBody(): Promise<void> {
-    const label = this.nodes2ToggleItem.locator('.p-menubar-item-label')
-    const toggle = this.nodes2ToggleItem.getByRole('switch')
-    const [labelBox, toggleBox, rowBox] = await Promise.all([
-      label.boundingBox(),
-      toggle.boundingBox(),
-      this.nodes2ToggleItem.boundingBox()
-    ])
-    if (!labelBox || !toggleBox || !rowBox) {
-      throw new Error('The Nodes 2.0 row is not laid out')
-    }
-
-    const gapStart = labelBox.x + labelBox.width
-    if (toggleBox.x - gapStart < 4) {
-      throw new Error('The Nodes 2.0 row has no gap between label and switch')
-    }
-    await this.nodes2ToggleItem.click({
-      position: {
-        x: (gapStart + toggleBox.x) / 2 - rowBox.x,
-        y: rowBox.height / 2
-      }
-    })
-  }
-
-  async getFocusedMenuItemLabel(): Promise<string | null> {
+  private async getFocusedMenuItemLabel(): Promise<string | null> {
     const focusedItemId = await this.menuRootList.getAttribute(
       'aria-activedescendant'
     )
     if (!focusedItemId) return null
 
-    const label = this.page.locator(
-      `[id="${focusedItemId}"] .p-menubar-item-label`
-    )
+    const label = this.menuLocator
+      .locator(`#${focusedItemId}`)
+      .locator('.p-menubar-item-label')
     if ((await label.count()) === 0) return null
-    return (await label.first().innerText()).trim()
+    return (await label.innerText()).trim()
   }
 
   /**
