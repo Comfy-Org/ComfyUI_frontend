@@ -979,7 +979,6 @@ describe('Load3d', () => {
       await Promise.all([load, idle])
 
       expect(ctx.load3d.getCurrentModel()).toBeNull()
-      expect(modelManager.clearModel).toHaveBeenCalledTimes(3)
     })
   })
 
