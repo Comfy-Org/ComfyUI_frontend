@@ -23,6 +23,15 @@ cause and a proposed change without editing anything. What an investigator
 reports is a claim to verify before you act on it. You apply the changes
 yourself.
 
+An approval decides what the comments mean. When a reviewer approves while
+their threads are still open, they have judged those threads non-blocking:
+answer each one in its thread, and carry the changes to a follow-up pull
+request rather than pushing to this one, because every push dismisses every
+approval and sends the pull request back to the start. Push to an approved
+pull request only when a reviewer says a comment blocks, or when a comment
+shows the change is unsafe to ship. Before any approval exists, every
+comment is worked as below.
+
 Treat every comment as a claim to test against the current code, not as an
 order. For each one, decide among three outcomes and act:
 

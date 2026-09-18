@@ -52,8 +52,13 @@ and carry on without waiting.
 
 ## Clear the blockers
 
-Run the loop in `review-loop.md`, investigators and all, with one push per
-round. Three rules are specific to a pull request that is not yours:
+When the reading shows a current approval, the pull request is not stuck on
+its comments: answer them in their threads, leave the code alone, and go to
+the gate. A push here dismisses the approval and costs a fresh review from
+both teams; make one only when a reviewer says a comment blocks or a comment
+shows the change is unsafe to ship, and say in the hand-off why you spent the
+approval. Without an approval, run the loop in `review-loop.md`,
+investigators and all, with one push per round. Three rules are specific to a pull request that is not yours:
 
 - Changes you make stay inside what the pull request already set out to do. A
   reviewer's request that would widen it becomes a note for a follow-up, said
@@ -100,14 +105,16 @@ queued unread, and only when every line below is true in that one reading:
 - Every completed check is green, required or not (the same rule
   `review-loop.md` ends on; a skipped check is fine), and no review stands at
   "changes requested".
-- Every review thread is either resolved or has your reply as its last
-  comment, the same test the review loop ends on. A human's thread stays open
-  after your reply because only the reviewer may resolve it, so for each such
-  thread compare, from this reading, the thread's human author against the
-  approvals: that same person must have an approval whose `submittedAt` is
-  later than your reply's time, or the thread does not count as accepted and
-  the line is false. Another reviewer's approval says nothing about this
-  thread.
+- Every review thread is either resolved, or has your reply as its last
+  comment, or was left open by a reviewer who then approved. A human's thread
+  stays open after your reply because only the reviewer may resolve it, so
+  for each thread whose last comment is yours compare, from this reading, the
+  thread's human author against the approvals: that same person must have an
+  approval whose `submittedAt` is later than your reply's time, or the thread
+  does not count as accepted and the line is false. A thread whose author
+  approved after writing it is non-blocking by their own judgement, even with
+  no reply from you; answer it in the thread and do not push for it. Another
+  reviewer's approval says nothing about either kind of thread.
 - It is not a draft, and nothing in the title, description, labels, or comments
   says to hold it: "do not merge", a launch date not yet reached, an embargo, a
   dependency on another pull request. A hold is lifted only by the person who
