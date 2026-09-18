@@ -142,8 +142,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './agentCrdtDocLifecycle'
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { DocFrameTransport } from './docFrameClient'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -177,7 +179,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  baseTransport?: DocFrameTransport
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -194,7 +197,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        baseTransport
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -321,6 +325,41 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
     expect('__agentCrdtPoc' in window).toBe(false)
     unmount()
+  it('resubscribes when the transport reports its socket (re)connected', () => {
+    // The server drops a connection's follows when the socket closes, while
+    // the bridge still believes it is subscribed — so a plain reconcile
+    // (which no-ops once intent equals reality) would leave the follower
+    // deaf after a reconnect. A transport on a socket other than ComfyUI's
+    // must get the same treatment as a ComfyUI `reconnected`: drop the
+    // connection state and resubscribe.
+    let connectedListener: (() => void) | null = null
+    const stopConnected = vi.fn()
+    const transport: DocFrameTransport = {
+      send: vi.fn(() => false),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      onConnected: (listener) => {
+        connectedListener = listener
+        return stopConnected
+      }
+    }
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      transport
+    )
+    expect(connectedListener).toBeTypeOf('function')
+    dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 3 })
+    expect(status().connected).toBe(true)
+    const before = bridge().resubscribe.mock.calls.length
+
+    connectedListener!()
+
+    expect(bridge().resubscribe.mock.calls.length).toBe(before + 1)
+    expect(status().connected).toBe(false)
+    unmount()
+    expect(stopConnected).toHaveBeenCalledTimes(1)
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -385,6 +424,94 @@ describe('useAgentCrdtFollower', () => {
       vi.advanceTimersByTime(60_000)
       expect(bridge().resubscribe).not.toHaveBeenCalled()
       expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
+      unmount()
+    })
+  })
+
+  describe('terminal follower state (#17469)', () => {
+    // AgentPanelRoot withholds the draft seed on the follower's INTENT
+    // (status.workflowId), so a follower that can no longer deliver the
+    // document must say so, or every later turn sends no draft against no
+    // document and the canvas is stranded until reload.
+    function refuse(): void {
+      dispatchFrame('doc_subscribed', { ok: false, workflow_id: 'wf-1' })
+    }
+
+    function exhaustRetries(): void {
+      for (let attempt = 0; attempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS; attempt++) {
+        refuse()
+        vi.runOnlyPendingTimers()
+      }
+    }
+
+    it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
+      vi.useFakeTimers()
+      const { unmount, status } = mountFollower('wf-1')
+
+      refuse()
+
+      expect(status().connected).toBe(false)
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('reports a terminal refusal once the retry budget is spent, and clears it on the next confirmed subscribe', () => {
+      vi.useFakeTimers()
+      const { unmount, status } = mountFollower('wf-1')
+
+      exhaustRetries()
+      expect(status().terminal).toBeNull()
+      refuse()
+
+      expect(status().terminal).toBe('refused')
+      expect(status().connected).toBe(false)
+      // Intent is untouched: the root still knows which document it wanted.
+      expect(status().workflowId).toBe('wf-1')
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      expect(status().terminal).toBeNull()
+      expect(status().connected).toBe(true)
+      unmount()
+    })
+
+    it('reports a schema error as terminal, cleared by the next confirmed subscribe', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+      expect(status().terminal).toBe('schema_error')
+      expect(status().workflowId).toBe('wf-1')
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 2 })
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('a retarget clears the terminal state', async () => {
+      vi.useFakeTimers()
+      const { unmount, status, workflowId } = mountFollower('wf-1')
+      exhaustRetries()
+      refuse()
+      expect(status().terminal).toBe('refused')
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(status().terminal).toBeNull()
+      expect(status().workflowId).toBe('wf-2')
+      unmount()
+    })
+
+    it('an ordinary reconnect drops connected without becoming terminal', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      expect(status().connected).toBe(true)
+
+      apiState.target.dispatchEvent(new Event('reconnected'))
+
+      expect(status().connected).toBe(false)
+      expect(status().terminal).toBeNull()
       unmount()
     })
   })

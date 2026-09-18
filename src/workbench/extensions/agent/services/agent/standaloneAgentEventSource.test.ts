@@ -194,3 +194,28 @@ describe('createStandaloneAgentEventSource', () => {
     expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
   })
 })
+
+describe('createStandaloneAgentEventSource send', () => {
+  it('reports false before the socket is open and writes nothing', () => {
+    const { source, sockets } = sourceHarness()
+    source.subscribe(vi.fn())
+    const socket = sockets[0]
+    const send = vi.fn()
+    Object.assign(socket, { send })
+
+    expect(source.send('{"type":"doc_subscribe"}')).toBe(false)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('writes the frame verbatim on the open socket and reports true', () => {
+    const { source, sockets } = sourceHarness()
+    source.subscribe(vi.fn())
+    const socket = sockets[0]
+    const send = vi.fn()
+    Object.assign(socket, { send })
+    socket.open()
+
+    expect(source.send('{"type":"doc_subscribe"}')).toBe(true)
+    expect(send).toHaveBeenCalledWith('{"type":"doc_subscribe"}')
+  })
+})
