@@ -1,7 +1,10 @@
 import { effectScope, toValue } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
+import {
+  ASSET_PAGE_SIZE,
+  useAssetsQuery
+} from '@/platform/assets/composables/useAssetsQuery'
 import type {
   AssetItem,
   AssetResponse
@@ -61,6 +64,12 @@ async function createList(
   return list
 }
 
+function requestedLimits() {
+  return fetchApiMock.mock.calls.map(([url]) =>
+    new URL(url, 'http://localhost').searchParams.get('limit')
+  )
+}
+
 function requestedAfterCursors() {
   return fetchApiMock.mock.calls.slice(1).map(([url]) => {
     const requestUrl = new URL(url, 'http://localhost')
@@ -106,6 +115,40 @@ const transientFailures: {
     backsOff: true
   }
 ]
+
+describe('useAssetsQuery page size', () => {
+  beforeEach(() => {
+    fetchApiMock.mockReset()
+  })
+
+  it('sends the pinned page size on the first fetch and on loadMore', async () => {
+    const list = await createList('page-size', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(response(['older']))
+
+    await list.loadMore()
+    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
+
+    expect(requestedLimits()).toEqual([
+      String(ASSET_PAGE_SIZE),
+      String(ASSET_PAGE_SIZE)
+    ])
+  })
+
+  it('lets a caller override the pinned page size', async () => {
+    fetchApiMock.mockResolvedValueOnce(response(['only']))
+    const scope = effectScope()
+    const list = scope.run(() =>
+      useAssetsQuery({ name_contains: 'override', limit: 100 })
+    )!
+    onTestFinished(() => scope.stop())
+    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
+
+    expect(requestedLimits()).toEqual(['100'])
+  })
+})
 
 describe('useAssetsQuery loadMore transient failure retry', () => {
   beforeEach(() => {

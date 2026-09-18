@@ -14,7 +14,11 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
+/** Rows per fetch. Stated so the feed's paging can't drift with ingest's default. */
+export const ASSET_PAGE_SIZE = 20
+
 const BASE_PARAMS: ListAssetsData['query'] = {
+  limit: ASSET_PAGE_SIZE,
   sort: 'created_at',
   tags_none: ['missing']
 }
