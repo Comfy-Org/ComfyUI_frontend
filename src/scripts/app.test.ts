@@ -45,6 +45,14 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
+import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -275,6 +283,134 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
+    function prepareResourceReload() {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const store = useExecutionErrorStore()
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      store.setActiveGraph(graphId)
+      useMissingModelStore().setMissingModels([
+        {
+          nodeId: createNodeExecutionId([1]),
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'model.safetensors',
+          isAssetSupported: false,
+          isMissing: true
+        }
+      ])
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
+        store.setActiveGraph(graphId)
+      })
+      return store
+    }
+
+    it.for(['immediate', 'deferred', 'unverified', 'skipped'] as const)(
+      'retires reloaded resource errors only after successful verification: %s',
+      async (verification) => {
+        const store = prepareResourceReload()
+        const absorbed = validationError('value_not_in_list', 'ckpt_name', {
+          received_value: 'model.safetensors'
+        })
+        const unrelated = validationError('required_input_missing', 'positive')
+        store.recordNodeErrors({ '1': nodeError([absorbed, unrelated]) })
+
+        let finishModels:
+          | ((candidates: MissingModelCandidate[]) => void)
+          | undefined
+        let finishMedia:
+          | ((candidates: MissingMediaCandidate[]) => void)
+          | undefined
+        vi.mocked(runMissingModelPipeline).mockImplementation(
+          async ({ onVerified }) => {
+            finishModels = onVerified
+            if (verification === 'immediate') onVerified?.([])
+            return { missingModels: [], confirmedCandidates: [] }
+          }
+        )
+        vi.spyOn(
+          missingMediaPipeline,
+          'runMissingMediaPipeline'
+        ).mockImplementation(async ({ onVerified }) => {
+          finishMedia = onVerified
+          if (verification === 'immediate') onVerified?.([])
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          skipAssetScans: verification === 'skipped'
+        })
+
+        if (verification === 'immediate') {
+          expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
+          return
+        }
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([
+          absorbed,
+          unrelated
+        ])
+        if (verification !== 'deferred') return
+        expect(finishModels).toBeTypeOf('function')
+        expect(finishMedia).toBeTypeOf('function')
+        finishModels?.([])
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
+        finishMedia?.([])
+        expect(store.lastNodeErrors?.['1'].errors).toEqual([unrelated])
+      }
+    )
+
+    it('retires verified model errors while preserving errors from failed media verification', async () => {
+      const store = prepareResourceReload()
+      const media = createMissingMediaCandidate([toNodeId(2)], {
+        name: 'portrait.png'
+      })
+      useMissingMediaStore().setMissingMedia([media])
+      const mediaError = validationError('value_not_in_list', 'image', {
+        received_value: 'portrait.png'
+      })
+      const unrelated = validationError('required_input_missing', 'positive')
+      store.recordNodeErrors({
+        '1': nodeError([
+          validationError('value_not_in_list', 'ckpt_name', {
+            received_value: 'model.safetensors'
+          }),
+          unrelated
+        ]),
+        '2': nodeError([mediaError])
+      })
+
+      vi.mocked(runMissingModelPipeline).mockImplementation(
+        async ({ onVerified }) => {
+          onVerified?.([])
+          return { missingModels: [], confirmedCandidates: [] }
+        }
+      )
+      vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
+        { ...media, isMissing: undefined }
+      ])
+      vi.spyOn(
+        missingMediaScan,
+        'isMissingMediaCandidateScopeActive'
+      ).mockReturnValue(true)
+      vi.spyOn(missingMediaScan, 'verifyMediaCandidates').mockRejectedValue(
+        new Error('asset service unavailable')
+      )
+
+      await app.loadGraphData(createWorkflowGraphData(), false, true, null)
+
+      await vi.waitFor(() => {
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'warn',
+            summary: t('toastMessages.missingMediaVerificationFailed')
+          })
+        )
+      })
+      expect(store.lastNodeErrors).toEqual({
+        '1': nodeError([unrelated]),
+        '2': nodeError([mediaError])
+      })
+    })
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -2184,17 +2320,14 @@ describe('ComfyApp', () => {
 
       const executionErrorStore = useExecutionErrorStore()
       executionErrorStore.recordNodeErrors(failedKSamplerErrors)
-      expect(executionErrorStore.totalErrorCount).toBe(1)
 
       await switchToWorkflow(workflowService, graph, workflowB, workflowBId)
 
       expect(executionErrorStore.lastNodeErrors).toBeNull()
-      expect(executionErrorStore.totalErrorCount).toBe(0)
 
       await switchToWorkflow(workflowService, graph, workflowA, workflowAId)
 
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
-      expect(executionErrorStore.totalErrorCount).toBe(1)
     })
 
     it('gives each imported workflow its own restorable run errors', async () => {

@@ -1,0 +1,71 @@
+# The write half of the two-workflow split for the package release path:
+# publish-package-on-merge.yaml runs on pull_request and uploads the release
+# links as an artifact; this runs the default branch's definition on
+# workflow_run and is the only place the report reaches the pull request.
+name: 'PR: Publish Report'
+
+on:
+  workflow_run:
+    workflows: ['Publish Package on PR Merge']
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-publish-report-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download publish report
+        id: download
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: publish-report
+          path: publish-report
+          if_no_artifact_found: ignore
+
+      # A run whose resolve job found no version change uploads nothing.
+      - name: Read the PR number
+        id: pr
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f publish-report/pr-number.txt ] || [ ! -f publish-report/report.md ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          NUMBER=$(cat publish-report/pr-number.txt)
+          if ! [[ "$NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "::error title=Invalid PR number::publish-report/pr-number.txt is not a number" >&2
+            exit 1
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert release section into unified report
+        if: steps.pr.outputs.skip != 'true'
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: release
+          section-content-file: publish-report/report.md
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}

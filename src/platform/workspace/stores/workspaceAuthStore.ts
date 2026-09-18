@@ -92,6 +92,9 @@ function surfacePermanentAuthError(err: WorkspaceAuthError): void {
 
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
+  // Read fresh after an await: the reactive flag can flip mid-mint, and a
+  // captured read is narrowed to the value at the function's opening guard.
+  const unifiedRailEnabled = () => flags.unifiedCloudAuthEnabled
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
@@ -423,6 +426,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
     const authUser = await unifiedUser()
+    // A rollback during the awaits above must abort the unified switch rather
+    // than commit a token for a flag that is now off.
+    if (!unifiedRailEnabled()) return
     if (!authUser) {
       throw new WorkspaceAuthError('Workspace identity changed during switch')
     }
@@ -459,7 +465,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return true
     }
     const authUser = await unifiedUser()
-    if (!authUser) {
+    // Re-check after the wait: a rollback that flips the flag off while a mint
+    // is parked on unifiedUser() must not let the resumed mint commit a token.
+    if (!unifiedRailEnabled() || !authUser) {
       return false
     }
     const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
@@ -504,7 +512,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     if (expectedToken !== currentToken) return currentToken
     const authUser = await unifiedUser()
-    if (!authUser) return null
+    if (!unifiedRailEnabled() || !authUser) return null
     const result = await unifiedSessionClient.remint(authUser, {
       workspaceId: unifiedWorkspaceIdFor(target),
       preserveCredentialOnTransientFailure: true
