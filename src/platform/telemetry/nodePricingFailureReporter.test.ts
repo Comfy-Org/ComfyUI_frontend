@@ -53,8 +53,7 @@ describe('reportNodePricingFailure', () => {
         }),
         context: {
           occurrenceCount: 1,
-          jsonataPosition: 14,
-          jsonataToken: 'notAFunction'
+          jsonataPosition: 14
         },
         level: 'warning'
       }

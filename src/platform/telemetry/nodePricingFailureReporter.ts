@@ -90,8 +90,7 @@ export function reportNodePricingFailure({
     },
     context: {
       occurrenceCount,
-      jsonataPosition: jsonataError?.position,
-      jsonataToken: jsonataError?.token
+      jsonataPosition: jsonataError?.position
     },
     level: 'warning'
   })
