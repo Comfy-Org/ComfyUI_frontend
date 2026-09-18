@@ -94,6 +94,30 @@ export interface UndoBracket {
   afterChange(): void
 }
 
+interface DocResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
+function readDocResetDetail(event: Event): DocResetDetail | undefined {
+  return event instanceof CustomEvent
+    ? (event.detail as DocResetDetail | undefined)
+    : undefined
+}
+
+function targetsActiveSubscription(
+  detail: DocResetDetail | undefined,
+  isTargetActive: boolean,
+  subscribedWorkflowId: string | null
+): detail is DocResetDetail & { workflowId: string } {
+  return (
+    isTargetActive &&
+    detail?.workflowId !== undefined &&
+    detail.workflowId === subscribedWorkflowId
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -262,26 +286,21 @@ export function useAgentCrdtFollower(
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
-    const resetWorkflowId = detail?.workflowId
+    const detail = readDocResetDetail(event)
     if (
-      !isTargetActive.value ||
-      resetWorkflowId === undefined ||
-      resetWorkflowId !== subscribedWorkflowId.value
+      !targetsActiveSubscription(
+        detail,
+        isTargetActive.value,
+        subscribedWorkflowId.value
+      )
     )
       return
+    const resetWorkflowId = detail.workflowId
     outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail?.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
+      actor: detail.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     withUndoBracket(() => {
       projection.clearForReset(resetWorkflowId, context)
@@ -292,10 +311,7 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    recordDevEvent('doc_reset', detail)
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
