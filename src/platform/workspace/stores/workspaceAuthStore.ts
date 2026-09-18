@@ -60,7 +60,7 @@ const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
 const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
 /** Ceiling on waiting for the identity port before a host mint gives up. */
-const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
+export const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
 
 const RECOVERY_COOLDOWN_MS = 5000
 
@@ -144,6 +144,9 @@ function surfacePermanentAuthError(err: WorkspaceAuthError): void {
 
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
+  // Read fresh after an await: the reactive flag can flip mid-mint, and a
+  // captured read is narrowed to the value at the function's opening guard.
+  const unifiedRailEnabled = () => flags.unifiedCloudAuthEnabled
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
@@ -330,8 +333,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function destroy(): void {
     stopRefreshTimer()
     stopUnifiedFlagWatch()
-    detachUnifiedIdentity?.()
-    detachUnifiedIdentity = undefined
+    unifiedSessionClient.dispose()
     clearUnifiedContext()
     stopUnifiedSnapshot()
   }
@@ -764,7 +766,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   let unifiedTarget: UnifiedMintBody | null = null
   let unifiedScheduledRetryCount = 0
   let unifiedPermanentFailureSurfaced = false
-  let detachUnifiedIdentity: (() => void) | undefined
 
   function personalWorkspaceTarget(): UnifiedMintBody {
     return {}
@@ -851,30 +852,36 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // falls back to per-tab refresh.
   const crossTabRefreshPort = createWebCrossTabRefreshPort()
 
-  const unifiedSessionClient = createSessionClient<User>({
-    exchangeUrl: workspaceApiUrl('/auth/token'),
-    // In-memory only: a persisted JWT can outlive its server expiry, so a
-    // reload re-mints instead of rehydrating.
-    storage: {
-      read: () => null,
-      write: () => undefined,
-      clear: () => undefined
+  const unifiedSessionClient = createSessionClient<User>(
+    {
+      exchangeUrl: workspaceApiUrl('/auth/token'),
+      autoMint: false,
+      // In-memory only: a persisted JWT can outlive its server expiry, so a
+      // reload re-mints instead of rehydrating.
+      storage: {
+        read: () => null,
+        write: () => undefined,
+        clear: () => undefined
+      },
+      refreshScheduler: {
+        bufferMs: TOKEN_REFRESH_BUFFER_MS,
+        retryBaseMs: UNIFIED_REFRESH_RETRY_BASE_MS,
+        maxRetries: MAX_SCHEDULED_REFRESH_RETRIES,
+        onScheduledOutcome: handleScheduledRefreshOutcome,
+        ...(crossTabRefreshPort && {
+          crossTab: {
+            port: crossTabRefreshPort,
+            // A sibling's rotation is still a rotation for this tab: the
+            // session cookie and the onAuthTokenRefreshed hook must see it.
+            onCredentialAdopted: () => useAuthStore().notifyTokenRefreshed()
+          }
+        })
+      }
     },
-    refreshScheduler: {
-      bufferMs: TOKEN_REFRESH_BUFFER_MS,
-      retryBaseMs: UNIFIED_REFRESH_RETRY_BASE_MS,
-      maxRetries: MAX_SCHEDULED_REFRESH_RETRIES,
-      onScheduledOutcome: handleScheduledRefreshOutcome,
-      ...(crossTabRefreshPort && {
-        crossTab: {
-          port: crossTabRefreshPort,
-          // A sibling's rotation is still a rotation for this tab: the
-          // session cookie and the onAuthTokenRefreshed hook must see it.
-          onCredentialAdopted: () => useAuthStore().notifyTokenRefreshed()
-        }
-      })
-    }
-  })
+    // Keep synchronous within setup: Firebase's first delivery is a microtask,
+    // so this store is fully assigned before authStore's listener re-enters it.
+    useAuthStore().identity
+  )
 
   const stopUnifiedSnapshot = unifiedSessionClient.subscribe((snapshot) => {
     if (snapshot.phase === 'authenticated') {
@@ -906,34 +913,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = null
   })
 
-  // The package's Firebase entry, bound in authStore to the app's own Auth
-  // instance, is the session client's identity source. No ordering with the
-  // auth listener's teardown is load-bearing: invalidate() keeps the
-  // identity, and the port fails closed on an identity change by itself.
-  function ensureUnifiedIdentityAttached(): void {
-    if (!flags.unifiedCloudAuthEnabled || detachUnifiedIdentity) return
-    detachUnifiedIdentity = unifiedSessionClient.attachIdentity(
-      useAuthStore().identity,
-      { autoMint: false }
-    )
-  }
-
-  // The flag owns both ends: enabling the rail must attach identity and mint
-  // the current target before consumers switch to it, or an already-signed-in
-  // session starts sending no auth header; a rollback must stop the unified
-  // scheduler and cross-tab lease, or they keep rotating the cookie and
-  // refilling the slot the API callers no longer read.
+  // Identity is bound for the store's lifetime; the flag gates minting, and a
+  // rollback invalidates the credential, so scheduler and cross-tab lease stop.
   const stopUnifiedFlagWatch = watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {
       if (enabled) {
-        ensureUnifiedIdentityAttached()
         void mintAtLogin()
         return
       }
-      if (!detachUnifiedIdentity) return
-      detachUnifiedIdentity()
-      detachUnifiedIdentity = undefined
       clearUnifiedContext()
     }
   )
@@ -946,7 +934,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
    * ceiling, so a caller can fail closed instead of hanging.
    */
   function unifiedUser(): Promise<User | null> {
-    ensureUnifiedIdentityAttached()
     const expectedUid = useAuthStore().currentUser?.uid ?? null
     const matches = (user: User | null) => (user?.uid ?? null) === expectedUid
     const current = unifiedSessionClient.getSnapshot().user
@@ -995,6 +982,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
     const authUser = await unifiedUser()
+    // A rollback during the awaits above must abort the unified switch rather
+    // than commit a token for a flag that is now off.
+    if (!unifiedRailEnabled()) return
     if (!authUser) {
       throw new WorkspaceAuthError('Workspace identity changed during switch')
     }
@@ -1031,7 +1021,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return true
     }
     const authUser = await unifiedUser()
-    if (!authUser) {
+    // Re-check after the wait: a rollback that flips the flag off while a mint
+    // is parked on unifiedUser() must not let the resumed mint commit a token.
+    if (!unifiedRailEnabled() || !authUser) {
       return false
     }
     const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
@@ -1076,7 +1068,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     if (expectedToken !== currentToken) return currentToken
     const authUser = await unifiedUser()
-    if (!authUser) return null
+    if (!unifiedRailEnabled() || !authUser) return null
     const result = await unifiedSessionClient.remint(authUser, {
       workspaceId: unifiedWorkspaceIdFor(target),
       preserveCredentialOnTransientFailure: true
