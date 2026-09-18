@@ -2122,20 +2122,19 @@ export class LGraph
     return subgraph
   }
 
-  convertToSubgraph(items: Set<Positionable>):
-    | {
-        kind: 'success'
-        value: { subgraph: Subgraph; node: SubgraphNode }
-      }
-    | { kind: 'empty-selection' } {
-    if (items.size === 0) return { kind: 'empty-selection' }
+  convertToSubgraph(items: Set<Positionable>): {
+    subgraph: Subgraph
+    node: SubgraphNode
+  } {
+    if (items.size === 0)
+      throw new RangeError('Cannot convert to subgraph: nothing to convert')
 
     // Record state before conversion for proper undo support
     this.beforeChange()
     this.canvasAction((c) => c.emitBeforeChange())
 
     try {
-      return { kind: 'success', value: this._convertToSubgraphImpl(items) }
+      return this._convertToSubgraphImpl(items)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()

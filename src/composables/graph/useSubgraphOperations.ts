@@ -21,11 +21,9 @@ export function useSubgraphOperations() {
     if (!graph) {
       return null
     }
+    if (!canvas.selectedItems.size) return
 
-    const res = graph.convertToSubgraph(canvas.selectedItems)
-    if (res.kind === 'empty-selection') return
-
-    const { node } = res.value
+    const { node } = graph.convertToSubgraph(canvas.selectedItems)
     canvas.select(node)
     canvasStore.updateSelectedItems()
     // Trigger change tracking

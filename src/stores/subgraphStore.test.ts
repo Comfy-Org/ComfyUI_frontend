@@ -142,19 +142,15 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(true)
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
   it('should reject stale edit and delete requests without mutating', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')).toBe(
-      false
-    )
-    expect(await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')).toBe(
-      false
-    )
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
     expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
     expect(api.storeUserData).not.toHaveBeenCalled()
     expect(error).toHaveBeenCalledWith(

@@ -4,13 +4,9 @@ import { api } from '@/scripts/api'
 
 import { taskService } from './taskService'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi: vi.fn() }
-}))
-
 describe('taskService.getTask', () => {
   beforeEach(() => {
-    vi.mocked(api.fetchApi).mockResolvedValue(
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
       new Response(null, { status: 404 })
     )
   })

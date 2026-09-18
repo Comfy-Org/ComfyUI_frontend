@@ -215,7 +215,7 @@ describe('useAssetDownloadStore', () => {
       expect(store.activeDownloads).toHaveLength(1)
     })
 
-    it('marks a missing task as failed and stops polling it', async () => {
+    it('marks a repeatedly missing task as failed and stops polling it', async () => {
       const store = useAssetDownloadStore()
 
       vi.mocked(taskService.getTask).mockResolvedValue(undefined)
@@ -232,7 +232,18 @@ describe('useAssetDownloadStore', () => {
         progress: 50,
         status: 'failed'
       })
-      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      expect(taskService.getTask).toHaveBeenCalledTimes(3)
+    })
+
+    it('accepts completion after a transient missing-task response', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue(undefined)
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
     })
   })
 

@@ -31,6 +31,7 @@ interface CompletedDownload {
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+const MISSING_TASK_RETRY_LIMIT = 3
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -86,6 +87,7 @@ function createTerminalTaskEvent(
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
+  const missingTaskPolls = new Map<TaskId, number>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -139,6 +141,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (existing?.status === 'completed' || existing?.status === 'failed') {
       return
     }
+    missingTaskPolls.delete(data.task_id)
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -177,9 +180,16 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         const task = await taskService.getTask(download.taskId)
 
         if (!task) {
+          const missingPolls = (missingTaskPolls.get(download.taskId) ?? 0) + 1
+          if (missingPolls < MISSING_TASK_RETRY_LIMIT) {
+            missingTaskPolls.set(download.taskId, missingPolls)
+            return
+          }
+          missingTaskPolls.delete(download.taskId)
           handleAssetDownload(createMissingTaskEvent(download))
           return
         }
+        missingTaskPolls.delete(download.taskId)
 
         if (task.status === 'completed' || task.status === 'failed') {
           handleAssetDownload(createTerminalTaskEvent(download, task))

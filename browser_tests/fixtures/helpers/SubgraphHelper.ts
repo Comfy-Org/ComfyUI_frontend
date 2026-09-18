@@ -655,15 +655,17 @@ export class SubgraphHelper {
     })
     await this.comfyPage.canvas.press('Control+a')
     await this.comfyPage.nextFrame()
-    const conversionKind = await this.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      const result = canvas.graph!.convertToSubgraph(canvas.selectedItems)
-      return result.kind
-    })
+    const selectedItemCount = await this.page.evaluate(
+      () => window.app!.canvas.selectedItems.size
+    )
     expect(
-      conversionKind,
+      selectedItemCount,
       'Expected interior nodes to be selected before packing'
-    ).toBe('success')
+    ).toBeGreaterThan(0)
+    await this.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.graph!.convertToSubgraph(canvas.selectedItems)
+    })
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {

@@ -1560,7 +1560,9 @@ describe('useMediaAssetActions', () => {
       })
       mockInputAssets.items = [asset]
 
-      await useMediaAssetActions().deleteAssets(asset)
+      await expect(useMediaAssetActions().deleteAssets(asset)).resolves.toBe(
+        false
+      )
 
       await vi.waitFor(() => expect(mockDeleteAsset).toHaveBeenCalledOnce())
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
@@ -1618,7 +1620,7 @@ describe('useMediaAssetActions', () => {
       const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
       mockInputAssets.items = [asset]
 
-      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+      await expect(actions.deleteAssets(asset)).resolves.toBe(false)
 
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'

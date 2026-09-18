@@ -6,18 +6,15 @@ import { app } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-vi.mock<unknown>(import('@/base/common/downloadUtil'), () => ({
-  downloadBlob: vi.fn()
-}))
+vi.mock(import('@/base/common/downloadUtil'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      default_connection_color_byType: {},
-      setDirty: vi.fn()
-    }
-  }
-}))
+Object.defineProperty(app, 'canvas', {
+  value: {
+    default_connection_color_byType: {},
+    setDirty: vi.fn()
+  },
+  configurable: true
+})
 
 describe('color palette missing-palette contracts', () => {
   beforeEach(() => {
@@ -28,9 +25,7 @@ describe('color palette missing-palette contracts', () => {
     const store = useColorPaletteStore()
     const initialPaletteId = store.activePaletteId
 
-    await expect(
-      useColorPaletteService().loadColorPalette('missing')
-    ).resolves.toBe(false)
+    await useColorPaletteService().loadColorPalette('missing')
 
     expect(store.activePaletteId).toBe(initialPaletteId)
     expect(app.canvas.setDirty).not.toHaveBeenCalled()
@@ -70,9 +65,8 @@ describe('color palette missing-palette contracts', () => {
   })
 
   it('does not download a missing palette', () => {
-    const exported = useColorPaletteService().exportColorPalette('missing')
+    useColorPaletteService().exportColorPalette('missing')
 
-    expect(exported).toBe(false)
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
@@ -89,9 +83,7 @@ describe('color palette missing-palette contracts', () => {
     const store = useColorPaletteStore()
     const paletteId = store.palettes[0].id
 
-    await expect(
-      useColorPaletteService().loadColorPalette(paletteId)
-    ).resolves.toBe(true)
+    await useColorPaletteService().loadColorPalette(paletteId)
 
     expect(store.activePaletteId).toBe(paletteId)
     expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
@@ -101,7 +93,7 @@ describe('color palette missing-palette contracts', () => {
     const store = useColorPaletteStore()
     const paletteId = store.palettes[0].id
 
-    expect(useColorPaletteService().exportColorPalette(paletteId)).toBe(true)
+    useColorPaletteService().exportColorPalette(paletteId)
     expect(downloadBlob).toHaveBeenCalledWith(
       `${paletteId}.json`,
       expect.any(Blob)

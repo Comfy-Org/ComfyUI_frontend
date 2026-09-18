@@ -1003,13 +1003,13 @@ function convertLoadedGroupNodes(): number {
       }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
-      const result = app.rootGraph.convertToSubgraph(new Set(innerNodes))
-      if (result.kind === 'empty-selection') {
+      if (!innerNodes.length) {
         console.error('Failed to convert group node to subgraph: empty group')
         failed.add(node)
         app.rootGraph.remove(node)
         continue
       }
+      app.rootGraph.convertToSubgraph(new Set(innerNodes))
       converted++
     } catch (error) {
       console.error('Failed to convert group node to subgraph', error)
@@ -1109,12 +1109,13 @@ const ext: ComfyExtension = {
           try {
             const innerNodes = handler.convertToNodes()
             for (const inner of innerNodes) inner.updateArea()
-            const result = graph.convertToSubgraph(new Set(innerNodes))
-            if (result.kind === 'empty-selection') {
+            if (!innerNodes.length) {
               console.error(
                 'Failed to convert stray group node to subgraph: empty group'
               )
+              return
             }
+            graph.convertToSubgraph(new Set(innerNodes))
           } catch (error) {
             console.error(
               'Failed to convert stray group node to subgraph',

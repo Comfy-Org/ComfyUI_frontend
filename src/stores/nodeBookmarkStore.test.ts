@@ -77,7 +77,7 @@ describe('node bookmark folder commands', () => {
     const originalBookmarks = [
       ...(settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] ?? [])
     ]
-    await expect(command()).resolves.toBe(false)
+    await command()
     expect(
       settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2']
     ).toEqual(originalBookmarks)
@@ -91,17 +91,19 @@ describe('node bookmark folder commands', () => {
 
   it('accepts an unchanged folder name without persisting', async () => {
     const settingStore = useSettingStore()
-    await expect(
-      useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
-    ).resolves.toBe(true)
+    await useNodeBookmarkStore().renameBookmarkFolder(
+      folder('Folder/'),
+      'Folder'
+    )
     expect(settingStore.set).not.toHaveBeenCalled()
   })
 
   it('persists a successful folder rename', async () => {
     const settingStore = useSettingStore()
-    await expect(
-      useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Renamed')
-    ).resolves.toBe(true)
+    await useNodeBookmarkStore().renameBookmarkFolder(
+      folder('Folder/'),
+      'Renamed'
+    )
     expect(settingStore.set).toHaveBeenNthCalledWith(
       1,
       'Comfy.NodeLibrary.Bookmarks.V2',

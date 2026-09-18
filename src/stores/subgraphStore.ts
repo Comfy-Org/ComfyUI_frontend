@@ -377,11 +377,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       life: 4000
     })
   }
-  async function editBlueprint(nodeType: string): Promise<boolean> {
+  async function editBlueprint(nodeType: string) {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     if (!(name in subgraphCache)) {
       console.error(`Cannot edit missing subgraph blueprint: ${nodeType}`)
-      return false
+      return
     }
     const blueprint = subgraphCache[name]
     useWorkflowStore().attachWorkflow(blueprint)
@@ -389,7 +389,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const canvas = useCanvasStore().getCanvas()
     if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
       canvas.setGraph(canvas.graph.nodes[0].subgraph)
-    return true
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON | undefined {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
@@ -400,11 +399,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const blueprint = subgraphCache[name]
     return structuredClone(blueprint.changeTracker.initialState)
   }
-  async function deleteBlueprint(nodeType: string): Promise<boolean> {
+  async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
     if (!(name in subgraphCache)) {
       console.error(`Cannot delete missing subgraph blueprint: ${nodeType}`)
-      return false
+      return
     }
     const blueprint = subgraphCache[name]
 
@@ -414,7 +413,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         summary: t('subgraphStore.cannotDeleteGlobal'),
         life: 4000
       })
-      return false
+      return
     }
 
     if (
@@ -425,12 +424,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         itemList: [name]
       }))
     )
-      return false
+      return
 
     await blueprint.delete()
     delete subgraphCache[name]
     subgraphDefCache.value.delete(name)
-    return true
   }
   function isSubgraphBlueprint(
     workflow: unknown

@@ -8587,8 +8587,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 console.error('Convert to Subgraph: Nothing selected.')
                 return
               }
-              const result = this._graph.convertToSubgraph(this.selectedItems)
-              if (result.kind === 'empty-selection') return
+              this._graph.convertToSubgraph(this.selectedItems)
             }
           },
           {
@@ -8621,8 +8620,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Convert to Subgraph',
           callback: () => {
-            const result = this._graph.convertToSubgraph(this.selectedItems)
-            if (result.kind === 'empty-selection') return
+            this._graph.convertToSubgraph(this.selectedItems)
           }
         },
         {

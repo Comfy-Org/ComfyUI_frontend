@@ -612,7 +612,7 @@ export function useMediaAssetActions() {
   /**
    * Show confirmation dialog and delete asset(s) if confirmed
    * @param assets Single asset or array of assets to delete
-   * @returns true if user confirmed and deletion was attempted, false if cancelled
+   * @returns true if at least one item was deleted, false otherwise
    */
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
@@ -837,7 +837,7 @@ export function useMediaAssetActions() {
       severity,
       summary: t(`mediaAsset.assetDelete.${severity}`)
     })
-    return true
+    return deletedJobCount > 0 || deletedAssetCount > 0
   }
 
   return {

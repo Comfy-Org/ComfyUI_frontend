@@ -4,6 +4,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
 type ExportEventHandler = (event: CustomEvent<AssetExportWsMessage>) => void
@@ -13,15 +14,7 @@ const eventHandler = vi.hoisted(() => {
   return state
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn((_event: string, handler: ExportEventHandler) => {
-      eventHandler.current = handler
-    })
-  }
-}))
-
-vi.mock<unknown>(import('@/platform/tasks/services/taskService'), () => ({
+vi.mock(import('@/platform/tasks/services/taskService'), () => ({
   taskService: { getTask: vi.fn() }
 }))
 
@@ -63,6 +56,9 @@ describe('useAssetExportStore', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     eventHandler.current = null
+    vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
+      if (event === 'asset_export') eventHandler.current = handler
+    })
   })
 
   it('completes a stale task and requests its download URL', async () => {
@@ -97,7 +93,7 @@ describe('useAssetExportStore', () => {
     expect(store.finishedExports).toHaveLength(0)
   })
 
-  it('marks a missing stale task as failed and stops polling it', async () => {
+  it('marks a repeatedly missing stale task as failed and stops polling it', async () => {
     const store = useAssetExportStore()
     const taskId = 'task-123'
     const getExportDownloadUrl = vi.spyOn(assetService, 'getExportDownloadUrl')
@@ -109,7 +105,7 @@ describe('useAssetExportStore', () => {
 
     expect(store.activeExports).toHaveLength(0)
     expect(store.finishedExports[0].status).toBe('failed')
-    expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    expect(taskService.getTask).toHaveBeenCalledTimes(3)
 
     assert(eventHandler.current)
     eventHandler.current(
@@ -130,5 +126,20 @@ describe('useAssetExportStore', () => {
 
     expect(store.finishedExports[0].status).toBe('failed')
     expect(getExportDownloadUrl).not.toHaveBeenCalled()
+  })
+
+  it('accepts completion after a transient missing-task response', async () => {
+    const store = useAssetExportStore()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    vi.spyOn(assetService, 'getExportDownloadUrl').mockResolvedValue({
+      url: 'https://example.com/export.zip'
+    })
+    vi.mocked(taskService.getTask).mockResolvedValue(undefined)
+    dispatchExport()
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    dispatchExport({ status: 'completed', progress: 1 })
+
+    expect(store.finishedExports[0].status).toBe('completed')
   })
 })

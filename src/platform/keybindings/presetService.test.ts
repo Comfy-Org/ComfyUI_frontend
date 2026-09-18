@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@/platform/keybindings/types'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const mockApi = vi.hoisted(() => ({
   listUserDataFullInfo: vi.fn(),
@@ -35,7 +36,6 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
-const mockReportError = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
@@ -57,9 +57,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mockReportError
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -218,7 +216,7 @@ describe('useKeybindingPresetService', () => {
         summary: 'g.error',
         detail: 'g.keybindingPresets.deletePresetFailed'
       })
-      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'keybinding_preset_deletion_http_failure',
         tags: { status: 500 }
       })

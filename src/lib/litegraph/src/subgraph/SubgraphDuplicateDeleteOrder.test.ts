@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -112,8 +112,7 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
 
   if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
   const result = rootGraph.convertToSubgraph(new Set([node]))
-  assert(result.kind === 'success')
-  return result.value.node
+  return result.node
 }
 
 interface DuplicatedSubgraphScenario {

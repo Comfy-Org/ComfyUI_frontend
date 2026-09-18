@@ -58,14 +58,14 @@ function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
 }
 
 describe('SubgraphConversion', () => {
-  it('returns empty-selection without mutating the graph', () => {
+  it('rejects an empty selection without mutating the graph', () => {
     const rootGraph = createTestRootGraph()
     const before = rootGraph.serialize()
     const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
 
-    expect(rootGraph.convertToSubgraph(new Set())).toEqual({
-      kind: 'empty-selection'
-    })
+    expect(() => rootGraph.convertToSubgraph(new Set())).toThrow(
+      'Cannot convert to subgraph: nothing to convert'
+    )
     expect(beforeChange).not.toHaveBeenCalled()
     expect(rootGraph.serialize()).toEqual(before)
   })
@@ -77,11 +77,8 @@ describe('SubgraphConversion', () => {
 
     const result = rootGraph.convertToSubgraph(new Set([source]))
 
-    assert(result.kind === 'success')
-    expect(result.value.subgraph).toBe(
-      rootGraph.subgraphs.values().next().value
-    )
-    expect(result.value.node.subgraph).toBe(result.value.subgraph)
+    expect(result.subgraph).toBe(rootGraph.subgraphs.values().next().value)
+    expect(result.node.subgraph).toBe(result.subgraph)
   })
 
   describe('Convert to Subgraph store integrity', () => {
@@ -98,8 +95,7 @@ describe('SubgraphConversion', () => {
       const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin])
       )
-      assert(result.kind === 'success')
-      const { subgraph, node: subgraphNode } = result.value
+      const { subgraph, node: subgraphNode } = result
 
       const linkStore = useLinkStore()
 
@@ -145,8 +141,7 @@ describe('SubgraphConversion', () => {
       const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin, reroute])
       )
-      assert(result.kind === 'success')
-      const { subgraph } = result.value
+      const { subgraph } = result
 
       const clonedReroute = subgraph.reroutes.get(reroute.id)
       expect(clonedReroute).toBeDefined()
@@ -170,8 +165,7 @@ describe('SubgraphConversion', () => {
       output.connect(origin.outputs[0], origin)
 
       const result = subgraph.convertToSubgraph(new Set<Positionable>([origin]))
-      assert(result.kind === 'success')
-      const { node: subgraphNode } = result.value
+      const { node: subgraphNode } = result
 
       const links = output.getLinks()
       expect(links).toHaveLength(1)
@@ -193,8 +187,7 @@ describe('SubgraphConversion', () => {
       const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin])
       )
-      assert(result.kind === 'success')
-      const { subgraph } = result.value
+      const { subgraph } = result
 
       const innerTarget = subgraph.nodes.find((node) => node.id === target.id)
       expect(innerTarget).toBeDefined()
@@ -262,8 +255,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([target, ...sources])
       )
-      assert(result.kind === 'success')
-      const { subgraph, node: subgraphNode } = result.value
+      const { subgraph, node: subgraphNode } = result
       const innerTarget = subgraph.nodes.find(
         (node) => node.title === 'dynamic target'
       )
@@ -311,8 +303,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([source, target])
       )
-      assert(result.kind === 'success')
-      const { subgraph, node: wrapper } = result.value
+      const { subgraph, node: wrapper } = result
       const innerTarget = subgraph.nodes.find(
         (node) => node.title === 'rebuilding target'
       )
@@ -354,8 +345,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([source0, source1, target])
       )
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
 
       graph.unpackSubgraph(wrapper)
 
@@ -397,8 +387,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([source0, source1, target])
       )
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
       const targetPrototype = Object.getPrototypeOf(target) as LGraphNode
       targetPrototype.onConnectionsChange = function (
         _type,
@@ -449,8 +438,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([source0, source2, source4, target])
       )
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
       const targetPrototype = Object.getPrototypeOf(target) as LGraphNode
       targetPrototype.onConnectionsChange = function (
         _type,
@@ -483,8 +471,7 @@ describe('SubgraphConversion', () => {
       onTestFinished(enableSubgraphNodeCreation(graph))
       const missing = createTestNode(graph, ['missing'], [], 'missing target')
       const result = graph.convertToSubgraph(new Set<Positionable>([missing]))
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
       LiteGraph.unregisterNodeType(missing.type)
 
       graph.unpackSubgraph(wrapper, { skipMissingNodes: true })
@@ -514,8 +501,7 @@ describe('SubgraphConversion', () => {
       assert(missing)
       graph.add(missing)
       const result = graph.convertToSubgraph(new Set<Positionable>([missing]))
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
       LiteGraph.unregisterNodeType(nodeType)
 
       expectUnpackRejected(graph, wrapper)
@@ -525,8 +511,7 @@ describe('SubgraphConversion', () => {
       onTestFinished(enableSubgraphNodeCreation(graph))
       const seed = createTestNode(graph)
       const outerResult = graph.convertToSubgraph(new Set<Positionable>([seed]))
-      assert(outerResult.kind === 'success')
-      const { subgraph: outer } = outerResult.value
+      const { subgraph: outer } = outerResult
       for (const name of ['input_0', 'input_1', 'input_2']) {
         outer.addInput(name, 'number')
       }
@@ -543,8 +528,7 @@ describe('SubgraphConversion', () => {
       const nestedResult = outer.convertToSubgraph(
         new Set<Positionable>([target])
       )
-      assert(nestedResult.kind === 'success')
-      const { subgraph: nested, node: nestedNode } = nestedResult.value
+      const { subgraph: nested, node: nestedNode } = nestedResult
       const innerTarget = nested.nodes.find(
         (node) => node.title === 'nested dynamic target'
       )
@@ -598,8 +582,7 @@ describe('SubgraphConversion', () => {
       const result = graph.convertToSubgraph(
         new Set<Positionable>([source0, source1])
       )
-      assert(result.kind === 'success')
-      const { node: wrapper } = result.value
+      const { node: wrapper } = result
       target.onConnectionsChange = function (_type, slot, connected, link) {
         if (!connected || !link || slot !== 0) return
         this.addInput('inserted', 'number')
