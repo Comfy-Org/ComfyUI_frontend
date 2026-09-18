@@ -7,8 +7,6 @@ import {
   overlappingNodePairs
 } from '@e2e/fixtures/utils/nodeLayoutGeometry'
 
-/** Agent-built layouts must be judged from rendered geometry, not modelled sizes. */
-
 const BATCHED_CASE = 'agent-rec-batched-ops'
 const SEQUENTIAL_CASE = 'agent-rec-three-sequential-adds'
 
