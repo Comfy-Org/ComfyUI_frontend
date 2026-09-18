@@ -35,6 +35,15 @@ export const redirects = {
   // locale prefix by hand gets a 404 instead of the page they asked for.
   '/zh-CN/affiliates': '/affiliates/',
   '/zh-CN/affiliates/terms': '/affiliates/terms/',
+  // Supported models catalog exists in English only.
+  '/zh-CN/p/supported-models': '/p/supported-models/',
+  '/zh-CN/p/supported-models/grok-imagine': '/p/supported-models/grok-imagine/',
+  // Serverless animation exists in English only.
+  '/zh-CN/platform/serverless-animation': '/platform/serverless-animation/',
+  // Pixal 3D / Trellis 2 launch page exists in English only.
+  '/zh-CN/pixal3d-trellis2': '/pixal3d-trellis2/',
+  // Legacy /zh-CN/ja/ prefix cleanup.
+  '/zh-CN/ja': '/zh-CN/',
   '/minimax': { status: 307, destination: '/minimax-h3/' },
   '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
 } satisfies Record<string, RedirectConfig>
