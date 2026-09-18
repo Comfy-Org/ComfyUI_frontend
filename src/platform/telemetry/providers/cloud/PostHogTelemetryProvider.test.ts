@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
@@ -38,8 +37,8 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: fromAny<Ref<string | null>, unknown>(null),
-    remoteConfig: fromAny<Ref<RemoteConfig>, unknown>(null)
+    tier: null as Ref<string | null> | null,
+    remoteConfig: null as Ref<RemoteConfig> | null
   }
 
   return {
@@ -107,7 +106,7 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig.value = {}
+    hoisted.refs.remoteConfig!.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<string | null>(null)
@@ -144,7 +143,7 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it('applies posthog_config overrides from remote config', async () => {
-      hoisted.refs.remoteConfig.value = {
+      hoisted.refs.remoteConfig!.value = {
         posthog_config: {
           debug: true,
           api_host: 'https://custom.host.com'
@@ -163,7 +162,7 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it("lets the server's person_profiles win over the client default", async () => {
-      hoisted.refs.remoteConfig.value = {
+      hoisted.refs.remoteConfig!.value = {
         posthog_config: { person_profiles: 'always' }
       }
       createProvider()
@@ -218,13 +217,13 @@ describe('PostHogTelemetryProvider', () => {
       // Unresolved tier (null) does not set the property
       expect(tierPropertySets()).toHaveLength(0)
 
-      hoisted.refs.tier.value = 'PRO'
+      hoisted.refs.tier!.value = 'PRO'
       await nextTick()
       expect(hoisted.mockPeopleSet).toHaveBeenCalledWith({
         subscription_tier: 'PRO'
       })
 
-      hoisted.refs.tier.value = null
+      hoisted.refs.tier!.value = null
       await nextTick()
       expect(tierPropertySets()).toHaveLength(1)
     })
@@ -238,7 +237,7 @@ describe('PostHogTelemetryProvider', () => {
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-2' })
 
-      hoisted.refs.tier.value = 'PRO'
+      hoisted.refs.tier!.value = 'PRO'
       await nextTick()
 
       expect(tierPropertySets()).toHaveLength(1)
@@ -1310,7 +1309,7 @@ describe('PostHogTelemetryProvider', () => {
 
     it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
-      hoisted.refs.remoteConfig.value = {
+      hoisted.refs.remoteConfig!.value = {
         posthog_config: {
           before_send: remoteBefore_send
         }
