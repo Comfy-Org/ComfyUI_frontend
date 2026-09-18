@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { BookmarkCustomization } from '@/schemas/apiSchema'
+import type { BookmarkCustomization } from '@/platform/settings/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
 import {

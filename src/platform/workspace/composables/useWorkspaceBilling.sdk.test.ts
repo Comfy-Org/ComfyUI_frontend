@@ -1,15 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { BillingStatusData } from '@comfyorg/account-core/billing'
+
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
+  billingSdkSubscriptionEnabled: false,
   unifiedCloudAuthEnabled: true
 }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
@@ -21,6 +28,12 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
       get billingSdkTopupRailEnabled() {
         return (
           flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
+        )
+      },
+      get billingSdkSubscriptionRailEnabled() {
+        return (
+          flagState.billingSdkSubscriptionEnabled &&
+          flagState.unifiedCloudAuthEnabled
         )
       },
       embeddedCheckoutEnabled: false
@@ -40,17 +53,13 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({ useSubscriptionDialog: () => ({ show: vi.fn() }) })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
+
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })
@@ -74,6 +83,33 @@ const STATUS: BillingStatusResponse = {
 
 let harness: ReturnType<typeof fakeBillingSdk>
 
+const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' as const }
+const READ_AT = 1_700_000_000_000
+
+/** The status the SDK's reader decodes, before the host projects it. */
+const DECODED_STATUS: BillingStatusData = {
+  is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  has_funds: true,
+  team_credit_stop: null,
+  scheduled_change: null,
+  subscription_tier: 'CREATOR',
+  plan_slug: 'creator-monthly'
+}
+
+/** What the SDK's status reader publishes once the rail is on. */
+function sdkStatus(overrides: Partial<BillingStatusData> = {}) {
+  vi.mocked(harness.sdk.status.read).mockResolvedValue({
+    status: 'ok',
+    value: {
+      status: { ...DECODED_STATUS, ...overrides },
+      scope: SCOPE,
+      readAt: READ_AT
+    }
+  })
+}
+
 function setupBilling() {
   const billing = effectScope().run(() => useWorkspaceBilling())
   if (!billing) throw new Error('Failed to create billing composable')
@@ -81,15 +117,16 @@ function setupBilling() {
 }
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
+  flagState.billingSdkSubscriptionEnabled = false
   flagState.unifiedCloudAuthEnabled = true
-  vi.spyOn(workspaceApi, 'getBillingStatus').mockResolvedValue(STATUS)
-  vi.spyOn(workspaceApi, 'getBillingBalance').mockResolvedValue({
+  vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(STATUS)
+  vi.mocked(workspaceApi.getBillingBalance).mockResolvedValue({
     amount_micros: 0,
     currency: 'USD'
   })
-  vi.spyOn(workspaceApi, 'createTopup')
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     undefined as never
   )
@@ -113,8 +150,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
 
   it('reattaches a pending top-up through the SDK instead of the poller', async () => {
     flagState.billingSdkTopupEnabled = true
-    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
-      ...STATUS,
+    sdkStatus({
       pending_billing_op_id: 'op-1',
       pending_billing_op_type: 'topup'
     })
@@ -142,8 +178,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
 
   it('still hands a pending subscription to the poller', async () => {
     flagState.billingSdkTopupEnabled = true
-    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
-      ...STATUS,
+    sdkStatus({
       pending_billing_op_id: 'op-sub',
       pending_billing_op_type: 'subscription'
     })
@@ -156,6 +191,108 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
       undefined,
       undefined
     )
+    expect(harness.sdk.lifecycle.recover).not.toHaveBeenCalled()
+  })
+})
+
+describe('useWorkspaceBilling reads with the billing SDK flag', () => {
+  it('reads status and balance through the workspace client while the flag is off', async () => {
+    flagState.billingSdkTopupEnabled = false
+    const billing = setupBilling()
+
+    await billing.fetchStatus()
+    await billing.fetchBalance()
+
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingBalance).toHaveBeenCalledOnce()
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
+  })
+
+  it('reads status through the SDK reader and publishes what it decoded', async () => {
+    flagState.billingSdkTopupEnabled = true
+    sdkStatus({ subscription_tier: 'PRO' })
+    const billing = setupBilling()
+
+    await billing.fetchStatus()
+
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(billing.tier.value).toBe('PRO')
+    expect(billing.error.value).toBeNull()
+  })
+
+  it('reads through the SDK reader when only the subscription rail is on', async () => {
+    flagState.billingSdkTopupEnabled = false
+    flagState.billingSdkSubscriptionEnabled = true
+    sdkStatus({ subscription_tier: 'PRO' })
+    const billing = setupBilling()
+
+    await billing.fetchStatus()
+
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    expect(billing.tier.value).toBe('PRO')
+  })
+
+  it('reports a status the host cannot hold exactly as a malformed read', async () => {
+    flagState.billingSdkTopupEnabled = true
+    sdkStatus({
+      team_credit_stop: {
+        id: 'team_huge',
+        credits_monthly: BigInt(Number.MAX_SAFE_INTEGER) + 1n,
+        stop_usd: 200n
+      }
+    })
+    const billing = setupBilling()
+
+    await expect(billing.fetchStatus()).rejects.toThrow('MALFORMED_RESPONSE')
+
+    expect(billing.tier.value).toBeNull()
+    expect(billing.error.value).toBe('MALFORMED_RESPONSE')
+  })
+
+  it('reads the balance through the SDK reader', async () => {
+    flagState.billingSdkTopupEnabled = true
+    vi.mocked(harness.sdk.credits.read).mockResolvedValue({
+      status: 'ok',
+      value: {
+        balance: { amount_micros: 5_000_000, currency: 'USD' },
+        scope: SCOPE,
+        readAt: READ_AT
+      }
+    })
+    const billing = setupBilling()
+
+    await billing.fetchBalance()
+
+    expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+  })
+
+  it('keeps the previous state and reports nothing when the scope moved under a read', async () => {
+    flagState.billingSdkTopupEnabled = true
+    vi.mocked(harness.sdk.status.read).mockResolvedValue({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+    const billing = setupBilling()
+
+    await expect(billing.fetchStatus()).resolves.toBeUndefined()
+
+    expect(billing.tier.value).toBeNull()
+    expect(billing.error.value).toBeNull()
+    expect(billing.isLoading.value).toBe(false)
+  })
+
+  it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
+    flagState.billingSdkTopupEnabled = true
+    vi.mocked(harness.sdk.credits.read).mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+    const billing = setupBilling()
+
+    await expect(billing.fetchBalance()).rejects.toThrow('REQUEST_FAILED')
+
+    expect(billing.error.value).toBe('REQUEST_FAILED')
+    expect(billing.isLoading.value).toBe(false)
   })
 })

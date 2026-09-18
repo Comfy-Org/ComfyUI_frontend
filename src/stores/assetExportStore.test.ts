@@ -1,9 +1,9 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 

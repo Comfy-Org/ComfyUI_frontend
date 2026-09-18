@@ -13,12 +13,14 @@ import type {
   GizmoConfig,
   LightConfig,
   ModelConfig,
-  SceneConfig
+  SceneConfig,
+  StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({
@@ -58,7 +60,7 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
   return new Load3DConfiguration(load3d, properties) as unknown as WithPrivate
 }
 
-function stubSettings(values: Record<string, unknown>) {
+function stubSettings(values: Partial<Settings>) {
   vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
@@ -131,13 +133,13 @@ describe('Load3DConfiguration.loadModelConfig', () => {
   })
 
   it('backfills scale on legacy gizmo config missing the scale field', () => {
-    const legacyGizmo = {
+    const legacyGizmo: Partial<GizmoConfig> = {
       enabled: true,
       mode: 'rotate',
       position: { x: 1, y: 2, z: 3 },
       rotation: { x: 0.1, y: 0.2, z: 0.3 }
-    } as unknown as GizmoConfig
-    const stored: ModelConfig = {
+    }
+    const stored: StoredModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
       showSkeleton: false,

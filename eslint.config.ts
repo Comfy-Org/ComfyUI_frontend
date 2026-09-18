@@ -173,9 +173,11 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'packages/account-core/vitest.config.ts',
+            'packages/account-ui/vite.config.ts',
             'packages/account-ui/vitest.config.ts',
             'packages/billing-contract/vitest.config.ts',
             'packages/design-system/vitest.config.ts',
+            'packages/ingest-types/openapi-ts.config.ts',
             'packages/object-info-parser/vitest.config.ts',
             'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
@@ -434,8 +436,6 @@ export default defineConfig([
       'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
       'src/**/{generated,vendor}/**',
       'src/__ecs_matrix__/**',
-      'src/extensions/core/**',
-      'src/scripts/**',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts'
     ],

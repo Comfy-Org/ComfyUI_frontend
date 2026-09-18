@@ -114,8 +114,8 @@ test.describe('Models catalog', () => {
       '/models/vertexai--gemini-nano-banana-2--edit-images/',
       '/models/vertexai--gemini-3-pro-image--edit-images/',
       '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
+      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
+      '/models/byteplus--seedream-4-5--edit-images/'
     ])
 
     await sort.click()
@@ -279,6 +279,41 @@ test.describe('Models catalog', () => {
     await expect
       .poll(async () => (await search.boundingBox())?.y)
       .toBeCloseTo(searching.y, 0)
+  })
+
+  test('the category heading stays clear of the nav while searching', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('Generate videos')
+
+    // Typing scrolls the heading's row into view, which is what used to bury
+    // the heading and the result count it carries under the sticky nav.
+    await page.getByTestId('workshop-search').fill('kling')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toContainText('Kling')
+
+    // Both measured after the scroll settles: the nav only reaches its docked
+    // height once the banner above it has scrolled away.
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const clearanceBelowNav = async () => {
+      const [headingBox, navBox] = await Promise.all([
+        heading.boundingBox(),
+        nav.boundingBox()
+      ])
+      if (!headingBox || !navBox) return null
+      return headingBox.y - (navBox.y + navBox.height)
+    }
+
+    await expect.poll(clearanceBelowNav).toBeGreaterThanOrEqual(0)
+    // Without an upper bound, dropping the scroll altogether would also pass.
+    await expect.poll(clearanceBelowNav).toBeLessThan(40)
   })
 
   test('cards open canonical model pages with related models', async ({
@@ -636,6 +671,48 @@ test.describe('Model playground', () => {
     const list = page.getByTestId('examples-tab').locator('ul')
     await expect
       .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
+      .toBe(true)
+  })
+
+  // 320px is the narrowest phone the site supports, and it is where a fixed
+  // card width ran the next sample off the screen: a strip that scrolls with
+  // nothing showing past its edge reads as a single card.
+  test('the next sample shows past the edge at 320px @mobile', async ({
+    page
+  }) => {
+    const width = 320
+    await page.setViewportSize({ width, height: 720 })
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const box = await cards.nth(1).boundingBox()
+        if (!box) return false
+        // Far enough in to be seen, and still running off the edge: a card
+        // that fitted whole would say the strip ends there.
+        return box.x < width - 24 && box.x + box.width > width
+      })
+      .toBe(true)
+  })
+
+  test('a lone sample takes the phone row @mobile', async ({ page }) => {
+    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(1)
+
+    // The strip runs edge to edge behind a gutter of 24px on each side.
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(async () => {
+        const [listBox, cardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox()
+        ])
+        if (!listBox || !cardBox) return false
+        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
+      })
       .toBe(true)
   })
 })

@@ -9,7 +9,7 @@ const h = vi.hoisted(() => {
       user: null,
       session: undefined
     } as unknown,
-    attachIdentity: vi.fn(() => () => undefined),
+    activate: vi.fn(async () => undefined),
     publish(next: unknown) {
       state.snapshot = next
       state.listeners.forEach((listener) => listener(next))
@@ -28,16 +28,6 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
-  return {
-    workshopIdentity: createTestIdentity({
-      onUserChanged: () => () => undefined
-    }),
-    signOutWorkshop: vi.fn()
-  }
-})
-
 vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: (listener: (snapshot: unknown) => void) => {
@@ -45,13 +35,13 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
       listener(h.snapshot)
       return () => h.listeners.delete(listener)
     },
-    attachIdentity: h.attachIdentity,
     ensureFresh: vi.fn(),
     remint: vi.fn(),
     clearStoredCredential: vi.fn(),
     getSnapshot: () => h.snapshot,
     getToken: vi.fn()
   },
+  workshopIdentity: { activate: h.activate, deactivate: vi.fn() },
   subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
@@ -64,12 +54,7 @@ describe('useWorkshopSession settled', () => {
   it('mirrors the client: settled only once Firebase has delivered the restored user or none', async () => {
     const mod = await import('./workshop-session-state')
     const s = mod.useWorkshopSession()
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
-    const { workshopIdentity } = await import('./workshop-firebase')
-    expect(
-      h.attachIdentity,
-      'the client gets the package identity itself, never a wrapper around it'
-    ).toHaveBeenCalledWith(workshopIdentity)
+    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledOnce())
 
     expect(
       s.settled.value,

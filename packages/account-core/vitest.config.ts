@@ -34,7 +34,8 @@ export default defineConfig({
           include: [
             'src/core/**/*.{test,spec}.ts',
             'src/web/**/*.{test,spec}.ts',
-            'src/*.{test,spec}.ts'
+            'src/*.{test,spec}.ts',
+            'scripts/*.{test,spec}.ts'
           ]
         }
       },

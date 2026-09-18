@@ -6,7 +6,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/schemas/apiSchema'
+import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 

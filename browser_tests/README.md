@@ -797,17 +797,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                   | Type source                                                                        |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                   |
-| Node definitions                                    | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                            | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                                 | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                      | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                                        |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
+| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
+| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
+| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
+| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
+| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
+| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
+| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
 
 ```typescript
 // ✅ Import the type and annotate mock data

@@ -2,13 +2,13 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AUTH_ERROR_MESSAGES } from '@comfyorg/account-core/firebaseAuthError'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { t } from '../../i18n/translations'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -82,7 +82,7 @@ const inChina = vi.hoisted(() => ({
   }
 }))
 const isInChina = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock<unknown>(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina
 }))
 
@@ -337,7 +337,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('warn')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+      t('auth.errors.auth/popup-closed-by-user', 'en')
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -855,8 +855,8 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('error')
     expect(
       alert.textContent,
-      'the cloud app names the code; the website reads the same line'
-    ).toContain(AUTH_ERROR_MESSAGES['auth/user-not-found'])
+      'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
+    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
@@ -1077,7 +1077,7 @@ describe('AuthSignIn', () => {
       await userEvent.setup().click(button)
 
       await waitFor(() => expect(fresh.value).toHaveLength(1))
-      expect(fresh.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+      expect(fresh.value[0].detail).toBe(t('auth.errors.generic', 'en'))
       expect(
         button.disabled,
         'a failed chunk load must not strand the page in pending'
@@ -1474,7 +1474,7 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'
