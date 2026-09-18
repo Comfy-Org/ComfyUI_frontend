@@ -130,6 +130,9 @@ export function createScopedReader<
     publish = publishAsRead
   } = definition
 
+  const resolveRoute: (options: TOptions | undefined) => string =
+    typeof route === 'string' ? () => route : route
+
   let snapshot: TSnapshot | undefined
   let inFlight: InFlightRead<TSnapshot> | undefined
   const lifetime = { disposed: false }
@@ -210,7 +213,7 @@ export function createScopedReader<
     // Resolved once, then used both to issue the request and to identify it,
     // so the answer a joining caller is served is the one its own route asked
     // for.
-    const resolvedRoute = typeof route === 'string' ? route : route(options)
+    const resolvedRoute = resolveRoute(options)
 
     // A caller arriving mid-flight joins only a read of the same scope and
     // route, rather than issuing a second identical request. A caller for a
