@@ -127,6 +127,10 @@ export class CameraInfoOverlay implements SceneOverlay {
     if (this.cameraHelper) this.cameraHelper.visible = visible
   }
 
+  isHelperVisible(): boolean {
+    return this.cameraHelper?.visible ?? false
+  }
+
   getState(): CameraInfoState {
     return cloneState(this.state)
   }
