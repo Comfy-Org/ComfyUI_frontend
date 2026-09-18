@@ -1,0 +1,162 @@
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
+
+/**
+ * Crossing locales must be a real page load.
+ *
+ * ClientRouter swaps the document without re-evaluating any module, and in
+ * production the browser loads only its own page's dictionary — an English
+ * reader never downloads Chinese. A client-side swap into another locale
+ * therefore left the incoming islands asking for a dictionary that was never
+ * fetched, and `t()` threw rather than render text the server did not. The page
+ * rendered broken and came right on refresh, which is a full load.
+ *
+ * Not only the language switcher: `localizeHref` returns an unprefixed path for
+ * a route a locale does not publish, so an ordinary footer link out of the
+ * Chinese tree crosses locales too. Both paths are covered here.
+ *
+ * Only a browser can catch this. The build is identical either way — the
+ * failure is in what the client does after the swap.
+ */
+async function errorsWhile(
+  page: Page,
+  act: () => Promise<void>
+): Promise<string[]> {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    // A preview server is http://localhost and the CDN is https://media.comfy.org,
+    // so external media and Vercel Analytics always complain. Neither says
+    // anything about whether the page hydrated, which is what this is for —
+    // that failure arrives as an uncaught exception on `pageerror`.
+    const text = message.text()
+    const environmental =
+      text.includes('Failed to load resource') ||
+      text.includes('Unsafe attempt to load URL') ||
+      text.includes('media.comfy.org') ||
+      text.includes('/_vercel/')
+    if (message.type() === 'error' && !environmental) errors.push(text)
+  })
+  await act()
+  await page.waitForLoadState('domcontentloaded')
+
+  // `domcontentloaded` is far too early: an island's markup is server-rendered
+  // and visible long before any of its code runs, so returning here would let a
+  // hydration failure land after the assertion had already passed.
+  //
+  // Astro's island element removes its `ssr` attribute only once `hydrator()`
+  // has resolved (astro-island.js), which makes its absence the one honest
+  // signal that hydration finished. Only `client:load` islands are waited on —
+  // a `client:visible` island below the fold may never hydrate at all.
+  //
+  // A failing hydration leaves the attribute in place, so this times out in
+  // exactly the case the test exists to catch. The timeout is turned into an
+  // entry in `errors` rather than swallowed: reporting it as a console error
+  // still reads better than a raw wait timeout, but swallowing it outright let
+  // the case pass silently. Hydration can stall without throwing — a chunk that
+  // never loads reports "Failed to load resource", which the filter above
+  // discards as environmental — so `errors` would have been empty and green.
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelectorAll('astro-island[client="load"][ssr]').length ===
+        0,
+      undefined,
+      { timeout: 5000 }
+    )
+    .catch(() => {
+      errors.push('a client:load island never finished hydrating')
+    })
+
+  return errors
+}
+
+test('switching language from the footer renders the new locale', async ({
+  page
+}) => {
+  await page.goto('/zh-CN/cli/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+
+  const errors = await errorsWhile(page, async () => {
+    await page
+      .locator('a[href="/cli/"][data-astro-reload]')
+      .locator('visible=true')
+      .first()
+      .click()
+  })
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  expect(
+    errors,
+    `console errors after switching language: ${errors.join(' | ')}`
+  ).toEqual([])
+
+  // Hydration is proven above; this is the content it produced.
+  await expect(
+    page.getByRole('link', { name: '简体中文', exact: true })
+  ).toBeVisible()
+})
+
+test('a footer link that leaves the Chinese tree renders correctly', async ({
+  page
+}) => {
+  await page.goto('/zh-CN/cli/', { waitUntil: 'domcontentloaded' })
+
+  // /terms-of-service is English-only, so `localizeHref` leaves it unprefixed
+  // and this link crosses locales without going anywhere near the switcher.
+  const errors = await errorsWhile(page, async () => {
+    await page
+      .locator('a[href="/terms-of-service"]')
+      .locator('visible=true')
+      .first()
+      .click()
+  })
+
+  await expect(page).toHaveURL(/\/terms-of-service\/?$/)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  expect(
+    errors,
+    `console errors after leaving the Chinese tree: ${errors.join(' | ')}`
+  ).toEqual([])
+})
+
+test('navigating within one locale still uses the client router', async ({
+  page
+}) => {
+  await page.goto('/zh-CN/cli/', { waitUntil: 'domcontentloaded' })
+
+  // A value on `window` survives a DOM swap and dies in a full page load, so it
+  // is what separates the two. Without it this test asserted a URL pattern and a
+  // `lang` that the page it started on already satisfied, so it passed whether
+  // the click routed, reloaded, or did nothing at all.
+  await page.evaluate(() => {
+    ;(window as unknown as { clientRouted?: boolean }).clientRouted = true
+  })
+  const before = page.url()
+
+  const errors = await errorsWhile(page, async () => {
+    await page
+      .locator(
+        'a[href^="/zh-CN/"]:not([data-astro-reload]):not([href="/zh-CN/cli/"])'
+      )
+      .locator('visible=true')
+      .first()
+      .click()
+  })
+
+  await expect(page).not.toHaveURL(before)
+  await expect(page).toHaveURL(/\/zh-CN\//)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { clientRouted?: boolean }).clientRouted
+    ),
+    'a full page load, so the client router did not handle this navigation'
+  ).toBe(true)
+  expect(
+    errors,
+    `console errors within one locale: ${errors.join(' | ')}`
+  ).toEqual([])
+})
