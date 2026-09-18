@@ -1,8 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import { t } from '../i18n/translations'
+import { pageContext } from '../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale
+)
 ---
 
-<BaseLayout title="404 - Page Not Found - Comfy" noindex>
+<BaseLayout title={t('notFound.meta.title', locale)} noindex>
   <div class="flex h-[calc(100dvh-12rem)] w-full flex-col items-center p-4">
     <div class="flex shrink-0 flex-col items-center gap-3 text-center">
       <div class="w-[220px] max-w-[60%]">
@@ -10,7 +18,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
           viewBox="0 0 311 63"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          aria-label="404 Page Not Found"
+          aria-label={t('notFound.a11y.pageLabel', locale)}
           class="block h-auto w-full"
         >
           <path
@@ -51,8 +59,8 @@ import BaseLayout from '../layouts/BaseLayout.astro'
         Looks like this node went off-grid.
       </p>
       <p class="font-mono text-sm tracking-wider opacity-75">
-        Score: <span id="scoreNow">0</span
-        ><span class="mx-2.5 opacity-50">|</span>Best:
+        Score: <span id="scoreNow">0</span>
+        <span class="mx-2.5 opacity-50">|</span>Best:
         <span id="scoreBest">0</span>
       </p>
     </div>
@@ -82,8 +90,9 @@ import BaseLayout from '../layouts/BaseLayout.astro'
             dominant-baseline="middle"
             transform="rotate(-31 400 200)"
             class="cursor-pointer uppercase"
-            >CLICK TO START</text
           >
+            CLICK TO START
+          </text>
         </g>
       </svg>
 
