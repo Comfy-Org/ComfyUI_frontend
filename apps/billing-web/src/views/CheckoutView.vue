@@ -60,10 +60,15 @@ const checkout = useCheckout({
 
 // The route record is shared, so arriving at this page with a different plan
 // reuses the view. Clearing first keeps the previous plan's quote from pricing
-// the new one while its replacement is still in flight.
+// the new one while its replacement is still in flight. A payment already in
+// flight outranks the new link: repricing under it would show one plan's
+// summary beside another plan's steps. `previous` is undefined on the first
+// run, which is what keeps a resumed operation from suppressing the first
+// quote and leaving the page with nothing to render.
 watch(
   planSlug,
-  (slug) => {
+  (slug, previous) => {
+    if (previous !== undefined && checkout.operation.value) return
     resetQuote()
     if (slug !== undefined) void quote({ planSlug: slug })
   },

@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { BillingOperationState } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -13,6 +14,7 @@ import {
   failedOperation,
   challengedPendingOperation,
   hostedPendingOperation,
+  pendingOperation,
   previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
@@ -79,7 +81,9 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), () => ({
 
 async function renderCheckout(
   path = CHECKOUT_PATH,
-  options: FakeBillingClientOptions = {}
+  options: FakeBillingClientOptions = {},
+  /** Published before mount, the way a lifecycle that already holds one would. */
+  live?: BillingOperationState
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const router = createRouter({
@@ -96,6 +100,7 @@ async function renderCheckout(
     },
     ...options
   })
+  if (live !== undefined) fake.publishOperation(live)
   await router.push(path)
   await router.isReady()
   render(CheckoutView, {
@@ -157,6 +162,34 @@ describe('CheckoutView', () => {
         quote_version: 7
       })
     )
+  })
+
+  it('keeps a live operation on the plan it was quoted for', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.publishOperation(pendingOperation())
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).toBeNull()
+    )
+
+    const next = `/v1/checkout?${ENTRY_QUERY}&plan=creator_annual`
+    recordBillingEntry(parseBillingEntry(next))
+    await fake.router.push(next)
+    await waitFor(() => expect(true).toBe(true))
+
+    // The operation is still running against creator_monthly, so the page
+    // stays on the quote that produced it rather than pricing another plan.
+    expect(fake.previewSubscribe).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Creator · Monthly')).toBeInTheDocument()
+  })
+
+  it('still quotes when the lifecycle already carries an operation at mount', async () => {
+    const fake = await renderCheckout(CHECKOUT_PATH, {}, pendingOperation())
+
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('Creator · Monthly')).toBeInTheDocument()
   })
 
   it("hands the form the quote and this deployment's key", async () => {
