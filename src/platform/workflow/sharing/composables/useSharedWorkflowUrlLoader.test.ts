@@ -2,7 +2,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
-import { createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { i18n } from '@/i18n'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -33,27 +36,10 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockImportPublishedAssets = vi.fn()
-const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
-const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: mockIsLoggedIn
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    mode: { value: 'graph' },
-    isAppMode: { value: false }
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackShareLinkOpened: mockTrackShareLinkOpened
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/workflowShareService'),
@@ -209,7 +195,6 @@ beforeEach(() => {
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
-    mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     vi.mocked(useDialogStore().updateDialog).mockImplementation(
@@ -249,7 +234,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('not-present')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockLoadGraphData).not.toHaveBeenCalled()
-    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackShareLinkOpened).not.toHaveBeenCalled()
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
@@ -273,7 +258,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: false,
       view_mode: 'graph',
@@ -288,7 +273,7 @@ describe('useSharedWorkflowUrlLoader', () => {
 
   it('does not capture share auth attribution for authenticated users', async () => {
     mockQueryParams = { share: 'share-id-1' }
-    mockIsLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(makePayload())
     })
@@ -297,7 +282,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
-    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: true,
       view_mode: 'graph',

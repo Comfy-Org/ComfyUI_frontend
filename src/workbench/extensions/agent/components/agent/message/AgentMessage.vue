@@ -114,7 +114,7 @@ const status = computed(() => {
     }
   if (composing.value)
     return {
-      icon: 'text-agent-fg-subtle icon-[lucide--loader-circle] animate-spin',
+      icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
     }
   return null
@@ -141,7 +141,7 @@ const status = computed(() => {
 
     <div
       v-if="status"
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal"
+      class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
       <span :class="cn('size-4 shrink-0', status.icon)" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>

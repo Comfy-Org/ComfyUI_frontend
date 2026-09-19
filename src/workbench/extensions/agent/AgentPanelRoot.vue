@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -57,9 +57,16 @@ import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  adoptSharedOnboardingFlag,
+  scopedOnboardingKey
+} from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
@@ -80,6 +87,7 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import type { CoachStep } from './composables/agent/useOnboarding'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -97,6 +105,7 @@ import { createStandaloneAgentEventSource } from './services/agent/standaloneAge
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
   isCrdtDebugEnabled,
@@ -112,7 +121,7 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
-const workspaceStore = useTeamWorkspaceStore()
+const { workspaceRole } = useWorkspaceUI()
 const { tier: subscriptionTier } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
@@ -122,7 +131,7 @@ const paywallPresentation = computed(() => {
   }
   return resolveAgentPaywallPresentation({
     distribution: isCloud ? 'cloud' : 'local',
-    role: workspaceStore.activeWorkspace?.role,
+    role: workspaceRole.value,
     tier: subscriptionTier.value,
     canTopUp: canTopUp.value,
     canSubscribeSelfServe: canSubscribeSelfServe.value
@@ -193,6 +202,22 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const workspaceStore = useTeamWorkspaceStore()
+const onboardingKey = computed(() =>
+  scopedOnboardingKey(
+    resolvedUserInfo.value?.id,
+    workspaceStore.activeWorkspaceId
+  )
+)
+watch(
+  onboardingKey,
+  (key) => {
+    if (key) adoptSharedOnboardingFlag(key)
+  },
+  { immediate: true }
+)
+const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -765,6 +790,34 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
+const coachSteps = computed<CoachStep[]>(() => [
+  {
+    target: '#agent-panel-root',
+    placement: 'left-center',
+    title: t('agent.coachTitle'),
+    body: t('agent.coachBody')
+  },
+  {
+    target: '#agent-composer',
+    placement: 'left-end',
+    title: t('agent.coachWorkflowTitle'),
+    body: t('agent.coachWorkflowBody')
+  },
+  {
+    target: '.graph-canvas-panel',
+    placement: 'graph-bottom',
+    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
+    title: t('agent.coachGraphTitle'),
+    body: t('agent.coachGraphBody')
+  },
+  {
+    target: '#agent-chat-history',
+    placement: 'left-start',
+    title: t('agent.coachHistoryTitle'),
+    body: t('agent.coachHistoryBody')
+  }
+])
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   target: () => selectedTarget.value,
@@ -1138,5 +1191,15 @@ function onPanelDrop(event: DragEvent): void {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
+    <OnboardingCoach
+      v-if="
+        consentAccepted &&
+        onboardingKey &&
+        !canvasStore.linearMode &&
+        activeTour === null
+      "
+      :steps="coachSteps"
+      :storage-key="onboardingKey"
+    />
   </div>
 </template>

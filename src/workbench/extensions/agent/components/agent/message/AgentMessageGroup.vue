@@ -69,14 +69,26 @@ const emit = defineEmits<{
     :role="group.part.level === 'error' ? 'alert' : 'status'"
     :class="
       cn(
-        'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',
+        'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
         group.part.level === 'error'
-          ? 'border-agent-danger/40 text-agent-danger'
-          : 'border-agent-border text-agent-fg-muted'
+          ? 'border-destructive-background/40 text-destructive-background'
+          : 'border-component-node-border text-muted-foreground'
       )
     "
   >
     <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-    <span>{{ group.part.text }}</span>
+    <span class="flex flex-col gap-0.5">
+      <span>{{ group.part.text }}</span>
+      <span
+        v-if="group.part.retryAfterSeconds !== undefined"
+        class="text-xs text-muted-foreground"
+      >
+        {{
+          $t('agent.retryAfterSeconds', {
+            seconds: group.part.retryAfterSeconds
+          })
+        }}
+      </span>
+    </span>
   </div>
 </template>

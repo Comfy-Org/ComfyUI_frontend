@@ -13,7 +13,7 @@ function safelyReportFirebaseAuthState(report: () => void): void {
 
 /**
  * Keep the Desktop main-process telemetry identity aligned with Firebase auth.
- * Must run after Pinia and VueFire are installed.
+ * Must run after Pinia is installed.
  */
 export function syncHostUserIdWithFirebaseAuth(): WatchStopHandle | undefined {
   const telemetry = window.__comfyDesktop2?.Telemetry

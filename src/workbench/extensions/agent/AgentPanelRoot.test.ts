@@ -5,7 +5,7 @@ import type {
   AgentThreadSummary,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
@@ -13,9 +13,9 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
@@ -189,13 +189,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: { value: true },
-    userDisplayName: { value: 'Jo Rivera' },
-    resolvedUserInfo: { value: { id: 'account-a' } }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -261,6 +255,11 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  useCurrentUser().isLoggedIn = computed(() => true)
+  useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'account-a'
+  }))
   Object.assign(useAgentConsentStore(), { accepted: true })
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(
@@ -306,6 +305,7 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
+  localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -459,6 +459,106 @@ describe('AgentPanelRoot first-use experience', () => {
     await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot onboarding', () => {
+  const SCOPED_KEY = 'Comfy.AgentPanel.onboarded.account-a.workspace-a'
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
+    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(SCOPED_KEY)
+  })
+
+  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
+    expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+    expect(canvasStore.linearMode).toBe(true)
+
+    canvasStore.linearMode = false
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('walks through the four cards and leaves the composer usable after Done', async () => {
+    render(
+      defineComponent({
+        setup: () => () =>
+          h('div', [
+            h('section', { class: 'graph-canvas-panel' }, [
+              h('div', { role: 'toolbar' })
+            ]),
+            h(AgentPanelRoot)
+          ])
+      }),
+      { global: { plugins: [i18n] } }
+    )
+
+    for (const [index, { title, description }] of [
+      {
+        title: 'Meet your Comfy Agent',
+        description:
+          'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
+      },
+      {
+        title: 'Select a workflow for your agent to edit',
+        description:
+          'The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.'
+      },
+      {
+        title: 'Let the agent run while you edit',
+        description:
+          'You can still edit the graph or switch tabs while the agent is working.'
+      },
+      {
+        title: 'Pick up where you left off',
+        description:
+          'Previous chats are saved here. Open one to review it or continue working with the agent.'
+      }
+    ].entries()) {
+      const dialog = await screen.findByRole('dialog', { name: title })
+      expect(dialog).toHaveAccessibleDescription(description)
+      await waitFor(() =>
+        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+      )
+      await userEvent.click(
+        within(dialog).getByRole('button', {
+          name: index === 3 ? 'Done' : 'Next'
+        })
+      )
+    }
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    const composer = screen.getByRole('textbox')
+    await userEvent.click(composer)
+    expect(composer).toHaveFocus()
+  })
+
+  it('preserves legacy tour completion when the panel mounts again', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
@@ -1764,7 +1864,6 @@ describe('AgentPanelRoot canvas draft on send', () => {
 describe('AgentPanelRoot history', () => {
   beforeEach(() => {
     ws.clear()
-    localStorage.clear()
   })
 
   async function renderWithActiveThread(): Promise<void> {

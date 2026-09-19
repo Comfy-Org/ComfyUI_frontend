@@ -28,6 +28,14 @@ export interface NoticePart {
   type: 'notice'
   level: 'info' | 'warning' | 'error'
   text: string
+  /**
+   * Seconds the server asked the client to wait before retrying (parsed from
+   * a `Retry-After` response header), e.g. on `funds_unavailable` admission
+   * denials. Presentation-only - the caller decides whether/how to honour it
+   * (countdown, disabled input, auto-retry); never implies a scheduled retry
+   * on its own.
+   */
+  retryAfterSeconds?: number
 }
 
 export interface TabLinkPart {

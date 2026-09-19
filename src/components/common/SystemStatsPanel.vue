@@ -58,7 +58,7 @@ import {
 } from '@/components/common/systemStatsColumns'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{

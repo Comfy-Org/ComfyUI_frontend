@@ -154,11 +154,17 @@ describe('ApiTab', () => {
   })
 
   it.for([
-    'vertexai--gemini-3-pro-image--edit-images',
-    'bfl--flux-2-max--generate-images'
+    {
+      slug: 'vertexai--gemini-3-pro-image--edit-images',
+      source: 'gemini-3-pro-image-input-1.1.png'
+    },
+    {
+      slug: 'bfl--flux-2-max--generate-images',
+      source: 'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
+    }
   ])(
-    'uses default source URLs without fetching media to show the API example: %s',
-    async (slug) => {
+    'uses default source URLs without fetching media to show the API example: $slug',
+    async ({ slug, source }) => {
       const model = getRouterWorkshopModelDetail(slug)
       if (!model) throw new Error('Missing model')
       const network = vi.fn(() =>
@@ -172,9 +178,7 @@ describe('ApiTab', () => {
         }
       })
       const snippet = await screen.findByTestId('snippet')
-      expect(snippet.textContent).toContain(
-        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
-      )
+      expect(snippet.textContent).toContain(source)
       expect(snippet.textContent).not.toContain('Path(')
       expect(network).not.toHaveBeenCalled()
     }

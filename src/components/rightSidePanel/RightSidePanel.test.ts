@@ -32,9 +32,7 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 
 function createPanelI18n() {
   return createI18n({
@@ -45,7 +43,6 @@ function createPanelI18n() {
 }
 
 const panelStubs = {
-  Button: { template: '<button><slot /></button>' },
   EditableText: true,
   Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
   TabErrors: true,
