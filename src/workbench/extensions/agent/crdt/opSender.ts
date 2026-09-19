@@ -202,52 +202,78 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
-  const unsubscribe = deps.onOpsResult((result) => {
+  function drainStaleCredit(): void {
+    if (staleAnonymousBudget > 0) staleAnonymousBudget--
+  }
+
+  function identifiedOpIds(result: OpsResultView): string[] {
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
-    const matchesInFlight =
-      inFlight !== null && identified.some((opId) => inFlight?.opIds.has(opId))
-    if (identified.length > 0 && !matchesInFlight) {
-      const lateOps = identified
-        .map((opId) => unacknowledged.get(opId))
-        .find(Boolean)
-      if (lateOps) {
-        for (const op of lateOps) {
-          unacknowledged.delete(op.op_id)
-          settledLate.add(op.op_id)
-        }
-        if (staleAnonymousBudget > 0) staleAnonymousBudget--
-        deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
-      } else if (identified.some((opId) => settledLate.has(opId))) {
-        for (const opId of identified) settledLate.delete(opId)
-        if (staleAnonymousBudget > 0) staleAnonymousBudget--
-      } else if (!inFlight && staleAnonymousBudget > 0) {
-        staleAnonymousBudget--
+    return identified
+  }
+
+  /** An identified result that names no in-flight op: settle or drain late state. */
+  function settleIdentifiedLateResult(
+    identified: string[],
+    result: OpsResultView
+  ): void {
+    const lateOps = identified
+      .map((opId) => unacknowledged.get(opId))
+      .find(Boolean)
+    if (lateOps) {
+      for (const op of lateOps) {
+        unacknowledged.delete(op.op_id)
+        settledLate.add(op.op_id)
       }
+      drainStaleCredit()
+      deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
       return
     }
-    if (
-      !inFlight ||
-      (result.workflowId !== undefined &&
-        result.workflowId !== inFlight.workflowId)
-    ) {
-      // A late result with no batch waiting, or addressed to another workflow
-      // than the in-flight batch: drain a credit if one is outstanding so it
-      // cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
+    if (identified.some((opId) => settledLate.has(opId))) {
+      for (const opId of identified) settledLate.delete(opId)
+      drainStaleCredit()
       return
     }
-    if (identified.length > 0) {
-      settle({ state: 'acknowledged', ops: inFlight.ops, result })
-      return
-    }
+    if (!inFlight) drainStaleCredit()
+  }
+
+  function settleAnonymousResult(
+    active: InFlight,
+    result: OpsResultView
+  ): void {
     // Anonymous failure (empty lists, no failure op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
     if (staleAnonymousBudget > 0) {
       staleAnonymousBudget--
       return
     }
-    settle({ state: 'acknowledged', ops: inFlight.ops, result })
+    settle({ state: 'acknowledged', ops: active.ops, result })
+  }
+
+  const unsubscribe = deps.onOpsResult((result) => {
+    const identified = identifiedOpIds(result)
+    const active = inFlight
+    const matchesInFlight = identified.some((opId) => active?.opIds.has(opId))
+    if (identified.length > 0 && !matchesInFlight) {
+      settleIdentifiedLateResult(identified, result)
+      return
+    }
+    if (
+      active === null ||
+      (result.workflowId !== undefined &&
+        result.workflowId !== active.workflowId)
+    ) {
+      // A late result with no batch waiting, or addressed to another workflow
+      // than the in-flight batch: drain a credit if one is outstanding so it
+      // cannot swallow a future batch's own result.
+      drainStaleCredit()
+      return
+    }
+    if (identified.length > 0) {
+      settle({ state: 'acknowledged', ops: active.ops, result })
+      return
+    }
+    settleAnonymousResult(active, result)
   })
 
   return {
