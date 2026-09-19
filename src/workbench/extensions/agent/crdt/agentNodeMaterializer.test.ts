@@ -858,32 +858,29 @@ describe('reconcileAgentAdapters', () => {
     // with no re-mint step, so the large id becomes the permanent on-canvas
     // id. Reported live on nightly (2026-09-08): flattened nodes showed IDs
     // like #3999039427639531.
-    it.fails(
-      'gives reconstructed nodes reasonably-sized ids, the way the native Unpack Subgraph command does',
-      () => {
-        const graph = new LGraph()
-        const scope = graphScopeOf(graph)
-        const mintedIds = [3999039427639531, 3086567801007485, 2149084457244098]
+    it.fails('gives reconstructed nodes reasonably-sized ids, the way the native Unpack Subgraph command does', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mintedIds = [3999039427639531, 3086567801007485, 2149084457244098]
 
-        for (const id of mintedIds) {
-          remoteMutations(scope).addNode(nodePayload(id), {
-            ...REMOTE,
-            opId: `op-${id}`
-          })
-        }
-
-        reconcileAgentAdapters(graph)
-
-        for (const id of mintedIds) {
-          const node = graph.getNodeById(toNodeId(id))
-          expect(node).toBeTruthy()
-          // Desired: reasonably-sized, readable IDs instead of large random
-          // numbers. Currently fails -- the id materializes exactly as
-          // comfy-cli minted it.
-          expect(node!.id).toBeLessThan(1_000_000)
-        }
+      for (const id of mintedIds) {
+        remoteMutations(scope).addNode(nodePayload(id), {
+          ...REMOTE,
+          opId: `op-${id}`
+        })
       }
-    )
+
+      reconcileAgentAdapters(graph)
+
+      for (const id of mintedIds) {
+        const node = graph.getNodeById(toNodeId(id))
+        expect(node).toBeTruthy()
+        // Desired: reasonably-sized, readable IDs instead of large random
+        // numbers. Currently fails -- the id materializes exactly as
+        // comfy-cli minted it.
+        expect(node!.id).toBeLessThan(1_000_000)
+      }
+    })
   })
 
   describe('subgraph definitions', () => {
