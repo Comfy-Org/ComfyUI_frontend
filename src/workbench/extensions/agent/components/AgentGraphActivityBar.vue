@@ -20,9 +20,16 @@ onMounted(() => {
   teleportTarget.value = document.querySelector('.graph-canvas-panel')
 })
 
-const visibleState = computed(() =>
-  activity.state.phase === 'idle' ? null : activity.state
-)
+const visibleState = computed(() => {
+  const state = activity.state
+  if (
+    state.phase === 'idle' ||
+    !canvas ||
+    String(canvas.graph.id) !== state.rootGraphId
+  )
+    return null
+  return state
+})
 const isComplete = computed(() => visibleState.value?.phase === 'complete')
 const presentation = computed(() => ({
   testId: isComplete.value
@@ -40,8 +47,7 @@ const presentation = computed(() => ({
 }))
 const liveNodes = computed(() => {
   const state = visibleState.value
-  if (!state || !canvas || String(app.rootGraph.id) !== state.rootGraphId)
-    return []
+  if (!state || !canvas) return []
   return state.nodeIds.flatMap((nodeId) => {
     const locator = createNodeLocatorId(null, nodeId)
     const node = getNodeByLocatorId(app.rootGraph, locator)

@@ -54,7 +54,7 @@ describe('AgentGraphActivityBar', () => {
     vi.useFakeTimers()
   })
 
-  it('hides View nodes when the report belongs to another graph', async () => {
+  it('hides the report when it belongs to another graph', async () => {
     const view = mount()
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
@@ -64,9 +64,7 @@ describe('AgentGraphActivityBar', () => {
     )
     await nextTick()
 
-    expect(
-      screen.queryByRole('button', { name: 'View node' })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     view.unmount()
   })
 })
