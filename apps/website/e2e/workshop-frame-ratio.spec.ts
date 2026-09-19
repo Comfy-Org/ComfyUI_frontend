@@ -46,10 +46,10 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   // first frame, which is what makes the silence above an answer about two
   // measured frames rather than about one that had not loaded yet.
   await last.setInputFiles(frame('last.png', PORTRAIT_9_16))
-  await expect(notice).toContainText('The last frame will be stretched')
+  await expect(notice).toContainText('The frames are different shapes')
 
   await first.setInputFiles(frame('first.png', LANDSCAPE_16_9))
-  await expect(notice).toContainText('The last frame will be stretched')
+  await expect(notice).toContainText('The frames are different shapes')
 
   // Replacing the last frame with the same shape retires the notice on its own.
   await last.setInputFiles(frame('last.png', WIDER_LANDSCAPE_16_9))
@@ -59,5 +59,5 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   // And that silence is about the replacement rather than a cleared or a stale
   // size: turning the first frame portrait has to bring the warning back.
   await first.setInputFiles(frame('first.png', PORTRAIT_9_16))
-  await expect(notice).toContainText('The last frame will be stretched')
+  await expect(notice).toContainText('The frames are different shapes')
 })
