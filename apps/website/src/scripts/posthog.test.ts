@@ -97,11 +97,11 @@ describe('Workshop visibility', () => {
   })
 
   it.for([
-    { deployEnv: '', reaches: true },
-    { deployEnv: 'preview', reaches: true },
-    { deployEnv: 'production', reaches: false }
+    { build: 'local', deployEnv: '', reaches: true },
+    { build: 'preview', deployEnv: 'preview', reaches: true },
+    { build: 'production', deployEnv: 'production', reaches: false }
   ])(
-    'an enabled flag reaches the run surface on a $deployEnv build: $reaches',
+    'an enabled flag reaches the run surface on a $build build: $reaches',
     async ({ deployEnv, reaches }) => {
       hoisted.deployEnv = deployEnv
       hoisted.mockIsFeatureEnabled.mockReturnValue(true)
@@ -114,7 +114,7 @@ describe('Workshop visibility', () => {
     }
   )
 
-  it('never holds the loading frame on production, even before a flag answer', async () => {
+  it('leaves visibility settled on production, so the gate never waits on a flag answer', async () => {
     hoisted.deployEnv = 'production'
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     const {
@@ -659,7 +659,7 @@ describe('useWorkshopAuthFlag', () => {
   })
 
   it('allows sign-in without an auth flag while Models stays disabled, and honors explicit auth changes', async () => {
-    hoisted.deployEnv = 'production'
+    hoisted.deployEnv = 'preview'
     hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
       key === 'workshop-enabled' ? false : undefined
     )

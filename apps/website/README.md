@@ -187,6 +187,14 @@ with the refreshed snapshot.
 
 ## Models rollout
 
+> **Models is currently switched off on comfy.org.** A production build hides
+> it regardless of `workshop-enabled`, because 108 of 238 runs failed on
+> 2026-09-18. Previews and local dev still obey the flag, so leave it **on**
+> to keep reviewing fixes there. Re-open production by reverting the
+> `PRODUCTION_DISABLED` constant in `src/scripts/posthog.ts`, not by raising
+> the flag. The rest of this section describes the flag-driven behaviour that
+> resumes once that revert lands.
+
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the
 build and authentication switches. It defaults off, including while flags are
@@ -252,8 +260,9 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 ```
 
 `PUBLIC_WORKSHOP_ENABLED` is honored only by a local `astro dev` command. Built
-previews and production always use PostHog. This is a frontend visibility
-control; the APIs continue to enforce authentication and billing.
+previews use PostHog; production ignores it while the kill above is in place.
+This is a frontend visibility control; the APIs continue to enforce
+authentication and billing.
 
 ### Models analytics
 
