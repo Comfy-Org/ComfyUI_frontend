@@ -807,15 +807,18 @@ describe('the send step, run against a stubbed Slack', () => {
     expect(run.summary).toContain('U0BA79D8R1T')
   })
 
-  // `jq -e` exits 0 on empty input, so a body that is not JSON reads as a
-  // delivered DM unless the script tests for emptiness first.
-  it('does not read an error page as a delivered DM', () => {
-    const run = runSendStep({
-      U0BA79D8R1T: { body: '<html><body>502</body></html>' }
-    })
+  // An answer that is not JSON cannot say a DM was delivered. The empty row
+  // is the one that needs the script's own emptiness test: jq 1.6 judges no
+  // input at all a success, and which jq runs is the runner image's choice.
+  it.for([
+    { shape: 'an error page', body: '<html><body>502</body></html>' },
+    { shape: 'nothing at all', body: '' }
+  ])('does not read $shape as a delivered DM', ({ body }) => {
+    const run = runSendStep({ U0BA79D8R1T: { body } })
 
     expect(run.stdout).not.toContain('Notified')
     expect(run.stdout).toContain('no usable response')
+    expect(run.summary).toContain('U0BA79D8R1T')
     expect(run.status).toBe(0)
   })
 
@@ -853,6 +856,102 @@ describe('the send step, run against a stubbed Slack', () => {
     })
 
     expect(run.status).toBe(0)
+  })
+})
+
+/**
+ * Runs the `Read the pull request` shell with `gh` and `git` stubbed.
+ *
+ * Its `awk` produces the branch list that `readRemoteBranches` consumes, and
+ * that side of the contract is covered exhaustively — but only here does
+ * anything check that the shell actually emits bare branch names, or that a
+ * remote it cannot list leaves the empty file the parser is written for
+ * rather than failing the step.
+ */
+function runReadStep(gitExitCode = 0): {
+  status: number
+  stdout: string
+  branches: string
+  pr: string
+} {
+  const dir = mkdtempSync(join(tmpdir(), 'notify-needs-backport-read-'))
+
+  try {
+    const step = Object.values(readWorkflow(NOTIFY_WORKFLOW).jobs ?? {})
+      .flatMap((job) => job?.steps ?? [])
+      .find((step) => step.name === 'Read the pull request')
+
+    expect(step?.run).toBeDefined()
+    writeFileSync(join(dir, 'step.sh'), step?.run ?? '')
+
+    writeFileSync(
+      join(dir, 'gh'),
+      '#!/usr/bin/env bash\necho \'{"number":15102}\'\n'
+    )
+    writeFileSync(
+      join(dir, 'git'),
+      [
+        '#!/usr/bin/env bash',
+        // A failing `git ls-remote` writes nothing to stdout — it reads the
+        // whole ref advertisement before printing any of it.
+        `if [ ${gitExitCode} -ne 0 ]; then`,
+        '  echo "fatal: could not read from remote repository" >&2',
+        `  exit ${gitExitCode}`,
+        'fi',
+        // The shape it prints on success, including a branch whose own name
+        // contains the prefix being stripped.
+        "printf '%s\\trefs/heads/%s\\n' aaa main bbb core/1.47 ccc feat/refs/heads-weird"
+      ].join('\n')
+    )
+    chmodSync(join(dir, 'gh'), 0o755)
+    chmodSync(join(dir, 'git'), 0o755)
+
+    const run = spawnSync('bash', [join(dir, 'step.sh')], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${dir}:${process.env.PATH ?? ''}`,
+        GH_TOKEN: 'stub',
+        GH_REPO: 'Comfy-Org/ComfyUI_frontend',
+        PR_NUMBER: '15102'
+      }
+    })
+
+    return {
+      status: run.status ?? -1,
+      stdout: `${run.stdout}${run.stderr}`,
+      branches: readFileSync(join(dir, 'branches.txt'), 'utf8'),
+      pr: readFileSync(join(dir, 'pr.json'), 'utf8')
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+describe('the read step, run against a stubbed gh and git', () => {
+  it('writes the PR and the bare branch names', () => {
+    const run = runReadStep()
+
+    expect(run.status).toBe(0)
+    expect(run.pr).toContain('15102')
+    expect(run.branches.split('\n').filter(Boolean)).toEqual([
+      'main',
+      'core/1.47',
+      // Only the leading `refs/heads/` goes; a branch named after it survives.
+      'feat/refs/heads-weird'
+    ])
+  })
+
+  // The branch list only sharpens the message, so a remote that cannot be
+  // listed has to leave the empty file readRemoteBranches reads as "unknown"
+  // — failing here would trade a vaguer DM for no DM at all.
+  it('leaves an empty branch list and carries on when the remote is unlistable', () => {
+    const run = runReadStep(128)
+
+    expect(run.status).toBe(0)
+    expect(run.branches.trim()).toBe('')
+    expect(run.stdout).toContain('Could not list the remote branches')
   })
 })
 

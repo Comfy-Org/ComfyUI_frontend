@@ -142,10 +142,14 @@ jobs:
 
             # Slack answers HTTP 200 with {"ok":false,"error":...} on auth,
             # scope and recipient errors, so the status code alone would
-            # report a dropped DM as a success. The emptiness test is not
-            # redundant: `jq -e` exits 0 on empty input, having produced no
-            # output to judge, so without it a body that is not JSON reads
-            # as a delivered DM.
+            # report a dropped DM as a success.
+            #
+            # The emptiness test is not redundant, though which jq runs
+            # decides whether it is load-bearing: given no input at all, jq
+            # 1.6 exits 0 having judged nothing, while 1.7 exits 4. The
+            # runner image picks that version, not us — ubuntu-22.04 carries
+            # 1.6 — so on an empty body this is the only thing standing
+            # between a dropped DM and a "Notified" line.
             if [ -n "$RESPONSE" ] &&
               jq -e '.ok == true' <<<"$RESPONSE" >/dev/null 2>&1; then
               echo "Notified ${CHANNEL}"
