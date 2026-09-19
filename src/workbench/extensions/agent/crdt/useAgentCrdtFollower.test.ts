@@ -143,7 +143,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus, UndoBracket } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -177,7 +177,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  getChangeTracker: () => UndoBracket | null = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -194,7 +195,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        getChangeTracker
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -657,6 +659,31 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('QAF-52: brackets every applied doc_update in the change tracker so redo replays the agent change', () => {
+    const tracker: UndoBracket = {
+      beforeChange: vi.fn(),
+      afterChange: vi.fn()
+    }
+    const { unmount } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      () => tracker
+    )
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+    expect(tracker.beforeChange).toHaveBeenCalledTimes(1)
+    expect(tracker.afterChange).toHaveBeenCalledTimes(1)
+    const before = vi.mocked(tracker.beforeChange).mock.invocationCallOrder[0]
+    const apply = vi.mocked(adapterState.applyFrame).mock.invocationCallOrder[0]
+    const after = vi.mocked(tracker.afterChange).mock.invocationCallOrder[0]
+    expect(before).toBeLessThan(apply)
+    expect(apply).toBeLessThan(after)
+    unmount()
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
@@ -755,7 +782,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+    it('does not count an ignored reset while the target is inactive', () => {
       const { unmount, status } = mountFollower('wf-a', false)
 
       dispatchFrame('doc_reset', {
@@ -764,7 +791,7 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(status().outcomes.reset).toBe(1)
+      expect(status().outcomes.reset).toBe(0)
       expect(adapterState.clearForReset).not.toHaveBeenCalled()
       unmount()
     })
@@ -966,7 +993,8 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
@@ -981,13 +1009,14 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
       expect(
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
         replacementDoc
       )
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
