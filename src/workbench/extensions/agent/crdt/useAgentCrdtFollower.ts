@@ -1,6 +1,8 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { st } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -20,6 +22,12 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { WithLayoutActor } from './pendingOpRevert'
+import {
+  applyPendingOpRevert,
+  createPendingRevertRemoveNode,
+  createRevertNotifier
+} from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
@@ -201,7 +209,9 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  /** `layoutStore.withActor`, injected by the composition root. */
+  withLayoutActor: WithLayoutActor = (_actor, fn) => fn()
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -244,6 +254,25 @@ export function useAgentCrdtFollower(
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
   let lastProjectedSequence: number | null = null
+  const removeRevertedNode = createPendingRevertRemoveNode({
+    getGraph,
+    withLayoutActor
+  })
+  const notifyReverted = createRevertNotifier((undone) => {
+    useToastStore().add({
+      severity: 'warn',
+      summary: undone
+        ? st(
+            'toastMessages.agentSyncEditReverted',
+            "Your edit couldn't be synced and was undone."
+          )
+        : st(
+            'toastMessages.agentSyncEditFailed',
+            "Your edit couldn't be synced."
+          ),
+      life: 5000
+    })
+  })
   // s3-opt-6: every minted human op is registered here before it flies and
   // leaves only on its authoritative doc_update effect, on revert, or — for
   // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
@@ -255,7 +284,10 @@ export function useAgentCrdtFollower(
     // id until its next applied frame; a still-pending skipped entry means the
     // effect frame never reached this follower, so one is coming.
     currentSeq: () => lastProjectedSequence ?? 0,
-    onEvent: (event) => recordDevEvent('pending_ops', event)
+    onEvent: (event) => {
+      notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
+      recordDevEvent('pending_ops', event)
+    }
   })
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),

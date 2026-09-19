@@ -1,15 +1,15 @@
 /**
- * Regression pin for PM-1143 / PM-1142: a human-authored `add_node` the CRDT
- * host rejects never leaves the canvas. `layoutMintPort.ts` mints the wire op
- * AFTER the node is already live via the normal LiteGraph flow, and
- * `useAgentCrdtFollower.ts` only forwards a rejection to the dev panel
- * (`recordDevEvent`) - nothing removes the node or tells the user. This test
- * drives the real transport (a mocked `/ws`), the real mint ports, and the
- * real canvas: it binds the CRDT doc through an actual agent turn, adds a
- * node the way a person would (double-click search), rejects that node's
- * `doc_ops` frame the way the reported host failure did
- * (`invalid_node_payload`), and proves the "ghost" node is still selectable
- * on canvas. See `src/workbench/extensions/agent/crdt/rejectedHumanAddNodeRevert.test.ts`
+ * Regression pin (ADR-CRDT-PENDING-0030): a human-authored `add_node` the
+ * CRDT host rejects must leave the canvas. `layoutMintPort.ts` mints the wire
+ * op AFTER the node is already live via the normal LiteGraph flow, and on
+ * rejection `useAgentCrdtFollower.ts` feeds the tracker's `reverted` event to
+ * `applyPendingOpRevert`, which removes the node. This test drives the real
+ * transport (a mocked `/ws`), the real mint ports, and the real canvas: it
+ * binds the CRDT doc through an actual agent turn, adds a node the way a
+ * person would (double-click search), rejects that node's `doc_ops` frame the
+ * way the reported host failure did (`invalid_node_payload`), and proves the
+ * node the host never accepted is removed. See
+ * `src/workbench/extensions/agent/crdt/rejectedHumanAddNodeRevert.test.ts`
  * for the equivalent proof against the composable wiring directly.
  */
 import type { WebSocketRoute } from '@playwright/test'
@@ -98,15 +98,12 @@ function installCrdtHostDouble(ws: WebSocketRoute): {
 }
 
 test.describe(
-  'a human-added node the CRDT host rejects (PM-1143)',
+  'a human-added node the CRDT host rejects',
   { tag: ['@cloud', '@canvas', '@node'] },
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('stays on the canvas instead of being removed', async ({
-      comfyPage,
-      getWebSocket
-    }, testInfo) => {
+    test('is removed from the canvas', async ({ comfyPage, getWebSocket }) => {
       test.setTimeout(30_000)
       await comfyPage.settings.setSetting(
         'Comfy.NodeSearchBoxImpl',
@@ -147,26 +144,7 @@ test.describe(
       // The host rejects the sync; the mock above already replied.
       await rejectedOpId
 
-      // Current (buggy) behavior, captured as visual proof: the "ghost" node
-      // the host never accepted is still on the canvas, selectable like any
-      // other node.
-      const ghostNodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-      expect(ghostNodes).toHaveLength(1)
-      await ghostNodes[0].click('title')
-      await comfyPage.nextFrame()
-      await testInfo.attach('rejected-add-node-ghost-remains.png', {
-        body: await comfyPage.page.screenshot({ fullPage: false }),
-        contentType: 'image/png'
-      })
-
-      test.fail(
-        true,
-        'PM-1143: layoutMintPort/opSender/pendingOpTracker compute the ' +
-          'rejection but nothing removes the node - useAgentCrdtFollower ' +
-          "only logs it to the dev panel (recordDevEvent('pending_ops', ...))."
-      )
-
-      // Desired behavior: the node the host never accepted is gone.
+      // The node the host never accepted is removed.
       await expect
         .poll(
           async () =>

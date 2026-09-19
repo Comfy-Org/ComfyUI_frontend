@@ -13,7 +13,13 @@ type PendingOpRevertReason =
   | 'undeliverable'
 
 export type PendingOpTrackerEvent =
-  | { type: 'reverted'; reason: PendingOpRevertReason; opIds: string[] }
+  | {
+      type: 'reverted'
+      reason: PendingOpRevertReason
+      opIds: string[]
+      /** The dropped ledger entries' ops, so consumers can undo their effect. */
+      ops: Op[]
+    }
   | { type: 'delivery_unknown'; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
   /** Skipped duplicates resolved by a projection at/after their ack seq. */
@@ -88,12 +94,18 @@ export function createPendingOpTracker(
   }
 
   function revert(opIds: readonly string[], reason: PendingOpRevertReason) {
-    const reverted: string[] = []
+    const reverted: PendingOpEntry<Op>[] = []
     for (const opId of opIds) {
       const entry = drop(opId)
-      if (entry) reverted.push(opId)
+      if (entry) reverted.push(entry)
     }
-    if (reverted.length > 0) emit({ type: 'reverted', reason, opIds: reverted })
+    if (reverted.length > 0)
+      emit({
+        type: 'reverted',
+        reason,
+        opIds: reverted.map((entry) => entry.opId),
+        ops: reverted.map((entry) => entry.shadow)
+      })
   }
 
   /**

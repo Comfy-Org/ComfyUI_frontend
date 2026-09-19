@@ -268,8 +268,13 @@ describe('createPendingOpTracker', () => {
       [['op-1', 'applied']]
     )
     expect(events).toEqual([
-      { type: 'reverted', reason: 'failed', opIds: ['op-2'] },
-      { type: 'reverted', reason: 'unprocessed', opIds: ['op-3'] }
+      { type: 'reverted', reason: 'failed', opIds: ['op-2'], ops: [ops[1]] },
+      {
+        type: 'reverted',
+        reason: 'unprocessed',
+        opIds: ['op-3'],
+        ops: [ops[2]]
+      }
     ])
   })
 
@@ -285,7 +290,8 @@ describe('createPendingOpTracker', () => {
       {
         type: 'reverted',
         reason: 'unattributed',
-        opIds: ['op-1', 'op-2', 'op-3']
+        opIds: ['op-1', 'op-2', 'op-3'],
+        ops
       }
     ])
   })
@@ -299,7 +305,8 @@ describe('createPendingOpTracker', () => {
       {
         type: 'reverted',
         reason: 'undeliverable',
-        opIds: ['op-1', 'op-2', 'op-3']
+        opIds: ['op-1', 'op-2', 'op-3'],
+        ops
       }
     ])
   })
@@ -338,8 +345,13 @@ describe('createPendingOpTracker', () => {
       [['op-1', 'applied']]
     )
     expect(events.slice(1)).toEqual([
-      { type: 'reverted', reason: 'failed', opIds: ['op-2'] },
-      { type: 'reverted', reason: 'unprocessed', opIds: ['op-3'] }
+      { type: 'reverted', reason: 'failed', opIds: ['op-2'], ops: [ops[1]] },
+      {
+        type: 'reverted',
+        reason: 'unprocessed',
+        opIds: ['op-3'],
+        ops: [ops[2]]
+      }
     ])
   })
 
