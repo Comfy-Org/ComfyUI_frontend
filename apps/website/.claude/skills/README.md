@@ -1,8 +1,8 @@
 # Website skills
 
-`build-web-pr` takes a designer's request to a reviewed pull request; `fix-web-pr` clears
+`building-web-prs` takes a designer's request to a reviewed pull request; `fixing-web-prs` clears
 the blockers on an existing one and merges it behind a gate. Both read
-`apps/website/AGENTS.md`, `build-web-pr/review-loop.md`, and `build-web-pr/git-workflow.md`.
+`apps/website/AGENTS.md`, `building-web-prs/review-loop.md`, and `building-web-prs/git-workflow.md`.
 
 ## Evals
 
@@ -14,7 +14,7 @@ file, or a judge rubric). A `tool_used: Skill` grader on a case records whether
 the skill fired on that phrasing; a case tagged `negative` asserts it did not.
 
 Eval runs are offline and start in an empty directory, so the functional
-cases ship a `fixture.sh` that calls `fix-web-pr/evals/_shared/scaffold.sh`. It
+cases ship a `fixture.sh` that calls `fixing-web-prs/evals/_shared/scaffold.sh`. It
 builds a small git repository (signing disabled, `bin/` excluded from git),
 copies the website skills into place, and installs `_shared/gh`, a stand-in
 for the GitHub CLI that answers from `_shared/base/` overlaid with the case's
@@ -69,10 +69,10 @@ and timeline events are cumulative with distinct ids. Every refusal starts
 with `merge refused`, and the merge cases grade its absence from the
 transcript.
 
-`bash fix-web-pr/evals/_shared/selftest.sh` costs nothing and covers three
+`bash fixing-web-prs/evals/_shared/selftest.sh` costs nothing and covers three
 things: it scaffolds every fixture under both skills and checks the stand-in
 is installed; it checks every markdown file under the skill tree for balanced
-code fences; and it drives the five stateful `fix-web-pr` sequences
+code fences; and it drives the five stateful `fixing-web-prs` sequences
 (`hold-blocks-merge`, `queued-is-not-merged`, `requeues-after-pop`,
 `escalates-after-three-removals`, and `merges-on-fresh-head` as the base for
 the rule checks) through the stand-in: the target
@@ -87,8 +87,8 @@ touching a fixture. The stand-in needs `jq`.
 Fixture setup and shell access are off by default, so pass the flags:
 
 ```bash
-claude plugin eval apps/website/.claude/skills/fix-web-pr --scaffold --allow-tools Bash --trust-plugin --no-publish
-claude plugin eval apps/website/.claude/skills/build-web-pr --scaffold --allow-tools Bash Edit Write --trust-plugin --no-publish
+claude plugin eval apps/website/.claude/skills/fixing-web-prs --scaffold --allow-tools Bash --trust-plugin --no-publish
+claude plugin eval apps/website/.claude/skills/building-web-prs --scaffold --allow-tools Bash Edit Write --trust-plugin --no-publish
 ```
 
 Add `--ablation none` to skip the no-skill baseline arm and halve the cost,
@@ -101,17 +101,17 @@ roughly 50 agent sessions.
 
 | Skill          | Case                             | Asserts                                                                                                                                                                                                                                                             |
 | -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fix-web-pr`   | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                                                                                                                                                           |
-| `fix-web-pr`   | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                                                                                                                                                                 |
-| `fix-web-pr`   | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                                                                                                                                                                  |
-| `fix-web-pr`   | `requeues-after-pop`             | Queue drops the PR once and the head moves; the skill reads the reason, re-reads the gate, merges again, reports merged                                                                                                                                             |
-| `fix-web-pr`   | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason                                                                                                                                                      |
-| `fix-web-pr`   | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                                                                                                                                                                        |
-| `fix-web-pr`   | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                                                                                                                                                                |
-| `build-web-pr` | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; the created branch's diff touches only `pricing.astro` and adds the new line; its commit message uses the `(website)` prefix and carries no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
-| `build-web-pr` | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                                                                                                                                                             |
-| `build-web-pr` | `does-not-trigger-on-app-work`   | Editor-app work under `src/lib` does not fire the website skill                                                                                                                                                                                                     |
-| `build-web-pr` | `does-not-trigger-on-question`   | A question about the site does not fire it                                                                                                                                                                                                                          |
+| `fixing-web-prs`   | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                                                                                                                                                           |
+| `fixing-web-prs`   | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                                                                                                                                                                 |
+| `fixing-web-prs`   | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                                                                                                                                                                  |
+| `fixing-web-prs`   | `requeues-after-pop`             | Queue drops the PR once and the head moves; the skill reads the reason, re-reads the gate, merges again, reports merged                                                                                                                                             |
+| `fixing-web-prs`   | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason                                                                                                                                                      |
+| `fixing-web-prs`   | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                                                                                                                                                                        |
+| `fixing-web-prs`   | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                                                                                                                                                                |
+| `building-web-prs` | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; the created branch's diff touches only `pricing.astro` and adds the new line; its commit message uses the `(website)` prefix and carries no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
+| `building-web-prs` | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                                                                                                                                                             |
+| `building-web-prs` | `does-not-trigger-on-app-work`   | Editor-app work under `src/lib` does not fire the website skill                                                                                                                                                                                                     |
+| `building-web-prs` | `does-not-trigger-on-question`   | A question about the site does not fire it                                                                                                                                                                                                                          |
 
 ### Results so far
 
@@ -121,11 +121,11 @@ and `fix-it` (grader names below are the current ones):
 
 | Case                           | Runs      | Graders                                                                                        | Result                                                                                                        |
 | ------------------------------ | --------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `does-not-trigger-on-app-work` | 1         | build-web-pr-not-fired                                                                         | 1/1 pass                                                                                                      |
-| `does-not-trigger-on-question` | 1         | build-web-pr-not-fired                                                                         | 1/1 pass                                                                                                      |
+| `does-not-trigger-on-app-work` | 1         | building-web-prs-not-fired                                                                         | 1/1 pass                                                                                                      |
+| `does-not-trigger-on-question` | 1         | building-web-prs-not-fired                                                                         | 1/1 pass                                                                                                      |
 | `triggers-on-mock-request`     | 1         | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass                                                                                                      |
 | `asks-for-number`              | 1         | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)                                 | 1/1 pass                                                                                                      |
-| `does-not-trigger-on-summary`  | 1, then 2 | fix-web-pr-not-fired, nothing-pushed-or-merged                                                 | 0/1, then 2/2 after the `fix-web-pr` description gained its "do not use it to read, summarize, review" clause |
+| `does-not-trigger-on-summary`  | 1, then 2 | fixing-web-prs-not-fired, nothing-pushed-or-merged                                                 | 0/1, then 2/2 after the `fixing-web-prs` description gained its "do not use it to read, summarize, review" clause |
 
 The six merge-gate and workflow cases (`hold-blocks-merge`,
 `merges-on-fresh-head`, `queued-is-not-merged`, `requeues-after-pop`,
