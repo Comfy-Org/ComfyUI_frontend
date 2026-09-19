@@ -158,6 +158,7 @@ export function useMinimap({
 
   const shouldAnimateDecorations = computed(
     () =>
+      initialized.value &&
       canDraw.value &&
       decorations.value.some(
         ({ enteredAt }) =>
@@ -169,7 +170,7 @@ export function useMinimap({
   watch(
     shouldAnimateDecorations,
     (active) => {
-      if (!canDraw.value) {
+      if (!initialized.value || !canDraw.value) {
         decorationFrames.pause()
         return
       }
