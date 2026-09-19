@@ -86,6 +86,30 @@ describe('panZoomUtils', () => {
     it('returns 1 for zero deltaY', () => {
       expect(getWheelZoomFactor(0)).toBe(1)
     })
+
+    it.for([
+      { deltaY: -3, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 1.1 },
+      { deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 0.9 },
+      { deltaY: -1, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 1.1 },
+      { deltaY: 1, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 0.9 },
+      { deltaY: 0, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 1 },
+      { deltaY: 0, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 1 }
+    ])(
+      'preserves non-pixel wheel behavior for $deltaY in mode $deltaMode',
+      ({ deltaY, deltaMode, factor }) => {
+        expect(getWheelZoomFactor(deltaY, deltaMode)).toBe(factor)
+      }
+    )
+
+    it.for([-1, 1])(
+      'does not depend on pixel event grouping in direction %s',
+      (direction) => {
+        const smallStep = getWheelZoomFactor(direction * 0.5)
+        const combinedStep = getWheelZoomFactor(direction * 100)
+
+        expect(smallStep ** 200).toBeCloseTo(combinedStep, 12)
+      }
+    )
   })
 
   describe('calculateZoomAroundPoint', () => {

@@ -60,10 +60,15 @@ export function clampZoom(zoom: number): number {
   return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom))
 }
 
-export function getWheelZoomFactor(deltaY: number): number {
+export function getWheelZoomFactor(
+  deltaY: number,
+  deltaMode: number = WheelEvent.DOM_DELTA_PIXEL
+): number {
   if (deltaY === 0) return 1
 
   const baseFactor = deltaY < 0 ? 1.1 : 0.9
+  if (deltaMode !== WheelEvent.DOM_DELTA_PIXEL) return baseFactor
+
   return Math.pow(baseFactor, Math.abs(deltaY) / WHEEL_DELTA_REFERENCE)
 }
 
