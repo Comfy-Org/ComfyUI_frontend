@@ -1,7 +1,8 @@
 import type { Component } from 'vue'
 
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
