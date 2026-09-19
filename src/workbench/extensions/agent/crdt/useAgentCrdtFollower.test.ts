@@ -920,6 +920,36 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports a pending live arrival when graph readiness materializes it', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const onMaterialized = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => ({ '3': {} }) })
+      }
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
     it('does not reconcile for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
@@ -1059,6 +1089,10 @@ describe('useAgentCrdtFollower', () => {
     it('does not attribute a human recreation after a pending node was deleted', () => {
       const onMaterialized = vi.fn()
       const graph = shallowRef<MaterializableGraph | null>(null)
+      const readyGraph = {
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      } as unknown as MaterializableGraph
       let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
@@ -1082,7 +1116,7 @@ describe('useAgentCrdtFollower', () => {
         catchUp: false
       })
 
-      graph.value = fakeGraph
+      graph.value = readyGraph
       nodes = { '3': {} }
       materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
       dispatchFrame('doc_update', {

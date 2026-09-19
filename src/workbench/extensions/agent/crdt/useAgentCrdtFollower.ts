@@ -79,6 +79,19 @@ function liveAddedNodeIds(
   })
 }
 
+function emitPendingMaterializations(
+  workflowId: string,
+  actor: string | undefined,
+  available: ReadonlySet<NodeId>,
+  pending: Set<NodeId>,
+  events: AgentCrdtFollowerEvents
+): void {
+  const nodeIds = [...pending].filter((id) => available.has(id))
+  for (const nodeId of nodeIds) pending.delete(nodeId)
+  if (nodeIds.length === 0) return
+  events.onMaterialized?.({ workflowId, actor, nodeIds })
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
@@ -100,14 +113,13 @@ function notifyAgentMaterialization(
     ...materialized,
     ...liveAddedNodeIds(added, graph)
   ])
-  const nodeIds = [...pendingLiveNodeIds].filter((id) => available.has(id))
-  for (const nodeId of nodeIds) pendingLiveNodeIds.delete(nodeId)
-  if (nodeIds.length === 0) return
-  events.onMaterialized?.({
-    workflowId: update.workflowId,
-    actor: isLiveAgentUpdate ? update.actor : undefined,
-    nodeIds
-  })
+  emitPendingMaterializations(
+    update.workflowId,
+    isLiveAgentUpdate ? update.actor : undefined,
+    available,
+    pendingLiveNodeIds,
+    events
+  )
 }
 
 interface DocResetDetail {
@@ -309,6 +321,16 @@ function startAgentCrdtFollower(
     } catch {
       return new Set()
     }
+  }
+  const reconcileAndReportPending = (workflowId: string): void => {
+    const materialized = projection.reconcileLiveGraph(workflowId)
+    emitPendingMaterializations(
+      workflowId,
+      undefined,
+      new Set(materialized),
+      pendingLiveNodeIds,
+      events
+    )
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -523,7 +545,7 @@ function startAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      projection.reconcileLiveGraph(boundWorkflowId)
+      reconcileAndReportPending(boundWorkflowId)
     }
   })
   // Drive the bridge's intent, then give the sender the same eager signal the
@@ -571,7 +593,7 @@ function startAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
-          if (justActivated) projection.reconcileLiveGraph(persisted)
+          if (justActivated) reconcileAndReportPending(persisted)
           return
         }
         lifecycle.clearPersistedDocId()
@@ -591,7 +613,7 @@ function startAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
-      if (justActivated) projection.reconcileLiveGraph(next)
+      if (justActivated) reconcileAndReportPending(next)
     },
     { immediate: true }
   )
