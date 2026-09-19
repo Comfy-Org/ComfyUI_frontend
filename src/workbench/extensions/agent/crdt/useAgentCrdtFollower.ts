@@ -259,6 +259,37 @@ function startAgentCrdtFollower(
       sender.abortIfUnbound()
     }
   }
+  const recordUpdateOutcome = (applied: boolean): void => {
+    outcomes.value = applied
+      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+  }
+
+  const recordDocNodeChanges = (): void => {
+    const ids = currentDocNodeIds()
+    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
+    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
+    if (added.length > 0 || removed.length > 0)
+      recordDevEvent('doc_nodes_changed', { added, removed })
+    knownDocNodeIds = ids
+  }
+
+  const applyIncomingUpdate = (update: DocUpdate, frameType: string): void => {
+    lifecycle.onDocumentUpdate()
+    updatesApplied.value = bridge.follower.updatesApplied
+    lastFrameType.value = frameType
+    const applied = projection.applyFrame(update)
+    recordUpdateOutcome(applied)
+    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    recordDevEvent('doc_update', {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      actor: update.actor,
+      bytes: update.update instanceof Uint8Array ? update.update.length : null
+    })
+    recordDocNodeChanges()
+  }
+
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
@@ -270,32 +301,10 @@ function startAgentCrdtFollower(
       !isTargetActive.value ||
       update.workflowId !== subscribedWorkflowId.value
     ) {
-      outcomes.value = {
-        ...outcomes.value,
-        skipped: outcomes.value.skipped + 1
-      }
+      recordUpdateOutcome(false)
       return
     }
-    lifecycle.onDocumentUpdate()
-    updatesApplied.value = bridge.follower.updatesApplied
-    lastFrameType.value = event.type
-    const applied = projection.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
-    recordDevEvent('doc_update', {
-      workflowId: update.workflowId,
-      seq: update.seq,
-      actor: update.actor,
-      bytes: update.update instanceof Uint8Array ? update.update.length : null
-    })
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    knownDocNodeIds = ids
+    applyIncomingUpdate(update, event.type)
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -457,12 +466,60 @@ function startAgentCrdtFollower(
     else bridge.subscribe(next)
     sender.abortIfUnbound()
   }
+  const unbindCurrentWorkflow = (): void => {
+    if (boundWorkflowId === null) return
+    projection.unbind(boundWorkflowId)
+    boundWorkflowId = null
+  }
+  const bindWorkflow = (workflowId: string): void => {
+    if (boundWorkflowId === workflowId) return
+    unbindCurrentWorkflow()
+    projection.bind(workflowId, bridge.follower)
+    boundWorkflowId = workflowId
+  }
+  const disconnectTarget = (next: string | null): void => {
+    if (next !== null) initialBind = false
+    unbindCurrentWorkflow()
+    subscribedWorkflowId.value = null
+    retarget(null)
+  }
+  const restorePersistedTarget = (justActivated: boolean): void => {
+    const persisted = initialBind ? lifecycle.readPersistedDocId() : null
+    initialBind = false
+    if (persisted === null) {
+      lifecycle.clearPersistedDocId()
+      disconnectTarget(null)
+      return
+    }
+    recordDevEvent('rebind', { workflowId: persisted })
+    bindWorkflow(persisted)
+    subscribedWorkflowId.value = persisted
+    retarget(persisted)
+    if (justActivated) projection.reconcileLiveGraph(persisted)
+  }
+  const activateTarget = (next: string, justActivated: boolean): void => {
+    initialBind = false
+    bindWorkflow(next)
+    subscribedWorkflowId.value = next
+    retarget(next)
+    if (justActivated) projection.reconcileLiveGraph(next)
+  }
   watch(
     [workflowId, isTargetActive],
     (
       [next, active],
       previous: [string | null | undefined, boolean | undefined] | undefined
     ) => {
+      // An acknowledgement of the doc we already follow (FE-1969: a persisted
+      // rebind lands first, then the reactive layer names the same id) is not
+      // a retarget. `bridge.subscribe(same)` is a `reconcile()` no-op because
+      // `sentWorkflowId === desired`, so running the reset below would zero
+      // `connected` and cancel the stale probe and any pending retry with no
+      // frame on its way to restore them. Safe to skip the rest: the inactive
+      // branch nulls `subscribedWorkflowId`, so an activation edge can never
+      // match here, and `initialBind` is already false on every path that
+      // leaves `subscribedWorkflowId` set.
+      if (active && next !== null && next === subscribedWorkflowId.value) return
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
@@ -471,48 +528,14 @@ function startAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       if (!active) {
-        if (next !== null) initialBind = false
-        if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        disconnectTarget(next)
         return
       }
       if (next === null) {
-        const persisted = initialBind ? lifecycle.readPersistedDocId() : null
-        initialBind = false
-        if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
-          if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-            projection.bind(persisted, bridge.follower)
-            boundWorkflowId = persisted
-          }
-          subscribedWorkflowId.value = persisted
-          retarget(persisted)
-          if (justActivated) projection.reconcileLiveGraph(persisted)
-          return
-        }
-        lifecycle.clearPersistedDocId()
-        if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        restorePersistedTarget(justActivated)
         return
       }
-      initialBind = false
-      if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-        projection.bind(next, bridge.follower)
-        boundWorkflowId = next
-      }
-      subscribedWorkflowId.value = next
-      retarget(next)
-      if (justActivated) projection.reconcileLiveGraph(next)
+      activateTarget(next, justActivated)
     },
     { immediate: true }
   )
