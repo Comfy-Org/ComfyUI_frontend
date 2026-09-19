@@ -416,6 +416,24 @@ describe('WidgetSelectDefault', () => {
       ).toHaveAttribute('aria-invalid', 'true')
     })
 
+    // An agent-created combo reaches the renderer before its option list does
+    // (widgetValueStore placeholder `options: {}`), and a remote combo starts
+    // with `values: []` until its inventory loads. Neither list can judge the
+    // value, so neither should paint the stale-value ring.
+    it.fails.for([
+      { name: 'no values key', values: undefined },
+      { name: 'an empty list', values: [] }
+    ])(
+      'does not mark a legal value as invalid while the options list is $name',
+      ({ values }) => {
+        renderComponent(createWidget(values), 'euler')
+
+        const trigger = screen.getByTestId('widget-select-default-trigger')
+        expect(trigger).toHaveTextContent('euler')
+        expect(trigger).not.toHaveAttribute('aria-invalid')
+      }
+    )
+
     it('does not mark a valid numeric option as invalid', () => {
       renderComponent(createWidget([5, 10]), 5)
 

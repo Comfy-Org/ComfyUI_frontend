@@ -1,0 +1,215 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-repro-combo-write-flux2",
+    "response_side": "synthesized",
+    "note": "SYNTHESIZED repro for the agent-tab combo red-ring bug (hypothesis B: the COMFY_DYNAMICCOMBO_V3 `model` selector on Flux2ImageNode). NOT a recording. The seed node and the add_node op are the exact node snapshots comfy-cli 1.20.0 `workflow add-node Flux2ImageNode` emits against the cloud object_info (widget catalog sha256:325ecf69f696423452e00348dc4ff5700e134a630c5e358ca48e09cf48b7a159; widget_order prompt, model, model.width, model.height, seed, control_after_generate; inputs: []), and the set_widget op is `workflow set-widget 1.model \"Flux.2 [max]\"`, minus the wire envelope the replay remints. The assistant text is placeholder prose."
+  },
+  "workflow": {
+    "id": "8b2d4f6a-1c3e-4a5b-9d7f-2e4c6a8b0d13",
+    "name": "Flux image",
+    "catalog": {
+      "types": {
+        "Flux2ImageNode": {
+          "widget_order": [
+            "prompt",
+            "model",
+            "model.width",
+            "model.height",
+            "seed",
+            "control_after_generate"
+          ]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 1,
+          "type": "Flux2ImageNode",
+          "pos": [0, 0],
+          "size": [400, 300],
+          "flags": {},
+          "order": 0,
+          "mode": 0,
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": []
+            }
+          ],
+          "properties": {},
+          "widgets_values": [
+            "a red bicycle on a pier at dusk",
+            "Flux.2 [pro]",
+            1024,
+            768,
+            0,
+            "fixed"
+          ]
+        }
+      ],
+      "links": []
+    }
+  },
+  "turns": [
+    {
+      "request": {
+        "content": "Switch to the tab 'Flux image', then switch the Flux.2 Image node to the Flux.2 [max] model. Change nothing else."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab first."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Flux image",
+              "workflow_id": "8b2d4f6a-1c3e-4a5b-9d7f-2e4c6a8b0d13"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 12,
+              "status": "success",
+              "tool_call_id": "toolu_repro_flux2_switch_tab",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 12
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "set_widget",
+              "old": "Flux.2 [pro]",
+              "value": "Flux.2 [max]",
+              "widget": "model",
+              "node_id": 1
+            }
+          ],
+          "at_ms": 2400
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 253,
+              "status": "success",
+              "tool_call_id": "toolu_repro_flux2_apply_ops",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 2400
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "The Flux.2 Image node on the \"Flux image\" tab now generates with Flux.2 [max]. Nothing else was touched."
+            }
+          },
+          "at_ms": 3900
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {}
+          },
+          "at_ms": 3904
+        }
+      ]
+    },
+    {
+      "request": {
+        "content": "Add a second Flux.2 Image node to the right of the first one and leave it unconnected."
+      },
+      "response": [
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [500, 0],
+              "node": {
+                "id": 6235959819245,
+                "type": "Flux2ImageNode",
+                "pos": [500, 0],
+                "size": [240, 206],
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [
+                  {
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": ["", "Flux.2 [pro]", 1024, 768, 0, "fixed"]
+              },
+              "node_id": 6235959819245,
+              "class_type": "Flux2ImageNode"
+            }
+          ],
+          "at_ms": 1800
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 180,
+              "status": "success",
+              "tool_call_id": "toolu_repro_flux2_add_node",
+              "tool_name": "add_node"
+            }
+          },
+          "at_ms": 1800
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "Added a second Flux.2 Image node to the right of the first one. It is not connected to anything yet."
+            }
+          },
+          "at_ms": 3200
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {}
+          },
+          "at_ms": 3204
+        }
+      ]
+    }
+  ]
+}
