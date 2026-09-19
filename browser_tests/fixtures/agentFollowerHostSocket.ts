@@ -1,6 +1,11 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Op } from '@comfyorg/comfy-multi-player'
+import { z } from 'zod'
 
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -8,10 +13,40 @@ import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
+/** A doc frame the follower put on the wire, as the host received it. */
+export interface ClientDocFrame {
+  type: 'doc_subscribe' | 'doc_unsubscribe' | 'doc_ops'
+  workflowId: string
+  ops: { op: string; node_id?: string | number }[]
+}
+
+const zClientDocFrame = z.object({
+  type: z.enum(['doc_subscribe', 'doc_unsubscribe', 'doc_ops']),
+  data: z.object({
+    workflow_id: z.string(),
+    ops: z
+      .array(
+        z
+          .object({
+            op: z.string(),
+            node_id: z.union([z.string(), z.number()]).optional()
+          })
+          .passthrough()
+      )
+      .default([])
+  })
+})
+
+const zClientDocOps = z.object({
+  workflow_id: z.string(),
+  ops: z.array(z.unknown())
+})
+
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private socket: WebSocketRoute | null = null
   private subscribes = 0
+  private readonly clientDocFrames: ClientDocFrame[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -74,9 +109,14 @@ export class AgentFollowerHostSocket {
   private onClientFrame(raw: string | Buffer): void {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
+    this.recordClientDocFrame(frame)
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
+    if (type === 'doc_ops') this.answerDocOps(data)
+    else if (type === 'doc_subscribe') this.answerSubscribe(data)
+  }
+
+  private answerSubscribe(data: unknown): void {
+    if (typeof data !== 'object' || data === null) return
     const { workflow_id, state_vector_b64 } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
@@ -89,8 +129,52 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed?.()
   }
 
+  // Applies the follower's human ops to the host document and answers the
+  // way the relay does: a doc_ops_result per batch, then the doc_update echo.
+  private answerDocOps(data: unknown): void {
+    const parsed = zClientDocOps.safeParse(data)
+    if (!parsed.success) return
+    const { workflow_id, ops } = parsed.data
+    if (workflow_id !== this.workflowId) {
+      this.send({
+        type: 'doc_ops_result',
+        data: {
+          v: DOC_PROTOCOL_VERSION,
+          workflow_id,
+          ok: false,
+          applied: [],
+          skipped: [],
+          code: 'unknown_workflow',
+          message: 'the fake host serves one workflow'
+        }
+      })
+      return
+    }
+    // The applier is the only judge of a wire op; this host reads only the
+    // workflow id off the envelope and hands the ops over untouched.
+    const { result, update } = this.host.applyClientOps(ops as Op[])
+    this.send(result)
+    if (update) this.send(update)
+  }
+
+  private recordClientDocFrame(frame: unknown): void {
+    const parsed = zClientDocFrame.safeParse(frame)
+    if (!parsed.success) return
+    const { type, data } = parsed.data
+    this.clientDocFrames.push({
+      type,
+      workflowId: data.workflow_id,
+      ops: data.ops
+    })
+  }
+
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  /** Every subscribe, unsubscribe and human-ops frame the follower has sent, in order. */
+  docFrames(): readonly ClientDocFrame[] {
+    return this.clientDocFrames
   }
 }

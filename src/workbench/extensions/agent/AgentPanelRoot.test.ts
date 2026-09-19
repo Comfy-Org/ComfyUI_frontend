@@ -190,6 +190,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 }))
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useRestoredWorkflowTabStore } from '@/platform/workflow/persistence/stores/restoredWorkflowTabStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -2611,6 +2612,7 @@ describe('AgentPanelRoot workflow binding', () => {
       JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
     )
     const restored = addTab('workflows/minted.json', { isTemporary: true })
+    useRestoredWorkflowTabStore().markRestored(restored)
     useAgentConversationStore().setThreadId('th-1')
     const bodies: unknown[] = []
     const history: AgentMessages = [
@@ -4981,6 +4983,61 @@ describe('AgentPanelRoot workflow binding', () => {
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('a new chat after clearing the canvas keeps the saved target and posts the cleared canvas as its first draft', async () => {
+    const tab = makeTab('wf-42')
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: [{ id: 1, type: 'LoadImage' }]
+    })
+    const posted: { threadId: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          posted.push({
+            threadId: url.split('/threads/')[1].split('/')[0],
+            body: JSON.parse(String(init.body))
+          })
+          return json(202, ack('wf-42', `m-${posted.length}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-42', name: 'current' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('build a duck')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    expect(posted[0]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [{ id: 1 }] } } }
+    })
+
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42', nodes: [] })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    await sendFromComposer('start over')
+
+    expect(posted[1]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [] } } }
+    })
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
   })
 
   it('does not bind an unsaved tab to a workflow that already has an open tab', async () => {

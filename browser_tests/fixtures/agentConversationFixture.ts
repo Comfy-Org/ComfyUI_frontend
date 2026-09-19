@@ -19,11 +19,13 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -584,6 +586,21 @@ class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  // Every subscribe, unsubscribe and human-ops frame the follower has sent, in order.
+  docFrames(): readonly ClientDocFrame[] {
+    return this.hostSocket.docFrames()
+  }
+
+  // Node ids the host document holds right now.
+  hostNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes)
+  }
+
+  // Applies ops on the host side, as the agent would mid-turn, and pushes the update.
+  applyHostOps(ops: RecordedGraphOperation[]): void {
+    this.hostSocket.send(this.host.apply(ops))
   }
 }
 

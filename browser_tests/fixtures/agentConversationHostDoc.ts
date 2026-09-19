@@ -6,6 +6,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
+  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -95,6 +96,57 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  // Human ops arrive already minted (op_id, actor, base_version, stamp), so
+  // they go to the applier as-is and every outcome becomes the wire result
+  // the relay would send: no-op and LWW-dropped writes are skipped, the first
+  // rejection fails the batch and leaves the rest unapplied, and a doc_update
+  // echoes whatever was applied. Applying the client's own ops through the
+  // real library is what makes the follower's echo path production-shaped.
+  applyClientOps(ops: Op[]): { result: HostFrame; update: HostFrame | null } {
+    const before = Y.encodeStateVector(this.doc)
+    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const applied = outcomes.flatMap((outcome) =>
+      outcome.outcome === 'applied' ? [outcome.op_id] : []
+    )
+    const skipped = outcomes.flatMap((outcome) =>
+      outcome.outcome === 'no-op' || outcome.outcome === 'lww-dropped'
+        ? [outcome.op_id]
+        : []
+    )
+    const rejected = outcomes.find((outcome) => outcome.outcome === 'rejected')
+    const failed =
+      rejected?.outcome === 'rejected'
+        ? {
+            index: outcomes.indexOf(rejected),
+            op_id: rejected.op_id,
+            code: rejected.reason.code,
+            message: rejected.reason.message
+          }
+        : undefined
+    if (applied.length > 0) this.seq += 1
+    const result: HostFrame = {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: failed === undefined,
+        seq: this.seq,
+        applied,
+        skipped,
+        ...(failed !== undefined && { failed })
+      }
+    }
+    const update =
+      applied.length > 0
+        ? this.updateFrame(
+            Y.encodeStateAsUpdate(this.doc, before),
+            ops[0].actor,
+            applied
+          )
+        : null
+    return { result, update }
   }
 
   private updateFrame(
