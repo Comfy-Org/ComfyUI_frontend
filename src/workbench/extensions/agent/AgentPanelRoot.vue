@@ -81,10 +81,8 @@ import type {
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
-import {
-  useAgentConversationStore,
-  type ConversationEntry
-} from './stores/agent/agentConversationStore'
+import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
   TurnOrigin,
   WorkflowTurnContext

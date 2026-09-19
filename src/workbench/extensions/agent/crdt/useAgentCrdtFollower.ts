@@ -27,10 +27,8 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
-import {
-  LayoutFollowerBridge,
-  type ClassifiedDocUpdate
-} from './layoutFollowerBridge'
+import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
