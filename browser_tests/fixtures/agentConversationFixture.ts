@@ -24,6 +24,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -38,6 +39,8 @@ const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
+// Screen point a node is panned to before it is clicked; left of the panel.
+const REVEAL_AT = { x: 400, y: 400 }
 const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -79,6 +82,12 @@ interface RenderedWidgetRow {
 interface PanelCounts {
   streams: number
   summaries: number
+}
+
+/** One live graph node as the canvas holds it. */
+interface LiveGraphNode {
+  id: string
+  type: string
 }
 
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
@@ -136,6 +145,10 @@ async function withTimeout(
 class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
+  /** The prompt editor (a ProseMirror contenteditable, not a textarea). */
+  readonly composer: Locator
+  /** Every assistant text block the panel has rendered, in order. */
+  readonly transcript: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -173,6 +186,8 @@ class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
+    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.transcript = this.streams
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
   }
@@ -256,8 +271,7 @@ class AgentConversationHarness {
 
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
-    await composer.fill(content)
+    await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     // Replay frames are dropped until the page has applied the ack's thread id.
     // useAgentSession records the user turn straight after storing that id, so
@@ -290,6 +304,83 @@ class AgentConversationHarness {
       if (index === this.conversation.turns[turn].cancel_after)
         await this.stopTurn(turn)
     }
+  }
+
+  // Lands one batch of agent graph operations on the document outside any
+  // recorded turn, the way a later tool call of the same thread would.
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.hostSocket.waitForSubscribe()
+    this.hostSocket.send(this.host.apply(ops))
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  // The nodes the live graph holds right now, whatever put them there.
+  graphNodes(): Promise<LiveGraphNode[]> {
+    return this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => ({
+        id: String(node.id),
+        type: node.type
+      }))
+    )
+  }
+
+  // Pans the canvas so `nodeId` sits clear of the docked panel, then selects
+  // it through its header the way a user would. The replayed graph extends
+  // past the seed, so an agent-added node can land under the panel, where a
+  // header click would never be delivered.
+  async selectNode(nodeId: string): Promise<void> {
+    await this.page.evaluate(
+      ({ id, at }) => {
+        const canvas = window.app!.canvas
+        const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+        if (!node) throw new Error(`no live node ${id}`)
+        const { scale } = canvas.ds
+        canvas.ds.offset[0] = at.x / scale - node.pos[0]
+        canvas.ds.offset[1] = at.y / scale - node.pos[1]
+        canvas.setDirty(true, true)
+      },
+      { id: nodeId, at: REVEAL_AT }
+    )
+    const header = this.vueNodes
+      .getNodeLocator(nodeId)
+      .locator('.lg-node-header')
+    await expect
+      .poll(async () => (await header.boundingBox())?.x ?? -1)
+      .toBeGreaterThan(0)
+    await header.click()
+    await expect(this.vueNodes.getNodeLocator(nodeId)).toHaveClass(
+      /outline-node-component-outline/
+    )
+  }
+
+  // The one live node of `type`; a recording is expected to hold exactly one.
+  async nodeOfType(type: string): Promise<LiveGraphNode> {
+    const matches = (await this.graphNodes()).filter(
+      (node) => node.type === type
+    )
+    if (matches.length !== 1)
+      throw new Error(
+        `expected exactly one live ${type} node, found ${matches.length}`
+      )
+    return matches[0]
+  }
+
+  // Live nodes that were not on the graph when `before` was taken.
+  async nodesAddedSince(before: LiveGraphNode[]): Promise<LiveGraphNode[]> {
+    const known = new Set(before.map((node) => node.id))
+    return (await this.graphNodes()).filter((node) => !known.has(node.id))
+  }
+
+  // One turn landed on the canvas, without the panel and wiring assertions
+  // runTurns() makes; for specs that act on the replayed graph rather than
+  // judge the replay.
+  async replayTurn(turn: number): Promise<void> {
+    await this.sendPrompt(turn)
+    await this.replayResponse(turn)
+    await this.waitForTurnComplete()
+    await expect(this.page.getByTestId('node-title')).toHaveCount(
+      this.host.projection().nodes.length
+    )
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.

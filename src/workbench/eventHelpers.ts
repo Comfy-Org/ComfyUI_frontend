@@ -4,12 +4,23 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * Utility functions for handling workbench events
  */
 
-/**
- * Check if there is selected text in the document.
- */
-function hasTextSelection(): boolean {
+function selectedText(): Selection | null {
   const selection = window.getSelection()
   return selection !== null && selection.toString().trim().length > 0
+    ? selection
+    : null
+}
+
+/**
+ * Collapse a text selection that starts outside `container`, the way a plain
+ * mousedown would before the canvas called `preventDefault()` on it. A copy
+ * or paste that follows a click on the graph then reaches the graph instead
+ * of the stale selection.
+ */
+export function collapseTextSelectionOutside(container: Element): void {
+  const selection = selectedText()
+  if (selection?.anchorNode && !container.contains(selection.anchorNode))
+    selection.removeAllRanges()
 }
 
 /**
@@ -23,6 +34,7 @@ function hasTextSelection(): boolean {
 export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
   const isTextInput =
     target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable) ||
     (target instanceof HTMLInputElement &&
       ![
         'button',
@@ -36,5 +48,5 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'search',
         'submit'
       ].includes(target.type))
-  return isTextInput || useCanvasStore().linearMode || hasTextSelection()
+  return isTextInput || useCanvasStore().linearMode || selectedText() !== null
 }
