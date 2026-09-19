@@ -24,6 +24,13 @@ export const Default: Story = {
   args: { name: 'reference.png' }
 }
 
+export const ImagePreview: Story = {
+  args: {
+    name: 'reference.png',
+    previewUrl: '/assets/images/default-template.png'
+  }
+}
+
 export const LongName: Story = {
   args: {
     name: 'an-extremely-long-reference-image-filename-that-must-truncate-in-the-prompt.png'

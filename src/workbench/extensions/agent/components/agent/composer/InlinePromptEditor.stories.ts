@@ -48,12 +48,15 @@ const meta: Meta<typeof InlinePromptEditor> = {
     })
   ],
   args: {
-    label: 'Describe what you want to build',
-    modelValue: prompt
+    label: 'Describe what you want to build'
   }
 }
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const References: Story = {}
+export const Default: Story = {}
+
+export const References: Story = {
+  args: { modelValue: prompt }
+}

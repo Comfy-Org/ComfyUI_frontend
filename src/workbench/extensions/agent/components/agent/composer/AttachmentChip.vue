@@ -42,6 +42,7 @@ const kindIconClass = computed(() =>
     <template #icon>
       <span
         v-if="uploading"
+        role="status"
         :aria-label="$t('agent.uploading')"
         class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
       />

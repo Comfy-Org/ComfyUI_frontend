@@ -41,6 +41,7 @@ const tagClass = computed(() =>
 )
 
 function handleKeydown(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
   if (!interactive || as === 'button') return
   if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
   if (event.key === 'Enter' && event.currentTarget instanceof HTMLElement)
@@ -48,6 +49,7 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 function handleKeyup(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
   if (!interactive || as === 'button' || event.key !== ' ') return
   event.preventDefault()
   if (event.currentTarget instanceof HTMLElement) event.currentTarget.click()
