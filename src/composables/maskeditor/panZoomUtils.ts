@@ -2,6 +2,7 @@ import type { Offset, Point } from '@/extensions/core/maskeditor/types'
 
 const ZOOM_MIN = 0.2
 const ZOOM_MAX = 10.0
+const WHEEL_DELTA_REFERENCE = 100
 
 interface FitViewParams {
   rootWidth: number
@@ -59,8 +60,16 @@ export function clampZoom(zoom: number): number {
   return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom))
 }
 
-export function getWheelZoomFactor(deltaY: number): number {
-  return deltaY < 0 ? 1.1 : 0.9
+export function getWheelZoomFactor(
+  deltaY: number,
+  deltaMode: number = WheelEvent.DOM_DELTA_PIXEL
+): number {
+  if (deltaY === 0) return 1
+
+  const baseFactor = deltaY < 0 ? 1.1 : 0.9
+  if (deltaMode !== WheelEvent.DOM_DELTA_PIXEL) return baseFactor
+
+  return Math.pow(baseFactor, Math.abs(deltaY) / WHEEL_DELTA_REFERENCE)
 }
 
 export function calculateZoomAroundPoint(
