@@ -160,6 +160,30 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Answer the app's websocket handshake with a `feature_flags` message, which
+   * is the channel `api.serverFeatureFlags` is actually populated from
+   * (`api.ts:1012`).
+   *
+   * This is the only seam early enough for a flag a **boot-time** read depends
+   * on. `seedServerFlags()` hooks the `window.app` assignment in `GraphCanvas`'s
+   * `onMounted`, which is already too late for anything the billing gate reads
+   * while resolving auth and workspace — and `resolveFailClosedBooleanFlag` has
+   * no localStorage or session override path by design, so `ff:` cannot reach
+   * these flags either.
+   *
+   * Must be called before `page.goto()`. The socket is answered locally and
+   * never connected to a server, which suits a fully mocked cloud spec: the
+   * app's other websocket traffic has no backend to reach in one anyway.
+   */
+  async serveServerFlagsOnHandshake(
+    flags: Record<string, unknown>
+  ): Promise<void> {
+    await this.page.routeWebSocket(/\/ws/, (socket) => {
+      socket.send(JSON.stringify({ type: 'feature_flags', data: flags }))
+    })
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

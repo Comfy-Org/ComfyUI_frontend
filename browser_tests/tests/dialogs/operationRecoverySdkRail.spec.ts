@@ -185,8 +185,14 @@ function transports(requests: Request[]): string[] {
   return requests.map((request) => request.resourceType())
 }
 
+/**
+ * Answered on the websocket handshake rather than seeded on `window.app`:
+ * recovery runs while the billing gate resolves, before `GraphCanvas`'s
+ * `onMounted` assigns `window.app`, so `seedServerFlags()` lands after the rail
+ * has already been chosen — which is what the first run of this spec showed.
+ */
 async function enableSdkRail(page: Page) {
-  await new FeatureFlagHelper(page).seedServerFlags({
+  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
     billing_sdk_subscription_enabled: true
   })
 }
