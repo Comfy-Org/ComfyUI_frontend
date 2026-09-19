@@ -124,6 +124,10 @@ const options: {
           </div>
         </div>
 
+        <span role="status" class="sr-only">
+          {{ savingMode === null ? '' : t('g.saving') }}
+        </span>
+
         <DropdownMenuRadioGroup
           :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
@@ -171,23 +175,14 @@ const options: {
                 </span>
               </span>
               <span
-                v-if="savingMode === option.mode"
-                role="status"
-                class="mt-0.5 flex size-4 shrink-0 items-center justify-center"
-              >
-                <span
-                  aria-hidden="true"
-                  class="icon-[lucide--loader-circle] size-4 text-muted-foreground motion-safe:animate-spin"
-                />
-                <span class="sr-only">{{ t('g.saving') }}</span>
-              </span>
-              <span
-                v-else
+                aria-hidden="true"
                 :class="
                   cn(
                     'mt-0.5 size-4 shrink-0',
-                    store.mode === option.mode &&
-                      'icon-[lucide--check] text-base-foreground'
+                    savingMode === option.mode
+                      ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
+                      : store.mode === option.mode &&
+                          'icon-[lucide--check] text-base-foreground'
                   )
                 "
               />

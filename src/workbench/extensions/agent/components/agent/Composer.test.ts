@@ -524,7 +524,7 @@ describe('Composer', () => {
           })
         ).toBeChecked()
       )
-      expect(screen.queryByRole('status')).toBeNull()
+      expect(screen.getByRole('status')).toHaveTextContent('')
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
@@ -594,11 +594,11 @@ describe('Composer', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await screen.findByRole('menu')
-      ;(
-        screen.getByRole('menuitemradio', {
+      screen
+        .getByRole('menuitemradio', {
           name: /Auto-run without approval/
         })
-      ).focus()
+        .focus()
       await userEvent.keyboard('{Enter}')
 
       await vi.waitFor(() => expect(store.mode).toBe('auto'))

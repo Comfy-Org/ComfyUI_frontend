@@ -1,7 +1,10 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+
+import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -48,6 +51,64 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       // the trigger or the panel.
       await page.keyboard.press('Escape')
       await expect(popoverHeading).toBeHidden()
+    })
+  })
+
+  // Picking a mode writes it straight through, so arrow keys must not commit.
+  // The roving focus that guarantees it only behaves in a real browser.
+  test('Arrow keys browse the modes and Enter applies the focused one', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const savedModes: string[] = []
+    await page.route('**/api/agent/run-mode', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'PUT')
+        return route.fulfill(jsonRoute({ mode: 'ask_approval' }))
+      const saved = zAgentRunMode.parse(request.postDataJSON())
+      savedModes.push(saved.mode)
+      return route.fulfill(jsonRoute(saved))
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+
+    const askTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const askOption = page.getByRole('menuitemradio', {
+      name: new RegExp(enMessages.agent.runModeAsk)
+    })
+    const autoOption = page.getByRole('menuitemradio', {
+      name: new RegExp(enMessages.agent.runModeAuto)
+    })
+
+    await askTrigger.click()
+    await expect(
+      page.getByText(enMessages.agent.runPermissions, { exact: true })
+    ).toBeVisible()
+
+    await test.step('moving focus leaves the saved mode alone', async () => {
+      await page.keyboard.press('ArrowDown')
+      await expect(askOption).toBeFocused()
+      await page.keyboard.press('ArrowDown')
+      await expect(autoOption).toBeFocused()
+      await expect(askOption).toBeChecked()
+      expect(savedModes).toEqual([])
+    })
+
+    await test.step('Enter applies the focused mode with no save step', async () => {
+      await page.keyboard.press('Enter')
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.runModeTriggerAuto,
+          exact: true
+        })
+      ).toBeVisible()
+      expect(savedModes).toEqual(['auto'])
     })
   })
 })
