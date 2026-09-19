@@ -2,6 +2,7 @@
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
+import WorkflowActions from '../../../components/hub/WorkflowActions.vue'
 import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
 import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
 import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
@@ -154,27 +155,25 @@ const tagClass =
     </section>}
 
     <div class="grid gap-10 lg:grid-cols-12">
-      <div class="flex flex-col gap-10 lg:col-span-7">
-        {operations.length === 0 && template.thumbnails[0] && (
-          <img
-            src={template.thumbnails[0]}
-            alt={template.title}
-            loading="lazy"
-            decoding="async"
-            class="aspect-4/3 w-full rounded-3xl bg-hub-surface object-cover"
-            data-testid="workflow-media"
-          />
-        )}
-
-        <WorkflowRunsOn models={runsOn} />
-
+      <div class="flex flex-col gap-10 lg:col-span-8">
         <section data-testid="workflow-graph-section">
           <h2 class={sectionTitle}>{t('workshop.v2.workflow.graph')}</h2>
           <p class="mt-2 mb-4 text-sm text-content-muted">
             {t('workshop.v2.workflow.graphNote')}
           </p>
           <WorkflowGraph source={page.downloadUrl} client:visible />
+          <div class="mt-4">
+            <WorkflowActions
+              cloudUrl={cloudUrl}
+              runsHere={operations.length > 0}
+              downloadUrl={page.downloadUrl}
+              tutorialUrl={details.tutorialUrl}
+              client:load
+            />
+          </div>
         </section>
+
+        <WorkflowRunsOn models={runsOn} />
 
         <section class="grid gap-6 sm:grid-cols-2">
           {page.inputs.length > 0 && <div data-testid="workflow-inputs">
@@ -203,16 +202,25 @@ const tagClass =
         </section>
       </div>
 
-      <div class="max-lg:order-first lg:col-span-5">
-        <WorkflowAside
-          cloudUrl={cloudUrl}
-          runsHere={operations.length > 0}
-          downloadUrl={page.downloadUrl}
-          tutorialUrl={details.tutorialUrl}
-          weights={formatWeights(page.weightsBytes)}
-          customNodes={page.customNodes}
-          callsPartnerModel={page.callsPartnerModel}
-        />
+      <div class="max-lg:order-first lg:col-span-4">
+        <div class="flex flex-col gap-5 lg:sticky lg:top-28">
+          {operations.length === 0 && template.thumbnails[0] && (
+            <img
+              src={template.thumbnails[0]}
+              alt={template.title}
+              loading="lazy"
+              decoding="async"
+              class="aspect-4/3 w-full rounded-2xl bg-hub-surface object-cover"
+              data-testid="workflow-media"
+            />
+          )}
+
+          <WorkflowAside
+            weights={formatWeights(page.weightsBytes)}
+            customNodes={page.customNodes}
+            callsPartnerModel={page.callsPartnerModel}
+          />
+        </div>
       </div>
     </div>
 
