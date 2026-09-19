@@ -1,5 +1,4 @@
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -76,7 +75,6 @@ async function renderScreen({
 }
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
   vi.mocked(useWorkflowTemplatesStore().getTemplateByName).mockImplementation(
     (name) =>
       useWorkflowTemplatesStore().enhancedTemplates.find(
@@ -292,9 +290,9 @@ describe('GettingStartedScreen', () => {
 
       await pickFirstTemplate()
 
-      await waitFor(() =>
-        expect(vi.mocked(useToastStore().add)).toHaveBeenCalled()
-      )
+      expect(
+        await screen.findByText(enMessages.gettingStarted.templateFailed)
+      ).toBeVisible()
       expect(
         mocks.dismiss,
         'A failed load must not dismiss the screen; the user would be left on a bare canvas'

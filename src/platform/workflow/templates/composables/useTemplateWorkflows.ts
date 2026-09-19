@@ -1,8 +1,11 @@
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -11,7 +14,18 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+
+function updateTemplateEducation(
+  isPartnerNode: boolean | undefined,
+  loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
+) {
+  const educationStore = usePartnerNodesEducationStore()
+  if (isPartnerNode && typeof loadedWorkflow === 'object') {
+    educationStore.requestCard(loadedWorkflow.key)
+  } else {
+    educationStore.dismissCard()
+  }
+}
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -20,7 +34,13 @@ export function useTemplateWorkflows() {
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
-  const loadingTemplateId = ref<string | null>(null)
+  let loadController: AbortController | undefined
+  const loadingTemplateId = computed(
+    () => workflowTemplatesStore.loadingTemplateId
+  )
+  onScopeDispose(() => {
+    workflowTemplatesStore.cancelTemplateLoad(loadController)
+  })
 
   // Computed
   const isTemplatesLoaded = computed(() => workflowTemplatesStore.isLoaded)
@@ -92,89 +112,120 @@ export function useTemplateWorkflows() {
       .trim()
   }
 
-  /**
-   * Loads a workflow template
-   */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
-    if (!isTemplatesLoaded.value) return false
+  function resolveTemplateSource(id: string, sourceModule: string) {
+    if (sourceModule !== 'all') return sourceModule
 
-    loadingTemplateId.value = id
-    let json
+    const group = allTemplateGroups.value.find(
+      (group) =>
+        group.label ===
+        t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+    )
+    const category = group?.modules.find(
+      (module) => module.moduleName === 'all'
+    )
+    const template = category?.templates.find(
+      (template) => template.name === id
+    )
+    if (template?.sourceModule) return template.sourceModule
 
+    showTemplateError(
+      t('templateWorkflows.error.templateNotFound', { templateName: id })
+    )
+  }
+
+  function showTemplateError(detail: string) {
+    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+  }
+
+  async function loadTemplateData(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const json = await fetchTemplateJson(id, sourceModule, signal)
+    signal.throwIfAborted()
+    const template = workflowTemplatesStore.enhancedTemplates.find(
+      (template) =>
+        template.name === id && template.sourceModule === sourceModule
+    )
+    return { json, template }
+  }
+
+  async function loadWorkflowTemplate(
+    id: string,
+    sourceModule: string,
+    {
+      onGraphLoadSettled
+    }: { onGraphLoadSettled?: (loaded: boolean) => void } = {}
+  ) {
+    if (!isTemplatesLoaded.value) {
+      showTemplateError(t('templateWorkflows.error.loading'))
+      return false
+    }
+    const controller = workflowTemplatesStore.startTemplateLoad(id)
+    if (!controller) return false
+    loadController = controller
     try {
-      // Handle "All" category as a special case
-      if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-        )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
-        )
-        const template = allCategory?.templates.find((t) => t.name === id)
-
-        if (!template || !template.sourceModule) return false
-
-        // Use the stored source module for loading
-        sourceModule = template.sourceModule
-      }
-
-      // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
+      const source = resolveTemplateSource(id, sourceModule)
+      if (!source) return false
+      const data = await loadTemplateData(id, source, controller.signal)
+      controller.signal.throwIfAborted()
+      if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
+        return false
 
       const workflowName =
-        sourceModule === 'default'
-          ? t(`templateWorkflows.template.${id}`, id)
-          : id
-
+        source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
       useTelemetry()?.trackTemplate({
         workflow_name: id,
-        template_source: sourceModule
+        template_source: source
       })
 
       dialogStore.closeDialog()
-      // Bind the card to the workflow THIS load activated, not the global
-      // active one: asset scans keep loadGraphData pending, and the user can
-      // switch workflows in that window.
-      const loadedWorkflow = await app.loadGraphData(
-        json,
-        true,
-        true,
-        workflowName,
-        { openSource: 'template' }
-      )
+      let loaded = false
+      try {
+        const loadedWorkflow = await app.loadGraphData(
+          data.json,
+          true,
+          true,
+          workflowName,
+          { openSource: 'template' }
+        )
+        if (loadedWorkflow === false) return false
 
-      const template = workflowTemplatesStore.enhancedTemplates.find(
-        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
-      )
-      const educationStore = usePartnerNodesEducationStore()
-      if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
-        educationStore.requestCard(loadedWorkflow.key)
-      } else {
-        educationStore.dismissCard()
+        updateTemplateEducation(data.template?.isPartnerNode, loadedWorkflow)
+        loaded = true
+        return true
+      } finally {
+        onGraphLoadSettled?.(loaded)
       }
-
-      return true
     } catch (error) {
-      console.error('Error loading workflow template:', error)
+      if (controller.signal.aborted) return false
+      reportError(error, { errorType: 'error_loading_template' })
+      showTemplateError(t('templateWorkflows.error.loading'))
       return false
     } finally {
-      loadingTemplateId.value = null
+      workflowTemplatesStore.finishTemplateLoad(controller)
+      if (loadController === controller) loadController = undefined
     }
   }
 
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) => {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
+      return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
+        r.json()
+      )
     } else {
       return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`),
+        { signal }
       ).then((r) => r.json())
     }
   }

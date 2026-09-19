@@ -115,13 +115,6 @@ export function useTemplateUrlLoader() {
       )
 
       if (!success) {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('templateWorkflows.error.templateNotFound', {
-            templateName: templateParam
-          })
-        })
         return
       }
 
@@ -139,7 +132,7 @@ export function useTemplateUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate')
+        detail: t('templateWorkflows.error.loading')
       })
     } finally {
       cleanupUrlParams()
