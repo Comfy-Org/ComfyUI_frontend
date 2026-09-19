@@ -88,6 +88,15 @@ export interface OpSender {
    * (the ops may well have landed), not `undeliverable`.
    */
   abortIfUnbound(): void
+  /**
+   * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
+   * transmitted, 'undeliverable' otherwise) and every queued batch
+   * `undeliverable` NOW, in mint order, although the doc is still bound. A
+   * `doc_reset` replaced the document these ops were minted against; the
+   * human-authored draft that caused it already carries their effect, so
+   * re-addressing them to the new lineage would apply them twice.
+   */
+  abortAll(): void
   detach(): void
 }
 
@@ -235,6 +244,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
         settleUnbound(inFlight)
       }
+    },
+    abortAll() {
+      const queued = queue.splice(0)
+      if (inFlight) settleUnbound(inFlight)
+      for (const batch of queued)
+        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
     },
     detach() {
       detached = true
