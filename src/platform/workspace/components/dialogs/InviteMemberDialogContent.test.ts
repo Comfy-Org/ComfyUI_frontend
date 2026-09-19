@@ -292,7 +292,7 @@ describe('InviteMemberDialogContent', () => {
     }
 
     function mockInviteListAfterSend(invites: WorkspacePendingInvite[]) {
-      vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
+      mockFetchPendingInvites
         .mockResolvedValueOnce([])
         .mockResolvedValue(invites)
     }
@@ -441,7 +441,7 @@ describe('InviteMemberDialogContent', () => {
     })
 
     it('renders rows without Copy actions when the invite list fetch fails', async () => {
-      vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
+      mockFetchPendingInvites
         .mockResolvedValueOnce([])
         .mockRejectedValue(new Error('nope'))
       const consoleError = vi

@@ -1811,10 +1811,10 @@ describe('useTeamWorkspaceStore', () => {
         invited_at: '2024-01-01T00:00:00Z',
         expires_at: '2024-01-08T00:00:00Z'
       })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+      vi.mocked(mockWorkspaceAuthStore.initializeFromSession).mockReturnValue(
         true
       )
-      Object.assign(useWorkspaceAuthStore(), {
+      Object.assign(mockWorkspaceAuthStore, {
         currentWorkspace: mockTeamWorkspace
       })
 
@@ -1919,10 +1919,10 @@ describe('useTeamWorkspaceStore', () => {
         invited_at: '2024-02-01T00:00:00Z',
         expires_at: '2024-02-08T00:00:00Z'
       })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+      vi.mocked(mockWorkspaceAuthStore.initializeFromSession).mockReturnValue(
         true
       )
-      Object.assign(useWorkspaceAuthStore(), {
+      Object.assign(mockWorkspaceAuthStore, {
         currentWorkspace: mockTeamWorkspace
       })
 
