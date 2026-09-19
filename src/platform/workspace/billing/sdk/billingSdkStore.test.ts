@@ -5,6 +5,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -74,7 +75,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 const mockLoadStripe = vi.hoisted(() => vi.fn())
@@ -667,5 +667,116 @@ describe('useBillingSdkStore subscription commands', () => {
     await useBillingSdkStore().openPaymentPortal('https://app.example/')
 
     expect(harness.sdk.paymentMethods.invalidate).not.toHaveBeenCalled()
+  })
+})
+
+describe('useBillingSdkStore operation projections', () => {
+  const otherWorkspace = {
+    userId: 'uid-1',
+    workspaceId: 'ws-2',
+    role: 'owner'
+  } as const
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  })
+
+  it('reports a pending operation, and stops once it settles', () => {
+    const store = useBillingSdkStore()
+    expect(store.hasPendingOperations).toBe(false)
+
+    harness.publish(pendingTopup())
+    expect(store.hasPendingOperations).toBe(true)
+
+    harness.publish(settledTopup('succeeded'))
+    expect(store.hasPendingOperations).toBe(false)
+  })
+
+  it.for([
+    ['a pending subscribe is setting up', pendingSubscription(), true],
+    [
+      'one parked on a bank challenge is waiting on the customer, not setting up',
+      pendingSubscription({ authenticationState: 'requires_action' }),
+      false
+    ],
+    [
+      'one the customer must retry is not setting up either',
+      pendingSubscription({ authenticationState: 'failed_retryable' }),
+      false
+    ],
+    ['a top-up is not a subscription setup', pendingTopup(), false],
+    [
+      'another workspace’s subscribe does not set this one up',
+      pendingSubscription({ scope: otherWorkspace }),
+      false
+    ]
+  ] as const)('%s', ([, state, expected]) => {
+    const store = useBillingSdkStore()
+
+    harness.publish(state)
+
+    expect(store.isSettingUp).toBe(expected)
+  })
+
+  it('offers the subscription that is waiting on the customer here', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ id: 'op-elsewhere', scope: otherWorkspace })
+    )
+    harness.publish(
+      pendingSubscription({
+        id: 'op-here',
+        authenticationState: 'requires_action'
+      })
+    )
+
+    expect(store.subscriptionActionOperation?.opId).toBe('op-here')
+  })
+
+  it('has no action operation while the subscribe just runs', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(pendingSubscription())
+
+    expect(store.subscriptionActionOperation).toBeUndefined()
+  })
+
+  it('looks an operation up by id, in the record shape', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        id: 'op-7',
+        serverPhase: 'awaiting_payment_method'
+      })
+    )
+
+    expect(store.getOperation('op-7')).toMatchObject({
+      opId: 'op-7',
+      kind: 'subscription',
+      workspaceId: 'ws-1',
+      status: 'pending',
+      phase: 'awaiting_payment_method'
+    })
+  })
+
+  it('finds an operation in another workspace, leaving the scope check to the caller', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(pendingSubscription({ id: 'op-9', scope: otherWorkspace }))
+
+    expect(store.getOperation('op-9')?.workspaceId).toBe('ws-2')
+  })
+
+  it.for([
+    ['an id it never saw', 'op-missing'],
+    ['an operation whose scope moved on', 'op-1']
+  ] as const)('has no record for %s', ([, opId]) => {
+    const store = useBillingSdkStore()
+
+    harness.publish(settledTopup('superseded'))
+
+    expect(store.getOperation(opId)).toBeUndefined()
   })
 })

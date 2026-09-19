@@ -11,7 +11,6 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({

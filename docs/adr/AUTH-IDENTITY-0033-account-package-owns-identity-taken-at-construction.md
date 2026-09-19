@@ -15,7 +15,7 @@ Supersedes the original transitional text of
 
 ADR-AUTH-IDENTITY-0028 first shipped a transitional shape: the cloud app
 owned identity (vuefire plus the Pinia `authStore`) and pushed it into the
-`@comfyorg/account` session client through `attachIdentity`, a
+`@comfyorg/account-core` session client through `attachIdentity`, a
 post-construction seam guarded at runtime by `isAccountIdentity`. The Workshop
 site attached the same way. The account TDD needs the package to own Firebase
 initialization and sign-in state so one account layer serves the cloud app,
