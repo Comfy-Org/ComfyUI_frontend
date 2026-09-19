@@ -43,6 +43,7 @@ export const localeDefinitions = {
   'pt-BR': { text: 'Português (BR)', loaders: loadersFor('pt-BR') },
   fa: { text: 'فارسی', loaders: loadersFor('fa') },
   he: { text: 'עברית', loaders: loadersFor('he') },
+  hi: { text: 'हिन्दी', loaders: loadersFor('hi') },
   it: { text: 'Italiano', loaders: loadersFor('it') }
 } as const satisfies Record<string, LocaleDefinition>
 

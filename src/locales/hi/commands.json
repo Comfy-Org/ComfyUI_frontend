@@ -1,0 +1,364 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "अपडेट जाँचें"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "कस्टम नोड्स फ़ोल्डर खोलें"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "इनपुट्स फ़ोल्डर खोलें"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "लॉग्स फ़ोल्डर खोलें"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml खोलें"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "मॉडल्स फ़ोल्डर खोलें"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "आउटपुट्स फ़ोल्डर खोलें"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "डेवलपर टूल्स खोलें"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "डेस्कटॉप उपयोगकर्ता मार्गदर्शिका"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "बंद करें"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "फिर से इंस्टॉल करें"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "रीस्टार्ट करें"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "चयनित नोड के लिए 3D व्यूअर (बीटा) खोलें"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "प्रायोगिक: मॉडल एसेट्स ब्राउज़ करें"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "टेम्पलेट्स ब्राउज़ करें"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "कॉपी करें"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "चयनित आइटम हटाएँ"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "दृश्य को चयनित नोड्स के अनुसार फिट करें"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "कैनवास लॉक करें"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "चयनित नोड्स नीचे ले जाएँ"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "चयनित नोड्स बाएँ ले जाएँ"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "चयनित नोड्स दाएँ ले जाएँ"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "चयनित नोड्स ऊपर ले जाएँ"
+  },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "पेस्ट करें"
+  },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "कनेक्ट के साथ पेस्ट करें"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "दृश्य रीसेट करें"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "चयनित नोड्स का आकार बदलें"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "सभी चुनें"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "कैनवास लिंक दृश्यता टॉगल करें"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "कैनवास लॉक टॉगल करें"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "कैनवास मिनीमैप टॉगल करें"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "चयनित आइटम पिन/अनपिन करें"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "चयनित नोड्स बायपास/अनबायपास करें"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "चयनित नोड्स संकुचित/विस्तृत करें"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "चयनित नोड्स म्यूट/अनम्यूट करें"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "चयनित नोड्स पिन/अनपिन करें"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "कैनवास अनलॉक करें"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "ज़ूम इन करें"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "ज़ूम आउट करें"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "लंबित कार्य साफ़ करें"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "वर्कफ़्लो साफ़ करें"
+  },
+  "Comfy_ContactSupport": {
+    "label": "सहायता से संपर्क करें"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "मॉडल चयनकर्ता दिखाएँ (डेव)"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "वर्तमान वर्कफ़्लो की प्रतिलिपि बनाएँ"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "वर्कफ़्लो निर्यात करें"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "वर्कफ़्लो निर्यात करें (API फ़ॉर्मेट)"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "चयन को सबग्राफ़ में बदलें"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "सबग्राफ़ विजेट संपादित करें"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "सबग्राफ़ से बाहर निकलें"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "समूह को सामग्री के अनुसार फिट करें"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "चयनित नोड्स का समूह बनाएँ"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "होवर किए गए विजेट का प्रमोशन टॉगल करें"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "चयनित सबग्राफ़ अनपैक करें"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "ComfyUI के बारे में खोलें"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Comfy-Org Discord खोलें"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "ComfyUI दस्तावेज़ खोलें"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "ComfyUI फ़ोरम खोलें"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "ComfyUI इश्यूज़ खोलें"
+  },
+  "Comfy_Interrupt": {
+    "label": "बाधित करें"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "चयनित नोड के लिए लेयर एडिटर खोलें"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "डिफ़ॉल्ट वर्कफ़्लो लोड करें"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "कस्टम नोड्स मैनेजर"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "कस्टम नोड्स (लेगेसी)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "मैनेजर मेनू (लेगेसी)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "गुम कस्टम नोड्स इंस्टॉल करें"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "कस्टम नोड अपडेट जाँचें"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "MaskEditor में ब्रश आकार घटाएँ"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "MaskEditor में ब्रश आकार बढ़ाएँ"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor में रंग चयनकर्ता खोलें"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "MaskEditor में क्षैतिज मिरर करें"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "MaskEditor में ऊर्ध्वाधर मिरर करें"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "चयनित नोड के लिए मास्क एडिटर खोलें"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "MaskEditor में बाएँ घुमाएँ"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "MaskEditor में दाएँ घुमाएँ"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "मॉडल अनलोड करें"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "मॉडल और निष्पादन कैश अनलोड करें"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "नया खाली वर्कफ़्लो"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "क्लिपस्पेस"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "मैनेजर"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "वर्कफ़्लो खोलें"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "सबग्राफ़ प्रकाशित करें"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "जॉब इतिहास टॉगल करें"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "प्रॉम्प्ट कतार में लगाएँ"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "प्रॉम्प्ट कतार में आगे लगाएँ"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "चयनित आउटपुट नोड्स कतार में लगाएँ"
+  },
+  "Comfy_Redo": {
+    "label": "फिर से करें"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "नोड परिभाषाएँ रीफ़्रेश करें"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "वर्कफ़्लो का नाम बदलें"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "वर्कफ़्लो सहेजें"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "वर्कफ़्लो इस रूप में सहेजें"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "सेटिंग्स डायलॉग दिखाएँ"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "सबग्राफ़ विवरण सेट करें"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "सबग्राफ़ खोज उपनाम सेट करें"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "प्रायोगिक: AssetAPI सक्षम करें"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "कैनवास प्रदर्शन"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "सहायता केंद्र"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "ऐप मोड टॉगल करें"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "क्यू पैनल V2 टॉगल करें"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "थीम टॉगल करें (डार्क/लाइट)"
+  },
+  "Comfy_Undo": {
+    "label": "पूर्ववत करें"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "साइन-इन डायलॉग खोलें"
+  },
+  "Comfy_User_SignOut": {
+    "label": "साइन आउट करें"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "प्रायोगिक: Nodes 2.0 सक्षम करें"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "वर्तमान वर्कफ़्लो बंद करें"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "अगला खुला वर्कफ़्लो"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "पिछला खुला वर्कफ़्लो"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "खोज बॉक्स टॉगल करें"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "निचला पैनल टॉगल करें"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "कीबाइंडिंग्स डायलॉग दिखाएँ"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "टर्मिनल निचला पैनल टॉगल करें"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "लॉग्स निचला पैनल टॉगल करें"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "आवश्यक निचला पैनल टॉगल करें"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "दृश्य नियंत्रण निचला पैनल टॉगल करें"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "फ़ोकस मोड टॉगल करें"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "ऐप्स साइडबार टॉगल करें",
+    "tooltip": "ऐप्स"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "एसेट्स साइडबार टॉगल करें",
+    "tooltip": "एसेट्स"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "मॉडल लाइब्रेरी साइडबार टॉगल करें",
+    "tooltip": "मॉडल लाइब्रेरी"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "नोड लाइब्रेरी साइडबार टॉगल करें",
+    "tooltip": "नोड लाइब्रेरी"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "वर्कफ़्लोज़ साइडबार टॉगल करें",
+    "tooltip": "वर्कफ़्लोज़"
+  }
+}
