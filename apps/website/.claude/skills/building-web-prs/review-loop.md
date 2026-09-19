@@ -75,11 +75,20 @@ shows the change is unsafe to ship. Before any approval exists, every
 comment is worked as below.
 
 Treat every comment as a claim to test against the current code, not as an
-order. For each one, decide among three outcomes and act:
+order. Give each one three verdicts before touching anything: is it inside
+what this pull request set out to change (a request to widen the pull
+request, harden tests beyond what the change needs, or reword text that
+changes no behaviour is outside), does it reproduce on the current head, and
+does it agree with `AGENTS.md` and the repository's own guidelines (when it
+conflicts, the repository's rule wins and the reply names it). Then act on one
+of four outcomes:
 
-- The comment is right: fix it, and reply in the thread with what changed.
+- The comment is right and in scope: fix it, and reply in the thread with
+  what changed.
 - The comment is wrong or no longer applies: reply in one or two sentences
   with the evidence, and change nothing.
+- The comment is outside the pull request's scope: reply that it belongs in a
+  follow-up, in one or two sentences, and change nothing.
 - The comment asks for a decision about design, copy, scope, or launch timing:
   that decision belongs to the designer or the reviewer. Reply that you are
   checking, and take it to the designer as a question.
