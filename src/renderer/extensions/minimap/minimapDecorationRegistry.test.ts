@@ -61,7 +61,7 @@ describe('minimapDecorationRegistry', () => {
     const result = getMinimapDecorations(scopeA)
     expect(result[0]?.target.nodeId).toBe('9')
 
-    ;(result[0]!.target as { nodeId: ReturnType<typeof toNodeId> }).nodeId =
+    ;(result[0].target as { nodeId: ReturnType<typeof toNodeId> }).nodeId =
       toNodeId('11')
     expect(getMinimapDecorations(scopeA)[0]?.target.nodeId).toBe('9')
     layer.dispose()
