@@ -383,6 +383,47 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  // PM-1189/PM-1027: the agent's connect tool wires an IMAGE output straight
+  // into a STRING prompt input (Grok Image Edit, GPT Image 2) and the mutation
+  // is accepted as if valid — only ComfyUI's execution-time prompt validator
+  // catches it later, long after the agent has told the user the graph is
+  // built. The interactive canvas never allows this: LGraphNode.connectSlots
+  // gates every human-dragged link on LiteGraph.isValidConnection(output.type,
+  // input.type). This remote/CRDT path is the ONLY way the agent edits the
+  // graph, and it applies a connect purely by node/slot existence — it never
+  // compares the origin output's declared type against the target input's.
+  it('rejects connecting an incompatible slot type pair (fails: no type check exists)', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = mutations()
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }]
+      })
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'prompt', type: 'STRING', link: null }]
+      })
+      batch.connect({
+        id: 1,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'STRING'
+      })
+    })
+
+    // A human dragging this exact link on canvas is refused by
+    // LiteGraph.isValidConnection; the agent's remote mutation path must
+    // refuse it too instead of silently wiring IMAGE into a STRING input.
+    expect(applied).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(1))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
