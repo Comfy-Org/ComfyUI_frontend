@@ -1239,16 +1239,14 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     expect(refreshed?.image).toBe('threed/scene-3.png [temp]')
   })
 
-  it('rejects when the scene never stabilizes during capture', async () => {
+  it('returns no scene when capture never stabilizes', async () => {
     const { node, load3d, serialize, useLoad3dModule } = await setup()
     load3d.captureScene.mockImplementation(async () => {
       useLoad3dModule.markLoad3dSceneDirty(node)
       return { scene: 'scene-data', mask: 'mask-data', normal: 'normal-data' }
     })
 
-    await expect(serialize()).rejects.toThrow(
-      'Load3D scene did not stabilize during capture'
-    )
+    expect(await serialize()).toBeNull()
 
     expect(load3d.captureScene).toHaveBeenCalledTimes(3)
     expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(true)
