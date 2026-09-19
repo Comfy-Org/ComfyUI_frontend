@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, effectScope, ref } from 'vue'

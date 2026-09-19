@@ -73,10 +73,6 @@ function renderStep(
         },
         TagsInputInput: {
           template: '<input data-testid="tags-input-input" />'
-        },
-        Button: {
-          template:
-            '<button data-testid="toggle-suggestions" type="button"><slot /></button>'
         }
       }
     }
@@ -187,7 +183,9 @@ describe('ComfyHubDescribeStep', () => {
     expect(defaultSuggestions).toHaveLength(10)
     expect(container.textContent).toContain('comfyHubPublish.showMoreTags')
 
-    await userEvent.click(screen.getByTestId('toggle-suggestions'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'comfyHubPublish.showMoreTags' })
+    )
     await nextTick()
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access

@@ -130,16 +130,15 @@ import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
 const memory = new Map()
-const client = createSessionClient({
-  exchangeUrl: 'https://example.invalid/api/auth/token',
-  storage: {
-    read: () => memory.get('credential') ?? null,
-    write: (value) => memory.set('credential', value),
-    clear: () => memory.delete('credential')
-  }
-})
-const beforeIdentity = client.getSnapshot().phase
-const detach = client.attachIdentity(
+const client = createSessionClient(
+  {
+    exchangeUrl: 'https://example.invalid/api/auth/token',
+    storage: {
+      read: () => memory.get('credential') ?? null,
+      write: (value) => memory.set('credential', value),
+      clear: () => memory.delete('credential')
+    }
+  },
   createTestIdentity({
     onUserChanged: (callback) => {
       callback(null)
@@ -148,13 +147,14 @@ const detach = client.attachIdentity(
   })
 )
 const afterIdentity = client.getSnapshot().phase
-detach()
-if (beforeIdentity !== 'pending' || afterIdentity !== 'signed-out') {
+client.dispose()
+const afterDispose = client.getSnapshot().phase
+if (afterIdentity !== 'signed-out' || afterDispose !== 'pending') {
   throw new Error(
-    \`session client phases \${beforeIdentity} -> \${afterIdentity}\`
+    \`session client phases \${afterIdentity} -> \${afterDispose}\`
   )
 }
-console.log(\`session client: \${beforeIdentity} -> \${afterIdentity}\`)
+console.log(\`session client: \${afterIdentity} -> \${afterDispose}\`)
 
 const entry = buildBillingEntryUrl({
   billingOrigin: 'https://billing.comfy.org',

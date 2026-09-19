@@ -2861,6 +2861,10 @@ Enterprise`
     en: 'If you want to shape the future of creativity, come build with us.',
     'zh-CN': '如果你想塑造创意的未来，来和我们一起构建。'
   },
+  'careers.hero.videoLabel': {
+    en: 'Comfy recruiting video',
+    'zh-CN': 'Comfy 招聘视频'
+  },
 
   // CareersWhyJoinSection
   'careers.whyJoin.reason1': {
@@ -9970,10 +9974,6 @@ Enterprise`
     en: 'The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.',
     'zh-CN':
       '视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。'
-  },
-  'workshop.field.selectOrDropReplacement': {
-    en: 'Select or drop to replace',
-    'zh-CN': '选择或拖入以替换'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {

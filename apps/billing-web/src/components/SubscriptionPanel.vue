@@ -8,6 +8,7 @@ import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
 import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import PlanCard from '@/components/PlanCard.vue'
+import SubscriptionActions from '@/components/SubscriptionActions.vue'
 import SubscriptionQuote from '@/components/SubscriptionQuote.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
@@ -17,7 +18,7 @@ const { t } = useI18n()
 const { coded, money } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
-const { plans, loading, failure } = usePlans()
+const { plans, loading, failure, refresh } = usePlans()
 const {
   preview,
   loading: quoting,
@@ -86,6 +87,8 @@ function goToCheckout() {
           : t('hosted.subscription.noPlan')
       }}
     </p>
+
+    <SubscriptionActions @changed="refresh" />
 
     <ul class="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
       <PlanCard

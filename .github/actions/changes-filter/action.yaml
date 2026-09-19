@@ -44,7 +44,7 @@ outputs:
     description: 'Shared deps, `apps/website/**`, or website e2e workflow support changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
   app-billing-web-changes:
-    description: 'Shared deps, `apps/billing-web/**`, or the billing-web unit workflow changed.'
+    description: 'Shared deps, `apps/billing-web/**`, or a billing-web workflow changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
@@ -79,6 +79,7 @@ runs:
           app_billing_web:
             - 'apps/billing-web/**'
             - '.github/workflows/ci-billing-web-unit.yaml'
+            - '.github/workflows/ci-billing-web-e2e.yaml'
           app_frontend:
             - 'src/**'
           packages:

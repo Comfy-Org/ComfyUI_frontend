@@ -161,7 +161,6 @@ catalog:
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
   vue-tsc: ^3.3.11
-  vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
   yjs: ^13.6.27
