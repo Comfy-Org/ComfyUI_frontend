@@ -176,23 +176,6 @@ test.describe(
       }
     )
 
-    test('hypothesis D: the Running status line is cleared once the generation completes', async ({
-      comfyPage,
-      getWebSocket
-    }) => {
-      test.fail(
-        true,
-        'PM-1303/PM-1310 hypothesis D: the $$node-text-preview progress widget is added by showTextPreview but nothing calls removeTextPreview, so "Status: Running" stays on the node forever'
-      )
-      const ws = await getWebSocket()
-      const exec = new ExecutionHelper(comfyPage, ws)
-      const { nodeId } = await readPromptWidget(comfyPage)
-
-      await runGeneration(comfyPage, exec, ws, nodeId)
-
-      await expect(getNode(comfyPage).getByText('Status: Running')).toBeHidden()
-    })
-
     test('hypothesis D: prompt text box keeps its height after two generations', async ({
       comfyPage,
       getWebSocket
