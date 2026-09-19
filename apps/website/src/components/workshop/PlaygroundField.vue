@@ -281,7 +281,7 @@ function booleanValue(fallback = false): boolean {
           :min="field.min"
           :max="field.max"
           :step="field.step"
-          :value="numberValue(field.defaultValue)"
+          :value="numberValue() ?? ''"
           :disabled
           :aria-label="
             t('workshop.field.exactValue', locale).replace(

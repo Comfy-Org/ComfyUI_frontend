@@ -670,6 +670,42 @@ describe('PlaygroundField', () => {
     expect(box.step).toBe('1')
   })
 
+  it('empties the value box when the field is cleared rather than showing the default', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    const values = mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', {
+      name: 'Height value'
+    }) as HTMLInputElement
+    await fireEvent.update(box, '')
+    expect(values.value.height).toBeUndefined()
+    expect(box.value).toBe('')
+  })
+
+  it('marks a typed value outside the field bounds invalid', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', { name: 'Height value' })
+    await fireEvent.update(box, '9999')
+    expect(box.getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByRole('alert').textContent).not.toBe('')
+  })
+
   it('leaves a field without slider bounds with the one control it already had', () => {
     mountField({ kind: 'number', name: 'count', label: 'Count', step: 1 })
     expect(screen.getAllByRole('spinbutton')).toHaveLength(1)
