@@ -508,6 +508,29 @@ describe('useWorkflowPersistenceV2', () => {
       )
     })
 
+    it('recreates a tab from a corrupt persisted draft by name, marks it restored, and drops the draft', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const draftStore = useWorkflowDraftStoreV2()
+      const path = 'workflows/Corrupt draft.json'
+      draftStore.saveDraft(path, '{not json', {
+        name: 'Corrupt draft.json',
+        isTemporary: true
+      })
+      writeTabState([path], 0)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      const restored = workflowStore.getWorkflowByPath(path)
+      expect(restored).toBeDefined()
+      expect(restored!.isTemporary).toBe(true)
+      expect(useRestoredWorkflowTabStore().wasRestored(restored!)).toBe(true)
+      expect(draftStore.getDraft(path)).toBeNull()
+      expect(workflowStore.openWorkflows.map((w) => w.path)).toContain(path)
+    })
+
     it('does not call openWorkflow when no restorable state', async () => {
       vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
       // No tab state written to sessionStorage
