@@ -3454,6 +3454,123 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  /**
+   * The net M1-20 is checked against. `useSubscriptionCheckout` is 1817 lines
+   * and half of it is a legacy branch that Step 5 deletes; the rest of this
+   * suite asserts a great deal but not as a matrix over the two rails, so a
+   * removal could pass by deleting a case rather than by preserving a
+   * behaviour. Every row below asserts the same user-visible result on both
+   * rails, so a removal that changes one of them fails here.
+   */
+  describe('rail x checkoutType x outcome', () => {
+    type Outcome =
+      | 'settled'
+      | 'parked then settles'
+      | 'parked then fails'
+      | 'no response'
+
+    const SUBSCRIBE_RESULT: Record<Outcome, unknown> = {
+      settled: { status: 'subscribed', billing_op_id: 'op-matrix' },
+      'parked then settles': {
+        status: 'pending_payment',
+        billing_op_id: 'op-matrix'
+      },
+      'parked then fails': {
+        status: 'pending_payment',
+        billing_op_id: 'op-matrix'
+      },
+      'no response': undefined
+    }
+
+    async function runCheckout(
+      railOn: boolean,
+      checkoutType: 'new' | 'change',
+      outcome: Outcome,
+      confirmReactivation = false
+    ) {
+      mockSubscriptionRail.value = railOn
+        ? { subscriptionActionUrl: null }
+        : null
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.previewData.value = {
+        allowed: true,
+        transition_type:
+          checkoutType === 'change' ? 'upgrade' : 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      } as PreviewSubscribeResponse
+      checkout.quoteIsCurrent.value = true
+      mockSubscribe.mockResolvedValueOnce(SUBSCRIBE_RESULT[outcome])
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        billingOperation({
+          opId: 'op-matrix',
+          status: outcome === 'parked then fails' ? 'failed' : 'succeeded',
+          workspaceId: 'workspace-1'
+        })
+      )
+
+      await checkout.handleConfirmTransition(confirmReactivation)
+      return checkout
+    }
+
+    // Sparse: each row names the outcome and the step it must leave behind.
+    // `checkoutType` and the rail are the two axes crossed over it. Anything
+    // short of a settled operation leaves the customer where they were, which
+    // this harness enters at.
+    const UNMOVED = 'pricing'
+    const OUTCOMES: { outcome: Outcome; step: string }[] = [
+      { outcome: 'settled', step: 'success' },
+      { outcome: 'parked then settles', step: 'success' },
+      { outcome: 'parked then fails', step: UNMOVED },
+      { outcome: 'no response', step: UNMOVED }
+    ]
+
+    const CHECKOUT_TYPES = ['new', 'change'] as const
+    const RAILS = [
+      { rail: 'legacy', railOn: false },
+      { rail: 'SDK', railOn: true }
+    ] as const
+
+    it.for(
+      RAILS.flatMap(({ rail, railOn }) =>
+        CHECKOUT_TYPES.flatMap((checkoutType) =>
+          OUTCOMES.map(({ outcome, step }) => ({
+            rail,
+            railOn,
+            checkoutType,
+            outcome,
+            step
+          }))
+        )
+      )
+    )(
+      'a $checkoutType checkout that is $outcome leaves the same step on the $rail rail',
+      async ({ railOn, checkoutType, outcome, step }) => {
+        const checkout = await runCheckout(railOn, checkoutType, outcome)
+
+        expect(checkout.checkoutStep.value).toBe(step)
+        // Whatever the outcome, the attempt is over: a checkout left busy is
+        // a dialog the customer cannot leave or retry from.
+        expect(checkout.isSubscribing.value).toBe(false)
+      }
+    )
+
+    it.for(RAILS)(
+      'a reactivation sends its confirmation on the $rail rail and succeeds',
+      async ({ railOn }) => {
+        const checkout = await runCheckout(railOn, 'change', 'settled', true)
+
+        expect(mockSubscribe).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ confirmReactivation: true })
+        )
+        expect(checkout.checkoutStep.value).toBe('success')
+      }
+    )
+  })
+
   describe('handleBackToPricing', () => {
     it('surfaces a subscription operation recovered from billing status', async () => {
       Object.assign(useBillingOperationStore(), {
