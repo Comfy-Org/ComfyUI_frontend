@@ -61,7 +61,9 @@ function openPanel() {
 }
 
 function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -112,15 +114,6 @@ describe('DockedAgentPanel', () => {
         errorType: 'agent_run_mode_load_failure'
       })
     )
-  })
-
-  it('fills the panel shell and draws the canvas seam border', () => {
-    openPanel()
-    renderPanel()
-
-    const shell = screen.getByTestId('docked-agent-panel-shell')
-
-    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
   })
 
   it('renders nothing while the panel is closed', () => {

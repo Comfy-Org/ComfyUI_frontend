@@ -209,6 +209,24 @@ const groupClasses = computed(() =>
   )
 )
 
+const CANVAS_GUTTER_VAR = '--comfy-canvas-gutter'
+
+/**
+ * The canvas gutter in pixels. Custom properties come back from
+ * `getComputedStyle` unresolved, so the token is measured through a length
+ * property the browser does resolve.
+ */
+function canvasGutter(): number {
+  const probe = document.createElement('div')
+  probe.style.position = 'absolute'
+  probe.style.visibility = 'hidden'
+  probe.style.marginLeft = `var(${CANVAS_GUTTER_VAR})`
+  document.body.append(probe)
+  const px = parseFloat(getComputedStyle(probe).marginLeft)
+  probe.remove()
+  return Number.isFinite(px) ? px : 0
+}
+
 const ENTER_OVERFLOW_MARGIN = 20
 const EXIT_OVERFLOW_MARGIN = 50
 
@@ -249,8 +267,12 @@ onMounted(() => {
       if (canvasStore.canvas) {
         if (sidebarLocation.value === 'left') {
           await nextTick()
+          const sidebarRight =
+            sideToolbarRef.value?.getBoundingClientRect()?.right
           canvasStore.canvas.fpsInfoLocation = [
-            sideToolbarRef.value?.getBoundingClientRect()?.right,
+            sidebarRight === undefined
+              ? undefined
+              : sidebarRight + canvasGutter(),
             null
           ]
         } else {
