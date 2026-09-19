@@ -167,7 +167,11 @@ export class DragDropHelper {
 
   async dragAndDropFilePath(
     filePath: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+    options: {
+      dropPosition?: Position
+      waitForUpload?: boolean
+      preserveNativePropagation?: boolean
+    } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
   }
