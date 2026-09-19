@@ -20,6 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { DocFrameTransport } from './docFrameClient'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -43,7 +44,8 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(() => true),
+  transport: null as DocFrameTransport | null
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -106,6 +108,9 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
     sendOps = clientState.sendOps
+    constructor(transport: DocFrameTransport) {
+      clientState.transport = transport
+    }
   }
 }))
 
@@ -130,7 +135,8 @@ vi.mock(import('./agentSubgraphDefinitions'), () => ({
 }))
 
 vi.mock(import('./devPanelLog'), () => ({
-  recordDevEvent: vi.fn()
+  recordDevEvent: vi.fn(),
+  sanitizeDevEventDetail: vi.fn((detail: unknown) => detail)
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -225,9 +231,37 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
+    clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('records only the length of an outbound frame that is not a JSON object', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    const transport = clientState.transport
+    if (!transport) throw new Error('Expected the client transport')
+
+    expect(transport.send('not json')).toBe(true)
+    expect(transport.send('[1,2]')).toBe(true)
+    expect(transport.send('null')).toBe(true)
+    expect(transport.send('42')).toBe(true)
+    expect(transport.send('{"type":"doc_subscribe"}')).toBe(true)
+
+    const outbound = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([kind]) => kind === 'ws_out')
+      .map(([, detail]) => detail)
+    expect(outbound).toEqual([
+      { delivered: true, frame: null, unparsed_chars: 8 },
+      { delivered: true, frame: null, unparsed_chars: 5 },
+      { delivered: true, frame: null, unparsed_chars: 4 },
+      { delivered: true, frame: null, unparsed_chars: 2 },
+      { delivered: true, frame: { type: 'doc_subscribe' } }
+    ])
+    expect(JSON.stringify(outbound)).not.toContain('not json')
+    unmount()
   })
 
   it('does not construct a follower when the product gate is disabled', () => {
