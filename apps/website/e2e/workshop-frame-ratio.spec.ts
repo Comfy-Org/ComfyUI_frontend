@@ -11,6 +11,12 @@ const PORTRAIT_9_16 =
 const WIDER_LANDSCAPE_16_9 =
   'iVBORw0KGgoAAAANSUhEUgAAACAAAAASCAIAAAC1qksFAAAAH0lEQVR42mOIyptGU8QwasGoBaMWjFowasGoBfSwAACcpROu+NZsLgAAAABJRU5ErkJggg=='
 
+declare global {
+  interface Window {
+    __measuredFrames?: string[]
+  }
+}
+
 function frame(name: string, base64: string) {
   return { name, mimeType: 'image/png', buffer: Buffer.from(base64, 'base64') }
 }
@@ -18,25 +24,66 @@ function frame(name: string, base64: string) {
 test('Seedance first/last frame warns about the stretch only while the shapes differ', async ({
   page
 }) => {
+  // `useFrameSize` measures a detached `new Image()` carrying its own object
+  // URL, never the preview element the page renders, so waiting for that
+  // preview says nothing about whether the comparison has run. The readiness
+  // signal has to come from the measuring image itself. The ledger chains onto
+  // the composable's own `onload` rather than racing it on a second listener,
+  // so a recorded frame is one whose size the composable has already taken.
+  await page.addInitScript(() => {
+    const measured: string[] = []
+    window.__measuredFrames = measured
+    const Native = window.Image
+    window.Image = class extends Native {
+      override set onload(handler: ((event: Event) => void) | null) {
+        super.onload = handler
+          ? (event: Event) => {
+              handler.call(this, event)
+              measured.push(`${this.naturalWidth}x${this.naturalHeight}`)
+            }
+          : handler
+      }
+      override get onload() {
+        return super.onload
+      }
+    }
+  })
+
   await page.goto(
     '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
   )
   const group = (name: string) => page.getByRole('group', { name, exact: true })
   const upload = (name: string) => group(name).getByLabel(name, { exact: true })
-  // The notice is legitimately down while a frame's size is unknown, and a
-  // replaced frame is unmeasured until it decodes, so every assertion of
-  // absence here first waits for the frames it is about to judge.
-  const decoded = (name: string, width: number) =>
-    expect(group(name).getByRole('img')).toHaveJSProperty('naturalWidth', width)
   const first = upload('First frame')
   const last = upload('Last frame')
   const notice = page.getByTestId('frame-ratio-notice')
 
+  const measured = (shape: string, count = 1) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          (want) =>
+            (window.__measuredFrames ?? []).filter((m) => m === want).length,
+          shape
+        )
+      )
+      .toBeGreaterThanOrEqual(count)
+
+  // The size lands in a ref, so the notice it drives is one Vue flush behind
+  // the measurement. Two frames put the assertion after that render.
+  const rendered = () =>
+    page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        )
+    )
+
   // The page opens with both frames already filled from its worked example.
   // The suite serves the example's external images as the same 1x1 placeholder,
   // so this pins that an untouched page stays quiet, not the example's shapes.
-  await decoded('First frame', 1)
-  await decoded('Last frame', 1)
+  await measured('1x1', 2)
+  await rendered()
   await expect(
     notice,
     'an untouched page must not greet the visitor with a warning'
@@ -51,9 +98,11 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   await first.setInputFiles(frame('first.png', LANDSCAPE_16_9))
   await expect(notice).toContainText('The frames are different shapes')
 
-  // Replacing the last frame with the same shape retires the notice on its own.
+  // Replacing the last frame with the same shape retires the notice on its own,
+  // and the silence is only an answer once the replacement has been measured.
   await last.setInputFiles(frame('last.png', WIDER_LANDSCAPE_16_9))
-  await decoded('Last frame', 32)
+  await measured('32x18')
+  await rendered()
   await expect(notice).toHaveCount(0)
 
   // And that silence is about the replacement rather than a cleared or a stale
