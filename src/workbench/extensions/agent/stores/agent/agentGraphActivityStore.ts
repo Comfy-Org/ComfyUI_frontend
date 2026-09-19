@@ -80,6 +80,16 @@ export const useAgentGraphActivityStore = defineStore(
       }, SETTLE_MS)
     }
 
+    function removeNodes(nodeIds: readonly NodeId[]): void {
+      if (state.value.phase === 'idle' || nodeIds.length === 0) return
+      const removed = new Set(nodeIds)
+      const remaining = state.value.nodeIds.filter((id) => !removed.has(id))
+      state.value =
+        remaining.length === 0
+          ? { phase: 'idle' }
+          : { ...state.value, nodeIds: remaining }
+    }
+
     function dismiss(): void {
       if (settleTimer !== undefined) clearTimeout(settleTimer)
       settleTimer = undefined
@@ -97,6 +107,7 @@ export const useAgentGraphActivityStore = defineStore(
       startTurn,
       recordMaterialized,
       finishTurn,
+      removeNodes,
       dismiss,
       resetWorkflow
     }

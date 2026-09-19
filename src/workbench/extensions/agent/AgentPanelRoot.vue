@@ -35,9 +35,6 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-// The composition root publishes declarative rows to the renderer-owned port;
-// agent CRDT and state modules remain independent of minimap implementation.
-// eslint-disable-next-line import-x/no-restricted-paths
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
@@ -58,6 +55,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -213,6 +211,21 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+watch(
+  () => canvasStore.canvas?.graph,
+  (graph, _previous, onCleanup) => {
+    if (!graph) return
+    const onNodeRemoved = (event: CustomEvent<{ node: { id: unknown } }>) => {
+      const nodeId = parseNodeId(String(event.detail.node.id))
+      if (nodeId) graphActivity.removeNodes([nodeId])
+    }
+    graph.events.addEventListener('node:removed', onNodeRemoved)
+    onCleanup(() =>
+      graph.events.removeEventListener('node:removed', onNodeRemoved)
+    )
+  },
+  { immediate: true }
+)
 const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
 watch(
   () => graphActivity.state,

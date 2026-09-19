@@ -129,4 +129,18 @@ describe('agentGraphActivityStore', () => {
     vi.advanceTimersByTime(500)
     expect(activity.state).toMatchObject({ phase: 'complete' })
   })
+
+  it('forgets deleted nodes so reused ids are not attributed to the agent', () => {
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1), toNodeId(2)]
+    )
+
+    activity.removeNodes([toNodeId(1)])
+    expect(activity.state).toMatchObject({ nodeIds: ['2'] })
+
+    activity.removeNodes([toNodeId(2)])
+    expect(activity.state).toEqual({ phase: 'idle' })
+  })
 })
