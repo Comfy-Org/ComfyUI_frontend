@@ -107,7 +107,17 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
-const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+
+// Workshop is switched off on comfy.org after 108 of 238 runs failed on
+// 2026-09-18. Preview builds keep serving it so the fixes can be reviewed.
+// Revert this PR to re-open production.
+const PRODUCTION_DISABLED = WORKSHOP_DEPLOY_ENV === 'production'
+
+function resolveEnabled(flagAnswer = false): boolean {
+  return !PRODUCTION_DISABLED && (VISIBILITY_OVERRIDE || flagAnswer)
+}
+
+const workshopEnabled = ref(resolveEnabled())
 // Default to the resolved public experience. The gate only leaves it once
 // `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
 // environment that never initializes PostHog — local dev, no key, SSR — shows
@@ -129,6 +139,10 @@ function markFlagResolved(): void {
 }
 
 function awaitFlagAnswer(): void {
+  if (PRODUCTION_DISABLED) {
+    markFlagResolved()
+    return
+  }
   if (flagResolutionTimer !== undefined) clearTimeout(flagResolutionTimer)
   workshopEnabledSettled.value = false
   flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
@@ -169,7 +183,7 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
     user &&
     posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
   if (cachedAnswer !== undefined) return
-  workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopEnabled.value = resolveEnabled()
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
@@ -179,7 +193,7 @@ function adoptNewIdentity(
   persistedUid: string | undefined,
   waitForIdentityAnswer: boolean
 ): void {
-  workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopEnabled.value = resolveEnabled()
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
   if (persistedUid) posthog.reset()
@@ -203,7 +217,7 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
     adoptNewIdentity(user, persistedUid, !VISIBILITY_OVERRIDE && user !== null)
   } catch (error) {
     workshopUser = previous
-    workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabled.value = resolveEnabled()
     markFlagResolved()
     console.error('PostHog identity failed', error)
   }
@@ -254,7 +268,7 @@ export function initPostHog() {
       expectedUid === persistedUid ||
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
-      workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopEnabled.value = resolveEnabled(persistedAnswer)
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -262,9 +276,9 @@ export function initPostHog() {
         markFlagResolved()
         return
       }
-      workshopEnabled.value =
-        VISIBILITY_OVERRIDE ||
+      workshopEnabled.value = resolveEnabled(
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      )
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =

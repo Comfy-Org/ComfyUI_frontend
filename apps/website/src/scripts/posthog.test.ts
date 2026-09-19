@@ -96,6 +96,40 @@ describe('Workshop visibility', () => {
     expect(enabled.value).toBe(true)
   })
 
+  it.for([
+    { deployEnv: '', reaches: true },
+    { deployEnv: 'preview', reaches: true },
+    { deployEnv: 'production', reaches: false }
+  ])(
+    'an enabled flag reaches the run surface on a $deployEnv build: $reaches',
+    async ({ deployEnv, reaches }) => {
+      hoisted.deployEnv = deployEnv
+      hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+      const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+        await import('./posthog')
+      initPostHog()
+      emitFeatureFlags()
+      expect(useWorkshopEnabled().value).toBe(reaches)
+      expect(useWorkshopEnabledSettled().value).toBe(true)
+    }
+  )
+
+  it('never holds the loading frame on production, even before a flag answer', async () => {
+    hoisted.deployEnv = 'production'
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    identifyWorkshopUser({ uid: 'staff-uid', email: 'a@comfy.org' })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
   it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
     vi.stubEnv('DEV', true)
     vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
