@@ -1,10 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { BalanceInfo } from '@/composables/billing/types'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
@@ -50,17 +50,11 @@ const i18n = createI18n({
   }
 })
 
-function makeBalance(amountMicros: number): BalanceInfo {
-  return {
-    amountMicros,
-    currency: 'usd',
-    effectiveBalanceMicros: amountMicros,
-    prepaidBalanceMicros: 0,
-    cloudCreditBalanceMicros: 0
-  }
-}
-
 describe('CreditsPanel', () => {
+  beforeEach(() => {
+    refreshActivity.mockClear()
+  })
+
   function renderComponent() {
     return render(CreditsPanel, {
       global: { plugins: [i18n], stubs: { Divider: true } }
@@ -77,18 +71,13 @@ describe('CreditsPanel', () => {
     expect(billing.manageSubscription).toHaveBeenCalledOnce()
   })
 
-  it('refreshes activity on a balance change but not on first hydration', async () => {
+  it('refreshes activity when the shared billing signal changes', async () => {
     const billing = mockBillingContext()
-    const balance = ref<BalanceInfo | null>(null)
-    billing.balance = computed(() => balance.value)
     renderComponent()
-
-    balance.value = makeBalance(5000)
-    await nextTick()
+    screen.getByTestId('usage-logs-table')
     expect(refreshActivity).not.toHaveBeenCalled()
 
-    balance.value = makeBalance(9000)
-    await nextTick()
-    expect(refreshActivity).toHaveBeenCalledOnce()
+    ;(billing.usageLogsRefreshSignal as Ref<number>).value++
+    await vi.waitFor(() => expect(refreshActivity).toHaveBeenCalledOnce())
   })
 })

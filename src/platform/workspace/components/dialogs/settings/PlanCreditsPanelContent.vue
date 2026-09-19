@@ -38,6 +38,7 @@ import { useI18n } from 'vue-i18n'
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
@@ -45,6 +46,7 @@ import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/S
 type View = 'overview' | 'activity'
 
 const { t } = useI18n()
+const { usageLogsRefreshSignal } = useBillingContext()
 
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
@@ -54,9 +56,7 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 const activeView = ref<View>('overview')
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
-watch(usageLogsTable, (table) => {
-  table?.refresh().catch(() => {
-    console.error('Error refreshing usage logs')
-  })
+watch(usageLogsRefreshSignal, () => {
+  void usageLogsTable.value?.refresh()
 })
 </script>
