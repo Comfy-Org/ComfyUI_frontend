@@ -872,6 +872,53 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(true)
   })
 
+  // PM-1199 / PM-1200. (g) above pins today's behaviour: a live->down->live
+  // socket blip settles the turn and the session does nothing on the way back
+  // up. The server never learned the socket went away, so it keeps running the
+  // turn and keeps broadcasting the same message_id. These two say what the
+  // user needs instead, and are the lowest level that proves it — the browser
+  // spec `agentTurnSurvivesSocketDrop.spec.ts` covers the same defect through
+  // the real socket and the rendered panel.
+  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
+    const rest = fakeRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(session.isStreaming.value).toBe(true)
+
+    status(false)
+    status(true)
+
+    expect(session.isStreaming.value).toBe(true)
+  })
+
+  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
+    const rest = fakeRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+
+    status(false)
+    status(true)
+    emit(delta('msg-1', ' and the rest'))
+
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'go' },
+      {
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'partial and the rest' }]
+      }
+    ])
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
