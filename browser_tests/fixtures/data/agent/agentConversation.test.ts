@@ -180,12 +180,16 @@ describe('committed recordings', () => {
         zAgentConversation.parse(load(file)).turns.length
       ])
     )
+    // RECORDED_EXPECTATIONS may also carry entries for hand-authored
+    // (`response_side: 'synthesized'`) conversations that live inline in a
+    // `.spec.ts` file rather than as a committed recording here — those have
+    // no matching file, so only check the direction that matters: every
+    // committed recording has a matching, correctly-sized expectation.
     expect(
       Object.fromEntries(
-        Object.entries(RECORDED_EXPECTATIONS).map(([caseId, expected]) => [
-          caseId,
-          expected?.length ?? 0
-        ])
+        Object.entries(RECORDED_EXPECTATIONS)
+          .filter(([caseId]) => caseId in turns)
+          .map(([caseId, expected]) => [caseId, expected?.length ?? 0])
       )
     ).toEqual(turns)
   })
