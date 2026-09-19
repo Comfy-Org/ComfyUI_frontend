@@ -18,7 +18,6 @@ import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,

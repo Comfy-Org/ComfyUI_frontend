@@ -7,7 +7,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import LiteGraphCanvasSplitterOverlay from '../LiteGraphCanvasSplitterOverlay.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
