@@ -20,6 +20,7 @@ const REQUEST_TIMEOUT_MS = 120_000
 const POLL_DEFAULT_MS = 2_000
 const POLL_MIN_MS = 1_000
 const POLL_MAX_MS = 10_000
+const MAX_TIMER_MS = 2_147_483_647
 const IN_FLIGHT_RETRIES = 5
 const INTERRUPTION_RETRIES = 20
 const UNREADABLE_RESULT_RETRIES = 2
@@ -86,6 +87,20 @@ function pollDelayMs(response: Response): number {
 
 function interruptionDelayMs(interruptions: number): number {
   return Math.min(POLL_DEFAULT_MS * 2 ** interruptions, POLL_MAX_MS)
+}
+
+function interruptedRequestDelayMs(
+  response: Response,
+  interruptions: number
+): number {
+  const value = response.headers.get('Retry-After')?.trim()
+  if (!value) return interruptionDelayMs(interruptions)
+  const numericDelay = /^\d+$/.test(value) ? Number(value) * 1000 : NaN
+  const dateDelay = Date.parse(value) - Date.now()
+  const delay = Number.isFinite(numericDelay) ? numericDelay : dateDelay
+  return Number.isFinite(delay)
+    ? Math.min(Math.max(delay, 0), MAX_TIMER_MS)
+    : interruptionDelayMs(interruptions)
 }
 
 function runRequestId(state: QueuedRun): string | null {
@@ -187,7 +202,9 @@ async function collectionRetry(
   await response.body?.cancel().catch(() => {})
   return {
     phase: 'waiting',
-    waitMs: pollDelayMs(response),
+    waitMs: pending
+      ? pollDelayMs(response)
+      : interruptedRequestDelayMs(response, state.interruptions),
     next: {
       ...state,
       interruptions: pending ? 0 : state.interruptions + 1

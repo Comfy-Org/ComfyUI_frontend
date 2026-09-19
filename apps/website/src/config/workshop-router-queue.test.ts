@@ -44,10 +44,16 @@ function result() {
   })
 }
 
-function refusal(status: number, errorType: string) {
+function refusal(status: number, errorType: string, retryAfter?: string) {
   return Response.json(
     { detail: 'refused', error_type: errorType },
-    { status, headers: { 'X-Comfy-Error-Type': errorType } }
+    {
+      status,
+      headers: {
+        'X-Comfy-Error-Type': errorType,
+        ...(retryAfter === undefined ? {} : { 'Retry-After': retryAfter })
+      }
+    }
   )
 }
 
@@ -78,6 +84,7 @@ function requestedUrls(calls: ReturnType<typeof stubFetch>) {
 describe('queued Router delivery', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-19T12:00:00Z'))
   })
 
   it('submits once, polls until the run finishes, and reports the durable request id', async () => {
@@ -116,6 +123,35 @@ describe('queued Router delivery', () => {
     expect(
       requestedUrls(calls).filter((request) => request.startsWith('POST'))
     ).toHaveLength(1)
+  })
+
+  it.for([
+    ['numeric', '60'],
+    ['HTTP-date', 'Sat, 19 Sep 2026 12:01:00 GMT']
+  ])(
+    'respects a %s Retry-After on an interrupted result read',
+    async ([, retryAfter]) => {
+      stubFetch(
+        admitted(),
+        refusal(503, 'service_unavailable', retryAfter),
+        result()
+      )
+      const startedAt = Date.now()
+      await settle(runWorkshopRouter(options()))
+      expect(Date.now() - startedAt).toBe(60_000)
+    }
+  )
+
+  it('backs off repeated result-read interruptions without a valid Retry-After', async () => {
+    stubFetch(
+      admitted(),
+      refusal(503, 'service_unavailable'),
+      refusal(503, 'service_unavailable', 'invalid'),
+      result()
+    )
+    const startedAt = Date.now()
+    await settle(runWorkshopRouter(options()))
+    expect(Date.now() - startedAt).toBe(6_000)
   })
 
   it('resubmits an interrupted submit with the identical key and body', async () => {
