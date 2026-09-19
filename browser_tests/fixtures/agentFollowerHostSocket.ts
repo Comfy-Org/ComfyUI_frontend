@@ -150,7 +150,10 @@ export class AgentFollowerHostSocket {
       ),
       opIds: ops.map((op) => op.op_id)
     })
-    if (frame.workflowId !== this.workflowId) return
+    if (frame.workflowId !== this.workflowId) {
+      this.rejectForeignOps(frame)
+      return
+    }
     if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
       this.answerSubscribe(frame.stateVector)
     else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
@@ -197,6 +200,25 @@ export class AgentFollowerHostSocket {
     this.humanOutcomes.push(...outcomes)
     this.send(result)
     if (update) this.send(update)
+  }
+
+  // A doc_ops batch for a workflow this host does not serve is answered the
+  // way the relay answers, so the sender settles it instead of waiting
+  // forever; any other foreign frame is ignored.
+  private rejectForeignOps(frame: ParsedClientDocFrame): void {
+    if (frame.type !== 'doc_ops' || frame.workflowId === null) return
+    this.send({
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: frame.workflowId,
+        ok: false,
+        applied: [],
+        skipped: [],
+        code: 'unknown_workflow',
+        message: 'the fake host serves one workflow'
+      }
+    })
   }
 
   private invalidFrameResult(): HostFrame {

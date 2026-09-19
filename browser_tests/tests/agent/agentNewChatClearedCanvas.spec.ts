@@ -124,7 +124,7 @@ test.describe(
   'Agent new chat on a cleared saved workflow',
   { tag: '@cloud' },
   () => {
-    test.use({ conversationCase: CONVERSATION_CASE })
+    test.use({ conversationCase: CONVERSATION_CASE, humanOpsHost: 'apply' })
 
     test('posts the cleared canvas as the first draft of the same workflow, and the canvas stays empty after the ack', async ({
       agentConversation,
