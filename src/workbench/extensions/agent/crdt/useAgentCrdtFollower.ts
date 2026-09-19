@@ -1,10 +1,19 @@
-import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
+import {
+  computed,
+  effectScope,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
@@ -40,7 +49,7 @@ export { apiTransport, STALE_AFTER_MS }
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
-export interface AgentCrdtOutcomeCounters {
+interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
@@ -136,6 +145,72 @@ export function useAgentCrdtFollower(
    * skips straight past what the agent drew (QAF-52).
    */
   getChangeTracker: () => UndoBracket | null = () => null
+) {
+  const productGate = useAgentPanelStore()
+  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
+  const disabledStatus: AgentCrdtStatus = {
+    enabled: false,
+    connected: false,
+    workflowId: null,
+    updatesApplied: 0,
+    lastFrameType: null,
+    outcomes: {
+      received: 0,
+      applied: 0,
+      skipped: 0,
+      errored: 0,
+      gap: 0,
+      reset: 0,
+      dropped: 0
+    }
+  }
+  const status = computed(() => follower.value?.status.value ?? disabledStatus)
+
+  watch(
+    () => productGate.enabled,
+    (enabled, _previous, onCleanup) => {
+      if (!enabled) return
+      const scope = effectScope()
+      onCleanup(() => {
+        follower.value = undefined
+        scope.stop()
+      })
+      follower.value = scope.run(() =>
+        startAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          userId,
+          isTargetActive,
+          getGraph,
+          getChangeTracker
+        )
+      )
+    },
+    { immediate: true, flush: 'sync' }
+  )
+
+  return {
+    status: readonly(status),
+    debugSnapshot: (): CrdtDebugSnapshot =>
+      follower.value?.debugSnapshot() ??
+      readCrdtSnapshot(null, {
+        status: status.value,
+        tabId: null,
+        lastSeq: null,
+        schemaError: null
+      }),
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      follower.value?.enqueueHumanOperations(operations)
+  }
+}
+
+function startAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  graphMutations: MutationsForTarget,
+  userId: () => string | null,
+  isTargetActive: Ref<boolean>,
+  getGraph: () => MaterializableGraph | null,
+  getChangeTracker: () => UndoBracket | null
 ) {
   const withUndoBracket = <T>(fn: () => T): T => {
     const tracker = getChangeTracker()
@@ -491,7 +566,7 @@ export function useAgentCrdtFollower(
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
     runFollowerTeardown([

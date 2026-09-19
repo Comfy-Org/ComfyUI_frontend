@@ -17,7 +17,6 @@ import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
@@ -44,12 +43,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: { value: false },
-    userEmail: { value: undefined }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
 const openWorkflow = vi.hoisted(() => vi.fn())

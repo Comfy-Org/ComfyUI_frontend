@@ -171,13 +171,6 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :aria-label="ariaLabel" @click="$emit(\'click\', $event)"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size', 'ariaLabel']
-}
-
 const SearchInputStub = {
   name: 'SearchInput',
   template:
@@ -191,7 +184,6 @@ function renderComponent() {
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
         WorkspaceMenuButton: true

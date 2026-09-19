@@ -60,9 +60,15 @@ async function rehostUrlInputs(
       resolved[field.name] = selected
     } catch {
       signal.throwIfAborted()
-      throw new WorkshopRouterError('validation', null, {
-        [field.name]: 'uploadFailed'
-      })
+      throw new WorkshopRouterError(
+        'upload',
+        null,
+        {
+          [field.name]: 'uploadFailed'
+        },
+        undefined,
+        'example_download'
+      )
     }
   }
   formSources.set(values, retained)
@@ -73,6 +79,37 @@ export type WorkshopUrlEncoder = (
   file: File,
   signal: AbortSignal
 ) => Promise<string>
+
+async function uploadUrlInput(
+  field: FieldSchema,
+  file: File,
+  signal: AbortSignal,
+  upload?: WorkshopUrlEncoder
+): Promise<string> {
+  signal.throwIfAborted()
+  try {
+    if (!upload) throw new Error('Upload unavailable')
+    const url = await upload(file, signal)
+    signal.throwIfAborted()
+    const errors = validateForm([field], { [field.name]: url })
+    if (!isHttpImageSource(url) || Object.keys(errors).length)
+      throw new Error('Invalid upload URL')
+    return url
+  } catch (error) {
+    signal.throwIfAborted()
+    const failure =
+      error instanceof WorkshopRouterError
+        ? error
+        : new WorkshopRouterError('upload')
+    throw new WorkshopRouterError(
+      'upload',
+      failure.requestId,
+      { [field.name]: 'uploadFailed' },
+      failure.response,
+      failure.stage
+    )
+  }
+}
 
 export async function resolveWorkshopUrlInputs(
   fields: readonly FieldSchema[],
@@ -111,22 +148,7 @@ export async function resolveWorkshopUrlInputs(
   })
   const resolved = { ...values }
   for (const { field, file } of pending) {
-    signal.throwIfAborted()
-    try {
-      if (!upload) throw new Error('Upload unavailable')
-      const url = await upload(file, signal)
-      signal.throwIfAborted()
-      const errors = validateForm([field], { [field.name]: url })
-      if (!isHttpImageSource(url) || Object.keys(errors).length)
-        throw new Error('Invalid upload URL')
-      resolved[field.name] = url
-    } catch (error) {
-      signal.throwIfAborted()
-      if (error instanceof WorkshopRouterError) throw error
-      throw new WorkshopRouterError('validation', null, {
-        [field.name]: 'uploadFailed'
-      })
-    }
+    resolved[field.name] = await uploadUrlInput(field, file, signal, upload)
   }
   return resolved
 }
