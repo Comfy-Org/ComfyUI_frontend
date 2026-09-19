@@ -50,6 +50,8 @@ const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
+// Screen point a node is panned to before it is clicked; left of the panel.
+const REVEAL_AT = { x: 400, y: 400 }
 const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -405,6 +407,35 @@ export class AgentConversationHarness {
     )
   }
 
+  // Pans the canvas so `nodeId` sits clear of the docked panel, then selects
+  // it through its header the way a user would. The replayed graph extends
+  // past the seed, so an agent-added node can land under the panel, where a
+  // header click would never be delivered.
+  async selectNode(nodeId: string): Promise<void> {
+    await this.page.evaluate(
+      ({ id, at }) => {
+        const canvas = window.app!.canvas
+        const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
+        if (!node) throw new Error(`no live node ${id}`)
+        const { scale } = canvas.ds
+        canvas.ds.offset[0] = at.x / scale - node.pos[0]
+        canvas.ds.offset[1] = at.y / scale - node.pos[1]
+        canvas.setDirty(true, true)
+      },
+      { id: nodeId, at: REVEAL_AT }
+    )
+    const header = this.vueNodes
+      .getNodeLocator(nodeId)
+      .locator('.lg-node-header')
+    await expect
+      .poll(async () => (await header.boundingBox())?.x ?? -1)
+      .toBeGreaterThan(0)
+    await header.click()
+    await expect(this.vueNodes.getNodeLocator(nodeId)).toHaveClass(
+      /outline-node-component-outline/
+    )
+  }
+
   // The one live node of `type`; a recording is expected to hold exactly one.
   async nodeOfType(type: string): Promise<LiveGraphNode> {
     const matches = (await this.graphNodes()).filter(
@@ -421,6 +452,18 @@ export class AgentConversationHarness {
   async nodesAddedSince(before: LiveGraphNode[]): Promise<LiveGraphNode[]> {
     const known = new Set(before.map((node) => node.id))
     return (await this.graphNodes()).filter((node) => !known.has(node.id))
+  }
+
+  // One turn landed on the canvas, without the panel and wiring assertions
+  // runTurns() makes; for specs that act on the replayed graph rather than
+  // judge the replay.
+  async replayTurn(turn: number): Promise<void> {
+    await this.sendPrompt(turn)
+    await this.replayResponse(turn)
+    await this.waitForTurnComplete()
+    await expect(this.page.getByTestId('node-title')).toHaveCount(
+      this.host.projection().nodes.length
+    )
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
