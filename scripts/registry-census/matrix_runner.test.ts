@@ -38,15 +38,20 @@ describe('matrix runner', () => {
             LiteGraph.vueNodesMode = !LiteGraph.vueNodesMode
           }
         },
-        ['entry'],
+        ['entry', 'missing'],
         'renderer-mutator'
       )
 
       const row = JSON.parse(
         fs.readFileSync(path.join(outputDir, 'renderer-mutator.json'), 'utf8')
-      ) as { loadedOk?: unknown; vueNodesMode?: unknown }
+      ) as {
+        load?: Record<string, unknown>
+        loadedOk?: unknown
+        vueNodesMode?: unknown
+      }
 
       expect(modeDuringLoad).toBe(selectedMode)
+      expect(row.load?.missing).toBe('NO-GLOB')
       expect(row.loadedOk).toBe(1)
       expect(row.vueNodesMode).toBe(!selectedMode)
     }

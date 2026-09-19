@@ -56,12 +56,15 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
             const node = liteGraph.createNode(nodeName, displayName)
             if (!node?.widgets?.length) return {}
+            const widgets: Array<
+              (typeof node.widgets)[number] | null | undefined
+            > = node.widgets
             return Object.fromEntries(
-              node.widgets
-                .filter(
-                  (widget) => widget.name && !inputNames.includes(widget.name)
-                )
-                .map((widget) => [widget.name, widget.label])
+              widgets.flatMap((widget) =>
+                widget?.name && !inputNames.includes(widget.name)
+                  ? [[widget.name, widget.label]]
+                  : []
+              )
             )
           },
           {
