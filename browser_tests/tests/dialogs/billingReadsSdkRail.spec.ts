@@ -148,11 +148,18 @@ interface ReadRoutes {
 interface BootOptions {
   /** Answers the balance with a value outside the safe-integer range. */
   unsafeBalance?: boolean
+  /**
+   * Serves `billing_sdk_topup_enabled: true` on `/api/features`, the channel
+   * the staged rollout publishes on. Boot awaits that response
+   * (`main.ts:56`), so unlike the websocket handshake it is readable before
+   * the billing gate issues its first reads.
+   */
+  readRailOnFeatures?: boolean
 }
 
 async function mockCloudBoot(
   page: Page,
-  { unsafeBalance = false }: BootOptions = {}
+  { unsafeBalance = false, readRailOnFeatures = false }: BootOptions = {}
 ): Promise<ReadRoutes> {
   const reads: Request[] = []
   const eventPages: (string | null)[] = []
@@ -164,7 +171,12 @@ async function mockCloudBoot(
   }
 
   await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute({ unified_cloud_auth: true }))
+    r.fulfill(
+      jsonRoute({
+        unified_cloud_auth: true,
+        ...(readRailOnFeatures ? { billing_sdk_topup_enabled: true } : {})
+      })
+    )
   )
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
@@ -289,12 +301,11 @@ function routesRead(reads: Request[]): Set<string> {
 }
 
 /**
- * Answered on the websocket handshake rather than set after boot: the billing
- * gate issues its first status, balance and capabilities reads while resolving
- * auth and workspace, before `GraphCanvas`'s `onMounted` assigns `window.app`.
- * A flag set any later would leave those first reads on the legacy client and
- * only move the ones the panel triggers, which is not what "every read on the
- * rail" means.
+ * The websocket half of the flag, paired with `readRailOnFeatures` so the two
+ * channels agree. Answered on the handshake rather than set after boot: the
+ * billing gate issues its first reads while resolving auth and workspace,
+ * before `GraphCanvas`'s `onMounted` assigns `window.app`, so a flag set any
+ * later would miss them.
  */
 async function enableReadRail(page: Page) {
   await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
@@ -325,35 +336,33 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   })
 
   /**
-   * The transport assertion here is `toContain('fetch')`, not
-   * `not.toContain('xhr')`, and that is a finding rather than a concession.
+   * `not.toContain('xhr')`: with the flag on `/api/features` there is no race
+   * left to tolerate.
    *
-   * **The boot-time reads go out on the legacy client even with the read rail
-   * on.** `billingSdkTopupRailEnabled` needs `billing_sdk_topup_enabled` off
-   * `api.serverFeatureFlags`, which only the websocket `feature_flags`
-   * handshake populates (`api.ts:1012`) and which nothing awaits —
-   * `createSocket()` does not even open the socket until the cloud auth token
-   * resolves. The billing gate's status, balance, plans and capabilities reads
-   * fire first. CI records the split on one load:
+   * This row used to assert only `toContain('fetch')`, because the flag was
+   * reachable solely on the websocket `feature_flags` handshake
+   * (`api.ts:1012`), which nothing awaits — `createSocket()` does not open the
+   * socket until the cloud auth token resolves, so the billing gate's status,
+   * balance, plans and capabilities reads went out first and CI recorded the
+   * split on one load:
    *
    *     ["xhr", "xhr", "xhr", "xhr", "fetch", "fetch", "fetch"]
    *
-   * The four boot reads lose the race; the reads the panel and the Activity tab
-   * trigger land after the handshake and take the rail. Which reads fall on
-   * which side is timing, so pinning either transport for the whole set would
-   * be a flake.
+   * #18141 moved these flags onto `/api/features` as their primary channel,
+   * and boot awaits that response at `main.ts:56`. So the flag is readable
+   * before the first billing read rather than 145ms after it, and every read
+   * — boot included — belongs on the rail. `mockCloudBoot` now serves it
+   * there; the handshake is seeded as well so neither channel alone is what
+   * the assertion rests on.
    *
-   * What this row proves is what is deterministic and what the ticket is for:
-   * the rail is genuinely serving reads, and the values it renders are
-   * identical to the legacy row above — the int64 projections do not move a
-   * rendered number. The same race is written up on #18135; when it is fixed,
-   * tighten this back to `not.toContain('xhr')`.
+   * If this row goes red on `xhr`, that is a finding about the ordering of
+   * `refreshRemoteConfig` against the billing gate, not a flake to loosen.
    */
   test('serves reads on the SDK transport while the rail is on, rendering the same values', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page)
+    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
     await enableReadRail(page)
     await bootApp(page)
 
@@ -370,7 +379,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => routesRead(routes.reads).size)
       .toBe(READ_ROUTES.length)
-    expect(routes.reads.map(transport)).toContain('fetch')
+    expect(routes.reads.map(transport)).not.toContain('xhr')
   })
 
   /**
@@ -382,7 +391,10 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    await mockCloudBoot(page, { unsafeBalance: true })
+    await mockCloudBoot(page, {
+      unsafeBalance: true,
+      readRailOnFeatures: true
+    })
     await enableReadRail(page)
     await bootApp(page)
 
