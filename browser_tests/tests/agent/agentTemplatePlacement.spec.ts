@@ -6,6 +6,7 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -150,7 +151,9 @@ class TemplatePlacementHarness {
       }
     })
 
-    await this.page.getByRole('button', { name: 'Ask Comfy Agent' }).click()
+    await this.page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
     const panel = this.page.locator('#agent-panel-root')
     await expect(panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()
