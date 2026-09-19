@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  assertNoModelSlugAliasCollisions,
   authoredRouterModelSlugAliases,
   authoredWorkshopModels,
   routerModelSlugAliases,
@@ -123,5 +124,14 @@ describe('model availability', () => {
     expect(routerModelSlugAliases.get(alias)).toBe(
       target && !isWorkshopModelDisabled(target) ? target : undefined
     )
+  })
+
+  it('rejects a canonical page that collides with a redirect alias', () => {
+    expect(() =>
+      assertNoModelSlugAliasCollisions(
+        new Map([['duplicate', 'target']]),
+        new Set(['duplicate'])
+      )
+    ).toThrow('Content slug collides with a legacy redirect: duplicate')
   })
 })

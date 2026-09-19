@@ -245,6 +245,15 @@ function primarySlug(sources: readonly WorkshopContentSource[]): string {
   return source.overlay.slug
 }
 
+export function assertNoModelSlugAliasCollisions(
+  aliases: ReadonlyMap<string, string>,
+  canonicalSlugs: ReadonlySet<string>
+) {
+  for (const slug of aliases.keys())
+    if (canonicalSlugs.has(slug))
+      throw new Error(`Content slug collides with a legacy redirect: ${slug}`)
+}
+
 function modelSlugAliasesFor(sources: readonly WorkshopContentSource[]) {
   const aliases = new Map<string, string>()
   for (const record of routerIndex) {
@@ -262,9 +271,7 @@ function modelSlugAliasesFor(sources: readonly WorkshopContentSource[]) {
   for (const [legacyId, matches] of sourcesByLegacyId)
     aliases.set(legacyId.replace('/', '--'), primarySlug(matches))
   const canonicalSlugs = new Set(sources.map(({ overlay }) => overlay.slug))
-  for (const slug of aliases.keys())
-    if (canonicalSlugs.has(slug))
-      throw new Error(`Content slug collides with a legacy redirect: ${slug}`)
+  assertNoModelSlugAliasCollisions(aliases, canonicalSlugs)
   return aliases
 }
 
