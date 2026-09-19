@@ -15,6 +15,7 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -130,7 +131,11 @@ test.describe(
       await expect(panel).toBeHidden()
 
       // A person adds a node the ordinary way: double-click search, pick it.
-      await comfyPage.canvasOps.doubleClick()
+      // Canvas-relative, not page (10, 10): in the cloud layout the page's
+      // top-left corner is topbar chrome, so the search box never opens there.
+      await comfyPage.canvasOps.mouseDblclickAt(
+        DefaultGraphPositions.emptyCanvasClick
+      )
       await comfyPage.searchBox.fillAndSelectFirstNode('Load Image', {
         exact: true
       })
