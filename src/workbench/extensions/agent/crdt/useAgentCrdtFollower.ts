@@ -86,16 +86,28 @@ function notifyAgentMaterialization(
   added: readonly string[],
   materialized: readonly NodeId[],
   graph: MaterializableGraph | null,
+  pendingLiveNodeIds: Set<NodeId>,
   events: AgentCrdtFollowerEvents
 ): void {
-  if (update.catchUp === true || !update.actor?.startsWith('agent:')) return
-  const nodeIds = [
-    ...new Set([...materialized, ...liveAddedNodeIds(added, graph)])
-  ]
+  const isLiveAgentUpdate =
+    !update.catchUp && update.actor?.startsWith('agent:') === true
+  if (isLiveAgentUpdate) {
+    for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
+    for (const id of added) {
+      const nodeId = parseNodeId(id)
+      if (nodeId) pendingLiveNodeIds.add(nodeId)
+    }
+  }
+  const available = new Set([
+    ...materialized,
+    ...liveAddedNodeIds(added, graph)
+  ])
+  const nodeIds = [...pendingLiveNodeIds].filter((id) => available.has(id))
   if (nodeIds.length === 0) return
+  for (const id of nodeIds) pendingLiveNodeIds.delete(id)
   events.onMaterialized?.({
     workflowId: update.workflowId,
-    actor: update.actor,
+    actor: isLiveAgentUpdate ? update.actor : undefined,
     nodeIds
   })
 }
@@ -289,6 +301,7 @@ function startAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
+  const pendingLiveNodeIds = new Set<NodeId>()
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -355,7 +368,14 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
-    notifyAgentMaterialization(update, added, materialized, getGraph(), events)
+    notifyAgentMaterialization(
+      update,
+      added,
+      materialized,
+      getGraph(),
+      pendingLiveNodeIds,
+      events
+    )
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -390,6 +410,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
+    pendingLiveNodeIds.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -525,6 +546,7 @@ function startAgentCrdtFollower(
       lifecycle.clearForRetarget()
       connected.value = false
       knownDocNodeIds = new Set()
+      pendingLiveNodeIds.clear()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
