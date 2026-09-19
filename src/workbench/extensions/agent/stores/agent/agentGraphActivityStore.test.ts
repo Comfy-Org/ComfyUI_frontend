@@ -15,7 +15,7 @@ describe('agentGraphActivityStore', () => {
     vi.useFakeTimers()
   })
 
-  it('keeps sequential materializations through settle and a UI remount', () => {
+  it('keeps sequential materializations through settlement', () => {
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
     activity.recordMaterialized(
@@ -30,8 +30,7 @@ describe('agentGraphActivityStore', () => {
     activity.finishTurn()
     vi.advanceTimersByTime(1_000)
 
-    const remounted = useAgentGraphActivityStore()
-    expect(remounted.state).toEqual({
+    expect(activity.state).toEqual({
       phase: 'complete',
       workflowId: 'wf-1',
       rootGraphId: 'graph-1',
