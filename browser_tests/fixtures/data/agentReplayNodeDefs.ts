@@ -76,12 +76,7 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
     ['IMAGE', 'MASK']
   ),
   PreviewImage: {
-    ...node(
-      'PreviewImage',
-      'Preview Image',
-      { images: ['IMAGE', {}] },
-      []
-    ),
+    ...node('PreviewImage', 'Preview Image', { images: ['IMAGE', {}] }, []),
     output_node: true
   },
   PrimitiveStringMultiline: node(
