@@ -361,6 +361,7 @@ function replayUpdatedWidgetCallbacks(
     }
     const widget = node.widgets?.find((candidate) => candidate.name === name)
     if (!widget) continue
+    widget.value = state.value
     widget.callback?.(state.value)
     node.onWidgetChanged?.(name, state.value, previousValue, widget)
   }

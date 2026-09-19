@@ -227,4 +227,27 @@ describe('agent-driven Load Image preview stays live', () => {
     )
     expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
   })
+
+  it('refreshes the real Load Image preview when a brand-new node materializes with a value set before it existed', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const mutations = remoteMutations(scope)
+    mutations.addNode(nodePayload(1, 'test-load-image'), remoteContext)
+    mutations.setWidget(
+      toNodeId(1),
+      'image',
+      'freshly-created-image.png',
+      remoteContext
+    )
+
+    reconcileAgentAdapters(graph)
+
+    const node = graph.getNodeById(toNodeId(1))
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'freshly-created-image.png',
+      { isAnimated: false }
+    )
+    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
+  })
 })
