@@ -161,4 +161,64 @@ describe('DescriptionTabPanel', () => {
       expect(screen.getByText('No description available')).toBeInTheDocument()
     })
   })
+
+  describe('hostile registry URLs', () => {
+    const EXECUTABLE_URL = 'javascript:alert'
+
+    function navigableHrefs() {
+      return screen
+        .queryAllByRole('link')
+        .map((link) => link.getAttribute('href') ?? '')
+    }
+
+    it('renders the repository field but refuses to make it navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({ repository: EXECUTABLE_URL })
+      })
+
+      expect(screen.getByText(EXECUTABLE_URL)).toBeInTheDocument()
+      expect(navigableHrefs()).toEqual([])
+    })
+
+    it('refuses to make a license URL built on a hostile repository navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: EXECUTABLE_URL,
+          license: 'LICENSE'
+        })
+      })
+
+      expect(
+        screen.getByText(`${EXECUTABLE_URL}/blob/main/LICENSE`)
+      ).toBeInTheDocument()
+      expect(navigableHrefs()).toEqual([])
+    })
+
+    it('refuses to make a description markdown link navigable', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          description: `See [the docs](${EXECUTABLE_URL}) for details.`
+        })
+      })
+
+      expect(screen.getByText('the docs')).toBeInTheDocument()
+      expect(navigableHrefs()).toEqual([])
+    })
+
+    it('still links an ordinary https repository and description link', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: 'https://github.com/user/repo',
+          description: 'See [the docs](https://example.com/docs) for details.'
+        })
+      })
+
+      expect(navigableHrefs()).toEqual(
+        expect.arrayContaining([
+          'https://github.com/user/repo',
+          'https://example.com/docs'
+        ])
+      )
+    })
+  })
 })
