@@ -18,10 +18,11 @@ const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
     slotData: { type: Object, required: true },
-    standalone: { type: Boolean, default: false }
+    standalone: { type: Boolean, default: false },
+    dotOnly: { type: Boolean, default: false }
   },
   template:
-    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" :data-standalone="standalone" />'
+    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" :data-standalone="standalone" :data-dot-only="dotOnly" />'
 })
 
 const AppInputStub = defineComponent({
@@ -114,7 +115,7 @@ describe('WidgetGrid', () => {
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
   })
 
-  it('renders connection-suppressed widgets as input sockets without controls', () => {
+  it('renders connection-suppressed widgets as labeled input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
         nodeId: toNodeId(1),
@@ -155,6 +156,11 @@ describe('WidgetGrid', () => {
         .getAllByTestId('input-slot')
         .map((element) => element.dataset.standalone)
     ).toEqual(['true', 'false'])
+    expect(
+      screen
+        .getAllByTestId('input-slot')
+        .map((element) => element.dataset.dotOnly)
+    ).toEqual(['false', 'true'])
     expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
     expect(
       screen
