@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   agentTest as test,
@@ -341,7 +342,7 @@ test.describe(
         page.evaluate((id) => {
           const node = window.app!.graph.getNodeById(id)
           return { color: node?.color, bgcolor: node?.bgcolor }
-        }, GPT_NODE_ID)
+        }, toNodeId(GPT_NODE_ID))
 
       await test.step('the wired node renders correctly beforehand', async () => {
         await expect(vueNodes.getNodeLocator(gptNodeId)).toBeVisible()
