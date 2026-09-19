@@ -1349,64 +1349,68 @@ const PM_1150_JOB_DETAIL: JobDetail = {
   }
 }
 
-test.describe('Assets sidebar - agent-submitted job workflow open (PM-1150)', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory([PM_1150_JOB])
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.assets.mockJobDetail(PM_1150_JOB_ID, PM_1150_JOB_DETAIL)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
-  test('Opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
-    comfyPage
-  }) => {
-    test.info().annotations.push({
-      type: 'regression',
-      description:
-        "PM-1150 / job 33a723f2-bf1f-4faf-9c42-1b83e2185601 — comfy-cli's " +
-        'agent-submitted jobs never populate extra_data.extra_pnginfo.workflow, ' +
-        "only workflow.prompt. Verifies PR #13957's fallback against the real " +
-        'job shape end to end (right-click asset card -> loaded graph on canvas).'
+test.describe(
+  'Assets sidebar - agent-submitted job workflow open (PM-1150)',
+  { tag: '@screenshot' },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.assets.mockOutputHistory([PM_1150_JOB])
+      await comfyPage.assets.mockInputFiles([])
+      await comfyPage.assets.mockJobDetail(PM_1150_JOB_ID, PM_1150_JOB_DETAIL)
+      await comfyPage.setup()
     })
 
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.assets.clearMocks()
+    })
 
-    await tab.assetCards.first().click({ button: 'right' })
-    await tab.contextMenuItem('Open as workflow in new tab').click()
+    test('Opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          "PM-1150 / job 33a723f2-bf1f-4faf-9c42-1b83e2185601 — comfy-cli's " +
+          'agent-submitted jobs never populate extra_data.extra_pnginfo.workflow, ' +
+          "only workflow.prompt. Verifies PR #13957's fallback against the real " +
+          'job shape end to end (right-click asset card -> loaded graph on canvas).'
+      })
 
-    // Before PR #13957 this always failed with "No workflow data available"
-    // for every agent-submitted job, since none of them embed an editor
-    // workflow. Assert both outcomes so a regression back to that state fails
-    // loudly instead of merely not-succeeding.
-    await expect(comfyPage.toast.toastWarnings).toBeHidden({ timeout: 1500 })
-    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
 
-    await expect
-      .poll(() => comfyPage.menu.topbar.getActiveTabName())
-      .toBe('agent_job_output.json')
+      await tab.assetCards.first().click({ button: 'right' })
+      await tab.contextMenuItem('Open as workflow in new tab').click()
 
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+      // Before PR #13957 this always failed with "No workflow data available"
+      // for every agent-submitted job, since none of them embed an editor
+      // workflow. Assert both outcomes so a regression back to that state fails
+      // loudly instead of merely not-succeeding.
+      await expect(comfyPage.toast.toastWarnings).toBeHidden({ timeout: 1500 })
+      await expect(comfyPage.toast.toastSuccesses).toBeVisible()
 
-    const nodeTypes = await comfyPage.page.evaluate(() =>
-      window.app!.graph.nodes.map((node) => node.type)
-    )
-    expect(nodeTypes).toEqual(
-      expect.arrayContaining([
-        'CheckpointLoaderSimple',
-        'KSampler',
-        'SaveImage'
-      ])
-    )
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe('agent_job_output.json')
 
-    // Visual proof the rebuilt graph actually renders, not just that the
-    // success toast fired.
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'pm-1150-agent-job-opened-as-workflow.png'
-    )
-  })
-})
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+
+      const nodeTypes = await comfyPage.page.evaluate(() =>
+        window.app!.graph.nodes.map((node) => node.type)
+      )
+      expect(nodeTypes).toEqual(
+        expect.arrayContaining([
+          'CheckpointLoaderSimple',
+          'KSampler',
+          'SaveImage'
+        ])
+      )
+
+      // Visual proof the rebuilt graph actually renders, not just that the
+      // success toast fired.
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'pm-1150-agent-job-opened-as-workflow.png'
+      )
+    })
+  }
+)
