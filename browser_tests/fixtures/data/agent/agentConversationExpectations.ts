@@ -511,5 +511,12 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
         ]
       ]
     }
+  ],
+  'synth-template-far-position': [
+    {
+      // graph_ops with no agent_tool_call event renders no tool row.
+      text: 'Loading the template nodes.',
+      groups: []
+    }
   ]
 }

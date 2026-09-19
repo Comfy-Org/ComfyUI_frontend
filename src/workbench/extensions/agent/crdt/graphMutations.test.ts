@@ -83,9 +83,26 @@ describe('graphMutations', () => {
   })
 
   function mutations() {
+    // `createLayout` also records each node's placed layout, so `getLayout`
+    // can answer with what the port itself just created (mirroring how the
+    // real port reads back the renderer-owned layoutStore it writes to).
+    const layouts = new Map<
+      string,
+      {
+        position: { x: number; y: number }
+        size: { width: number; height: number }
+      }
+    >()
+    createLayout.mockImplementation((_scope, nodeId, layout) => {
+      layouts.set(String(nodeId), layout)
+    })
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        getLayout: (_scope, nodeId) => layouts.get(String(nodeId)) ?? null
+      }
     })
   }
 
@@ -256,6 +273,33 @@ describe('graphMutations', () => {
       ).toBe(expected)
     }
   )
+
+  // Regression test for the agent template placement bug: a template's own
+  // baked-in absolute layout coordinates (authored assuming an empty canvas)
+  // used to land verbatim via `readPair`, regardless of where existing
+  // content already was. `prepare()` now checks a brand-new node's raw
+  // coordinates against existing content's bounds (read from the layout
+  // port) and repositions it nearby when they land far outside those bounds.
+  it('positions a newly added node near existing graph content instead of at its raw baked-in coordinates', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context) // existing content near the origin
+
+    // A template's own absolute layout coordinates, authored for an empty
+    // canvas, land far from the existing node above.
+    const templateNode = { ...node(2), pos: [8000, 6000] }
+    expect(graph.addNode(templateNode, context)).toBe(true)
+
+    const call = createLayout.mock.calls.find(([, id]) => id === toNodeId(2))
+    expect(call).toBeDefined()
+    const { position } = call![2] as { position: { x: number; y: number } }
+
+    const existingPos = { x: 10, y: 20 } // node(1)'s pos
+    const distance = Math.hypot(
+      position.x - existingPos.x,
+      position.y - existingPos.y
+    )
+    expect(distance).toBeLessThan(2000)
+  })
 
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
