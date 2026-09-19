@@ -83,15 +83,16 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(panel).toBeVisible()
     })
 
-    await test.step('Saved consent reopens Agent without another prompt', async () => {
-      await expect(openButton).toHaveCount(0)
-      await panel
-        .getByRole('button', { name: enMessages.agent.close, exact: true })
-        .click()
+    await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {
+      await expect(openButton).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
+      await openButton.click()
       await expect(panel).toHaveCount(0)
+      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
       await openButton.click()
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
     })
 
     await test.step('Saved consent survives reload', async () => {
