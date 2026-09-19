@@ -45,7 +45,9 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(
+    (_workflowId: string, _tab: string, _ops: Array<{ op_id: string }>) => true
+  )
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -1343,6 +1345,203 @@ describe('useAgentCrdtFollower', () => {
       .map(([, detail]) => (detail as { state: string }).state)
     expect(settledStates).toEqual(['undeliverable'])
     unmount()
+  })
+
+  describe('tab suspension of the human write leg', () => {
+    type Enqueue = ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+
+    function mountWriter(initial: string): {
+      unmount: () => void
+      workflowId: Ref<string | null>
+      isTargetActive: Ref<boolean>
+      enqueue: Enqueue
+    } {
+      const workflowId = ref<string | null>(initial)
+      const isTargetActive = ref(true)
+      let enqueue!: Enqueue
+      const host = defineComponent({
+        setup() {
+          const { enqueueHumanOperations } = useAgentCrdtFollower(
+            workflowId,
+            graphMutations,
+            () => null,
+            isTargetActive
+          )
+          enqueue = enqueueHumanOperations
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      // Mirror the real bridge: reconcile() sets send reality synchronously
+      // when a subscribe leaves the transport and clears it on unsubscribe.
+      bridge().subscribe.mockImplementation((next: string) => {
+        bridge().subscribedWorkflowId = next
+      })
+      bridge().unsubscribe.mockImplementation(() => {
+        bridge().subscribedWorkflowId = null
+      })
+      return { unmount, workflowId, isTargetActive, enqueue }
+    }
+
+    function deleteNode(nodeId: string) {
+      return { op: 'delete_node' as const, node_id: nodeId, removed_links: [] }
+    }
+
+    async function settledStates(): Promise<string[]> {
+      const { recordDevEvent } = await import('./devPanelLog')
+      return vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+        .map(([, detail]) => (detail as { state: string }).state)
+    }
+
+    function ackSent(index: number): void {
+      const [workflowId, , ops] = clientState.sendOps.mock.calls[index]
+      dispatchFrame('doc_ops_result', {
+        workflowId,
+        ok: true,
+        applied: ops.map((op) => op.op_id),
+        skipped: []
+      })
+    }
+
+    beforeEach(async () => {
+      vi.useFakeTimers()
+      clientState.sendOps.mockClear()
+      const { recordDevEvent } = await import('./devPanelLog')
+      vi.mocked(recordDevEvent).mockClear()
+    })
+
+    it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      expect(bridge().unsubscribe).toHaveBeenCalled()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('sends the held batch to the same workflow when its tab becomes active again', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('a rebind to another workflow while its tab is not active settles the held batch undeliverable at once', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('a rebind to another workflow fired together with the inactive edge aborts instead of holding', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+
+      workflowId.value = 'wf-2'
+      isTargetActive.value = false
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['undeliverable', 'undeliverable'])
+      unmount()
+    })
+
+    it('a real detach while the tab is inactive settles the held batch undeliverable', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = null
+      await nextTick()
+
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+
+      bridge().subscribedWorkflowId = 'wf-1'
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      unmount()
+    })
+
+    it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
   })
 
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
