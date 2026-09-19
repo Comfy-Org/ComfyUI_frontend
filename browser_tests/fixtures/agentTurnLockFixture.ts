@@ -260,13 +260,14 @@ export class AgentTurnLockHarness {
   }
 
   /**
-   * Runs the Web Audio half of `useWaveAudioPlayer.decodeAudioSource`: open an
-   * AudioContext, `decodeAudioData` real WAV bytes, then close the context.
-   * The product reaches those bytes through `api.fetchApi`, which is left out
-   * because network isolation fails a test on any unmocked request, so they are
-   * built in the page instead of downloaded.
+   * Replays the Web Audio work an audio preview does while a turn is live:
+   * open an AudioContext, `decodeAudioData` real WAV bytes, close it. This is
+   * the shape of `useWaveAudioPlayer.decodeAudioSource`, not a call into it —
+   * the product's `api.fetchApi` step and its waveform pass are not exercised,
+   * so this shows Web Audio alone is harmless rather than clearing the whole
+   * player.
    */
-  async decodeAudioLikeThePlayer(): Promise<void> {
+  async decodeAudioLikeAPreview(): Promise<void> {
     await this.page.evaluate(async () => {
       const frames = 800
       const bytes = new ArrayBuffer(44 + frames * 2)
@@ -312,8 +313,6 @@ export const agentTurnLockTest = mergeTests(
     { page, workflowSelection, getWebSocket, nextWebSocket },
     use
   ) => {
-    // Workflow selection boots the app before these agent-specific routes.
-    void workflowSelection
     const server = new TurnLockServer()
     await routeTurnLock(page, server)
     await use(

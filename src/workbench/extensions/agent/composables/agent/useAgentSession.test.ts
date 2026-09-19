@@ -1,5 +1,5 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -879,8 +879,26 @@ describe('useAgentSession (v1 composition root)', () => {
   // user needs instead, and are the lowest level that proves it — the browser
   // spec `agentTurnSurvivesSocketDrop.spec.ts` covers the same defect through
   // the real socket and the rendered panel.
+  // The server still has this turn open, so its history says `streaming`. That
+  // matters for what counts as fixed: re-attaching the local transport and
+  // re-hydrating from the server are both plausible repairs, and a double that
+  // answered with an empty transcript would keep these red after the second one
+  // shipped.
+  const streamingTurnRest = () =>
+    fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', 'partial', 'msg-1'),
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+
   it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
-    const rest = fakeRest()
+    const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -893,11 +911,11 @@ describe('useAgentSession (v1 composition root)', () => {
     status(false)
     status(true)
 
-    expect(session.isStreaming.value).toBe(true)
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
   })
 
   it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
-    const rest = fakeRest()
+    const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -914,7 +932,8 @@ describe('useAgentSession (v1 composition root)', () => {
     // on reconnect still shows the user the whole reply, and must count as
     // fixed.
     const assistant = session.entries.value.at(-1)
-    const replyText = (assistant && 'parts' in assistant ? assistant.parts : [])
+    assert(assistant !== undefined && 'parts' in assistant)
+    const replyText = assistant.parts
       .flatMap((part) => (part.type === 'text' ? [part.text] : []))
       .join('')
     expect(replyText).toBe('partial and the rest')
