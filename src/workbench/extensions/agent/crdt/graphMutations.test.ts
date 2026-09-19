@@ -283,10 +283,10 @@ describe('graphMutations', () => {
 
   // Node color is presentation-only and the CRDT doc never carries it, so
   // `prepareNode` only conditionally spreads `color`/`bgcolor` when the
-  // payload has one. `assignNodeFields` (nodeDataStore.ts) resets both to
-  // `undefined` before applying the replacement, so any reconcile blanks a
-  // locally set node color.
-  it.fails('keeps a locally set node color through a reconcile whose payload carries none', () => {
+  // payload has one; `assignNodeFields` (nodeDataStore.ts) leaves both
+  // untouched when the replacement doesn't own the key, preserving a
+  // locally set node color across a reconcile.
+  it('keeps a locally set node color through a reconcile whose payload carries none', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
     const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!

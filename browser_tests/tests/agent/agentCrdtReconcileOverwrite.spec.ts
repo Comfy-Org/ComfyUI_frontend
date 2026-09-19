@@ -103,12 +103,6 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Known bug: the CRDT doc never carries presentation-only node color,
-      // and graphMutations.ts's reconcileNode always spreads the doc's
-      // color-less payload over the live node; nodeDataStore.ts's
-      // assignNodeFields resets color/bgcolor to undefined first, so any
-      // reconcile silently strips a color the user just applied.
-      test.fail()
       await expect(wrapper).toHaveCSS('background-color', coloredBackground)
     })
   }
