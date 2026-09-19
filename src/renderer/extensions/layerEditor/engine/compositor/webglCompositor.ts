@@ -513,7 +513,7 @@ export function createWebGLCompositor(): Compositor {
         alpha: true,
         premultipliedAlpha: false,
         preserveDrawingBuffer: true
-      })
+      }) as WebGL2RenderingContext | null
       if (!ctx) return false
       if (!ctx.getExtension('EXT_color_buffer_float')) return false
       canvas = c

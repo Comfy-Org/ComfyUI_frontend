@@ -2,18 +2,25 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyExtension } from '@/types/comfy'
 
-const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
-  async () => {
-    const { createExtensionCapture } =
-      await import('@/utils/__tests__/extensionTestUtils')
-    return {
-      extensions: createExtensionCapture(),
-      getUserData: vi.fn(),
-      reportErrorMock: vi.fn()
-    }
+const { extensions, getUserData, reportErrorMock } = vi.hoisted(() => {
+  const captured = new Map<string, ComfyExtension>()
+  return {
+    extensions: {
+      registerExtension(extension: ComfyExtension) {
+        captured.set(extension.name, extension)
+      },
+      getExtension(name: string) {
+        const extension = captured.get(name)
+        if (!extension) throw new Error(`Extension ${name} was not registered`)
+        return extension
+      }
+    },
+    getUserData: vi.fn(),
+    reportErrorMock: vi.fn()
   }
-)
+})
 
 vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
 
