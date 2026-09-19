@@ -10,8 +10,6 @@ interface MinimapDecorationTarget extends GraphScope {
 
 interface MinimapNodeDecoration {
   readonly target: MinimapDecorationTarget
-  readonly tone: 'accent'
-  readonly treatment: 'fill'
   readonly enter?: 'pop'
 }
 
@@ -34,6 +32,17 @@ const revision = shallowRef(0)
 
 function targetKey(target: MinimapDecorationTarget): string {
   return `${target.rootGraphId}:${target.owningGraphId}:${target.nodeId}`
+}
+
+function copyDecoration(
+  row: MinimapNodeDecoration,
+  enteredAt?: number
+): ResolvedMinimapNodeDecoration {
+  return {
+    target: { ...row.target },
+    enter: row.enter,
+    enteredAt
+  }
 }
 
 function invalidate(): void {
@@ -63,14 +72,14 @@ export function registerMinimapDecorationLayer(
       if (layer.disposed) return
       const next = new Map<string, ResolvedMinimapNodeDecoration>()
       const now = performance.now()
-      for (const row of rows) {
+      for (const [index, row] of rows.entries()) {
         const key = targetKey(row.target)
         const previous = layer.rows.get(key)
-        next.set(key, {
-          ...row,
-          enteredAt:
-            row.enter === 'pop' ? (previous?.enteredAt ?? now) : undefined
-        })
+        const enteredAt =
+          row.enter === 'pop'
+            ? (previous?.enteredAt ?? now + Math.min(index, 8) * 50)
+            : undefined
+        next.set(key, copyDecoration(row, enteredAt))
       }
       layer.rows.clear()
       for (const [key, row] of next) layer.rows.set(key, row)
@@ -98,4 +107,5 @@ export function getMinimapDecorations(
         target.rootGraphId === scope.rootGraphId &&
         target.owningGraphId === scope.owningGraphId
     )
+    .map((row) => copyDecoration(row, row.enteredAt))
 }

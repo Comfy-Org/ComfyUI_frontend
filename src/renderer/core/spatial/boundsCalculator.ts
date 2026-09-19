@@ -1,3 +1,5 @@
+import { calculatePositionExtents } from '@/utils/positionBounds'
+
 /**
  * Spatial bounds calculations for node layouts
  */
@@ -81,4 +83,3 @@ export function calculateMinimapScale(
 
   return Math.min(scaleX, scaleY) * padding
 }
-import { calculatePositionExtents } from '@/utils/positionBounds'

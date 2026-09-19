@@ -38,7 +38,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 // The composition root publishes declarative rows to the renderer-owned port;
 // agent CRDT and state modules remain independent of minimap implementation.
 // eslint-disable-next-line import-x/no-restricted-paths
-import { registerMinimapDecorationLayer } from '@/renderer/extensions/minimap/minimapDecorationRegistry'
+import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -229,8 +229,6 @@ watch(
           owningGraphId: toOwningGraphId(activity.rootGraphId),
           nodeId
         },
-        tone: 'accent',
-        treatment: 'fill',
         enter: 'pop'
       }))
     )

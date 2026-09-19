@@ -367,8 +367,6 @@ describe('minimapCanvasRenderer', () => {
       decorations: [
         {
           target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
-          tone: 'accent',
-          treatment: 'fill',
           enter: 'pop',
           enteredAt: 1_000
         }

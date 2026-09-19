@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   getMinimapDecorations,
   registerMinimapDecorationLayer
-} from './minimapDecorationRegistry'
+} from '@/platform/canvas/minimapDecorationRegistry'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -22,8 +22,6 @@ describe('minimapDecorationRegistry', () => {
     layer.replace([
       {
         target: { ...scopeA, nodeId: toNodeId('7') },
-        tone: 'accent',
-        treatment: 'fill',
         enter: 'pop'
       }
     ])
@@ -33,8 +31,6 @@ describe('minimapDecorationRegistry', () => {
     layer.replace([
       {
         target: { ...scopeA, nodeId: toNodeId('7') },
-        tone: 'accent',
-        treatment: 'fill',
         enter: 'pop'
       }
     ])
@@ -51,10 +47,48 @@ describe('minimapDecorationRegistry', () => {
     layer.replace([
       {
         target: { ...scopeA, nodeId: toNodeId('8') },
-        tone: 'accent',
-        treatment: 'fill'
       }
     ])
     expect(getMinimapDecorations(scopeA)).toEqual([])
+  })
+
+  it('owns target values on both sides of the registry boundary', () => {
+    const layer = registerMinimapDecorationLayer('test.ownership')
+    const target = { ...scopeA, nodeId: toNodeId('9') }
+    layer.replace([{ target }])
+
+    target.nodeId = toNodeId('10')
+    const result = getMinimapDecorations(scopeA)
+    expect(result[0]?.target.nodeId).toBe('9')
+
+    ;(result[0]!.target as { nodeId: ReturnType<typeof toNodeId> }).nodeId =
+      toNodeId('11')
+    expect(getMinimapDecorations(scopeA)[0]?.target.nodeId).toBe('9')
+    layer.dispose()
+  })
+
+  it('stages new pop decorations while preserving existing entry times', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000)
+    const layer = registerMinimapDecorationLayer('test.stagger')
+    layer.replace(
+      ['1', '2', '3'].map((id) => ({
+        target: { ...scopeA, nodeId: toNodeId(id) },
+        enter: 'pop' as const
+      }))
+    )
+
+    expect(
+      getMinimapDecorations(scopeA).map(({ enteredAt }) => enteredAt)
+    ).toEqual([1_000, 1_050, 1_100])
+
+    now.mockReturnValue(2_000)
+    layer.replace([
+      { target: { ...scopeA, nodeId: toNodeId('2') }, enter: 'pop' },
+      { target: { ...scopeA, nodeId: toNodeId('4') }, enter: 'pop' }
+    ])
+    expect(
+      getMinimapDecorations(scopeA).map(({ enteredAt }) => enteredAt)
+    ).toEqual([1_050, 2_050])
+    layer.dispose()
   })
 })

@@ -4,7 +4,7 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
-import type { ResolvedMinimapNodeDecoration } from './minimapDecorationRegistry'
+import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 
 /**
  * Minimal interface for what the minimap needs from the canvas
