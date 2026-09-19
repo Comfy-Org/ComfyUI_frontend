@@ -65,6 +65,23 @@ test.describe(
         .toBe('false')
     })
 
+    test('describes the active workflow as the workflow the agent can edit', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true)
+
+      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeVisible()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.switchWorkflow })
+        .hover()
+      await expect(page.locator('.z-1700')).toContainText(
+        'Change the workflow that the agent can edit'
+      )
+    })
+
     test.fixme('supports keyboard activation and returns one complementary landmark', async ({
       page
     }) => {
