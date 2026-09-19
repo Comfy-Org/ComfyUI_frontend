@@ -100,18 +100,13 @@ test(
     const image = panel.getByRole('img', { name: droppedFilename })
     await expect(image).toBeVisible()
 
-    // Structure first, while a failure here is still unexpected. test.fail()
-    // below makes everything after it expected to fail.
-    test.fail()
-
     // Lens 1 (DOM/attribute): the rendered attachment's `src` should be the
     // dragged asset's own preview URL, not a reconstructed one.
     await expect(image).toHaveAttribute('src', correctPreviewUrl)
 
     // Lens 2 (visual): the two fixture images differ in pixel dimensions, so
-    // a screenshot and a decoded-size check both show which file actually
-    // rendered - today it is the wrong (64x64) image, not the dragged (32x32)
-    // one.
+    // a screenshot and a decoded-size check both confirm the dragged (32x32)
+    // image rendered, not the other (64x64) fixture.
     await image.evaluate((el: HTMLImageElement) => el.decode())
     const naturalWidth = await image.evaluate(
       (el: HTMLImageElement) => el.naturalWidth

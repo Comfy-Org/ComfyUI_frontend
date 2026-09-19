@@ -174,11 +174,10 @@ describe('UserMessage', () => {
   // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
   // into the composer attaches it with `ref` set to the bare output filename
   // (no content hash — see outputAssetUtil.ts's deliberate omission) and a
-  // correct `previewUrl` captured at drop time. splitAttachments discards
-  // that previewUrl whenever `ref` is truthy and reconstructs
-  // `/view?...&type=input`, which does not resolve to the dragged output.
-  // It should prefer `previewUrl` when present instead.
-  it.fails('KNOWN BUG: shows the dragged batch output, not a type=input lookup, for a non-first output asset', () => {
+  // correct `previewUrl` captured at drop time. splitAttachments must prefer
+  // that previewUrl over reconstructing `/view?...&type=input`, which does
+  // not resolve to the dragged output.
+  it('shows the dragged batch output, not a type=input lookup, for a non-first output asset', () => {
     renderMessage({
       text: 'use this one',
       attachments: [
