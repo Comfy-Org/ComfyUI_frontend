@@ -255,8 +255,16 @@ function routesRead(reads: Request[]): Set<string> {
   )
 }
 
+/**
+ * Answered on the websocket handshake rather than set after boot: the billing
+ * gate issues its first status, balance and capabilities reads while resolving
+ * auth and workspace, before `GraphCanvas`'s `onMounted` assigns `window.app`.
+ * A flag set any later would leave those first reads on the legacy client and
+ * only move the ones the panel triggers, which is not what "every read on the
+ * rail" means.
+ */
 async function enableReadRail(page: Page) {
-  await new FeatureFlagHelper(page).setServerFlagsPersistent({
+  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
     billing_sdk_topup_enabled: true
   })
 }
@@ -283,8 +291,8 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await mockCloudBoot(page)
-    await bootApp(page)
     await enableReadRail(page)
+    await bootApp(page)
 
     const content = await openPlanAndCredits(page)
 
@@ -309,8 +317,8 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     await mockCloudBoot(page, { unsafeBalance: true })
-    await bootApp(page)
     await enableReadRail(page)
+    await bootApp(page)
 
     const content = await openPlanAndCredits(page)
 
@@ -325,8 +333,8 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await mockCloudBoot(page)
-    await bootApp(page)
     await enableReadRail(page)
+    await bootApp(page)
 
     const content = await openPlanAndCredits(page)
     await expect(content.getByText('node-on-page-1')).toBeVisible()
