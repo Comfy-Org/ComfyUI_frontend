@@ -144,12 +144,6 @@ function notifyAgentMaterialization(
   )
 }
 
-interface DocResetDetail {
-  workflowId?: string
-  actor?: string
-  seq?: number
-}
-
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -410,6 +404,12 @@ function startAgentCrdtFollower(
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
     const added = trackNodeChanges()
+    if (!update.actor?.startsWith('agent:')) {
+      const liveDocIds = currentDocNodeIds()
+      for (const nodeId of pendingLiveNodeIds) {
+        if (!liveDocIds.has(nodeId)) pendingLiveNodeIds.delete(nodeId)
+      }
+    }
     notifyAgentMaterialization(
       update,
       added,
@@ -434,7 +434,11 @@ function startAgentCrdtFollower(
   const onDocReset: EventListener = (event) => {
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as DocResetDetail)
+        ? (event.detail as {
+            workflowId?: string
+            actor?: string
+            seq?: number
+          })
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
