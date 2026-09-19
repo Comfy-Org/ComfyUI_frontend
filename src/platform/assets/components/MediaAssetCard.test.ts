@@ -406,29 +406,39 @@ describe('MediaAssetCard', () => {
     expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
   })
 
-  it('falls back to the real, inline-playable content url for a video with no server preview', async () => {
-    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+  it.for([
+    {
+      kind: 'video',
+      name: 'agent_generated_video.mp4',
+      testId: 'media-asset-video'
+    },
+    {
+      kind: 'audio',
+      name: 'agent_generated_audio.mp3',
+      testId: 'wave-audio-media'
+    }
+  ])(
+    'plays a $kind asset with no server preview from its inline content url',
+    async ({ name, testId }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
-    const { container } = renderCard({
-      loading: false,
-      asset: {
-        ...asset,
-        id: 'agent-video',
-        name: 'agent_generated_video.mp4',
-        preview_url: undefined,
-        thumbnail_url: undefined
-      }
-    })
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          id: 'agent-media',
+          name,
+          preview_url: undefined,
+          thumbnail_url: undefined
+        }
+      })
 
-    const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-      const element = container.querySelector('video')
-      expect(element).toBeInTheDocument()
-      return element!
-    })
+      const media = await screen.findByTestId(testId)
 
-    expect(video.getAttribute('src')).toBe(
-      '/api/assets/agent-video/content?disposition=inline'
-    )
-  })
+      expect(media).toHaveAttribute(
+        'src',
+        '/api/assets/agent-media/content?disposition=inline'
+      )
+    }
+  )
 })
