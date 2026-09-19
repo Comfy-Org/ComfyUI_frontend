@@ -281,12 +281,21 @@ const graphMutations = (workflowId: string) => {
         // layoutStore entry yet. Fall back to the live renderer node's own
         // position/size so bounds-gathering still sees it.
         const rootGraph = app.rootGraph
-        if (rootGraph.id !== scope.rootGraphId) return null
         const graph =
           String(scope.owningGraphId) === String(scope.rootGraphId)
             ? rootGraph
             : rootGraph._subgraphs.get(scope.owningGraphId)
         const node = graph?.getNodeById(nodeId)
+        console.error('[diag] getLayout fallback', {
+          rootGraphId: rootGraph.id,
+          scopeRootGraphId: scope.rootGraphId,
+          scopeOwningGraphId: scope.owningGraphId,
+          rootGraphIdMatches: rootGraph.id === scope.rootGraphId,
+          resolvedGraphExists: graph !== undefined && graph !== null,
+          nodeFound: node !== undefined,
+          nodeId
+        })
+        if (rootGraph.id !== scope.rootGraphId) return null
         if (!node) return null
         return {
           position: { x: node.pos[0], y: node.pos[1] },

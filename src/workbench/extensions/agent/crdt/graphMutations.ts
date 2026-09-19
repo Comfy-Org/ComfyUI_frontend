@@ -460,6 +460,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
+    console.error('[diag] prepare() bounds source', {
+      rootGraphId: scope.rootGraphId,
+      owningGraphId: scope.owningGraphId,
+      nodeCount: nodes.size,
+      nodeIds: [...nodes.values()].map((node) => node.id)
+    })
     // Bounds of everything already on the graph, so a brand-new node's raw
     // coordinates can be checked against it (see `placeNewNode`). Read once
     // up front, then extended as this batch adds nodes of its own, so
