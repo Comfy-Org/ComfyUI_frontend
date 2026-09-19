@@ -94,6 +94,9 @@ describe('useSubscriptionOperationView', () => {
     const view = useSubscriptionOperationView()
     harness.publish(pendingSubscription({ actionUrl: HOSTED_STEP }))
     expect(view.isSettingUp.value).toBe(true)
+    // Pinned before the switch too, or a view that always answers null would
+    // pass the assertion after it.
+    expect(view.subscriptionActionUrl.value).toBe(HOSTED_STEP)
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-other' })
 
