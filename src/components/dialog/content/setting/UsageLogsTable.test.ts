@@ -11,6 +11,8 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 import UsageLogsTable from './UsageLogsTable.vue'
 
 const mockCustomerEventsService = vi.hoisted(() => ({
@@ -635,6 +637,27 @@ describe('UsageLogsTable', () => {
           'Something went wrong while loading activity. Please refresh and try again.'
         )
       ).not.toBeInTheDocument()
+    })
+
+    // The superseded branch only covers a switch that races an in-flight read.
+    // With nothing in flight, nothing reloaded this table at all and the rows
+    // of the workspace being left stayed on screen.
+    it('reloads and drops the rows when the active workspace changes', async () => {
+      onTheRail()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'ok',
+        value: { events: [], page: 1, limit: 7, total: 0, totalPages: 0 }
+      })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
     })
 
     it('shows the localized fallback when the read fails', async () => {

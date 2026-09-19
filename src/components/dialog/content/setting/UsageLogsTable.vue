@@ -105,6 +105,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
@@ -183,13 +184,7 @@ const loadEvents = async () => {
     // does not remount this table — leaving the rows up would show one
     // workspace's billing events under another.
     if (response === undefined) {
-      events.value = []
-      pagination.value = {
-        ...pagination.value,
-        page: 1,
-        total: 0,
-        totalPages: 0
-      }
+      dropRenderedEvents()
       return
     }
 
@@ -235,14 +230,32 @@ const onPageChange = (event: { page: number }) => {
   })
 }
 
+/**
+ * Forget what is on screen. A superseded read and a workspace switch both mean
+ * the rendered rows belong to a scope this table has left, so they go before
+ * the next read rather than after it settles.
+ */
+const dropRenderedEvents = () => {
+  events.value = []
+  pagination.value = { ...pagination.value, page: 1, total: 0, totalPages: 0 }
+}
+
 const refresh = async () => {
   pagination.value.page = 1
   await loadEvents()
 }
 
+const workspaceStore = useTeamWorkspaceStore()
+
+// The active workspace is watched alongside the billing mode: a switch between
+// two workspaces on the same mode leaves this table mounted, and without this
+// nothing reloads it at all when no read happens to be in flight.
 watch(
-  shouldUseWorkspaceBilling,
-  () => {
+  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  ([, workspaceId], previous) => {
+    if (previous !== undefined && previous[1] !== workspaceId) {
+      dropRenderedEvents()
+    }
     refresh().catch((error) => {
       console.error('Error loading events:', error)
     })
