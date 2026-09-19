@@ -115,8 +115,20 @@ const updateWidgets = () => {
         widgetState.size = [newWidth, newHeight]
       }
 
-      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
-      widgetState.readonly = lgCanvas.read_only
+      const newZIndex = getDomWidgetZIndex(posNode, currentGraph)
+      if (widgetState.zIndex !== newZIndex) {
+        widgetState.zIndex = newZIndex
+      }
+
+      const newReadonly = lgCanvas.read_only
+      if (widgetState.readonly !== newReadonly) {
+        widgetState.readonly = newReadonly
+      }
+
+      const newComputedDisabled = widget.computedDisabled ?? false
+      if (widgetState.computedDisabled !== newComputedDisabled) {
+        widgetState.computedDisabled = newComputedDisabled
+      }
     }
   }
 }
