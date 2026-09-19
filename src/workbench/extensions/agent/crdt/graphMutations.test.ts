@@ -495,6 +495,29 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  // The CRDT document never carries a node's presentation-only
+  // `color` or an autogrow input's client-computed `localized_name` (the
+  // friendly label shown over a raw dotted slot name like
+  // `model.images.image_1`). A reconcile wholesale-replaces the live state
+  // from the doc payload instead of merging onto it, so both are blanked.
+  it.fails('preserves a live node color and friendly input label across a reconcile', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#ff0000')
+    expect(reconciled.inputs[0].localized_name).toBe('image_1')
+  })
+
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)

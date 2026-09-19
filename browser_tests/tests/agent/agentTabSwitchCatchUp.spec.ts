@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
@@ -225,6 +226,84 @@ test.describe(
         await returnToTabA()
         await expectTabA(tabAViewport)
       })
+    })
+  }
+)
+
+// The CRDT document never carries a node's presentation-only color,
+// because it is a renderer-owned field the op layer's payload never sets.
+// `reconcileLiveGraph` (the same tab-switch trigger as above) re-applies that
+// payload wholesale onto the live node record instead of merging onto it, so
+// a color the user picked on this node disappears the moment the tab is
+// left and revisited. See `graphMutations.test.ts` for the same defect
+// proven directly against `nodeDataStore.updateNode`, including the
+// autogrow input label half of the bug that this end-to-end repro does not
+// cover (no recorded conversation carries a multi-input autogrow node).
+const COLORED_CASE = EDITED_CASE
+const COLORED_NODE_ID = '3' // KSampler, from the case's seed workflow.
+
+test.describe(
+  'Agent workflow tab switch blanks a user-set node color',
+  { tag: ['@cloud', '@agent'] },
+  () => {
+    test.use({ conversationCase: COLORED_CASE })
+
+    test('keeps a user-set node color after switching away and back with Agent open', async ({
+      agentConversation,
+      page
+    }, testInfo) => {
+      test.setTimeout(90_000)
+      const topbar = new Topbar(page)
+      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const nodes = agentConversation.vueNodes
+      const coloredInnerWrapper = nodes.getNodeInnerWrapper(COLORED_NODE_ID)
+
+      await agentConversation.runTurns()
+
+      const coloredBackground =
+        await test.step('user picks a custom color for a node', async () => {
+          await nodes.selectNode(COLORED_NODE_ID)
+          await page
+            .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+            .click()
+          await page.getByTestId(TestIds.selectionToolbox.colorRed).click()
+
+          const background = await coloredInnerWrapper.evaluate(
+            (el) => getComputedStyle(el).backgroundColor
+          )
+          await expect(coloredInnerWrapper).toHaveCSS(
+            'background-color',
+            background
+          )
+          return background
+        })
+
+      await test.step('user opens a new blank workflow', async () => {
+        await expect(tabs).toHaveCount(1)
+        await topbar.newWorkflowButton.click()
+        await expect(tabs).toHaveCount(2)
+        await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+      })
+
+      await test.step('user returns to the colored workflow, forcing a full reconcile', async () => {
+        await topbar.getTab(0).click()
+        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await agentConversation.expectCanvasReplayed(0)
+      })
+
+      await testInfo.attach('node-after-reconcile.png', {
+        body: await page.screenshot(),
+        contentType: 'image/png'
+      })
+
+      test.fail(
+        true,
+        'the reconcile triggered by returning to the tab wholesale-replaces the node record from the CRDT doc, which never carried the color, blanking it'
+      )
+      await expect(coloredInnerWrapper).toHaveCSS(
+        'background-color',
+        coloredBackground
+      )
     })
   }
 )
