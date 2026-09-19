@@ -21,10 +21,13 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   await page.goto(
     '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
   )
-  const upload = (name: string) =>
-    page
-      .getByRole('group', { name, exact: true })
-      .getByLabel(name, { exact: true })
+  const group = (name: string) => page.getByRole('group', { name, exact: true })
+  const upload = (name: string) => group(name).getByLabel(name, { exact: true })
+  // The notice is legitimately down while a frame's size is unknown, and a
+  // replaced frame is unmeasured until it decodes, so every assertion of
+  // absence here first waits for the frames it is about to judge.
+  const decoded = (name: string, width: number) =>
+    expect(group(name).getByRole('img')).toHaveJSProperty('naturalWidth', width)
   const first = upload('First frame')
   const last = upload('Last frame')
   const notice = page.getByTestId('frame-ratio-notice')
@@ -32,16 +35,29 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
   // The page opens with both frames already filled from its worked example.
   // The suite serves the example's external images as the same 1x1 placeholder,
   // so this pins that an untouched page stays quiet, not the example's shapes.
+  await decoded('First frame', 1)
+  await decoded('Last frame', 1)
   await expect(
     notice,
     'an untouched page must not greet the visitor with a warning'
   ).toHaveCount(0)
 
-  await first.setInputFiles(frame('first.png', LANDSCAPE_16_9))
+  // Changing only the last frame raises the notice against the example's own
+  // first frame, which is what makes the silence above an answer about two
+  // measured frames rather than about one that had not loaded yet.
   await last.setInputFiles(frame('last.png', PORTRAIT_9_16))
+  await expect(notice).toContainText('The last frame will be stretched')
+
+  await first.setInputFiles(frame('first.png', LANDSCAPE_16_9))
   await expect(notice).toContainText('The last frame will be stretched')
 
   // Replacing the last frame with the same shape retires the notice on its own.
   await last.setInputFiles(frame('last.png', WIDER_LANDSCAPE_16_9))
+  await decoded('Last frame', 32)
   await expect(notice).toHaveCount(0)
+
+  // And that silence is about the replacement rather than a cleared or a stale
+  // size: turning the first frame portrait has to bring the warning back.
+  await first.setInputFiles(frame('first.png', PORTRAIT_9_16))
+  await expect(notice).toContainText('The last frame will be stretched')
 })
