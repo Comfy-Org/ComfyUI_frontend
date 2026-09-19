@@ -46,7 +46,7 @@ const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 // The composer names itself with the rendered message, escapes resolved; the
@@ -204,7 +204,9 @@ export class AgentConversationHarness {
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
 
-    await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await this.page
+      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      .click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
