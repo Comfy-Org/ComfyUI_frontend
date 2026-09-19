@@ -7,7 +7,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -26,6 +26,7 @@ const toast = useToastStore()
 
 const open = ref(false)
 const savingMode = ref<AgentRunModeValue | null>(null)
+const descriptionId = useId()
 let openCount = 0
 
 function onOpenChange(next: boolean): void {
@@ -118,7 +119,7 @@ const options: {
           <div class="text-sm/5 font-medium text-base-foreground">
             {{ t('agent.runPermissions') }}
           </div>
-          <div class="text-xs/4 text-muted-foreground">
+          <div :id="descriptionId" class="text-xs/4 text-muted-foreground">
             {{ t('agent.runPermissionsDescription') }}
           </div>
         </div>
@@ -126,6 +127,7 @@ const options: {
         <DropdownMenuRadioGroup
           :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
+          :aria-describedby="descriptionId"
           class="flex flex-col gap-1"
           @update:model-value="onSelectMode"
         >
@@ -143,7 +145,7 @@ const options: {
                 store.mode === option.mode ? 'tertiary' : 'muted-textonly'
               "
               size="unset"
-              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none"
+              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none data-disabled:opacity-50"
             >
               <span
                 :class="

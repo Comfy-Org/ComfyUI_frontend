@@ -598,6 +598,43 @@ describe('Composer', () => {
       }
     )
 
+    it('dismisses on Escape and leaves a menu reopened during the write alone', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Choose when the agent needs your consent')
+        ).toBeNull()
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
+
+      expect(
+        screen.getByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+    })
+
     it('reopens on the mode saved by the previous choice', async () => {
       mount()
       const store = useAgentRunModeStore()
