@@ -79,27 +79,6 @@ function liveAddedNodeIds(
   })
 }
 
-function rememberLiveNodeIds(
-  added: readonly string[],
-  materialized: readonly NodeId[],
-  pending: Set<NodeId>
-): void {
-  for (const nodeId of materialized) pending.add(nodeId)
-  for (const id of added) {
-    const nodeId = parseNodeId(id)
-    if (nodeId) pending.add(nodeId)
-  }
-}
-
-function takeAvailablePendingIds(
-  available: ReadonlySet<NodeId>,
-  pending: Set<NodeId>
-): NodeId[] {
-  const ready = [...pending].filter((id) => available.has(id))
-  for (const id of ready) pending.delete(id)
-  return ready
-}
-
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
@@ -110,13 +89,19 @@ function notifyAgentMaterialization(
 ): void {
   const isLiveAgentUpdate =
     !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate)
-    rememberLiveNodeIds(added, materialized, pendingLiveNodeIds)
+  if (isLiveAgentUpdate) {
+    for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
+    for (const id of added) {
+      const nodeId = parseNodeId(id)
+      if (nodeId) pendingLiveNodeIds.add(nodeId)
+    }
+  }
   const available = new Set([
     ...materialized,
     ...liveAddedNodeIds(added, graph)
   ])
-  const nodeIds = takeAvailablePendingIds(available, pendingLiveNodeIds)
+  const nodeIds = [...pendingLiveNodeIds].filter((id) => available.has(id))
+  for (const nodeId of nodeIds) pendingLiveNodeIds.delete(nodeId)
   if (nodeIds.length === 0) return
   events.onMaterialized?.({
     workflowId: update.workflowId,
