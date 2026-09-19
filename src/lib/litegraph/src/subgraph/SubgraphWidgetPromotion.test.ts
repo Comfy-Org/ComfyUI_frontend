@@ -1662,3 +1662,74 @@ describe('SubgraphWidgetPromotion', () => {
     })
   })
 })
+
+// PM-1328 / PM-1253 / PM-1254: wiring a new source into the interior link
+// behind one promoted widget (e.g. "prompt") visually duplicates or drops
+// the *other*, unrelated promoted widgets (e.g. width/height/seed) on the
+// same host node. Confirmed mechanism: SubgraphInputNode's
+// 'input-disconnected' handler (SubgraphNode.ts, ensureWidgetRemoved) drops
+// the rewired widget from `hostNode.widgets` synchronously, but defers the
+// matching `widgetValueStore` cleanup to a `queueMicrotask`. For one tick,
+// `hostNode.widgets.length` and the store's tracked id count for that node
+// disagree, which is exactly the desync the Vue widget grid (useProcessedWidgets)
+// reads from two different sources to render.
+describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
+  function makeInteriorNode(title: string, value: unknown = 1) {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'number')
+    node.addOutput('out', 'number')
+    // @ts-expect-error Abstract class instantiation
+    const widget = new BaseWidget({
+      name: 'widget',
+      type: 'number',
+      value,
+      y: 0,
+      options: {},
+      node
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  it.fails('KNOWN BUG: rewiring the interior link behind one promoted widget drops it from hostNode.widgets for one tick, out of sync with the still-stale widget-value store', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'text', type: 'number' },
+        { name: 'seed', type: 'number' },
+        { name: 'width', type: 'number' },
+        { name: 'height', type: 'number' }
+      ]
+    })
+
+    const textNode = makeInteriorNode('TextNode')
+    const seedNode = makeInteriorNode('SeedNode')
+    const widthNode = makeInteriorNode('WidthNode')
+    const heightNode = makeInteriorNode('HeightNode')
+    subgraph.add(textNode)
+    subgraph.add(seedNode)
+    subgraph.add(widthNode)
+    subgraph.add(heightNode)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    subgraph.inputNode.slots[1].connect(seedNode.inputs[0], seedNode)
+    subgraph.inputNode.slots[2].connect(widthNode.inputs[0], widthNode)
+    subgraph.inputNode.slots[3].connect(heightNode.inputs[0], heightNode)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    expect(hostNode.widgets).toHaveLength(4)
+
+    // Rewire the interior link feeding the 'text' promoted widget, exactly
+    // as a user (or agent) dragging a new source onto that widget's socket
+    // does: the old link is removed before the new one lands.
+    textNode.disconnectInput(0, true)
+
+    // The other, unrelated promoted widgets (seed/width/height) must still
+    // read back as a stable set of 4 immediately after the rewire step.
+    // Today this is 3: the demotion is synchronous on `hostNode.widgets`
+    // while `useWidgetValueStore` keeps the stale 4th id until a
+    // `queueMicrotask` runs, which is the exact one-tick window the Vue
+    // widget grid renders from.
+    expect(hostNode.widgets).toHaveLength(4)
+  })
+})
