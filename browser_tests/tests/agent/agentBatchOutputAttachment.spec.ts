@@ -97,8 +97,15 @@ test(
 
     const bubble = panel.getByTestId('user-message-bubble')
     await expect(bubble).toHaveText('use this generation')
-    const image = panel.getByRole('img', { name: droppedFilename })
+    // The preview <img> sits inside a role="button" wrapper (for the
+    // lightbox-open click target), and Chromium's accessibility tree treats a
+    // button's content as presentational, so the image never surfaces as its
+    // own accessible `img` node - getByRole('img', ...) matches zero elements
+    // here even though the correct image is rendered. Find it by test id
+    // instead, and check the accessible name (alt) directly.
+    const image = panel.getByTestId('reply-image-preview')
     await expect(image).toBeVisible()
+    await expect(image).toHaveAttribute('alt', droppedFilename)
 
     // Lens 1 (DOM/attribute): the rendered attachment's `src` should be the
     // dragged asset's own preview URL, not a reconstructed one.
