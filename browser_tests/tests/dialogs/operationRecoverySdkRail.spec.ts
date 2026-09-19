@@ -241,30 +241,30 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
   })
 
   /**
-   * Pins a defect, not the intended behaviour. **Recovery at load runs on the
-   * legacy poller even with `billing_sdk_subscription_enabled` on**, because
-   * the flag has not arrived yet when the decision is made.
+   * Asserts the invariant, not the rail, because **the rail is not
+   * deterministic here** — and that is itself the finding.
    *
-   * `billingSdkSubscriptionRailEnabled` is `billingSdkSubscriptionEnabled &&
-   * unifiedCloudAuthEnabled`, and the two halves come from different channels:
-   * `unified_cloud_auth` off `/api/features`, which boot awaits, but
+   * `billingSdkSubscriptionRailEnabled` needs two halves from two channels:
+   * `unified_cloud_auth` off `/api/features`, which boot awaits, and
    * `billing_sdk_subscription_enabled` off `api.serverFeatureFlags`, which only
    * the websocket `feature_flags` handshake populates (`api.ts:1012`) and which
-   * nothing awaits. `resumePendingOperation` runs from the billing gate's first
-   * status read, before the socket has connected.
+   * nothing awaits — `createSocket()` does not even open the socket until the
+   * cloud auth token resolves. `resumePendingOperation` runs from the billing
+   * gate's first status read, so the two race. The trace from this spec's first
+   * CI run measures one outcome: the legacy poll went out 145ms before the
+   * handshake reached the page.
    *
-   * The trace from this spec's first run measures the gap: the legacy poll of
-   * `/billing/ops/{id}` went out 145ms before the handshake reached the page.
-   * That ordering is not fixed — it is a race — so the rail a recovered
-   * operation lands on is nondeterministic per load, which is a worse version
-   * of the mid-session-flip ambiguity FE-2484 exists to remove.
+   * Asserting either transport would therefore be a flake, so this row asserts
+   * what holds on both sides of the race and is what FE-2484 is actually for:
+   * **exactly one adopter**. Two transports polling one operation is the
+   * double-poll this PR exists to prevent, and that fails here whichever side
+   * wins.
    *
-   * The unit suite proves `railOwnsResume` picks the SDK once the flag is
-   * readable; what this row records is that at load it usually is not. **When
-   * the race is fixed this row goes red, and that is the point** — swap it for
-   * the `fetch`/no-`xhr` assertion it was written with.
+   * The race is written up on the PR; fixing it is flag plumbing, not billing,
+   * and needs its own ticket. Once it is fixed, tighten this back to the
+   * `fetch`/no-`xhr` assertion it was written with.
    */
-  test('still adopts on the legacy poller at load, because the rail flag lands after the billing gate', async ({
+  test('adopts a server-reported pending operation exactly once, on one rail', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -277,7 +277,7 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     await cloudAppExpect
       .poll(() => routes.pollRequests.length)
       .toBeGreaterThan(0)
-    expect(transports(routes.pollRequests)).toContain('xhr')
+    expect(new Set(transports(routes.pollRequests)).size).toBe(1)
   })
 
   test('still restores the tier and cycle from the host pointer when recovery fails', async ({
