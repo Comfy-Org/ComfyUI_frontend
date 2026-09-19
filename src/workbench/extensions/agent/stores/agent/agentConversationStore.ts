@@ -186,19 +186,7 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const last = kept.at(-1)
-      let poppedHydratedCopy = false
-      if (
-        kept.length === messages.value.length &&
-        last &&
-        !hydratedAssistantTurnIds.has(last.id) &&
-        entry.userText !== undefined &&
-        userTexts.value.get(last.id) === entry.userText
-      ) {
-        kept.pop()
-        userTexts.value.delete(last.id)
-        poppedHydratedCopy = true
-      }
+      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
         entry.settled &&
         !poppedHydratedCopy &&
@@ -217,6 +205,23 @@ export const useAgentConversationStore = defineStore(
       activeIndex.value = index
       transport = entry.transport
       liveMessage = entry.message
+    }
+
+    function removeHydratedCopy(
+      entry: BackgroundTurn,
+      kept: AssistantMessage[]
+    ): boolean {
+      if (kept.length !== messages.value.length) return false
+      const last = kept.at(-1)
+      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        entry.userText === undefined ||
+        userTexts.value.get(last.id) !== entry.userText
+      )
+        return false
+      kept.pop()
+      userTexts.value.delete(last.id)
+      return true
     }
 
     function settleBackgroundTurn(turnId: string): void {

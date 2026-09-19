@@ -576,6 +576,51 @@ function startAgentCrdtFollower(
     else bridge.subscribe(next)
     sender.abortIfUnbound()
   }
+
+  const deactivateTarget = (next: string | null): void => {
+    if (next !== null) initialBind = false
+    if (boundWorkflowId !== null) {
+      projection.unbind(boundWorkflowId)
+      boundWorkflowId = null
+    }
+    subscribedWorkflowId.value = null
+    retarget(null)
+  }
+
+  const restorePersistedTarget = (justActivated: boolean): void => {
+    const persisted = initialBind ? lifecycle.readPersistedDocId() : null
+    initialBind = false
+    if (persisted === null) {
+      lifecycle.clearPersistedDocId()
+      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+      boundWorkflowId = null
+      subscribedWorkflowId.value = null
+      retarget(null)
+      return
+    }
+    recordDevEvent('rebind', { workflowId: persisted })
+    if (boundWorkflowId !== persisted) {
+      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+      projection.bind(persisted, bridge.follower)
+      boundWorkflowId = persisted
+    }
+    subscribedWorkflowId.value = persisted
+    retarget(persisted)
+    if (justActivated) reconcileAndReportPending(persisted)
+  }
+
+  const activateTarget = (next: string, justActivated: boolean): void => {
+    initialBind = false
+    if (boundWorkflowId !== next) {
+      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+      projection.bind(next, bridge.follower)
+      boundWorkflowId = next
+    }
+    subscribedWorkflowId.value = next
+    retarget(next)
+    if (justActivated) reconcileAndReportPending(next)
+  }
+
   watch(
     [workflowId, isTargetActive],
     (
@@ -591,48 +636,14 @@ function startAgentCrdtFollower(
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
-        if (next !== null) initialBind = false
-        if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        deactivateTarget(next)
         return
       }
       if (next === null) {
-        const persisted = initialBind ? lifecycle.readPersistedDocId() : null
-        initialBind = false
-        if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
-          if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-            projection.bind(persisted, bridge.follower)
-            boundWorkflowId = persisted
-          }
-          subscribedWorkflowId.value = persisted
-          retarget(persisted)
-          if (justActivated) reconcileAndReportPending(persisted)
-          return
-        }
-        lifecycle.clearPersistedDocId()
-        if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
-        subscribedWorkflowId.value = null
-        retarget(null)
+        restorePersistedTarget(justActivated)
         return
       }
-      initialBind = false
-      if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-        projection.bind(next, bridge.follower)
-        boundWorkflowId = next
-      }
-      subscribedWorkflowId.value = next
-      retarget(next)
-      if (justActivated) reconcileAndReportPending(next)
+      activateTarget(next, justActivated)
     },
     { immediate: true }
   )
