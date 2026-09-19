@@ -15,7 +15,10 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
@@ -23,8 +26,8 @@ type Load3DConfigurationSettings = {
   loadFolder: string
   modelWidget: IBaseWidget
   cameraState?: CameraState
-  width?: IBaseWidget
-  height?: IBaseWidget
+  width?: INumericWidget
+  height?: INumericWidget
   bgImagePath?: string
   silentOnNotFound?: boolean
   /**
@@ -110,7 +113,7 @@ class Load3DConfiguration {
         watch(
           [() => width.value, () => height.value],
           ([nextWidth, nextHeight]) => {
-            this.load3d.setTargetSize(nextWidth as number, nextHeight as number)
+            this.load3d.setTargetSize(nextWidth, nextHeight)
             setting.onSceneInvalidated?.()
           },
           { flush: 'sync' }
@@ -120,9 +123,9 @@ class Load3DConfiguration {
     this.load3d.setConfigurationCleanup(() => scope.stop())
   }
 
-  private setupTargetSize(width?: IBaseWidget, height?: IBaseWidget) {
+  private setupTargetSize(width?: INumericWidget, height?: INumericWidget) {
     if (width && height) {
-      this.load3d.setTargetSize(width.value as number, height.value as number)
+      this.load3d.setTargetSize(width.value, height.value)
     }
   }
 

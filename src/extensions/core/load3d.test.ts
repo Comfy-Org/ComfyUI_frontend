@@ -160,6 +160,7 @@ const registeredExtensionCount = registerExtensionMock.mock.calls.length
 
 interface FakeWidget {
   name: string
+  type?: string
   value: unknown
   serializeValue?: () => Promise<unknown>
 }
@@ -484,8 +485,8 @@ describe('Comfy.Load3D.nodeCreated', () => {
   it('configures with the input folder and width/height widgets', async () => {
     const widgets: FakeWidget[] = [
       { name: 'model_file', value: 'model.glb' },
-      { name: 'width', value: 1024 },
-      { name: 'height', value: 768 },
+      { name: 'width', type: 'number', value: 1024 },
+      { name: 'height', type: 'number', value: 768 },
       { name: 'image', value: '' }
     ]
     const node = makeLoad3DNode({ widgets })

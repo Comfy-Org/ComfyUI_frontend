@@ -30,7 +30,10 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  INumericWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   NodeExecutionOutput,
@@ -72,10 +75,6 @@ const inputSpecPreview3D: CustomInputSpec = {
   name: 'image',
   type: 'Preview3D',
   isPreview: true
-}
-
-function invalidateLoad3dScene(node: LGraphNode): void {
-  markLoad3dSceneDirty(node)
 }
 
 async function handleModelUpload(files: FileList, node: LGraphNode) {
@@ -122,7 +121,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       modelWidget.value = uploadPath
     }
 
-    invalidateLoad3dScene(node)
+    markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
     useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
@@ -140,7 +139,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
       : '3d'
 
     await Load3dUtils.uploadMultipleFiles(files, subfolder)
-    invalidateLoad3dScene(node)
+    markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
     useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
@@ -352,7 +351,7 @@ useExtensionService().registerExtension({
             if (modelWidget) {
               modelWidget.value = LOAD3D_NONE_MODEL
             }
-            invalidateLoad3dScene(node)
+            markLoad3dSceneDirty(node)
           })
         }
 
@@ -396,8 +395,12 @@ useExtensionService().registerExtension({
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find((w) => w.name === 'width')
-      const height = node.widgets?.find((w) => w.name === 'height')
+      const width = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
+      )
+      const height = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
+      )
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as
@@ -412,7 +415,7 @@ useExtensionService().registerExtension({
         cameraState,
         width,
         height,
-        onSceneInvalidated: () => invalidateLoad3dScene(node)
+        onSceneInvalidated: () => markLoad3dSceneDirty(node)
       })
     })
 

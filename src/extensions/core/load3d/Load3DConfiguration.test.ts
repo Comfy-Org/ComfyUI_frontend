@@ -17,7 +17,10 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -69,6 +72,10 @@ function stubSettings(values: Partial<Settings>) {
 
 function reactiveWidget(value: IBaseWidget['value']): IBaseWidget {
   return reactive(fromPartial<IBaseWidget>({ value }))
+}
+
+function reactiveNumericWidget(value: number): INumericWidget {
+  return reactive(fromPartial<INumericWidget>({ type: 'number', value }))
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -836,8 +843,8 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
 
   it('width.callback invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = reactiveWidget(1024)
-    const height = reactiveWidget(1024)
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -856,8 +863,8 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
 
   it('height.callback invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = reactiveWidget(1024)
-    const height = reactiveWidget(1024)
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -918,8 +925,8 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
   })
 
   it('callbacks remain safe when onSceneInvalidated is omitted', async () => {
-    const width = reactiveWidget(1024)
-    const height = reactiveWidget(1024)
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
     const modelWidget = reactiveWidget('none')
     const config = new Load3DConfiguration(makeLoad3dMock())
 
