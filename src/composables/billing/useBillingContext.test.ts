@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { effectScope, nextTick, computed } from 'vue'
+import { effectScope, nextTick, computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -73,6 +73,7 @@ const {
 
 let mockIsPersonal: Ref<boolean>
 let mockBillingRail: Ref<BillingRail | null | undefined>
+const mockHasActiveWorkspace = ref(true)
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -141,7 +142,22 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     subscribe: vi.fn(async () => ({ status: 'subscribed' })),
     previewSubscribe: vi.fn(async () => ({ allowed: true })),
     createTopup: vi.fn(async () => undefined)
+  },
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      public readonly status?: number,
+      public readonly code?: string
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
   }
+}))
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 describe('useBillingContext', () => {
@@ -152,10 +168,12 @@ describe('useBillingContext', () => {
     mockBillingRail = refs.activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspace: computed(() =>
-        fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
-          id: mockIsPersonal.value ? 'personal-123' : 'team-456',
-          type: mockIsPersonal.value ? 'personal' : 'team'
-        })
+        mockHasActiveWorkspace.value
+          ? fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
+              id: mockIsPersonal.value ? 'personal-123' : 'team-456',
+              type: mockIsPersonal.value ? 'personal' : 'team'
+            })
+          : undefined
       )
     })
     const authStore = useAuthStore()
@@ -165,6 +183,7 @@ describe('useBillingContext', () => {
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
+    mockHasActiveWorkspace.value = true
     mockBillingRail.value = undefined
     vi.mocked(
       useTeamWorkspaceStore().setWorkspaceBillingRail
@@ -256,6 +275,81 @@ describe('useBillingContext', () => {
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()
     await expect(initialize()).resolves.toBeUndefined()
+  })
+
+  it('recovers from a transient network failure during initialization', async () => {
+    mockHasActiveWorkspace.value = false
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyFetchStatus
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValue(undefined)
+
+    const { initialize, isInitialized } = useBillingContext()
+    const initialization = initialize()
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(500)
+    await initialization
+
+    expect(mockLegacyFetchStatus).toHaveBeenCalledTimes(2)
+    expect(isInitialized.value).toBe(true)
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a network failure after bounded initialization retries', async () => {
+    mockHasActiveWorkspace.value = false
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyFetchStatus.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    const { initialize, isInitialized } = useBillingContext()
+    const initialization = initialize()
+    const result = initialization.catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(await result).toEqual(expect.any(TypeError))
+    expect(mockLegacyFetchStatus).toHaveBeenCalledTimes(3)
+    expect(isInitialized.value).toBe(false)
+    expect(mockReportError).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(TypeError), {
+      errorType: 'billing_context_initialization_failure',
+      tags: { billing_backend: 'legacy' }
+    })
+
+    mockLegacyFetchStatus.mockResolvedValue(undefined)
+    await expect(initialize()).resolves.toBeUndefined()
+    expect(mockLegacyFetchStatus).toHaveBeenCalledTimes(4)
+    expect(isInitialized.value).toBe(true)
+  })
+
+  it('stops retrying when the billing adapter changes during backoff', async () => {
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyFetchStatus
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValue(undefined)
+
+    useBillingContext()
+    await vi.advanceTimersByTimeAsync(0)
+
+    mockBillingRail.value = undefined
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  it('does not retry a legacy HTTP initialization failure', async () => {
+    mockHasActiveWorkspace.value = false
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyFetchStatus.mockRejectedValue(
+      new AuthStoreError('Forbidden', 403)
+    )
+
+    const { initialize } = useBillingContext()
+
+    await expect(initialize()).rejects.toThrow('Forbidden')
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
   it('exposes fetchStatus action', async () => {
