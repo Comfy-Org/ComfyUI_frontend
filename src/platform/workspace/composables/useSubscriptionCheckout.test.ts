@@ -3482,6 +3482,41 @@ describe('useSubscriptionCheckout', () => {
       'no response': undefined
     }
 
+    /**
+     * Annotated rather than asserted: `previewData` holds a wider union whose
+     * other member requires the whole cost breakdown, so a bare literal
+     * resolves to that member and fails. The annotation picks the member this
+     * table means, with no fields no row reads.
+     */
+    function quoteFor(
+      checkoutType: 'new' | 'change'
+    ): PreviewSubscribeResponse {
+      return {
+        allowed: true,
+        transition_type:
+          checkoutType === 'change' ? 'upgrade' : 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        effective_at: '2026-09-20T00:00:00Z',
+        cost_today_cents: 2_000,
+        cost_next_period_cents: 2_000,
+        credits_today_cents: 2_110,
+        credits_next_period_cents: 2_110,
+        new_plan: {
+          slug: 'standard-annual',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          price_cents: 2_000,
+          credits_cents: 2_110,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 2_000,
+            total_credits_cents: 2_110
+          }
+        }
+      }
+    }
+
     async function runCheckout(
       railOn: boolean,
       checkoutType: 'new' | 'change',
@@ -3494,13 +3529,7 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      checkout.previewData.value = {
-        allowed: true,
-        transition_type:
-          checkoutType === 'change' ? 'upgrade' : 'new_subscription',
-        is_immediate: true,
-        requires_reactivation_confirmation: false
-      } as PreviewSubscribeResponse
+      checkout.previewData.value = quoteFor(checkoutType)
       checkout.quoteIsCurrent.value = true
       mockSubscribe.mockResolvedValueOnce(SUBSCRIBE_RESULT[outcome])
       vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
