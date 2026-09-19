@@ -2,7 +2,7 @@
 import { Check, X } from '@lucide/vue'
 import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -55,6 +55,7 @@ const emit = defineEmits<{
 
 const activeKey = ref(groups[0]?.key ?? '')
 const search = ref<Record<string, string>>({})
+const loneGroupLabelId = `facet-sheet-group-${useId()}`
 
 // A facet that is no longer offered would leave the sheet on an empty tab.
 watch(
@@ -194,11 +195,11 @@ function visibleOptions(group: FacetSheetGroup) {
       </button>
 
       <div class="flex items-center justify-between px-4 pt-1 pb-5">
-        <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
+        <h2 class="text-base font-bold text-content">{{ labels.title }}</h2>
         <button
           type="button"
           :aria-label="labels.close"
-          class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
+          class="grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8 text-content-secondary hover:text-content"
           data-testid="workshop-filter-close"
           @click="emit('close')"
         >
@@ -208,20 +209,26 @@ function visibleOptions(group: FacetSheetGroup) {
     </div>
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
+      <!-- One group has nothing to be chosen between. Its name labels the
+        region directly without exposing an inoperable tab widget. -->
+      <h3 v-if="groups.length === 1" :id="loneGroupLabelId" class="sr-only">
+        {{ groups[0]?.label }}
+      </h3>
       <TabsList
-        class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
+        v-if="groups.length > 1"
+        class="scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
         <TabsTrigger
           v-for="group in groups"
           :key="group.key"
           :value="group.key"
           :data-testid="`workshop-facet-${group.key}`"
-          class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
+          class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-content-secondary uppercase transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:ring-2 focus-visible:ring-brand data-[state=active]:bg-white/8 data-[state=active]:text-content"
         >
           {{ group.label }}
           <span
             v-if="group.selected.length"
-            class="bg-brand text-page inline-flex size-4 items-center justify-center rounded-full text-2xs font-bold tabular-nums"
+            class="inline-flex size-4 items-center justify-center rounded-full bg-brand text-2xs font-bold text-page tabular-nums"
             :data-testid="`workshop-facet-${group.key}-count`"
           >
             {{ group.selected.length }}
@@ -233,6 +240,15 @@ function visibleOptions(group: FacetSheetGroup) {
         v-for="group in groups"
         :key="group.key"
         :value="group.key"
+        v-bind="
+          groups.length === 1
+            ? {
+                role: 'region',
+                'aria-labelledby': loneGroupLabelId,
+                tabindex: -1
+              }
+            : {}
+        "
         class="flex min-h-0 flex-col outline-none max-sm:flex-1"
       >
         <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
@@ -242,7 +258,7 @@ function visibleOptions(group: FacetSheetGroup) {
             :placeholder="labels.search"
             :aria-label="labels.search"
             :data-testid="`workshop-filter-${group.key}-search`"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 max-sm:py-2.5 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
+            class="w-full rounded-lg bg-white/5 px-3 py-2 text-xs text-content outline-none placeholder:text-content-muted focus-visible:ring-2 focus-visible:ring-brand max-sm:py-2.5 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
 
@@ -258,7 +274,7 @@ function visibleOptions(group: FacetSheetGroup) {
               type="button"
               :aria-pressed="group.selected.includes(option.value)"
               :data-testid="`filter-${group.key}-${option.value}`"
-              class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
+              class="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs text-content-secondary transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
               @click="emit('toggle', group.key, option.value)"
             >
               <span
@@ -279,14 +295,14 @@ function visibleOptions(group: FacetSheetGroup) {
                 />
               </span>
               <span class="flex-1 truncate">{{ option.label }}</span>
-              <span class="text-content/30 shrink-0 tabular-nums">
+              <span class="shrink-0 text-content/30 tabular-nums">
                 {{ option.count }}
               </span>
             </button>
           </li>
           <li
             v-if="!visibleOptions(group).length"
-            class="text-content-muted px-3 py-2 text-xs max-sm:py-10 max-sm:text-center max-sm:text-sm"
+            class="px-3 py-2 text-xs text-content-muted max-sm:py-10 max-sm:text-center max-sm:text-sm"
           >
             {{ labels.noMatches }}
           </li>
@@ -299,7 +315,7 @@ function visibleOptions(group: FacetSheetGroup) {
       class="flex items-center justify-between gap-3 border-t border-white/10 p-2 max-sm:hidden"
     >
       <span
-        class="text-content-secondary px-1 text-xs"
+        class="px-1 text-xs text-content-secondary"
         data-testid="workshop-filter-applied"
       >
         {{ labels.applied.replace('{n}', String(selectedCount)) }}
@@ -307,7 +323,7 @@ function visibleOptions(group: FacetSheetGroup) {
       <button
         type="button"
         data-testid="workshop-filter-clear"
-        class="text-content-secondary hover:text-content cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/5"
+        class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors hover:bg-white/5 hover:text-content"
         @click="emit('clearAll')"
       >
         {{ labels.clearAll }}
@@ -331,7 +347,7 @@ function visibleOptions(group: FacetSheetGroup) {
       </button>
       <button
         type="button"
-        class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+        class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
         data-testid="workshop-filter-show"
         @click="resultCount > 0 ? emit('close') : emit('clearAll')"
       >

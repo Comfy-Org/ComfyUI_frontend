@@ -52,7 +52,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       <slot />
 
       <SheetClose
-        class="focus:ring-primary-comfy-yellow/50 text-primary-comfy-yellow border-primary-comfy-yellow absolute top-4 right-4 rounded-xl border p-2 ring-offset-primary-comfy-ink transition-opacity focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+        class="absolute top-4 right-4 rounded-xl border border-primary-comfy-yellow p-2 text-primary-comfy-yellow ring-offset-primary-comfy-ink transition-opacity focus:ring-2 focus:ring-primary-comfy-yellow/50 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
       >
         <X class="size-6" />
         <span class="sr-only">{{ closeLabel }}</span>
