@@ -257,6 +257,39 @@ describe('graphMutations', () => {
     }
   )
 
+  // Agent template placement bug: `prepareNode` takes `payload.pos` verbatim via
+  // `readPair` with zero viewport-centering, bounding-box, or
+  // collision-avoidance logic. An agent's "load template" tool emits
+  // `add_node` ops carrying the template's own baked-in absolute layout
+  // coordinates (authored assuming an empty canvas), so a template node lands
+  // wherever the template file says regardless of where existing content
+  // already is.
+  it.fails(
+    'positions a newly added node near existing graph content instead of at its raw baked-in coordinates',
+    () => {
+      const graph = mutations()
+      graph.addNode(node(1), context) // existing content near the origin
+
+      // A template's own absolute layout coordinates, authored for an empty
+      // canvas, land far from the existing node above.
+      const templateNode = { ...node(2), pos: [8000, 6000] }
+      expect(graph.addNode(templateNode, context)).toBe(true)
+
+      const call = createLayout.mock.calls.find(
+        ([, id]) => id === toNodeId(2)
+      )
+      expect(call).toBeDefined()
+      const { position } = call![2] as { position: { x: number; y: number } }
+
+      const existingPos = { x: 10, y: 20 } // node(1)'s pos
+      const distance = Math.hypot(
+        position.x - existingPos.x,
+        position.y - existingPos.y
+      )
+      expect(distance).toBeLessThan(2000)
+    }
+  )
+
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
 
