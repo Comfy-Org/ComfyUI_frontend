@@ -583,7 +583,7 @@ describe('ComfyApp', () => {
       )
       vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
       const images = output.images
-      images?.push({ filename: 'third.png' })
+      images.push({ filename: 'third.png' })
       expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
         {
@@ -594,8 +594,7 @@ describe('ComfyApp', () => {
       expect(output.images).toBe(images)
 
       vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
-      const image = images?.[0]
-      if (!image) throw new Error('Expected a legacy output image')
+      const image = images[0]
       image.filename = 'mutated.png'
       expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',
@@ -603,7 +602,7 @@ describe('ComfyApp', () => {
           images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
         }
       )
-      expect(images?.[0]).toBe(image)
+      expect(images[0]).toBe(image)
     })
 
     it('commits shared output mutations to the accessed entry', () => {
@@ -1872,14 +1871,12 @@ describe('ComfyApp', () => {
           ''
         )
 
-        const [widgetNode] = graph.nodes.filter(
-          (n) => n.type === widgetNodeType
-        )
+        const widgetNode = graph.nodes.find((n) => n.type === widgetNodeType)
         expect(widgetNode?.widgets?.[0].value).toEqual(curve)
         expect(widgetNode?.widgets?.[1].value).toEqual(points)
         expect(curveCallback).toHaveBeenCalledWith(curve)
 
-        const [placeholder] = graph.nodes.filter(
+        const placeholder = graph.nodes.find(
           (n) => n.type === 'Uninstalled/CurveNode'
         )
         expect(placeholder?.last_serialization?.widgets_values).toEqual([
@@ -1944,7 +1941,7 @@ describe('ComfyApp', () => {
       try {
         await app.loadApiJson(apiData, 'api-missing')
 
-        const placeholder = graph.nodes[0]
+        const placeholder = graph.nodes.at(0)
         if (!placeholder) throw new Error('Expected missing-node placeholder')
         expect(placeholder).toMatchObject({
           type: 'UninstalledNode',
@@ -2345,7 +2342,7 @@ describe('ComfyApp', () => {
 
       await app.loadApiJson({}, 'api-a')
       const importedA = useWorkflowStore().activeWorkflow
-      const importedAId = importedA?.activeState?.id
+      const importedAId = importedA?.activeState.id
       if (!importedA || !importedAId) {
         throw new Error('Expected the first imported workflow to have an id')
       }
@@ -2356,7 +2353,7 @@ describe('ComfyApp', () => {
       executionErrorStore.recordNodeErrors(failedKSamplerErrors)
 
       await app.loadApiJson({}, 'api-b')
-      const importedBId = useWorkflowStore().activeWorkflow?.activeState?.id
+      const importedBId = useWorkflowStore().activeWorkflow?.activeState.id
       expect(importedBId).not.toBe(zeroUuid)
       expect(importedBId).not.toBe(importedAId)
       expect(executionErrorStore.lastNodeErrors).toBeNull()
