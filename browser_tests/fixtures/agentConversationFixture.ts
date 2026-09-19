@@ -392,8 +392,8 @@ export class AgentConversationHarness {
   // Lands one batch of agent graph operations on the document outside any
   // recorded turn, the way a later tool call of the same thread would.
   async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
-    await this.waitForSubscribe()
-    this.send(this.host.apply(ops))
+    await this.hostSocket.waitForSubscribe()
+    this.hostSocket.send(this.host.apply(ops))
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
