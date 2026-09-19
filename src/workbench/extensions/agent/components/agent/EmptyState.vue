@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
 
 const { userName } = defineProps<{ userName?: string }>()
 const emit = defineEmits<{ insert: [text: string] }>()
@@ -33,7 +34,7 @@ const promptIcons = [
           />
         </div>
         <div
-          class="text-agent-fg flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
+          class="flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
         >
           <p class="my-0">
             {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
@@ -47,24 +48,26 @@ const promptIcons = [
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
       >
-        <button
+        <Button
           v-for="(prompt, index) in prompts"
           :key="index"
           type="button"
-          class="bg-agent-surface-raised text-agent-fg hover:bg-agent-surface-hover focus-visible:ring-agent-accent flex h-8 w-full max-w-full min-w-0 cursor-pointer items-center justify-start gap-2 rounded-full px-3 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none @min-[460px]:w-auto"
+          variant="secondary"
+          size="md"
+          class="w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto"
           @click="emit('insert', prompt)"
         >
           <span
             :class="
               cn(
-                'text-agent-fg-muted size-3 shrink-0',
+                'size-3 shrink-0 text-muted-foreground',
                 promptIcons[index] ?? 'icon-[lucide--sparkles]'
               )
             "
             aria-hidden="true"
           />
           <span class="truncate">{{ prompt }}</span>
-        </button>
+        </Button>
       </div>
     </div>
   </div>
