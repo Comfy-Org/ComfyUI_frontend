@@ -5,11 +5,17 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  */
 
 /**
- * Check if there is selected text in the document.
+ * Whether the user has selected text that a copy or paste should act on
+ * instead of the graph: any selection when nothing specific has focus, or a
+ * selection inside the focused element. A selection elsewhere (the agent
+ * transcript, a side panel) does not claim a copy or paste aimed at the canvas.
  */
-function hasTextSelection(): boolean {
+function hasTextSelectionFor(target: EventTarget | null): boolean {
   const selection = window.getSelection()
-  return selection !== null && selection.toString().trim().length > 0
+  if (selection === null || selection.toString().trim().length === 0)
+    return false
+  if (!(target instanceof Element) || target === document.body) return true
+  return selection.anchorNode !== null && target.contains(selection.anchorNode)
 }
 
 /**
@@ -23,6 +29,7 @@ function hasTextSelection(): boolean {
 export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
   const isTextInput =
     target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable) ||
     (target instanceof HTMLInputElement &&
       ![
         'button',
@@ -36,5 +43,7 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'search',
         'submit'
       ].includes(target.type))
-  return isTextInput || useCanvasStore().linearMode || hasTextSelection()
+  return (
+    isTextInput || useCanvasStore().linearMode || hasTextSelectionFor(target)
+  )
 }
