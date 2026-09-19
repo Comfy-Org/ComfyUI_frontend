@@ -1,18 +1,14 @@
 /**
- * Regression pin: a human-authored `add_node` the host
- * rejects never leaves the canvas. `layoutMintPort.ts`'s `createNode` handler
- * mints the wire op AFTER the node is already live via the normal LiteGraph
- * flow (optimistic-by-construction), and `pendingOpTracker.test.ts` already
- * proves the ledger computes the correct `reverted` outcome for a rejected
- * op. The gap is downstream: `useAgentCrdtFollower.ts` wires that event to
- * `recordDevEvent('pending_ops', event)` only, so the failure reaches the dev
- * panel and nothing else. This test composes the same three real modules
- * `useAgentCrdtFollower.ts` composes - `attachMintPortWiring`,
- * `createOpSender`, `createPendingOpTracker` - over a fake graph, so the
- * missing revert is pinned against production wiring rather than a
- * reimplementation of it. `it.fails` keeps the assertions expressing the
- * CORRECT behavior; convert to a plain `it` the day something consumes a
- * `reverted` event to remove the node.
+ * Regression pin (ADR-CRDT-PENDING-0030): a human-authored `add_node` the
+ * host rejects must leave the canvas. `layoutMintPort.ts`'s `createNode`
+ * handler mints the wire op AFTER the node is already live via the normal
+ * LiteGraph flow (optimistic-by-construction); on rejection the tracker's
+ * `reverted` event now feeds `applyPendingOpRevert`, which removes the node.
+ * This test composes the same real modules `useAgentCrdtFollower.ts`
+ * composes - `attachMintPortWiring`, `createOpSender`,
+ * `createPendingOpTracker`, `createPendingRevertRemoveNode` - over a fake
+ * graph, so the revert is pinned against production wiring rather than a
+ * reimplementation of it.
  */
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -26,6 +22,11 @@ import { attachMintPortWiring } from './mintPortWiring'
 import type { MintableGraph } from './mintPortWiring'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { RevertableGraph } from './pendingOpRevert'
+import {
+  applyPendingOpRevert,
+  createPendingRevertRemoveNode
+} from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
 
@@ -42,7 +43,7 @@ interface FakeGraphNode {
 describe('human add_node rejection regression pin', () => {
   let graphNodes: Map<string, FakeGraphNode>
   let layoutListeners: Set<(change: LayoutChangeView) => void>
-  let graph: MintableGraph
+  let graph: MintableGraph & RevertableGraph
 
   function deliverLayoutChange(change: LayoutChangeView): void {
     for (const listener of layoutListeners) listener(change)
@@ -59,14 +60,29 @@ describe('human add_node rejection regression pin', () => {
         null,
       get _nodes() {
         return [...graphNodes.values()] as unknown as LGraphNode[]
+      },
+      get _nodes_by_id() {
+        return Object.fromEntries(graphNodes) as Partial<
+          Record<string, LGraphNode>
+        >
+      },
+      remove(node) {
+        graphNodes.delete(String(node.id))
       }
     }
   })
 
-  it.fails('removes the node from the graph after the host rejects its sync', () => {
+  it('removes the node from the graph after the host rejects its sync', () => {
+    const removeNode = createPendingRevertRemoveNode({
+      getGraph: () => graph,
+      withLayoutActor: (_actor, fn) => fn()
+    })
     const trackerEvents: PendingOpTrackerEvent[] = []
     const tracker = createPendingOpTracker({
-      onEvent: (event) => trackerEvents.push(event)
+      onEvent: (event) => {
+        trackerEvents.push(event)
+        applyPendingOpRevert(event, removeNode)
+      }
     })
 
     const sentBatches: Op[][] = []
@@ -129,15 +145,13 @@ describe('human add_node rejection regression pin', () => {
       failure: { op_id: mintedOpId }
     })
 
-    // The ledger correctly computes the revert...
-    expect(trackerEvents).toContainEqual({
-      type: 'reverted',
-      reason: 'failed',
-      opIds: [mintedOpId]
-    })
-
-    // ...but nothing consumes it: the node the host never accepted is
-    // still on the graph. Desired behavior once fixed: it is gone.
+    expect(trackerEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'reverted',
+        reason: 'failed',
+        opIds: [mintedOpId]
+      })
+    )
     expect(graphNodes.has('1')).toBe(false)
 
     wiring.detach()
