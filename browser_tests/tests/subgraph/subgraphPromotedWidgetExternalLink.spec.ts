@@ -19,6 +19,8 @@ const PLAIN_TEXT_INPUT = 1
 const ENDPOINT_TOLERANCE_PX = 2
 /** Canvas pixel below every node in the asset; clicking it also lets the change tracker capture the drag-connect. */
 const EMPTY_CANVAS_POSITION = { x: 640, y: 690 }
+/** A second empty pixel: clicking the first one again within the double-click window opens node search and swallows the redo shortcut. */
+const SECOND_EMPTY_CANVAS_POSITION = { x: 900, y: 690 }
 
 async function centerOf(locator: Locator) {
   const box = await locator.boundingBox()
@@ -208,7 +210,7 @@ test.describe(
           .getByLabel('width', { exact: true })
       ).toBeVisible()
 
-      await comfyPage.canvas.click({ position: EMPTY_CANVAS_POSITION })
+      await comfyPage.canvas.click({ position: SECOND_EMPTY_CANVAS_POSITION })
       await comfyPage.keyboard.redo()
       await expect
         .poll(() => isInputConnected(comfyPage, HOST_ID, HOST_WIDTH_INPUT))
