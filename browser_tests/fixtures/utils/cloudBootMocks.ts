@@ -13,7 +13,7 @@ interface CloudBootOptions {
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
-  /** Server definitions, optionally augmented with deterministic test entries. */
+  /** Exact deterministic definitions, or `'server'` to opt into the backend catalog. */
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
 }
 
@@ -43,11 +43,9 @@ export async function mockCloudBootRoutes(
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
   if (objectInfo && objectInfo !== 'server') {
-    await page.route('**/api/object_info', async (route) => {
-      const response = await route.fetch()
-      const server = (await response.json()) as Record<string, ComfyNodeDef>
-      await route.fulfill({ response, json: { ...server, ...objectInfo } })
-    })
+    await page.route('**/api/object_info', (route) =>
+      route.fulfill(jsonRoute(objectInfo))
+    )
   } else if (objectInfo !== 'server')
     await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
