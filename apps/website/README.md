@@ -208,15 +208,25 @@ with the refreshed snapshot.
 > insight filtered on the flag _property_ rather than the exposure _event_
 > will still show production traffic — that is not the kill leaking.
 >
-> The kill takes the header account menu with it, so a signed-in customer can
-> neither see nor spend credits, and cannot sign out from the site, while it
-> is in place; balances are untouched server-side and existing sessions
-> persist until they expire.
+> Everything gated on Workshop visibility goes with it. The header account
+> menu disappears, so a signed-in customer can neither see nor spend credits,
+> and cannot sign out from the site, while this is in place; balances are
+> untouched server-side and existing sessions persist until they expire. The
+> homepage Model Discovery section also drops out of `/` and `/zh-CN/`, with
+> no fallback content in its place. `/login/`, `/signup/` and
+> `/forgot-password/` are _not_ gated on visibility — they answer to
+> `workshop-auth` and `workshop-signup-turnstile` — so someone arriving from a
+> bookmark or a password-reset mail can still create an account and will land
+> on `/` with nothing indicating they are signed in.
 >
 > To re-open production, revert the PR that added `DEPLOY_DISABLED` to
 > `src/scripts/posthog.ts` rather than raising the flag: that removes the
-> constant, this banner and the deploy-env test table together. The rest of
-> this section describes the flag-driven behaviour that resumes afterwards.
+> constant, this banner and the deploy-env test table together. Note that both
+> levers are build-time — `astro:env` inlines `WORKSHOP_DEPLOY_ENV` — so the
+> override above and this revert each need a production redeploy to take
+> effect, which runs the `WEBSITE_CLOUD_API_KEY` check and the production-only
+> cloud-nodes freshness gate. Neither is a switch that acts on its own. The
+> rest of this section describes the behaviour that resumes afterwards.
 
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the
