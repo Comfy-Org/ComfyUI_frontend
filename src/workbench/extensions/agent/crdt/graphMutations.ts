@@ -236,6 +236,48 @@ function readPair(
     : fallback
 }
 
+type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
+
+/**
+ * Node color is a client-only presentation property the CRDT document never
+ * carries (see ComfyNode's constructor), so a payload without it keeps the
+ * live node's color instead of losing it to a reconcile.
+ */
+function resolveNodeColors(
+  payload: SemanticNodePayload,
+  existing?: NodeState
+): Partial<NodeColors> {
+  const bgcolor =
+    typeof payload.bgcolor === 'string' ? payload.bgcolor : existing?.bgcolor
+  const boxcolor =
+    typeof payload.boxcolor === 'string' ? payload.boxcolor : existing?.boxcolor
+  const color =
+    typeof payload.color === 'string' ? payload.color : existing?.color
+  return {
+    ...(bgcolor !== undefined && { bgcolor }),
+    ...(boxcolor !== undefined && { boxcolor }),
+    ...(color !== undefined && { color })
+  }
+}
+
+type NodeDisplayFlags = Pick<NodeState, 'resizable' | 'shape' | 'showAdvanced'>
+
+function resolveNodeDisplayFlags(
+  payload: SemanticNodePayload
+): Partial<NodeDisplayFlags> {
+  return {
+    ...(typeof payload.resizable === 'boolean' && {
+      resizable: payload.resizable
+    }),
+    ...(typeof payload.shape === 'number' && {
+      shape: payload.shape
+    }),
+    ...(typeof payload.showAdvanced === 'boolean' && {
+      showAdvanced: payload.showAdvanced
+    })
+  }
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -245,15 +287,6 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
-  // Node color is a client-only presentation property the CRDT document
-  // never carries (see ComfyNode's constructor), so a payload without it
-  // keeps the live node's color instead of losing it to a reconcile.
-  const bgcolor =
-    typeof payload.bgcolor === 'string' ? payload.bgcolor : existing?.bgcolor
-  const boxcolor =
-    typeof payload.boxcolor === 'string' ? payload.boxcolor : existing?.boxcolor
-  const color =
-    typeof payload.color === 'string' ? payload.color : existing?.color
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
@@ -265,18 +298,8 @@ function prepareNode(
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
-    ...(bgcolor !== undefined && { bgcolor }),
-    ...(boxcolor !== undefined && { boxcolor }),
-    ...(color !== undefined && { color }),
-    ...(typeof payload.resizable === 'boolean' && {
-      resizable: payload.resizable
-    }),
-    ...(typeof payload.shape === 'number' && {
-      shape: payload.shape
-    }),
-    ...(typeof payload.showAdvanced === 'boolean' && {
-      showAdvanced: payload.showAdvanced
-    })
+    ...resolveNodeColors(payload, existing),
+    ...resolveNodeDisplayFlags(payload)
   }
   return {
     state,
