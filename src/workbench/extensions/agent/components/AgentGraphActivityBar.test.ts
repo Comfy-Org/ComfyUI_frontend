@@ -16,18 +16,18 @@ import { toNodeId } from '@/types/nodeId'
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
 
-const graph = { id: 'graph-1' }
-const node = {
+const graph = fromPartial<LGraph>({ id: 'graph-1' })
+const node = fromPartial<LGraphNode>({
   id: toNodeId(1),
-  graph: graph as LGraph,
+  graph,
   pos: [10, 20],
   size: [100, 80]
-} as unknown as LGraphNode
-const canvas = {
+})
+const canvas = fromPartial<LGraphCanvas>({
   graph,
   canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) },
   animateToBounds: vi.fn()
-}
+})
 
 vi.mock(import('@/scripts/app'), () => ({
   app: fromPartial<ComfyApp>({
@@ -42,7 +42,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 }))
 function mount() {
   return render(AgentGraphActivityBar, {
-    props: { canvas: canvas as unknown as LGraphCanvas },
+    props: { canvas },
     global: { plugins: [i18n] }
   })
 }
