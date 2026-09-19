@@ -106,7 +106,7 @@ test.describe(
     test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
     test.describe('Interior rewire (rebinding the link behind the promoted widget)', () => {
-      test('duplicates/drops sibling promoted widgets on the subgraph host', async ({
+      test('keeps sibling promoted widgets rendered exactly once on the subgraph host', async ({
         comfyPage
       }) => {
         const subgraphNodeId = await buildBaselineSubgraph(comfyPage)
@@ -119,16 +119,6 @@ test.describe(
         await comfyPage.subgraph.rebindPromotedInput(interiorClip, 'text')
         await comfyPage.subgraph.exitViaBreadcrumb()
 
-        await comfyPage.page.screenshot({
-          path: 'test-results/pm-1328-interior-rewire-duplication.png'
-        })
-
-        test.fail(
-          true,
-          'PM-1328/PM-1253 confirmed mechanism: SubgraphNode.ts ensureWidgetRemoved ' +
-            '(queueMicrotask-deferred store cleanup) desyncs node.widgets from the ' +
-            'widget-value store for one tick, which the Vue widget grid renders from.'
-        )
         await expectSingleRenderedWidgetOfEach(comfyPage, subgraphNodeId)
       })
 
@@ -156,7 +146,7 @@ test.describe(
     })
 
     test.describe("External boundary wire (new node onto the host node's promoted widget socket)", () => {
-      test('duplicates/drops sibling promoted widgets on the subgraph host', async ({
+      test('keeps sibling promoted widgets rendered exactly once on the subgraph host', async ({
         comfyPage
       }) => {
         const subgraphNodeId = await buildBaselineSubgraph(comfyPage)
@@ -180,20 +170,6 @@ test.describe(
         await source.connectWidget(0, subgraphNodeRef, textWidgetIndex)
         await comfyPage.nextFrame()
 
-        await comfyPage.page.screenshot({
-          path: 'test-results/pm-1328-external-boundary-wire-duplication.png'
-        })
-
-        test.fail(
-          true,
-          'If this unexpectedly passes, the external-boundary-wire path (a new ' +
-            'link landing on an already-promoted SubgraphNode input slot from the ' +
-            'parent graph) does NOT reproduce the duplication/disappearance ' +
-            'symptom via the confirmed interior-rewire mechanism -- SubgraphNode ' +
-            'has no onConnectInput/onConnectionsChange override, so this is a ' +
-            'materially different code path. That would mean PM-1328s literal ' +
-            'reported trigger needs a separate root-cause investigation.'
-        )
         await expectSingleRenderedWidgetOfEach(comfyPage, subgraphNodeId)
       })
 
@@ -215,6 +191,12 @@ test.describe(
         await comfyPage.nextFrame()
         await source.connectWidget(0, subgraphNodeRef, textWidgetIndex)
         await comfyPage.nextFrame()
+
+        // The drag-connect suppresses the mouseup state capture (see the
+        // caveat in the header), so capture the post-connect state with a
+        // plain click before undoing -- otherwise undo targets a snapshot
+        // from before the width/height promotions.
+        await comfyPage.canvasOps.clickEmptySpace()
 
         await comfyPage.keyboard.undo()
         await comfyPage.nextFrame()
