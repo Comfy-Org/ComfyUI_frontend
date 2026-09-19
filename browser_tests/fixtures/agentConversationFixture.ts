@@ -587,6 +587,14 @@ class AgentConversationHarness {
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
   }
+
+  async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
+    await this.hostSocket.disconnect()
+    for (const entry of this.conversation.turns[turn].response) {
+      if (entry.kind === 'graph_ops') this.host.apply(entry.ops)
+    }
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
 }
 
 export type ReplayTiming = 'immediate' | 'recorded'

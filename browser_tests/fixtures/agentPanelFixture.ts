@@ -1,6 +1,12 @@
 import type { Page } from '@playwright/test'
 
-import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  AgentThreadListResponse,
+  GlobalSetting,
+  ListAssetsResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
@@ -78,22 +84,26 @@ async function mockAgentBoot(
     )
   }
   if (turnAccepted) {
+    const threads: AgentThreadListResponse = {
+      threads: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
+    const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+    const workflows: WorkflowListResponse = {
+      data: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
     await page.route('**/api/experiment/models', (r) =>
       r.fulfill(jsonRoute([]))
     )
     await page.route('**/api/agent/threads', (r) =>
-      r.fulfill(jsonRoute({ threads: [] }))
+      r.fulfill(jsonRoute(threads))
     )
     await page.route('**/api/agent/run-mode', (r) =>
-      r.fulfill(jsonRoute({ mode: 'manual', credit_limit: null }))
+      r.fulfill(jsonRoute(runMode))
     )
     await page.route('**/api/workflows**', (r) =>
-      r.fulfill(
-        jsonRoute({
-          data: [],
-          pagination: { has_more: false, next_cursor: null }
-        })
-      )
+      r.fulfill(jsonRoute(workflows))
     )
     await page.route('**/api/agent/threads/*/messages', (r) =>
       r.fulfill(jsonRoute(turnAccepted))

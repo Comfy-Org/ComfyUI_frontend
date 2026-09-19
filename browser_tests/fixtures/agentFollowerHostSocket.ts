@@ -93,4 +93,9 @@ export class AgentFollowerHostSocket {
   subscribeCount(): number {
     return this.subscribes
   }
+
+  async disconnect(): Promise<void> {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    await this.socket.close()
+  }
 }

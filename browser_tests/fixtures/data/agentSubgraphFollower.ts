@@ -150,7 +150,22 @@ export function agentSubgraphUpdates(): {
   initial: string
   followUp: string
 } {
-  const host = mint(subgraphWorkflow, catalog)
+  const host = mint(
+    {
+      ...subgraphWorkflow,
+      definitions: {
+        subgraphs: subgraphWorkflow.definitions.subgraphs.map((definition) => ({
+          ...definition,
+          definitions: {
+            subgraphs: [
+              { ...definition, id: '52e51d98-aaac-44d3-bab1-61eae17b9869' }
+            ]
+          }
+        }))
+      }
+    },
+    catalog
+  )
   const initialResult = applyOps(host, initialOps, catalog)
   if (initialResult.outcomes.some(({ outcome }) => outcome !== 'applied')) {
     throw new Error('Failed to build the initial agent subgraph frame')

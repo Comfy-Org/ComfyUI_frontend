@@ -1,9 +1,11 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import {
@@ -27,14 +29,16 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('materializes a linked host and applies a promoted widget edit', async ({
+    test('materializes a linked host with nested definitions and applies a promoted widget edit', async ({
       page,
       getWebSocket
     }) => {
+      await page.setViewportSize({ width: 1920, height: 1280 })
       await page.addInitScript(() => {
         localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
       })
       await bootAgentApp(page, true, {
+        settings: { 'Comfy.VueNodes.Enabled': true },
         nodeDefs: agentSubgraphNodeDefs,
         turnAccepted: {
           message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
@@ -87,7 +91,12 @@ test.describe(
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
 
-      await page.getByRole('button', { name: 'Ask Comfy Agent' }).click()
+      await page
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
+        .click()
       const panel = page.locator('#agent-panel-root')
       await panel.getByRole('button', { name: 'Switch workflow' }).click()
       await page
@@ -214,6 +223,17 @@ test.describe(
           )
         )
         .toBe(AGENT_SUBGRAPH_EDITED_TEXT)
+      await page
+        .getByRole('button', { name: 'Fit View (.)', exact: true })
+        .click()
+      const widget = new VueNodeHelpers(page)
+        .getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+        .getByRole('textbox')
+      await expect(widget).toBeVisible()
+      await expect(widget).toHaveValue(AGENT_SUBGRAPH_EDITED_TEXT)
+      await page.screenshot({
+        path: test.info().outputPath('subgraph-edited.png')
+      })
     })
   }
 )
