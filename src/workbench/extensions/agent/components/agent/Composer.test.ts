@@ -531,7 +531,7 @@ describe('Composer', () => {
       })
     })
 
-    it('reports the pending write and takes no second pick until it settles', async () => {
+    it('blocks a second pick while the write is in flight', async () => {
       let resolvePut!: (response: Response) => void
       fetchApi.mockReturnValueOnce(
         new Promise<Response>((resolve) => {
@@ -598,7 +598,7 @@ describe('Composer', () => {
       }
     )
 
-    it('dismisses on Escape and leaves a menu reopened during the write alone', async () => {
+    it('leaves a menu reopened during the write open once it settles', async () => {
       let resolvePut!: (response: Response) => void
       fetchApi.mockReturnValueOnce(
         new Promise<Response>((resolve) => {

@@ -145,7 +145,14 @@ const options: {
                 store.mode === option.mode ? 'tertiary' : 'muted-textonly'
               "
               size="unset"
-              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none data-disabled:opacity-50"
+              :class="
+                cn(
+                  'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
+                  savingMode !== null &&
+                    savingMode !== option.mode &&
+                    'opacity-50'
+                )
+              "
             >
               <span
                 :class="
