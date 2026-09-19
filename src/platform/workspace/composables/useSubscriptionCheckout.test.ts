@@ -248,7 +248,22 @@ const {
 interface SubscriptionRailStub {
   subscriptionActionUrl: string | null
   subscriptionActionOperation?: RailOperation
-  getOperation?: (opId: string) => RailOperation | undefined
+  getOperation: (opId: string) => RailOperation | undefined
+}
+
+/**
+ * A rail that holds nothing unless the row says otherwise. `getOperation` is
+ * never optional on the real rail, and a rail that answers `undefined` for an
+ * operation the legacy transport issued is the case the 404 fallback turns on.
+ */
+function railStub(
+  overrides: Partial<SubscriptionRailStub> = {}
+): SubscriptionRailStub {
+  return {
+    subscriptionActionUrl: null,
+    getOperation: () => undefined,
+    ...overrides
+  }
 }
 
 interface RailOperation {
@@ -3169,9 +3184,9 @@ describe('useSubscriptionCheckout', () => {
 
   describe('hosted payment step on the SDK rail', () => {
     it('re-offers the hosted page the rail opened for itself', async () => {
-      mockSubscriptionRail.value = {
+      mockSubscriptionRail.value = railStub({
         subscriptionActionUrl: 'https://pay.example/op-3'
-      }
+      })
 
       const checkout = await setupWithApprovedPreview()
 
@@ -3181,9 +3196,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('holds the rail it read at setup when the flag flips mid-checkout', async () => {
-      mockSubscriptionRail.value = {
+      mockSubscriptionRail.value = railStub({
         subscriptionActionUrl: 'https://pay.example/op-3'
-      }
+      })
 
       const checkout = await setupWithApprovedPreview()
 
@@ -3206,7 +3221,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('offers nothing while the rail is parked on no hosted page', async () => {
-      mockSubscriptionRail.value = { subscriptionActionUrl: null }
+      mockSubscriptionRail.value = railStub()
 
       const checkout = await setupWithApprovedPreview()
 
@@ -3225,10 +3240,9 @@ describe('useSubscriptionCheckout', () => {
     }
 
     it('reads the lifecycle on the rail, not the store the poller writes', async () => {
-      mockSubscriptionRail.value = {
-        subscriptionActionUrl: null,
+      mockSubscriptionRail.value = railStub({
         subscriptionActionOperation: PARKED
-      }
+      })
       Object.assign(useBillingOperationStore(), {
         subscriptionActionOperation: undefined
       })
@@ -3248,7 +3262,7 @@ describe('useSubscriptionCheckout', () => {
     // on the flag would leave that operation with no poller at all.
     it.for([
       { rail: 'off', railValue: null },
-      { rail: 'on, route 404', railValue: { subscriptionActionUrl: null } }
+      { rail: 'on, route 404', railValue: railStub() }
     ])(
       'registers exactly one poller for a legacy-transport checkout with the rail $rail',
       async ({ railValue }) => {
@@ -3261,6 +3275,15 @@ describe('useSubscriptionCheckout', () => {
           billing_op_id: 'op-fallback'
         })
 
+        vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+          billingOperation({
+            opId: 'op-fallback',
+            status: 'pending',
+            workspaceId: 'workspace-1',
+            phase: 'awaiting_payment_method'
+          })
+        )
+
         await checkout.handleAddCreditCard()
 
         expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
@@ -3269,6 +3292,10 @@ describe('useSubscriptionCheckout', () => {
           'subscription',
           expect.any(Object)
         )
+        // And the checkout watches the operation it registered: the rail holds
+        // nothing for a subscribe the legacy transport issued, so a rail-only
+        // read would leave the recovery prompt with no operation at all.
+        expect(checkout.parkedCheckoutRecovery.value).toBe(true)
       }
     )
 
