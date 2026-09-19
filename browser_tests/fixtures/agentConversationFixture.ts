@@ -1,5 +1,6 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
+import type { ApplyOutcome, Op } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
@@ -25,6 +26,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -83,6 +85,24 @@ interface PanelCounts {
   summaries: number
 }
 
+/**
+ * How the fake host treats a `doc_ops` batch the page mints for a human edit:
+ * `apply` runs it through the real applier and answers like the relay does;
+ * `hold` records it and never answers, so the batch stays in flight.
+ */
+type HumanOpsHost = 'apply' | 'hold'
+
+/** One `doc_*` frame the page sent, as the test attaches it. */
+interface ClientDocFrame {
+  /** Milliseconds since the harness booted. */
+  atMs: number
+  type: string
+  workflowId: string | null
+  /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
+  ops: string[]
+  opIds: string[]
+}
+
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
 const zProjectedLink = z
   .tuple([
@@ -135,7 +155,7 @@ async function withTimeout(
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
-class AgentConversationHarness {
+export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
 
@@ -148,6 +168,9 @@ class AgentConversationHarness {
   private socket: WebSocketRoute | null = null
   private postedTurns = 0
   private subscribes = 0
+  private readonly bootedAt = Date.now()
+  private readonly clientFrames: ClientDocFrame[] = []
+  private readonly humanOutcomes: ApplyOutcome[] = []
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -160,7 +183,8 @@ class AgentConversationHarness {
     private readonly page: Page,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
-    caseId: string
+    caseId: string,
+    private readonly humanOpsHost: HumanOpsHost = 'apply'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -609,21 +633,62 @@ class AgentConversationHarness {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
+    if (typeof type !== 'string' || !type.startsWith('doc_')) return
+    if (typeof data !== 'object' || data === null) return
+    const { workflow_id, state_vector_b64, ops } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
+      ops?: unknown
     }
-    if (
-      workflow_id !== this.conversation.workflow.id ||
-      typeof state_vector_b64 !== 'string'
-    )
+    const wireOps = Array.isArray(ops) ? (ops as Op[]) : []
+    this.clientFrames.push({
+      atMs: Date.now() - this.bootedAt,
+      type,
+      workflowId: typeof workflow_id === 'string' ? workflow_id : null,
+      ops: wireOps.map(
+        (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
+      ),
+      opIds: wireOps.map((op) => op.op_id)
+    })
+    if (workflow_id !== this.conversation.workflow.id) return
+    if (type === 'doc_subscribe' && typeof state_vector_b64 === 'string') {
+      this.send(this.host.subscribed())
+      this.send(this.host.catchUp(state_vector_b64))
+      this.subscribes += 1
+      this.resolveSubscribed?.()
       return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.subscribes += 1
-    this.resolveSubscribed?.()
+    }
+    // The applier is the only judge of a human batch; the wire ops reach it
+    // structurally, exactly as the relay hands them to the host.
+    if (type === 'doc_ops' && this.humanOpsHost === 'apply') {
+      const { result, update, outcomes } = this.host.applyWire(wireOps)
+      this.humanOutcomes.push(...outcomes)
+      this.send(result)
+      if (update) this.send(update)
+    }
+  }
+
+  /** Every `doc_*` frame the page has sent so far, oldest first. */
+  clientDocFrames(): ClientDocFrame[] {
+    return [...this.clientFrames]
+  }
+
+  /** The applier's verdict on every human op the host has judged so far. */
+  humanOpOutcomes(): ApplyOutcome[] {
+    return [...this.humanOutcomes]
+  }
+
+  /** Node ids the host document holds right now. */
+  hostNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes)
+  }
+
+  // A host-side edit outside the recording, pushed as one `doc_update`. The
+  // follower applies frames in order, so a rendered effect of this edit
+  // proves every earlier frame (a catch-up included) has been applied too.
+  pushHostOps(operations: RecordedGraphOperation[]): void {
+    this.send(this.host.apply(operations))
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
@@ -656,6 +721,7 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  humanOpsHost: HumanOpsHost
   agentConversation: AgentConversationHarness
 }
 
@@ -665,6 +731,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  humanOpsHost: ['apply', { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -674,7 +741,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming },
+    { page, agentFlagEnabled, conversationCase, replayTiming, humanOpsHost },
     use
   ) => {
     if (conversationCase.length === 0)
@@ -683,7 +750,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
-      conversationCase
+      conversationCase,
+      humanOpsHost
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)
