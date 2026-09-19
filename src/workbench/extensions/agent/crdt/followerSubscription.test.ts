@@ -27,6 +27,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
+import { FollowerApplyError } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -106,13 +107,17 @@ function wire() {
   const bridge = new LayoutFollowerBridge(client)
   const projected: DocUpdate[] = []
   const schemaErrors: unknown[] = []
+  const applyErrors: unknown[] = []
   bridge.addEventListener('doc_update', (event) => {
     if (event instanceof CustomEvent) projected.push(event.detail as DocUpdate)
   })
   bridge.addEventListener('schema_error', (event) => {
     if (event instanceof CustomEvent) schemaErrors.push(event.detail)
   })
-  return { transport, client, bridge, projected, schemaErrors }
+  bridge.addEventListener('apply_error', (event) => {
+    if (event instanceof CustomEvent) applyErrors.push(event.detail)
+  })
+  return { transport, client, bridge, projected, schemaErrors, applyErrors }
 }
 
 describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers', () => {
@@ -1020,6 +1025,120 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
       assertReadableSchema(doc)
     }).toThrow(/KA-11/)
     error.mockRestore()
+  })
+})
+
+describe('FEC-2 — a malformed doc_update fails closed instead of throwing uncaught', () => {
+  it('rebuilds from trusted state and withholds pre-ack successors', () => {
+    const { transport, bridge, projected, applyErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    const rejectedFollower = bridge.follower
+    const emptyVector = encodeBase64(rejectedFollower.stateVector())
+
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const node = new Y.Map<unknown>()
+    node.set('type', 'LoadImage')
+    nodesMap(host).set('1', node)
+    const predecessor = Y.encodeStateAsUpdate(host)
+    const beforeSuccessor = Y.encodeStateVector(host)
+    node.set('title', 'Recovered')
+    const successor = Y.encodeStateAsUpdate(host, beforeSuccessor)
+
+    expect(() => {
+      transport.deliver('doc_update', docUpdateFrame(predecessor.slice(0, -1)))
+    }).not.toThrow()
+
+    expect(projected).toHaveLength(0)
+    expect(applyErrors).toEqual([
+      {
+        workflowId: WORKFLOW_ID,
+        seq: 1,
+        error: expect.any(FollowerApplyError)
+      }
+    ])
+    expect(bridge.follower).not.toBe(rejectedFollower)
+    expect(nodesMap(bridge.follower.doc).size).toBe(0)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(emptyVector)
+
+    transport.deliver('doc_update', docUpdateFrame(successor, WORKFLOW_ID, 2))
+    expect(projected).toHaveLength(0)
+    expect(bridge.follower.updatesApplied).toBe(0)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_update', docUpdateFrame(predecessor, WORKFLOW_ID, 1))
+
+    expect(projected.map(({ seq }) => seq)).toEqual([1, 2])
+    expect(bridge.follower.updatesApplied).toBe(2)
+    expect(nodesMap(bridge.follower.doc).get('1')?.get('title')).toBe(
+      'Recovered'
+    )
+    host.destroy()
+  })
+
+  it('immediately resubscribes when a malformed catch-up has no later frame', () => {
+    const { transport, bridge, projected, applyErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    const rejectedFollower = bridge.follower
+    const emptyVector = encodeBase64(rejectedFollower.stateVector())
+
+    // The acknowledged catch-up is malformed and no later frame arrives. The
+    // bridge must request recovery now; waiting for a future seq gap leaves
+    // the follower stale forever.
+    const garbage = new Uint8Array([9, 9, 9, 9, 9])
+    transport.deliver('doc_update', docUpdateFrame(garbage, WORKFLOW_ID, 1))
+    expect(projected).toHaveLength(0)
+    expect(applyErrors).toEqual([
+      { workflowId: WORKFLOW_ID, seq: 1, error: expect.any(FollowerApplyError) }
+    ])
+    expect(bridge.follower).not.toBe(rejectedFollower)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(emptyVector)
+  })
+
+  it('replays a queued update after an empty recovery acknowledgement', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(new Uint8Array([1, 2, 3, 4, 5]))
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(projected).toHaveLength(0)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true
+    })
+
+    expect(projected.map(({ seq }) => seq)).toEqual([1])
+    expect(bridge.follower.updatesApplied).toBe(1)
   })
 })
 

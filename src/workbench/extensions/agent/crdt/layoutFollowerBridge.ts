@@ -8,7 +8,7 @@ import type {
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
-import { FollowerDoc } from './followerDoc'
+import { FollowerApplyError, FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 /**
@@ -37,6 +37,11 @@ function trySend(send: () => boolean): boolean {
     return false
   }
 }
+
+type ApplyRecovery =
+  | { phase: 'idle' }
+  | { phase: 'awaitingAck'; queued: DocUpdate[] }
+  | { phase: 'awaitingCatchUp'; ackSeq: number; queued: DocUpdate[] }
 
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
@@ -114,6 +119,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  private applyRecovery: ApplyRecovery = { phase: 'idle' }
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -172,7 +178,8 @@ export class LayoutFollowerBridge extends EventTarget {
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
-      this.dropDocForNewLineage()
+      this.applyRecovery = { phase: 'idle' }
+      this.replaceFollowerDoc()
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
       )
@@ -241,83 +248,132 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.applyRecovery = { phase: 'idle' }
       this.followerDoc.destroy()
     }
   }
 
   private readonly onDocUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const update = event.detail as DocUpdate
-    if (update.workflowId !== this.sentWorkflowId) return
+    this.handleDocUpdate(event.detail as DocUpdate)
+  }
 
-    // The first incompatible frame is already in the Y.Doc. Same-lineage
-    // updates cannot remove those CRDT bytes, so keep the read gate latched
-    // until an explicit doc_reset replaces the lineage.
-    if (this.schemaError !== null) return
+  private handleDocUpdate(update: DocUpdate): void {
+    if (!this.canProcessUpdate(update)) return
 
-    // A stale/duplicate frame cannot advance the replica. Ignoring it also
-    // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    // The one exception is the subscribe's own catch-up (seq == ackSeq) when
-    // a live frame overtook the ack: see {@link catchUpPending}.
-    // Deliberately compares against lastSeq, never ackSeq: while lastSeq is
-    // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
-    // leave the follower on an empty doc (KA-11).
-    const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
+    const isCatchUp = this.isCatchUp(update)
+    if (this.rejectSequence(update, isCatchUp)) return
+    if (!this.applyFollowerUpdate(update, isCatchUp)) return
+    if (!this.acceptReadableSchema(update)) return
+
+    this.dispatchFrameEvent('doc_update', update)
+    this.finishRecoveryAfter(update)
+  }
+
+  private canProcessUpdate(update: DocUpdate): boolean {
+    return (
+      update.workflowId === this.sentWorkflowId &&
+      this.schemaError === null &&
+      !this.queueDuringApplyRecovery(update)
+    )
+  }
+
+  private isCatchUp(update: DocUpdate): boolean {
+    return this.catchUpPending && update.seq === this.ackSeq
+  }
+
+  private finishRecoveryAfter(update: DocUpdate): void {
+    if (this.applyRecovery.phase !== 'awaitingCatchUp') return
+    if (update.seq !== this.applyRecovery.ackSeq) return
+    this.finishApplyRecovery(this.applyRecovery.queued)
+  }
+
+  private rejectSequence(update: DocUpdate, isCatchUp: boolean): boolean {
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchEvent(
-        new CustomEvent('doc_stale', {
-          detail: { workflowId: update.workflowId, seq: update.seq }
-        })
-      )
-      return
+      this.dispatchFrameEvent('doc_stale', {
+        workflowId: update.workflowId,
+        seq: update.seq
+      })
+      return true
     }
 
-    // Seq is only a gap detector. A jump withholds the uncertain frame and
-    // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
-    //
-    // Before the first applied update the detector is armed from the ack seq
-    // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
-    // both contiguous with it, so neither trips it, while a first frame at
-    // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
     const baseline = this.lastSeq ?? this.ackSeq
     if (baseline !== null && update.seq > baseline + 1) {
-      this.dispatchEvent(
-        new CustomEvent('doc_gap', {
-          detail: {
-            workflowId: update.workflowId,
-            expected: baseline + 1,
-            received: update.seq
-          }
-        })
-      )
+      this.dispatchFrameEvent('doc_gap', {
+        workflowId: update.workflowId,
+        expected: baseline + 1,
+        received: update.seq
+      })
       this.resubscribe()
-      return
+      return true
+    }
+    return false
+  }
+
+  private applyFollowerUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+    } catch (error) {
+      if (!(error instanceof FollowerApplyError)) throw error
+      this.recoverFromApplyError(update, error)
+      return false
     }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
+    return true
+  }
 
-    // KA-11 read-time gate. The frame must merge before its schema can be
-    // checked, but nothing downstream may READ a doc whose declared schema
-    // this build was not written against. Failing closed here, before the
-    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
-    // onto the canvas by a v1 reader.
+  private acceptReadableSchema(update: DocUpdate): boolean {
     try {
       assertReadableSchema(this.follower.doc)
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
       this.schemaError = error
-      this.dispatchEvent(
-        new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
-        })
-      )
-      return
+      this.applyRecovery = { phase: 'idle' }
+      this.dispatchFrameEvent('schema_error', {
+        workflowId: update.workflowId,
+        found: error.found
+      })
+      return false
     }
+    return true
+  }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+  private queueDuringApplyRecovery(update: DocUpdate): boolean {
+    const recovery = this.applyRecovery
+    if (recovery.phase === 'idle') return false
+    if (recovery.phase === 'awaitingCatchUp' && update.seq === recovery.ackSeq)
+      return false
+    recovery.queued.push(update)
+    return true
+  }
+
+  private recoverFromApplyError(
+    update: DocUpdate,
+    error: FollowerApplyError
+  ): void {
+    this.dispatchFrameEvent('apply_error', {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      error
+    })
+    this.applyRecovery = { phase: 'awaitingAck', queued: [] }
+    this.replaceFollowerDoc()
+    this.dispatchFrameEvent('follower_replaced', {
+      workflowId: update.workflowId
+    })
+    this.resubscribe()
+  }
+
+  private finishApplyRecovery(queued: DocUpdate[]): void {
+    this.applyRecovery = { phase: 'idle' }
+    for (const update of queued.toSorted((left, right) => left.seq - right.seq))
+      this.handleDocUpdate(update)
+  }
+
+  private dispatchFrameEvent(type: string, detail: unknown): void {
+    this.dispatchEvent(new CustomEvent(type, { detail }))
   }
 
   /**
@@ -330,7 +386,8 @@ export class LayoutFollowerBridge extends EventTarget {
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
-    this.dropDocForNewLineage()
+    this.applyRecovery = { phase: 'idle' }
+    this.replaceFollowerDoc()
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
@@ -339,7 +396,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * Replace the doc after an explicit lineage reset so the next subscribe
    * carries an empty state vector and pulls the new folded state.
    */
-  private dropDocForNewLineage(): void {
+  private replaceFollowerDoc(): void {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
@@ -365,11 +422,24 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
+    let queued: DocUpdate[] | null = null
     if (subscribed.ok) {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
+      if (this.applyRecovery.phase === 'awaitingAck') {
+        if (this.ackSeq === null || this.ackSeq === 0) {
+          queued = this.applyRecovery.queued
+        } else {
+          this.applyRecovery = {
+            phase: 'awaitingCatchUp',
+            ackSeq: this.ackSeq,
+            queued: this.applyRecovery.queued
+          }
+        }
+      }
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+    if (queued) this.finishApplyRecovery(queued)
   }
 
   private readonly forwardFrame: EventListener = (event) => {

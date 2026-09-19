@@ -60,6 +60,14 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
+  hasPending(workflowId: string): boolean {
+    return this.adapter.hasPending(workflowId)
+  }
+
+  retryPending(workflowId: string): boolean {
+    return this.adapter.retryPending(workflowId)
+  }
+
   reconcileLiveGraph(workflowId: string): void {
     const graph = this.getGraph()
     if (!graph) return
