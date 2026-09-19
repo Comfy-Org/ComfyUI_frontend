@@ -306,7 +306,7 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', { name: enMessages.agent.entryButton })
           .click()
         await expect(panel).toBeVisible()
         await panel
