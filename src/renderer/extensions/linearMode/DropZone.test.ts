@@ -7,9 +7,12 @@ import Button from '@/components/ui/button/Button.vue'
 
 import DropZone from './DropZone.vue'
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: vi.fn() })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

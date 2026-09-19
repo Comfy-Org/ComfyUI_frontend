@@ -33,7 +33,7 @@ interface LoaderMediaConfig {
  * inline preview as the normal editor. See FE-1344 for the long-term plan of
  * making the preview part of the selection widget itself.
  */
-const LOADER_MEDIA_CONFIG: Record<string, LoaderMediaConfig> = {
+const LOADER_MEDIA_CONFIG: Partial<Record<string, LoaderMediaConfig>> = {
   LoadImage: {
     widgetName: 'image',
     mediaType: 'image',
@@ -80,7 +80,7 @@ export function getLoaderDropIndicator(
     widgetValueStore: Pick<ReturnType<typeof useWidgetValueStore>, 'getWidget'>
   }
 ): LoaderDropIndicator | undefined {
-  const config = LOADER_MEDIA_CONFIG[node.type ?? '']
+  const config = LOADER_MEDIA_CONFIG[node.type]
   if (!config) return undefined
   if (parseWidgetId(id).name !== config.widgetName) return undefined
 

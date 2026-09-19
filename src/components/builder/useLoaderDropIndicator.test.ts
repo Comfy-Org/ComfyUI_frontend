@@ -1,26 +1,28 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import type { WidgetState } from '@/types/widgetState'
 import { widgetId } from '@/types/widgetId'
 import { toNodeId } from '@/types/nodeId'
 
 import { getLoaderDropIndicator } from './useLoaderDropIndicator'
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
-  }
+  })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     getPreviewFormatParam: vi.fn(() => '&preview=webp')
-  }
+  })
 }))
 
 function makeWidget(

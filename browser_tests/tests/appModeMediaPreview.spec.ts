@@ -167,7 +167,7 @@ test.describe(
       // Force an empty selection regardless of what the server's file list
       // happens to default the combo widget to.
       await comfyPage.page.evaluate((id) => {
-        const node = window.app!.graph!.getNodeById(id)
+        const node = window.app!.graph.getNodeById(id)
         const fileWidget = node?.widgets?.find((w) => w.name === 'file')
         if (fileWidget) fileWidget.value = ''
       }, nodeRef.id)
