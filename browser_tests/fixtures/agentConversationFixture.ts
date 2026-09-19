@@ -28,6 +28,7 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
@@ -226,7 +227,7 @@ class AgentConversationHarness {
         'Comfy.Graph.CanvasInfo': false
       },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: 'server'
+      objectInfo: agentReplayNodeDefs
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))

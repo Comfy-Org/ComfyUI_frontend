@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -12,8 +13,8 @@ interface CloudBootOptions {
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
-  /** `'server'` lets `/api/object_info` reach the backend so real node definitions load. */
-  objectInfo?: 'server'
+  /** Server definitions, optionally augmented with deterministic test entries. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
 }
 
 /**
@@ -41,7 +42,13 @@ export async function mockCloudBootRoutes(
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  if (objectInfo !== 'server')
+  if (objectInfo && objectInfo !== 'server') {
+    await page.route('**/api/object_info', async (route) => {
+      const response = await route.fetch()
+      const server = (await response.json()) as Record<string, ComfyNodeDef>
+      await route.fulfill({ response, json: { ...server, ...objectInfo } })
+    })
+  } else if (objectInfo !== 'server')
     await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
