@@ -555,6 +555,11 @@ describe('Composer', () => {
         within(screen.getByRole('menu')).getByRole('status')
       ).toHaveTextContent('Saving')
       expect(ask).toHaveAttribute('aria-disabled', 'true')
+      expect(
+        screen.getByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      ).toHaveAttribute('aria-disabled', 'true')
       await userEvent.click(ask)
       expect(fetchApi).toHaveBeenCalledTimes(1)
 
@@ -564,6 +569,39 @@ describe('Composer', () => {
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
+    })
+
+    it('takes a retry after a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      const auto = await screen.findByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(auto).not.toHaveAttribute('aria-disabled'))
+
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('commits the focused mode on Enter', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await screen.findByRole('menu')
+      ;(
+        screen.getByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      ).focus()
+      await userEvent.keyboard('{Enter}')
+
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
