@@ -206,10 +206,13 @@ test.describe(
       initialSettings: {
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      }
     })
 
+    // `onboarding_tour_enabled` is set here (not via `initialFeatureFlags`)
+    // because `initialFeatureFlags` mocks this same `/api/features` endpoint
+    // internally, and a second mock registered later would shadow this one,
+    // dropping `subscription_required` that the paywall tests below need.
     test.beforeEach(async ({ page }) => {
       await page.route('**/api/features', (route) =>
         route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))

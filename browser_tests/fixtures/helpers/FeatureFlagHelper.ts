@@ -6,19 +6,26 @@ export class FeatureFlagHelper {
   constructor(private readonly page: Page) {}
 
   /**
-   * Seed feature flags via `addInitScript` so they are available in
-   * localStorage before the app JS executes on first load.
-   * Must be called before `comfyPage.setup()` / `page.goto()`.
+   * Seed feature flags before the app boots, via `/api/features` — the
+   * endpoint that populates `remoteConfig` (see `resolveFlag()` in
+   * `useFeatureFlags.ts`). Must be called before `comfyPage.setup()` /
+   * `page.goto()`.
    *
-   * Note: Playwright init scripts persist for the page lifetime and
-   * cannot be removed. Call this once per test, before navigation.
+   * The previous implementation wrote an `ff:`-prefixed localStorage entry
+   * via `addInitScript`, which `devFeatureFlagOverride.ts` reads. That read
+   * is gated on `import.meta.env.DEV`, which is compiled to `false` in the
+   * production build CI serves for e2e, so the entry was seeded correctly
+   * but never read there — the bug was never seeding timing, it was that
+   * the whole read path is dead code outside a dev server.
+   *
+   * `remoteConfig` has no such gate, so mocking its source is what actually
+   * reaches `useFeatureFlags()`'s getters on CI. This only affects flags
+   * whose getter falls back to `remoteConfig.value` (most of them); one
+   * resolved purely from the server's WS `feature_flags` handshake needs
+   * `seedServerFlags()`/`setServerFlagsPersistent()` instead.
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(flagMap)) {
-        localStorage.setItem(`ff:${key}`, JSON.stringify(value))
-      }
-    }, flags)
+    await this.mockServerFeatures(flags)
   }
 
   /**

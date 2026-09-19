@@ -603,7 +603,13 @@ export const comfyPageFixture = base.extend<{
   comfyFiles: ComfyFiles
 }>({
   // Allows configuring feature flags for tests with before initial setup:
-  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
+  // `test.use({ initialFeatureFlags: { my_flag: true } })`. Backed by
+  // `FeatureFlagHelper.seedFlags()`, which mocks `/api/features` (the
+  // `remoteConfig` source) rather than the dev-only `ff:` localStorage
+  // override, so it actually takes effect on CI's production build. Only
+  // reaches flags whose `useFeatureFlags()` getter falls back to
+  // `remoteConfig`; a flag resolved purely from the server's WS handshake
+  // needs `seedServerFlags`/`setServerFlagsPersistent` instead.
   initialFeatureFlags: [{}, { option: true }],
 
   initialLocalStorage: [{}, { option: true }],
