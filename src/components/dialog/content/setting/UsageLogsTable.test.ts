@@ -610,6 +610,33 @@ describe('UsageLogsTable', () => {
       ).not.toBeInTheDocument()
     })
 
+    // The billing-mode watcher is the only thing that reloads this table, so a
+    // switch between two workspaces on the same mode leaves it mounted. A read
+    // superseded by that switch must not leave the previous workspace's events
+    // on screen.
+    it('drops the rendered rows when a later read is superseded', async () => {
+      const user = userEvent.setup()
+      onTheRail()
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      await user.click(screen.getByRole('button', { name: 'Next Page' }))
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
+      expect(
+        screen.queryByText(
+          'Something went wrong while loading activity. Please refresh and try again.'
+        )
+      ).not.toBeInTheDocument()
+    })
+
     it('shows the localized fallback when the read fails', async () => {
       onTheRail({ status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 })
 

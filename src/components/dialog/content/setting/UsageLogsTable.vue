@@ -177,8 +177,21 @@ const loadEvents = async () => {
 
     if (loadToken !== latestLoadToken) return
 
-    // Undefined is a rail read the scope moved on under: nothing to publish.
-    if (response === undefined) return
+    // Undefined is a SUPERSEDED rail read: the scope moved on mid-request, so
+    // what is on screen belongs to the workspace we just left. Only the billing
+    // mode is watched, and a switch between two workspaces on the same mode
+    // does not remount this table — leaving the rows up would show one
+    // workspace's billing events under another.
+    if (response === undefined) {
+      events.value = []
+      pagination.value = {
+        ...pagination.value,
+        page: 1,
+        total: 0,
+        totalPages: 0
+      }
+      return
+    }
 
     if (response) {
       if (response.events) {
