@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { PopoverTrigger, RadioGroupItem, RadioGroupRoot } from 'reka-ui'
+import {
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -21,9 +26,14 @@ const toast = useToastStore()
 
 const open = ref(false)
 const savingMode = ref<AgentRunModeValue | null>(null)
-const selectedMode = computed(() => savingMode.value ?? store.mode)
+let openCount = 0
 
-async function onSelectMode(value: string | undefined): Promise<void> {
+function onOpenChange(next: boolean): void {
+  open.value = next
+  if (next) openCount += 1
+}
+
+async function onSelectMode(value: string): Promise<void> {
   const match = options.find((option) => option.mode === value)
   if (!match || savingMode.value !== null) return
   if (match.mode === store.mode) {
@@ -31,10 +41,11 @@ async function onSelectMode(value: string | undefined): Promise<void> {
     return
   }
 
+  const openedAs = openCount
   savingMode.value = match.mode
   try {
     await store.save(match.mode, null)
-    open.value = false
+    if (openedAs === openCount) open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
     toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
@@ -81,8 +92,8 @@ const options: {
 </script>
 
 <template>
-  <Popover v-model:open="open">
-    <PopoverTrigger as-child>
+  <DropdownMenuRoot :open @update:open="onOpenChange">
+    <DropdownMenuTrigger as-child>
       <Button
         v-tooltip.top="buildTooltipConfig(triggerTooltip)"
         variant="muted-textonly"
@@ -95,67 +106,86 @@ const options: {
           class="icon-[lucide--chevron-down] size-4"
         />
       </Button>
-    </PopoverTrigger>
-    <PopoverContent
-      side="top"
-      align="end"
-      :side-offset="8"
-      class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border-border-default bg-secondary-background p-2.5 shadow-lg"
-      @escape-key-down="open = false"
-    >
-      <div class="flex flex-col gap-0.5">
-        <div class="text-sm/5 font-medium text-base-foreground">
-          {{ t('agent.runPermissions') }}
-        </div>
-        <div class="text-xs/4 text-muted-foreground">
-          {{ t('agent.runPermissionsDescription') }}
-        </div>
-      </div>
-
-      <RadioGroupRoot
-        :model-value="selectedMode"
-        :aria-label="t('agent.runPermissions')"
-        class="flex flex-col gap-1"
-        @update:model-value="onSelectMode"
+    </DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <DropdownMenuContent
+        side="top"
+        align="end"
+        :side-offset="8"
+        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
-        <RadioGroupItem
-          v-for="option in options"
-          :key="option.mode"
-          :value="option.mode"
-          as-child
+        <div class="flex flex-col gap-0.5">
+          <div class="text-sm/5 font-medium text-base-foreground">
+            {{ t('agent.runPermissions') }}
+          </div>
+          <div class="text-xs/4 text-muted-foreground">
+            {{ t('agent.runPermissionsDescription') }}
+          </div>
+        </div>
+
+        <DropdownMenuRadioGroup
+          :model-value="store.mode"
+          :aria-label="t('agent.runPermissions')"
+          class="flex flex-col gap-1"
+          @update:model-value="onSelectMode"
         >
-          <Button
-            :variant="
-              selectedMode === option.mode ? 'tertiary' : 'muted-textonly'
-            "
-            size="unset"
-            class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
+          <DropdownMenuRadioItem
+            v-for="option in options"
+            :key="option.mode"
+            :value="option.mode"
+            :disabled="savingMode !== null"
+            :aria-busy="savingMode === option.mode || undefined"
+            as-child
+            @select.prevent
           >
-            <span
-              :class="
-                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
+            <Button
+              :variant="
+                store.mode === option.mode ? 'tertiary' : 'muted-textonly'
               "
-            />
-            <span class="min-w-0 flex-1">
-              <span class="block text-sm/5 text-base-foreground">
-                {{ t(option.title) }}
+              size="unset"
+              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none"
+            >
+              <span
+                :class="
+                  cn(
+                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
+                    option.icon
+                  )
+                "
+              />
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm/5 text-base-foreground">
+                  {{ t(option.title) }}
+                </span>
+                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
+                  {{ t(option.description) }}
+                </span>
               </span>
-              <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-                {{ t(option.description) }}
+              <span
+                v-if="savingMode === option.mode"
+                role="status"
+                class="mt-0.5 flex size-4 shrink-0 items-center justify-center"
+              >
+                <span
+                  aria-hidden="true"
+                  class="icon-[lucide--loader-circle] size-4 text-muted-foreground motion-safe:animate-spin"
+                />
+                <span class="sr-only">{{ t('g.saving') }}</span>
               </span>
-            </span>
-            <span
-              :class="
-                cn(
-                  'mt-0.5 size-4 shrink-0',
-                  selectedMode === option.mode &&
-                    'icon-[lucide--check] text-base-foreground'
-                )
-              "
-            />
-          </Button>
-        </RadioGroupItem>
-      </RadioGroupRoot>
-    </PopoverContent>
-  </Popover>
+              <span
+                v-else
+                :class="
+                  cn(
+                    'mt-0.5 size-4 shrink-0',
+                    store.mode === option.mode &&
+                      'icon-[lucide--check] text-base-foreground'
+                  )
+                "
+              />
+            </Button>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
 </template>

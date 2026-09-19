@@ -448,11 +448,13 @@ describe('Composer', () => {
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+        screen.getByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
       ).toBeChecked()
-      expect(screen.getAllByRole('radio')).toHaveLength(2)
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
       expect(
-        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+        screen.queryByRole('menuitemradio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Save changes' })
@@ -465,7 +467,9 @@ describe('Composer', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
       await nextTick()
@@ -484,7 +488,9 @@ describe('Composer', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
       )
 
       expect(
@@ -496,13 +502,15 @@ describe('Composer', () => {
       )
     })
 
-    it('keeps the popover open and reverts the choice when the save fails', async () => {
+    it('keeps the popover open on the unchanged mode when the save fails', async () => {
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
 
       expect(
@@ -511,13 +519,51 @@ describe('Composer', () => {
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
       await vi.waitFor(() =>
         expect(
-          screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+          screen.getByRole('menuitemradio', {
+            name: /Ask before a workflow runs/
+          })
         ).toBeChecked()
       )
+      expect(screen.queryByRole('status')).toBeNull()
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+    })
+
+    it('reports the pending write and takes no second pick until it settles', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+
+      const ask = screen.getByRole('menuitemradio', {
+        name: /Ask before a workflow runs/
+      })
+      expect(
+        within(screen.getByRole('menu')).getByRole('status')
+      ).toHaveTextContent('Saving')
+      expect(ask).toHaveAttribute('aria-disabled', 'true')
+      await userEvent.click(ask)
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -558,13 +604,17 @@ describe('Composer', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
 
       await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
       expect(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       ).toBeChecked()
     })
   })
