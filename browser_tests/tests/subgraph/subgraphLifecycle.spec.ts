@@ -321,4 +321,70 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       ).toEqual([])
     })
   })
+
+  for (const renderer of [
+    { name: 'LiteGraph', tag: ['@slow', '@ui'] },
+    { name: 'Vue', tag: ['@slow', '@ui', '@vue-nodes'] }
+  ]) {
+    test.describe(
+      `${renderer.name} host persistence`,
+      { tag: renderer.tag },
+      () => {
+        for (const scenario of [
+          { survivorName: 'copy', removedName: 'original' },
+          { survivorName: 'original', removedName: 'copy' }
+        ] as const) {
+          test(`the ${scenario.survivorName} remains editable after deleting the ${scenario.removedName} and reopening`, async ({
+            comfyPage
+          }) => {
+            test.slow()
+            await comfyPage.workflow.setupWorkflowsDirectory({})
+            await comfyPage.workflow.loadWorkflow(
+              'subgraphs/subgraph-with-promoted-text-widget'
+            )
+            const original = await comfyPage.nodeOps.getNodeRefById('11')
+            const copy = await original.duplicate()
+            const survivor = scenario.survivorName === 'copy' ? copy : original
+            const removed = scenario.removedName === 'copy' ? copy : original
+
+            await test.step(`Delete the ${scenario.removedName}`, async () => {
+              await removed.delete()
+              await removed.expectExists(false)
+              await survivor.expectExists()
+            })
+
+            const workflowName = `${renderer.name.toLowerCase()}-${scenario.survivorName}-survivor`
+
+            await test.step('Save and reopen the workflow', async () => {
+              const savedWorkflow =
+                await comfyPage.workflow.saveWorkflow(workflowName)
+              comfyPage.subgraph.expectHostIds(savedWorkflow, [
+                String(survivor.id)
+              ])
+              await comfyPage.subgraph.expectPersistedHostIds(workflowName, [
+                String(survivor.id)
+              ])
+              await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+                workflowName
+              )
+              await survivor.expectExists()
+            })
+
+            await test.step('Open and edit the surviving host', async () => {
+              await comfyPage.subgraph.enterSubgraph(survivor)
+              const inner = await comfyPage.nodeOps.getNodeRefByType(
+                'CLIPTextEncode',
+                true
+              )
+              const originalPosition = await inner.getPosition()
+              await inner.dragBy({ x: 40, y: 20 })
+              await expect
+                .poll(() => inner.getPosition())
+                .not.toEqual(originalPosition)
+            })
+          })
+        }
+      }
+    )
+  }
 })

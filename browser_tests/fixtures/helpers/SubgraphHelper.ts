@@ -18,6 +18,16 @@ import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
+export interface GraphTopology {
+  nodes: string[]
+  links: [string, number, string, number][]
+}
+
+export interface SubgraphHostIdentity {
+  type: string
+  subgraphId: string
+}
+
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
 
@@ -454,6 +464,24 @@ export class SubgraphHelper {
     }
   }
 
+  async enterSubgraph(node: NodeReference): Promise<void> {
+    const subgraphId = await this.page.evaluate((id) => {
+      const host = window.app!.canvas.graph?.getNodeById(id)
+      if (!host?.isSubgraphNode()) {
+        throw new Error(`Expected visible subgraph node ${id}`)
+      }
+      return host.subgraph.id
+    }, node.id)
+
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.enterSubgraph(String(node.id))
+      await this.comfyPage.vueNodes.waitForNodes()
+    } else {
+      await node.navigateIntoSubgraph()
+    }
+    await expect.poll(() => this.getActiveGraphId()).toBe(subgraphId)
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
@@ -519,6 +547,85 @@ export class SubgraphHelper {
     { hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]
   > {
     return getAllHostPromotedWidgets(this.comfyPage)
+  }
+
+  async getHostIdentity(node: NodeReference): Promise<SubgraphHostIdentity> {
+    return this.page.evaluate((id) => {
+      const host = window.app!.rootGraph.getNodeById(id)
+      if (!host?.isSubgraphNode()) {
+        throw new Error(`Subgraph host ${id} not found`)
+      }
+      return { type: host.type, subgraphId: host.subgraph.id }
+    }, node.id)
+  }
+
+  async expectPromotedWidget(
+    node: NodeReference,
+    name: string,
+    expected: SubgraphHostIdentity & { label: string | null; value: unknown }
+  ): Promise<void> {
+    await expect
+      .poll(() =>
+        this.page.evaluate(
+          ([id, widgetName]) => {
+            const host = window.app!.rootGraph.getNodeById(id)
+            if (!host?.isSubgraphNode()) return null
+            const widget = host.widgets.find(
+              (candidate) => candidate.name === widgetName
+            )
+            return {
+              type: host.type,
+              subgraphId: host.subgraph.id,
+              label: widget?.label ?? null,
+              value: widget?.value
+            }
+          },
+          [node.id, name] as const
+        )
+      )
+      .toEqual(expected)
+  }
+
+  async expectPersistedHostIds(
+    workflowName: string,
+    expectedIds: string[]
+  ): Promise<void> {
+    const workflow =
+      await this.comfyPage.workflow.getPersistedWorkflow(workflowName)
+    this.expectHostIds(workflow, expectedIds)
+  }
+
+  expectHostIds(workflow: ComfyWorkflowJSON, expectedIds: string[]): void {
+    const hostIds = workflow.nodes
+      .filter((node) =>
+        workflow.definitions?.subgraphs.some(
+          (subgraph) => subgraph.id === node.type
+        )
+      )
+      .map((node) => String(node.id))
+    expect(hostIds).toEqual(expectedIds)
+  }
+
+  async getActiveTopology(): Promise<GraphTopology> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph
+      if (!graph) throw new Error('Canvas graph was not loaded')
+      return {
+        nodes: graph.nodes.map((node) => String(node.id)).sort(),
+        links: [...graph.links.values()]
+          .map<[string, number, string, number]>((link) => [
+            String(link.origin_id),
+            link.origin_slot,
+            String(link.target_id),
+            link.target_slot
+          ])
+          .sort((a, b) => a.join(':').localeCompare(b.join(':')))
+      }
+    })
+  }
+
+  async expectActiveTopology(expected: GraphTopology): Promise<void> {
+    await expect.poll(() => this.getActiveTopology()).toEqual(expected)
   }
 
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */

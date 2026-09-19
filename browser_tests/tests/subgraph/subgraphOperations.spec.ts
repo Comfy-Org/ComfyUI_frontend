@@ -160,5 +160,32 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .poll(() => comfyPage.subgraph.getNodeCount())
         .toBe(initialCount)
     })
+
+    for (const renderer of [
+      { name: 'LiteGraph', tag: '@ui' },
+      { name: 'Vue', tag: ['@ui', '@vue-nodes'] }
+    ]) {
+      test.describe(`${renderer.name} renderer`, { tag: renderer.tag }, () => {
+        test('root node movement is undoable', async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+          const rootNode = await comfyPage.nodeOps.getNodeRefById('8')
+          const originalPosition = await rootNode.getPosition()
+
+          await test.step('Move a root node', async () => {
+            await rootNode.dragBy({ x: 80, y: 40 })
+            await expect
+              .poll(() => rootNode.getPosition())
+              .not.toEqual(originalPosition)
+          })
+
+          await test.step('Undo the movement', async () => {
+            await comfyPage.keyboard.undo()
+            await expect
+              .poll(() => rootNode.getPosition())
+              .toEqual(originalPosition)
+          })
+        })
+      })
+    }
   })
 })

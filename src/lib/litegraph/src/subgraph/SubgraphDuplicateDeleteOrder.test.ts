@@ -5,12 +5,12 @@ import type {
   LGraph,
   LLink,
   Reroute,
-  Subgraph,
-  SubgraphNode
+  Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphNode as LGraphNodeClass,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -169,16 +169,12 @@ function expectSurvivorUndamaged(
   const survivor = scenario.instances[survivorIndex]
   const survivorLink = scenario.links[survivorIndex]
   const survivorReroute = scenario.reroutes[survivorIndex]
-  const survivorValue = promotedValueOf(survivor)
-  const survivorWidgetId = survivor.inputs.find(
-    (input) => input.name === PROMOTED_INPUT
-  )?.widgetId
+  const survivorValue = [111, 222][survivorIndex]
+  const survivorWidgetId = promotedId(survivor)
 
   rootGraph.remove(removed)
 
-  expect(survivorWidgetId).not.toBe(
-    removed.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
-  )
+  expect(survivorWidgetId).not.toBe(promotedId(removed))
   expect(promotedValueOf(survivor)).toBe(survivorValue)
 
   const liveLink = rootGraph.links.get(survivorLink.id)
@@ -190,6 +186,23 @@ function expectSurvivorUndamaged(
   ]).toContain(survivorLink.id)
 
   expect(rootGraph.subgraphs.get(definition.id)).toBe(definition)
+
+  const serializedSurvivor = survivor.serialize()
+  useWidgetValueStore().clearNode(rootGraph.id, survivor.id)
+  const reloadedSurvivor = new SubgraphNode(
+    rootGraph,
+    definition,
+    serializedSurvivor
+  )
+  reloadedSurvivor.configure(serializedSurvivor)
+
+  expect(promotedValueOf(reloadedSurvivor)).toBe(survivorValue)
+  const reloadedWidgetId = promotedId(reloadedSurvivor)
+  if (!reloadedWidgetId)
+    throw new Error('expected a reloaded promoted widget id')
+  expect(useWidgetValueStore().setValue(reloadedWidgetId, 333)).toBe(true)
+  expect(promotedValueOf(reloadedSurvivor)).toBe(333)
+  expect(reloadedSurvivor.serialize().widgets_values).toEqual([333])
 
   rootGraph.remove(survivor)
   expect(rootGraph.subgraphs.has(definition.id)).toBe(false)
