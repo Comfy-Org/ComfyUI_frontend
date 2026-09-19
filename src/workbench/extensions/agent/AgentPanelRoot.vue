@@ -81,7 +81,10 @@ import type {
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import {
+  useAgentConversationStore,
+  type ConversationEntry
+} from './stores/agent/agentConversationStore'
 import type {
   TurnOrigin,
   WorkflowTurnContext
@@ -556,6 +559,9 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
 )
+const { activeTurnId: conversationTurnId } = storeToRefs(
+  useAgentConversationStore()
+)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -580,11 +586,16 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
+let observedActivityStatus = false
 watch(
   status,
   (value) => {
-    if (value === 'idle') graphActivity.finishTurn()
-    else graphActivity.startTurn()
+    if (value === 'idle') {
+      // The immediate idle value on remount is a hydration snapshot, not a
+      // completed turn. A real idle transition is observed after this pass.
+      if (observedActivityStatus) graphActivity.finishTurn()
+    } else graphActivity.startTurn(conversationTurnId.value)
+    observedActivityStatus = true
     if (value === 'idle') {
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
