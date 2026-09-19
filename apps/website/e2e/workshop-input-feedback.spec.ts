@@ -145,4 +145,13 @@ test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async
   await value.fill('1024')
   await expect(slider).toHaveValue('1024')
   await expect(page.getByRole('alert')).toHaveCount(0)
+
+  // The widest value the field accepts has to be readable, not scrolled out
+  // of a box sized for a shorter one.
+  await value.fill('2048')
+  expect(
+    await value.evaluate(
+      (box: HTMLInputElement) => box.scrollWidth <= box.clientWidth
+    )
+  ).toBe(true)
 })

@@ -616,6 +616,35 @@ describe('PlaygroundField', () => {
     }
   )
 
+  // A seed shows ten characters and a resolution four, so one width either
+  // wastes the row or scrolls most of the number out of sight. The pixels are
+  // checked in the browser; here the rule is that a wider range gets a wider
+  // box and never the reverse.
+  it('widens the value box with the widest value its field accepts', () => {
+    const width = (name: string, min: number, max: number) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name,
+        label: name,
+        min,
+        max,
+        step: 1,
+        defaultValue: min
+      }
+      mountField(field, defaultValues([field]))
+      const size = screen
+        .getByTestId(`field-${name}-value`)
+        .className.match(/\bw-(\d+)\b/)
+      expect(size).not.toBeNull()
+      return Number(size![1])
+    }
+    const height = width('height', 256, 2048)
+    const polycount = width('target_polycount', 100, 300000)
+    const seed = width('seed', -1, 2147483647)
+    expect(height).toBeLessThan(polycount)
+    expect(polycount).toBeLessThan(seed)
+  })
+
   it('moves the value box with the slider and carries the slider bounds', async () => {
     const field: FieldSchema = {
       kind: 'number',

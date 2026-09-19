@@ -217,6 +217,21 @@ function sliderFill(field: {
   return `${Math.min(Math.max(ratio, 0), 1) * 100}%`
 }
 
+// A resolution needs four digits and a seed needs ten, so one width either
+// wastes the row or hides most of the number. `ch` cannot do this: the face
+// carries tracking the unit does not count.
+const valueBoxWidth = computed(() => {
+  if (field.kind !== 'number') return undefined
+  const bounds = [field.min, field.max].filter(
+    (bound): bound is number => bound !== undefined
+  )
+  const fraction = field.step === 'any' || !Number.isInteger(field.step) ? 3 : 0
+  const characters =
+    Math.max(4, ...bounds.map((bound) => String(bound).length)) + fraction
+  if (characters <= 5) return 'w-20'
+  return characters <= 8 ? 'w-28' : 'w-40'
+})
+
 function numberValue(fallback?: number): number | undefined {
   const value = values.value[field.name]
   return typeof value === 'number' ? value : fallback
@@ -280,7 +295,8 @@ function booleanValue(fallback = false): boolean {
           :class="
             cn(
               inputClass,
-              'h-8 w-28 rounded-lg px-2 text-right text-xs tabular-nums'
+              'h-8 rounded-lg px-2 text-right text-xs tabular-nums',
+              valueBoxWidth
             )
           "
           @input="onNumber"
