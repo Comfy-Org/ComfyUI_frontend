@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -508,7 +509,7 @@ class AgentConversationHarness {
         )
       const liveType = await this.page.evaluate(
         (nodeId) => window.app?.graph.getNodeById(nodeId)?.type,
-        id
+        toNodeId(id)
       )
       expect(liveType).toBe(node.type)
     }
