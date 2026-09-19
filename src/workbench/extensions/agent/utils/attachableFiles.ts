@@ -5,13 +5,13 @@ const MEDIA_ATTACHABLE_KINDS = new Set<MediaType>(['image', 'video', 'audio'])
 
 /* Non-media formats approved for agent attach (Jo, FE-1323); extended as the
    backend grows support. */
-const EXTRA_ATTACHABLE_EXTENSIONS = new Set(['glb', 'md', 'txt'])
+const EXTRA_ATTACHABLE_EXTENSIONS = new Set(['glb', 'md', 'txt', 'json'])
 
 /* The OS picker cannot express "any audio plus these extensions" through MIME
    alone (glb and md have no reliable browser MIME), so the accept list names
    the extensions explicitly alongside the media wildcards. */
 export const AGENT_ATTACH_ACCEPT =
-  'image/*,video/*,audio/*,.mp4,.m4a,.mov,.mp3,.wav,.glb,.md,.txt'
+  'image/*,video/*,audio/*,.mp4,.m4a,.mov,.mp3,.wav,.glb,.md,.txt,.json,application/json'
 
 /**
  * Judged by file NAME, not MIME type: dragged glb/md/txt files carry an empty
