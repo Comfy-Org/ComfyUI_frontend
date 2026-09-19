@@ -329,7 +329,13 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    // The follower's payload keys widget values by name, so the node needs
+    // named restore exactly like a definition's interior nodes; without it
+    // `configure()` drops them and the widgets serialise as undefined, which
+    // the server rejects as `required_input_missing`.
+    withNamedValuesRestore(() =>
+      node.configure(withNamedWidgetValues(serialised))
+    )
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
