@@ -6,28 +6,26 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-// PM-1329 (child of PM-995): node selection mode does not lock down the
-// canvas. `agentNodeSelectionStore.ts`'s enter()/exit() never touch
-// `canvas.read_only` (src/stores/agentNodeSelectionStore.ts), unlike the
-// app-mode precedent in `appModeStore.ts`'s `enforceReadOnly`
-// (src/stores/appModeStore.ts:252-261). The canvas info overlay
-// (`useLitegraphSettings.ts:19-31`, gated only on `Comfy.Graph.CanvasInfo`)
-// and the floating queue overlay (`TopMenuSection.vue`'s
-// `isQueueProgressOverlayEnabled`, gated only on `isQueuePanelV2Enabled`)
-// have no selection-mode check either. One root-cause class, three
-// symptoms. Each `test.fail()` case below pins one symptom until PM-1329
-// lands, using the same real-UI entry (Add to prompt -> Nodes) as the
-// existing "exits node selection when the active workflow changes" test in
-// agentPanel.spec.ts.
+// PM-1329 (child of PM-995): node selection mode left the canvas info
+// overlay (`useLitegraphSettings.ts:19-31`, gated only on
+// `Comfy.Graph.CanvasInfo`) and the floating queue overlay
+// (`TopMenuSection.vue`'s `isQueueProgressOverlayEnabled`, gated only on
+// `isQueuePanelV2Enabled`) visible with no selection-mode check. Both are
+// now fixed in `agentNodeSelectionStore.ts` / `TopMenuSection.vue`. The
+// cases below cover those two symptoms, using the same real-UI entry (Add
+// to prompt -> Nodes) as the existing "exits node selection when the
+// active workflow changes" test in agentPanel.spec.ts.
 //
-// Widget edits are deliberately not one of the symptoms here: entering
-// selection mode also sets `canvas.selectOnly = true` (AgentPanelRoot.vue's
-// onSelectNodes), and `LGraphCanvas.ts`'s `_processNodeClick` returns before
-// any widget/collapse/io handling whenever `selectOnly` is set (~line 2755;
-// covered by `LGraphCanvas.selectOnly.test.ts`). Widgets are already
-// undraggable during node selection today, independent of the missing
-// `read_only` lockdown, so a "steps widget stays draggable" case would not
-// reproduce a real bug.
+// Widget edits and canvas.read_only are deliberately not symptoms here:
+// entering selection mode already sets `canvas.selectOnly = true`
+// (AgentPanelRoot.vue's onSelectNodes), and `LGraphCanvas.ts`'s
+// `_processNodeClick` returns before any widget/collapse/io handling
+// whenever `selectOnly` is set (~line 2755; covered by
+// `LGraphCanvas.selectOnly.test.ts`). Pinning `canvas.read_only` as well
+// was tried and reverted: `_processPrimaryButton` and
+// `useCanvasInteractions.ts`'s `shouldHandleNodePointerEvents` both
+// early-return on `read_only`, which turns node-click-to-select itself
+// into a no-op - the opposite of what selection mode needs.
 async function enterNodeSelectionMode(
   agentPanel: AgentPanel,
   page: Page
@@ -45,20 +43,6 @@ test.describe(
   'Agent node selection mode lockdown (PM-1329)',
   { tag: '@cloud' },
   () => {
-    test('keeps the canvas read-only while node selection mode is active', async ({
-      agentPanel,
-      comfyPage
-    }) => {
-      expect(
-        await comfyPage.canvasOps.isReadOnly(),
-        'Precondition: canvas starts writable'
-      ).toBe(false)
-
-      await enterNodeSelectionMode(agentPanel, comfyPage.page)
-
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
-    })
-
     test('hides the canvas info overlay while node selection mode is active', async ({
       agentPanel,
       comfyPage
