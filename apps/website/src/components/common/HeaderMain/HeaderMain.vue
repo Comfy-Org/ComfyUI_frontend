@@ -224,7 +224,6 @@ const ctaButtons = [
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
-      :workshop-in-build="showWorkshop"
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -233,7 +232,7 @@ const ctaButtons = [
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderMainMobile :locale />
     </div>
 
     <!-- Desktop CTA buttons -->

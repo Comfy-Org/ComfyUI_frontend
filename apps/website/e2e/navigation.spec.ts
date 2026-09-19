@@ -29,10 +29,9 @@ const minimaxRoute = '/minimax-h3/'
 const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
-  'Hub',
   'Products',
+  'Enterprise',
   'Pricing',
-  'Community',
   'Company'
 ] as const
 
@@ -50,7 +49,7 @@ const RETIRED_BADGE_PANELS = [
     ]
   },
   {
-    section: 'Community',
+    section: 'Company',
     badged: [{ label: 'Events', href: '/events/' }],
     bare: [
       { label: 'Affiliates', href: '/affiliates/' },
@@ -107,28 +106,22 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
-    page
-  }) => {
+  test('NEW badge shows on Products only', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
     await expect(
       desktopLinks
-        .getByRole('link', { name: 'Hub' })
+        .getByRole('button', { name: 'Products' })
         .getByText('NEW', { exact: true })
     ).toBeVisible()
-    for (const label of ['Products', 'Community']) {
-      await expect(
-        desktopLinks
-          .getByRole('button', { name: label })
-          .getByText('NEW', { exact: true })
-      ).toBeVisible()
-    }
 
     await expect(
       desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      desktopLinks.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
     ).toHaveCount(0)
     await expect(
       desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
@@ -164,8 +157,11 @@ test.describe('Desktop dropdown @interaction', () => {
     for (const item of [
       'Comfy Desktop',
       'Comfy Cloud',
+      'Supported Models',
+      'Comfy Agent',
       'Developer Platform',
-      'Comfy Enterprise'
+      'Managed Builds',
+      'Docs'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
     }
@@ -199,24 +195,24 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('Community featured card links to the Product Photography tutorial', async ({
+  test('Company dropdown folds in Community and names each social icon link', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     await nav
       .getByTestId('desktop-nav-links')
-      .getByRole('button', { name: 'Community' })
+      .getByRole('button', { name: 'Company' })
       .hover()
 
-    const card = nav
-      .getByTestId('nav-dropdown')
-      .getByRole('link', { name: 'Watch the Product Photography demo' })
-    await expect(card).toHaveAttribute(
-      'href',
-      '/learning/ads/product-photography/'
-    )
+    const dropdown = nav.getByTestId('nav-dropdown')
+    for (const item of ['Events', 'About Us', 'Customer Stories', 'Launches']) {
+      await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
+    }
     await expect(
-      card.getByRole('img', { name: 'Product Photography workflow demo image' })
+      dropdown.getByRole('link', { name: 'Discord', exact: true })
+    ).toHaveAttribute('href', 'https://discord.com/invite/comfyorg')
+    await expect(
+      dropdown.getByRole('link', { name: 'YouTube', exact: true })
     ).toBeVisible()
   })
 
@@ -327,33 +323,27 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Hub', 'Products', 'Pricing', 'Community']) {
+    for (const label of ['Products', 'Enterprise', 'Pricing', 'Company']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
-    page
-  }) => {
+  test('NEW badge shows on Products only', async ({ page }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
     await expect(
-      menu.getByRole('link', { name: 'Hub' }).getByText('NEW', {
+      menu.getByRole('button', { name: 'Products' }).getByText('NEW', {
         exact: true
       })
     ).toBeVisible()
-    for (const label of ['Products', 'Community']) {
-      await expect(
-        menu.getByRole('button', { name: label }).getByText('NEW', {
-          exact: true
-        })
-      ).toBeVisible()
-    }
 
     await expect(
       menu.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      menu.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
     ).toHaveCount(0)
     await expect(
       menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')

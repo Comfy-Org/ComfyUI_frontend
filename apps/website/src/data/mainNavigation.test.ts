@@ -6,44 +6,77 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'gates both catalogue navigation entries for %s',
+    'links Browse Models once, under Products > Create, for %s',
     (locale) => {
-      const links = (enabled: boolean) =>
-        getMainNavigation(locale, enabled).flatMap((item) =>
-          item.columns
-            ? item.columns.flatMap((column) =>
-                column.items.map((entry) => entry.href)
-              )
-            : [item.href]
-        )
+      const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
+      const allLinks = navigation.flatMap((item) =>
+        item.columns
+          ? item.columns.flatMap((column) =>
+              column.items.map((entry) => entry.href)
+            )
+          : [item.href]
+      )
+      const create = navigation
+        .find((item) => item.label === t('nav.products', locale))
+        ?.columns?.find(
+          (column) => column.header === t('nav.colCreate', locale)
+        )
+
       expect(catalogue).toBe('/hub/models/')
-      expect(links(false)).not.toContain(catalogue)
-      expect(links(true).filter((href) => href === catalogue)).toHaveLength(2)
+      expect(allLinks.filter((href) => href === catalogue)).toHaveLength(1)
+      expect(create?.items).toContainEqual({
+        label: t('nav.comfyWorkshop', locale),
+        href: catalogue,
+        badge: 'new'
+      })
     }
   )
-  it('includes a Products entry linking to Enterprise Managed Builds', () => {
+
+  it('does not expose Models or Hub as a top-level navigation item', () => {
+    const labels = getMainNavigation('en').map((item) => item.label)
+    expect(labels).not.toContain('Models')
+    expect(labels).not.toContain('Hub')
+  })
+
+  it('organizes Products by Create, Automate, Build, and Resources', () => {
     const productsItem = getMainNavigation('en').find(
       (item) => item.label === 'Products'
     )
-    const productsColumn = productsItem?.columns?.[0]
-    const managedBuildsEntry = productsColumn?.items.find(
-      (item) => item.href === getRoutes('en').managedBuilds
-    )
 
-    expect(managedBuildsEntry).toMatchObject({
-      label: 'Managed Builds',
-      href: '/enterprise/managed-builds/'
-    })
+    expect(productsItem?.columns?.map((column) => column.header)).toEqual([
+      'Create',
+      'Automate',
+      'Build',
+      'Resources'
+    ])
+    expect(productsItem?.columns?.[0].items.map((item) => item.label)).toEqual([
+      'Comfy Desktop',
+      'Comfy Cloud',
+      'Comfy Workflows',
+      'Browse Models',
+      'Supported Models'
+    ])
+    expect(productsItem?.columns?.[2].items).toContainEqual(
+      expect.objectContaining({
+        label: 'Managed Builds',
+        href: '/enterprise/managed-builds/'
+      })
+    )
+    expect(productsItem?.columns?.[3].placement).toBe('footer')
+    expect(productsItem?.columns?.[3].items.map((item) => item.label)).toEqual([
+      'Docs',
+      'Comfy SDKs'
+    ])
   })
 
   it.for(['en', 'zh-CN', 'ja'] as const)(
     'marks the developer products as new, never beta, for %s',
     (locale) => {
       const routes = getRoutes(locale)
-      const products = getMainNavigation(locale).find(
-        (item) => item.label === t('nav.products', locale)
-      )?.columns?.[0].items
+      const products = getMainNavigation(locale)
+        .find((item) => item.label === t('nav.products', locale))
+        ?.columns?.flatMap((column) => column.items)
       const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)
         expect(entry).toBeDefined()
@@ -56,48 +89,79 @@ describe('getMainNavigation', () => {
     }
   )
 
-  const featuredCards = [
-    {
-      position: 0,
-      imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
-      videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm'
-    },
-    {
-      position: 1,
-      imageSrc:
-        'https://media.comfy.org/website/learning/advertising3-thumb.png',
-      videoSrc: undefined
-    }
-  ] as const
+  it('places Enterprise between Products and Pricing', () => {
+    const navigation = getMainNavigation('en')
+
+    expect(navigation.map((item) => item.label)).toEqual([
+      'Products',
+      'Enterprise',
+      'Pricing',
+      'Company'
+    ])
+    expect(navigation[1].columns).toHaveLength(1)
+    expect(navigation[1].columns?.[0].header).toBeUndefined()
+    expect(navigation[1].columns?.[0].items.map((item) => item.label)).toEqual([
+      'Comfy Enterprise',
+      'Forward Deployed Creatives',
+      'Team Billing',
+      'Commercial Licensing',
+      'Contact Sales'
+    ])
+    expect(navigation[1].featured).toEqual(
+      expect.objectContaining({
+        videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
+        cta: expect.objectContaining({
+          href: getRoutes('en').minimaxLicense
+        })
+      })
+    )
+  })
+
+  it('folds Community into the Company menu with social icons in the footer', () => {
+    const company = getMainNavigation('en').find(
+      (item) => item.label === 'Company'
+    )
+    const labels = (index: number) =>
+      company?.columns?.[index].items.map((item) => item.label)
+
+    expect(company?.columns?.map((column) => column.header)).toEqual([
+      'Community',
+      'Company',
+      'Updates',
+      'Connect'
+    ])
+    expect(labels(0)).toEqual(['Events', 'Affiliates', 'Learning'])
+    expect(labels(2)).toEqual(['Customer Stories', 'Launches', 'Blog'])
+    expect(company?.columns?.[3].placement).toBe('footer')
+    expect(company?.columns?.[3].items).toContainEqual({
+      label: 'Discord',
+      href: 'https://discord.com/invite/comfyorg',
+      icon: '/icons/social/discord.svg',
+      external: true
+    })
+    expect(company?.columns?.[3].items.every((item) => item.icon)).toBe(true)
+    expect(company?.featured?.cta.href).toBe(
+      getRoutes('en').customerVideoBlackMath
+    )
+  })
 
   it.for([
-    { locale: 'en', card: featuredCards[0], href: '/gemini-omni/' },
-    { locale: 'zh-CN', card: featuredCards[0], href: '/zh-CN/gemini-omni/' },
-    { locale: 'ja', card: featuredCards[0], href: '/gemini-omni/' },
-    {
-      locale: 'en',
-      card: featuredCards[1],
-      href: '/learning/ads/product-photography/'
-    },
-    {
-      locale: 'zh-CN',
-      card: featuredCards[1],
-      href: '/zh-CN/learning/ads/product-photography/'
-    },
-    {
-      locale: 'ja',
-      card: featuredCards[1],
-      href: '/learning/ads/product-photography/'
-    }
+    { locale: 'en', href: '/gemini-omni/' },
+    { locale: 'zh-CN', href: '/zh-CN/gemini-omni/' },
+    { locale: 'ja', href: '/gemini-omni/' }
   ] as const)(
-    'links the featured card to $href for $locale',
-    ({ locale, card, href }) => {
-      const { imageSrc, videoSrc, cta } = getMainNavigation(locale).flatMap(
-        (item) => (item.featured ? [item.featured] : [])
-      )[card.position]
-      expect(imageSrc).toBe(card.imageSrc)
-      expect(videoSrc).toBe(card.videoSrc)
-      expect(cta.href).toBe(href)
+    'links the Products featured card to $href for $locale',
+    ({ locale, href }) => {
+      const featured = getMainNavigation(locale).find(
+        (item) => item.label === t('nav.products', locale)
+      )?.featured
+      expect(featured?.imageSrc).toBe(
+        'https://media.comfy.org/website/gemini-omni/card-5.webp'
+      )
+      expect(featured?.videoSrc).toBe(
+        'https://media.comfy.org/website/gemini-omni/card-5.webm'
+      )
+      expect(featured?.cta.href).toBe(href)
     }
   )
 })

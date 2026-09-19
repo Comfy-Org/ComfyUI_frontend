@@ -4,33 +4,20 @@ import { nextTick } from 'vue'
 
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
-async function modelsLink(path: string) {
-  history.replaceState(null, '', path)
-  render(HeaderMainDesktop, { props: { workshopInBuild: true } })
-  await nextTick()
-  return screen.getByRole('link', { name: /^Hub\b/i })
-}
-
 describe('HeaderMainDesktop', () => {
-  it('does not add Hub navigation without a build opt-in', () => {
+  it('renders Products and Enterprise without a top-level Hub item', () => {
     render(HeaderMainDesktop)
     expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
-  })
-  it('renders the Hub leaf link with its NEW badge', async () => {
-    const link = await modelsLink('/pricing')
-    expect(link.getAttribute('href')).toBe('/hub/models/')
-    expect(link.textContent).toMatch(/new/i)
-    expect(link.getAttribute('data-active')).toBeNull()
+    expect(screen.getByRole('button', { name: /products/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /enterprise/i })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
-  it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/hub/models/')
-    expect(link.getAttribute('data-active')).not.toBeNull()
-  })
-
-  it('keeps Products inactive on the Hub page it also links to', async () => {
-    await modelsLink('/hub/models/')
+  it('marks Products active on the Hub page it links to', async () => {
+    history.replaceState(null, '', '/hub/models/')
+    render(HeaderMainDesktop)
+    await nextTick()
     const products = screen.getByRole('button', { name: /products/i })
-    expect(products.getAttribute('data-active')).toBeNull()
+    expect(products.getAttribute('data-active')).not.toBeNull()
   })
 })

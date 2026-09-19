@@ -47,19 +47,18 @@ beforeEach(() => {
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, enabled: true, modelsAvailable: false },
-    { workshopInBuild: true, enabled: false, modelsAvailable: false },
-    { workshopInBuild: true, enabled: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true },
+    { workshopInBuild: true, enabled: false },
+    { workshopInBuild: true, enabled: true }
   ])(
-    'renders Hub availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    async ({ workshopInBuild, enabled, modelsAvailable }) => {
+    'keeps Hub out of the top navigation when workshopInBuild is $workshopInBuild',
+    async ({ workshopInBuild, enabled }) => {
       visibility.value = enabled
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Hub\b/i }) !== null).toBe(
-        modelsAvailable
-      )
+      expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
+      expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
     }
   )
 
@@ -162,7 +161,7 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('ignores credits requests while Models is hidden', async () => {
+  it('ignores credits requests while workshop access is hidden', async () => {
     flag.value = true
     renderHeader(true)
     await nextTick()
@@ -181,17 +180,15 @@ describe('HeaderMain workshop gating', () => {
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('updates navigation and removes the account controls when access is revoked', async () => {
+  it('removes the account controls when access is revoked', async () => {
     flag.value = true
     renderHeader(true)
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     visibility.value = true
-    await screen.findByRole('link', { name: /^Hub\b/i })
+    expect(await screen.findAllByTestId('header-account')).not.toHaveLength(0)
     visibility.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })
