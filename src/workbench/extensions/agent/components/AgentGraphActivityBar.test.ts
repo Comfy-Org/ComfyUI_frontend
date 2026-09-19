@@ -15,7 +15,8 @@ import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
 
 const graph = fromPartial<LGraph>({ id: 'graph-1' })
-const node = fromPartial<LGraphNode>({
+const node = fromPartial<LGraphNode>({})
+Object.assign(node, {
   id: toNodeId(1),
   pos: [10, 20],
   size: [100, 80]
