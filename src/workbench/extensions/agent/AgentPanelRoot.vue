@@ -621,13 +621,13 @@ function resumedTurnTabPath(): string | null {
 // stash/resume flip of a panel remount, where those setters never run.
 let observedActivityStatus = false
 watch(
-  status,
-  (value) => {
+  [status, conversationTurnId],
+  ([value, turnId]) => {
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
       if (observedActivityStatus) graphActivity.finishTurn()
-    } else graphActivity.startTurn(conversationTurnId.value)
+    } else graphActivity.startTurn(turnId)
     observedActivityStatus = true
     if (value === 'idle') {
       const completedPath = tabActivity.editingTabPath

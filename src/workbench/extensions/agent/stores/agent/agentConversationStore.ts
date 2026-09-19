@@ -116,8 +116,8 @@ export const useAgentConversationStore = defineStore(
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
       liveMessage = message
-      activeIndex.value = messages.value.push(message) - 1
       activeTurnId.value = turnId
+      activeIndex.value = messages.value.push(message) - 1
       transport = createAgentEventTransport(message, replaceActive)
     }
 
@@ -213,8 +213,8 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
-      activeIndex.value = index
       activeTurnId.value = entry.messageId
+      activeIndex.value = index
       transport = entry.transport
       liveMessage = entry.message
     }
@@ -275,8 +275,8 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       if (transcript.pending) {
         liveMessage = transcript.pending.message
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
+        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive
