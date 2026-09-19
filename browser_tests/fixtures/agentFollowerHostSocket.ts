@@ -1,7 +1,11 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -31,6 +35,11 @@ const zClientDocFrame = z.object({
       )
       .default([])
   })
+})
+
+const zClientDocOps = z.object({
+  workflow_id: z.string(),
+  ops: z.array(z.unknown())
 })
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
@@ -102,8 +111,12 @@ export class AgentFollowerHostSocket {
     if (typeof frame !== 'object' || frame === null) return
     this.recordClientDocFrame(frame)
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
+    if (type === 'doc_ops') this.answerDocOps(data)
+    else if (type === 'doc_subscribe') this.answerSubscribe(data)
+  }
+
+  private answerSubscribe(data: unknown): void {
+    if (typeof data !== 'object' || data === null) return
     const { workflow_id, state_vector_b64 } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
@@ -114,6 +127,34 @@ export class AgentFollowerHostSocket {
     this.send(this.host.catchUp(state_vector_b64))
     this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  // Applies the follower's human ops to the host document and answers the
+  // way the relay does: a doc_ops_result per batch, then the doc_update echo.
+  private answerDocOps(data: unknown): void {
+    const parsed = zClientDocOps.safeParse(data)
+    if (!parsed.success) return
+    const { workflow_id, ops } = parsed.data
+    if (workflow_id !== this.workflowId) {
+      this.send({
+        type: 'doc_ops_result',
+        data: {
+          v: DOC_PROTOCOL_VERSION,
+          workflow_id,
+          ok: false,
+          applied: [],
+          skipped: [],
+          code: 'unknown_workflow',
+          message: 'the fake host serves one workflow'
+        }
+      })
+      return
+    }
+    // The applier is the only judge of a wire op; this host reads only the
+    // workflow id off the envelope and hands the ops over untouched.
+    const { result, update } = this.host.applyClientOps(ops as Op[])
+    this.send(result)
+    if (update) this.send(update)
   }
 
   private recordClientDocFrame(frame: unknown): void {
