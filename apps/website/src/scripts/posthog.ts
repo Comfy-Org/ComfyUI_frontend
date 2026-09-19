@@ -234,6 +234,7 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
 }
 
 const OVERRIDDEN_ON =
+  !WORKSHOP_VERCEL_PRODUCTION &&
   WORKSHOP_DEPLOY_ENV !== 'production' &&
   import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(true)
