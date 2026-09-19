@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { BatchOutcome } from './opSender'
+import type { BatchOutcome, OpsResultView } from './opSender'
 import type { PendingOpEntry, PendingOpLedger } from './pendingOpLedger'
 import { createPendingOpLedger } from './pendingOpLedger'
 
@@ -122,6 +122,42 @@ export function createPendingOpTracker(
       emit({ type: 'skipped_cleared', seq, opIds: cleared })
   }
 
+  function parkOrClearSkipped(skipped: string[], ackSeq: number | null): void {
+    if (skipped.length === 0) return
+    if (ackSeq !== null && currentSeq() >= ackSeq) {
+      // The projection already folded doc state at/after the ack, so the
+      // duplicate's authoritative outcome is on screen NOW. This is a
+      // projection-based transition, not a clear-on-ack.
+      clearSkipped(skipped, ackSeq)
+      return
+    }
+    for (const opId of skipped) awaitingSkipped.set(opId, ackSeq)
+    emit({ type: 'skipped_awaiting', seq: ackSeq, opIds: skipped })
+  }
+
+  function reconcileAcknowledged(batch: string[], result: OpsResultView): void {
+    const summary = ledger.reconcileOpsResult({
+      batch,
+      applied: result.applied,
+      skipped: result.skipped,
+      failedOpId: result.failure?.op_id ?? null,
+      failure: result.failure,
+      attempts: Object.fromEntries(
+        batch.map((id) => [id, attempts.get(id) ?? 0])
+      )
+    })
+    revert(summary.failed, 'failed')
+    revert(summary.unprocessed, 'unprocessed')
+    parkOrClearSkipped(summary.skipped, result.seq ?? null)
+    if (result.ok) return
+    // An anonymous `ok:false` (no lists, no failed op id) names nothing, so
+    // the ledger leaves the batch in flight; nothing will ever clear it.
+    const unattributed = batch.filter(
+      (id) => ledger.get(id)?.state === 'inflight'
+    )
+    revert(unattributed, 'unattributed')
+  }
+
   return {
     onBatchMinted(ops) {
       for (const op of ops) {
@@ -147,43 +183,7 @@ export function createPendingOpTracker(
         revert(batch, outcome.state)
         return
       }
-      const { result } = outcome
-      const failedOpId = result.failure?.op_id ?? null
-      const summary = ledger.reconcileOpsResult({
-        batch,
-        applied: result.applied,
-        skipped: result.skipped,
-        failedOpId,
-        failure: result.failure,
-        attempts: Object.fromEntries(
-          batch.map((id) => [id, attempts.get(id) ?? 0])
-        )
-      })
-      revert(summary.failed, 'failed')
-      revert(summary.unprocessed, 'unprocessed')
-      if (summary.skipped.length > 0) {
-        const ackSeq = result.seq ?? null
-        if (ackSeq !== null && currentSeq() >= ackSeq) {
-          // The projection already folded doc state at/after the ack, so the
-          // duplicate's authoritative outcome is on screen NOW. This is a
-          // projection-based transition, not a clear-on-ack.
-          clearSkipped(summary.skipped, ackSeq)
-        } else {
-          for (const opId of summary.skipped) awaitingSkipped.set(opId, ackSeq)
-          emit({
-            type: 'skipped_awaiting',
-            seq: ackSeq,
-            opIds: summary.skipped
-          })
-        }
-      }
-      if (result.ok) return
-      // An anonymous `ok:false` (no lists, no failed op id) names nothing, so
-      // the ledger leaves the batch in flight; nothing will ever clear it.
-      const unattributed = batch.filter(
-        (id) => ledger.get(id)?.state === 'inflight'
-      )
-      revert(unattributed, 'unattributed')
+      reconcileAcknowledged(batch, outcome.result)
     },
     onDocEffect(opIds) {
       if (opIds.length === 0) return

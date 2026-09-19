@@ -104,7 +104,6 @@ test.describe(
     test.use({ connectWebSocketToServer: false })
 
     test('is removed from the canvas', async ({ comfyPage, getWebSocket }) => {
-      test.setTimeout(30_000)
       await comfyPage.settings.setSetting(
         'Comfy.NodeSearchBoxImpl',
         'v1 (legacy)'
