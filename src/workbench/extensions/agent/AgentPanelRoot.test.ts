@@ -190,6 +190,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 }))
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useRestoredWorkflowTabStore } from '@/platform/workflow/persistence/stores/restoredWorkflowTabStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -2611,6 +2612,7 @@ describe('AgentPanelRoot workflow binding', () => {
       JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
     )
     const restored = addTab('workflows/minted.json', { isTemporary: true })
+    useRestoredWorkflowTabStore().markRestored(restored)
     useAgentConversationStore().setThreadId('th-1')
     const bodies: unknown[] = []
     const history: AgentMessages = [

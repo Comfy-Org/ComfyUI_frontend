@@ -4,6 +4,7 @@ import { toRaw, watch } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useRestoredWorkflowTabStore } from '@/platform/workflow/persistence/stores/restoredWorkflowTabStore'
 
 const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
 
@@ -16,7 +17,15 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     )
 
     const workflows = useWorkflowStore()
+    const restoredTabs = useRestoredWorkflowTabStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
+
+    // Every scratch tab shares one default path, so a persisted scratch
+    // binding is adopted only by the tab persistence restored for it, never
+    // by a blank tab that merely landed on the same path.
+    function adoptsPersistedBinding(tab: ComfyWorkflow): boolean {
+      return !tab.isTemporary || restoredTabs.wasRestored(tab)
+    }
 
     function unbind(tabPath: string): void {
       for (const [id, path] of Object.entries(tabByWorkflow.value)) {
@@ -42,7 +51,11 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         }
         for (const { tab, path } of open) {
           const id = workflowIdFor(path)
-          if (id !== undefined && !boundInstances.has(id))
+          if (
+            id !== undefined &&
+            !boundInstances.has(id) &&
+            adoptsPersistedBinding(tab)
+          )
             boundInstances.set(id, toRaw(tab))
         }
       },

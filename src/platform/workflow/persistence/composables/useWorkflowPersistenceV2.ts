@@ -39,6 +39,7 @@ import {
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+import { useRestoredWorkflowTabStore } from '../stores/restoredWorkflowTabStore'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
@@ -56,6 +57,7 @@ export function useWorkflowPersistenceV2() {
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
+  const restoredTabs = useRestoredWorkflowTabStore()
   const tabState = useWorkflowTabState()
   const toast = useToast()
   const { onUserLogout, onUserResolved } = useCurrentUser()
@@ -388,14 +390,16 @@ export function useWorkflowPersistenceV2() {
       if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        workflowStore.createTemporary(draft.name, workflowData)
+        restoredTabs.markRestored(
+          workflowStore.createTemporary(draft.name, workflowData)
+        )
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
           err
         )
         draftStore.removeDraft(path)
-        workflowStore.createTemporary(draft.name)
+        restoredTabs.markRestored(workflowStore.createTemporary(draft.name))
       }
     })
 

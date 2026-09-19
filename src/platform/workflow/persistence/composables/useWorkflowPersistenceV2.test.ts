@@ -11,6 +11,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+import { useRestoredWorkflowTabStore } from '../stores/restoredWorkflowTabStore'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const mockToastAdd = vi.fn()
@@ -482,6 +483,29 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowA)
+    })
+
+    it('marks the tabs it recreates from persisted drafts as restored, and nothing else', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const path = 'workflows/Agent draft.json'
+      useWorkflowDraftStoreV2().saveDraft(
+        path,
+        JSON.stringify({ nodes: [], links: [] }),
+        { name: 'Agent draft.json', isTemporary: true }
+      )
+      writeTabState([path], 0)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      const restoredTabs = useRestoredWorkflowTabStore()
+      const restored = workflowStore.getWorkflowByPath(path)
+      expect(restored).toBeDefined()
+      expect(restoredTabs.wasRestored(restored!)).toBe(true)
+      expect(restoredTabs.wasRestored(workflowStore.createTemporary())).toBe(
+        false
+      )
     })
 
     it('does not call openWorkflow when no restorable state', async () => {
