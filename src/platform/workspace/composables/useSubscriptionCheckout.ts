@@ -192,11 +192,16 @@ export function useSubscriptionCheckout(
   const reactivationRequired = ref(false)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
+  // The operation this checkout is watching, from whichever rail is driving it.
+  // On the subscription rail the lifecycle owns it, so reading the legacy store
+  // here left the parked-recovery prompt, the authentication state and the busy
+  // state all answering off a store nothing was writing.
+  const operationSource = subscriptionRail ?? billingOperationStore
   const activeCheckoutOperation = computed(() => {
     if (!activeCheckoutOperationId.value) {
-      return billingOperationStore.subscriptionActionOperation
+      return operationSource.subscriptionActionOperation
     }
-    const operation = billingOperationStore.getOperation(
+    const operation = operationSource.getOperation(
       activeCheckoutOperationId.value
     )
     return operation?.workspaceId === workspaceStore.activeWorkspaceId

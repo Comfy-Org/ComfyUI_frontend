@@ -239,10 +239,28 @@ const {
     },
     mockBillingStatus: { value: null as BillingStatus | null },
     mockSubscriptionRail: {
-      value: null as { subscriptionActionUrl: string | null } | null
+      value: null as SubscriptionRailStub | null
     }
   }
 })
+
+/** The reads the checkout takes off the rail, as the store answers them. */
+interface SubscriptionRailStub {
+  subscriptionActionUrl: string | null
+  subscriptionActionOperation?: RailOperation
+  getOperation?: (opId: string) => RailOperation | undefined
+}
+
+interface RailOperation {
+  opId: string
+  status: string
+  workspaceId: string
+  actionUrl?: string | null
+  phase?: string | null
+  authenticationState?: string | null
+  errorMessage?: string | null
+  isAuthenticating?: boolean
+}
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)
@@ -3193,6 +3211,77 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
 
       expect(checkout.activeCheckoutActionUrl.value).toBeNull()
+    })
+  })
+
+  describe('the operation the checkout watches', () => {
+    const PARKED: RailOperation = {
+      opId: 'op-parked',
+      status: 'pending',
+      workspaceId: 'workspace-1',
+      phase: 'awaiting_payment_method',
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your card was declined.'
+    }
+
+    it('reads the lifecycle on the rail, not the store the poller writes', async () => {
+      mockSubscriptionRail.value = {
+        subscriptionActionUrl: null,
+        subscriptionActionOperation: PARKED
+      }
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: undefined
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(checkout.authenticationState.value).toBe('failed_retryable')
+      expect(checkout.authenticationError.value).toBe('Your card was declined.')
+    })
+
+    // The subscribe that reaches `advanceToSuccessOnOperation` came off the
+    // legacy transport whichever way the flag is set: the rail's own subscribe
+    // settles before it returns, so `needs_payment_method` is a shape only
+    // `workspaceApi.subscribe` produces — including on the 404 fallback, where
+    // the flag is on and the legacy call ran anyway. Skipping the registration
+    // on the flag would leave that operation with no poller at all.
+    it.for([
+      { rail: 'off', railValue: null },
+      { rail: 'on, route 404', railValue: { subscriptionActionUrl: null } }
+    ])(
+      'registers exactly one poller for a legacy-transport checkout with the rail $rail',
+      async ({ railValue }) => {
+        mockSubscriptionRail.value = railValue
+        const checkout = await setupWithApprovedPreview()
+        checkout.selectedTierKey.value = 'standard'
+        checkout.selectedBillingCycle.value = 'yearly'
+        mockSubscribe.mockResolvedValueOnce({
+          status: 'pending_payment',
+          billing_op_id: 'op-fallback'
+        })
+
+        await checkout.handleAddCreditCard()
+
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+          'op-fallback',
+          'subscription',
+          expect.any(Object)
+        )
+      }
+    )
+
+    it('reads the poller off the rail, not the lifecycle', async () => {
+      mockSubscriptionRail.value = null
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: PARKED
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(checkout.authenticationError.value).toBe('Your card was declined.')
     })
   })
 
