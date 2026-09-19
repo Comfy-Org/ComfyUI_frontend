@@ -317,6 +317,7 @@ export function useMinimap({
   return {
     visible: computed(() => visible.value),
     initialized: computed(() => initialized.value),
+    decorationCount: computed(() => decorations.value.length),
 
     containerStyles,
     viewportStyles,

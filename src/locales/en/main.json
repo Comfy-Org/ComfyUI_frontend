@@ -3608,6 +3608,8 @@
     }
   },
   "minimap": {
+    "label": "Minimap",
+    "highlightedNodes": "Highlighted nodes: {count}",
     "nodeColors": "Node Colors",
     "showLinks": "Show Links",
     "showGroups": "Show Frames/Groups",

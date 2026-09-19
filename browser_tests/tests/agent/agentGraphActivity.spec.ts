@@ -41,12 +41,13 @@ test.describe(
         ).not.toEqual([])
 
         // The minimap is the passive locator while the camera remains under the
-        // user's control. This screenshot proves the three scoped activity marks
-        // are visible without relying on renderer internals.
+        // user's control. Its accessible summary is renderer-owned and reports
+        // the same scoped decorations painted on the canvas.
         const minimap = page.getByTestId('minimap-container')
         await expect(minimap).toBeVisible()
-        await expect(minimap).toHaveScreenshot(
-          'agent-generated-node-minimap-markers.png'
+        await expect(minimap).toHaveAttribute(
+          'aria-label',
+          'Minimap. Highlighted nodes: 3'
         )
 
         const report = page.getByTestId('agent-graph-added-toast')

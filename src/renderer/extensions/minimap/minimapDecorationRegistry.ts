@@ -4,11 +4,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
-export interface MinimapDecorationTarget extends GraphScope {
+interface MinimapDecorationTarget extends GraphScope {
   readonly nodeId: NodeId
 }
 
-export interface MinimapNodeDecoration {
+interface MinimapNodeDecoration {
   readonly target: MinimapDecorationTarget
   readonly tone: 'accent'
   readonly treatment: 'fill'
