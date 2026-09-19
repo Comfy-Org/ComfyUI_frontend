@@ -917,7 +917,8 @@ describe('useAgentSession (v1 composition root)', () => {
   it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
     // The server already holds the whole reply, so a re-hydrate repair recovers
     // it without the delta, and a transport re-attach appends the delta to the
-    // 'partial' it already had. Both land on the same text.
+    // 'partial' it already had. Both land on the same text, and exact equality
+    // still rejects a repair that does both and duplicates the suffix.
     const rest = streamingTurnRest('partial and the rest')
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -931,15 +932,21 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     emit(delta('msg-1', ' and the rest'))
 
-    // Joined rather than part-by-part: a re-attach that opens a fresh text part
-    // on reconnect still shows the user the whole reply, and must count as
-    // fixed.
-    const assistant = session.entries.value.at(-1)
-    assert(assistant !== undefined && 'parts' in assistant)
-    const replyText = assistant.parts
-      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-      .join('')
-    expect(replyText).toBe('partial and the rest')
+    // Retried, because a re-hydrate repair reaches the reply through an async
+    // getMessages. Joined rather than part-by-part: a re-attach that opens a
+    // fresh text part on reconnect still shows the user the whole reply, and
+    // must count as fixed.
+    await vi.waitFor(
+      () => {
+        const assistant = session.entries.value.at(-1)
+        assert(assistant !== undefined && 'parts' in assistant)
+        const replyText = assistant.parts
+          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+          .join('')
+        expect(replyText).toBe('partial and the rest')
+      },
+      { timeout: 200 }
+    )
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {

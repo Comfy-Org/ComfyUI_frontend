@@ -4,6 +4,7 @@ import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
   TURN_DONE_EVENT,
+  TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 
@@ -105,7 +106,11 @@ test.describe(
       await expect.poll(() => turnLock.postAttempts()).toBeGreaterThanOrEqual(2)
 
       test.fail()
-      await expect(turnLock.panel.getByRole('alert')).toHaveCount(0)
+      await expect(
+        turnLock.panel
+          .getByRole('alert')
+          .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+      ).toHaveCount(0)
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 

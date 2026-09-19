@@ -28,9 +28,10 @@ const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
  * to a thread whose assistant row is still `streaming` with HTTP 409 and this
  * body. The client renders it as `agent.sendFailed` + ': ' + this text.
  */
-const TURN_IN_PROGRESS: AgentError = {
-  error: 'a turn is already in progress for this thread'
-}
+export const TURN_IN_PROGRESS_MESSAGE =
+  'a turn is already in progress for this thread'
+
+const TURN_IN_PROGRESS: AgentError = { error: TURN_IN_PROGRESS_MESSAGE }
 
 const TURN_THINKING_TEXT = 'Wiring the audio output node.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
@@ -201,7 +202,9 @@ export class AgentTurnLockHarness {
     // this locator cannot go vacuous when a turn is shorter or longer than the
     // fixture's tool duration, or when the copy is reworded.
     this.workSummary = this.panel.getByRole('button', {
-      name: new RegExp(`^${enMessages.agent.worked}`)
+      name: new RegExp(
+        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+      )
     })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
@@ -302,8 +305,11 @@ export class AgentTurnLockHarness {
 
   /** Drops the live socket and resolves with the one the client reconnects on. */
   async dropSocket(): Promise<WebSocketRoute> {
-    const reconnected = this.nextWebSocket()
+    // Resolve the live route first: with no socket open yet both calls would
+    // queue on the same waiter and hand back the same route, so the close
+    // below would kill the one returned as the reconnect.
     const live = await this.getWebSocket()
+    const reconnected = this.nextWebSocket()
     await live.close()
     return reconnected
   }
