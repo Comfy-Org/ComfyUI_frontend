@@ -5183,7 +5183,7 @@
       "includedSources": "Include in the report (on by default)"
     },
     "loadFailed": "The agent panel failed to load.",
-    "askComfyAgent": "Ask Comfy Agent",
+    "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
     "caption": "The AI agent can make mistakes",
     "captionExpanded": "The AI agent can make mistakes. Double check your response.",

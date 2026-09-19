@@ -27,7 +27,7 @@ import {
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
@@ -39,7 +39,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       comfyPage,
       postedMessages
     }) => {

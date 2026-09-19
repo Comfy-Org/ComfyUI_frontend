@@ -89,7 +89,7 @@ test(
 
     await page
       .getByRole('button', {
-        name: enMessages.agent.askComfyAgent,
+        name: enMessages.agent.entryButton,
         exact: true
       })
       .click()
