@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
+import { splitInlineCode } from '../../lib/inline-code'
 import GlassCard from '../common/GlassCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
@@ -34,18 +35,20 @@ const {
   heading,
   eyebrow,
   locale = 'en',
-  rows
+  rows,
+  titleClass
 } = defineProps<{
-  heading: string
+  heading?: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
+  titleClass?: string
 }>()
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader :label="eyebrow" max-width="xl">
+    <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
       {{ heading }}
     </SectionHeader>
 
@@ -53,7 +56,7 @@ const {
       <slot name="media" />
     </div>
 
-    <div class="mt-16 flex flex-col gap-4 lg:gap-6">
+    <div :class="cn('flex flex-col gap-4 lg:gap-6', heading && 'mt-16')">
       <GlassCard
         v-for="(row, i) in rows"
         :key="row.id"
@@ -68,11 +71,26 @@ const {
             )
           "
         >
-          <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
+          <h3
+            :class="
+              cn(
+                'text-2xl font-light text-primary-comfy-canvas lg:text-3xl',
+                titleClass
+              )
+            "
+          >
             {{ row.title }}
           </h3>
           <p class="text-sm text-smoke-700 lg:text-base">
-            {{ row.description }}
+            <template
+              v-for="(part, partIndex) in splitInlineCode(row.description)"
+              :key="partIndex"
+              ><code
+                v-if="part.code"
+                class="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary-comfy-canvas"
+                >{{ part.text }}</code
+              ><template v-else>{{ part.text }}</template></template
+            >
           </p>
         </div>
 

@@ -17,6 +17,7 @@ const CURL_INPUTS = [
 export const modelsApiCodeTabs: Record<string, CodeTab> = {
   python: {
     name: 'Python',
+    lang: 'python',
     segments: [
       'result = comfy.models.run(\n    "',
       { values: MODELS, highlight: true },
@@ -29,6 +30,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
   },
   typescript: {
     name: 'TypeScript',
+    lang: 'typescript',
     segments: [
       "const result = await comfy.models.run('",
       { values: MODELS, highlight: true },
@@ -43,6 +45,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
   // (services/comfy-api/docs/router-quickstart.mdx in Comfy-Org/cloud).
   curl: {
     name: 'cURL',
+    lang: 'shell',
     segments: [
       'curl -X POST https://api.comfy.org/v2/models/',
       { values: CURL_MODELS, highlight: true },
@@ -53,6 +56,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
   },
   cli: {
     name: 'comfy-cli',
+    lang: 'shell',
     segments: [
       '$ comfy generate --model ',
       { values: MODELS, highlight: true },
@@ -60,6 +64,56 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
       { values: PROMPTS },
       '" \\\n    --output ',
       { values: OUTPUTS }
+    ]
+  }
+}
+
+// Router code block: the model and prompt stay fixed while the provider
+// cycles, illustrating that switching providers only changes one argument.
+const ROUTER_MODEL = 'openai/gpt-image-2'
+const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
+export const ROUTER_PROVIDERS = ['fal', 'runware', 'wavespeed'] as const
+export type RouterProvider = (typeof ROUTER_PROVIDERS)[number]
+
+export const routerCodeTabs: Record<string, CodeTab> = {
+  python: {
+    name: 'Python',
+    lang: 'python',
+    segments: [
+      'from comfy_sdk import Comfy\n\nclient = Comfy(api_key="comfyui-...")\n\nresult = client.models.run(\n    "' +
+        ROUTER_MODEL +
+        '",\n    arguments={"prompt": "' +
+        ROUTER_PROMPT +
+        '"},\n    provider="',
+      { values: [...ROUTER_PROVIDERS], highlight: true },
+      '",\n)'
+    ]
+  },
+  typescript: {
+    name: 'TypeScript',
+    lang: 'typescript',
+    segments: [
+      "import { Comfy } from 'comfy-sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.run('" +
+        ROUTER_MODEL +
+        "', {\n  arguments: { prompt: '" +
+        ROUTER_PROMPT +
+        "' },\n  provider: '",
+      { values: [...ROUTER_PROVIDERS], highlight: true },
+      "',\n})"
+    ]
+  },
+  curl: {
+    name: 'cURL',
+    lang: 'shell',
+    wrap: true,
+    segments: [
+      'curl -X POST https://api.comfy.org/v1/models/' +
+        ROUTER_MODEL +
+        ' \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "' +
+        ROUTER_PROMPT +
+        '", "provider": "',
+      { values: [...ROUTER_PROVIDERS], highlight: true },
+      '"}\''
     ]
   }
 }
