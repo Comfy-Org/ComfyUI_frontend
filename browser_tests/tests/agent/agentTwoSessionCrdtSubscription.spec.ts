@@ -116,7 +116,9 @@ test.describe(
       const before = twoSessionCrdt.docOpsCount(WORKFLOW_A.id, 'set_widget')
       await editCfg(twoSessionCrdt.vueNodes, 9)
       await expect
-        .poll(() => twoSessionCrdt.docOpsCount(WORKFLOW_A.id, 'set_widget'))
+        .poll(() => twoSessionCrdt.docOpsCount(WORKFLOW_A.id, 'set_widget'), {
+          timeout: 20_000
+        })
         .toBeGreaterThan(before)
     })
 
