@@ -111,33 +111,6 @@ test('does not initialize Firebase on public pages', async ({
   expect(firebaseRequests).toEqual([])
 })
 
-for (const { enabled, runSurface } of [
-  { enabled: true, runSurface: 1 },
-  { enabled: false, runSurface: 0 }
-]) {
-  test(`a build with no VERCEL_ENV still obeys workshop-enabled=${enabled}`, async ({
-    context,
-    page
-  }) => {
-    await context.route('**/t.comfy.org/**', (route) =>
-      /\/(flags|decide)\//.test(route.request().url())
-        ? route.fulfill({
-            json: {
-              featureFlags: { 'workshop-enabled': enabled },
-              featureFlagPayloads: {}
-            }
-          })
-        : route.abort('blockedbyclient')
-    )
-    const flags = page.waitForResponse((response) =>
-      /t\.comfy\.org\/(flags|decide)\//.test(response.url())
-    )
-    await page.goto(MODEL_PATH)
-    await flags
-    await expect(page.getByTestId('model-detail')).toHaveCount(runSurface)
-  })
-}
-
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 

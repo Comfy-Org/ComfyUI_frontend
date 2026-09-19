@@ -196,9 +196,17 @@ with the refreshed snapshot.
 > unset — unset meaning a non-Vercel build, so local `astro dev` and the e2e
 > CI job are unaffected and still obey `workshop-enabled`. Leave that flag
 > **on** to keep reviewing fixes on previews. Every other value, `production`
-> included, hides Workshop whatever the flag says, and production no longer
-> records `workshop-enabled` exposures, so PostHog reports preview traffic
-> only.
+> included, hides Workshop whatever the flag says. `WORKSHOP_DEPLOY_ENV`
+> defaults to `VERCEL_ENV` but is an `astro:env` field in its own right, so
+> setting it explicitly outranks `VERCEL_ENV` — `WORKSHOP_DEPLOY_ENV=preview`
+> restores Workshop in any environment, which is the escape hatch if a build
+> reports a deploy env we did not anticipate.
+>
+> A disabled build stops emitting `$feature_flag_called` for
+> `workshop-enabled`, so exposure counts cover previews only. Flag membership
+> still rides along on production events in `$active_feature_flags`, so an
+> insight filtered on the flag _property_ rather than the exposure _event_
+> will still show production traffic — that is not the kill leaking.
 >
 > The kill takes the header account menu with it, so a signed-in customer can
 > neither see nor spend credits, and cannot sign out from the site, while it

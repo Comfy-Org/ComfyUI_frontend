@@ -24,7 +24,7 @@ for (const path of ['/models/', MODEL_PATH]) {
   })
 }
 
-test.describe('enabled workshop', () => {
+test.describe('a build with no VERCEL_ENV still obeys workshop-enabled', () => {
   test.beforeEach(async ({ context }) => {
     await context.route('**/cdn-cgi/trace', (route) =>
       route.fulfill({
