@@ -173,11 +173,19 @@ describe('committed recordings', () => {
     expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
   })
 
-  it('every recording has explicit visible expectations for each turn', () => {
+  it('every recording and repro has explicit visible expectations for each turn', () => {
+    const reprosDir = join(dir, '..', 'repros')
+    const fixtures = [
+      ...files.map((file) => join(dir, file)),
+      ...readdirSync(reprosDir)
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => join(reprosDir, file))
+    ]
     const turns = Object.fromEntries(
-      files.map((file) => [
-        file.slice(0, -'.json'.length),
-        zAgentConversation.parse(load(file)).turns.length
+      fixtures.map((path) => [
+        path.slice(path.lastIndexOf('/') + 1, -'.json'.length),
+        zAgentConversation.parse(JSON.parse(readFileSync(path, 'utf8'))).turns
+          .length
       ])
     )
     expect(
