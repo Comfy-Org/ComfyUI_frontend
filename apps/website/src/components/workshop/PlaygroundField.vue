@@ -289,6 +289,7 @@ function booleanValue(fallback = false): boolean {
               field.label
             )
           "
+          :aria-required="field.required || undefined"
           :aria-invalid="invalid()"
           :aria-describedby="describedBy"
           :data-testid="`field-${field.name}-value`"

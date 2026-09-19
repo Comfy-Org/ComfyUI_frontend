@@ -689,6 +689,27 @@ describe('PlaygroundField', () => {
     expect(box.value).toBe('')
   })
 
+  // The box is the half of the pair that can hold nothing, so it is the half
+  // that has to say the field is required.
+  it('exposes the required state on the value box', () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024,
+      required: true
+    }
+    mountField(field, defaultValues([field]))
+    expect(
+      screen
+        .getByRole('spinbutton', { name: 'Height value' })
+        .getAttribute('aria-required')
+    ).toBe('true')
+  })
+
   it('marks a typed value outside the field bounds invalid', async () => {
     const field: FieldSchema = {
       kind: 'number',
