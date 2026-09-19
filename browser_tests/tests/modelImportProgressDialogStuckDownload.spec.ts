@@ -142,7 +142,12 @@ test.describe(
         error: 'Source server error'
       })
 
-      const toast = page.getByRole('status')
+      // Scoped by footer text: `getByRole('status')` alone also matches the
+      // top-menu action bar's own status region and is a strict-mode
+      // violation with two toasts on screen.
+      const toast = page
+        .getByRole('status')
+        .filter({ hasText: '1 download failed' })
       await expect(toast).toBeVisible()
       await expect(
         page.getByText('1 download failed', { exact: true })
