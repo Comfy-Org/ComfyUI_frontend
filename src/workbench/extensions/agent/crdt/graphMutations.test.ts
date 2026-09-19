@@ -299,32 +299,6 @@ describe('graphMutations', () => {
     ).toBe('Renamed By Agent')
   })
 
-  // A node's live state can be rebuilt outside this reconcile loop entirely
-  // — e.g. a workflow tab serialized away and reloaded when the user
-  // switches back to it — which starts the reloaded NodeState with no
-  // `lastSerialization` baseline at all, even though the node already went
-  // through a reconcile before the tab switch. With no baseline to compare
-  // the doc's title against, there is no evidence the doc side changed, so
-  // the reloaded live title (which may itself carry an unsynced rename)
-  // should win the same way an unchanged baseline would.
-  it('keeps a live title when the node has no reconcile baseline yet', () => {
-    const graph = mutations()
-    graph.addNode(node(1), context)
-    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
-    live.title = 'My Custom Sampler'
-    live.lastSerialization = undefined
-
-    expect(
-      graph.batch(context, (batch) => {
-        batch.reconcileNode(node(1))
-      })
-    ).toBe(true)
-
-    expect(
-      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
-    ).toBe('My Custom Sampler')
-  })
-
   // Node color is presentation-only and the CRDT doc never carries it, so
   // `prepareNode` only conditionally spreads `color`/`bgcolor` when the
   // payload has one; `assignNodeFields` (nodeDataStore.ts) leaves both

@@ -328,6 +328,13 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  // This is a rendering-layer materialization of the same logical node, not
+  // a content change: the record's CRDT reconcile baseline must survive it,
+  // or the next reconcile sees a node with no baseline at all and treats an
+  // unrelated local edit (e.g. a title set outside the doc) as unproven,
+  // replaying the doc's possibly-stale value over it.
+  added._state.lastSerialization = state.lastSerialization
+
   try {
     node.configure(withNamedWidgetValues(serialised))
   } catch (cause) {

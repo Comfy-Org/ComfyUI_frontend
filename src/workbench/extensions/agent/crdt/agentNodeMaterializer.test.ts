@@ -209,6 +209,31 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  // Materializing a store-only record into a live node is a rendering-layer
+  // step, not a content change: `materialize()` deletes and re-registers the
+  // record's `NodeState` so a real `LGraphNode` can own it, but that record
+  // is the same logical node the doc already described. Dropping its
+  // `lastSerialization` here means the very next reconcile sees a node with
+  // no baseline at all and cannot tell an unrelated local edit from a stale
+  // doc replay (graphMutations.ts's `resolveNodeTitle`).
+  it('keeps the record lastSerialization baseline across materialization', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    const beforeSerialization = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(1)
+    )?.lastSerialization
+    expect(beforeSerialization).toBeDefined()
+
+    reconcileAgentAdapters(graph)
+
+    expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(DummyNode)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+        ?.lastSerialization
+    ).toEqual(beforeSerialization)
+  })
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
