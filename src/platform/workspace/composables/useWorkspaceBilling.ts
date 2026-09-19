@@ -7,9 +7,7 @@ import {
   watch
 } from 'vue'
 
-import type {
-  PreviewSubscribeInput
-} from '@comfyorg/account-core/billing'
+import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
