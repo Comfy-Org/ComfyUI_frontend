@@ -3744,6 +3744,14 @@ export type ChurnkeyAuthResponse = {
    * Churnkey environment matching the configured app
    */
   mode: 'live' | 'test' | 'sandbox'
+  /**
+   * Exact Stripe subscription for a native discount proof on an explicitly
+   * allowlisted non-production Personal workspace. Absent by default and
+   * always absent in live mode. This is test admission, not a signed
+   * discount authorization or production offer eligibility decision.
+   *
+   */
+  test_discount_subscription_id?: string
 }
 
 /**

@@ -1,10 +1,21 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useAuthStore } from '@/stores/authStore'
+import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
+import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -21,6 +32,9 @@ import {
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function useBillingContext() {
   const scope = effectScope()
@@ -261,6 +275,34 @@ describe('useBillingContext', () => {
   it('exposes fetchStatus action', async () => {
     const { fetchStatus } = useBillingContext()
     await expect(fetchStatus()).resolves.toBeUndefined()
+  })
+
+  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
+    mockBillingRail.value = 'stripe'
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockReturnValue('personal-123')
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const billing = scope.run(useSharedBillingContext)
+    assert.exists(billing)
+    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
+    const error = new Error('Billing status unavailable')
+    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
+    vi.mocked(prepareChurnkey).mockResolvedValue({
+      show: async () => ({ type: 'discount-applied' })
+    })
+    const showFallback = vi.fn()
+
+    await scope.run(() => launchCancellationFlow({ showFallback }))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'error_refreshing_billing_after_churnkey_discount'
+    })
+    expect(mockLegacyFetchStatus).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 
   it('exposes fetchBalance action', async () => {
