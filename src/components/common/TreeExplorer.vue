@@ -178,8 +178,8 @@ const renameCommand = (node: RenderedTreeExplorerNode<T>) => {
   renameEditingNode.value = node
 }
 const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
-  await node.handleDelete?.()
-  emit('nodeDelete', node)
+  const result = await node.handleDelete?.()
+  if (result !== false) emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() => {
   const node = menuTargetNode.value

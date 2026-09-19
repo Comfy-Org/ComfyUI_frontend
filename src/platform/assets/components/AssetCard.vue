@@ -229,7 +229,14 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.inProgress', {
             assetName
           })
-          await assetService.deleteAsset(asset.id)
+          const deleted = await assetService.deleteAsset(asset.id)
+          if (!deleted) {
+            promptText.value = t('assetBrowser.deletion.failed', {
+              assetName
+            })
+            await new Promise((resolve) => setTimeout(resolve, 3_000))
+            return
+          }
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })

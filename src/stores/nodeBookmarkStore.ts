@@ -2,6 +2,7 @@ import { clone } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { BookmarkCustomization } from '@/platform/settings/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -18,6 +19,7 @@ const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
+  const { toastErrorHandler } = useErrorHandling()
   const bookmarks = computed<string[]>(() =>
     settingStore.get(BOOKMARK_SETTING_ID)
   )
@@ -89,11 +91,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     newName: string
   ) => {
     if (!folderNode.isDummyFolder) {
-      throw new Error('Cannot rename non-folder node')
+      toastErrorHandler(new Error('Cannot rename non-folder node'))
+      return
     }
 
     if (newName.includes('/')) {
-      throw new Error('Folder name cannot contain "/"')
+      toastErrorHandler(new Error('Folder name cannot contain "/"'))
+      return
     }
 
     const newNodePath =
@@ -105,7 +109,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
 
     if (bookmarks.value.some((b: string) => b.startsWith(newNodePath))) {
-      throw new Error(`Folder name "${newNodePath}" already exists`)
+      toastErrorHandler(
+        new Error(`Folder name "${newNodePath}" already exists`)
+      )
+      return
     }
 
     await settingStore.set(
@@ -121,7 +128,8 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   const deleteBookmarkFolder = async (folderNode: ComfyNodeDefImpl) => {
     if (!folderNode.isDummyFolder) {
-      throw new Error('Cannot delete non-folder node')
+      console.warn('Cannot delete non-folder node')
+      return false
     }
     await settingStore.set(
       BOOKMARK_SETTING_ID,
@@ -131,6 +139,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       )
     )
     await deleteBookmarkCustomization(folderNode.nodePath)
+    return true
   }
 
   const bookmarksCustomization = computed<

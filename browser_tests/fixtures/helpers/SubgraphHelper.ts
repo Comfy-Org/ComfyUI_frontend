@@ -655,6 +655,13 @@ export class SubgraphHelper {
     })
     await this.comfyPage.canvas.press('Control+a')
     await this.comfyPage.nextFrame()
+    const selectedItemCount = await this.page.evaluate(
+      () => window.app!.canvas.selectedItems.size
+    )
+    expect(
+      selectedItemCount,
+      'Expected interior nodes to be selected before packing'
+    ).toBeGreaterThan(0)
     await this.page.evaluate(() => {
       const canvas = window.app!.canvas
       canvas.graph!.convertToSubgraph(canvas.selectedItems)

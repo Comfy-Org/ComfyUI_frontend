@@ -4,6 +4,7 @@ import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
@@ -246,7 +247,7 @@ export const useColorPaletteService = () => {
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      toastErrorHandler(new Error(t('palette.notFound', { colorPaletteId })))
       return
     }
 
@@ -275,7 +276,7 @@ export const useColorPaletteService = () => {
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      toastErrorHandler(new Error(t('palette.notFound', { colorPaletteId })))
       return
     }
     downloadBlob(
