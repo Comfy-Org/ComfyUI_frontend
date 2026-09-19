@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -1089,10 +1090,10 @@ describe('useAgentCrdtFollower', () => {
 
     it('retains a live add until a dependency makes the node visible', () => {
       const onMaterialized = vi.fn()
-      const graph = {
+      const graph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
         _nodes_by_id: { [toNodeId(3)]: {} }
-      } as unknown as MaterializableGraph
+      })
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
       })
@@ -1133,10 +1134,10 @@ describe('useAgentCrdtFollower', () => {
     it('does not attribute a human recreation after a pending node was deleted', () => {
       const onMaterialized = vi.fn()
       const graph = shallowRef<MaterializableGraph | null>(null)
-      const readyGraph = {
+      const readyGraph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
         _nodes_by_id: { [toNodeId(3)]: {} }
-      } as unknown as MaterializableGraph
+      })
       let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
@@ -1145,14 +1146,17 @@ describe('useAgentCrdtFollower', () => {
         getMap: () => ({ toJSON: () => nodes })
       }
 
-      nodes = { '3': {} }
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 9,
         actor: 'agent:thread:turn',
-        catchUp: false
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
       })
-      nodes = {}
+      // The add never enters the observable document set because projection is
+      // still waiting on a dependency; a later delete must still retire it.
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 10,
