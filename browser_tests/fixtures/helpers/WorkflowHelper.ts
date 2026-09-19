@@ -222,24 +222,27 @@ export class WorkflowHelper {
     })
   }
 
+  /**
+   * Reopen a saved workflow through the workflows sidebar, the same path a
+   * user takes. Blanks the graph first so the caller's assertions can only
+   * pass once the saved graph is actually restored: after a reload the app
+   * may already have the target active, and neither the management store's
+   * `openWorkflow` nor `isBusy` tracks `app.loadGraphData`.
+   */
   async openPersistedWorkflow(workflowName: string): Promise<void> {
-    await this.comfyPage.page.evaluate(async (name) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const workflow =
-        store.getWorkflowByPath(`workflows/${name}.json`) ??
-        store.persistedWorkflows.find(
-          (candidate) =>
-            candidate.filename === name ||
-            candidate.path.endsWith(`${name}.json`)
+    await this.comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect
+      .poll(() =>
+        this.comfyPage.page.evaluate(
+          () => window.app!.canvas.graph?.nodes.length ?? 0
         )
-      if (!workflow) {
-        throw new Error(`Persisted workflow not found: ${name}`)
-      }
-      await store.openWorkflow(workflow)
-    }, workflowName)
-    await this.waitForWorkflowIdle()
-    await this.comfyPage.vueNodes.waitForNodes()
+      )
+      .toBe(0)
+
+    const tab = this.comfyPage.menu.workflowsTab
+    await tab.open()
+    await tab.getPersistedItem(workflowName).click()
+    await tab.close()
   }
 
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {

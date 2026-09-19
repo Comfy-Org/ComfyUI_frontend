@@ -75,7 +75,7 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     expect(valueLines.join('\n').trim()).toBe(longValue)
 
     const width = await tooltipText.evaluate(
-      (el) => (el as HTMLElement).getBoundingClientRect().width
+      (el) => el.getBoundingClientRect().width
     )
     expect(width).toBeLessThanOrEqual(MAX_TOOLTIP_WIDTH)
   })

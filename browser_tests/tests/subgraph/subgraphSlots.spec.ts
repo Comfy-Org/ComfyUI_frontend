@@ -6,6 +6,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
 import {
   expectSlotsWithinBounds,
@@ -405,100 +406,123 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     () => {
       test.use({
         initialSettings: {
-          'Comfy.UseNewMenu': 'Disabled',
-          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)',
-          'Comfy.VueNodes.Enabled': false
+          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
         }
       })
 
       test('Renaming a subgraph input slot updates the widget label on the parent node', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/test-values-input-subgraph'
-        )
-
         const subgraphNodeId = toNodeId(19)
-        const disconnected = await comfyPage.page.evaluate((nodeId) => {
-          const node = window.app!.canvas.graph!.getNodeById(nodeId)
-          if (!node) return false
 
-          const seedInputIndex = node.inputs.findIndex(
-            (input) => input.name === 'seed'
+        await test.step('Vue nodes render the promoted seed widget', async () => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/test-values-input-subgraph'
           )
-          return node.disconnectInput(seedInputIndex)
-        }, subgraphNodeId)
-        expect(
-          disconnected,
-          'Expected the parent seed input to disconnect'
-        ).toBe(true)
-        await comfyPage.nextFrame()
 
-        await comfyPage.subgraph.enterSubgraphWithFallback('19')
+          const disconnected = await comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!.getNodeById(nodeId)
+            if (!node) return false
 
-        // The rename prompt reads LGraphCanvas.active_canvas, which only real
-        // pointer events assign; setGraph-based entry never touches the
-        // canvas, so click empty space once before opening the slot menu.
-        await comfyPage.canvasOps.mouseClickAt({ x: 250, y: 250 })
+            const seedInputIndex = node.inputs.findIndex(
+              (input) => input.name === 'seed'
+            )
+            return node.disconnectInput(seedInputIndex)
+          }, subgraphNodeId)
+          expect(
+            disconnected,
+            'Expected the parent seed input to disconnect'
+          ).toBe(true)
+          await comfyPage.nextFrame()
 
-        let seedSlotName: string | null = null
-        await expect
-          .poll(async () => {
-            seedSlotName = await comfyPage.page.evaluate(() => {
-              const graph = window.app!.canvas.graph
-              if (!graph) return null
-              const inputs = (graph as { inputs?: Array<{ name: string }> })
-                .inputs
-              return (
-                inputs?.find((input) => input.name.includes('seed'))?.name ??
-                null
-              )
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
+          await expect(subgraphNode).toBeVisible()
+
+          const seedWidget = subgraphNode
+            .getByTestId(TestIds.widgets.layoutFieldLabel)
+            .filter({ hasText: /^renamed_seed$/ })
+          await expect(seedWidget).toBeVisible()
+          await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
+        })
+
+        await test.step('Rename the seed slot on the legacy renderer', async () => {
+          // Switch to the legacy canvas first, then enter through setGraph:
+          // after the disconnect above, the legacy node body shows an
+          // interactive seed widget that swallows coordinate-based navigation
+          // clicks, and entering while Vue nodes are enabled leaves a stale
+          // active canvas that breaks the rename prompt.
+          await comfyPage.menu.topbar.setVueNodesEnabled(false)
+          await comfyPage.subgraph.enterSubgraphWithFallback('19')
+
+          // The rename prompt reads LGraphCanvas.active_canvas, which only real
+          // pointer events assign; setGraph-based entry never touches the
+          // canvas, so click empty space once before opening the slot menu.
+          await comfyPage.canvasOps.mouseClickAt({ x: 250, y: 250 })
+
+          let seedSlotName: string | null = null
+          await expect
+            .poll(async () => {
+              seedSlotName = await comfyPage.page.evaluate(() => {
+                const graph = window.app!.canvas.graph
+                if (!graph) return null
+                const inputs = (graph as { inputs?: Array<{ name: string }> })
+                  .inputs
+                return (
+                  inputs?.find((input) => input.name.includes('seed'))?.name ??
+                  null
+                )
+              })
+              return seedSlotName
             })
-            return seedSlotName
-          })
-          .not.toBeNull()
+            .not.toBeNull()
 
-        await comfyPage.subgraph.rightClickInputSlot(seedSlotName!)
-        await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
-        await comfyPage.nextFrame()
+          await comfyPage.subgraph.rightClickInputSlot(seedSlotName!)
+          await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+          await comfyPage.nextFrame()
 
-        await expect(
-          comfyPage.page.locator(SELECTORS.promptDialog)
-        ).toBeVisible()
-        await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
-        await comfyPage.page.locator(SELECTORS.promptDialog).fill(RENAMED_LABEL)
-        await comfyPage.page.keyboard.press('Enter')
-        await expect(
-          comfyPage.page.locator(SELECTORS.promptDialog)
-        ).toBeHidden()
+          await expect(
+            comfyPage.page.locator(SELECTORS.promptDialog)
+          ).toBeVisible()
+          await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+          await comfyPage.page
+            .locator(SELECTORS.promptDialog)
+            .fill(RENAMED_LABEL)
+          await comfyPage.page.keyboard.press('Enter')
+          await expect(
+            comfyPage.page.locator(SELECTORS.promptDialog)
+          ).toBeHidden()
 
-        await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.vueNodes.setEnabled(true)
+          await comfyPage.subgraph.exitViaBreadcrumb()
+        })
 
-        const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
-        await expect(subgraphNodeAfter).toBeVisible()
+        await test.step('Switching back to Vue nodes shows the renamed label', async () => {
+          await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate((nodeId) => {
-              const node = window.app!.canvas.graph!.getNodeById(nodeId)
-              if (!node) return null
-              const widget = node.widgets?.find((entry: { name: string }) =>
-                entry.name.includes('seed')
-              )
-              return widget?.label || widget?.name || null
-            }, subgraphNodeId)
+          const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
+          await expect(subgraphNodeAfter).toBeVisible()
+
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate((nodeId) => {
+                const node = window.app!.canvas.graph!.getNodeById(nodeId)
+                if (!node) return null
+                const widget = node.widgets?.find((entry: { name: string }) =>
+                  entry.name.includes('seed')
+                )
+                return widget?.label || widget?.name || null
+              }, subgraphNodeId)
+            )
+            .toBe(RENAMED_LABEL)
+
+          const seedWidgetAfter = subgraphNodeAfter
+            .getByTestId('widget-layout-field-label')
+            .filter({ hasText: new RegExp(`^${RENAMED_LABEL}$`) })
+          await expect(seedWidgetAfter).toBeVisible()
+          await SubgraphHelper.expectWidgetBelowHeader(
+            subgraphNodeAfter,
+            seedWidgetAfter
           )
-          .toBe(RENAMED_LABEL)
-
-        const seedWidgetAfter = subgraphNodeAfter
-          .getByTestId('widget-layout-field-label')
-          .filter({ hasText: new RegExp(`^${RENAMED_LABEL}$`) })
-        await expect(seedWidgetAfter).toBeVisible()
-        await SubgraphHelper.expectWidgetBelowHeader(
-          subgraphNodeAfter,
-          seedWidgetAfter
-        )
+        })
       })
     }
   )
