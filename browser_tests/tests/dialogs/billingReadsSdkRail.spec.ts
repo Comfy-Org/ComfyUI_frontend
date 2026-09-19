@@ -270,7 +270,8 @@ async function openPlanAndCredits(page: Page) {
  * this click.
  */
 async function openActivity(content: Locator) {
-  await content.getByRole('button', { name: 'Activity' }).click()
+  // `exact`, or this also matches the panel's "Full usage activity" button.
+  await content.getByRole('button', { name: 'Activity', exact: true }).click()
   return content
 }
 
