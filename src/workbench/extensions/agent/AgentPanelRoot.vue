@@ -286,15 +286,20 @@ const graphMutations = (workflowId: string) => {
             ? rootGraph
             : rootGraph._subgraphs.get(scope.owningGraphId)
         const node = graph?.getNodeById(nodeId)
-        console.error('[diag] getLayout fallback', {
-          rootGraphId: rootGraph.id,
-          scopeRootGraphId: scope.rootGraphId,
-          scopeOwningGraphId: scope.owningGraphId,
-          rootGraphIdMatches: rootGraph.id === scope.rootGraphId,
-          resolvedGraphExists: graph !== undefined && graph !== null,
-          nodeFound: node !== undefined,
-          nodeId
-        })
+        ;(globalThis as unknown as { __agentDiag?: unknown[] }).__agentDiag ??=
+          []
+        ;(globalThis as unknown as { __agentDiag: unknown[] }).__agentDiag.push(
+          {
+            site: 'getLayout fallback',
+            rootGraphId: rootGraph.id,
+            scopeRootGraphId: scope.rootGraphId,
+            scopeOwningGraphId: scope.owningGraphId,
+            rootGraphIdMatches: rootGraph.id === scope.rootGraphId,
+            resolvedGraphExists: graph !== undefined && graph !== null,
+            nodeFound: node !== undefined,
+            nodeId
+          }
+        )
         if (rootGraph.id !== scope.rootGraphId) return null
         if (!node) return null
         return {

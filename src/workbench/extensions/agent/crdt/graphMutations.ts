@@ -460,7 +460,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    console.error('[diag] prepare() bounds source', {
+    ;(globalThis as unknown as { __agentDiag?: unknown[] }).__agentDiag ??= []
+    ;(globalThis as unknown as { __agentDiag: unknown[] }).__agentDiag.push({
+      site: 'prepare() bounds source',
       rootGraphId: scope.rootGraphId,
       owningGraphId: scope.owningGraphId,
       nodeCount: nodes.size,
