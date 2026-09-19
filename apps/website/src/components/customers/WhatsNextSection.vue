@@ -47,7 +47,7 @@ const {
 
         <a :href="href" class="flex items-center gap-3">
           <span
-            class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full text-primary-comfy-ink"
+            class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
           >
             <span class="text-lg font-bold">›</span>
           </span>

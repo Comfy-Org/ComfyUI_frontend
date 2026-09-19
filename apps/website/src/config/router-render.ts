@@ -18,6 +18,7 @@ import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { releaseRouterOutputs } from './workshop-response'
 
 const upload = createWorkshopUrlUploader()
 
@@ -37,6 +38,10 @@ export interface RouterRenderOptions {
   readonly rasterizeSvg?: WorkshopSvgRasterizer
   readonly onRequestId?: (requestId: string | null) => void
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
+}
+
+export type BoundRouterRenderOptions = RouterRenderOptions & {
+  readonly model: WorkshopModelDetail
 }
 
 export interface ResolvedRouterRender {
@@ -122,17 +127,12 @@ export async function prepareModelRouterRender(
 export async function router_render(
   slug: string,
   parameters: RouterRenderParameters = {},
-  options: RouterRenderOptions = {}
+  options: BoundRouterRenderOptions
 ): Promise<RouterRenderResult> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const model =
-    options.model ??
-    (await import('./workshop-router-content')).getRouterWorkshopModelDetail(
-      slug
-    )
-  if (!model || (options.model && model.slug !== slug))
-    throw new WorkshopRouterError('unavailable')
+  const { model } = options
+  if (model.slug !== slug) throw new WorkshopRouterError('unavailable')
   const prepared = await prepareModelRouterRender(model, parameters, {
     ...options,
     signal
@@ -154,10 +154,17 @@ export async function router_render(
     rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })
+  const outputs = result.outputs.filter(
+    (output) => output.purpose !== 'response-metadata'
+  )
+  releaseRouterOutputs(
+    result.outputs.filter((output) => output.purpose === 'response-metadata')
+  )
   return {
     slug: prepared.slug,
     routerId: prepared.routerId,
     expectedKind: prepared.expectedKind,
-    ...result
+    ...result,
+    outputs
   }
 }

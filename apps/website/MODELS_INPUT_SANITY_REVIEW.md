@@ -30,7 +30,7 @@ Prefer a small, obvious form over complete exposure of the provider schema.
 ## Evidence and false-positive rules
 
 - Review the current worktree, not the older PR preview or previous conversation.
-  Start with `routerWorkshopModels`, `getRouterWorkshopModelDetail`,
+  Start with `workshopModels`, `getRouterWorkshopModelDetail`,
   `schemaForModel`, `defaultValues`, `validateForm` and
   `prepareWorkshopRouterInput`. Inspect actual per-use-case slugs.
 - Check both the curated contract and the pinned native OpenAPI snapshot.

@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -56,6 +56,11 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  adoptSharedOnboardingFlag,
+  scopedOnboardingKey
+} from './composables/agent/useOnboarding'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -70,7 +75,6 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { CoachStep } from './composables/agent/useOnboarding'
 import type {
   AgentActiveTabData,
   AgentThreadSummary
@@ -81,6 +85,7 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import type { CoachStep } from './composables/agent/useOnboarding'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -93,7 +98,10 @@ import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPr
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
   isCrdtDebugEnabled,
@@ -195,6 +203,22 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const workspaceStore = useTeamWorkspaceStore()
+const onboardingKey = computed(() =>
+  scopedOnboardingKey(
+    resolvedUserInfo.value?.id,
+    workspaceStore.activeWorkspaceId
+  )
+)
+watch(
+  onboardingKey,
+  (key) => {
+    if (key) adoptSharedOnboardingFlag(key)
+  },
+  { immediate: true }
+)
+const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -280,6 +304,7 @@ const nodeReferenceDisabledReason = computed(() => {
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
+composerStore.setNodeScope(selectedTarget.value?.path ?? null)
 const {
   staged: selectionTags,
   consume: consumeSelection,
@@ -287,6 +312,11 @@ const {
   add: addSelectionTag,
   replace: replaceSelectionTags
 } = useCanvasSelection({
+  staged: computed({
+    get: () => composerStore.nodes,
+    set: composerStore.setNodes
+  }),
+  retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
@@ -746,7 +776,7 @@ async function onSelectHistory(id: string): Promise<void> {
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
     .map((entry) => {
-      if (entry.role === 'user') return `**You:** ${entry.text}`
+      if (entry.role === 'user') return `**You:** ${agentMessageText(entry)}`
       const text = entry.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
@@ -761,11 +791,33 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachStep: CoachStep = {
-  target: '#agent-panel-root',
-  title: t('agent.coachTitle'),
-  body: t('agent.coachBody')
-}
+const coachSteps = computed<CoachStep[]>(() => [
+  {
+    target: '#agent-panel-root',
+    placement: 'left-center',
+    title: t('agent.coachTitle'),
+    body: t('agent.coachBody')
+  },
+  {
+    target: '#agent-composer',
+    placement: 'left-end',
+    title: t('agent.coachWorkflowTitle'),
+    body: t('agent.coachWorkflowBody')
+  },
+  {
+    target: '.graph-canvas-panel',
+    placement: 'graph-bottom',
+    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
+    title: t('agent.coachGraphTitle'),
+    body: t('agent.coachGraphBody')
+  },
+  {
+    target: '#agent-chat-history',
+    placement: 'left-start',
+    title: t('agent.coachHistoryTitle'),
+    body: t('agent.coachHistoryBody')
+  }
+])
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
@@ -811,6 +863,7 @@ function onNewChat(): void {
   cancelWorkflowSelection()
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
+  composerStore.resetPromptHistory()
   newChat()
 }
 
@@ -868,7 +921,7 @@ watch(
   selectedTarget,
   (target, previous) => {
     exitNodeSelectionMode()
-    replaceSelectionTags([])
+    composerStore.setNodeScope(target?.path ?? null)
     nodeReferenceWorkflow = null
     agentNodeSelectionStore.saveNodeIds(previous?.path, [])
     agentNodeSelectionStore.saveNodeIds(target?.path, [])
@@ -938,9 +991,9 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
-  stage: (staged) => panelRef.value?.addAttachment(staged),
-  update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
-  remove: (id) => panelRef.value?.removeAttachment(id)
+  stage: composerStore.addAttachment,
+  update: composerStore.updateAttachment,
+  remove: composerStore.removeAttachment
 })
 
 function onAttach(): void {
@@ -1140,8 +1193,14 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      :step="coachStep"
-      storage-key="Comfy.AgentPanel.onboarded"
+      v-if="
+        consentAccepted &&
+        onboardingKey &&
+        !canvasStore.linearMode &&
+        activeTour === null
+      "
+      :steps="coachSteps"
+      :storage-key="onboardingKey"
     />
   </div>
 </template>

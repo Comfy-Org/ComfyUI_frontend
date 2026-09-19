@@ -1,13 +1,15 @@
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
   CameraState,
   HDRIConfig,
   LightConfig,
+  GizmoConfig,
   ModelConfig,
-  SceneConfig
+  SceneConfig,
+  StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
@@ -45,6 +47,14 @@ export function parseAnnotatedFilename(
     filename: rawValue.slice(0, match.index),
     folder: match[1]
   }
+}
+
+const DEFAULT_GIZMO: GizmoConfig = {
+  enabled: false,
+  mode: 'translate',
+  position: { x: 0, y: 0, z: 0 },
+  rotation: { x: 0, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 }
 }
 
 class Load3DConfiguration {
@@ -184,7 +194,7 @@ class Load3DConfiguration {
       backgroundColor:
         '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor'),
       backgroundImage: ''
-    } as SceneConfig
+    }
   }
 
   private loadCameraConfig(): CameraConfig {
@@ -195,7 +205,7 @@ class Load3DConfiguration {
     return {
       cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
       fov: 35
-    } as CameraConfig
+    }
   }
 
   private loadLightConfig(): LightConfig {
@@ -211,46 +221,30 @@ class Load3DConfiguration {
       return {
         intensity:
           saved.intensity ??
-          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
+          useSettingStore().get('Comfy.Load3D.LightIntensity'),
         hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
       }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity'),
       hdri: hdriDefaults
     }
   }
 
   private loadModelConfig(): ModelConfig {
-    if (this.properties && 'Model Config' in this.properties) {
-      const config = this.properties['Model Config'] as ModelConfig
-      if (!config.gizmo) {
-        config.gizmo = {
-          enabled: false,
-          mode: 'translate',
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 }
-        }
-      } else if (!config.gizmo.scale) {
-        config.gizmo.scale = { x: 1, y: 1, z: 1 }
-      }
-      return config
-    }
-
-    return {
+    const stored = this.properties?.['Model Config'] as
+      | StoredModelConfig
+      | undefined
+    const config: ModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
       showSkeleton: false,
-      gizmo: {
-        enabled: false,
-        mode: 'translate',
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1, z: 1 }
-      }
+      ...stored,
+      gizmo: { ...DEFAULT_GIZMO, ...stored?.gizmo }
     }
+    if (stored) stored.gizmo = config.gizmo
+    return config
   }
 
   private applySceneConfig(config: SceneConfig, bgImagePath?: string) {

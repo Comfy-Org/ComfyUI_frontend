@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
@@ -54,7 +53,7 @@ describe('WorkshopCatalog', () => {
       'kling'
     )
     await nextTick()
-    expect(screen.getByText('No models match these filters.')).toBeTruthy()
+    expect(screen.getByText('No models match your filters.')).toBeTruthy()
   })
 
   it('renders the next page on request', async () => {

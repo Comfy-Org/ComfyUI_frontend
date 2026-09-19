@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import defaultMedia from '../data/router-default-media.json'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { prepareModelRouterRender } from './router-render'
-import { routerWorkshopModels } from './workshop-browse-content'
+import { workshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
 import { applyRouterDefaultInputs } from './router-default-inputs'
@@ -117,11 +117,7 @@ describe('runnable page defaults', () => {
     ])
   })
 
-  it.for([
-    'bfl--flux-erase--edit-images',
-    'bria--eraser--edit-images',
-    'bria--generative-fill--edit-images'
-  ])(
+  it.for(['bfl--flux-erase--edit-images', 'bria--eraser--edit-images'])(
     'composes the default source and matching mask as real media for %s',
     async (slug) => {
       const model = modelFor(slug)
@@ -133,13 +129,38 @@ describe('runnable page defaults', () => {
       const request = await prepareModelRouterRender(model)
       expect(request.body).toMatchObject({
         image: defaultMedia.image,
-        mask:
-          slug === 'bria--generative-fill--edit-images'
-            ? defaultMedia.partialMask
-            : defaultMedia.mask
+        mask: defaultMedia.mask
       })
     }
   )
+
+  it('uses Bria Generative Fill’s authored source and matching mask', () => {
+    const model = modelFor('bria--generative-fill--edit-images')
+    const page = initialWorkshopPageState(model)
+    expect(validateForm(page.schema, page.values)).toEqual({})
+    expect(page.values).toMatchObject({
+      image: {
+        sourceUrl: expect.stringContaining('generative-fill-input-1.1.png')
+      },
+      mask: {
+        sourceUrl: expect.stringContaining('generative-fill-input-1.2.png')
+      }
+    })
+  })
+
+  it('keeps authored role-page media and settings ahead of fallback seeds', () => {
+    const model = modelFor('kling--omni-pro-first-last-frame--animate-images')
+    const page = initialWorkshopPageState(model)
+    expect(page.values).toMatchObject({
+      generate_audio: true,
+      first_frame_url: expect.stringContaining(
+        'omni-pro-first-last-frame-input-1.1.png'
+      ),
+      last_frame_url: expect.stringContaining(
+        'omni-pro-first-last-frame-input-1.2.png'
+      )
+    })
+  })
 
   it('preserves authored examples and gives unseeded URL pages usable media', () => {
     const model = modelFor('wavespeed--seedvr2-image--edit-images')
@@ -157,7 +178,7 @@ describe('runnable page defaults', () => {
   })
 
   it('publishes only runnable pages whose first-render inputs validate', () => {
-    for (const { slug } of routerWorkshopModels) {
+    for (const { slug } of workshopModels) {
       const model = modelFor(slug)
       expect({ slug, runnable: Boolean(model.execution) }).toEqual({
         slug,
@@ -179,7 +200,7 @@ describe('runnable page defaults', () => {
       input: {
         mode: 'text2video',
         video_url: page.values.video_url,
-        text: 'Welcome to Comfy Cloud. Let us bring your creative ideas to life today.',
+        text: page.values.text,
         voice_id: 'genshin_vindi2',
         voice_language: 'en',
         voice_speed: 1
@@ -193,7 +214,7 @@ describe('runnable page defaults', () => {
     expect(request.body).toEqual({
       input: {
         mode: 'text2video',
-        video_url: 'https://assets.sync.so/docs/example-video.mp4',
+        video_url: page.values.video_url,
         text: 'Hello from the playground.',
         voice_id: 'genshin_vindi2',
         voice_language: 'en',
