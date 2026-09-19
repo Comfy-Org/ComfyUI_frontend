@@ -37,7 +37,10 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * exercised on plain nodes, where the loss isn't visible because they have no
  * client-only color or autogrow label to lose.
  *
- * This is a known-failing repro (`test.fail()`): there is no fix yet.
+ * Fixed in `graphMutations.ts`'s `prepareNode`/`prepareInputSlots`: a
+ * reconcile now keeps the live node's color when the payload omits it, and
+ * keeps an existing input slot's `localized_name`/`label` when the payload's
+ * slot at the same index and name doesn't carry one.
  */
 
 const GPT_IMAGE_NODE_TYPE = 'OpenAIGPTImageNodeV2'
@@ -163,9 +166,6 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
-      // Known-failing repro for PM-1339: no fix yet. Flips to a real CI
-      // failure once the color/label survive a reconcile.
-      test.fail()
 
       // `objectInfo: 'server'` (passed to `bootAgentApp` below) stops
       // `mockCloudBootRoutes` from also registering an (empty) handler for

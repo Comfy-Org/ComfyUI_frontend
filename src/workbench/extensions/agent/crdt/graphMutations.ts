@@ -193,6 +193,16 @@ function prepareInputSlots(
     const slot = structuredClone(raw)
     if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
     if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
+    // The CRDT payload never carries the autogrow-computed display name, so a
+    // prior slot at the same index and name (i.e. this is a reconcile of a
+    // slot the live node already has, not a genuinely new one) keeps its
+    // display metadata instead of losing it to the thin payload.
+    const priorSlot = existing?.[index]
+    if (priorSlot && priorSlot.name === slot.name) {
+      if (slot.localized_name === undefined)
+        slot.localized_name = priorSlot.localized_name
+      if (slot.label === undefined) slot.label = priorSlot.label
+    }
     return {
       ...slot,
       boundingRect: [0, 0, 0, 0]
@@ -235,6 +245,15 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  // Node color is a client-only presentation property the CRDT document
+  // never carries (see ComfyNode's constructor), so a payload without it
+  // keeps the live node's color instead of losing it to a reconcile.
+  const bgcolor =
+    typeof payload.bgcolor === 'string' ? payload.bgcolor : existing?.bgcolor
+  const boxcolor =
+    typeof payload.boxcolor === 'string' ? payload.boxcolor : existing?.boxcolor
+  const color =
+    typeof payload.color === 'string' ? payload.color : existing?.color
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
@@ -246,9 +265,9 @@ function prepareNode(
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
-    ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
-    ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
-    ...(typeof payload.color === 'string' && { color: payload.color }),
+    ...(bgcolor !== undefined && { bgcolor }),
+    ...(boxcolor !== undefined && { boxcolor }),
+    ...(color !== undefined && { color }),
     ...(typeof payload.resizable === 'boolean' && {
       resizable: payload.resizable
     }),
