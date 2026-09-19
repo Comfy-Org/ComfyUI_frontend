@@ -200,30 +200,61 @@ class AgentTwoSessionCrdtHarness {
   }
 
   private onClientFrame(raw: string | Buffer): void {
+    const parsed = AgentTwoSessionCrdtHarness.parseClientFrame(raw)
+    if (parsed === null) return
+    const { type, workflowId, stateVectorB64, ops } = parsed
+    if (type === 'doc_ops' && workflowId !== undefined) {
+      this.recordOutboundDocOps(workflowId, ops)
+      return
+    }
+    if (type === 'doc_subscribe' && workflowId !== undefined) {
+      this.handleDocSubscribe(workflowId, stateVectorB64)
+    }
+  }
+
+  private static parseClientFrame(raw: string | Buffer): {
+    type: string
+    workflowId?: string
+    stateVectorB64?: string
+    ops: unknown
+  } | null {
     const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
+    if (typeof frame !== 'object' || frame === null) return null
     const { type, data } = frame as { type?: unknown; data?: unknown }
     if (typeof type !== 'string' || typeof data !== 'object' || data === null)
-      return
+      return null
     const { workflow_id, state_vector_b64, ops } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
       ops?: unknown
     }
-    if (type === 'doc_ops' && typeof workflow_id === 'string') {
-      this.outboundDocOps.push({
-        workflowId: workflow_id,
-        ops: Array.isArray(ops) ? (ops as OutboundDocOps['ops']) : []
-      })
-      return
+    return {
+      type,
+      workflowId: typeof workflow_id === 'string' ? workflow_id : undefined,
+      stateVectorB64:
+        typeof state_vector_b64 === 'string' ? state_vector_b64 : undefined,
+      ops
     }
-    if (type !== 'doc_subscribe' || typeof workflow_id !== 'string') return
-    const host = this.hosts.get(workflow_id)
-    if (host === undefined || typeof state_vector_b64 !== 'string') return
+  }
+
+  private recordOutboundDocOps(workflowId: string, ops: unknown): void {
+    this.outboundDocOps.push({
+      workflowId,
+      ops: Array.isArray(ops) ? (ops as OutboundDocOps['ops']) : []
+    })
+  }
+
+  private handleDocSubscribe(
+    workflowId: string,
+    stateVectorB64: string | undefined
+  ): void {
+    if (stateVectorB64 === undefined) return
+    const host = this.hosts.get(workflowId)
+    if (host === undefined) return
     this.send(host.subscribed())
-    this.send(host.catchUp(state_vector_b64))
-    this.subscribes.set(workflow_id, this.subscribeCount(workflow_id) + 1)
-    for (const waiter of this.subscribeWaiters.get(workflow_id) ?? []) waiter()
+    this.send(host.catchUp(stateVectorB64))
+    this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
+    for (const waiter of this.subscribeWaiters.get(workflowId) ?? []) waiter()
   }
 
   private async mockAgentApi(): Promise<void> {
