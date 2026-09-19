@@ -99,8 +99,8 @@ roughly 50 agent sessions.
 
 ### Cases
 
-| Skill          | Case                             | Asserts                                                                                                                                                                                                                                                             |
-| -------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skill              | Case                             | Asserts                                                                                                                                                                                                                                                             |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fixing-web-prs`   | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                                                                                                                                                           |
 | `fixing-web-prs`   | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                                                                                                                                                                 |
 | `fixing-web-prs`   | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                                                                                                                                                                  |
@@ -119,13 +119,13 @@ Runs on Claude Code 2.1.275, 2026-09-17, `--ablation none`, judge model
 haiku, run from the authoring Mac, when the skills were still named `task`
 and `fix-it` (grader names below are the current ones):
 
-| Case                           | Runs      | Graders                                                                                        | Result                                                                                                        |
-| ------------------------------ | --------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `does-not-trigger-on-app-work` | 1         | building-web-prs-not-fired                                                                         | 1/1 pass                                                                                                      |
-| `does-not-trigger-on-question` | 1         | building-web-prs-not-fired                                                                         | 1/1 pass                                                                                                      |
-| `triggers-on-mock-request`     | 1         | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass                                                                                                      |
-| `asks-for-number`              | 1         | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)                                 | 1/1 pass                                                                                                      |
-| `does-not-trigger-on-summary`  | 1, then 2 | fixing-web-prs-not-fired, nothing-pushed-or-merged                                                 | 0/1, then 2/2 after the `fixing-web-prs` description gained its "do not use it to read, summarize, review" clause |
+| Case                           | Runs      | Graders                                                                                        | Result                                                                                                            |
+| ------------------------------ | --------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `does-not-trigger-on-app-work` | 1         | building-web-prs-not-fired                                                                     | 1/1 pass                                                                                                          |
+| `does-not-trigger-on-question` | 1         | building-web-prs-not-fired                                                                     | 1/1 pass                                                                                                          |
+| `triggers-on-mock-request`     | 1         | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass                                                                                                          |
+| `asks-for-number`              | 1         | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)                                 | 1/1 pass                                                                                                          |
+| `does-not-trigger-on-summary`  | 1, then 2 | fixing-web-prs-not-fired, nothing-pushed-or-merged                                             | 0/1, then 2/2 after the `fixing-web-prs` description gained its "do not use it to read, summarize, review" clause |
 
 The six merge-gate and workflow cases (`hold-blocks-merge`,
 `merges-on-fresh-head`, `queued-is-not-merged`, `requeues-after-pop`,
