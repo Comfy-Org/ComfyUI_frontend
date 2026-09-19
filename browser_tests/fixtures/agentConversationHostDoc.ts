@@ -5,7 +5,9 @@ import {
   readGraph
 } from '@comfyorg/comfy-multi-player'
 import type {
+  ApplyOutcome,
   GraphSnapshot,
+  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -95,6 +97,31 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  /**
+   * Applies ops that already carry wire identity (`op_id`/`actor`/
+   * `base_version`/`stamp`) — e.g. an `Op[]` captured straight off an app's
+   * own outbound `doc_ops` frame — through the same production applier
+   * {@link apply} uses, without its all-or-nothing invariant. A losing write
+   * is not an error here: its outcome (`lww-dropped`) is returned instead of
+   * thrown, so a test can assert on the applier's real conflict resolution
+   * (see PM-1251 — two actors independently minting a wire op for the same
+   * node id, resolved by last-write-wins over `(base_version, actor, op_id)`
+   * with the loser silently dropped).
+   */
+  applyWireOps(ops: Op[]): { frame: HostFrame; outcomes: ApplyOutcome[] } {
+    const before = Y.encodeStateVector(this.doc)
+    const result = applyOps(this.doc, ops, this.catalog)
+    this.seq += 1
+    return {
+      frame: this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        ops[0]?.actor ?? HOST_ACTOR,
+        ops.map((op) => op.op_id)
+      ),
+      outcomes: result.outcomes
+    }
   }
 
   private updateFrame(
