@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { adjustColor } from '@/utils/colorUtil'
@@ -380,4 +383,41 @@ describe('minimapCanvasRenderer', () => {
       vi.mocked(mockContext.fillRect)
     )
   })
+
+  it.each([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
+    'keeps tiny pop markers centered and legible at %dms',
+    (elapsed) => {
+      renderMinimapToCanvas(mockCanvas, mockGraph, {
+        bounds: { minX: 0, minY: 0, width: 50_000, height: 40_000 },
+        scale: 0.005,
+        settings: {
+          nodeColors: false,
+          showLinks: false,
+          showGroups: false,
+          renderBypass: false,
+          renderError: true
+        },
+        width: 250,
+        height: 200,
+        decorations: [
+          {
+            target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+            enter: 'pop',
+            enteredAt: 1_000
+          }
+        ],
+        now: 1_000 + elapsed
+      })
+
+      const marker = vi
+        .mocked(mockContext.strokeRect)
+        .mock.calls.find(([, , width, height]) => width === 2 && height === 2)
+      expect(marker).toBeDefined()
+      const [x, y, width, height] = marker!
+      expect(width).toBe(2)
+      expect(height).toBe(2)
+      expect(x + width / 2).toBeCloseTo(0.875)
+      expect(y + height / 2).toBeCloseTo(0.7)
+    }
+  )
 })

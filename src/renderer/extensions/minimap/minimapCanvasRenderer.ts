@@ -123,8 +123,8 @@ function renderNodeDecorations(
     const eased = 1 - (1 - progress) ** 3
     const x = (node.x - context.bounds.minX) * context.scale + offsetX
     const y = (node.y - context.bounds.minY) * context.scale + offsetY
-    const width = Math.max(2, node.width * context.scale) * eased
-    const height = Math.max(2, node.height * context.scale) * eased
+    const width = Math.max(2, node.width * context.scale * eased)
+    const height = Math.max(2, node.height * context.scale * eased)
     const centerX = x + (node.width * context.scale) / 2
     const centerY = y + (node.height * context.scale) / 2
     ctx.fillRect(centerX - width / 2, centerY - height / 2, width, height)
