@@ -6524,6 +6524,14 @@ Enterprise`
     en: "Run the world's leading AI models in ComfyUI",
     'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
   },
+  'models.index.searchLabel': {
+    en: 'Search models',
+    'zh-CN': '搜索模型'
+  },
+  'models.index.noResults': {
+    en: 'No models match. Try another name.',
+    'zh-CN': '没有匹配的模型。换个名称试试。'
+  },
   'models.breadcrumb.models': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
