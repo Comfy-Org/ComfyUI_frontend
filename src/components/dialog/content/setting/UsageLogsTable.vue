@@ -103,6 +103,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
@@ -145,6 +147,13 @@ const tooltipContentMap = computed(() => {
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
+const readWorkspaceEvents = (params: { page: number; limit: number }) => {
+  const rail = useBillingReadRail()
+  return rail === null
+    ? workspaceApi.getBillingEvents(params)
+    : readOnRail(() => rail.readEvents(params))
+}
+
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
   loading.value = true
@@ -156,7 +165,7 @@ const loadEvents = async () => {
       limit: pagination.value.limit
     }
     const response = shouldUseWorkspaceBilling.value
-      ? await workspaceApi.getBillingEvents(params)
+      ? await readWorkspaceEvents(params)
       : await customerEventService.getMyEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
@@ -167,6 +176,9 @@ const loadEvents = async () => {
     }
 
     if (loadToken !== latestLoadToken) return
+
+    // Undefined is a rail read the scope moved on under: nothing to publish.
+    if (response === undefined) return
 
     if (response) {
       if (response.events) {
