@@ -450,16 +450,16 @@ describe('Composer', () => {
       expect(
         screen.getByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
       expect(screen.getAllByRole('radio')).toHaveLength(2)
       expect(
         screen.queryByRole('radio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Save changes' })
+      ).not.toBeInTheDocument()
     })
 
-    it('saves auto mode and closes', async () => {
+    it('applies the picked mode without a separate save step', async () => {
       mount()
       const store = useAgentRunModeStore()
 
@@ -467,9 +467,6 @@ describe('Composer', () => {
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
-      const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeEnabled()
-      await userEvent.click(save)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
       await nextTick()
 
@@ -479,11 +476,27 @@ describe('Composer', () => {
       expect(
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto')
       expect(store.creditLimit).toBeNull()
     })
 
-    it('keeps the popover open and reports a failed save', async () => {
+    it('closes without saving when the active mode is picked again', async () => {
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+      )
+
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+      expect(fetchApi).not.toHaveBeenCalledWith(
+        '/agent/run-mode',
+        expect.objectContaining({ method: 'PUT' })
+      )
+    })
+
+    it('keeps the popover open and reverts the choice when the save fails', async () => {
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
@@ -491,14 +504,16 @@ describe('Composer', () => {
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Save changes' })
-      )
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+        ).toBeChecked()
+      )
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
@@ -537,7 +552,7 @@ describe('Composer', () => {
       }
     )
 
-    it('discards an unsaved draft when the popover closes without saving', async () => {
+    it('reopens on the mode saved by the previous choice', async () => {
       mount()
       const store = useAgentRunModeStore()
 
@@ -545,12 +560,11 @@ describe('Composer', () => {
       await userEvent.click(
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
-      await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask_approval')
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
 
-      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
       expect(
-        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
       ).toBeChecked()
     })
   })

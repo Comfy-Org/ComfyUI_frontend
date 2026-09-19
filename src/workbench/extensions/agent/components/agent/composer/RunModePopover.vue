@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -14,65 +13,35 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
-import {
-  DEFAULT_CREDIT_LIMIT,
-  useAgentRunModeStore
-} from '../../../stores/agent/agentRunModeStore'
+import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
 const toast = useToastStore()
 
 const open = ref(false)
-const saving = ref(false)
-const draftMode = ref<AgentRunModeValue>(store.mode)
-const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
+const savingMode = ref<AgentRunModeValue | null>(null)
+const selectedMode = computed(() => savingMode.value ?? store.mode)
 
-function onOpenChange(next: boolean): void {
-  open.value = next
-  if (next) {
-    draftMode.value = store.mode
-    draftLimit.value = store.creditLimit ?? DEFAULT_CREDIT_LIMIT
+async function onSelectMode(value: string | undefined): Promise<void> {
+  const match = options.find((option) => option.mode === value)
+  if (!match || savingMode.value !== null) return
+  if (match.mode === store.mode) {
+    open.value = false
+    return
   }
-}
 
-async function saveChanges(): Promise<void> {
-  saving.value = true
+  savingMode.value = match.mode
   try {
-    await store.save(
-      draftMode.value,
-      draftMode.value === 'auto_limited' ? draftLimit.value : null
-    )
+    await store.save(match.mode, null)
     open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
     toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
   } finally {
-    saving.value = false
+    savingMode.value = null
   }
 }
-
-function onDraftMode(value: string | undefined): void {
-  const match = options.find((option) => option.mode === value)
-  if (match) draftMode.value = match.mode
-}
-
-const dirty = computed(
-  () =>
-    draftMode.value !== store.mode ||
-    (draftMode.value === 'auto_limited' &&
-      draftLimit.value !== store.creditLimit)
-)
-
-const limitValid = computed(() => {
-  if (draftMode.value !== 'auto_limited') return true
-  const limit = draftLimit.value
-  return limit !== null && Number.isInteger(limit) && limit > 0
-})
-
-const saveable = computed(
-  () => dirty.value && limitValid.value && !saving.value
-)
 
 const TRIGGER_LABEL_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
@@ -112,7 +81,7 @@ const options: {
 </script>
 
 <template>
-  <Popover :open @update:open="onOpenChange">
+  <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button
         v-tooltip.top="buildTooltipConfig(triggerTooltip)"
@@ -144,75 +113,49 @@ const options: {
       </div>
 
       <RadioGroupRoot
-        :model-value="draftMode"
+        :model-value="selectedMode"
         :aria-label="t('agent.runPermissions')"
         class="flex flex-col gap-1"
-        @update:model-value="onDraftMode"
+        @update:model-value="onSelectMode"
       >
-        <div v-for="option in options" :key="option.mode" class="rounded-lg">
-          <RadioGroupItem :value="option.mode" as-child>
-            <Button
-              :variant="
-                draftMode === option.mode ? 'tertiary' : 'muted-textonly'
-              "
-              size="unset"
-              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
-            >
-              <span
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
-                    option.icon
-                  )
-                "
-              />
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm/5 text-base-foreground">
-                  {{ t(option.title) }}
-                </span>
-                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-                  {{ t(option.description) }}
-                </span>
-              </span>
-              <span
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0',
-                    draftMode === option.mode &&
-                      'icon-[lucide--check] text-base-foreground'
-                  )
-                "
-              />
-            </Button>
-          </RadioGroupItem>
-          <div
-            v-if="
-              option.mode === 'auto_limited' && draftMode === 'auto_limited'
+        <RadioGroupItem
+          v-for="option in options"
+          :key="option.mode"
+          :value="option.mode"
+          as-child
+        >
+          <Button
+            :variant="
+              selectedMode === option.mode ? 'tertiary' : 'muted-textonly'
             "
-            class="flex items-center gap-3 px-9.5 pb-2.5"
+            size="unset"
+            class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
           >
-            <Input
-              v-model.number="draftLimit"
-              type="number"
-              min="1"
-              :aria-label="t('agent.credits')"
-              class="h-8 flex-1 px-2.5 text-sm/5"
+            <span
+              :class="
+                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
+              "
             />
-            <span class="text-xs/4 text-muted-foreground">
-              {{ t('agent.credits') }}
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm/5 text-base-foreground">
+                {{ t(option.title) }}
+              </span>
+              <span class="mt-0.5 block text-xs/4 text-muted-foreground">
+                {{ t(option.description) }}
+              </span>
             </span>
-          </div>
-        </div>
+            <span
+              :class="
+                cn(
+                  'mt-0.5 size-4 shrink-0',
+                  selectedMode === option.mode &&
+                    'icon-[lucide--check] text-base-foreground'
+                )
+              "
+            />
+          </Button>
+        </RadioGroupItem>
       </RadioGroupRoot>
-
-      <Button
-        variant="inverted"
-        :disabled="!saveable"
-        class="w-full"
-        @click="saveChanges"
-      >
-        {{ t('agent.saveChanges') }}
-      </Button>
     </PopoverContent>
   </Popover>
 </template>
