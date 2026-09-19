@@ -57,6 +57,7 @@ vi.mock(import('@/services/load3dService'), () => ({
 
 vi.mock(import('@/composables/useLoad3d'), () => {
   const sceneDirty = new WeakMap<LGraphNode, boolean>()
+  const sceneRevisions = new WeakMap<LGraphNode, number>()
   const outputCache = new WeakMap<LGraphNode, unknown>()
   return {
     useLoad3d: () =>
@@ -67,13 +68,21 @@ vi.mock(import('@/composables/useLoad3d'), () => {
     nodeToLoad3dMap: fromAny(nodeToLoad3dMap),
     markLoad3dSceneDirty: (node: LGraphNode | null) => {
       if (!node) return
+      sceneRevisions.set(node, (sceneRevisions.get(node) ?? 0) + 1)
       sceneDirty.set(node, true)
     },
+    getLoad3dSceneRevision: (node: LGraphNode) => sceneRevisions.get(node) ?? 0,
     isLoad3dSceneDirty: (node: LGraphNode) => sceneDirty.get(node) !== false,
     getLoad3dOutputCache: fromAny((node: LGraphNode) => outputCache.get(node)),
-    setLoad3dOutputCache: (node: LGraphNode, value: unknown) => {
+    setLoad3dOutputCache: (
+      node: LGraphNode,
+      value: unknown,
+      revision: number = sceneRevisions.get(node) ?? 0
+    ) => {
+      if ((sceneRevisions.get(node) ?? 0) !== revision) return false
       outputCache.set(node, value)
       sceneDirty.set(node, false)
+      return true
     }
   }
 })
@@ -151,6 +160,7 @@ const registeredExtensionCount = registerExtensionMock.mock.calls.length
 
 interface FakeWidget {
   name: string
+  type?: string
   value: unknown
   serializeValue?: () => Promise<unknown>
 }
@@ -475,8 +485,8 @@ describe('Comfy.Load3D.nodeCreated', () => {
   it('configures with the input folder and width/height widgets', async () => {
     const widgets: FakeWidget[] = [
       { name: 'model_file', value: 'model.glb' },
-      { name: 'width', value: 1024 },
-      { name: 'height', value: 768 },
+      { name: 'width', type: 'number', value: 1024 },
+      { name: 'height', type: 'number', value: 768 },
       { name: 'image', value: '' }
     ]
     const node = makeLoad3DNode({ widgets })
@@ -542,6 +552,42 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
       'upload extra resources',
       'clear'
     ])
+  })
+
+  it('shows a toast when the uploaded model fails to load', async () => {
+    const node = makeLoad3DNode()
+    const load3d = { ...makeLoad3dMock(), loadModel: vi.fn() }
+    load3d.loadModel.mockRejectedValue(new Error('bad glb'))
+    waitForLoad3dMock.mockImplementation((cb: (l: typeof load3d) => void) =>
+      cb(load3d)
+    )
+    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
+    vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
+    const createElement = document.createElement.bind(document)
+    const fileInputs: HTMLInputElement[] = []
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const element = createElement(tag)
+      if (element instanceof HTMLInputElement) fileInputs.push(element)
+      return element
+    })
+
+    ;(await load3DExt.getCustomWidgets!(app)).LOAD_3D(
+      node,
+      'model_file',
+      ['LOAD_3D', {}],
+      app
+    )
+    const [modelInput] = fileInputs
+    Object.defineProperty(modelInput, 'files', {
+      value: [new File(['x'], 'model.glb')]
+    })
+    await modelInput.onchange!(new Event('change'))
+    await flush()
+
+    expect(load3d.loadModel).toHaveBeenCalledWith('/view')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'toastMessages.failedToLoadModel'
+    )
   })
 
   it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
@@ -1073,6 +1119,7 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
 
   function makeFullFakeLoad3d() {
     return {
+      whenLoadIdle: vi.fn(async () => {}),
       getCurrentCameraType: vi.fn(() => 'perspective'),
       cameraManager: { perspectiveCamera: { fov: 35 } },
       getCameraState: vi.fn(() => ({ position: { x: 0, y: 0, z: 0 } })),
@@ -1108,15 +1155,38 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
       { name: 'image', value: '' }
     ]
     const node = makeLoad3DNode({ widgets, properties: {} })
-    useLoad3dModule.nodeToLoad3dMap.set(node, makeFullFakeLoad3d() as never)
+    const load3d = makeFullFakeLoad3d()
+    useLoad3dModule.nodeToLoad3dMap.set(node, load3d as never)
 
     await load3DExt.nodeCreated!(node, app)
     const serialize = widgets[3].serializeValue! as () => Promise<{
       image: string
     } | null>
 
-    return { node, serialize, uploadTempImage, useLoad3dModule }
+    return { node, load3d, serialize, uploadTempImage, useLoad3dModule }
   }
+
+  it('waits for a pending model load before capturing the scene', async () => {
+    const { load3d, serialize } = await setup()
+    let releaseLoad!: () => void
+    load3d.whenLoadIdle.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseLoad = resolve
+        })
+    )
+
+    const pending = serialize()
+    await flush()
+    expect(load3d.whenLoadIdle).toHaveBeenCalledTimes(1)
+    expect(load3d.captureScene).not.toHaveBeenCalled()
+
+    releaseLoad()
+    const result = await pending
+
+    expect(load3d.captureScene).toHaveBeenCalledTimes(1)
+    expect(result?.image).toBe('threed/scene-1.png [temp]')
+  })
 
   it('reuses the cached output when the scene has not been dirtied', async () => {
     const { node, serialize, uploadTempImage, useLoad3dModule } = await setup()
@@ -1143,6 +1213,45 @@ describe('Comfy.Load3D scene widget serializeValue caching', () => {
     const refreshed = await serialize()
     expect(uploadTempImage).toHaveBeenCalledTimes(6)
     expect(refreshed?.image).toBe('threed/scene-4.png [temp]')
+  })
+
+  it('re-captures when the scene changes during an upload', async () => {
+    const { node, load3d, serialize, uploadTempImage, useLoad3dModule } =
+      await setup()
+    let releaseUploads!: () => void
+    const uploadsBlocked = new Promise<void>((resolve) => {
+      releaseUploads = resolve
+    })
+    uploadTempImage.mockImplementationOnce(async () => {
+      await uploadsBlocked
+      return { name: 'stale-scene.png' }
+    })
+
+    const pending = serialize()
+    await flush()
+
+    useLoad3dModule.markLoad3dSceneDirty(node)
+    releaseUploads()
+
+    const refreshed = await pending
+
+    expect(load3d.captureScene).toHaveBeenCalledTimes(2)
+    expect(uploadTempImage).toHaveBeenCalledTimes(6)
+    expect(refreshed?.image).toBe('threed/scene-3.png [temp]')
+  })
+
+  it('returns no scene when capture never stabilizes', async () => {
+    const { node, load3d, serialize, useLoad3dModule } = await setup()
+    load3d.captureScene.mockImplementation(async () => {
+      useLoad3dModule.markLoad3dSceneDirty(node)
+      return { scene: 'scene-data', mask: 'mask-data', normal: 'normal-data' }
+    })
+
+    expect(await serialize()).toBeNull()
+
+    expect(load3d.captureScene).toHaveBeenCalledTimes(3)
+    expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(true)
+    expect(useLoad3dModule.getLoad3dOutputCache(node)).toBeUndefined()
   })
 
   it('returns null when no load3d instance is registered for the node', async () => {

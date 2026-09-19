@@ -1,6 +1,13 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+
+/** Matches interior node-level errors that are not lifted to the host. */
+export interface PromotedWidgetExecutionSource {
+  executionId: NodeExecutionId
+  widgetName: string
+}
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode

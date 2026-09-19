@@ -9,7 +9,6 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import App from './App.vue'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }

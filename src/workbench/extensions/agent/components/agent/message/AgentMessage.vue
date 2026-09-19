@@ -142,7 +142,7 @@ const status = computed(() => {
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <template v-else-if="group.kind === 'trace'">
-        <ActivityTrace v-if="message.streaming" :parts="activityParts" />
+        <ActivityTrace v-if="message.streaming" :parts="activityParts" live />
         <WorkSummary v-else :parts="activityParts" />
       </template>
       <div
@@ -186,7 +186,19 @@ const status = computed(() => {
         "
       >
         <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-        <span>{{ group.part.text }}</span>
+        <span class="flex flex-col gap-0.5">
+          <span>{{ group.part.text }}</span>
+          <span
+            v-if="group.part.retryAfterSeconds !== undefined"
+            class="text-xs text-muted-foreground"
+          >
+            {{
+              t('agent.retryAfterSeconds', {
+                seconds: group.part.retryAfterSeconds
+              })
+            }}
+          </span>
+        </span>
       </div>
     </template>
 

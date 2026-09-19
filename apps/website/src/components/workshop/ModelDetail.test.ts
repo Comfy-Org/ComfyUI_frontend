@@ -8,7 +8,7 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import type {
   AccountCredential,
   SessionFailure
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -20,6 +20,10 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
+import {
+  cancelWorkshopRun,
+  workshopRunInFlight
+} from '../../config/workshop-run-state'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -408,7 +412,21 @@ describe('ModelDetail', () => {
   it('reports a failed attempt with a bounded reason and no error payload', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
-      new WorkshopRouterError('rateLimit', 'request-failed')
+      new WorkshopRouterError(
+        'provider',
+        'request-failed',
+        {},
+        {
+          status: 503,
+          errorType: 'provider_timeout',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        },
+        'response'
+      )
     )
     mountDetail({ model: runnable })
     const visitor = user()
@@ -422,8 +440,11 @@ describe('ModelDetail', () => {
         name: 'run_finished',
         properties: expect.objectContaining({
           status: 'failed',
-          reason: 'rateLimit',
+          reason: 'provider',
           request_id: 'request-failed',
+          http_status: 503,
+          router_error_type: 'provider_timeout',
+          failure_stage: 'response',
           workspace_id: credential.workspace.id
         })
       })
@@ -431,12 +452,85 @@ describe('ModelDetail', () => {
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('Private prompt')
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private provider response')
+  })
+
+  it('reports empty output as a response-stage failure with its request ID', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: []
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'An image'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'response',
+          failure_stage: 'response',
+          request_id: routerResult.requestId
+        })
+      })
+    )
+    expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
+  })
+
+  it('omits an unrecognized Router error header from analytics', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError(
+        'provider',
+        'request-private-header',
+        {},
+        {
+          status: 503,
+          errorType: 'customer_account_suspended',
+          retryAfter: null,
+          concurrencyLimit: null,
+          concurrencyCurrent: null,
+          concurrencyRemaining: null,
+          body: 'Private provider response'
+        }
+      )
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'provider',
+          http_status: 503
+        })
+      })
+    )
+    const calls = JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    expect(calls).not.toContain('customer_account_suspended')
+    expect(calls).not.toContain('Private provider response')
+    expect(calls).not.toContain('Private prompt')
   })
 
   it.for([
     {
       slug: 'vertexai--gemini-3-pro-image--edit-images',
-      label: 'Images',
+      label: 'Source images',
       count: 2
     },
     { slug: 'bfl--flux-2-max--generate-images', label: 'Image', count: 3 }
@@ -916,6 +1010,43 @@ describe('ModelDetail', () => {
     expect(softLeaving()).toBe(true)
   })
 
+  // The header is outside this island, so the only thing it can act on is what
+  // the run reports: that one is going, and how to end it.
+  it('hands the rest of the page a way to end the run while one is going', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    expect(workshopRunInFlight.value).toBe(false)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    cancelWorkshopRun()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+    )
+    expect(workshopRunInFlight.value).toBe(false)
+  })
+
+  it('takes that way back when the playground goes away mid-run', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const { unmount } = mountDetail({ model: runnable })
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(workshopRunInFlight.value).toBe(true))
+
+    unmount()
+    expect(workshopRunInFlight.value).toBe(false)
+  })
+
   it('answers an in-site link in its own words, and lets the link go when told to', async () => {
     auth.session.value = credential
     const pending = Promise.withResolvers<typeof routerResult>()
@@ -1077,7 +1208,10 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'run_validation_failed',
-      properties: expect.objectContaining({ model_slug: runnable.slug })
+      properties: expect.objectContaining({
+        model_slug: runnable.slug,
+        field_error_codes: ['required']
+      })
     })
     expect(
       vi
@@ -1087,6 +1221,43 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('failed')
+    expect(screen.getByTestId('run-error')).toHaveTextContent(
+      'Check the highlighted fields.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-describedby',
+      'error-prompt'
+    )
+    expect(screen.getByRole('alert')).toBeVisible()
+  })
+
+  it('explains an input rejection without pointing to fields that have no errors', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('validation', 'request-rejected')
+    )
+    mountDetail({ model: runnable })
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByTestId('run-button'))
+
+    expect(await screen.findByTestId('run-error')).toHaveTextContent(
+      'The model rejected these inputs without identifying a field. Check the model’s input requirements or contact support with the request ID.'
+    )
+    expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveAttribute(
+      'aria-invalid',
+      'false'
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByTestId('router-request-id')).toHaveTextContent(
+      'request-rejected'
+    )
   })
 
   it('keeps curated models in the minimal form even when an old JSON-mode draft exists', async () => {

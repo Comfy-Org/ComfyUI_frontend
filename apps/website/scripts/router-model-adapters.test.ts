@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { z } from 'astro/zod'
 
 import { workshopContractSchema } from '../src/config/workshop-contract'
@@ -53,6 +53,50 @@ const completed = {
     seed: 42
   }
 }
+
+describe('Seedream layer-separation input adapter', () => {
+  it('adds layer sizes and one source image without restricting ordinary edits', () => {
+    const contract = workshopContractSchema.parse(
+      contracts.find((item) => item.id === 'byteplus/seedream-5-0-pro-260628')
+    )
+    const editSlug = 'byteplus--seedream-5-pro--edit-images'
+    const layerSlug = 'byteplus--seedream-5-pro-layer-separation--edit-images'
+    const edit = contract.creatorVariants?.[editSlug]
+    assert.exists(edit)
+    const parameters = {
+      type: 'object',
+      properties: {
+        size: { type: 'string', enum: ['2K', '4K'], default: '2K' }
+      }
+    }
+    const adapted = adaptRouterModel({
+      ...contract,
+      inputSchema: parameters,
+      creatorVariants: {
+        [editSlug]: { ...edit, parameters }
+      }
+    })
+    expect(adapted.inputSchema).toHaveProperty('properties.size.enum', [
+      '2K',
+      '4K',
+      'auto',
+      '1K',
+      '1.5K'
+    ])
+    expect(adapted.creatorVariants?.[layerSlug]).toMatchObject({
+      parameters: {
+        properties: {
+          size: { enum: ['auto', '1K', '1.5K', '2K'], default: 'auto' }
+        }
+      },
+      files: [expect.objectContaining({ name: 'images', maxItems: 1 })]
+    })
+    expect(adapted.creatorVariants?.[editSlug]).toMatchObject({
+      parameters,
+      files: [expect.objectContaining({ name: 'images', maxItems: 10 })]
+    })
+  })
+})
 
 describe('Bria generation response adapter', () => {
   it('accepts a completed image whose optional echoed refined prompt is null', async () => {

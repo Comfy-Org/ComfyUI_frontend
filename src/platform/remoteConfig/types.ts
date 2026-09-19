@@ -2,7 +2,7 @@ import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
-export type { TurnstileMode } from '@comfyorg/account/turnstile'
+export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 /**
  * Server health alert configuration from the backend
