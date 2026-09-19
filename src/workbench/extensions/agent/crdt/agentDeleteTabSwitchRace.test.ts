@@ -1,35 +1,26 @@
 /**
- * Repro: deleting an agent-added node does not persist across a tab switch.
- * Characterizes the interaction between two already-tested-in-isolation
- * behaviors that combine into a bug:
+ * Deleting an agent-added node must persist across a workflow tab switch.
+ * Two behaviors combine:
  *
- * - `opSender.ts` binds a batch to the workflow id at ENQUEUE time and only
- *   re-checks that binding against the currently active workflow when the
- *   batch is popped off the FIFO queue to become in-flight (`transmit()`,
- *   opSender.ts ~L117-124). A delete queued behind an earlier in-flight batch
- *   when the tab switches never gets re-addressed: it settles `undeliverable`
- *   (`settleUndeliverable`, ~L142-146) and is dropped without ever reaching
- *   the server. The server's document still has the node.
- * - Locally, deleting a node removes it from the canvas and from the node
- *   store immediately (`LGraph.remove()` -> `detachNodeFromStores()` ->
- *   `unregisterNodeState()` -> `nodeDataStore.deleteNode()`), independent of
- *   whether the corresponding wire op ever lands. It does NOT touch the
- *   follower's Y.Doc, which mirrors the SERVER's state, not the local store.
- * - `useAgentCrdtFollower.ts` rebinds the `EcsFollowerAdapter` session on a
- *   workflow/tab (re)activation, which resets `reconcileNextFrame` to `true`
- *   (`ecsFollowerAdapter.ts` `createSession`, ~L296/L387). The next frame the
- *   adapter applies is therefore treated as a full, authoritative resync: it
- *   reads every node CURRENTLY in the doc and reconciles the store to match
- *   (~L465-496), regardless of whether anything actually changed. Since the
- *   server's doc still has the node whose delete was dropped, this resync
- *   re-adds its record to the local store.
- * - `agentNodeMaterializer.ts`'s `reconcile()` then treats that store record
- *   as ground truth: a record with no live canvas node is recreated
- *   (~L199-244), so the node the user deleted reappears.
+ * - `opSender.ts` binds a batch to the workflow id at ENQUEUE time and
+ *   re-checks that binding when the batch is transmitted. A tab switch pauses
+ *   the subscription (send reality goes null) without rebinding the session,
+ *   so a delete queued behind an in-flight batch is held while the sender is
+ *   suspended and sent to the same workflow on return, instead of settling
+ *   `undeliverable` and never reaching the server.
+ * - Locally, deleting a node removes it from the canvas and the node store
+ *   immediately (`LGraph.remove()` -> `nodeDataStore.deleteNode()`), but never
+ *   touches the follower's Y.Doc, which mirrors the SERVER's state.
+ * - A tab (re)activation rebinds the `EcsFollowerAdapter` session, which arms
+ *   a full reconcile for the next frame (`ecsFollowerAdapter.ts`
+ *   `createSession`): every node the doc holds is reconciled into the store,
+ *   and `agentNodeMaterializer.ts`'s `reconcile()` recreates any record with
+ *   no live node. A node whose human delete is still pending must be skipped
+ *   by that reconcile, or it reappears until the delete's effect lands.
  *
  * This test drives the real `opSender`, `EcsFollowerAdapter`, `FollowerDoc`
- * and `reconcileAgentAdapters`, forcing the queued-batch drop and the
- * resubscribe deterministically instead of relying on timing.
+ * and `reconcileAgentAdapters`, forcing the suspend and the resubscribe
+ * deterministically instead of relying on timing.
  */
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
@@ -56,6 +47,7 @@ class DummyNode extends LGraphNode {
   }
 }
 
+const WORKFLOW = 'wf-a'
 const CATALOG: WidgetCatalog = { types: { dummy: { widget_order: [] } } }
 
 function agentOperation(id: string, version: number, payload: object) {
@@ -93,142 +85,178 @@ beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
 })
 
-describe('agent-added node delete dropped across a tab switch', () => {
-  it.fails('KNOWN BUG: a delete dropped by a tab-switch race reappears once the follower resubscribes and reconciles', () => {
-    const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    // `host` stands in for the server's canonical Yjs document.
-    const host = mint({ nodes: [], links: [] }, CATALOG)
-    const follower = new FollowerDoc()
-    const mutations = createGraphMutations({
-      placement: inertPlacementPort,
-      getScope: () => scope,
-      layout: { createNode: () => {}, deleteNodes: () => {} }
-    })
-    const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind('workflow', follower)
+/**
+ * Drives the race up to the point where the user returns to the tab: the
+ * agent added node 1, the user deleted it locally, the delete queued behind
+ * an in-flight batch, the tab went inactive (sender suspended, send reality
+ * null) and the in-flight batch settled while away. Returns the handles the
+ * two cases need to finish the story differently.
+ */
+function setupRaceUntilReturn() {
+  const graph = new LGraph()
+  const scope = graphScopeOf(graph)
+  // `host` stands in for the server's canonical Yjs document.
+  const host = mint({ nodes: [], links: [] }, CATALOG)
+  const follower = new FollowerDoc()
+  const mutations = createGraphMutations({
+    placement: inertPlacementPort,
+    getScope: () => scope,
+    layout: { createNode: () => {}, deleteNodes: () => {} }
+  })
 
-    let opSequence = 0
-    let frameSeq = 0
-    let sentInitialFrame = false
-    const deliverFromHost = (payload?: object) => {
-      const stateVector = Y.encodeStateVector(host)
-      let opId: string | undefined
-      if (payload) {
-        opId = `agent-op-${++opSequence}`
-        const result = applyOps(
-          host,
-          [agentOperation(opId, opSequence, payload)] as Parameters<
-            typeof applyOps
-          >[1],
-          CATALOG
-        )
-        expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
+  let boundWorkflow: string | null = WORKFLOW
+  let frameSeq = 0
+  const sent: Array<{ workflowId: string; ops: Op[] }> = []
+  const settled: BatchOutcome[] = []
+  const listenerBox: {
+    resultListener: ((result: OpsResultView) => void) | null
+  } = { resultListener: null }
+  const sender = createOpSender({
+    sendOps: (workflowId, _tab, ops) => {
+      sent.push({ workflowId, ops })
+      return true
+    },
+    onOpsResult: (listener) => {
+      listenerBox.resultListener = listener
+      return () => {
+        listenerBox.resultListener = null
       }
-      const update = sentInitialFrame
-        ? Y.encodeStateAsUpdate(host, stateVector)
-        : Y.encodeStateAsUpdate(host)
-      sentInitialFrame = true
-      follower.applyRemoteUpdate(update)
-      adapter.applyFrame({
-        workflowId: 'workflow',
-        seq: ++frameSeq,
-        update,
-        actor: 'agent:test',
-        opIds: opId ? [opId] : []
-      })
-      reconcileAgentAdapters(graph)
+    },
+    workflowId: () => boundWorkflow,
+    tab: 'tab-1',
+    actor: () => 'human:test-user:tab-1',
+    baseVersion: () => frameSeq,
+    onBatchSettled: (outcome) => settled.push(outcome)
+  })
+  const adapter = new EcsFollowerAdapter(mutations)
+  adapter.bind(WORKFLOW, follower)
+
+  let opSequence = 0
+  let sentInitialFrame = false
+  const applyToHost = (ops: Op[]) => {
+    const result = applyOps(host, ops, CATALOG)
+    expect(result.outcomes.map(({ outcome }) => outcome)).toEqual(
+      ops.map(() => 'applied')
+    )
+  }
+  const deliverFromHost = (payload?: object) => {
+    const stateVector = Y.encodeStateVector(host)
+    let opId: string | undefined
+    if (payload) {
+      opId = `agent-op-${++opSequence}`
+      applyToHost([agentOperation(opId, opSequence, payload) as unknown as Op])
     }
-
-    // The agent adds an unrelated node (the z-image-turbo repro): this is
-    // the very first frame, so it lands through the initial full sync.
-    deliverFromHost(addNodePayload(1))
-    expect(graph.getNodeById(toNodeId(1))).toBeTruthy()
-
-    // Wire a real opSender bound to workflow "wf-a", the way
-    // useAgentCrdtFollower does for the human write leg.
-    let boundWorkflow: string | null = 'wf-a'
-    const sent: Array<{ workflowId: string; ops: Op[] }> = []
-    const settled: BatchOutcome[] = []
-    const listenerBox: {
-      resultListener: ((result: OpsResultView) => void) | null
-    } = { resultListener: null }
-    const sender = createOpSender({
-      sendOps: (workflowId, _tab, ops) => {
-        sent.push({ workflowId, ops })
-        return true
-      },
-      onOpsResult: (listener) => {
-        listenerBox.resultListener = listener
-        return () => {
-          listenerBox.resultListener = null
-        }
-      },
-      workflowId: () => boundWorkflow,
-      tab: 'tab-1',
-      actor: () => 'human:test-user:tab-1',
-      baseVersion: () => 0,
-      onBatchSettled: (outcome) => settled.push(outcome)
+    const update = sentInitialFrame
+      ? Y.encodeStateAsUpdate(host, stateVector)
+      : Y.encodeStateAsUpdate(host)
+    sentInitialFrame = true
+    follower.applyRemoteUpdate(update)
+    adapter.applyFrame({
+      workflowId: WORKFLOW,
+      seq: ++frameSeq,
+      update,
+      actor: 'agent:test',
+      opIds: opId ? [opId] : []
     })
-
-    // An earlier, unrelated edit is already in flight on wf-a...
-    sender.enqueue([{ op: 'set_widget', node_id: 2, widget: 'x', value: 1 }])
-    expect(sent).toHaveLength(1)
-
-    // ...so the human's delete of the unwanted node queues up behind it
-    // instead of transmitting immediately.
-    sender.enqueue([deleteNodeOp(1)])
-    expect(sent).toHaveLength(1)
-
-    // The user deletes the node on the canvas right away: gone from the
-    // live graph and the local node store, but the server (`host`) never
-    // heard about it yet.
-    const node = graph.getNodeById(toNodeId(1))!
-    graph.remove(node)
-    expect(graph.getNodeById(toNodeId(1))).toBeNull()
-    expect(
-      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
-    ).toBeUndefined()
-
-    // The user switches to another workflow tab before the in-flight
-    // batch's result comes back.
-    boundWorkflow = 'wf-b'
-
-    // The in-flight batch now settles (its own result arrives as normal);
-    // opSender pops the queued delete next and re-checks its binding
-    // against the now-active workflow, per opSender.ts ~L121-124.
-    const inFlightOpId = sent[0].ops[0].op_id
+    reconcileAgentAdapters(graph)
+  }
+  const acknowledge = (ops: Op[]) => {
     listenerBox.resultListener?.({
       ok: true,
-      applied: [inFlightOpId],
+      applied: ops.map((op) => op.op_id),
       skipped: []
     })
+  }
 
-    // The delete was dropped without ever reaching the server: no second
-    // send happened for it, and it settled 'undeliverable'. `host` was
-    // never told to delete node 1.
-    expect(sent).toHaveLength(1)
-    expect(settled.map((outcome) => outcome.state)).toEqual([
-      'acknowledged',
-      'undeliverable'
-    ])
+  // The agent adds an unrelated node: this is the very first frame, so it
+  // lands through the initial full sync.
+  deliverFromHost(addNodePayload(1))
+  expect(graph.getNodeById(toNodeId(1))).toBeTruthy()
 
-    // The user switches back to the workflow tab. The follower rebinds
-    // (`useAgentCrdtFollower` re-subscribes on activation), which arms a
-    // full reconcile for the next frame it applies.
-    boundWorkflow = 'wf-a'
-    adapter.bind('workflow', follower)
+  // An earlier, unrelated edit is already in flight...
+  sender.enqueue([{ op: 'set_widget', node_id: 2, widget: 'x', value: 1 }])
+  expect(sent).toHaveLength(1)
 
-    // Any subsequent frame from the server triggers that full reconcile,
-    // reading every node the server's doc still has -- including node 1,
-    // whose delete never arrived -- and re-registering it in the store.
-    deliverFromHost()
+  // ...so the human's delete of the unwanted node queues up behind it.
+  sender.enqueue([deleteNodeOp(1)])
+  expect(sent).toHaveLength(1)
 
-    expect(graph.getNodeById(toNodeId(1))).toBeNull()
+  // The user deletes the node on the canvas right away: gone from the live
+  // graph and the local node store, but the server never heard about it.
+  const node = graph.getNodeById(toNodeId(1))!
+  graph.remove(node)
+  expect(graph.getNodeById(toNodeId(1))).toBeNull()
+  expect(
+    useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+  ).toBeUndefined()
 
+  // The user switches to another workflow tab: the follower suspends the
+  // sender and unsubscribes, so send reality is null.
+  sender.suspend()
+  boundWorkflow = null
+
+  // The in-flight batch settles while away; the queued delete is held, not
+  // dropped.
+  acknowledge(sent[0].ops)
+  expect(sent).toHaveLength(1)
+  expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  expect(sender.pending()).toBe(1)
+
+  // The user returns: the follower rebinds the adapter (arming a full
+  // reconcile of the next frame), resubscribes, runs the eager abort check
+  // and resumes the sender. The held delete goes out to the same workflow.
+  boundWorkflow = WORKFLOW
+  adapter.bind(WORKFLOW, follower)
+  sender.abortIfUnbound()
+  sender.resume()
+  expect(sent).toHaveLength(2)
+  expect(sent[1].workflowId).toBe(WORKFLOW)
+  expect(sent[1].ops[0]).toMatchObject({ op: 'delete_node', node_id: 1 })
+
+  const teardown = () => {
     sender.detach()
     adapter.destroy()
     follower.destroy()
     host.destroy()
+  }
+  return {
+    graph,
+    scope,
+    sent,
+    applyToHost,
+    deliverFromHost,
+    acknowledge,
+    teardown
+  }
+}
+
+describe('agent-added node delete across a tab switch', () => {
+  it('delivers a delete held across the switch and the node stays gone once its effect lands', () => {
+    const race = setupRaceUntilReturn()
+
+    race.applyToHost(race.sent[1].ops)
+    race.deliverFromHost()
+    race.acknowledge(race.sent[1].ops)
+
+    expect(race.graph.getNodeById(toNodeId(1))).toBeNull()
+    expect(
+      useNodeDataStore().getNode(race.scope.rootGraphId, toNodeId(1))
+    ).toBeUndefined()
+    race.teardown()
+  })
+
+  it.fails('KNOWN BUG: the rebind reconcile recreates the node while its delete is still in flight', () => {
+    const race = setupRaceUntilReturn()
+
+    // The resubscribe catch-up arrives before the delete has landed on the
+    // server: the doc still holds node 1, but its delete is pending locally.
+    race.deliverFromHost()
+    expect(race.graph.getNodeById(toNodeId(1))).toBeNull()
+
+    race.applyToHost(race.sent[1].ops)
+    race.deliverFromHost()
+    race.acknowledge(race.sent[1].ops)
+    expect(race.graph.getNodeById(toNodeId(1))).toBeNull()
+    race.teardown()
   })
 })
