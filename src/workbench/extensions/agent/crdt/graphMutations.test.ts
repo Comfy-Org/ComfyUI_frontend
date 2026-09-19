@@ -283,9 +283,9 @@ describe('graphMutations', () => {
     )
   })
 
-  // PM-1143: a template's own baked-in absolute layout lands on an agent
+  // A template's own baked-in absolute layout lands on an agent
   // canvas verbatim, with no adjustment for what is already there. Reported
-  // by Jo Zhang: the GPT Image 2.5 Sunburst template landed far from a
+  // in the field: a template landed far from a
   // LoadImage node the user had just placed. graphMutations.ts has no
   // bounding-box, viewport, or collision logic anywhere in prepareNode(); it
   // forwards payload.pos untouched (src/workbench/extensions/agent/crdt/graphMutations.ts:235).
