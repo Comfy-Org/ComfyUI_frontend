@@ -144,13 +144,7 @@ agentConversationTest.describe(
           }
         )
 
-        const diag = await page.evaluate(
-          () => (window as unknown as { __agentDiag?: unknown[] }).__agentDiag
-        )
-        expect(
-          distance,
-          `distance=${distance} diag=${JSON.stringify(diag)}`
-        ).toBeLessThan(2000)
+        expect(distance).toBeLessThan(2000)
       }
     )
   }

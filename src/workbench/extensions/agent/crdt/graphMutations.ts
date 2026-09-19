@@ -305,6 +305,27 @@ function placeNewNode(
   }
 }
 
+/**
+ * `prepareNode` freezes `state.lastSerialization` from the wire payload
+ * before `placeNewNode` can run, so a node placement adjustment never
+ * reached it: the materializer's later `node.configure(lastSerialization)`
+ * (see `agentNodeMaterializer.ts`) applies `lastSerialization.pos`/`.size`
+ * onto the live LiteGraph node unconditionally, silently overwriting the
+ * placed position with the original far-away coordinates. Keep the two in
+ * sync whenever placement moves a node.
+ */
+function withPlacedSerialization(
+  node: PreparedNode,
+  layout: SemanticNodeLayout
+): void {
+  if (!isRecord(node.state.lastSerialization)) return
+  node.state.lastSerialization = {
+    ...node.state.lastSerialization,
+    pos: [layout.position.x, layout.position.y],
+    size: [layout.size.width, layout.size.height]
+  } as unknown as ISerialisedNode
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -460,14 +481,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    ;(globalThis as unknown as { __agentDiag?: unknown[] }).__agentDiag ??= []
-    ;(globalThis as unknown as { __agentDiag: unknown[] }).__agentDiag.push({
-      site: 'prepare() bounds source',
-      rootGraphId: scope.rootGraphId,
-      owningGraphId: scope.owningGraphId,
-      nodeCount: nodes.size,
-      nodeIds: [...nodes.values()].map((node) => node.id)
-    })
     // Bounds of everything already on the graph, so a brand-new node's raw
     // coordinates can be checked against it (see `placeNewNode`). Read once
     // up front, then extended as this batch adds nodes of its own, so
@@ -527,6 +540,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (!existing) {
             const placed = placeNewNode(node.layout, bounds)
             node.layout = placed.layout
+            withPlacedSerialization(node, placed.layout)
             bounds = placed.bounds
           }
           nodes.set(key, node.state)
@@ -559,6 +573,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (!existing) {
               const placed = placeNewNode(node.layout, bounds)
               node.layout = placed.layout
+              withPlacedSerialization(node, placed.layout)
               bounds = placed.bounds
             }
             nodes.set(key, node.state)
