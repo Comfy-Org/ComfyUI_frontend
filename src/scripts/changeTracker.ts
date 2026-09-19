@@ -121,15 +121,6 @@ function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
 }
 
-/**
- * Whether `tracker` owns the graph currently on the canvas. `null` (nothing
- * bound yet, e.g. before the first load or in unit tests) is permissive.
- */
-function isCanvasTracker(tracker: ChangeTracker): boolean {
-  const canvasTracker = ChangeTracker.canvasTracker
-  return canvasTracker === null || canvasTracker === tracker
-}
-
 function isAutoQueueOnChange(): boolean {
   const { ui } = useApp()
   return (
@@ -356,17 +347,32 @@ export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
   /**
    * The tracker whose workflow graph is currently loaded on the canvas.
-   * Bound by `afterLoadNewGraph()` after `loadGraphData()` has configured
-   * the root graph. `activeWorkflow` can be moved without a graph load
-   * (e.g. an extension calling `useWorkflowStore().openWorkflow()` directly);
-   * in that state the active tracker must not serialize the canvas, or the
-   * previous workflow's graph would be written into the new workflow's
-   * activeState and persisted as its draft.
+   * `null` permits capture before the first workflow binding; `false` blocks
+   * capture while the canvas is being replaced or after a failed load.
    */
-  static canvasTracker: ChangeTracker | null | false = null
+  private static canvasTracker: ChangeTracker | null | false = null
+
+  static bindCanvasTracker(tracker: ChangeTracker) {
+    ChangeTracker.canvasTracker = tracker
+  }
 
   static invalidateCanvasTracker() {
     ChangeTracker.canvasTracker = false
+  }
+
+  static isCanvasOwner(tracker: ChangeTracker): boolean {
+    return ChangeTracker.canvasTracker === tracker
+  }
+
+  static canCaptureCanvas(tracker: ChangeTracker): boolean {
+    return (
+      ChangeTracker.canvasTracker === null ||
+      ChangeTracker.canvasTracker === tracker
+    )
+  }
+
+  private static isCanvasCaptureBlocked(): boolean {
+    return ChangeTracker.canvasTracker === false
   }
 
   static resetCanvasTrackerForTest() {
@@ -541,7 +547,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
-    if (!isCanvasTracker(this)) {
+    if (ChangeTracker.isCanvasCaptureBlocked()) return
+    if (!ChangeTracker.canCaptureCanvas(this)) {
       reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
       return
     }
@@ -576,7 +583,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
       ChangeTracker.isLoadingGraph ||
-      !isCanvasTracker(this)
+      !ChangeTracker.canCaptureCanvas(this)
     )
       return
 

@@ -159,6 +159,7 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
+    ChangeTracker.resetCanvasTrackerForTest()
     vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(true)
   })
 
@@ -668,8 +669,10 @@ describe('useWorkflowService', () => {
         loadable: true,
         path: 'workflows/active-noop.json'
       })
+      const activeTracker = active.changeTracker
+      if (!activeTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
-      ChangeTracker.canvasTracker = active.changeTracker
+      ChangeTracker.bindCanvasTracker(activeTracker)
       const service = useWorkflowService()
 
       await service.openWorkflow(active)
@@ -685,6 +688,8 @@ describe('useWorkflowService', () => {
         loadable: true,
         path: 'workflows/store-selected.json'
       })
+      const activeTracker = active.changeTracker
+      if (!activeTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
       const service = useWorkflowService()
       vi.mocked(app.loadGraphData).mockImplementationOnce(
@@ -697,7 +702,7 @@ describe('useWorkflowService', () => {
       await service.openWorkflow(active)
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
-      expect(ChangeTracker.canvasTracker).toBe(active.changeTracker)
+      expect(ChangeTracker.isCanvasOwner(activeTracker)).toBe(true)
     })
 
     it('re-opens a workflow normally once its close has settled', async () => {
@@ -903,16 +908,21 @@ describe('useWorkflowService', () => {
         loadable: true,
         path: 'workflows/failing.json'
       })
+      const retainedTracker = retained.changeTracker
+      if (!retainedTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
-      ChangeTracker.canvasTracker = retained.changeTracker
-      vi.mocked(app.loadGraphData).mockResolvedValue(false)
+      ChangeTracker.bindCanvasTracker(retainedTracker)
+      vi.mocked(app.loadGraphData).mockImplementation(async () => {
+        ChangeTracker.invalidateCanvasTracker()
+        return false
+      })
 
       await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
         false
       )
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(ChangeTracker.canvasTracker).toBe(false)
+      expect(ChangeTracker.canCaptureCanvas(retainedTracker)).toBe(false)
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -2189,7 +2199,9 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
-      expect(ChangeTracker.canvasTracker).toBe(existingWorkflow.changeTracker)
+      expect(ChangeTracker.isCanvasOwner(existingWorkflow.changeTracker)).toBe(
+        true
+      )
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)
