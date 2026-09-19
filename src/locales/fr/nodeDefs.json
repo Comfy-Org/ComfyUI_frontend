@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "VidéoLatenteCosmosVide",
+    "display_name": "Vidéo latent Cosmos vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Image latente Hunyuan vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "Vidéo latent Hunyuan 1.0 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "HunyuanVideo 1.5 latent vide",
+    "display_name": "Vidéo latent Hunyuan 1.5 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_lot"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Vidéo latent LTXV vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Latent Hunyuan 3D v2 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Structure latent Trellis2 vide",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Mise à l'échelle du latent Hunyuan Video 1.5 avec modèle",
     "inputs": {
       "crop": {
         "name": "rogner"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "Audio latent vide LTXV",
+    "display_name": "Audio latent LTXV vide",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 uniquement : passes de raffinement volumétrique sparse sur la profondeur prédite. Davantage de passes affinent les détails fins et les bords, pour un coût approximativement linéaire. 0 désactive le raffinement. Ignoré par MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = plus rapide, 9 = plus de détails."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 uniquement : passes de raffinement volumétrique sparse sur la profondeur prédite. Davantage de passes affinent les détails fins et les bords, pour un coût approximativement linéaire. 0 désactive le raffinement. Ignoré par MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Conditionnement Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -22751,7 +22759,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Image latent stable cascade vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -22794,7 +22802,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Encodage VAE de l'étape C de stable cascade",
     "inputs": {
       "compression": {
         "name": "compression"
@@ -23757,7 +23765,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Encodage de texte Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23787,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Encodage de texte Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23863,10 @@
       "max_length": {
         "name": "longueur_max"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Décodage spéculatif avec la tête de prédiction multi-token du checkpoint. Aucun effet sans poids MTP. auto adapte la profondeur de brouillon ; 2-5 la fixe. La sortie échantillonnée conserve une distribution correcte, mais diffère de la sortie sans MTP pour la même graine."
+      },
       "prompt": {
         "name": "invite"
       },
@@ -23916,6 +23928,10 @@
       },
       "max_length": {
         "name": "longueur_maximale"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Décodage spéculatif avec la tête de prédiction multi-token du checkpoint. Aucun effet sans poids MTP. auto adapte la profondeur de brouillon ; 2-5 la fixe. La sortie échantillonnée conserve une distribution correcte, mais diffère de la sortie sans MTP pour la même graine."
       },
       "prompt": {
         "name": "invite"
@@ -24432,7 +24448,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Conditionnement Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24470,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Étape de forme Trellis2",
     "inputs": {
       "negative": {
         "name": "négatif"
@@ -24482,7 +24498,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Étape de texture Trellis2",
     "inputs": {
       "negative": {
         "name": "négatif"
@@ -26162,7 +26178,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Décodage VAE Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "nombre_de_morceaux"
@@ -26470,7 +26486,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Décodage de forme VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "échantillons"
@@ -26491,7 +26507,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Décodage de structure VAE Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26527,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Décodage de texture VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
