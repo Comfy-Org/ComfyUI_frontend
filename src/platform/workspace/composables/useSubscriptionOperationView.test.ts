@@ -83,28 +83,23 @@ describe('useSubscriptionOperationView', () => {
     expect(view.subscriptionActionUrl.value).toBe(HOSTED_STEP)
   })
 
-  it.for([
-    { rail: 'legacy', railEnabled: false },
-    { rail: 'SDK', railEnabled: true }
-  ])(
-    'offers no hosted step for another workspace on the $rail rail',
-    ({ railEnabled }) => {
-      flagState.subscriptionRailEnabled = railEnabled
-      Object.assign(useBillingOperationStore(), {
-        isSettingUp: false,
-        subscriptionActionOperation: undefined
-      })
+  // SDK rail only. The legacy store's own predicates filter on the active
+  // workspace inside computeds over a private `operations` ref, so a test at
+  // this level can only overwrite their results, not drive them — a legacy row
+  // here would assert the value it just assigned. `billingOperationStore`'s
+  // suite holds that side; this holds the projection the rail publishes.
+  it('offers no hosted step for another workspace on the SDK rail', () => {
+    flagState.subscriptionRailEnabled = true
 
-      const view = useSubscriptionOperationView()
-      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-other' })
-      if (railEnabled) {
-        harness.publish(pendingSubscription({ actionUrl: HOSTED_STEP }))
-      }
+    const view = useSubscriptionOperationView()
+    harness.publish(pendingSubscription({ actionUrl: HOSTED_STEP }))
+    expect(view.isSettingUp.value).toBe(true)
 
-      expect(view.isSettingUp.value).toBe(false)
-      expect(view.subscriptionActionUrl.value).toBeNull()
-    }
-  )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-other' })
+
+    expect(view.isSettingUp.value).toBe(false)
+    expect(view.subscriptionActionUrl.value).toBeNull()
+  })
 
   it('refuses a hosted step that is not https on the SDK rail', () => {
     flagState.subscriptionRailEnabled = true
