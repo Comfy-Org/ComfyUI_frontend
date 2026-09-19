@@ -125,8 +125,8 @@ test.describe(
       await panel.getByRole('button', { name: firstPrompt }).click()
       await panel.getByRole('button', { name: 'Send' }).click()
       await subscribed
-      await agentPanel.openButton.click()
-      await expect(panel).toBeHidden()
+      // The panel stays open: closing it unmounts AgentPanelRoot, which
+      // disposes the follower and unbinds the doc, so nothing would mint.
 
       // A local human edit: the fixture's graph.add lands an actor-less
       // createNode that the layout store stamps with this session's human
