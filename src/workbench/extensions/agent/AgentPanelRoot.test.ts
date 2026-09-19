@@ -22,7 +22,7 @@ import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePr
 setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
@@ -189,8 +189,6 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -224,12 +222,13 @@ vi.mock(
 )
 
 const paywallWorkspace = vi.hoisted(() => ({
-  role: 'owner' as 'owner' | 'member'
+  role: 'owner' as 'owner' | 'member' | undefined
 }))
 const paywallCapabilities = vi.hoisted(() => ({
   canTopUp: true,
   canSubscribeSelfServe: true,
-  isReady: true
+  isReady: true,
+  hasResolvedCapabilities: true
 }))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
@@ -285,13 +284,18 @@ beforeEach(() => {
       tier: computed(() => paywallBilling.tier)
     })
   )
-  useBillingCapabilities().canTopUp = computed(
-    () => paywallCapabilities.canTopUp
+  vi.mocked(useBillingCapabilities).mockReturnValue(
+    fromPartial({
+      canTopUp: computed(() => paywallCapabilities.canTopUp),
+      canSubscribeSelfServe: computed(
+        () => paywallCapabilities.canSubscribeSelfServe
+      ),
+      isReady: computed(() => paywallCapabilities.isReady),
+      hasResolvedCapabilities: computed(
+        () => paywallCapabilities.hasResolvedCapabilities
+      )
+    })
   )
-  useBillingCapabilities().canSubscribeSelfServe = computed(
-    () => paywallCapabilities.canSubscribeSelfServe
-  )
-  useBillingCapabilities().isReady = computed(() => paywallCapabilities.isReady)
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
@@ -321,9 +325,19 @@ beforeEach(() => {
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspace',
+    'get'
+  ).mockImplementation(() =>
+    paywallWorkspace.role === undefined
+      ? null
+      : fromPartial({ role: paywallWorkspace.role })
+  )
   paywallCapabilities.canTopUp = true
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
+  paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
 })
 
@@ -568,16 +582,41 @@ describe('AgentPanelRoot paywall actions', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Upgrade plan' })
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
 
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription'],
       ['credits']
     ])
   })
 
+  it('routes Subscribe through the subscription precondition', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
+  })
+
   it('hides purchase actions from a Team member without billing permissions', async () => {
     paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -683,29 +722,32 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not interpret the pending false pair as sales-managed', async () => {
-    paywallCapabilities.canTopUp = false
-    paywallCapabilities.canSubscribeSelfServe = false
-    paywallCapabilities.isReady = false
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'paywall' }],
-      streaming: false,
-      thinking: false
-    })
+  it.for(['pending', 'denied', 'unresolved-role'] as const)(
+    'withholds purchase actions for %s without inventing a sales-managed plan',
+    async (state) => {
+      paywallCapabilities.canTopUp = false
+      paywallCapabilities.canSubscribeSelfServe = false
+      paywallCapabilities.isReady = state !== 'pending'
+      paywallCapabilities.hasResolvedCapabilities = state === 'unresolved-role'
+      if (state === 'unresolved-role') paywallWorkspace.role = undefined
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      useAgentConversationStore().messages.push({
+        id: 'msg-paywall' as TurnId,
+        role: 'assistant',
+        parts: [{ type: 'paywall' }],
+        streaming: false,
+        thinking: false
+      })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Upgrade plan' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/billed through your Comfy account team/i)
-    ).not.toBeInTheDocument()
-  })
+      expect(await screen.findByText('Out of credits')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(/billed through your Comfy account team/i)
+      ).not.toBeInTheDocument()
+    }
+  )
 })
 
 describe('AgentPanelRoot session notices', () => {
