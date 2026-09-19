@@ -6,6 +6,8 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 import { isCloud } from '@/platform/distribution/types'
 import { toError } from '@/utils/errorUtil'
 
+export const REPORTED_ERROR_PREFIX = '[Reported error]: '
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -16,6 +18,7 @@ export interface ReportErrorOptions {
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
+  logToConsole?: boolean
 }
 
 interface PendingReport {
@@ -154,6 +157,10 @@ export function flushErrorReports(): void {
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (options.logToConsole !== false) {
+      const log = options.level === 'warning' ? console.warn : console.error
+      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+    }
     flushErrorReports()
 
     const error = toError(cause)
