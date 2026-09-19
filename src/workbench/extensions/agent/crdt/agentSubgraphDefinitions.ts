@@ -35,6 +35,18 @@ function isReadableKey(key: string): boolean {
   return key !== '__proto__'
 }
 
+function withoutUnsafeKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutUnsafeKeys)
+  if (typeof value !== 'object' || value === null) return value
+  const prototype = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) return value
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, nested]) =>
+      isReadableKey(key) ? [[key, withoutUnsafeKeys(nested)]] : []
+    )
+  )
+}
+
 /**
  * A value slot's JSON view. Every shared type, and a subdocument, answers
  * `toJSON()`; `structuredClone` throws on all of them, and this reader runs
@@ -44,9 +56,9 @@ function isReadableKey(key: string): boolean {
  */
 function plain(value: unknown): unknown {
   if (value instanceof Y.AbstractType || value instanceof Y.Doc) {
-    return value.toJSON()
+    return withoutUnsafeKeys(value.toJSON())
   }
-  return structuredClone(value)
+  return withoutUnsafeKeys(structuredClone(value))
 }
 
 function withoutDefinitionBookkeeping(source: unknown): unknown {
@@ -113,35 +125,58 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-export function projectSubgraphDefinition(
-  source: Y.Map<unknown>
-): ExportedSubgraph {
-  const definition: Record<string, unknown> = {}
-  for (const [key, value] of source.entries()) {
-    if (
-      key === NODE_ORDER ||
-      key === LINK_ORDER ||
-      isDefinitionBookkeeping(key) ||
-      !isReadableKey(key)
-    )
-      continue
-    if (key === 'nodes' && value instanceof Y.Map) {
-      definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
-        (id) => {
-          const node = readInteriorNode(value.get(id))
-          return node ? [node] : []
-        }
-      )
-    } else if (key === 'links' && value instanceof Y.Map) {
-      definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
-        plain(value.get(id))
-      )
-    } else if (key === 'definitions') {
-      definition.definitions = withoutNestedDefinitionBookkeeping(plain(value))
-    } else {
-      definition[key] = plain(value)
-    }
+function isSkippedDefinitionKey(key: string): boolean {
+  return (
+    key === NODE_ORDER ||
+    key === LINK_ORDER ||
+    isDefinitionBookkeeping(key) ||
+    !isReadableKey(key)
+  )
+}
+
+function projectDefinitionNodes(
+  source: Y.Map<unknown>,
+  nodes: Y.Map<unknown>
+): Record<string, unknown>[] {
+  return orderedKeys(source.get(NODE_ORDER), nodes).flatMap((id) => {
+    const node = readInteriorNode(nodes.get(id))
+    return node ? [node] : []
+  })
+}
+
+function projectDefinitionLinks(
+  source: Y.Map<unknown>,
+  links: Y.Map<unknown>
+): unknown[] {
+  return orderedKeys(source.get(LINK_ORDER), links).map((id) =>
+    plain(links.get(id))
+  )
+}
+
+function projectDefinitionEntry(
+  source: Y.Map<unknown>,
+  key: string,
+  value: unknown
+): Array<[string, unknown]> {
+  if (isSkippedDefinitionKey(key)) return []
+  if (key === 'nodes' && value instanceof Y.Map) {
+    return [[key, projectDefinitionNodes(source, value)]]
   }
+  if (key === 'links' && value instanceof Y.Map) {
+    return [[key, projectDefinitionLinks(source, value)]]
+  }
+  if (key === 'definitions') {
+    return [[key, withoutNestedDefinitionBookkeeping(plain(value))]]
+  }
+  return [[key, plain(value)]]
+}
+
+function projectSubgraphDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+  const definition = Object.fromEntries(
+    [...source.entries()].flatMap(([key, value]) =>
+      projectDefinitionEntry(source, key, value)
+    )
+  )
   return definition as unknown as ExportedSubgraph
 }
 
