@@ -3523,9 +3523,7 @@ describe('useSubscriptionCheckout', () => {
       outcome: Outcome,
       confirmReactivation = false
     ) {
-      mockSubscriptionRail.value = railOn
-        ? { subscriptionActionUrl: null }
-        : null
+      mockSubscriptionRail.value = railOn ? railStub() : null
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
