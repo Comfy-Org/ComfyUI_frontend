@@ -97,7 +97,12 @@ export class LocalWriteLegHarness {
     if (typeof type !== 'string' || typeof data !== 'object' || data === null)
       return
     this.clientFrames.push({ type, data: data as Record<string, unknown> })
-    if (type !== 'doc_subscribe') return
+    if (type === 'doc_subscribe')
+      this.handleDocSubscribe(data as Record<string, unknown>)
+  }
+
+  /** Replies to a `doc_subscribe` frame for our workflow with subscribe + catch-up. */
+  private handleDocSubscribe(data: Record<string, unknown>): void {
     const { workflow_id, state_vector_b64 } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
