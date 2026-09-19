@@ -69,6 +69,46 @@
       "count": 7
     }
   },
+  "src/extensions/core/load3d/Load3d.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "src/extensions/core/load3d/Load3dUtils.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/ModelAdapter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/ModelExporter.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/extensions/core/load3d/RecordingManager.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/cameraFromMatrices.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/extensions/core/load3d/loader/FastPLYLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/webcamCapture.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
       "count": 9
@@ -352,6 +392,21 @@
   "src/renderer/three/RendererView.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
+    }
+  },
+  "src/scripts/api.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/scripts/app.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/scripts/metadata/avif.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
     }
   },
   "src/services/audioService.ts": {

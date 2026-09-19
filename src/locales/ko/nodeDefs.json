@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "루프 종료",
+    "inputs": {
+      "accumulate": {
+        "name": "누적",
+        "tooltip": "활성화하면 모든 반복의 출력 값을 반환하고, 그렇지 않으면 마지막 반복만 반환합니다."
+      },
+      "next_iteration_value": {
+        "name": "다음 반복 값",
+        "tooltip": "다음 반복을 위해 End Loop에서 Start Loop로 다시 전송되는 값입니다."
+      },
+      "output_value": {
+        "name": "출력 값",
+        "tooltip": "End Loop에서 반환되는 값입니다. accumulate 설정에 따라 마지막 반복 또는 모든 반복을 반환합니다."
+      },
+      "terminations": {
+        "name": "종료 항목",
+        "tooltip": "모든 반복에서 실행해야 하는 출력을 연결합니다. 해당 값은 반환되지 않습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력",
+        "tooltip": "마지막 반복의 출력 값 또는 accumulate가 활성화된 경우 반복 전체에 걸쳐 누적된 값입니다."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "엡실론 스케일링",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Google의 Gemini 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지, 오디오 클립, 비디오 또는 파일을 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답 생성에 사용되는 Gemini 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "최대 출력 토큰"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_system_prompt": {
+        "name": "시스템 프롬프트"
+      },
+      "model_thinking_level": {
+        "name": "사고 수준"
+      },
+      "model_video_processing": {
+        "name": "비디오 처리"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 영상을 생성합니다. 결과를 안내하거나 편집하기 위해 참조 이미지 및/또는 영상을 선택적으로 제공할 수 있습니다. 원하는 길이(3~10초)와 화면 비율(16:9 또는 9:16)을 프롬프트에 직접 작성하세요.",
     "display_name": "Google Gemini Omni (Video)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "목록에서 항목 가져오기",
+    "inputs": {
+      "index": {
+        "name": "인덱스"
+      },
+      "list": {
+        "name": "목록"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "텍스트",
         "tooltip": "텍스트 캡션 목록입니다."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "현재 반복 값"
+      },
+      "is_first": {
+        "name": "첫 번째 여부"
+      },
+      "is_last": {
+        "name": "마지막 여부"
+      },
+      "iteration_index": {
+        "name": "반복 인덱스"
+      },
+      "list_item": {
+        "name": "목록 항목"
+      },
+      "reuse_cache": {
+        "name": "캐시 재사용"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "위치"
+      },
+      "start_id": {
+        "name": "시작 ID"
+      },
+      "total": {
+        "name": "합계"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "종료 ID"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "선택적으로 마지막 프레임, 생성된 사운드 또는 오디오 트랙을 사용하여 Pruna 비디오 모델로 이미지를 비디오로 애니메이션화합니다.",
+    "display_name": "Pruna P-Video-2 이미지를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_draft": {
+        "name": "초안"
+      },
+      "model_duration": {
+        "name": "기간"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "선택적으로 생성된 사운드 또는 이를 구동할 오디오 트랙과 함께 Pruna 비디오 모델을 사용하여 텍스트 프롬프트에서 비디오를 생성합니다.",
+    "display_name": "Pruna P-Video-2 텍스트-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "초안"
+      },
+      "model_duration": {
+        "name": "기간"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[레시피]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "루프 시작",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "이전 실행에서 변경되지 않은 반복 결과를 재사용합니다. 모든 반복을 다시 실행하려면 비활성화하세요."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "첫 번째 반복에서 current_iteration_value로 노출되는 값입니다."
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "루프 반복 모드입니다."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "이 루프를 중첩하려면 외부 Start Loop의 iteration_index를 연결하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "현재 루프 반복의 인덱스입니다."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "루프의 첫 번째 반복 동안 True입니다."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "루프의 마지막 반복에서 참입니다."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "List 모드 사용 시 목록의 현재 항목입니다. Simple 및 For 모드에서는 None입니다."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "현재 반복의 루프 전달 값입니다. 첫 번째 반복에서는 initial_iteration_value이고, 이후 각 반복에서는 End Loop의 next_iteration_value입니다."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "비교",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "이미지에서 깔끔한 토폴로지의 저폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 이미지에서 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "방향"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "쿼드"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "쿼드가 활성화된 경우 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "쿼드가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "정면 뷰와 좌측, 후면, 우측 뷰 중 1~3개를 사용하여 깔끔한 토폴로지의 저폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 다중 뷰에서 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "방향"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "쿼드"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "텍스트 프롬프트에서 깔끔한 토폴로지의 로우 폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 텍스트에서 모델로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
       }
     }
   },

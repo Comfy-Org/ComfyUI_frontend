@@ -14,15 +14,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-interface BootAgentAppOptions {
-  nodeDefs?: Record<string, ComfyNodeDef>
-  turnAccepted?: AgentTurnAccepted
-  /** Extra `/api/settings` entries layered over the panel defaults. */
-  settings?: Record<string, unknown>
-  /** `'server'` loads real node definitions instead of the empty catalog. */
-  objectInfo?: 'server'
-}
-
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     posthog_project_token: 'phc_e2e_agent_panel',
@@ -33,6 +24,17 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
       }
     }
   }
+}
+
+interface BootAgentAppOptions {
+  nodeDefs?: Record<string, ComfyNodeDef>
+  turnAccepted?: AgentTurnAccepted
+  /** Extra `/api/settings` entries layered over the panel defaults. */
+  settings?: Record<string, unknown>
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo?: 'server'
+  /** Preserve existing tests by default; onboarding specs opt into the tour. */
+  onboardingCompleted?: boolean
 }
 
 async function mockAgentBoot(
@@ -124,11 +126,12 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
-  // The shell's onboarding coach is a modal; pre-seed its dismissal so the
-  // panel chrome is interactable, as the canonical agent suite does.
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)

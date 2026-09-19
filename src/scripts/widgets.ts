@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -107,10 +108,9 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  let name = inputData?.[1]?.control_after_generate
-  if (typeof name !== 'string') {
-    name = widgetName
-  }
+  const controlAfterGenerate = inputData?.[1]?.control_after_generate
+  const name =
+    typeof controlAfterGenerate === 'string' ? controlAfterGenerate : widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -124,20 +124,29 @@ export function addValueControlWidget(
   return widgets[0]
 }
 
+interface ValueControlWidgetOptions {
+  addFilterList?: boolean
+  controlAfterGenerateName?: string
+  controlFilterListName?: string
+}
+
 export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
+  options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
-  if (!options) options = {}
 
-  const getName = (defaultName: string, optionName: string) => {
+  const getName = (
+    defaultName: string,
+    optionName: 'controlAfterGenerateName' | 'controlFilterListName'
+  ) => {
     let name = defaultName
-    if (options[optionName]) {
-      name = options[optionName]
+    const nameOverride = options[optionName]
+    if (nameOverride) {
+      name = nameOverride
     } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
       name = inputData?.[1]?.[defaultName]
     } else if (inputData?.[1]?.control_prefix) {

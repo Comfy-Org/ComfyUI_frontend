@@ -72,6 +72,12 @@ const mediaControlClass =
 const failureKey: Record<RunFailure, TranslationKey> = {
   validation: 'workshop.error.validation',
   provider: 'workshop.error.provider',
+  upload: 'workshop.error.upload',
+  network: 'workshop.error.network',
+  response: 'workshop.error.response',
+  client: 'workshop.error.client',
+  concurrency: 'workshop.error.concurrency',
+  conflict: 'workshop.error.conflict',
   rateLimit: 'workshop.error.rateLimit',
   policy: 'workshop.error.policy',
   noCredits: 'workshop.error.noCredits',
@@ -89,7 +95,7 @@ const statusMessage = computed(() => {
       '{workspace}',
       memberWorkspace
     )
-  if (state.status === 'failed') return t(failureKey[state.reason], locale)
+  if (state.status === 'failed') return t(failureTranslationKey(state), locale)
   if (state.status === 'running') return t('workshop.run.running', locale)
   if (state.status === 'cancelled')
     return t('workshop.output.cancelled', locale)
@@ -102,6 +108,17 @@ const statusMessage = computed(() => {
     )
   return ''
 })
+
+function failureTranslationKey(
+  failure: Extract<RunState, { status: 'failed' }>
+): TranslationKey {
+  if (
+    failure.reason === 'validation' &&
+    !Object.keys(failure.fieldErrors).length
+  )
+    return 'workshop.error.inputRejected'
+  return failureKey[failure.reason]
+}
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
@@ -228,14 +245,29 @@ const earlierClass = (active: boolean) =>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <span>{{ t('workshop.output.title', locale) }}</span>
-      <span
-        v-if="state.status === 'running'"
-        class="text-primary-warm-white tabular-nums"
-        data-testid="run-elapsed"
+      <span class="shrink-0">{{ t('workshop.output.title', locale) }}</span>
+      <div
+        v-if="currentAttachments.length && !blurred"
+        role="group"
+        :aria-label="t('workshop.output.files', locale)"
+        class="flex min-w-0 items-center gap-2 overflow-x-auto"
+        data-testid="output-files"
       >
-        {{ elapsed }}
-      </span>
+        <button
+          v-for="(output, index) in files"
+          :key="output.url"
+          type="button"
+          :aria-pressed="shown === output"
+          :title="output.fileName"
+          :class="cn(earlierClass(shown === output), 'size-auto px-2.5 py-1')"
+          @click="selectedAttachment = output"
+        >
+          {{ t(fileLabels[index].key, locale)
+          }}{{
+            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
+          }}
+        </button>
+      </div>
     </header>
 
     <!-- Idle -->
@@ -260,11 +292,17 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
-        class="size-8 animate-spin text-primary-comfy-yellow"
+        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
       />
-      <p class="text-sm text-primary-warm-white">
+      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
         {{ t('workshop.run.running', locale) }}
+        <span
+          class="text-primary-warm-gray tabular-nums"
+          data-testid="run-elapsed"
+        >
+          {{ elapsed }}
+        </span>
       </p>
       <p
         v-if="modality === 'video'"
@@ -331,7 +369,7 @@ const earlierClass = (active: boolean) =>
         {{ t('nav.buyCredits', locale) }}
       </Button>
       <Button
-        v-else-if="state.reason !== 'validation'"
+        v-else-if="!['validation', 'policy'].includes(state.reason)"
         variant="outline"
         size="sm"
         @click="emit('retry')"
@@ -484,26 +522,6 @@ const earlierClass = (active: boolean) =>
       </div>
 
       <div
-        v-if="currentAttachments.length && !blurred"
-        class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
-      >
-        <button
-          v-for="(output, index) in files"
-          :key="output.url"
-          type="button"
-          :aria-pressed="shown === output"
-          :title="output.fileName"
-          :class="cn(earlierClass(shown === output), 'size-auto px-3 py-2')"
-          @click="selectedAttachment = output"
-        >
-          {{ t(fileLabels[index].key, locale)
-          }}{{
-            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
-          }}
-        </button>
-      </div>
-
-      <div
         v-if="earlier.length && state.status === 'succeeded'"
         role="group"
         :aria-label="t('workshop.output.earlier', locale)"
@@ -550,18 +568,12 @@ const earlierClass = (active: boolean) =>
         {{ t('workshop.output.truncated', locale) }}
       </p>
       <p
+        v-if="state.status === 'example'"
         class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        :data-testid="
-          state.status === 'example' ? 'output-example-hint' : undefined
-        "
+        data-testid="output-example-hint"
       >
         {{
-          state.status === 'example'
-            ? t('workshop.output.exampleHint', locale).replace(
-                '{model}',
-                modelName
-              )
-            : t('workshop.output.expires', locale)
+          t('workshop.output.exampleHint', locale).replace('{model}', modelName)
         }}
       </p>
       <div
