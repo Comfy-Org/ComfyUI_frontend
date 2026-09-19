@@ -5193,7 +5193,7 @@
       "includedSources": "Include in the report (on by default)"
     },
     "loadFailed": "The agent panel failed to load.",
-    "askComfyAgent": "Ask Comfy Agent",
+    "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
