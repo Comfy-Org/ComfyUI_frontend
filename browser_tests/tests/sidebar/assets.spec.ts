@@ -1367,7 +1367,6 @@ test.describe(
     test('Opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
       comfyPage
     }) => {
-      test.fixme()
       test.info().annotations.push({
         type: 'regression',
         description:
@@ -1375,20 +1374,6 @@ test.describe(
           'agent-submitted jobs never populate extra_data.extra_pnginfo.workflow, ' +
           "only workflow.prompt. Verifies PR #13957's fallback against the real " +
           'job shape end to end (right-click asset card -> loaded graph on canvas).'
-      })
-      test.info().annotations.push({
-        type: 'fixme',
-        description:
-          'Correct by static/unit-test inspection (see fetchJobs.test.ts) and by ' +
-          'a controlled CI experiment: disabling this test made shard 3 of the ' +
-          'baseline-generation workflow pass cleanly, and re-enabling it (with ' +
-          'toast-order, expect.poll, and waitForNodes hardening applied) still ' +
-          'reproduces the same "did not pass, no snapshot rewritten" failure. ' +
-          'Unresolved real-browser-only flake; needs a maintainer with local ' +
-          'Playwright access to debug further. Passed with this test disabled: ' +
-          'https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35417865009/job/105830213259 ' +
-          '— failed again re-enabled and hardened: ' +
-          'https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35418609639/job/105832290433'
       })
 
       const tab = comfyPage.menu.assetsTab
@@ -1409,7 +1394,7 @@ test.describe(
 
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
-        .toBe('agent_job_output.json')
+        .toBe('agent_job_output')
 
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
 
