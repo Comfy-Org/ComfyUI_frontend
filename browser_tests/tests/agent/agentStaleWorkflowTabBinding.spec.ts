@@ -22,7 +22,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const LEGACY_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const THREAD_KEY = 'Comfy.Agent.ThreadId'
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
