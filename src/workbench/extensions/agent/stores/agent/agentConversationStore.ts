@@ -40,6 +40,26 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+export interface LiveTurn {
+  threadId: string
+  messageId: TurnId
+}
+
+function finishWithPersistedText(
+  message: AssistantMessage,
+  persistedText: string | undefined
+): void {
+  const kept = message.parts.filter((part) => part.type !== 'runApproval')
+  if (persistedText === undefined || persistedText === '') {
+    message.parts = kept
+    return
+  }
+  message.parts = [
+    ...kept.filter((part) => part.type !== 'text'),
+    { type: 'text', text: persistedText, state: 'done' }
+  ]
+}
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -242,6 +262,37 @@ export const useAgentConversationStore = defineStore(
       backgroundTurns.clear()
     }
 
+    function liveTurns(): LiveTurn[] {
+      const background = Array.from(backgroundTurns)
+        .filter(([, entry]) => !entry.settled)
+        .map(([key, entry]) => ({ threadId: key, messageId: entry.messageId }))
+      if (!transport || threadId.value === null || activeTurnId.value === null)
+        return background
+      return [
+        { threadId: threadId.value, messageId: activeTurnId.value },
+        ...background
+      ]
+    }
+
+    function settleTurn(
+      turn: LiveTurn,
+      persistedText: string | undefined
+    ): void {
+      const isActive =
+        turn.threadId === threadId.value &&
+        turn.messageId === activeTurnId.value
+      if (isActive && transport && liveMessage) {
+        finishWithPersistedText(liveMessage, persistedText)
+        abortActiveTurn()
+        return
+      }
+      const entry = backgroundTurns.get(turn.threadId)
+      if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      finishWithPersistedText(entry.message, persistedText)
+      entry.transport.settle()
+      entry.settled = true
+    }
+
     function clearActive(): void {
       transport = null
       liveMessage = null
@@ -341,6 +392,8 @@ export const useAgentConversationStore = defineStore(
       resumeBackgroundTurn,
       settleBackgroundTurn,
       dropBackgroundTurns,
+      liveTurns,
+      settleTurn,
       reset,
       hydrate
     }

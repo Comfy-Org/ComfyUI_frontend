@@ -73,10 +73,9 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
  *
- * `transcript()` and the cancel route are not reached by the current specs.
- * They are here so the fake stays a faithful server: a repair that re-hydrates
- * on reconnect, or a spec that clicks Stop, needs both, and a half-modelled
- * server would make such a fix look broken.
+ * `transcript()` answers the GET the client issues after a reconnect to check
+ * whether the turn is still running; the cancel route releases the lock when a
+ * spec clicks Stop.
  */
 class TurnLockServer {
   private streaming = false
@@ -265,6 +264,12 @@ export class AgentTurnLockHarness {
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
     ws.send(JSON.stringify(event))
+  }
+
+  /** Ends the turn the way the real server does: release the lock, then announce done. */
+  finishTurn(ws: WebSocketRoute): void {
+    this.server.completeTurn()
+    this.push(ws, TURN_DONE_EVENT)
   }
 
   /**

@@ -1,3 +1,4 @@
+import { delay } from 'es-toolkit'
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
@@ -21,6 +22,7 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
@@ -89,6 +91,17 @@ export interface AgentSessionDeps {
 
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
+/**
+ * After a reconnect the server may still be finishing the turn, and its
+ * terminal event may or may not reach the new socket. Poll the persisted row
+ * with backoff; once the schedule is exhausted the socket alone is trusted.
+ */
+const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
+
+type TurnOutcome =
+  | { kind: 'terminal'; text: string | undefined }
+  | { kind: 'streaming' }
+  | { kind: 'error'; message: string }
 
 let sessionGeneration = 0
 
@@ -146,6 +159,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   // an initial `false` (still connecting, not yet dropped) doesn't abort a
   // turn that survived a remount.
   let everLive = false
+  let socketDropped = false
+  const recoveringTurns = new Set<TurnId>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -154,6 +169,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
+    socketDropped = false
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
@@ -606,16 +622,67 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (live) {
-      everLive = true
+    if (!live) {
+      // An initial `false` (socket not open yet) is not a drop. The server
+      // keeps running the turn, so it is reconciled from REST on reconnect.
+      socketDropped = everLive
       return
     }
-    // Only a real live->down transition means a turn's stream was actually
-    // interrupted. An initial `false` (socket not open yet) is not a
-    // reconnect and must not abort a turn that survived a remount.
-    if (!everLive) return
-    conversationStore.abortActiveTurn()
-    conversationStore.dropBackgroundTurns()
+    everLive = true
+    if (!socketDropped) return
+    socketDropped = false
+    const turns = conversationStore
+      .liveTurns()
+      .filter((turn) => !recoveringTurns.has(turn.messageId))
+    for (const turn of turns) void reconcileTurn(turn)
+  }
+
+  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+    recoveringTurns.add(turn.messageId)
+    const generation = ownedGeneration
+    const stillLive = () =>
+      generation === sessionGeneration &&
+      conversationStore
+        .liveTurns()
+        .some(
+          (live) =>
+            live.threadId === turn.threadId && live.messageId === turn.messageId
+        )
+    let noticed = false
+    try {
+      for (const ms of TURN_RECOVERY_DELAYS_MS) {
+        await delay(ms)
+        if (!stillLive()) return
+        const outcome = await fetchTurnOutcome(turn)
+        if (outcome.kind === 'terminal') {
+          if (stillLive()) conversationStore.settleTurn(turn, outcome.text)
+          return
+        }
+        if (outcome.kind === 'error' && !noticed && stillLive()) {
+          noticed = true
+          pushError(outcome.message)
+        }
+      }
+    } finally {
+      recoveringTurns.delete(turn.messageId)
+    }
+  }
+
+  async function fetchTurnOutcome(turn: LiveTurn): Promise<TurnOutcome> {
+    try {
+      const history = await rest.getMessages(turn.threadId)
+      const row = history.find((entry) => entry.id === turn.messageId)
+      if (!row || row.status === 'streaming') return { kind: 'streaming' }
+      const text = typeof row.content?.text === 'string' ? row.content.text : ''
+      return { kind: 'terminal', text }
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404)
+        return { kind: 'terminal', text: undefined }
+      return {
+        kind: 'error',
+        message: error instanceof Error ? error.message : String(error)
+      }
+    }
   }
 
   const isSending = computed(() => sending.value)
