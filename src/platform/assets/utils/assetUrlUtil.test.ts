@@ -6,7 +6,11 @@ import {
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+
+interface AugmentedResultItem {
+  assetId?: string
+  filename: string
+}
 
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188/api${path}`)
