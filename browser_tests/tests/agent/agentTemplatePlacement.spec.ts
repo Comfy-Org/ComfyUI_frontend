@@ -18,7 +18,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-// PM-1143 (child of PM-1142, reported by Jo Zhang in #comfy-agent-user-feedback):
+// Agent template placement bug:
 // when the in-app Comfy Agent inserts a workflow template onto a canvas that
 // already has a node on it, the template's nodes land wherever the template's
 // own baked-in absolute layout says, with no regard for what is already on
@@ -336,7 +336,7 @@ test.describe(
   'Agent template placement onto a non-empty canvas',
   { tag: ['@cloud', '@agent'] },
   () => {
-    // PM-1143: driven through the real CRDT follower onto a real canvas.
+    // Driven through the real CRDT follower onto a real canvas.
     // Structure first (this part is not expected to be broken): the template
     // materializes, alongside the pre-existing node. test.fail() below marks
     // where the known placement defect starts, per this repo's convention
@@ -403,7 +403,7 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Below is the known defect (PM-1143): graphMutations.ts#prepareNode
+      // Below is the known defect: graphMutations.ts#prepareNode
       // forwards payload.pos verbatim, with no viewport, bounding-box, or
       // collision-avoidance adjustment against what is already on the canvas.
       test.fail()
