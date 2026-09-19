@@ -275,7 +275,23 @@ const graphMutations = (workflowId: string) => {
       },
       getLayout(scope, nodeId) {
         const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
-        return layout ? { position: layout.position, size: layout.size } : null
+        if (layout) return { position: layout.position, size: layout.size }
+        // A node from the workflow's initial load (or any node this agent
+        // hasn't itself created/attached via createNode above) has no
+        // layoutStore entry yet. Fall back to the live renderer node's own
+        // position/size so bounds-gathering still sees it.
+        const rootGraph = app.rootGraph
+        if (rootGraph.id !== scope.rootGraphId) return null
+        const graph =
+          String(scope.owningGraphId) === String(scope.rootGraphId)
+            ? rootGraph
+            : rootGraph._subgraphs.get(scope.owningGraphId)
+        const node = graph?.getNodeById(nodeId)
+        if (!node) return null
+        return {
+          position: { x: node.pos[0], y: node.pos[1] },
+          size: { width: node.size[0], height: node.size[1] }
+        }
       }
     }
   })
