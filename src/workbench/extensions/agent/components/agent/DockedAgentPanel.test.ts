@@ -60,8 +60,11 @@ function openPanel() {
   return store
 }
 
-function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+function renderPanel(hasOpaqueNeighbor = false) {
+  return render(DockedAgentPanel, {
+    props: { hasOpaqueNeighbor },
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -87,6 +90,26 @@ describe('DockedAgentPanel', () => {
       })
     ).toBeTruthy()
   })
+
+  it.for([
+    { hasOpaqueNeighbor: false, hasOpaqueSurface: false },
+    { hasOpaqueNeighbor: true, hasOpaqueSurface: true }
+  ])(
+    'sets the opaque surface to $hasOpaqueSurface when hasOpaqueNeighbor is $hasOpaqueNeighbor',
+    ({ hasOpaqueNeighbor, hasOpaqueSurface }) => {
+      openPanel()
+      renderPanel(hasOpaqueNeighbor)
+
+      const shell = screen.getByTestId('docked-agent-panel-shell')
+      expect(shell.classList.contains('border-l')).toBe(hasOpaqueSurface)
+      expect(shell.classList.contains('border-interface-stroke')).toBe(
+        hasOpaqueSurface
+      )
+      expect(shell.classList.contains('bg-base-background')).toBe(
+        hasOpaqueSurface
+      )
+    }
+  )
 
   it('restores the server run mode when the panel initializes', async () => {
     fetchApi.mockResolvedValueOnce(

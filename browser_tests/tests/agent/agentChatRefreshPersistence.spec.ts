@@ -100,7 +100,7 @@ test(
         name: enMessages.agent.entryButton,
         exact: true
       })
-    ).toHaveCount(0)
+    ).toHaveAttribute('aria-pressed', 'true')
 
     // Same order and content, not merely the same count: a hydration bug
     // that re-sorts or drops a row would still pass a bare toHaveCount check.

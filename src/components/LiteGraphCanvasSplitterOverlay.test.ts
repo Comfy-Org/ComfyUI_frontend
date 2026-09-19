@@ -11,6 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 vi.mock(import('firebase/auth'))
 
 /**
@@ -120,14 +121,35 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
    * nothing to measure here. The class is the whole behaviour: whether the
    * graph keeps a right gutter turns on what is drawn beside it.
    */
-  const renderGraphGutter = (offsideOpen: boolean) => {
+  const renderGraphGutter = ({
+    offsideOpen = false,
+    sidebarLocation = 'left',
+    sidebarOpen = false
+  }: {
+    offsideOpen?: boolean
+    sidebarLocation?: 'left' | 'right'
+    sidebarOpen?: boolean
+  } = {}) => {
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
     agentPanelStore.isOpen = true
     agentPanelStore.consentAccepted = true
 
+    if (sidebarOpen) {
+      const sidebarTabStore = useSidebarTabStore()
+      sidebarTabStore.sidebarTabs = [
+        {
+          id: 'test-sidebar',
+          title: 'Test sidebar',
+          type: 'custom',
+          render: vi.fn()
+        }
+      ]
+      sidebarTabStore.activeSidebarTabId = 'test-sidebar'
+    }
+
     vi.mocked(useSettingStore().get).mockImplementation((id) => {
-      if (id === 'Comfy.Sidebar.Location') return 'left'
+      if (id === 'Comfy.Sidebar.Location') return sidebarLocation
       if (id === 'Comfy.UseNewMenu') return 'Top'
       if (id === 'Comfy.RightSidePanel.IsOpen') return offsideOpen
       return false
@@ -152,11 +174,21 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
   }
 
   it('drops the graph right gutter where the Agent panel meets the canvas', () => {
-    expect(renderGraphGutter(false)).not.toContain('mr-')
+    expect(renderGraphGutter()).not.toContain('mr-')
   })
 
   it('keeps the graph right gutter when a panel is drawn between', () => {
-    expect(renderGraphGutter(true)).toContain('mr-')
+    expect(renderGraphGutter({ offsideOpen: true })).toContain('mr-')
+  })
+
+  it('drops the graph right gutter when the configured right sidebar is closed', () => {
+    expect(renderGraphGutter({ sidebarLocation: 'right' })).not.toContain('mr-')
+  })
+
+  it('keeps the graph right gutter when the right sidebar is visible', () => {
+    expect(
+      renderGraphGutter({ sidebarLocation: 'right', sidebarOpen: true })
+    ).toContain('mr-')
   })
 
   it('refreshes the splitter only when the Agent panel becomes visible', async () => {

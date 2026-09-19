@@ -14,8 +14,6 @@
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
     />
-    <!-- Against the canvas the panel floats as a card and the graph shows
-         through its gutter. An opaque neighbour needs a surface and a seam. -->
     <div
       data-testid="docked-agent-panel-shell"
       :class="

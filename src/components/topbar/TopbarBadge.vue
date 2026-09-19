@@ -41,12 +41,14 @@
     :style="menuBackgroundStyle"
   >
     <div
-      class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-      :class="[
-        { 'flex-row-reverse': reverseOrder },
-        noPadding ? '' : 'px-3',
-        clickableClasses
-      ]"
+      :class="
+        cn(
+          'flex h-full shrink-0 items-center gap-2 whitespace-nowrap',
+          reverseOrder && 'flex-row-reverse',
+          !noPadding && 'px-3',
+          clickableClasses
+        )
+      "
       @click="togglePopover"
     >
       <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
@@ -80,8 +82,13 @@
   <div
     v-else
     v-tooltip="badge.tooltip"
-    class="flex h-full shrink-0 items-center gap-1 whitespace-nowrap"
-    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-2']"
+    :class="
+      cn(
+        'flex h-full shrink-0 items-center gap-1 whitespace-nowrap',
+        reverseOrder && 'flex-row-reverse',
+        !noPadding && 'px-2'
+      )
+    "
     :style="menuBackgroundStyle"
   >
     <i v-if="iconClass" data-testid="badge-icon" :class="badgeIconClass" />
@@ -142,7 +149,6 @@ const showLabel = computed(() => {
     )
 })
 
-/** Matches the ALPHA badge in the agent panel header. */
 const labelClasses =
   'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'
 

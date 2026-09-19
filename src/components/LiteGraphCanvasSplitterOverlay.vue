@@ -206,7 +206,10 @@ const showOffsideSplitter = computed(
  */
 const agentPanelHasOpaqueNeighbor = computed(
   () =>
-    sidebarLocation.value === 'right' ||
+    (sidebarLocation.value === 'right' &&
+      sidebarPanelVisible.value &&
+      !agentNodeSelectionActive.value &&
+      !focusMode.value) ||
     (showOffsideSplitter.value &&
       !agentNodeSelectionActive.value &&
       !focusMode.value)
