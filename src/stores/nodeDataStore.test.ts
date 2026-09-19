@@ -174,7 +174,7 @@ describe('useNodeDataStore', () => {
     expect(registered.title).toBe('Renamed')
     expect(registered.mode).toBe(2)
     expect(registered.properties).toEqual({ source: 'doc' })
-    expect(registered.color).toBeUndefined()
+    expect(registered.color).toBe('#111')
     expect(registered.inputs).toBe(liveInputs)
     expect(registered.outputs).toBe(liveOutputs)
     expect(registered.inputs).toHaveLength(1)

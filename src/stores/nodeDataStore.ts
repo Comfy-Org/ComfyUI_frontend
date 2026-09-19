@@ -177,10 +177,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       outputs: _outputs,
       ...next
     } = replacement
+    // color/bgcolor are absent from `next` unless the payload explicitly
+    // set them (graphMutations.ts's prepareNode), so they're left out of
+    // this reset to preserve a locally set color across a reconcile.
     Object.assign(state, {
-      bgcolor: undefined,
       boxcolor: undefined,
-      color: undefined,
       lastSerialization: undefined,
       resizable: undefined,
       shape: undefined,
