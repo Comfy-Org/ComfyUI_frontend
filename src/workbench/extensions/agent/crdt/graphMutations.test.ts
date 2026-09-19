@@ -1015,12 +1015,12 @@ describe('graphMutations', () => {
     expect(mockReportError).not.toHaveBeenCalled()
   })
 
-  // PM-1273 / ADR-CRDT-WIDGETS-0036: the human edit paths (`BaseWidget.setValue`,
+  // ADR-CRDT-WIDGETS-0036: the human edit paths (`BaseWidget.setValue`,
   // `createWidgetUpdateHandler`) assign the live widget's value and run its
   // `callback`, which is where Custom Combo's option rebuild and
   // PrimitiveNode's `applyToGraph` propagation hang. An agent write used to
   // land in the widget store only.
-  describe('agent widget writes vs. the live widget callback (PM-1273)', () => {
+  describe('agent widget writes vs. the live widget callback', () => {
     it('fires the widget callback for an agent-set value the same way a human edit does', () => {
       const callback = vi.fn()
       const graph = new LGraph()
