@@ -5310,6 +5310,7 @@
     "friend": "there",
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
+    "sendAbandoned": "Message was not sent because the conversation changed",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachProgress": "{current} of {total}",
