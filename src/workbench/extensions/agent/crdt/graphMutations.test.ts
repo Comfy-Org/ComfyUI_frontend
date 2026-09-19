@@ -495,6 +495,61 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  // `applyWidgetValues` / `setWidgetValue` overwrite a widget's stored value
+  // from the doc payload unconditionally. There is no per-field "is the
+  // local value newer" check, so a value the user is actively typing
+  // (already ahead of the doc's stale copy) is stomped by a reconcile that
+  // resyncs an unrelated widget on the same node. Fast typing into any text
+  // widget right after an unrelated resync lands drops keystrokes for
+  // exactly this reason.
+  it.fails(
+    'preserves a locally newer widget value across a reconcile of the same node',
+    () => {
+      const graph = mutations()
+      graph.addNode(node(1, { text: 'a photo of a pier' }), context)
+      const id = widgetId('root', toNodeId(1), 'text')
+
+      // The user is mid-keystroke; the doc has not caught up to this value yet.
+      useWidgetValueStore().setValue(id, 'a photo of a pier at sunset')
+
+      expect(
+        graph.batch({ ...context, opId: 'resync' }, (batch) => {
+          batch.reconcileNode({
+            ...node(1, { text: 'a photo of a pier' }),
+            title: 'Reconciled'
+          })
+        })
+      ).toBe(true)
+
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(
+        'a photo of a pier at sunset'
+      )
+    }
+  )
+
+  // Same defect, reached through the plain `setWidget` op the incremental
+  // (non-reconcile) path uses for a single changed widget — proving the
+  // missing guard lives in `setWidgetValue` itself, not only in the
+  // full-reconcile call site.
+  it.fails(
+    'preserves a locally newer widget value across a direct setWidget op',
+    () => {
+      const graph = mutations()
+      graph.addNode(node(1, { text: 'a photo of a pier' }), context)
+      const id = widgetId('root', toNodeId(1), 'text')
+
+      useWidgetValueStore().setValue(id, 'a photo of a pier at sunset')
+
+      expect(
+        graph.setWidget(toNodeId(1), 'text', 'a photo of a pier', context)
+      ).toBe(true)
+
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(
+        'a photo of a pier at sunset'
+      )
+    }
+  )
+
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
