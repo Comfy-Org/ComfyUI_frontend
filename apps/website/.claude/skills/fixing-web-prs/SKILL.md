@@ -172,7 +172,7 @@ login `github-merge-queue[bot]` created after that event and within ten
 minutes of it; a comment serves one event only. When no such comment is
 left, record the reason as unknown, and treat two unknowns as the same
 reason. Say in the
-hand-off which of the three sources you used. When that happens, do not stop and do not report it as merged or queued:
+hand-off which of the three sources you used. After any queue removal, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the
 same way), then take the whole gate reading again, all five reads, none

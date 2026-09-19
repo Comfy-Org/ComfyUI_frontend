@@ -325,6 +325,12 @@ expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 assert_eq "view 1 after merge" "$(read_view)" "OPEN QUEUED"
 assert_eq "view 2 after merge" "$(read_view)" "CLOSED UNKNOWN"
 if ./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -e '.[0].event == "closed" and .[0].actor.login == "site-lead"' >/dev/null; then ok "timeline names the closer"; else bad "timeline lacks the close event"; fi
+./bin/gh api --paginate repos/example/site/issues/4242/comments >/dev/null
+closed_order() { awk '/^merge accepted/{m=1} m&&/^view CLOSED /{c=1} c&&/^read timeline/{t=1} c&&/^read comments/{r=1} END{exit !(m&&c&&t&&r)}' "$1"; }
+if closed_order bin/events.log; then ok "events log orders merge, CLOSED view, timeline and comments reads"; else bad "events log order broken"; fi
+if awk '/^view CLOSED /{c=1} c&&/^read timeline/{t=1} END{exit !(t)}' <(grep -v '^read timeline' bin/events.log); then bad "falsifier: missing timeline read went unnoticed"; else ok "falsifier: missing timeline read is noticed"; fi
+if closed_order <(grep -v '^view CLOSED ' bin/events.log); then bad "falsifier: missing CLOSED view went unnoticed"; else ok "falsifier: missing CLOSED view is noticed"; fi
+if closed_order <(sed '/^read comments/d' bin/events.log); then bad "falsifier: missing comments read went unnoticed"; else ok "falsifier: missing comments read is noticed"; fi
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
