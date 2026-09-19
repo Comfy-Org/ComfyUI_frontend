@@ -690,7 +690,7 @@ describe('verifyMediaCandidates', () => {
       expect(candidates).toEqual([
         expect.objectContaining({ name: value, isMissing: false })
       ])
-      expect(vi.mocked(fetchHistoryPage)).not.toHaveBeenCalled()
+      expect(mockFetchHistoryPage).not.toHaveBeenCalled()
     }
   )
 
@@ -719,7 +719,7 @@ describe('verifyMediaCandidates', () => {
       const jobs = hasHistory
         ? [makeHistoryJob('photo.png', { subfolder: 'subfolder' })]
         : []
-      vi.mocked(fetchHistoryPage).mockResolvedValue({
+      mockFetchHistoryPage.mockResolvedValue({
         jobs,
         total: jobs.length,
         offset: 0,
