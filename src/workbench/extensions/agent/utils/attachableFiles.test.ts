@@ -33,6 +33,10 @@ describe('isAgentAttachable', () => {
     expect(isAgentAttachable(fileNamed('noextension'))).toBe(false)
   })
 
+  it('rejects .json despite it being in the picker accept list, so a dropped workflow file still falls through to the graph loader', () => {
+    expect(isAgentAttachable(fileNamed('workflow.json'))).toBe(false)
+  })
+
   it('names every approved extension in the picker accept list', () => {
     for (const extension of [
       '.mp4',
@@ -42,9 +46,11 @@ describe('isAgentAttachable', () => {
       '.wav',
       '.glb',
       '.md',
-      '.txt'
+      '.txt',
+      '.json'
     ]) {
       expect(AGENT_ATTACH_ACCEPT).toContain(extension)
     }
+    expect(AGENT_ATTACH_ACCEPT).toContain('application/json')
   })
 })
