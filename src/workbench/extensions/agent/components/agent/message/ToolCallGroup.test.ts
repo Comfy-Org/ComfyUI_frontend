@@ -107,6 +107,35 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
   })
 
+  it('keeps existing rows mounted when an active tool step arrives', async () => {
+    const { rerender } = render(ToolCallGroup, {
+      props: {
+        parts: [
+          tool('c1', 'add_node', 'done', true),
+          tool('c2', 'set_widget', 'done', true)
+        ],
+        active: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const before = screen.getAllByRole('listitem')
+    await rerender({
+      parts: [
+        tool('c1', 'add_node', 'done', true),
+        tool('c2', 'set_widget', 'done', true),
+        tool('c3', 'ls_nodes', 'streaming')
+      ],
+      active: true
+    })
+
+    const after = screen.getAllByRole('listitem')
+    expect(after).toHaveLength(3)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
+    expect(after[2]).toHaveClass('agent-row-enter')
+  })
+
   it('T-11 / PM-661 / FE-1301 streams tool calls open and folds them on completion', async () => {
     const { rerender } = render(ToolCallGroup, {
       props: {
