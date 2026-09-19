@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class SidebarTab {
@@ -340,8 +341,12 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
+  // --- Delete confirmation ---
+  public readonly deleteConfirmDialog: ConfirmDialog
+
   constructor(public override readonly page: Page) {
     super(page, 'assets')
+    this.deleteConfirmDialog = new ConfirmDialog(page)
     this.generatedTab = page.getByRole('tab', { name: 'Generated' })
     this.importedTab = page.getByRole('tab', { name: 'Imported' })
     this.emptyStateMessage = page.getByText(
@@ -420,6 +425,57 @@ export class AssetsSidebarTab extends SidebarTab {
 
   getAssetCardByName(name: string) {
     return this.assetCards.filter({ hasText: name })
+  }
+
+  getListViewItemByName(name: string) {
+    return this.listViewItems.filter({ hasText: name })
+  }
+
+  getSeeMoreOutputsButton(name: string) {
+    return this.getListViewItemByName(name).getByRole('button', {
+      name: 'See more outputs'
+    })
+  }
+
+  /**
+   * Touch-driven pass over list view, search, output grouping and delete
+   * confirmation, asserting every control the sequence touches stays fully
+   * inside the viewport on a phone-sized screen.
+   */
+  async expectTouchControlsUsable({
+    assetName,
+    groupedAssetName
+  }: {
+    assetName: string
+    groupedAssetName: string
+  }) {
+    await this.open()
+    await this.openSettingsMenu()
+    await this.listViewOption.tap()
+
+    const listItem = this.getListViewItemByName(assetName)
+    await expect(listItem).toBeVisible()
+
+    await this.searchInput.fill(assetName)
+    await expect(this.listViewItems).toHaveCount(1)
+    await this.searchInput.clear()
+
+    const groupButton = this.getSeeMoreOutputsButton(assetName)
+    await expect(groupButton).toBeInViewport({ ratio: 1 })
+    await groupButton.tap()
+    await expect(groupButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(this.getListViewItemByName(groupedAssetName)).toBeVisible()
+
+    await this.openSettingsMenu()
+    await this.gridLargeOption.tap()
+    await this.waitForAssets()
+    await this.getAssetCardByName(assetName).tap()
+    await expect(this.deleteSelectedButton).toBeInViewport({ ratio: 1 })
+    await this.deleteSelectedButton.tap()
+    await expect(this.deleteConfirmDialog.delete).toBeInViewport({ ratio: 1 })
+    await expect(this.deleteConfirmDialog.reject).toBeInViewport({ ratio: 1 })
+    await this.deleteConfirmDialog.reject.tap()
+    await expect(this.deleteConfirmDialog.root).toBeHidden()
   }
 
   async getFirstGridItemWidth() {
