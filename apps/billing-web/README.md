@@ -37,17 +37,18 @@ recovery stays a single flow, owned by the Cloud app's own page.
 
 Configure these per deployment (see `.env_example`):
 
-| Variable                            | Required | Meaning                                                                                                                                                                                                                                                                         |
-| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_BILLING_ENV`                  | no       | Backend family: `production`, `staging` or `test`. Unset or misspelt resolves to `test`, so a misconfigured deployment cannot reach production Cloud. It selects the Cloud origin (`https://cloud.comfy.org`, `https://stagingcloud.comfy.org`, `https://testcloud.comfy.org`). |
-| `VITE_FIREBASE_API_KEY`             | yes      | Firebase web-app config for that family's project.                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_AUTH_DOMAIN`         | yes      |                                                                                                                                                                                                                                                                                 |
-| `VITE_FIREBASE_PROJECT_ID`          | yes      |                                                                                                                                                                                                                                                                                 |
-| `VITE_FIREBASE_APP_ID`              | yes      |                                                                                                                                                                                                                                                                                 |
-| `VITE_FIREBASE_DATABASE_URL`        | no       | Carried through to Firebase when set.                                                                                                                                                                                                                                           |
-| `VITE_FIREBASE_STORAGE_BUCKET`      | no       |                                                                                                                                                                                                                                                                                 |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | no       |                                                                                                                                                                                                                                                                                 |
-| `VITE_FIREBASE_MEASUREMENT_ID`      | no       |                                                                                                                                                                                                                                                                                 |
+| Variable                            | Required | Meaning                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_BILLING_ENV`                  | no       | Backend family: `production`, `staging` or `test`. Unset or misspelt resolves to `test`, so a misconfigured deployment cannot reach production Cloud. It selects the Cloud origin (`https://cloud.comfy.org`, `https://stagingcloud.comfy.org`, `https://testcloud.comfy.org`).                                              |
+| `VITE_FIREBASE_API_KEY`             | yes      | Firebase web-app config for that family's project.                                                                                                                                                                                                                                                                           |
+| `VITE_FIREBASE_AUTH_DOMAIN`         | yes      |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_FIREBASE_PROJECT_ID`          | yes      |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_FIREBASE_APP_ID`              | yes      |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_FIREBASE_DATABASE_URL`        | no       | Carried through to Firebase when set.                                                                                                                                                                                                                                                                                        |
+| `VITE_FIREBASE_STORAGE_BUCKET`      | no       |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | no       |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_FIREBASE_MEASUREMENT_ID`      | no       |                                                                                                                                                                                                                                                                                                                              |
+| `VITE_STRIPE_PUBLISHABLE_KEY`       | no       | Stripe publishable key for the same family. Without it the checkout surface reports that payment is unavailable and takes no card: there is no hosted-page fallback on `/v1/checkout`. The portal-driven steps (payment methods, invoices) are unaffected, since they open the provider's own hosted portal and need no key. |
 
 The Firebase project has to belong to the same family as `VITE_BILLING_ENV`: a
 token minted against one family is meaningless in another. With any required
@@ -140,6 +141,13 @@ reachable at its `*.vercel.app` host, and the core frontend's
 `VITE_BILLING_WEB_URL` must point at whichever origin is live — it accepts
 `https` only outside local development.
 
+## Browser tests
+
+`pnpm --filter @comfyorg/billing-web test:e2e` runs the Playwright suite in
+`e2e/` against a production build of this app and a Cloud, identity and
+payment portal the suite answers in-process; see `e2e/README.md`. CI runs it
+as `CI: Billing Web E2E` whenever this app or a package changes.
+
 ## Path-prefixed hosting
 
 `VITE_BILLING_WEB_URL` may point at a path prefix, such as
@@ -178,3 +186,44 @@ request to `comfy-billing-web-preview-pr-<N>.vercel.app`. Ingest's non-prod
 `CORS_ORIGIN` and `TOPUP_CHECKOUT_RETURN_HOSTS` sentinels are derived from
 those three hostname shapes, so renaming the project or the team is a breaking
 change for the Cloud overlays, not a dashboard-only edit.
+
+## Security headers
+
+`vercel.json` sends `X-Robots-Tag: noindex`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin` and `X-Frame-Options: DENY`
+on every response: billing is opened as its own tab and is never embedded.
+
+A Content Security Policy is sent as `Content-Security-Policy-Report-Only`
+while the hosted checkout is verified on previews. Report-only means a
+violation is logged in the browser console and blocks nothing, so a missing
+origin surfaces during review instead of as a payment that silently fails in
+production. The allowlist names what the app actually loads:
+
+| Directive     | Origins                                                                                                    | For                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `script-src`  | `js.stripe.com`, `challenges.cloudflare.com`, `apis.google.com`                                            | Stripe.js, Turnstile, the Firebase popup sign-in helper |
+| `connect-src` | the three Cloud origins, `api.stripe.com`, the Firebase identity and token endpoints, the two auth domains | billing reads and commands, Elements, sign-in           |
+| `frame-src`   | `js.stripe.com`, `hooks.stripe.com`, `challenges.cloudflare.com`, the two auth domains, `apis.google.com`  | Elements, 3DS, Turnstile, the Firebase auth iframe      |
+| `style-src`   | `'self' 'unsafe-inline'`                                                                                   | Vue-managed inline styles                               |
+
+The two auth domains are `dreamboothy.firebaseapp.com` (production) and
+`dreamboothy-dev.firebaseapp.com` (staging and test), the projects the three
+Cloud origins report in `/api/features`. They are spelled out rather than
+wildcarded because `*.firebaseapp.com` is every Firebase project there is. A
+deployment whose `VITE_FIREBASE_AUTH_DOMAIN` names another project adds that
+domain to both directives.
+
+No `report-to` endpoint is set: this origin has no server of its own to
+receive reports, so a violation is visible only in the console of a browser
+with devtools open. That is the deliberate scope of the report-only phase,
+which is verified by hand on previews as described below. After promotion a
+violation in production is invisible until a reporting endpoint exists, which
+is the first addition to make when one does.
+
+Promote it to `Content-Security-Policy` once a preview has completed sign-in
+(email and Google), a card checkout with a 3DS challenge, and a portal
+round-trip with no violation in the console. Read each report before acting on
+it: add an origin only when the report names an expected, trusted external
+resource the flow loads. A report about inline code, a `data:` or `blob:`
+source, or framing is a resource to fix or a directive to keep, not a source
+to add.

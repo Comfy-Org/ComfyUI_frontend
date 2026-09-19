@@ -8,6 +8,8 @@
 import type {
   BillingOperationState,
   BillingOperationTelemetryEvent,
+  BillingResult,
+  CapabilitiesReadOptions,
   EmbeddedChallengePort,
   PendingBillingOperation,
   PreviewSubscribeInput,
@@ -30,18 +32,29 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
+  BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingPlansResponse,
+  BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
+  SavedPaymentMethod,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+import { projectBillingCapabilities } from './billingCapabilitiesView'
+import { projectBillingPlans } from './billingPlansView'
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import { projectBillingStatus } from './billingStatusView'
 import { createBillingSdk } from './createBillingSdk'
+import type { BillingOperationRecordView } from './operationRecordView'
+import { projectOperationRecord } from './operationRecordView'
 import type { SubscriptionRailOutcome } from './subscriptionOperationView'
 import {
   projectPaymentPortalResult,
@@ -72,6 +85,7 @@ async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
 
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const toastStore = useToastStore()
   const { flags } = useFeatureFlags()
 
@@ -139,6 +153,42 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
         state.kind === 'subscription' ? (hostedActionUrl(state) ?? []) : []
       )[0] ?? null
   )
+
+  // The four below mirror `billingOperationStore`'s own predicates, including
+  // where it does and does not scope to the active workspace: the lifecycle
+  // keeps operations from a scope it has left, and a consumer switching rails
+  // must not find a different answer on the other side.
+  const operationRecords = computed(() =>
+    operations.value.flatMap((state) => projectOperationRecord(state) ?? [])
+  )
+
+  const hasPendingOperations = computed(() =>
+    operationRecords.value.some((record) => record.status === 'pending')
+  )
+
+  const isSettingUp = computed(() =>
+    operationRecords.value.some(
+      (record) =>
+        record.kind === 'subscription' &&
+        record.status === 'pending' &&
+        record.authenticationState !== 'requires_action' &&
+        record.authenticationState !== 'failed_retryable' &&
+        record.workspaceId === workspaceStore.activeWorkspaceId
+    )
+  )
+
+  const subscriptionActionOperation = computed(() =>
+    operationRecords.value.find(
+      (record) =>
+        record.kind === 'subscription' &&
+        record.workspaceId === workspaceStore.activeWorkspaceId &&
+        needsCustomerAttention(record)
+    )
+  )
+
+  function getOperation(opId: string): BillingOperationRecordView | undefined {
+    return operationRecords.value.find((record) => record.opId === opId)
+  }
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
   // the lifecycle's events stand in for the poller's only on an operation
@@ -372,6 +422,52 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     void sdk.lifecycle.recover()
   }
 
+  // The readers the commands above already refresh after a success, exposed
+  // so the panels read the state the rail settled rather than a second read
+  // through the workspace client.
+  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read()
+    if (result.status === 'error') return result
+    const status = projectBillingStatus(result.value.status)
+    return status === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: status }
+  }
+
+  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: result.value.balance }
+      : result
+  }
+
+  async function readPlans(): Promise<BillingResult<BillingPlansResponse>> {
+    const result = await sdk.plans.read()
+    if (result.status === 'error') return result
+    const plans = projectBillingPlans(result.value.data)
+    return plans === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: plans }
+  }
+
+  async function readCapabilities(
+    options: CapabilitiesReadOptions
+  ): Promise<BillingResult<BillingCapabilitiesResponse>> {
+    const result = await sdk.capabilities.read(options)
+    return result.status === 'ok'
+      ? { status: 'ok', value: projectBillingCapabilities(result.value) }
+      : result
+  }
+
+  async function readPaymentMethods(): Promise<
+    BillingResult<SavedPaymentMethod[]>
+  > {
+    const result = await sdk.paymentMethods.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: [...result.value.methods] }
+      : result
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -388,6 +484,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isAddingCredits,
     topupActionOperation,
     subscriptionActionUrl,
+    hasPendingOperations,
+    isSettingUp,
+    subscriptionActionOperation,
+    getOperation,
     createTopup,
     subscribe,
     previewSubscribe,
@@ -395,6 +495,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     resubscribe,
     openPaymentPortal,
     recover,
+    readStatus,
+    readBalance,
+    readPlans,
+    readCapabilities,
+    readPaymentMethods,
     retryPaymentAuthentication,
     dismissOperation
   }

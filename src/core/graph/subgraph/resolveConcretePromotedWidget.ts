@@ -1,7 +1,11 @@
-import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type {
+  PromotedWidgetExecutionSource,
+  ResolvedPromotedWidget
+} from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -27,6 +31,72 @@ function isNodeActive(node: LGraphNode): boolean {
   return (
     node.mode !== LGraphEventMode.NEVER && node.mode !== LGraphEventMode.BYPASS
   )
+}
+
+export function resolveActivePromotedWidgetConsumers(
+  hostNode: LGraphNode,
+  inputName: string
+): ResolvedPromotedWidget[] {
+  if (!hostNode.isSubgraphNode()) return []
+
+  const pending: {
+    host: SubgraphNode
+    inputName: string
+    nodePath: NodeId[]
+    visited: ReadonlySet<SubgraphInput>
+  }[] = [{ host: hostNode, inputName, nodePath: [], visited: new Set() }]
+  const consumers: ResolvedPromotedWidget[] = []
+
+  for (const entry of pending) {
+    const { host, inputName, nodePath, visited } = entry
+    if (nodePath.length >= MAX_PROMOTED_WIDGET_CHAIN_DEPTH) continue
+    const input = host.subgraph.inputNode.slots.find(
+      (slot) => slot.name === inputName
+    )
+    if (!input || visited.has(input)) continue
+    const nextVisited = new Set(visited).add(input)
+
+    for (const linkId of input.linkIds) {
+      const link = host.subgraph.getLink(linkId)
+      if (!link) continue
+      const { inputNode, input: targetInput } = link.resolve(host.subgraph)
+      if (!inputNode || !targetInput || !isNodeActive(inputNode)) continue
+      const nextPath = [...nodePath, inputNode.id]
+
+      if (inputNode.isSubgraphNode()) {
+        if (targetInput.widgetId) {
+          pending.push({
+            host: inputNode,
+            inputName: targetInput.name,
+            nodePath: nextPath,
+            visited: nextVisited
+          })
+        }
+        continue
+      }
+
+      const widget = inputNode.getWidgetFromSlot(targetInput)
+      if (widget)
+        consumers.push({ node: inputNode, nodePath: nextPath, widget })
+    }
+  }
+
+  return consumers
+}
+
+export function buildPromotedWidgetExecutionSources(
+  executionId: NodeExecutionId,
+  consumers: readonly ResolvedPromotedWidget[]
+): PromotedWidgetExecutionSource[] {
+  return consumers.flatMap(({ nodePath, widget }) => {
+    const sourceExecutionId = buildPromotedSourceExecutionId(
+      executionId,
+      nodePath
+    )
+    return sourceExecutionId
+      ? [{ executionId: sourceExecutionId, widgetName: widget.name }]
+      : []
+  })
 }
 
 export function hasActivePromotedWidgetConsumer(

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getClientCountry, isInChina } from './networkUtil'
+import { getClientCountry, isInChina } from './regionProbe'
 
 const traceResponse = (body: string, ok = true) =>
   ({ ok, text: () => Promise.resolve(body) }) as Response
@@ -69,7 +69,7 @@ describe('getClientCountry', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       text: () => new Promise<string>(() => {})
-    } as Response)
+    })
 
     const country = getClientCountry()
     expect(await settlementOf(country)).toBe('PENDING')

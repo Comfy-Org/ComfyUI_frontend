@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router'
+import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
 import {
   prepareRouterRender,
@@ -9,7 +9,7 @@ import {
   router_render
 } from './router-render'
 
-vi.mock(import('../src/config/workshop-router'), () => ({
+vi.mock(import('../src/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
@@ -188,8 +188,8 @@ describe('router_render', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
   })
 
-  it('uses COMFY_KEY through the production page Router client', async () => {
-    vi.stubEnv('COMFY_KEY', 'comfyui-test-key')
+  it('uses COMFY_API_KEY through the production page Router client', async () => {
+    vi.stubEnv('COMFY_API_KEY', 'comfyui-test-key')
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       requestId: 'request-1',
       deadlineCollections: 0,
@@ -223,7 +223,7 @@ describe('router_render', () => {
   })
 
   it('reports a missing key as unavailable without exposing credentials', async () => {
-    vi.stubEnv('COMFY_KEY', '')
+    vi.stubEnv('COMFY_API_KEY', '')
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('unavailable')
     )
