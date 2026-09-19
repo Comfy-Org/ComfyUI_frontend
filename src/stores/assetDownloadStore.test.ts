@@ -103,6 +103,45 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.finishedDownloads).toHaveLength(1)
     })
+
+    // KNOWN BUG PM-1302 / PM-1309: cloud's HandleDownloadFile (download_file.go)
+    // broadcasts a terminal `failed` WS message for ANY retryable error before
+    // asynq decides whether to retry, then StatusMiddleware.ProcessTask quietly
+    // resets the task to pending and asynq retries it. When the retry succeeds,
+    // the backend broadcasts a later `completed` message for the same task_id -
+    // but handleAssetDownload's terminal-state short circuit (lines 100-103)
+    // treats the earlier `failed` as final and silently drops it, so the store
+    // (and the toast reading from it) stays wrong forever even though the
+    // asset actually downloaded successfully.
+    it.fails('does not get stuck on a premature failed status once a later completed message arrives (PM-1302)', () => {
+      const store = useAssetDownloadStore()
+
+      // Backend reported a retryable error as a terminal failure...
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+      // ...then silently retried and actually succeeded.
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
+      expect(store.finishedDownloads[0].error).toBeUndefined()
+    })
+
+    it.fails('excludes a failed-then-actually-completed task from activeDownloads so it is never reconciled (PM-1302)', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(createDownloadMessage({ status: 'running' }))
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+
+      // The task never actually stopped on the backend - it retried and
+      // completed - but it was dropped from activeDownloads the moment the
+      // premature `failed` message landed, so pollStaleDownloads()
+      // (which only walks activeDownloads) will never pick it back up to
+      // reconcile with the real, later `completed` message.
+      expect(store.activeDownloads).toHaveLength(1)
+    })
   })
 
   describe('trackDownload', () => {
