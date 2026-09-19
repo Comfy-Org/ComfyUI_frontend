@@ -34,7 +34,8 @@ export const useAgentGraphActivityStore = defineStore(
       if (turnOpen.value && currentTurnId.value === turnId) return
       const previous = state.value
       const resumesCurrentTurn =
-        currentTurnId.value === turnId && previous.phase === 'settling'
+        currentTurnId.value === turnId &&
+        (previous.phase === 'settling' || previous.phase === 'complete')
       turnOpen.value = true
       currentTurnId.value = turnId
       if (settleTimer !== undefined) clearTimeout(settleTimer)

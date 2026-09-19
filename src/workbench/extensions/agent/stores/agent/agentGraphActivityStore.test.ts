@@ -88,6 +88,28 @@ describe('agentGraphActivityStore', () => {
     expect(activity.state).toMatchObject({ nodeIds: ['2'] })
   })
 
+  it('keeps a completed report when hydration resumes the same turn', () => {
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn(TURN_1)
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1)]
+    )
+    activity.finishTurn()
+    vi.advanceTimersByTime(1_000)
+
+    activity.startTurn(TURN_1)
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(2)]
+    )
+
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['1', '2']
+    })
+  })
+
   it('settles for a full interval after the latest materialization', () => {
     const activity = useAgentGraphActivityStore()
     activity.recordMaterialized(
