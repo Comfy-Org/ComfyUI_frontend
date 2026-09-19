@@ -27,6 +27,42 @@ export interface ClientDocFrame {
   opIds: string[]
 }
 
+interface ParsedClientDocFrame {
+  type: string
+  workflowId: string | null
+  stateVector: string | null
+  ops: Op[]
+}
+
+function docFrameEnvelope(
+  raw: string | Buffer
+): { type: string; data: Record<string, unknown> } | null {
+  const frame: unknown = JSON.parse(raw.toString())
+  if (typeof frame !== 'object' || frame === null) return null
+  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (typeof type !== 'string' || !type.startsWith('doc_')) return null
+  if (typeof data !== 'object' || data === null) return null
+  return { type, data: data as Record<string, unknown> }
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function parseClientDocFrame(
+  raw: string | Buffer
+): ParsedClientDocFrame | null {
+  const envelope = docFrameEnvelope(raw)
+  if (!envelope) return null
+  const { workflow_id, state_vector_b64, ops } = envelope.data
+  return {
+    type: envelope.type,
+    workflowId: stringOrNull(workflow_id),
+    stateVector: stringOrNull(state_vector_b64),
+    ops: Array.isArray(ops) ? (ops as Op[]) : []
+  }
+}
+
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private socket: WebSocketRoute | null = null
@@ -95,42 +131,38 @@ export class AgentFollowerHostSocket {
   }
 
   private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (typeof type !== 'string' || !type.startsWith('doc_')) return
-    if (typeof data !== 'object' || data === null) return
-    const { workflow_id, state_vector_b64, ops } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-      ops?: unknown
-    }
-    const wireOps = Array.isArray(ops) ? (ops as Op[]) : []
+    const frame = parseClientDocFrame(raw)
+    if (!frame) return
     this.clientFrames.push({
       atMs: Date.now() - this.createdAt,
-      type,
-      workflowId: typeof workflow_id === 'string' ? workflow_id : null,
-      ops: wireOps.map(
+      type: frame.type,
+      workflowId: frame.workflowId,
+      ops: frame.ops.map(
         (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
       ),
-      opIds: wireOps.map((op) => op.op_id)
+      opIds: frame.ops.map((op) => op.op_id)
     })
-    if (workflow_id !== this.workflowId) return
-    if (type === 'doc_subscribe' && typeof state_vector_b64 === 'string') {
-      this.send(this.host.subscribed())
-      this.send(this.host.catchUp(state_vector_b64))
-      this.subscribes += 1
-      this.resolveSubscribed?.()
-      return
-    }
-    // The applier is the only judge of a human batch; the wire ops reach it
-    // structurally, exactly as the relay hands them to the host.
-    if (type === 'doc_ops' && this.humanOpsHost === 'apply') {
-      const { result, update, outcomes } = this.host.applyWire(wireOps)
-      this.humanOutcomes.push(...outcomes)
-      this.send(result)
-      if (update) this.send(update)
-    }
+    if (frame.workflowId !== this.workflowId) return
+    if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
+      this.answerSubscribe(frame.stateVector)
+    else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
+      this.judgeHumanOps(frame.ops)
+  }
+
+  private answerSubscribe(stateVector: string): void {
+    this.send(this.host.subscribed())
+    this.send(this.host.catchUp(stateVector))
+    this.subscribes += 1
+    this.resolveSubscribed?.()
+  }
+
+  // The applier is the only judge of a human batch; the wire ops reach it
+  // structurally, exactly as the relay hands them to the host.
+  private judgeHumanOps(ops: Op[]): void {
+    const { result, update, outcomes } = this.host.applyWire(ops)
+    this.humanOutcomes.push(...outcomes)
+    this.send(result)
+    if (update) this.send(update)
   }
 
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
