@@ -135,6 +135,27 @@ function isSafeDefinition(value: unknown): boolean {
   )
 }
 
+function readNestedDefinitions(
+  source: Y.Map<unknown>
+): Record<string, unknown> {
+  const definitions: Record<string, unknown> = {}
+  source.forEach((value, key) => {
+    if (key === 'subgraph_order' || !isReadableKey(key)) return
+    if (key === 'subgraphs' && value instanceof Y.Map) {
+      definitions.subgraphs = orderedKeys(
+        source.get('subgraph_order'),
+        value
+      ).map((id) => {
+        const definition = value.get(id)
+        return definition instanceof Y.Map ? readDefinition(definition) : null
+      })
+    } else {
+      definitions[key] = plain(value)
+    }
+  })
+  return definitions
+}
+
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
@@ -150,6 +171,8 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
       definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
         plain(value.get(id))
       )
+    } else if (key === 'definitions' && value instanceof Y.Map) {
+      definition.definitions = readNestedDefinitions(value)
     } else {
       definition[key] = plain(value)
     }
@@ -175,8 +198,15 @@ function readList(source: unknown): unknown[] {
 function collectDefinitionIds(source: unknown, ids: string[]): void {
   const id = readField(source, 'id')
   if (typeof id === 'string') ids.push(id)
-  const nested = readField(readField(source, 'definitions'), 'subgraphs')
-  for (const definition of readList(nested)) {
+  const container = readField(source, 'definitions')
+  const nested = readField(container, 'subgraphs')
+  const definitions =
+    nested instanceof Y.Map
+      ? orderedKeys(readField(container, 'subgraph_order'), nested).map((key) =>
+          nested.get(key)
+        )
+      : readList(nested)
+  for (const definition of definitions) {
     collectDefinitionIds(definition, ids)
   }
 }

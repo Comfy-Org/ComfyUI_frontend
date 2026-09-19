@@ -149,6 +149,30 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
+  it('preserves nested definition order after snapshot decode without writing', () => {
+    const first = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000002'
+    })
+    const second = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000001'
+    })
+    const outer = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000003',
+      definitions: { subgraphs: [first, second] }
+    })
+    const follower = new Y.Doc()
+    Y.applyUpdate(follower, Y.encodeStateAsUpdate(seed(outer)))
+    const before = Y.encodeStateAsUpdate(follower)
+
+    expect(readSubgraphDefinitions(follower)).toEqual([outer])
+    expect(readSubgraphDefinitionIds(follower)).toEqual([
+      outer.id,
+      first.id,
+      second.id
+    ])
+    expect(Y.encodeStateAsUpdate(follower)).toEqual(before)
+  })
+
   it('projects top-level and nested definition ids without reading bodies', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
     const outer = createTestSubgraphData({
@@ -195,6 +219,17 @@ describe('readSubgraphDefinitions', () => {
     ['links', (stored) => stored.set('links', 'invalid')],
     ['definitions', (stored) => stored.set('definitions', 'invalid')],
     [
+      'nested map definition',
+      (stored) => {
+        const definitions = new Y.Map<unknown>()
+        const subgraphs = new Y.Map<unknown>()
+        stored.set('definitions', definitions)
+        definitions.set('subgraphs', subgraphs)
+        definitions.set('subgraph_order', ['invalid'])
+        subgraphs.set('invalid', null)
+      }
+    ],
+    [
       'nested definition',
       (stored) => {
         const definitions = new Y.Map<unknown>()
@@ -216,16 +251,18 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('reads a node named twice in the order register once', () => {
-    // mintDefinition pushes one register entry per input node, so two interior
-    // nodes sharing an id leave a two-entry register over a one-key map.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)] as never,
-      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)] as never
+      nodes: [interiorNode(1), interiorNode(2)] as never,
+      links: [interiorLink(5, 1, 2)] as never
     })
+    const doc = seed(definition)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(definition.id)
+    stored?.set('node_order', ['2', '1', '2', '1'])
+    stored?.set('link_order', ['5', '5'])
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(doc)
 
-    expect(projected.nodes?.map((node) => node.id)).toEqual([1, 2])
+    expect(projected.nodes?.map((node) => node.id)).toEqual([2, 1])
     expect(projected.links?.map((link) => link.id)).toEqual([5])
   })
 

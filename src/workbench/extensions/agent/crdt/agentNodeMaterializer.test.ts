@@ -123,7 +123,7 @@ function agentOperation(id: string, version: number, payload: object) {
     op_id: id,
     actor: 'agent:test',
     base_version: version,
-    stamp: [version, 'agent:test', id],
+    stamp: [version, 'agent:test'],
     ...payload
   }
 }
