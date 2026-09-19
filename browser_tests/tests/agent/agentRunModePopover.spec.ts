@@ -1,7 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { webSocketFixture } from '@e2e/fixtures/ws'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
