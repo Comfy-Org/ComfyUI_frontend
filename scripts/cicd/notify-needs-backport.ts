@@ -184,6 +184,44 @@ const code = (values: readonly string[]) =>
 const LABEL_HINT =
   'Add a target label: a `major.minor` version, `core/major.minor`, `cloud/major.minor`, or `branch:` followed by a branch name.'
 
+/**
+ * Whether the PR is merged decides how to read every line below, and it is
+ * what tells a typo apart from a deliberate label on a line that has not been
+ * cut yet — so each of the three sentence builders takes it, and none of them
+ * is written for only one state. `pr-backport.yaml` runs on merge and
+ * re-checks the branches then, so nothing is yet wrong with an open PR.
+ */
+function uncutTargetWarning(unknown: string[], merged: boolean): string[] {
+  if (unknown.length === 0) return []
+
+  const one = unknown.length === 1
+  return [
+    merged
+      ? `:warning: ${code(unknown)} ${one ? 'has' : 'have'} no branch on the remote, so *PR Backport* drops ${one ? 'it' : 'them'}.`
+      : `:warning: ${code(unknown)} ${one ? 'has' : 'have'} no branch on the remote yet, and ${one ? 'needs' : 'need'} one by the time this merges.`
+  ]
+}
+
+function noTargetWarning(merged: boolean): string {
+  return merged
+    ? `:warning: The PR is merged with no usable target branch label, so *PR Backport* fails. ${LABEL_HINT}`
+    : `:warning: The PR is still open and has no usable target branch label yet — *PR Backport* needs one by the time it merges. ${LABEL_HINT}`
+}
+
+/**
+ * "Attempt", because two of `pr-backport.yaml`'s later gates are not modelled
+ * here: it skips a target that already has an open backport PR, and reports
+ * "No backport needed" when the merge commit is already on the target — the
+ * dual-homed case `docs/release-process.md` describes as routine right after
+ * a minor bump. Both are outcomes a watcher is content with; promising a
+ * cherry-pick that then does not appear is not.
+ */
+function cherryPickOutlook(known: string[], merged: boolean): string {
+  return merged
+    ? `The PR is merged, so *PR Backport* will attempt a cherry-pick into ${code(known)}.`
+    : `The PR is still open — *PR Backport* will attempt a cherry-pick into ${code(known)} once it merges.`
+}
+
 /** What `pr-backport.yaml` will do with this PR, and when. */
 function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
   if (pr.baseRef !== BACKPORT_SOURCE_BRANCH) {
@@ -198,44 +236,12 @@ function backportOutlook(pr: PullRequest, targets: BackportTargets): string[] {
     ]
   }
 
-  // Whether the PR is merged decides how to read everything below it, and it
-  // is what tells a typo apart from a deliberate label on a line that has not
-  // been cut yet — so it is in every message, not only the ones that promise
-  // a cherry-pick. `pr-backport.yaml` runs on merge and re-checks the
-  // branches then, so nothing is yet wrong with an open PR.
   const merged = pr.state === 'MERGED'
+  const uncut = uncutTargetWarning(targets.unknown, merged)
 
-  const one = targets.unknown.length === 1
-  const uncut =
-    targets.unknown.length === 0
-      ? []
-      : [
-          merged
-            ? `:warning: ${code(targets.unknown)} ${one ? 'has' : 'have'} no branch on the remote, so *PR Backport* drops ${one ? 'it' : 'them'}.`
-            : `:warning: ${code(targets.unknown)} ${one ? 'has' : 'have'} no branch on the remote yet, and ${one ? 'needs' : 'need'} one by the time this merges.`
-        ]
-
-  if (targets.known.length === 0) {
-    return [
-      merged
-        ? `:warning: The PR is merged with no usable target branch label, so *PR Backport* fails. ${LABEL_HINT}`
-        : `:warning: The PR is still open and has no usable target branch label yet — *PR Backport* needs one by the time it merges. ${LABEL_HINT}`,
-      ...uncut
-    ]
-  }
-
-  // "Attempt", because two of pr-backport.yaml's later gates are not modelled
-  // here: it skips a target that already has an open backport PR, and reports
-  // "No backport needed" when the merge commit is already on the target — the
-  // dual-homed case docs/release-process.md describes as routine right after
-  // a minor bump. Both are outcomes a watcher is content with; promising a
-  // cherry-pick that then does not appear is not.
-  return [
-    merged
-      ? `The PR is merged, so *PR Backport* will attempt a cherry-pick into ${code(targets.known)}.`
-      : `The PR is still open — *PR Backport* will attempt a cherry-pick into ${code(targets.known)} once it merges.`,
-    ...uncut
-  ]
+  return targets.known.length === 0
+    ? [noTargetWarning(merged), ...uncut]
+    : [cherryPickOutlook(targets.known, merged), ...uncut]
 }
 
 export function buildNeedsBackportText({
