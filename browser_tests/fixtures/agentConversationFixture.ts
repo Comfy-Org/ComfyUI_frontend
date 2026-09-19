@@ -133,7 +133,7 @@ async function withTimeout(
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
-class AgentConversationHarness {
+export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
 
