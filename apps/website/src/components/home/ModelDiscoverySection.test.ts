@@ -95,7 +95,7 @@ describe('ModelDiscoverySection', async () => {
     expect(all[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('fades both ends of the looping row by the same amount', async () => {
+  it('fades both ends of the looping row over the same 2rem', async () => {
     render(ModelDiscoverySection, { props: { providers } })
     await nextTick()
 
@@ -104,8 +104,7 @@ describe('ModelDiscoverySection', async () => {
         screen.getByTestId('discovery-marquee').className
       )
 
-    expect(fade).not.toBeNull()
-    expect(fade?.[1]).toBe(fade?.[2])
+    expect(fade?.slice(1)).toEqual(['2rem', '2rem'])
   })
 
   it('loads a provider preview only once its card is hovered', async () => {
