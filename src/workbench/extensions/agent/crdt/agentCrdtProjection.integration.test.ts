@@ -15,6 +15,9 @@ import { toNodeId } from '@/types/nodeId'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
+import type { GraphOperation } from './graphOperations'
+import { createLiveWidgetEffectPort } from './liveWidgetEffects'
+import { attachMintPortWiring } from './mintPortWiring'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -37,6 +40,15 @@ class TestNote extends LGraphNode {
   }
 }
 
+class TestPayload extends LGraphNode {
+  static override title = 'Payload'
+  constructor() {
+    super('Payload')
+    this.addWidget('custom', 'payload', { tag: 'a' }, () => {})
+    this.serialize_widgets = true
+  }
+}
+
 function widgetsOf(node: LGraphNode) {
   assert(node.widgets, 'test node registers widgets', { title: node.title })
   return node.widgets
@@ -44,13 +56,24 @@ function widgetsOf(node: LGraphNode) {
 
 const WORKFLOW_ID = 'wf-a'
 const CATALOG: WidgetCatalog = {
-  types: { TestSource: { widget_order: ['steps', 'seed'] } }
+  types: {
+    TestSource: { widget_order: ['steps', 'seed'] },
+    TestPayload: { widget_order: ['payload'] }
+  }
 }
 
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
 
-function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({ getScope: () => scope, layout })
+function remoteMutations(graph: LGraph) {
+  const scope: GraphScope = graphScopeOf(graph)
+  return createGraphMutations({
+    getScope: () => scope,
+    layout,
+    widgets: createLiveWidgetEffectPort({
+      getGraph: () => graph,
+      getCanvas: () => undefined
+    })
+  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -129,7 +152,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
   const projection = new AgentCrdtProjection(
-    remoteMutations(graphScopeOf(graph)),
+    remoteMutations(graph),
     () => graph,
     () => follower.doc
   )
@@ -167,7 +190,16 @@ beforeEach(() => {
   layout.deleteNodes.mockReset()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestNote', TestNote)
+  LiteGraph.registerNodeType('TestPayload', TestPayload)
 })
+
+function widgetsMapOf(host: Y.Doc, nodeId: string): Y.Map<unknown> {
+  const entry = nodesMap(host).get(nodeId)
+  if (!(entry instanceof Y.Map)) throw new Error(`node ${nodeId} not in doc`)
+  const widgets = entry.get('widgets')
+  if (!(widgets instanceof Y.Map)) throw new Error(`node ${nodeId} no widgets`)
+  return widgets
+}
 
 describe('AgentCrdtProjection catch-up over a live graph', () => {
   it('leaves a saved workflow displayed as saved after the catch-up frame re-reconciles it', () => {
@@ -239,6 +271,47 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((w) => w.value)
     ).toEqual([30, 7])
+    destroy()
+  })
+})
+
+describe('AgentCrdtProjection widget effects against the mint port', () => {
+  it('mints a normalizing callback rewrite once and stays quiet on its echo', () => {
+    const graph = new LGraph()
+    const node = createRegisteredNode('TestPayload', TestPayload)
+    graph.add(node)
+    const payload = widgetsOf(node)[0]
+    payload.callback = (value) => {
+      if (typeof value === 'object' && value !== null) {
+        payload.value = { ...value }
+      }
+    }
+    const minted: GraphOperation[] = []
+    const wiring = attachMintPortWiring({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => {},
+      localActorPrefix: 'user-',
+      getGraph: () => graph
+    })
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const setWidgetOps = () => minted.filter((op) => op.op === 'set_widget')
+
+    hostEdit(() => widgetsMapOf(host, '1').set('payload', { tag: 'b' }))
+
+    expect(payload.value).toEqual({ tag: 'b' })
+    expect(setWidgetOps()).toEqual([
+      expect.objectContaining({ widget: 'payload', value: { tag: 'b' } })
+    ])
+
+    hostEdit(() => widgetsMapOf(host, '1').set('payload', { tag: 'b' }))
+
+    expect(setWidgetOps()).toHaveLength(1)
+    wiring.detach()
     destroy()
   })
 })

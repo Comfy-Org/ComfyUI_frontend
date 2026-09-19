@@ -17,6 +17,7 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import { inertWidgetEffectPort } from './__fixtures__/widgetEffectPorts'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -58,7 +59,8 @@ describe('EcsFollowerAdapter integration', () => {
     )
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      widgets: inertWidgetEffectPort
     })
     mutations.addNode(
       {
@@ -155,7 +157,8 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts },
+      widgets: inertWidgetEffectPort
     })
     const context = {
       source: 'agent-remote' as const,
@@ -249,7 +252,8 @@ describe('EcsFollowerAdapter integration', () => {
     let scopeAvailable = false
     const mutations = createGraphMutations({
       getScope: () => (scopeAvailable ? scope : null),
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts },
+      widgets: inertWidgetEffectPort
     })
     const context = {
       source: 'agent-remote' as const,
@@ -313,7 +317,8 @@ describe('EcsFollowerAdapter integration', () => {
     let activeScope = targetScope
     const mutations = createGraphMutations({
       getScope: () => activeScope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      widgets: inertWidgetEffectPort
     })
     const context = {
       source: 'agent-remote' as const,
@@ -350,7 +355,8 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      widgets: inertWidgetEffectPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -421,7 +427,8 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      widgets: inertWidgetEffectPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -523,7 +530,8 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      widgets: inertWidgetEffectPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -719,7 +727,8 @@ describe('EcsFollowerAdapter integration', () => {
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+        widgets: inertWidgetEffectPort
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
@@ -835,7 +844,8 @@ describe('EcsFollowerAdapter integration', () => {
     const createNode = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode, deleteNodes: vi.fn() }
+      layout: { createNode, deleteNodes: vi.fn() },
+      widgets: inertWidgetEffectPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -1018,7 +1028,8 @@ describe('EcsFollowerAdapter integration', () => {
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+        widgets: inertWidgetEffectPort
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)

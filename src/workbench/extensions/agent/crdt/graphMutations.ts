@@ -111,9 +111,26 @@ export interface GraphMutations {
   clearSemanticGraph(context: RemoteMutationContext): boolean
 }
 
+/**
+ * Renderer-owned live-widget effect port. Semantic state reports a widget
+ * value the store now holds; the port runs the live widget's `callback` and
+ * `onWidgetChanged` the way a human edit does.
+ */
+export interface SemanticWidgetEffectPort {
+  valueApplied(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    previous: WidgetValue,
+    context: RemoteMutationContext
+  ): void
+}
+
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  widgets: SemanticWidgetEffectPort
 }
 
 type QueuedMutation =
