@@ -433,4 +433,29 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
   })
+
+  it('abortAll settles the transmitted in-flight batch unconfirmed and every queued batch undeliverable, in mint order, while the doc stays bound', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortAll()
+
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+    expect(sender.pending()).toBe(0)
+
+    sender.enqueue([addNode(4)])
+    expect(sent).toHaveLength(2)
+  })
 })
