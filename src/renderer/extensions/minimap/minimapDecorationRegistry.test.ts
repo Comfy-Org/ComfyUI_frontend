@@ -46,7 +46,7 @@ describe('minimapDecorationRegistry', () => {
     layer.dispose()
     layer.replace([
       {
-        target: { ...scopeA, nodeId: toNodeId('8') },
+        target: { ...scopeA, nodeId: toNodeId('8') }
       }
     ])
     expect(getMinimapDecorations(scopeA)).toEqual([])

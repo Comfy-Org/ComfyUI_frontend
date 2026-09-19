@@ -215,14 +215,14 @@ watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
     if (!graph) return
-    const onNodeRemoved = (event: CustomEvent<{ node: { id: unknown } }>) => {
-      const nodeId = parseNodeId(String(event.detail.node.id))
+    const events = graph.events as EventTarget
+    const onNodeRemoved: EventListener = (event) => {
+      if (!(event instanceof CustomEvent)) return
+      const nodeId = parseNodeId(String(event.detail.node?.id))
       if (nodeId) graphActivity.removeNodes([nodeId])
     }
-    graph.events.addEventListener('node:removed', onNodeRemoved)
-    onCleanup(() =>
-      graph.events.removeEventListener('node:removed', onNodeRemoved)
-    )
+    events.addEventListener('node:removed', onNodeRemoved)
+    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
   },
   { immediate: true }
 )
