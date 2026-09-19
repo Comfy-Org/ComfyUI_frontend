@@ -36,7 +36,6 @@ vi.mock(
 
 beforeEach(() => {
   mockIsDesktop.value = false
-  mockStartDownload.mockReset()
   useSettingStore().settingValues[HUGGINGFACE_MIRROR_SETTING_ID] = ''
   useSidebarTabStore().activeSidebarTabId = null
   vi.spyOn(useElectronDownloadStore(), 'start').mockImplementation(
@@ -218,6 +217,40 @@ describe('fetchModelMetadata', () => {
     expect(first.fileSize).toBe(500)
     expect(second.fileSize).toBe(500)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps metadata caches separate when the mirror changes', async () => {
+    const url =
+      'https://huggingface.co/org/model/resolve/main/mirror-cache.safetensors'
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-length': '100' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-length': '200' })
+      })
+
+    setHuggingFaceMirror('https://mirror-a.example')
+    expect((await fetchModelMetadata(url)).fileSize).toBe(100)
+
+    setHuggingFaceMirror('https://mirror-b.example')
+    expect((await fetchModelMetadata(url)).fileSize).toBe(200)
+
+    setHuggingFaceMirror('https://mirror-a.example')
+    expect((await fetchModelMetadata(url)).fileSize).toBe(100)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://mirror-a.example/org/model/resolve/main/mirror-cache.safetensors',
+      { method: 'HEAD' }
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://mirror-b.example/org/model/resolve/main/mirror-cache.safetensors',
+      { method: 'HEAD' }
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('caches successful responses without content-length', async () => {
