@@ -28,9 +28,7 @@ async function enterNodeSelectionMode(
   await agentPanel.root
     .getByRole('button', { name: enMessages.agent.addToPrompt })
     .click()
-  await page
-    .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
-    .click()
+  await page.getByRole('menuitem', { name: enMessages.agent.nodes }).click()
   await expect(page.getByTestId('node-selection-mode-banner')).toBeVisible()
 }
 
@@ -93,7 +91,11 @@ test.describe(
       await comfyPage.nextFrame()
 
       await comfyPage.page.screenshot({
-        path: 'test-results/pm-1329-canvas-info-overlay-visible-in-selection-mode.png'
+        path: test
+          .info()
+          .outputPath(
+            'pm-1329-canvas-info-overlay-visible-in-selection-mode.png'
+          )
       })
 
       test.fail(
@@ -118,7 +120,9 @@ test.describe(
       await expect(overlay).toBeVisible()
 
       await comfyPage.page.screenshot({
-        path: 'test-results/pm-1329-queue-overlay-visible-in-selection-mode.png'
+        path: test
+          .info()
+          .outputPath('pm-1329-queue-overlay-visible-in-selection-mode.png')
       })
 
       test.fail(
