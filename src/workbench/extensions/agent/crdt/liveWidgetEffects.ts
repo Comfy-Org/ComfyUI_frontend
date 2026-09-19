@@ -1,5 +1,9 @@
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import type { GraphScope } from '@/types/graphScopeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   getNodeByLocatorId,
@@ -16,6 +20,30 @@ export interface LiveWidgetEffectDeps {
   getCanvas(): LGraphCanvas | undefined
 }
 
+interface LiveWidget {
+  node: LGraphNode
+  widget: IBaseWidget
+}
+
+function resolveLiveWidget(
+  rootGraph: LGraph | undefined,
+  scope: GraphScope,
+  nodeId: NodeId,
+  name: string
+): LiveWidget | undefined {
+  if (!rootGraph || rootGraph.id !== scope.rootGraphId) return
+  const locatorId = locatorIdFromState(
+    { id: nodeId, graphId: scope.owningGraphId },
+    rootGraph.id
+  )
+  const node = locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
+  if (!node || !useNodeDataStore().ownsNode(scope, node._state)) return
+  const widget = mapLiveWidgetsById(node).get(
+    widgetId(scope.rootGraphId, nodeId, name)
+  )
+  return widget && { node, widget }
+}
+
 /**
  * Runs the effects a human edit runs (`createWidgetUpdateHandler` in the Vue
  * renderer) for a widget value the follower just committed. Resolution
@@ -29,18 +57,14 @@ export function createLiveWidgetEffectPort(
 ): SemanticWidgetEffectPort {
   return {
     valueApplied(scope, nodeId, name, value, previous) {
-      const rootGraph = deps.getGraph()?.rootGraph
-      if (!rootGraph || rootGraph.id !== scope.rootGraphId) return
-      const locatorId = locatorIdFromState(
-        { id: nodeId, graphId: scope.owningGraphId },
-        rootGraph.id
+      const live = resolveLiveWidget(
+        deps.getGraph()?.rootGraph,
+        scope,
+        nodeId,
+        name
       )
-      const node = locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
-      if (!node || !useNodeDataStore().ownsNode(scope, node._state)) return
-      const widget = mapLiveWidgetsById(node).get(
-        widgetId(scope.rootGraphId, nodeId, name)
-      )
-      if (!widget) return
+      if (!live) return
+      const { node, widget } = live
       widget.value = value
       widget.callback?.(value, deps.getCanvas(), node)
       node.onWidgetChanged?.(name, value, previous, widget)
