@@ -577,7 +577,7 @@ function startAgentCrdtFollower(
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
-      const justActivated =  active && previous?.[1] === false
+      const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
       knownDocNodeIds = new Set()
