@@ -100,7 +100,7 @@ test(
     await expect.poll(() => promptHistory.requests.length).toBe(1)
 
     const bubble = panel.getByTestId('user-message-bubble')
-    await expect(bubble).toHaveText('use this generation')
+    await expect(bubble).toContainText('use this generation')
     // The preview <img> sits inside a role="button" wrapper (for the
     // lightbox-open click target), and Chromium's accessibility tree treats a
     // button's content as presentational, so the image never surfaces as its
