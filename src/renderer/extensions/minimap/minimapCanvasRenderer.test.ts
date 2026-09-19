@@ -1,5 +1,5 @@
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
@@ -384,7 +384,7 @@ describe('minimapCanvasRenderer', () => {
     )
   })
 
-  it.each([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
+  test.for([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
     'keeps tiny pop markers centered and legible at %dms',
     (elapsed) => {
       renderMinimapToCanvas(mockCanvas, mockGraph, {
