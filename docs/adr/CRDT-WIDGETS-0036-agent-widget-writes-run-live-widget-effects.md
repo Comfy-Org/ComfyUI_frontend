@@ -61,7 +61,7 @@ edit. Two concrete beneficiaries in core:
   primitive and none of its targets.
 
 The visible symptom that surfaced this work is the false "invalid" ring on
-combo widgets in agent workflow tabs (PM-1273): `WidgetSelectDefault.vue`
+combo widgets in agent workflow tabs: `WidgetSelectDefault.vue`
 marks a value invalid when it is not in the widget's own `options.values`.
 Two mechanisms were traced. Mechanism A, a freshly agent-created node's
 placeholder widget carrying `options: {}` until the node materializes, is
@@ -364,7 +364,7 @@ are applied.
 - **Keep the live callback on `WidgetState`.** Violates plain-data components
   and reintroduces the back-reference ADR-ECS-WIDGETS-0023 removes. Rejected.
 
-### Scope: node fields (PM-1155 family) are out
+### Scope: node fields (the autogrow family) are out
 
 The autogrow display bugs come from a different mechanism:
 `nodeDataStore.assignNodeFields` and `prepareNode` replacing a live node's

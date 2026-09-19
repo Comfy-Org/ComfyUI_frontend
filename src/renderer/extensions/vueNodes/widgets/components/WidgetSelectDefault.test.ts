@@ -424,7 +424,7 @@ describe('WidgetSelectDefault', () => {
       expect(trigger).toHaveTextContent('5')
     })
 
-    it('does not mark a placeholder combo widget invalid before its real options load (PM-1273)', () => {
+    it('does not mark a placeholder combo widget invalid before its real options load', () => {
       // Mirrors registerPlaceholder() in
       // src/workbench/extensions/agent/crdt/graphMutations.ts: an
       // agent-created node's widget starts as a placeholder with
