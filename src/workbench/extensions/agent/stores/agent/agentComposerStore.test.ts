@@ -79,11 +79,10 @@ describe('composer reference ownership', () => {
 
 describe('composer draft reset (PM-1331)', () => {
   // insertComposerReference (composerPrompt.ts) pads an empty `prompt.text`
-  // with a literal space on first insert. setNodes() filters `references`
-  // on removal but leaves `text` untouched, so the leftover space survives
-  // and the draft never reports empty again. it.fails() pins this repro
-  // until PM-1331 lands.
-  it.fails('clears the draft once the only node reference is removed from an empty composer', () => {
+  // with a literal space on first insert. setNodes() now resets `text` to
+  // `''` once the last reference is removed and the leftover text is
+  // whitespace-only, so the draft reports empty again.
+  it('clears the draft once the only node reference is removed from an empty composer', () => {
     const store = useAgentComposerStore()
     store.setNodeScope('workflow-A')
     store.setNodes([{ id: '1', title: 'KSampler' }])

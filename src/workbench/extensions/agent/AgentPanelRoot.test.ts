@@ -5522,8 +5522,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useAgentComposerStore().draft).toBe(
           nextAction === 'new-draft'
             ? 'New input'
-            : nextAction === 'removed-reference' ||
-                nextAction === 'removed-attachment'
+            : nextAction === 'removed-reference'
               ? ' '
               : ''
         )

@@ -63,10 +63,6 @@ test.describe(
           )
       })
 
-      test.fail(
-        true,
-        'PM-1331: the leftover space from insertComposerReference keeps composer.draft non-empty, so the placeholder guard never re-shows the placeholder'
-      )
       await expect(placeholder).toBeVisible()
     })
   }
