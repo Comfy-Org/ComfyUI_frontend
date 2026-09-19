@@ -136,7 +136,10 @@ class Load3dAgentHarness {
       objectInfo: 'server'
     })
     await this.page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', {
+        name: enMessages.agent.entryButton,
+        exact: true
+      })
       .click()
     await expect(this.page.locator('#agent-panel-root')).toBeVisible({
       timeout: PANEL_MOUNT_TIMEOUT
