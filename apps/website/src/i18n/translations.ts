@@ -10524,6 +10524,230 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.v2.meta.title': {
+    en: 'Playground - Comfy',
+    'zh-CN': 'Playground - Comfy'
+  },
+  'workshop.v2.meta.description': {
+    en: 'Every model Comfy can run, and the workflows built on them.',
+    'zh-CN': 'Comfy 可运行的全部模型，以及基于它们构建的工作流。'
+  },
+  'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.outcome.animateCharacters': {
+    en: 'Animate characters',
+    'zh-CN': '让角色动起来'
+  },
+  'workshop.outcome.productShots': {
+    en: 'Create product photos & ads',
+    'zh-CN': '制作产品图与广告'
+  },
+  'workshop.outcome.upscaleRestore': {
+    en: 'Upscale & restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.outcome.cleanUp': {
+    en: 'Edit & clean up photos',
+    'zh-CN': '修图与清理'
+  },
+  'workshop.outcome.relightRestyle': {
+    en: 'Relight & restyle',
+    'zh-CN': '重新打光与换风格'
+  },
+  'workshop.outcome.firstLastFrame': {
+    en: 'First & last frame',
+    'zh-CN': '首尾帧'
+  },
+  'workshop.outcome.recutVideo': {
+    en: 'Recut & extend video',
+    'zh-CN': '视频剪辑与延长'
+  },
+  'workshop.outcome.fromAReference': {
+    en: 'Generate from a reference',
+    'zh-CN': '基于参考生成'
+  },
+  'workshop.outcome.guidedGeneration': {
+    en: 'Guided generation',
+    'zh-CN': '可控生成'
+  },
+  'workshop.outcome.logosAndVectors': {
+    en: 'Logos & vectors',
+    'zh-CN': '标志与矢量图'
+  },
+  'workshop.outcome.modelFromAPhoto': {
+    en: 'Make a 3D model from a photo',
+    'zh-CN': '照片生成 3D 模型'
+  },
+  'workshop.outcome.voices': { en: 'Voices & speech', 'zh-CN': '人声与配音' },
+  'workshop.outcome.musicAndSound': {
+    en: 'Music & sound',
+    'zh-CN': '音乐与音效'
+  },
+  'workshop.outcome.seeAll': { en: 'See all {n}', 'zh-CN': '查看全部 {n} 个' },
+  'workshop.v2.heading': {
+    en: 'What will you make next?',
+    'zh-CN': '接下来你想创造什么？'
+  },
+  'workshop.v2.subtitle': {
+    en: 'Models and the workflows built on them, by what you want to make.',
+    'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
+  },
+  'workshop.v2.kind.label': { en: 'Show', 'zh-CN': '显示' },
+  'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
+  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.kind.app': { en: 'App', 'zh-CN': '应用' },
+  'workshop.v2.kind.models': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.v2.card.runsOn': {
+    en: 'Runs on {model}',
+    'zh-CN': '运行于 {model}'
+  },
+  'workshop.v2.card.customNodes': {
+    en: 'Custom nodes',
+    'zh-CN': '自定义节点'
+  },
+  'workshop.v2.workflow.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
+  'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
+  'workshop.v2.sort.popular': { en: 'Most popular', 'zh-CN': '推荐' },
+  'workshop.v2.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
+  'workshop.v2.sort.newest': { en: 'Newest', 'zh-CN': '最新' },
+  'workshop.v2.sort.narrowed': {
+    en: 'Only {type} can be ordered this way',
+    'zh-CN': '只有{type}支持这种排序'
+  },
+  'workshop.v2.search': {
+    en: 'Search models, workflows, creators',
+    'zh-CN': '搜索模型、工作流、创作者'
+  },
+  'workshop.v2.showing': {
+    en: 'Showing {shown} of {total}',
+    'zh-CN': '显示 {shown} / {total}'
+  },
+  'workshop.v2.loadMore': { en: 'Show more', 'zh-CN': '显示更多' },
+  'workshop.v2.empty': {
+    en: 'Nothing here matches',
+    'zh-CN': '没有同时满足这些条件的结果'
+  },
+  'workshop.v2.emptyHint': {
+    en: 'Try fewer words, or another tab.',
+    'zh-CN': '去掉一个筛选条件以扩大范围。'
+  },
+  'workshop.v2.clear': { en: 'Clear', 'zh-CN': '清除' },
+  'workshop.v2.workflow.back': {
+    en: 'Back to Playground',
+    'zh-CN': '返回 Playground'
+  },
+  'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
+  'workshop.v2.workflow.runsOnNote': {
+    en: 'The models this workflow calls.',
+    'zh-CN': '此工作流调用的模型。目录中收录的会附带链接。'
+  },
+  'workshop.v2.workflow.notInCatalogue': {
+    en: 'not in the catalogue',
+    'zh-CN': '目录中暂无'
+  },
+  'workshop.v2.workflow.needs': { en: 'What you need', 'zh-CN': '所需条件' },
+  'workshop.v2.workflow.needsComfy': {
+    en: 'ComfyUI, on your own machine',
+    'zh-CN': '你自己机器上的 ComfyUI'
+  },
+  'workshop.v2.workflow.needsWeights': {
+    en: 'About {size} of model weights',
+    'zh-CN': '约 {size} 的模型权重'
+  },
+  'workshop.v2.workflow.needsCustom': {
+    en: 'These custom nodes installed',
+    'zh-CN': '需安装以下自定义节点'
+  },
+  'workshop.v2.workflow.needsNothing': {
+    en: 'Nothing to download. This one calls a partner model.',
+    'zh-CN': '无需下载。此工作流调用合作方模型。'
+  },
+  'workshop.v2.workflow.form': {
+    en: 'What the app asks for',
+    'zh-CN': '应用需要的输入'
+  },
+  'workshop.v2.workflow.loads': {
+    en: 'What the graph loads',
+    'zh-CN': '节点图加载的内容'
+  },
+  'workshop.v2.workflow.produces': { en: 'What it produces', 'zh-CN': '产出' },
+  'workshop.v2.workflow.download': {
+    en: 'Download the JSON',
+    'zh-CN': '下载 JSON'
+  },
+  'workshop.v2.workflow.tutorial': {
+    en: 'Read the tutorial',
+    'zh-CN': '查看教程'
+  },
+  'workshop.v2.workflow.openWeights': {
+    en: 'Open weights',
+    'zh-CN': '开放权重'
+  },
+  'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
+  'workshop.v2.workflow.graphNote': {
+    en: 'See what it does before you open it in ComfyUI or download it.',
+    'zh-CN': '在用 ComfyUI 打开或下载之前，先看看它做什么。'
+  },
+  'workshop.v2.workflow.graphAlt': {
+    en: 'The nodes of this workflow and the links between them',
+    'zh-CN': '此工作流的节点及其连接'
+  },
+  'workshop.v2.workflow.graphHint': {
+    en: 'Read-only \u00b7 scroll to zoom \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 滚动缩放 \u00b7 拖动平移'
+  },
+  'workshop.v2.workflow.graphLoading': {
+    en: 'Loading the graph',
+    'zh-CN': '正在加载节点图'
+  },
+  'workshop.v2.workflow.graphFailed': {
+    en: 'The graph could not be loaded. The download still works.',
+    'zh-CN': '节点图加载失败，下载仍然可用。'
+  },
+  'workshop.v2.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
+  'workshop.v2.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
+  'workshop.v2.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.v2.workflow.openCloud': {
+    en: 'Open in Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 中打开'
+  },
+  'workshop.v2.workflow.openCloudNote': {
+    en: 'Opens in your own Cloud account, ready to run.',
+    'zh-CN': '在你自己的 Cloud 账户中打开该图，随时可运行。'
+  },
+  'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
+  'workshop.v2.workflow.related': {
+    en: 'Workflows like this one',
+    'zh-CN': '相似的工作流'
+  },
+  'workshop.v2.workflow.relatedApps': {
+    en: 'Apps like this one',
+    'zh-CN': '相似的应用'
+  },
+  'workshop.v2.model.noRun': {
+    en: 'This model cannot be run here yet.',
+    'zh-CN': 'Router 尚未提供该模型可运行的操作。'
+  },
+  'workshop.v2.model.operations': { en: 'Operations', 'zh-CN': '操作' },
+  'workshop.v2.model.operationsNote': {
+    en: 'Pick what you want it to do.',
+    'zh-CN':
+      '注册表按操作逐条列出该模型。这里它们合并为一张卡片，操作是一个选项。'
+  },
+  'workshop.v2.model.openModel': {
+    en: 'Open the model page',
+    'zh-CN': '打开模型页面'
+  },
+  'workshop.v2.model.workflows': {
+    en: 'Made with this model',
+    'zh-CN': '用此模型做的'
+  },
+  'workshop.v2.model.workflowsNote': {
+    en: 'Workflows and apps that run on it.',
+    'zh-CN': '基于它运行的工作流与应用。'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'

@@ -8,10 +8,12 @@ import { t } from '../../i18n/translations'
 import SplitReveal from './SplitReveal.vue'
 
 const {
+  eyebrowKey = 'workshop.hero.eyebrow',
   headingKey = 'workshop.hero.heading',
   subtitleKey,
   locale = 'en'
 } = defineProps<{
+  eyebrowKey?: TranslationKey
   headingKey?: TranslationKey
   subtitleKey?: TranslationKey
   locale?: Locale
@@ -35,7 +37,7 @@ const slots = useSlots()
     <p
       class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
     >
-      <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
+      <SplitReveal :text="t(eyebrowKey, locale)" />
     </p>
     <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />

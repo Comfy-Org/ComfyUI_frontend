@@ -1,6 +1,7 @@
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import { useCaseFor, useCasesFor } from '../../config/models-catalogue'
 import templateModelJoin from '../../data/templateModelJoin.json'
+import { modelName } from './model-identity'
 import type { HubTemplate } from './types'
 
 // Generated canonical content-page slugs, not display-family names. Tasks
@@ -52,11 +53,12 @@ export function modelNamedBy(
 ): WorkshopModel | undefined {
   if (!template.tags.includes('API')) return undefined
   const names = template.models.map(normalize)
-  return uniqueModel(
-    modelsForTask(template, models).filter((model) =>
-      names.includes(normalize(model.name))
-    )
-  )
+  // A template names the model in whatever words the registry used when it was
+  // written, so an operation answers to its own name and to the model's.
+  const named = (model: WorkshopModel) =>
+    names.includes(normalize(model.name)) ||
+    names.includes(normalize(modelName(model, models)))
+  return uniqueModel(modelsForTask(template, models).filter(named))
 }
 
 export function partnerModelFor(

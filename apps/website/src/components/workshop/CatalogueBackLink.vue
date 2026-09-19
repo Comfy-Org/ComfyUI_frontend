@@ -4,15 +4,25 @@ import { onMounted, ref } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  catalogue,
+  fallbackKey = 'workshop.model.back',
+  locale = 'en'
+} = defineProps<{
+  /** The listing this page belongs to. Defaults to the live catalogue. */
+  catalogue?: string
+  fallbackKey?: TranslationKey
+  locale?: Locale
+}>()
 
 const routes = getRoutes(locale)
-const href = ref(routes.workshop)
+const catalogueHref = catalogue ?? routes.workshop
+const href = ref(catalogueHref)
 const category = ref<string>()
 
 // Most visitors reach a model from a shelf, and the way back they want is that
@@ -21,7 +31,7 @@ const category = ref<string>()
 onMounted(() => {
   const shelf = lastShelf(location.pathname)
   if (!shelf || shelf === 'all') return
-  href.value = `${routes.workshop}${catalogSearch({ useCase: shelf })}`
+  href.value = `${catalogueHref}${catalogSearch({ useCase: shelf })}`
   category.value = t(useCaseLabelKey[shelf], locale)
 })
 </script>
@@ -36,7 +46,7 @@ onMounted(() => {
     {{
       category
         ? t('workshop.model.backTo', locale).replace('{category}', category)
-        : t('workshop.model.back', locale)
+        : t(fallbackKey, locale)
     }}
   </a>
 </template>

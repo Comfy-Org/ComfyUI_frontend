@@ -40,6 +40,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 
@@ -156,12 +157,15 @@ const featured = computed(() => {
   const selected = FEATURED_SLUGS.flatMap((slug) =>
     available.filter((model) => model.slug === slug)
   )
-  return sortWorkshopModels(
-    [
-      ...selected,
-      ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
-    ].slice(0, FEATURED_LIMIT),
-    'popular'
+  return modelSlides(
+    sortWorkshopModels(
+      [
+        ...selected,
+        ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
+      ].slice(0, FEATURED_LIMIT),
+      'popular'
+    ),
+    locale
   )
 })
 
@@ -217,7 +221,7 @@ const menuItemClass =
   <section class="gap-10">
     <FeaturedBanner
       v-if="browsing && featured.length"
-      :models="featured"
+      :slides="featured"
       :locale
       class="mb-10 short:mb-6"
     />

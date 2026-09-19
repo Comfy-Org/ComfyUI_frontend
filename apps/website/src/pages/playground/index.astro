@@ -1,0 +1,31 @@
+---
+import CatalogueBrowse from '../../components/hub/CatalogueBrowse.vue'
+import { workshopModels } from '../../config/workshop-browse-content'
+import hubTemplateDetails from '../../data/hubTemplateDetails.json'
+import hubTemplates from '../../data/hubTemplates.json'
+import { browseEntries } from '../../lib/hub/browse-payload'
+import { customNodeNamesFrom, facetedTemplates } from '../../lib/hub/page-data'
+import { t } from '../../i18n/translations'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+// A V2 proposal, not a shipped route: the live catalogue is untouched while
+// this one is argued over.
+
+// Everything resolves here. The island receives card-sized records, so the
+// model list and the template index never reach the browser.
+const entries = browseEntries(
+  facetedTemplates(hubTemplates, workshopModels),
+  workshopModels,
+  customNodeNamesFrom(hubTemplateDetails)
+)
+---
+
+<BaseLayout
+  title={t('workshop.v2.meta.title')}
+  description={t('workshop.v2.meta.description')}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <CatalogueBrowse entries={entries} client:load />
+  </main>
+</BaseLayout>

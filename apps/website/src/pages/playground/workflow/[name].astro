@@ -1,0 +1,234 @@
+---
+import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
+import ModelRun from '../../../components/hub/ModelRun.vue'
+import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
+import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
+import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
+import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
+import { useCaseFor } from '../../../config/models-catalogue'
+import { workshopModels } from '../../../config/workshop-browse-content'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
+import {
+  customNodeNamesFrom,
+  pricedOperations,
+  relatedCardViews
+} from '../../../lib/hub/page-data'
+import { tagDisplayName } from '../../../lib/hub/tag-aliases'
+import {
+  formatWeights,
+  getHubWorkflowPage,
+  listHubWorkflows
+} from '../../../lib/hub/workflow-detail'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+
+export function getStaticPaths() {
+  return listHubWorkflows().map((template) => ({
+    params: { name: template.name }
+  }))
+}
+
+const { name } = Astro.params
+const page = name ? getHubWorkflowPage(name) : undefined
+if (!page) return Astro.redirect('/playground/')
+
+const { template, mediaType, details, runsOn, related } = page
+
+const author = template.username || 'ComfyUI'
+const mediaLabels: Record<string, string> = {
+  image: t('workshop.hub.io.image'),
+  video: t('workshop.hub.io.video'),
+  audio: t('workshop.hub.io.audio'),
+  '3d': t('workshop.hub.io.3d')
+}
+// An app is a graph someone wrapped in a form, so its inputs are the thing it
+// is; a node graph's inputs are what its loader nodes read off disk.
+const inputsHeading = template.isApp
+  ? t('workshop.v2.workflow.form')
+  : t('workshop.v2.workflow.loads')
+
+// A workflow that is one call to a model we carry is that model with a graph
+// around it, so the page hands the reader the playground rather than a file to
+// take elsewhere. Everything the graph adds stays below it.
+const runnable = page.destination
+  ? getRouterWorkshopModelDetail(page.destination.slug)
+  : undefined
+const operations = runnable
+  ? (
+      await pricedOperations([runnable], (model) =>
+        estimateWorkshopNodePrice(model, useCaseFor(model))
+      )
+    ).map((row) => ({
+      slug: row.model.slug,
+      task: row.task,
+      price: row.price,
+      detail: runnable
+    }))
+  : []
+
+const pills = [
+  template.isApp ? t('workshop.v2.kind.app') : t('workshop.v2.kind.workflow'),
+  mediaLabels[mediaType],
+  operations.length > 0 ? t('workshop.v2.workflow.runsHere') : undefined,
+  details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
+].filter((label): label is string => Boolean(label))
+
+const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
+
+// A page that runs a model has to say what a run costs, on either page.
+const price = operations.find((operation) => operation.price)?.price
+
+const relatedViews = relatedCardViews(
+  related.slice(0, 4),
+  workshopModels,
+  customNodeNamesFrom(hubTemplateDetails)
+)
+
+const sectionTitle =
+  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
+const pill =
+  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase'
+const tagClass =
+  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow'
+---
+
+<BaseLayout
+  title={`${template.title} - Comfy`}
+  description={details.description ?? template.title}
+  ogImage={template.thumbnails[0]}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
+    <CatalogueBackLink
+      catalogue="/playground/"
+      fallback-key="workshop.v2.workflow.back"
+      class="mb-8"
+      client:load
+    />
+
+    <header class="mb-10 flex flex-col gap-4">
+      <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kind">
+        {pills.map((label) => <li><span class={pill}>{label}</span></li>)}
+        {price && <li>
+          <span class={pill} data-testid="workflow-price">
+            {price}
+          </span>
+        </li>}
+      </ul>
+      <h1
+        class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl"
+      >
+        {template.title}
+      </h1>
+      <p class="text-sm text-content-secondary" data-testid="workflow-author">
+        {t('workshop.workflow.by').replace('{author}', author)}
+      </p>
+      {details.description && <details
+        class="group max-w-2xl"
+        data-testid="workflow-summary"
+      >
+        <summary class="cursor-pointer list-none sm:cursor-auto">
+          <span
+            class="line-clamp-3 text-base/relaxed text-primary-comfy-canvas/80 group-open:line-clamp-none sm:line-clamp-none"
+          >
+            {details.description}
+          </span>
+          <span
+            class="mt-1 inline-block text-sm text-primary-comfy-yellow group-open:hidden sm:hidden"
+          >
+            {t('ui.readMore')}
+          </span>
+        </summary>
+      </details>}
+    </header>
+
+    {operations.length > 0 && page.destination && <section
+      class="mb-16"
+      data-testid="workflow-run"
+    >
+      <ModelRun operations={operations} client:load />
+    </section>}
+
+    <div class="grid gap-10 lg:grid-cols-12">
+      <div class="flex flex-col gap-10 lg:col-span-7">
+        {operations.length === 0 && template.thumbnails[0] && (
+          <img
+            src={template.thumbnails[0]}
+            alt={template.title}
+            loading="lazy"
+            decoding="async"
+            class="aspect-4/3 w-full rounded-3xl bg-hub-surface object-cover"
+            data-testid="workflow-media"
+          />
+        )}
+
+        <WorkflowRunsOn models={runsOn} />
+
+        <section data-testid="workflow-graph-section">
+          <h2 class={sectionTitle}>{t('workshop.v2.workflow.graph')}</h2>
+          <p class="mt-2 mb-4 text-sm text-content-muted">
+            {t('workshop.v2.workflow.graphNote')}
+          </p>
+          <WorkflowGraph source={page.downloadUrl} client:visible />
+        </section>
+
+        <section class="grid gap-6 sm:grid-cols-2">
+          {page.inputs.length > 0 && <div data-testid="workflow-inputs">
+            <WorkflowPorts heading={inputsHeading} rows={page.inputs} />
+          </div>}
+          <div data-testid="workflow-outputs">
+            <WorkflowPorts
+              heading={t('workshop.v2.workflow.produces')}
+              rows={page.outputs}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 class={sectionTitle}>{t('workshop.v2.workflow.tags')}</h2>
+          <ul class="mt-3 flex flex-wrap gap-2" data-testid="workflow-tags">
+            {template.tags.map((tag) => <li>
+              <a
+                href={`/playground/?q=${encodeURIComponent(tagDisplayName(tag))}`}
+                class={tagClass}
+              >
+                {tagDisplayName(tag)}
+              </a>
+            </li>)}
+          </ul>
+        </section>
+      </div>
+
+      <div class="max-lg:order-first lg:col-span-5">
+        <WorkflowAside
+          cloudUrl={cloudUrl}
+          runsHere={operations.length > 0}
+          downloadUrl={page.downloadUrl}
+          tutorialUrl={details.tutorialUrl}
+          weights={formatWeights(page.weightsBytes)}
+          customNodes={page.customNodes}
+          callsPartnerModel={page.callsPartnerModel}
+        />
+      </div>
+    </div>
+
+    {relatedViews.length > 0 && <section
+      class="mt-24 border-t border-transparency-white-t8 pt-12"
+    >
+      <h2 class={sectionTitle}>
+        {template.isApp
+          ? t('workshop.v2.workflow.relatedApps')
+          : t('workshop.v2.workflow.related')}
+      </h2>
+      <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {relatedViews.map((view) => <li>
+          <CatalogueCard view={view} />
+        </li>)}
+      </ul>
+    </section>}
+  </main>
+</BaseLayout>
