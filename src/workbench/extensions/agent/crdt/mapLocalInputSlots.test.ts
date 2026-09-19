@@ -1,8 +1,9 @@
-import { mint } from '@comfyorg/comfy-multi-player'
-import type * as Y from 'yjs'
+import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import * as Y from 'yjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 
 import type { GraphOperation } from './graphOperations'
 import { mapLocalInputSlots } from './mapLocalInputSlots'
@@ -64,6 +65,13 @@ afterEach(() => {
   fixture?.doc.destroy()
   fixture = undefined
 })
+
+function insertDocumentInputs(doc: Y.Doc, nodeId: NodeId, entries: unknown[]) {
+  const inputs = nodesMap(doc).get(String(nodeId))?.get('inputs')
+  if (!(inputs instanceof Y.Array))
+    throw new Error('the document node carries no inputs array')
+  doc.transact(() => inputs.insert(inputs.length, entries))
+}
 
 describe('mapLocalInputSlots', () => {
   it('sends an existing input by its document index after local inputs move', () => {
@@ -164,6 +172,33 @@ describe('mapLocalInputSlots', () => {
       remove,
       grown
     ])
+  })
+
+  it('keeps the document position of the named input past a malformed entry', () => {
+    const { graph, source, target, doc } = buildFixture()
+    insertDocumentInputs(doc, target.id, [{}, { name: 'extra', type: 'INT' }])
+    target.addInput('extra', 'INT')
+
+    const mapped = mapLocalInputSlots(doc, graph, [
+      connectTo(source, target, target.findInputSlot('extra'))
+    ])
+
+    expect(mapped).toEqual([
+      expect.objectContaining({ op: 'connect', to_slot: 4 })
+    ])
+  })
+
+  it('reports and drops a connection when the document names the input twice', () => {
+    const { graph, source, target, doc } = buildFixture()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    insertDocumentInputs(doc, target.id, [{ name: 'width', type: 'INT' }])
+
+    const mapped = mapLocalInputSlots(doc, graph, [
+      connectTo(source, target, target.findInputSlot('width'))
+    ])
+
+    expect(mapped).toEqual([])
+    expect(error).toHaveBeenCalledTimes(1)
   })
 
   it('drops a connect to a missing slot when grow is explicitly null', () => {
