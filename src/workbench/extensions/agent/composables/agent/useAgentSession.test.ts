@@ -1255,6 +1255,7 @@ describe('useAgentSession (v1 composition root)', () => {
     const session = useAgentSession({ rest, events: source })
     session.start()
     status(true)
+    session.bindWorkflow('wf-1')
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
@@ -1265,6 +1266,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
     expect(session.threadId.value).toBeNull()
+    expect(session.boundWorkflowId.value).toBeNull()
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
 
     await session.sendMessage('again')

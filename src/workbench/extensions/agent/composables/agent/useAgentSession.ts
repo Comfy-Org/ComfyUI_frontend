@@ -705,6 +705,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.settleTurn(turn, undefined)
     if (conversationStore.threadId !== turn.threadId) return
     conversationStore.setThreadId(null)
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
