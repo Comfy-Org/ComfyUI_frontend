@@ -352,6 +352,109 @@ describe('useVueNodeResizeTracking', () => {
     entry.target.remove()
   })
 
+  // PM-1304 / PM-1312: switching tabs away and back re-triggers this shared
+  // measurement pipeline for every deferred node in one batch, not just the
+  // node whose content actually grew. This spreads the "can't shrink"
+  // ratchet from `refreshNodeGeometry` to nodes the user never touched.
+  it.fails(
+    "does not re-report an untouched node's unchanged content size after a " +
+      'tab-visibility cycle triggered by a different node',
+    async () => {
+      const touchedNodeId = toNodeId('touched-node')
+      const untouchedNodeId = toNodeId('untouched-node')
+
+      const touched = createResizeEntry({
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 180
+      })
+      const untouched = createResizeEntry({
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      })
+      document.body.append(touched.entry.target, untouched.entry.target)
+      seedNodeLayout({
+        nodeId: touchedNodeId,
+        left: 100,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+      seedNodeLayout({
+        nodeId: untouchedNodeId,
+        left: 400,
+        top: 200,
+        width: 240,
+        height: 180
+      })
+
+      // Establish a baseline measurement for both nodes.
+      resizeObserverState.callback?.(
+        [touched.entry, untouched.entry],
+        createObserverMock()
+      )
+      vi.clearAllMocks()
+
+      // Tab goes hidden. Both nodes happen to receive a resize-observer
+      // entry while hidden (e.g. a layout pass unrelated to either node's
+      // own content), even though only the touched node's autogrow widget
+      // is actually mid-resize.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+
+      const grownTouched = createResizeEntry({
+        element: touched.entry.target,
+        nodeId: touchedNodeId,
+        width: 240,
+        height: 500
+      }).entry
+      const unchangedUntouched = createResizeEntry({
+        element: untouched.entry.target,
+        nodeId: untouchedNodeId,
+        width: 240,
+        height: 180
+      }).entry
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+      expect(testState.reportContentSize).not.toHaveBeenCalled()
+      vi.clearAllMocks()
+
+      // Tab becomes visible again.
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+      vi.clearAllMocks()
+
+      // The browser redelivers each node's real, current measurement: the
+      // touched node genuinely grew; the untouched node's DOM size never
+      // changed from the baseline measured above.
+      resizeObserverState.callback?.(
+        [grownTouched, unchangedUntouched],
+        createObserverMock()
+      )
+
+      expect(testState.reportContentSize).toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        touchedNodeId,
+        { width: 240, height: 500 - LiteGraph.NODE_TITLE_HEIGHT }
+      )
+
+      // Bug: the untouched node's identical, already-known measurement is
+      // re-reported too. The tab-visibility batch cleared its measurement
+      // cache along with the touched node's, forcing it back through the
+      // pipeline as if it were a fresh, changed measurement.
+      expect(testState.reportContentSize).not.toHaveBeenCalledWith(
+        ROOT_GRAPH_ID,
+        untouchedNodeId,
+        expect.anything()
+      )
+    }
+  )
+
   it('observes on mount and removes identity before unobserving on unmount', () => {
     const nodeId = toNodeId('mounted-node')
     const Component = defineComponent({
