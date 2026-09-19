@@ -32,6 +32,7 @@ import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExp
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -399,13 +400,6 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
-  private expectedTitle(node: {
-    type: string
-    title?: string
-  }): string | undefined {
-    return node.title || this.displayNames.get(node.type)
-  }
-
   // The renderer's link map names the endpoints no DOM surface does; the
   // painted result is a screenshot expectation in the replay spec.
   private async renderedLinks(): Promise<RecordedLink[]> {
@@ -502,16 +496,18 @@ class AgentConversationHarness {
       const id = String(node.id)
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
-      const expectedTitle = this.expectedTitle(node)
-      if (expectedTitle !== undefined)
-        await expect(locator.getByTestId('node-title')).toHaveText(
-          expectedTitle
-        )
-      const liveType = await this.page.evaluate(
-        (nodeId) => window.app?.graph.getNodeById(nodeId)?.type,
-        toNodeId(id)
+      const materialized = await this.page.evaluate((nodeId) => {
+        const liveNode = window.app?.graph.getNodeById(nodeId)
+        return liveNode
+          ? { type: liveNode.type, hasErrors: liveNode.has_errors === true }
+          : null
+      }, toNodeId(id))
+      const expectedTitle = assertAgentReplayNodeContract(
+        node,
+        this.displayNames.get(node.type),
+        materialized
       )
-      expect(liveType).toBe(node.type)
+      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
