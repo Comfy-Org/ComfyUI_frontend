@@ -4,13 +4,17 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { ComboWidgetHelper } from '@e2e/fixtures/helpers/ComboWidgetHelper'
 
-// Combo widgets in an agent workflow tab paint the red "invalid value" ring
-// although every value the agent wrote is a legal option.
-// Both repros drive the same agent-CRDT write path (set_widget on a live node,
-// then add_node with combo values, then a tab round trip that re-syncs the
-// whole document) on two node families, to tell one root cause from two:
-// a plain enum combo (KSampler) and the COMFY_DYNAMICCOMBO_V3 model selector
-// (Flux2ImageNode), whose widget has its own value setter in dynamicWidgets.ts.
+// Combo widgets in an agent workflow tab were reported to paint the red
+// "invalid value" ring although every value the agent wrote is a legal option.
+// Both cases drive the agent-CRDT write path (set_widget on a live node, then
+// add_node with combo values, then a tab round trip that re-syncs the whole
+// document) on two node families: a plain enum combo (KSampler) and the
+// COMFY_DYNAMICCOMBO_V3 model selector (Flux2ImageNode), whose widget has its
+// own value setter in dynamicWidgets.ts. Neither path reproduces the report:
+// the placeholder widget an add_node registers is materialized in the same
+// frame, so its empty options list never reaches the renderer. They stay as
+// guards on that path; the rendering condition itself is pinned in
+// WidgetSelectDefault.test.ts.
 const GENERIC_CASE = 'agent-repro-combo-write-ksampler'
 const FLUX2_CASE = 'agent-repro-combo-write-flux2'
 
@@ -25,10 +29,6 @@ test.describe(
         agentConversation,
         page
       }, testInfo) => {
-        test.fail(
-          true,
-          'WidgetSelectDefault paints ring-destructive on combos the agent wrote through widgetValueStore.setValue, bypassing the widget callback'
-        )
         test.setTimeout(120_000)
         const combos = new ComboWidgetHelper(page)
         const topbar = new Topbar(page)
@@ -62,10 +62,6 @@ test.describe(
         agentConversation,
         page
       }, testInfo) => {
-        test.fail(
-          true,
-          'The Flux2ImageNode model selector shows a red ring after an agent write; same root cause as the KSampler repro only if this fails the same way'
-        )
         test.setTimeout(120_000)
         const combos = new ComboWidgetHelper(page)
         const topbar = new Topbar(page)
