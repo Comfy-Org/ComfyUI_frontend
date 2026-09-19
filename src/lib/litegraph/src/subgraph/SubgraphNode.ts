@@ -310,6 +310,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
+        // A reconnect landing before the deferred demotion below runs is a
+        // rewire, not a real disconnect: cancel the pending demotion so the
+        // widget is never torn down.
+        input._pendingDemotionToken = undefined
         if (!e.detail.widget || !e.detail.node) return
 
         this._setWidget(
@@ -335,20 +339,33 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           return
         }
 
-        if (input._widget) this.ensureWidgetRemoved(input._widget)
-        if (input.widgetId) {
-          const id = input.widgetId
-          queueMicrotask(() => {
-            if (this.inputs.some((input) => input.widgetId === id)) return
-            useWidgetValueStore().deleteWidget(id)
-          })
-        }
+        // Defer the actual demotion by a microtask instead of clearing
+        // input.widgetId/.widget/._widget here: a rewire (this disconnect
+        // immediately followed by a reconnect of the same input, e.g.
+        // dragging a new source onto an already-promoted widget) would
+        // otherwise drop the widget from `this.widgets` for one tick, which
+        // is exactly the window the Vue widget grid can render from. The
+        // 'input-connected' listener above cancels this token on a
+        // same-tick reconnect.
+        const widget = input._widget
+        const id = input.widgetId
+        const token = Symbol()
+        input._pendingDemotionToken = token
+        queueMicrotask(() => {
+          if (input._pendingDemotionToken !== token) return
+          input._pendingDemotionToken = undefined
 
-        input.pos = undefined
-        input.widget = undefined
-        input.widgetId = undefined
-        input._widget = undefined
-        this.invalidatePromotedViews()
+          if (widget) this.ensureWidgetRemoved(widget)
+          if (id && !this.inputs.some((i) => i.widgetId === id)) {
+            useWidgetValueStore().deleteWidget(id)
+          }
+
+          input.pos = undefined
+          input.widget = undefined
+          input.widgetId = undefined
+          input._widget = undefined
+          this.invalidatePromotedViews()
+        })
       },
       { signal }
     )
