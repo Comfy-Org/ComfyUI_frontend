@@ -93,15 +93,13 @@ test.describe(
       // reaches a thread the server still has locked and comes back 409
       // TURN_IN_PROGRESS.
       //
-      // The nudge stays ABOVE test.fail() on purpose. Once the client
-      // re-attaches there is no Send button, and this unbounded click runs out
-      // the describe timeout, which Playwright reports as `timedOut` — the one
-      // status test.fail() does not accept, so the fix surfaces loudly. Giving
-      // the click its own `timeout` would raise an ordinary TimeoutError, which
-      // maps to `failed` and would be swallowed as the expected failure
-      // (workerProcessEntry.js: `root instanceof TimeoutManagerError`).
+      // The nudge stays ABOVE test.fail(): body-level test.fail() only sets the
+      // expected status when it executes, so a throw up here is still an
+      // unexpected failure. Once the client re-attaches there is no Send
+      // button, and this click reports that by name in seconds instead of
+      // running out the file timeout four times over under CI retries.
       await turnLock.composer.fill('are you still there?')
-      await turnLock.sendButton.click()
+      await turnLock.sendButton.click({ timeout: 10_000 })
       // Inequality, so a future client-side retry cannot fail this line in
       // place of the alert assertion below.
       await expect.poll(() => turnLock.postAttempts()).toBeGreaterThanOrEqual(2)
@@ -111,15 +109,26 @@ test.describe(
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 
-    // The report mentions audio playback right before the disconnect. The
-    // evidence that it was incidental is really the three specs above, which
-    // reproduce all of it with no audio anywhere; this adds only that Web Audio
-    // decoding alongside a live turn does not disturb it. It does not run the
+    // Keeps the `workSummary` locator honest. Every other use of it above is a
+    // toHaveCount(0), which a locator that matched nothing would satisfy for
+    // free; this shows it does resolve once a turn ends.
+    test('summarises a turn that ends normally', async ({
+      turnLock,
+      getWebSocket
+    }) => {
+      await expect(turnLock.workSummary).toHaveCount(0)
+
+      turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+
+      await expect(turnLock.workSummary).toBeVisible()
+      await expect(turnLock.sendButton).toBeVisible()
+    })
+
+    // The report mentions audio playback right before the disconnect. What
+    // shows it was incidental is really the three specs above, which reproduce
+    // every symptom with no audio anywhere; this only adds that Web Audio
+    // decoding beside a live turn leaves it alone. It does not call the
     // product's player, so it does not clear the whole audio path.
-    //
-    // It also carries the only positive assertion on `workSummary`: a turn that
-    // ends normally must produce the summary, so the negative assertions above
-    // cannot be passing on a locator that matches nothing.
     test('keeps the turn running while audio decoding runs alongside it', async ({
       turnLock,
       getWebSocket
@@ -132,10 +141,6 @@ test.describe(
 
       turnLock.push(ws, POST_RECONNECT_EVENT)
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
-
-      turnLock.push(ws, TURN_DONE_EVENT)
-      await expect(turnLock.workSummary).toBeVisible()
-      await expect(turnLock.sendButton).toBeVisible()
     })
   }
 )

@@ -71,6 +71,11 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
  * an assistant row goes `streaming` when a turn starts and only leaves that
  * state when the turn completes, fails, or is cancelled. Dropping the client's
  * socket does not touch it — that asymmetry is what these specs exercise.
+ *
+ * `transcript()` and the cancel route are not reached by the current specs.
+ * They are here so the fake stays a faithful server: a repair that re-hydrates
+ * on reconnect, or a spec that clicks Stop, needs both, and a half-modelled
+ * server would make such a fix look broken.
  */
 class TurnLockServer {
   private streaming = false
