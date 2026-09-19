@@ -65,16 +65,45 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
-  it('keeps first-party errors that merely mention a browser noise term', () => {
+  it.for([
+    [
+      'a drawImage TypeError naming HTMLImageElement in its overload list',
+      "Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The provided value is not of type '(CSSImageValue or HTMLImageElement or SVGImageElement or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame)'"
+    ],
+    [
+      'a texImage2D TypeError naming HTMLImageElement in its overload list',
+      "Failed to execute 'texImage2D' on 'WebGL2RenderingContext': The provided value is not of type '(HTMLImageElement or HTMLCanvasElement or HTMLVideoElement or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'"
+    ],
+    [
+      'a deliberate report whose text mentions HTMLImageElement',
+      'Thumbnail decode failed for an HTMLImageElement supplied by the node pack'
+    ]
+  ])(
+    'keeps first-party errors that merely name a matched noise term: %s',
+    ([, message]) => {
+      // These carry a matched substring ('HTMLImageElement') but not the
+      // `Uncaught {…}` shape the resource-load matcher targets, so the
+      // anchored predicate must let them through. An unanchored
+      // `includes('HTMLImageElement')` drops all three — that is the
+      // regression this case exists to catch.
+      const event = createErrorEvent(
+        message,
+        'at render (https://cloud.comfy.org/assets/app.js:1:2)'
+      )
+
+      expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    }
+  )
+
+  it('still drops the uncaught-event shape the img matcher targets', () => {
+    // The other half of the pair above: anchoring must not stop the matcher
+    // from catching the noise it was written for.
     const event = createErrorEvent(
-      'Widget resize handler threw before the ResizeObserver was attached',
+      'Uncaught {"isTrusted":true,"target":"HTMLImageElement"}',
       'at render (https://cloud.comfy.org/assets/app.js:1:2)'
     )
 
-    // A real "ResizeObserver loop" warning is dropped, but this application
-    // error only references resize handling and must survive.
-    expect(event.error.message.includes('ResizeObserver loop')).toBe(false)
-    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
   it('drops the console echo of an assertion the reporter also reports', () => {

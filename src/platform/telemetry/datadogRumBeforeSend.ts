@@ -26,10 +26,21 @@ const RUM_NOISE_MESSAGE_MATCHERS: ((message: string) => boolean)[] = [
   // Classic benign layout warning ("ResizeObserver loop completed with
   // undelivered notifications") with no actionable stack.
   (message) => message.includes('ResizeObserver loop'),
-  // Failed <img> loads surface as uncaught non-Error events whose target is an
-  // HTMLImageElement (e.g. "Uncaught {…HTMLImageElement…}") — by far the #1
+  // Failed <img> loads surface as uncaught non-Error events whose serialized
+  // target is an HTMLImageElement (e.g.
+  // `Uncaught {"isTrusted":true,"target":"HTMLImageElement"}`) — by far the #1
   // entry in the error stream and pure browser noise, not an app failure.
-  (message) => message.includes('HTMLImageElement'),
+  //
+  // Anchored to that `Uncaught` shape deliberately. A bare
+  // `includes('HTMLImageElement')` also swallows first-party DOM TypeErrors
+  // that merely NAME the interface in an overload list — e.g. "Failed to
+  // execute 'drawImage' on 'CanvasRenderingContext2D': The provided value is
+  // not of type '(… or HTMLImageElement or …)'", and the same for
+  // `texImage2D` / `createPattern` — which a canvas-heavy app hits for real.
+  // This runs before origin tagging, so an unanchored match would discard even
+  // a deliberate `reportError()` whose text happens to mention the interface.
+  (message) =>
+    message.startsWith('Uncaught') && message.includes('HTMLImageElement'),
   // PostHog's client-side rate-limit notice — analytics plumbing, not an error.
   (message) =>
     message.includes(
