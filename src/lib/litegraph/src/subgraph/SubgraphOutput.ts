@@ -1,3 +1,4 @@
+import { assert } from '@/base/assert'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { mintLinkId } from '../idAllocation'
@@ -76,6 +77,11 @@ export class SubgraphOutput extends SubgraphSlot {
     }
 
     existingLink?.disconnect(subgraph, 'input')
+
+    assert(
+      this.linkIds.length <= 1,
+      `SubgraphOutput.connect: output "${this.name}" has ${this.linkIds.length} existing links before assigning a new one - a subgraph output must have at most one connection`
+    )
 
     // Set link ID in each slot
     this.linkIds[0] = link.id

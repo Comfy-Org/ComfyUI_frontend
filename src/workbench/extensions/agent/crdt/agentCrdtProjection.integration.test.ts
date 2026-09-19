@@ -38,8 +38,9 @@ class TestNote extends LGraphNode {
 }
 
 function widgetsOf(node: LGraphNode) {
-  assert(node.widgets, 'test node registers widgets', { title: node.title })
-  return node.widgets
+  const { widgets } = node
+  assert(widgets, 'test node registers widgets', { title: node.title })
+  return widgets ?? []
 }
 
 const WORKFLOW_ID = 'wf-a'
