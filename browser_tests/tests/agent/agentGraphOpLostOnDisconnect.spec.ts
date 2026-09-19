@@ -310,7 +310,6 @@ test.describe(
       // The agent said it added the note, and the op is in the document's own
       // record (asserted above). The follower must notice that its subscribe
       // was never acknowledged, retry it, and land the node on the live canvas.
-      test.fail()
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
         timeout: SUBSCRIBE_ACK_TIMEOUT_MS + 10_000
       })
