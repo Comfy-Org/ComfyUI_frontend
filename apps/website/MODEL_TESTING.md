@@ -190,6 +190,26 @@ the parking behaviour. The grid labels passes that needed collection
 
 ## Results, separate campaigns and commits
 
+The results ledger retains `elapsedMs` for each live attempt and its last
+successful run. This measures the whole case: input preparation, Router
+generation, output download and decoding. It excludes waiting for a test worker.
+The September 17 timings were recovered from the saved `events.jsonl` files by
+matching both page slug and request ID; no durations were inferred from unrelated
+preflight timestamps or from the length of an output video.
+
+Model pages use the last successful production `page-defaults` time, rounded up
+to 10-second steps through one minute, 30-second steps through five minutes, and
+whole minutes thereafter. Failed, staging and custom-input attempts do not set
+the estimate. Updating and committing the ledger refreshes estimates on the next
+website build; only the rounded number is sent to the browser.
+
+The progress ring is explicitly estimated: it reaches 95% at that duration,
+then approaches 99% exponentially while waiting for the real result. Success
+replaces the ring with the output. Failure and cancellation remove it, and a
+new attempt starts at zero. Changed inputs, provider load and browser uploads
+can take longer than the recorded default. A model without a usable timing
+keeps an indeterminate spinner until it has a measured pass.
+
 ### Verify live browser uploads separately
 
 ```sh

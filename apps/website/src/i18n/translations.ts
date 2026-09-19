@@ -10096,6 +10096,18 @@ Enterprise`
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.estimatedProgress': {
+    en: 'Estimated generation progress',
+    'zh-CN': '预计生成进度'
+  },
+  'workshop.run.estimatedTime': {
+    en: 'Estimated time: {time}',
+    'zh-CN': '预计用时：{time}'
+  },
+  'workshop.run.longerThanEstimated': {
+    en: 'Taking longer than estimated. Still waiting for the result.',
+    'zh-CN': '用时超过预计，仍在等待结果。'
+  },
   'workshop.load.pending': { en: 'Loading', 'zh-CN': '加载中' },
   'workshop.load.failed': {
     en: 'Models did not load.',

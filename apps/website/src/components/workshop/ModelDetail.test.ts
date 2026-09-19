@@ -409,6 +409,23 @@ describe('ModelDetail', () => {
     expect(JSON.stringify(events)).not.toContain(routerResult.outputs[0].url)
   })
 
+  it('passes the model estimate to the running meter', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: { ...runnable, estimatedSeconds: 150 } })
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByTestId('run-button'))
+    expect(await screen.findByRole('progressbar')).toBeVisible()
+    expect(screen.getByText('Estimated time: 2.5 min')).toBeVisible()
+    pending.resolve(routerResult)
+    await screen.findByTestId('output-download')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
   it('reports a failed attempt with a bounded reason and no error payload', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(

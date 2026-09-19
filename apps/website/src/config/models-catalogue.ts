@@ -142,6 +142,7 @@ export interface WorkshopModel {
 }
 
 export interface WorkshopModelDetail extends WorkshopModel {
+  readonly estimatedSeconds?: number
   readonly nodeDisplayName?: string
   readonly form?: WorkshopFormDefinition
   readonly execution?: WorkshopContract

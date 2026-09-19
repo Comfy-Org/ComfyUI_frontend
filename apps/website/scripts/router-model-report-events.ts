@@ -11,6 +11,7 @@ const eventSchema = z.object({
   at: z.string().datetime({ offset: true }),
   phase: z.enum(['preflight', 'generation']),
   status: z.string(),
+  elapsedMs: z.number().int().nonnegative().optional(),
   requestId: z.string().nullable().optional(),
   completion: z.literal('collected-after-timeout').optional(),
   reason: z.string().optional(),
@@ -111,6 +112,7 @@ export function routerReportUpdate(
   const common = {
     at: event.at,
     source,
+    ...(event.elapsedMs !== undefined ? { elapsedMs: event.elapsedMs } : {}),
     ...(requestId.success ? { requestId: requestId.data } : {}),
     ...(event.response ? { httpStatus: event.response.status } : {})
   }

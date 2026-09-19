@@ -20,6 +20,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:47.666Z",
+        "elapsedMs": 94586,
         "requestId": "53d07c0e-0209-46c3-a5b0-7ee119e046c7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -53,6 +54,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:47.666Z",
+        "elapsedMs": 94586,
         "requestId": "53d07c0e-0209-46c3-a5b0-7ee119e046c7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -103,6 +105,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:11.767Z",
+        "elapsedMs": 42211,
         "requestId": "10a5b165-20f1-4e7c-9501-ceae4e0e32b0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -131,6 +134,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:11.767Z",
+        "elapsedMs": 42211,
         "requestId": "10a5b165-20f1-4e7c-9501-ceae4e0e32b0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -176,6 +180,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.644Z",
+        "elapsedMs": 47564,
         "requestId": "005a982f-82de-4d90-8586-30047610a266",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -196,6 +201,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.644Z",
+        "elapsedMs": 47564,
         "requestId": "005a982f-82de-4d90-8586-30047610a266",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -233,6 +239,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:32.738Z",
+        "elapsedMs": 19657,
         "requestId": "7300ccce-c438-4907-baf1-5281d92f69de",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -253,6 +260,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:32.738Z",
+        "elapsedMs": 19657,
         "requestId": "7300ccce-c438-4907-baf1-5281d92f69de",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -290,6 +298,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:42.216Z",
+        "elapsedMs": 192660,
         "requestId": "c1a66a68-f85d-4a49-a010-0520dced342e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -310,6 +319,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:42.216Z",
+        "elapsedMs": 192660,
         "requestId": "c1a66a68-f85d-4a49-a010-0520dced342e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -347,6 +357,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:06.809Z",
+        "elapsedMs": 277253,
         "requestId": "63fb501a-7282-4fb8-909c-8f45235e3500",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -367,6 +378,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:06.809Z",
+        "elapsedMs": 277253,
         "requestId": "63fb501a-7282-4fb8-909c-8f45235e3500",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -434,6 +446,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:23.803Z",
+        "elapsedMs": 10722,
         "requestId": "90f03bb0-45bb-40ab-bcfa-b0700f7f0eb6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -453,6 +466,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:23.803Z",
+        "elapsedMs": 10722,
         "requestId": "90f03bb0-45bb-40ab-bcfa-b0700f7f0eb6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -489,6 +503,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.242Z",
+        "elapsedMs": 34161,
         "requestId": "d6c33446-2809-4b72-a64f-1aae13da871c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -508,6 +523,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.242Z",
+        "elapsedMs": 34161,
         "requestId": "d6c33446-2809-4b72-a64f-1aae13da871c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -544,6 +560,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:35.646Z",
+        "elapsedMs": 22565,
         "requestId": "834e861f-3763-4a8b-80f9-71d0508fe1ca",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -563,6 +580,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:35.646Z",
+        "elapsedMs": 22565,
         "requestId": "834e861f-3763-4a8b-80f9-71d0508fe1ca",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -599,6 +617,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:25.896Z",
+        "elapsedMs": 12815,
         "requestId": "0e61a48b-11a2-49be-939f-46c45f1a64ab",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -619,6 +638,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:25.896Z",
+        "elapsedMs": 12815,
         "requestId": "0e61a48b-11a2-49be-939f-46c45f1a64ab",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -656,6 +676,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:34.059Z",
+        "elapsedMs": 20978,
         "requestId": "97e4539b-a6ba-43b3-9679-b67869a31e22",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -676,6 +697,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:34.059Z",
+        "elapsedMs": 20978,
         "requestId": "97e4539b-a6ba-43b3-9679-b67869a31e22",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -713,6 +735,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.966Z",
+        "elapsedMs": 34885,
         "requestId": "febb366a-27a1-4097-a9fd-854a0ba50fd2",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -733,6 +756,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.966Z",
+        "elapsedMs": 34885,
         "requestId": "febb366a-27a1-4097-a9fd-854a0ba50fd2",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -770,6 +794,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:35.358Z",
+        "elapsedMs": 22277,
         "requestId": "d27874c5-d674-4ada-82a6-09fd9775337a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -790,6 +815,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:35.358Z",
+        "elapsedMs": 22277,
         "requestId": "d27874c5-d674-4ada-82a6-09fd9775337a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -827,6 +853,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:04.120Z",
+        "elapsedMs": 34564,
         "requestId": "40cb58fd-1290-499b-be9c-bb3bf3eabcde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -847,6 +874,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:04.120Z",
+        "elapsedMs": 34564,
         "requestId": "40cb58fd-1290-499b-be9c-bb3bf3eabcde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -884,6 +912,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:32.542Z",
+        "elapsedMs": 19461,
         "requestId": "aeb3e0b7-7f28-407b-8ec5-9c94ba6baee3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -903,6 +932,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:32.542Z",
+        "elapsedMs": 19461,
         "requestId": "aeb3e0b7-7f28-407b-8ec5-9c94ba6baee3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -939,6 +969,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:26.399Z",
+        "elapsedMs": 13318,
         "requestId": "91b5c298-7f73-454e-8c3a-1fe7d0e2c77a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -958,6 +989,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:26.399Z",
+        "elapsedMs": 13318,
         "requestId": "91b5c298-7f73-454e-8c3a-1fe7d0e2c77a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -994,6 +1026,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:28.766Z",
+        "elapsedMs": 15684,
         "requestId": "8b60b967-84af-4637-992d-c8dc2bcaa152",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1013,6 +1046,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:28.766Z",
+        "elapsedMs": 15684,
         "requestId": "8b60b967-84af-4637-992d-c8dc2bcaa152",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1049,6 +1083,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:54.046Z",
+        "elapsedMs": 40964,
         "requestId": "f7a9768d-9576-4b7b-8aa9-534298c94d58",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1068,6 +1103,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:54.046Z",
+        "elapsedMs": 40964,
         "requestId": "f7a9768d-9576-4b7b-8aa9-534298c94d58",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1104,6 +1140,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.232Z",
+        "elapsedMs": 40150,
         "requestId": "8dc59850-f549-49eb-9476-cecc845b44ea",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1123,6 +1160,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.232Z",
+        "elapsedMs": 40150,
         "requestId": "8dc59850-f549-49eb-9476-cecc845b44ea",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1159,6 +1197,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:05.914Z",
+        "elapsedMs": 36358,
         "requestId": "cd3cbb07-b2ab-4dec-8316-0aa5bdec7301",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1179,6 +1218,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:05.914Z",
+        "elapsedMs": 36358,
         "requestId": "cd3cbb07-b2ab-4dec-8316-0aa5bdec7301",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1216,6 +1256,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:36.757Z",
+        "elapsedMs": 23675,
         "requestId": "474f3687-69da-4bb9-80a1-138cce9fb9f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1235,6 +1276,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:36.757Z",
+        "elapsedMs": 23675,
         "requestId": "474f3687-69da-4bb9-80a1-138cce9fb9f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1271,6 +1313,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:29.355Z",
+        "elapsedMs": 16273,
         "requestId": "3ee1497e-a021-4684-801b-0ab4934cacf7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1290,6 +1333,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:29.355Z",
+        "elapsedMs": 16273,
         "requestId": "3ee1497e-a021-4684-801b-0ab4934cacf7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1326,6 +1370,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:04.294Z",
+        "elapsedMs": 34738,
         "requestId": "2dc40f06-f8f1-46c2-8d19-c9b5b793ca8f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1346,6 +1391,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:04.294Z",
+        "elapsedMs": 34738,
         "requestId": "2dc40f06-f8f1-46c2-8d19-c9b5b793ca8f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1383,6 +1429,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:08.153Z",
+        "elapsedMs": 38597,
         "requestId": "8883f82d-2990-4c5e-927e-a0a2d0f575ec",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1403,6 +1450,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:08.153Z",
+        "elapsedMs": 38597,
         "requestId": "8883f82d-2990-4c5e-927e-a0a2d0f575ec",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1440,6 +1488,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:39:01.359Z",
+        "elapsedMs": 31355,
         "requestId": "45082ee7-346e-40cc-817a-2c1680061964",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1459,6 +1508,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:39:01.359Z",
+        "elapsedMs": 31355,
         "requestId": "45082ee7-346e-40cc-817a-2c1680061964",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1495,6 +1545,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:39:24.374Z",
+        "elapsedMs": 54370,
         "requestId": "b10aeace-2f7e-4afb-80c3-adbd2cdcddb4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1514,6 +1565,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:39:24.374Z",
+        "elapsedMs": 54370,
         "requestId": "b10aeace-2f7e-4afb-80c3-adbd2cdcddb4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1670,6 +1722,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:45:40.092Z",
+        "elapsedMs": 370535,
         "requestId": "da8d3329-8c9e-4af2-9180-57895ee07891",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1690,6 +1743,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:45:40.092Z",
+        "elapsedMs": 370535,
         "requestId": "da8d3329-8c9e-4af2-9180-57895ee07891",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1727,6 +1781,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:55.779Z",
+        "elapsedMs": 446222,
         "requestId": "691a649f-4b29-4d5d-aebe-f208956787f9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1747,6 +1802,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:55.779Z",
+        "elapsedMs": 446222,
         "requestId": "691a649f-4b29-4d5d-aebe-f208956787f9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1784,6 +1840,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:50.580Z",
+        "elapsedMs": 201023,
         "requestId": "011ea5f9-8a16-44f0-92f3-f4dae4743f61",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1804,6 +1861,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:50.580Z",
+        "elapsedMs": 201023,
         "requestId": "011ea5f9-8a16-44f0-92f3-f4dae4743f61",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1841,6 +1899,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:35.118Z",
+        "elapsedMs": 185561,
         "requestId": "55387a19-9f68-45ec-8af5-b9b4dc04d048",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1861,6 +1920,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:35.118Z",
+        "elapsedMs": 185561,
         "requestId": "55387a19-9f68-45ec-8af5-b9b4dc04d048",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1898,6 +1958,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T17:05:36.902Z",
+        "elapsedMs": 176598,
         "requestId": "a6c3a7e5-e122-4929-a5e2-c9c08ba76ea0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1918,6 +1979,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T17:05:36.902Z",
+        "elapsedMs": 176598,
         "requestId": "a6c3a7e5-e122-4929-a5e2-c9c08ba76ea0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1955,6 +2017,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:12.481Z",
+        "elapsedMs": 162924,
         "requestId": "6356422b-0692-486b-b7bc-ee87bc51159c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -1975,6 +2038,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:12.481Z",
+        "elapsedMs": 162924,
         "requestId": "6356422b-0692-486b-b7bc-ee87bc51159c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2012,6 +2076,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:18.634Z",
+        "elapsedMs": 169077,
         "requestId": "b96b21f2-9e61-4055-8e8e-5a9b42dd5a6b",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2032,6 +2097,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:18.634Z",
+        "elapsedMs": 169077,
         "requestId": "b96b21f2-9e61-4055-8e8e-5a9b42dd5a6b",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2069,6 +2135,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:47.976Z",
+        "elapsedMs": 258419,
         "requestId": "cfe0cb4d-41ec-4cbe-b114-a15a93ca9953",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2089,6 +2156,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:47.976Z",
+        "elapsedMs": 258419,
         "requestId": "cfe0cb4d-41ec-4cbe-b114-a15a93ca9953",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2126,6 +2194,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T21:47:39.951Z",
+        "elapsedMs": 142313,
         "requestId": "bd5a1d05-81be-45bc-8557-74454f63cbd3",
         "source": {
           "revision": "2b044d241dd98a5d72f795d8ba93c6e07ad77eef",
@@ -2146,6 +2215,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T21:47:39.951Z",
+        "elapsedMs": 142313,
         "requestId": "bd5a1d05-81be-45bc-8557-74454f63cbd3",
         "source": {
           "revision": "2b044d241dd98a5d72f795d8ba93c6e07ad77eef",
@@ -2183,6 +2253,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:48.713Z",
+        "elapsedMs": 259156,
         "requestId": "cc6f54f6-1d0a-43f3-b850-15e948449ac9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2203,6 +2274,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:48.713Z",
+        "elapsedMs": 259156,
         "requestId": "cc6f54f6-1d0a-43f3-b850-15e948449ac9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2240,6 +2312,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:57.003Z",
+        "elapsedMs": 327446,
         "requestId": "153550e6-9fbe-43ab-8fff-8c3bead200c9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2260,6 +2333,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:57.003Z",
+        "elapsedMs": 327446,
         "requestId": "153550e6-9fbe-43ab-8fff-8c3bead200c9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2327,6 +2401,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:44.480Z",
+        "elapsedMs": 31398,
         "requestId": "2571d2fe-f60f-46ac-8a51-7489173fa3f8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2347,6 +2422,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:44.480Z",
+        "elapsedMs": 31398,
         "requestId": "2571d2fe-f60f-46ac-8a51-7489173fa3f8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2384,6 +2460,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:33.090Z",
+        "elapsedMs": 20008,
         "requestId": "06cf9bd9-243d-4560-93a1-7c6435466edd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2404,6 +2481,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:33.090Z",
+        "elapsedMs": 20008,
         "requestId": "06cf9bd9-243d-4560-93a1-7c6435466edd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2441,6 +2519,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:49.728Z",
+        "elapsedMs": 36646,
         "requestId": "271b98c4-4245-4630-95ae-8e083f052357",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2461,6 +2540,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:49.728Z",
+        "elapsedMs": 36646,
         "requestId": "271b98c4-4245-4630-95ae-8e083f052357",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2498,6 +2578,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:33.036Z",
+        "elapsedMs": 19954,
         "requestId": "0a44c464-93eb-48c3-af84-2a012796a592",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2518,6 +2599,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:33.036Z",
+        "elapsedMs": 19954,
         "requestId": "0a44c464-93eb-48c3-af84-2a012796a592",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2555,6 +2637,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:22.161Z",
+        "elapsedMs": 69079,
         "requestId": "7ece31cf-aefb-4895-8aab-7a67c27e9146",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2575,6 +2658,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:22.161Z",
+        "elapsedMs": 69079,
         "requestId": "7ece31cf-aefb-4895-8aab-7a67c27e9146",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2612,6 +2696,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:09.676Z",
+        "elapsedMs": 56594,
         "requestId": "ca93ff4f-b6c3-4655-8335-9f3786c7e84c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2632,6 +2717,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:09.676Z",
+        "elapsedMs": 56594,
         "requestId": "ca93ff4f-b6c3-4655-8335-9f3786c7e84c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2669,6 +2755,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:19.630Z",
+        "elapsedMs": 126548,
         "requestId": "a9f5e209-a3f7-4451-936f-2ca2b8344737",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2689,6 +2776,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:19.630Z",
+        "elapsedMs": 126548,
         "requestId": "a9f5e209-a3f7-4451-936f-2ca2b8344737",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2726,6 +2814,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.721Z",
+        "elapsedMs": 40639,
         "requestId": "52b4227b-7e63-4bd2-9180-c226086c78ef",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2746,6 +2835,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.721Z",
+        "elapsedMs": 40639,
         "requestId": "52b4227b-7e63-4bd2-9180-c226086c78ef",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2783,6 +2873,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T17:52:16.063Z",
+        "elapsedMs": 74140,
         "requestId": "d1d00472-f6aa-441d-bff9-1339ef856f28",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2845,6 +2936,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T17:52:16.063Z",
+        "elapsedMs": 74140,
         "requestId": "d1d00472-f6aa-441d-bff9-1339ef856f28",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2954,6 +3046,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:38:33.131Z",
+        "elapsedMs": 3127,
         "requestId": "19811544-6b07-4409-8136-13ef04940424",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -2973,6 +3066,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:38:33.131Z",
+        "elapsedMs": 3127,
         "requestId": "19811544-6b07-4409-8136-13ef04940424",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3009,6 +3103,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:39.088Z",
+        "elapsedMs": 86006,
         "requestId": "d71826cb-58e8-4803-a241-1c3573c43deb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3028,6 +3123,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:39.088Z",
+        "elapsedMs": 86006,
         "requestId": "d71826cb-58e8-4803-a241-1c3573c43deb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3064,6 +3160,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:45.013Z",
+        "elapsedMs": 91930,
         "requestId": "9bfffc46-6721-47a0-8a0c-789756d5caf6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3083,6 +3180,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:45.013Z",
+        "elapsedMs": 91930,
         "requestId": "9bfffc46-6721-47a0-8a0c-789756d5caf6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3119,6 +3217,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:36.385Z",
+        "elapsedMs": 66828,
         "requestId": "ca9fcf02-8670-4d1e-9af5-df9d598adfbb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3139,6 +3238,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:36.385Z",
+        "elapsedMs": 66828,
         "requestId": "ca9fcf02-8670-4d1e-9af5-df9d598adfbb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3176,6 +3276,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:05.494Z",
+        "elapsedMs": 95937,
         "requestId": "032769cc-117a-4b35-9aa9-062d89d198c6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3196,6 +3297,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:05.494Z",
+        "elapsedMs": 95937,
         "requestId": "032769cc-117a-4b35-9aa9-062d89d198c6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3233,6 +3335,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:13.548Z",
+        "elapsedMs": 43991,
         "requestId": "74e3afbc-ea4a-4684-9aca-5d575964adac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3253,6 +3356,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:13.548Z",
+        "elapsedMs": 43991,
         "requestId": "74e3afbc-ea4a-4684-9aca-5d575964adac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3290,6 +3394,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:46.146Z",
+        "elapsedMs": 76589,
         "requestId": "edd8bf33-0951-4b03-9a6d-2a473d0ff2ae",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3310,6 +3415,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:46.146Z",
+        "elapsedMs": 76589,
         "requestId": "edd8bf33-0951-4b03-9a6d-2a473d0ff2ae",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3347,6 +3453,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:38.082Z",
+        "elapsedMs": 128525,
         "requestId": "8d3b8c0d-1bc4-4257-a009-167a8a0754e7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3367,6 +3474,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:38.082Z",
+        "elapsedMs": 128525,
         "requestId": "8d3b8c0d-1bc4-4257-a009-167a8a0754e7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3404,6 +3512,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:21.121Z",
+        "elapsedMs": 51564,
         "requestId": "500cb84b-2f84-4162-9754-0a719f5f8ecd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3424,6 +3533,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:21.121Z",
+        "elapsedMs": 51564,
         "requestId": "500cb84b-2f84-4162-9754-0a719f5f8ecd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3461,6 +3571,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:38:46.067Z",
+        "elapsedMs": 16063,
         "requestId": "bcbde940-65c9-4523-8798-7d5078711897",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3480,6 +3591,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:38:46.067Z",
+        "elapsedMs": 16063,
         "requestId": "bcbde940-65c9-4523-8798-7d5078711897",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3516,6 +3628,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:41.435Z",
+        "elapsedMs": 28352,
         "requestId": "0631bc70-9d48-4cef-b076-d35771dbd15c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3535,6 +3648,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:41.435Z",
+        "elapsedMs": 28352,
         "requestId": "0631bc70-9d48-4cef-b076-d35771dbd15c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3571,6 +3685,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:37.280Z",
+        "elapsedMs": 24197,
         "requestId": "d1aff0ea-82fd-4ff6-bb8f-2b40b7249091",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3590,6 +3705,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:37.280Z",
+        "elapsedMs": 24197,
         "requestId": "d1aff0ea-82fd-4ff6-bb8f-2b40b7249091",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3626,6 +3742,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:47:58.450Z",
+        "elapsedMs": 508893,
         "requestId": "0d8f2bf3-3aee-44f1-a973-a1b940cfce1f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3646,6 +3763,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:47:58.450Z",
+        "elapsedMs": 508893,
         "requestId": "0d8f2bf3-3aee-44f1-a973-a1b940cfce1f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3797,6 +3915,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:52.826Z",
+        "elapsedMs": 203269,
         "requestId": "f09939fb-6f5f-4e3a-9f31-3fe049ac224a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3817,6 +3936,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:52.826Z",
+        "elapsedMs": 203269,
         "requestId": "f09939fb-6f5f-4e3a-9f31-3fe049ac224a",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3854,6 +3974,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:26.130Z",
+        "elapsedMs": 236572,
         "requestId": "ad8385cd-7043-4f3a-97d8-2eabfd01ee1f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3874,6 +3995,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:26.130Z",
+        "elapsedMs": 236572,
         "requestId": "ad8385cd-7043-4f3a-97d8-2eabfd01ee1f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3911,6 +4033,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:33.183Z",
+        "elapsedMs": 123625,
         "requestId": "7adef1d9-70f2-4d7a-8344-584041a054f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3931,6 +4054,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:33.183Z",
+        "elapsedMs": 123625,
         "requestId": "7adef1d9-70f2-4d7a-8344-584041a054f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3968,6 +4092,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:23.337Z",
+        "elapsedMs": 233779,
         "requestId": "2760808d-f789-42e2-b1a5-1bd209a416c9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -3988,6 +4113,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:23.337Z",
+        "elapsedMs": 233779,
         "requestId": "2760808d-f789-42e2-b1a5-1bd209a416c9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4025,6 +4151,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:49.744Z",
+        "elapsedMs": 200186,
         "requestId": "488363f2-f020-4661-b409-ab5d240e6d0f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4045,6 +4172,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:49.744Z",
+        "elapsedMs": 200186,
         "requestId": "488363f2-f020-4661-b409-ab5d240e6d0f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4082,6 +4210,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:17.115Z",
+        "elapsedMs": 287557,
         "requestId": "e5c58aff-9fbb-4ff9-a647-19bfbffb678e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4102,6 +4231,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:17.115Z",
+        "elapsedMs": 287557,
         "requestId": "e5c58aff-9fbb-4ff9-a647-19bfbffb678e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4139,6 +4269,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:14.259Z",
+        "elapsedMs": 104701,
         "requestId": "d4b28062-844d-4a60-81cf-df6c4118c989",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4159,6 +4290,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:14.259Z",
+        "elapsedMs": 104701,
         "requestId": "d4b28062-844d-4a60-81cf-df6c4118c989",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4196,6 +4328,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:46.062Z",
+        "elapsedMs": 401940,
         "requestId": "e34310a4-fcd2-48c1-9bbf-38a33d337438",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4216,6 +4349,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:46.062Z",
+        "elapsedMs": 401940,
         "requestId": "e34310a4-fcd2-48c1-9bbf-38a33d337438",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4253,6 +4387,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:54.065Z",
+        "elapsedMs": 109769,
         "requestId": "f64b9607-8ae2-4380-a889-579f5db26008",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4273,6 +4408,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:54.065Z",
+        "elapsedMs": 109769,
         "requestId": "f64b9607-8ae2-4380-a889-579f5db26008",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4310,6 +4446,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:33.444Z",
+        "elapsedMs": 207528,
         "requestId": "086bdbfa-3950-43d5-8435-8aa258a681f0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4330,6 +4467,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:33.444Z",
+        "elapsedMs": 207528,
         "requestId": "086bdbfa-3950-43d5-8435-8aa258a681f0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4367,6 +4505,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:52.586Z",
+        "elapsedMs": 164431,
         "requestId": "aaaf880e-4f23-46c7-bc74-22ba3523ff8e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4387,6 +4526,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:52.586Z",
+        "elapsedMs": 164431,
         "requestId": "aaaf880e-4f23-46c7-bc74-22ba3523ff8e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4443,6 +4583,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:20.521Z",
+        "elapsedMs": 67438,
         "requestId": "1bb1fdb3-481f-4dd3-adab-e9524546a650",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4462,6 +4603,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:20.521Z",
+        "elapsedMs": 67438,
         "requestId": "1bb1fdb3-481f-4dd3-adab-e9524546a650",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4498,6 +4640,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:43.440Z",
+        "elapsedMs": 30357,
         "requestId": "a4a3720d-32ba-4a21-8394-1adca92272f3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4517,6 +4660,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:43.440Z",
+        "elapsedMs": 30357,
         "requestId": "a4a3720d-32ba-4a21-8394-1adca92272f3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4553,6 +4697,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:02.459Z",
+        "elapsedMs": 38654,
         "requestId": "dc785b09-5799-4a20-9744-19aff6175c15",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4572,6 +4717,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:02.459Z",
+        "elapsedMs": 38654,
         "requestId": "dc785b09-5799-4a20-9744-19aff6175c15",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4608,6 +4754,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:40:42.852Z",
+        "elapsedMs": 31082,
         "requestId": "2ae88a53-0308-4140-9b4f-a6d65f24cb53",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4628,6 +4775,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:40:42.852Z",
+        "elapsedMs": 31082,
         "requestId": "2ae88a53-0308-4140-9b4f-a6d65f24cb53",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4665,6 +4813,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:40.679Z",
+        "elapsedMs": 71322,
         "requestId": "415608b6-13bd-40e1-a608-d90d5e298003",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4684,6 +4833,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:40.679Z",
+        "elapsedMs": 71322,
         "requestId": "415608b6-13bd-40e1-a608-d90d5e298003",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4720,6 +4870,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:47.413Z",
+        "elapsedMs": 74869,
         "requestId": "6944b7bd-04aa-40e2-8a4d-3d5c3d4eaeb3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4739,6 +4890,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:47.413Z",
+        "elapsedMs": 74869,
         "requestId": "6944b7bd-04aa-40e2-8a4d-3d5c3d4eaeb3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4775,6 +4927,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:57.923Z",
+        "elapsedMs": 145184,
         "requestId": "295409fa-c9d3-4612-b76d-59e424e682bb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4794,6 +4947,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:57.923Z",
+        "elapsedMs": 145184,
         "requestId": "295409fa-c9d3-4612-b76d-59e424e682bb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4830,6 +4984,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:52.890Z",
+        "elapsedMs": 139853,
         "requestId": "a766712b-b4dc-4ce8-8f44-eb3b6b966e51",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4849,6 +5004,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:52.890Z",
+        "elapsedMs": 139853,
         "requestId": "a766712b-b4dc-4ce8-8f44-eb3b6b966e51",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4885,6 +5041,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:01.191Z",
+        "elapsedMs": 35293,
         "requestId": "1cd2d03a-95ba-491f-8d64-ef9e1243d009",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4905,6 +5062,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:01.191Z",
+        "elapsedMs": 35293,
         "requestId": "1cd2d03a-95ba-491f-8d64-ef9e1243d009",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4942,6 +5100,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.535Z",
+        "elapsedMs": 34134,
         "requestId": "6e5ed755-0a6e-45e8-9b54-497f51291ec3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4962,6 +5121,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.535Z",
+        "elapsedMs": 34134,
         "requestId": "6e5ed755-0a6e-45e8-9b54-497f51291ec3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -4999,6 +5159,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:46.919Z",
+        "elapsedMs": 18151,
         "requestId": "77dd319d-32e4-4af1-9d24-4730a0338efb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5019,6 +5180,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:46.919Z",
+        "elapsedMs": 18151,
         "requestId": "77dd319d-32e4-4af1-9d24-4730a0338efb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5056,6 +5218,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.619Z",
+        "elapsedMs": 18768,
         "requestId": "7ae2a687-340c-4401-9c9b-b7d58c43d8ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5076,6 +5239,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.619Z",
+        "elapsedMs": 18768,
         "requestId": "7ae2a687-340c-4401-9c9b-b7d58c43d8ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5113,6 +5277,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:12.959Z",
+        "elapsedMs": 179407,
         "requestId": "fbd201af-d07c-4d1a-a1a6-035f181c5bd5",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5133,6 +5298,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:12.959Z",
+        "elapsedMs": 179407,
         "requestId": "fbd201af-d07c-4d1a-a1a6-035f181c5bd5",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5170,6 +5336,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:50.803Z",
+        "elapsedMs": 89680,
         "requestId": "c12a4435-41d6-4082-9752-00afd54bc9e7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5190,6 +5357,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:50.803Z",
+        "elapsedMs": 89680,
         "requestId": "c12a4435-41d6-4082-9752-00afd54bc9e7",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5227,6 +5395,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:56:38.406Z",
+        "elapsedMs": 962020,
         "requestId": "0bf8f712-93df-45c7-8a45-7e696e429dfd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5248,6 +5417,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:56:38.406Z",
+        "elapsedMs": 962020,
         "requestId": "0bf8f712-93df-45c7-8a45-7e696e429dfd",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5286,6 +5456,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T17:01:38.493Z",
+        "elapsedMs": 4349,
         "requestId": "b5670deb-690b-46ac-9eea-09247b44bda8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5307,6 +5478,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T17:01:38.493Z",
+        "elapsedMs": 4349,
         "requestId": "b5670deb-690b-46ac-9eea-09247b44bda8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5366,6 +5538,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.222Z",
+        "elapsedMs": 14131,
         "requestId": "44025951-3f3d-4d98-b9f1-2ef9e021fd21",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5385,6 +5558,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:47.222Z",
+        "elapsedMs": 14131,
         "requestId": "44025951-3f3d-4d98-b9f1-2ef9e021fd21",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5421,6 +5595,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:20.231Z",
+        "elapsedMs": 46170,
         "requestId": "10fb6396-3bd7-4829-8619-9430767091a4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5440,6 +5615,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:20.231Z",
+        "elapsedMs": 46170,
         "requestId": "10fb6396-3bd7-4829-8619-9430767091a4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5525,6 +5701,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:33:20.189Z",
+        "elapsedMs": 164667,
         "requestId": "01626cb0-6ab9-464f-91f9-1658e49fe566",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5544,6 +5721,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:33:20.189Z",
+        "elapsedMs": 164667,
         "requestId": "01626cb0-6ab9-464f-91f9-1658e49fe566",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5610,6 +5788,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:55.061Z",
+        "elapsedMs": 18302,
         "requestId": "4e137dbb-c771-4bc8-9bfa-7972fba49889",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5629,6 +5808,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:55.061Z",
+        "elapsedMs": 18302,
         "requestId": "4e137dbb-c771-4bc8-9bfa-7972fba49889",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5695,6 +5875,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:02.979Z",
+        "elapsedMs": 25187,
         "requestId": "7c875241-764a-4802-a71e-cf382b152f19",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5714,6 +5895,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:02.979Z",
+        "elapsedMs": 25187,
         "requestId": "7c875241-764a-4802-a71e-cf382b152f19",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5750,6 +5932,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:49.880Z",
+        "elapsedMs": 71118,
         "requestId": "2aaacee9-d76f-4539-8262-7a979b1df5da",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5769,6 +5952,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:49.880Z",
+        "elapsedMs": 71118,
         "requestId": "2aaacee9-d76f-4539-8262-7a979b1df5da",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5805,6 +5989,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:01.333Z",
+        "elapsedMs": 79896,
         "requestId": "bf1cc604-5dc7-4dd9-950f-37b2176c3b6e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5824,6 +6009,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:01.333Z",
+        "elapsedMs": 79896,
         "requestId": "bf1cc604-5dc7-4dd9-950f-37b2176c3b6e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5860,6 +6046,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:39.129Z",
+        "elapsedMs": 55687,
         "requestId": "39ed5b01-2c18-4ff5-b97d-79633dfe554e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5879,6 +6066,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:39.129Z",
+        "elapsedMs": 55687,
         "requestId": "39ed5b01-2c18-4ff5-b97d-79633dfe554e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5915,6 +6103,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:37.742Z",
+        "elapsedMs": 53261,
         "requestId": "3851664c-837a-4bfd-9bb1-b4079e679c4f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5934,6 +6123,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:37.742Z",
+        "elapsedMs": 53261,
         "requestId": "3851664c-837a-4bfd-9bb1-b4079e679c4f",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5970,6 +6160,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.299Z",
+        "elapsedMs": 6378,
         "requestId": "684fa395-40f3-48fc-b661-0f2664b81bff",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -5989,6 +6180,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:30:53.299Z",
+        "elapsedMs": 6378,
         "requestId": "684fa395-40f3-48fc-b661-0f2664b81bff",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6025,6 +6217,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.176Z",
+        "elapsedMs": 12952,
         "requestId": "8f753129-7ed1-4d36-89f2-624f5db4e806",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6044,6 +6237,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:00.176Z",
+        "elapsedMs": 12952,
         "requestId": "8f753129-7ed1-4d36-89f2-624f5db4e806",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6080,6 +6274,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:08.923Z",
+        "elapsedMs": 21679,
         "requestId": "ce99f28e-8568-469e-ab13-feac20ef1d0c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6099,6 +6294,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:08.923Z",
+        "elapsedMs": 21679,
         "requestId": "ce99f28e-8568-469e-ab13-feac20ef1d0c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6135,6 +6331,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:11.351Z",
+        "elapsedMs": 23730,
         "requestId": "b2c8555f-27fd-4ac0-85e2-3b0fd76c1a58",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6154,6 +6351,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:11.351Z",
+        "elapsedMs": 23730,
         "requestId": "b2c8555f-27fd-4ac0-85e2-3b0fd76c1a58",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6190,6 +6388,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:06.337Z",
+        "elapsedMs": 18369,
         "requestId": "c983f5f5-25b0-4b1a-9fe4-4ac05c0b11b4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6209,6 +6408,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:06.337Z",
+        "elapsedMs": 18369,
         "requestId": "c983f5f5-25b0-4b1a-9fe4-4ac05c0b11b4",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6245,6 +6445,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:15.981Z",
+        "elapsedMs": 26251,
         "requestId": "f736ac92-1c5e-44b8-b89f-25c06929da23",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6264,6 +6465,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:15.981Z",
+        "elapsedMs": 26251,
         "requestId": "f736ac92-1c5e-44b8-b89f-25c06929da23",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6300,6 +6502,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:12.345Z",
+        "elapsedMs": 19112,
         "requestId": "a7f7b580-4d8d-4bf3-9011-03c5e356649c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6319,6 +6522,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:12.345Z",
+        "elapsedMs": 19112,
         "requestId": "a7f7b580-4d8d-4bf3-9011-03c5e356649c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6355,6 +6559,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:07.071Z",
+        "elapsedMs": 13771,
         "requestId": "09913c85-0fc4-419f-8d0e-f76877791957",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6374,6 +6579,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:07.071Z",
+        "elapsedMs": 13771,
         "requestId": "09913c85-0fc4-419f-8d0e-f76877791957",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6410,6 +6616,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.747Z",
+        "elapsedMs": 17025,
         "requestId": "38f48871-8e47-48c0-bfee-9d3e9dff04d6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6429,6 +6636,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.747Z",
+        "elapsedMs": 17025,
         "requestId": "38f48871-8e47-48c0-bfee-9d3e9dff04d6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6465,6 +6673,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:14.377Z",
+        "elapsedMs": 20329,
         "requestId": "e573de96-fa2a-40a2-b9b2-82524ce67461",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6484,6 +6693,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:14.377Z",
+        "elapsedMs": 20329,
         "requestId": "e573de96-fa2a-40a2-b9b2-82524ce67461",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6520,6 +6730,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:14.398Z",
+        "elapsedMs": 19336,
         "requestId": "c76cf5d8-bebd-4959-8408-e6a7b7995bd8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6539,6 +6750,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:14.398Z",
+        "elapsedMs": 19336,
         "requestId": "c76cf5d8-bebd-4959-8408-e6a7b7995bd8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6575,6 +6787,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:15.755Z",
+        "elapsedMs": 15577,
         "requestId": "e230c784-c5d6-4f2f-ba17-32c3518c8a8c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6594,6 +6807,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:15.755Z",
+        "elapsedMs": 15577,
         "requestId": "e230c784-c5d6-4f2f-ba17-32c3518c8a8c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6630,6 +6844,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.745Z",
+        "elapsedMs": 10209,
         "requestId": "52001ca8-49e1-4996-add2-16ce59c7aa56",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6649,6 +6864,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.745Z",
+        "elapsedMs": 10209,
         "requestId": "52001ca8-49e1-4996-add2-16ce59c7aa56",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6685,6 +6901,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:17.389Z",
+        "elapsedMs": 16743,
         "requestId": "2a049eab-204e-4751-be1f-a8e4b037f819",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6704,6 +6921,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:17.389Z",
+        "elapsedMs": 16743,
         "requestId": "2a049eab-204e-4751-be1f-a8e4b037f819",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6740,6 +6958,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:19.422Z",
+        "elapsedMs": 153274,
         "requestId": "5d2b7948-17f1-4197-a0fa-4dbdab7ef533",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6760,6 +6979,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:19.422Z",
+        "elapsedMs": 153274,
         "requestId": "5d2b7948-17f1-4197-a0fa-4dbdab7ef533",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6797,6 +7017,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:31.177Z",
+        "elapsedMs": 29985,
         "requestId": "19d76ecb-0933-4d0b-bc74-79e992a8aad9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6816,6 +7037,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:31.177Z",
+        "elapsedMs": 29985,
         "requestId": "19d76ecb-0933-4d0b-bc74-79e992a8aad9",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6852,6 +7074,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:41:51.139Z",
+        "elapsedMs": 45643,
         "requestId": "3945f341-0138-472c-9fdf-2450a608bdcb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6872,6 +7095,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:41:51.139Z",
+        "elapsedMs": 45643,
         "requestId": "3945f341-0138-472c-9fdf-2450a608bdcb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6937,6 +7161,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:12.687Z",
+        "elapsedMs": 10226,
         "requestId": "1d9f259f-e6f6-4afa-8490-4b80132ea0bf",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6956,6 +7181,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:12.687Z",
+        "elapsedMs": 10226,
         "requestId": "1d9f259f-e6f6-4afa-8490-4b80132ea0bf",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -6992,6 +7218,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.692Z",
+        "elapsedMs": 7711,
         "requestId": "9c64689a-2ede-4283-b49b-a392e4fd140e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7011,6 +7238,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:10.692Z",
+        "elapsedMs": 7711,
         "requestId": "9c64689a-2ede-4283-b49b-a392e4fd140e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7047,6 +7275,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:29.115Z",
+        "elapsedMs": 22776,
         "requestId": "c6fd0c1e-cb3c-4217-89ee-70fffe72a021",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7066,6 +7295,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:29.115Z",
+        "elapsedMs": 22776,
         "requestId": "c6fd0c1e-cb3c-4217-89ee-70fffe72a021",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7102,6 +7332,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:28.733Z",
+        "elapsedMs": 21660,
         "requestId": "2b7ebe64-4b02-465b-9051-1528e4c81412",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7121,6 +7352,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:28.733Z",
+        "elapsedMs": 21660,
         "requestId": "2b7ebe64-4b02-465b-9051-1528e4c81412",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7157,6 +7389,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:22.791Z",
+        "elapsedMs": 13866,
         "requestId": "9fbda4c5-5635-472f-a256-963cff7cc3aa",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7176,6 +7409,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:22.791Z",
+        "elapsedMs": 13866,
         "requestId": "9fbda4c5-5635-472f-a256-963cff7cc3aa",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7212,6 +7446,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:21.977Z",
+        "elapsedMs": 12299,
         "requestId": "81f09a90-c226-4768-8cb7-da3be400e5ea",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7238,6 +7473,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:21.977Z",
+        "elapsedMs": 12299,
         "requestId": "81f09a90-c226-4768-8cb7-da3be400e5ea",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7281,6 +7517,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:35.789Z",
+        "elapsedMs": 81528,
         "requestId": "7f7a0053-f0a9-4258-9a75-12ee3ec1374d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7301,6 +7538,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:35.789Z",
+        "elapsedMs": 81528,
         "requestId": "7f7a0053-f0a9-4258-9a75-12ee3ec1374d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7338,6 +7576,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:01.581Z",
+        "elapsedMs": 88396,
         "requestId": "783cbe07-a82e-4903-a2ee-e16314d15165",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7358,6 +7597,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:01.581Z",
+        "elapsedMs": 88396,
         "requestId": "783cbe07-a82e-4903-a2ee-e16314d15165",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7395,6 +7635,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:42:40.332Z",
+        "elapsedMs": 62248,
         "requestId": "921ce2ac-62da-4f6d-8051-bc844713e0c5",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7415,6 +7656,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:42:40.332Z",
+        "elapsedMs": 62248,
         "requestId": "921ce2ac-62da-4f6d-8051-bc844713e0c5",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7452,6 +7694,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:12.681Z",
+        "elapsedMs": 81877,
         "requestId": "b3a50ab5-1c9e-4929-bdcb-a06c430f1f56",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7472,6 +7715,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:12.681Z",
+        "elapsedMs": 81877,
         "requestId": "b3a50ab5-1c9e-4929-bdcb-a06c430f1f56",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7509,6 +7753,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:25.367Z",
+        "elapsedMs": 94226,
         "requestId": "94b89484-b21c-488c-b5b0-c0ac61a9d0d3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7529,6 +7774,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:25.367Z",
+        "elapsedMs": 94226,
         "requestId": "94b89484-b21c-488c-b5b0-c0ac61a9d0d3",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7566,6 +7812,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:32.878Z",
+        "elapsedMs": 98810,
         "requestId": "b803dec2-297b-4bff-ad88-29d706b06dd0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7586,6 +7833,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:32.878Z",
+        "elapsedMs": 98810,
         "requestId": "b803dec2-297b-4bff-ad88-29d706b06dd0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7623,6 +7871,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:44.333Z",
+        "elapsedMs": 154772,
         "requestId": "069ddfa9-ffdd-4c20-ae67-f06a9545676d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7643,6 +7892,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:44.333Z",
+        "elapsedMs": 154772,
         "requestId": "069ddfa9-ffdd-4c20-ae67-f06a9545676d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7680,6 +7930,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:16.547Z",
+        "elapsedMs": 65853,
         "requestId": "e441d564-dcc9-46bc-8c4a-294299067553",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7699,6 +7950,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:16.547Z",
+        "elapsedMs": 65853,
         "requestId": "e441d564-dcc9-46bc-8c4a-294299067553",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7735,6 +7987,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:32.496Z",
+        "elapsedMs": 82084,
         "requestId": "eabe432f-f504-42a8-ac81-8946c0eaa864",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7755,6 +8008,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:32.496Z",
+        "elapsedMs": 82084,
         "requestId": "eabe432f-f504-42a8-ac81-8946c0eaa864",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7792,6 +8046,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:35.738Z",
+        "elapsedMs": 83254,
         "requestId": "eebec3e9-6e04-4f06-8634-67e5ab8c5621",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7812,6 +8067,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:35.738Z",
+        "elapsedMs": 83254,
         "requestId": "eebec3e9-6e04-4f06-8634-67e5ab8c5621",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7849,6 +8105,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:45:50.459Z",
+        "elapsedMs": 211821,
         "requestId": "e935fd51-6565-4cf7-964a-e1e05900fd66",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7869,6 +8126,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:45:50.459Z",
+        "elapsedMs": 211821,
         "requestId": "e935fd51-6565-4cf7-964a-e1e05900fd66",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7906,6 +8164,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:41.592Z",
+        "elapsedMs": 66472,
         "requestId": "8abfae5c-3348-46b8-a523-3cae9f6427ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7926,6 +8185,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:41.592Z",
+        "elapsedMs": 66472,
         "requestId": "8abfae5c-3348-46b8-a523-3cae9f6427ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7963,6 +8223,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:24.082Z",
+        "elapsedMs": 228291,
         "requestId": "7e77a389-d4d8-4c70-bf3b-1ee75cd868e0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -7983,6 +8244,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:24.082Z",
+        "elapsedMs": 228291,
         "requestId": "7e77a389-d4d8-4c70-bf3b-1ee75cd868e0",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8020,6 +8282,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:13.506Z",
+        "elapsedMs": 93172,
         "requestId": "17706ca6-0734-48bf-8311-254efa737364",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8040,6 +8303,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:13.506Z",
+        "elapsedMs": 93172,
         "requestId": "17706ca6-0734-48bf-8311-254efa737364",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8077,6 +8341,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:45:01.589Z",
+        "elapsedMs": 139372,
         "requestId": "cb73d4a0-1812-4cde-b90c-575f12f429ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8097,6 +8362,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:45:01.589Z",
+        "elapsedMs": 139372,
         "requestId": "cb73d4a0-1812-4cde-b90c-575f12f429ac",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8134,6 +8400,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:47:17.235Z",
+        "elapsedMs": 267489,
         "requestId": "fe653501-3eca-49f4-a85b-2d8cb514be32",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8154,6 +8421,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:47:17.235Z",
+        "elapsedMs": 267489,
         "requestId": "fe653501-3eca-49f4-a85b-2d8cb514be32",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8191,6 +8459,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:28.970Z",
+        "elapsedMs": 18223,
         "requestId": "32313d3f-e410-4efe-90e5-9ae796d76ebb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8210,6 +8479,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:28.970Z",
+        "elapsedMs": 18223,
         "requestId": "32313d3f-e410-4efe-90e5-9ae796d76ebb",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8246,6 +8516,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:43:58.952Z",
+        "elapsedMs": 68370,
         "requestId": "8b492ef7-f3b9-4a76-9c11-723c50eaa2d8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8266,6 +8537,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:43:58.952Z",
+        "elapsedMs": 68370,
         "requestId": "8b492ef7-f3b9-4a76-9c11-723c50eaa2d8",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8303,6 +8575,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:31.175Z",
+        "elapsedMs": 218586,
         "requestId": "e6773022-a0d6-4d23-b021-cb50baa791aa",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8323,6 +8596,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:31.175Z",
+        "elapsedMs": 218586,
         "requestId": "e6773022-a0d6-4d23-b021-cb50baa791aa",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8360,6 +8634,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:33.027Z",
+        "elapsedMs": 220199,
         "requestId": "9280bf2e-7941-4b29-9868-ee6f357acd88",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8380,6 +8655,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:33.027Z",
+        "elapsedMs": 220199,
         "requestId": "9280bf2e-7941-4b29-9868-ee6f357acd88",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8417,6 +8693,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:12.911Z",
+        "elapsedMs": 71327,
         "requestId": "9f7e462f-9208-486a-9bab-cf8ebef8adde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8437,6 +8714,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:12.911Z",
+        "elapsedMs": 71327,
         "requestId": "9f7e462f-9208-486a-9bab-cf8ebef8adde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8474,6 +8752,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:32.769Z",
+        "elapsedMs": 80084,
         "requestId": "5201fb86-6d4f-4f24-9a22-ad96a1a3880e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8494,6 +8773,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:32.769Z",
+        "elapsedMs": 80084,
         "requestId": "5201fb86-6d4f-4f24-9a22-ad96a1a3880e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8531,6 +8811,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:46:53.631Z",
+        "elapsedMs": 220670,
         "requestId": "3b49dd7b-f7b9-4520-b476-5b5c9634f2c1",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8551,6 +8832,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:46:53.631Z",
+        "elapsedMs": 220670,
         "requestId": "3b49dd7b-f7b9-4520-b476-5b5c9634f2c1",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8588,6 +8870,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:20.591Z",
+        "elapsedMs": 61165,
         "requestId": "d9ce63e4-a4d8-45c1-9f31-397cbc7abd14",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8608,6 +8891,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:20.591Z",
+        "elapsedMs": 61165,
         "requestId": "d9ce63e4-a4d8-45c1-9f31-397cbc7abd14",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8645,6 +8929,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:11.907Z",
+        "elapsedMs": 61159,
         "requestId": "eecd44b2-8086-41f7-af49-7d9e39f4e24e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8665,6 +8950,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:11.907Z",
+        "elapsedMs": 61159,
         "requestId": "eecd44b2-8086-41f7-af49-7d9e39f4e24e",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8702,6 +8988,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:38:23.058Z",
+        "elapsedMs": 431706,
         "requestId": "8cf03da3-fc91-4bdd-97b5-87f25fb157cc",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8722,6 +9009,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:38:23.058Z",
+        "elapsedMs": 431706,
         "requestId": "8cf03da3-fc91-4bdd-97b5-87f25fb157cc",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8759,6 +9047,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:31:27.032Z",
+        "elapsedMs": 14685,
         "requestId": "49009580-1474-4d71-839c-bd7ce5d6e903",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8778,6 +9067,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:31:27.032Z",
+        "elapsedMs": 14685,
         "requestId": "49009580-1474-4d71-839c-bd7ce5d6e903",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8814,6 +9104,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:32:40.780Z",
+        "elapsedMs": 88091,
         "requestId": "54b9f6bb-a89c-4ac0-aaee-2a20b98d9cde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8833,6 +9124,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:32:40.780Z",
+        "elapsedMs": 88091,
         "requestId": "54b9f6bb-a89c-4ac0-aaee-2a20b98d9cde",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8869,6 +9161,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:45:36.409Z",
+        "elapsedMs": 133070,
         "requestId": "e9fc0a6f-a043-4ccc-b179-18bfcf7fd0f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8889,6 +9182,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:45:36.409Z",
+        "elapsedMs": 133070,
         "requestId": "e9fc0a6f-a043-4ccc-b179-18bfcf7fd0f6",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8926,6 +9220,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:45:30.434Z",
+        "elapsedMs": 125065,
         "requestId": "75a223c2-333d-4e86-8b26-9c5cdb48fe0d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8946,6 +9241,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:45:30.434Z",
+        "elapsedMs": 125065,
         "requestId": "75a223c2-333d-4e86-8b26-9c5cdb48fe0d",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -8983,6 +9279,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:33.158Z",
+        "elapsedMs": 67026,
         "requestId": "addaeaa8-b8f7-438e-96cb-6480c91d922c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9003,6 +9300,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:33.158Z",
+        "elapsedMs": 67026,
         "requestId": "addaeaa8-b8f7-438e-96cb-6480c91d922c",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9040,6 +9338,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:40.503Z",
+        "elapsedMs": 68004,
         "requestId": "39b8fb83-ca8a-4d3a-82b4-b41912500d06",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9060,6 +9359,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:40.503Z",
+        "elapsedMs": 68004,
         "requestId": "39b8fb83-ca8a-4d3a-82b4-b41912500d06",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9097,6 +9397,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:40.003Z",
+        "elapsedMs": 67123,
         "requestId": "fc5a253f-3d77-436b-8ccd-1b603fa6e223",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9117,6 +9418,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:40.003Z",
+        "elapsedMs": 67123,
         "requestId": "fc5a253f-3d77-436b-8ccd-1b603fa6e223",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9154,6 +9456,7 @@
       "live": {
         "status": "passed",
         "at": "2026-09-17T16:44:50.827Z",
+        "elapsedMs": 77381,
         "requestId": "5bd8fb98-1e70-45ff-880b-33f2f308e175",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
@@ -9174,6 +9477,7 @@
       "lastSuccess": {
         "status": "passed",
         "at": "2026-09-17T16:44:50.827Z",
+        "elapsedMs": 77381,
         "requestId": "5bd8fb98-1e70-45ff-880b-33f2f308e175",
         "source": {
           "revision": "33cc0b7a0ed951c91852e60a9c4f77f62a3765e0",
