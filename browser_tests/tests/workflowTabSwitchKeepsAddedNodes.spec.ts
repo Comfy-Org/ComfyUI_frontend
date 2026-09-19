@@ -4,10 +4,20 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
+// A viewport spot on the empty canvas, clear of the side toolbar.
+const ADD_POSITION = { x: 200, y: 200 }
+
 function graphNodeIds(comfyPage: ComfyPage): Promise<string[]> {
   return comfyPage.page.evaluate(() =>
     window.app!.graph.nodes.map((node) => String(node.id))
   )
+}
+
+// A blank workflow tab, so the double-click that opens the search box lands
+// on the canvas and not on a default-graph node.
+async function openBlankWorkflow(comfyPage: ComfyPage): Promise<void> {
+  await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+  await expect.poll(() => graphNodeIds(comfyPage)).toEqual([])
 }
 
 // Adds through the search box and returns the id the graph gave the node.
@@ -16,9 +26,7 @@ async function addThroughSearchBox(
   query: string
 ): Promise<string> {
   const before = new Set(await graphNodeIds(comfyPage))
-  await comfyPage.canvasOps.doubleClick()
-  await comfyPage.searchBox.fillAndSelectFirstNode(query, { exact: true })
-  await expect(comfyPage.searchBox.input).toHaveCount(0)
+  await comfyPage.searchBoxV2.addNode(query, { position: ADD_POSITION })
   await expect
     .poll(async () =>
       (await graphNodeIds(comfyPage)).filter((id) => !before.has(id))
@@ -30,14 +38,17 @@ async function addThroughSearchBox(
   return added
 }
 
+// The active tab is the last one (a new workflow opens at the end of the
+// bar); a further new tab takes focus, then the click brings the first back.
 async function switchToNewTabAndBack(comfyPage: ComfyPage): Promise<void> {
   const topbar = comfyPage.menu.topbar
-  await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+  const tabs = (await topbar.getTabNames()).length
+  await expect(topbar.getTab(tabs - 1)).toHaveClass(/p-togglebutton-checked/)
   await topbar.newWorkflowButton.click()
-  await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+  await expect.poll(() => topbar.getTabNames()).toHaveLength(tabs + 1)
   await expect.poll(() => graphNodeIds(comfyPage)).toEqual([])
-  await topbar.getTab(0).click()
-  await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+  await topbar.getTab(tabs - 1).click()
+  await expect(topbar.getTab(tabs - 1)).toHaveClass(/p-togglebutton-checked/)
   await comfyPage.workflow.waitForWorkflowIdle()
 }
 
@@ -56,6 +67,7 @@ test.describe('Workflow tab switch keeps nodes added on the canvas', () => {
     test(`keeps ${name} after switching to another tab and back`, async ({
       comfyPage
     }) => {
+      await openBlankWorkflow(comfyPage)
       const nodeId = await addThroughSearchBox(comfyPage, query)
       await comfyPage.attachScreenshot(`${query}-before-tab-switch.png`, {
         runInCI: true
