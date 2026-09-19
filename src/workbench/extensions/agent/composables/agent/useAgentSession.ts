@@ -92,13 +92,22 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 /**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
+ * After a reconnect or a refresh the server may still be finishing the turn,
+ * and its terminal event may never reach this socket (dropped during
+ * hydration, or the row was orphaned and only a server sweep will end it).
+ * Poll the persisted row with backoff, then keep checking at the last delay
+ * for as long as the turn is still live here. Each check is bounded by the
+ * REST client's own timeout; the job ends when the turn settles, the thread
+ * changes, or the session stops.
  */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
-/** Upper bound on one recovery job, including any history fetch still in flight. */
-const TURN_RECOVERY_DEADLINE_MS = 60_000
+type RecoverySchedule = readonly [number, ...number[]]
+const TURN_RECOVERY_DELAYS_AFTER_FETCH_MS: RecoverySchedule = [
+  1000, 2000, 4000, 8000, 16000
+]
+const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
+  0,
+  ...TURN_RECOVERY_DELAYS_AFTER_FETCH_MS
+]
 
 type TurnOutcome =
   | { kind: 'terminal'; text: string }
@@ -232,6 +241,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      reconcileLiveTurns(TURN_RECOVERY_DELAYS_AFTER_FETCH_MS)
       await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
@@ -646,22 +656,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     connection = 'live'
     if (!reconnected) return
+    reconcileLiveTurns(TURN_RECOVERY_DELAYS_MS)
+  }
+
+  function reconcileLiveTurns(delaysMs: RecoverySchedule): void {
     const turns = conversationStore
       .liveTurns()
       .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn)
+    for (const turn of turns) void reconcileTurn(turn, delaysMs)
   }
 
-  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+  async function reconcileTurn(
+    turn: LiveTurn,
+    delaysMs: RecoverySchedule
+  ): Promise<void> {
     const key = recoveryKey(turn)
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
-    const deadline = setTimeout(
-      () => recovery.abort(),
-      TURN_RECOVERY_DEADLINE_MS
-    )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(turn, delaysMs, ownedGeneration, recovery.signal)
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -670,19 +683,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!recovery.signal.aborted)
         reportError(error, { errorType: 'agent_turn_recovery_failed' })
     } finally {
-      clearTimeout(deadline)
       recoveringTurns.delete(key)
     }
   }
 
   async function recoverTurn(
     turn: LiveTurn,
+    delaysMs: RecoverySchedule,
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
     let noticed = false
-    for (const ms of TURN_RECOVERY_DELAYS_MS) {
-      await delay(ms, { signal })
+    for (let attempt = 0; ; attempt++) {
+      await delay(delaysMs[Math.min(attempt, delaysMs.length - 1)], { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
