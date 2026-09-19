@@ -59,16 +59,9 @@ test.describe(
       agentPanel,
       comfyPage
     }) => {
-      // Drag-and-drop is a different path from the file browser above, gated
-      // by `isAgentAttachable`/`EXTRA_ATTACHABLE_EXTENSIONS`, which
-      // deliberately excludes .json: a saved workflow file dropped anywhere
-      // in the app -- including over the agent panel -- must stay unclaimed
-      // so the pre-existing "drop a workflow onto the canvas to open it"
-      // graph loader can still pick it up. See attachableFiles.ts and the
-      // AgentPanelRoot.test.ts unit coverage for the same contract; the
-      // graph loader's own drag-and-drop behavior is already covered by
-      // metadataWorkflowImport.spec.ts, so it is not re-asserted here.
       await agentPanel.open()
+      await comfyPage.nodeOps.clearGraph()
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       const panel = agentPanel.root
       const assetSection = panel.getByTestId('composer-asset-section')
       await expect(assetSection).toHaveCount(0)
@@ -76,13 +69,20 @@ test.describe(
       const panelBox = await panel.boundingBox()
       if (!panelBox) throw new Error('Agent panel is not visible')
       await comfyPage.dragDrop.dragAndDropFile('default.json', {
+        preserveNativePropagation: true,
         dropPosition: {
           x: panelBox.x + panelBox.width / 2,
           y: panelBox.y + panelBox.height / 2
         }
       })
 
-      // The composer must not have claimed it.
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      ).toHaveLength(1)
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      ).toHaveLength(2)
       await expect(assetSection).toHaveCount(0)
     })
   }
