@@ -150,12 +150,6 @@ interface DocResetDetail {
   seq?: number
 }
 
-function docResetDetail(event: Event): DocResetDetail | undefined {
-  return event instanceof CustomEvent
-    ? (event.detail as DocResetDetail)
-    : undefined
-}
-
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -437,7 +431,10 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
-    const detail = docResetDetail(event)
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as DocResetDetail)
+        : undefined
     outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
