@@ -257,6 +257,52 @@ describe('graphMutations', () => {
     }
   )
 
+  // A canvas rename never writes back into the CRDT doc
+  // (useNodeEventHandlers.ts's handleNodeTitleUpdate only touches the live
+  // node), so the doc keeps replaying the pre-rename title on every later
+  // reconcile, silently reverting a user's rename the moment any unrelated
+  // agent edit (or resync) reaches this node.
+  it.fails('keeps a locally renamed title through a reconcile carrying the stale doc title', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    live.title = 'My Custom Sampler'
+
+    expect(
+      graph.batch(context, (batch) => {
+        // Same payload the doc minted node(1) with — the doc was never
+        // told about the rename, so this is genuinely what it still holds.
+        batch.reconcileNode(node(1))
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('My Custom Sampler')
+  })
+
+  // Node color is presentation-only and the CRDT doc never carries it, so
+  // `prepareNode` only conditionally spreads `color`/`bgcolor` when the
+  // payload has one. `assignNodeFields` (nodeDataStore.ts) resets both to
+  // `undefined` before applying the replacement, so any reconcile blanks a
+  // locally set node color.
+  it.fails('keeps a locally set node color through a reconcile whose payload carries none', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    live.color = '#ff0000'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode(node(1))
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.color
+    ).toBe('#ff0000')
+  })
+
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
 
