@@ -19,6 +19,15 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 // lands, using the same real-UI entry (Add to prompt -> Nodes) as the
 // existing "exits node selection when the active workflow changes" test in
 // agentPanel.spec.ts.
+//
+// Widget edits are deliberately not one of the symptoms here: entering
+// selection mode also sets `canvas.selectOnly = true` (AgentPanelRoot.vue's
+// onSelectNodes), and `LGraphCanvas.ts`'s `_processNodeClick` returns before
+// any widget/collapse/io handling whenever `selectOnly` is set (~line 2755;
+// covered by `LGraphCanvas.selectOnly.test.ts`). Widgets are already
+// undraggable during node selection today, independent of the missing
+// `read_only` lockdown, so a "steps widget stays draggable" case would not
+// reproduce a real bug.
 async function enterNodeSelectionMode(
   agentPanel: AgentPanel,
   page: Page
@@ -52,28 +61,6 @@ test.describe(
         'PM-1329: agentNodeSelectionStore never sets canvas.read_only, so the canvas stays writable during node selection mode'
       )
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
-    })
-
-    test('blocks widget edits while node selection mode is active', async ({
-      agentPanel,
-      comfyPage
-    }) => {
-      const node = await comfyPage.nodeOps.addNode('KSampler', undefined, {
-        x: 400,
-        y: 300
-      })
-      const stepsWidget = await node.getWidgetByName('steps')
-      const valueBefore = await stepsWidget.getValue()
-
-      await enterNodeSelectionMode(agentPanel, comfyPage.page)
-
-      await stepsWidget.dragHorizontal(150)
-
-      test.fail(
-        true,
-        'PM-1329: with canvas.read_only never set, the steps widget stays draggable during node selection mode'
-      )
-      expect(await stepsWidget.getValue()).toBe(valueBefore)
     })
 
     test('hides the canvas info overlay while node selection mode is active', async ({
