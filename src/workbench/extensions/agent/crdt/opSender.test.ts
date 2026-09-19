@@ -19,6 +19,10 @@ function addNode(id: number): GraphOperation {
   }
 }
 
+function addedNodeId(op: Op): string | number | undefined {
+  return op.op === 'add_node' ? op.node_id : undefined
+}
+
 describe('createOpSender', () => {
   let sent: Array<{ workflowId: string; tab: string; ops: Op[] }>
   let settled: BatchOutcome[]
@@ -206,6 +210,134 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(sender.pending()).toBe(1)
+  })
+
+  it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
+    sender.enqueue([addNode(0)])
+    for (let index = 1; index < 20_000; index++) {
+      sender.enqueue([addNode(index)])
+    }
+    const queuedIds = new Set(
+      settled.flatMap((outcome) => outcome.ops.map((op) => op.op_id))
+    )
+    expect(queuedIds.size).toBe(0)
+
+    boundWorkflow = null
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(settled.every(({ state }) => state === 'undeliverable')).toBe(true)
+    const settledIds = settled.flatMap((outcome) =>
+      outcome.ops.map((op) => op.op_id)
+    )
+    expect(new Set(settledIds).size).toBe(20_000)
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('drains a large old-workflow backlog before sending the next workflow batch', () => {
+    sender.enqueue([addNode(0)])
+    for (let index = 1; index < 20_000; index++) {
+      sender.enqueue([addNode(index)])
+    }
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(20_000)])
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(addedNodeId(sent[1].ops[0])).toBe(20_000)
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+
+    expect(settled).toHaveLength(20_001)
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('preserves FIFO when a settlement callback enqueues during an active drain', () => {
+    const callbackSettled: BatchOutcome[] = []
+    sender.detach()
+    const callbackSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          resultListener = null
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        callbackSettled.push(outcome)
+        if (callbackSettled.length === 1) {
+          callbackSender.enqueue([addNode(4)])
+        }
+      }
+    })
+    sender = callbackSender
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+
+    sender.abortIfUnbound()
+
+    expect(callbackSettled).toHaveLength(3)
+    expect(callbackSettled.map(({ ops }) => addedNodeId(ops[0]))).toEqual([
+      1, 2, 3
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(addedNodeId(sent[1].ops[0])).toBe(4)
+  })
+
+  it('detach from a settlement callback drops the remaining drain without callbacks', () => {
+    const callbackSettled: BatchOutcome[] = []
+    sender.detach()
+    const callbackSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          resultListener = null
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        callbackSettled.push(outcome)
+        if (callbackSettled.length === 2) callbackSender.detach()
+      }
+    })
+    sender = callbackSender
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+
+    sender.abortIfUnbound()
+
+    expect(callbackSettled.map(({ ops }) => addedNodeId(ops[0]))).toEqual([
+      1, 2
+    ])
+    expect(sent).toHaveLength(1)
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {

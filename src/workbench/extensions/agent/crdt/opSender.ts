@@ -98,6 +98,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
+  let pumping = false
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -162,17 +163,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function pump(): void {
-    if (detached || inFlight !== null) return
-    const queued = queue.shift()
-    if (!queued) return
-    inFlight = {
-      workflowId: queued.workflowId,
-      ops: queued.ops,
-      opIds: new Set(queued.ops.map((op) => op.op_id)),
-      resent: false,
-      timer: null
+    if (pumping) return
+    pumping = true
+    try {
+      while (!detached && inFlight === null) {
+        const queued = queue.shift()
+        if (!queued) return
+        inFlight = {
+          workflowId: queued.workflowId,
+          ops: queued.ops,
+          opIds: new Set(queued.ops.map((op) => op.op_id)),
+          resent: false,
+          timer: null
+        }
+        transmit(inFlight, 0)
+      }
+    } finally {
+      pumping = false
     }
-    transmit(inFlight, 0)
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
