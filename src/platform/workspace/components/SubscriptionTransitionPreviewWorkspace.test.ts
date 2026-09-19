@@ -12,7 +12,7 @@ import type {
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscription: { value: { isCancelled: false, endDate: null } },
     isInitialized: { value: true }
@@ -39,8 +39,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' },
-    Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
+    SubscriptionTermsNote: { template: '<div />' }
   }
 }
 

@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -25,6 +26,7 @@ import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { usePainterWidget } from '@/renderer/extensions/vueNodes/widgets/composables/usePainterWidget'
 import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRangeWidget'
+import { useResolutionPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
@@ -106,10 +108,9 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  let name = inputData?.[1]?.control_after_generate
-  if (typeof name !== 'string') {
-    name = widgetName
-  }
+  const controlAfterGenerate = inputData?.[1]?.control_after_generate
+  const name =
+    typeof controlAfterGenerate === 'string' ? controlAfterGenerate : widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -123,20 +124,29 @@ export function addValueControlWidget(
   return widgets[0]
 }
 
+interface ValueControlWidgetOptions {
+  addFilterList?: boolean
+  controlAfterGenerateName?: string
+  controlFilterListName?: string
+}
+
 export function addValueControlWidgets(
   node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
+  options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
   if (!defaultValue) defaultValue = 'randomize'
-  if (!options) options = {}
 
-  const getName = (defaultName: string, optionName: string) => {
+  const getName = (
+    defaultName: string,
+    optionName: 'controlAfterGenerateName' | 'controlFilterListName'
+  ) => {
     let name = defaultName
-    if (options[optionName]) {
-      name = options[optionName]
+    const nameOverride = options[optionName]
+    if (nameOverride) {
+      name = nameOverride
     } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
       name = inputData?.[1]?.[defaultName]
     } else if (inputData?.[1]?.control_prefix) {
@@ -153,7 +163,7 @@ export function addValueControlWidgets(
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false, // Don't include this in prompt.
-      canvasOnly: true
+      surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
     }
   ) as IComboWidget
 
@@ -251,6 +261,9 @@ export const ComfyWidgets = {
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
   VIDEO_EDIT: transformWidgetConstructorV2ToV1(useVideoEditWidget()),
+  RESOLUTION_PREVIEW: transformWidgetConstructorV2ToV1(
+    useResolutionPreviewWidget()
+  ),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets

@@ -44,6 +44,7 @@
     "rootDir": "./"
   },
   "include": [
+    "__mocks__/**/*.ts",
     ".storybook/**/*",
     "build/**/*.ts",
     "eslint.config.ts",

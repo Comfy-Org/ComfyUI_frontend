@@ -3,7 +3,6 @@ version: 2
 updates:
   - package-ecosystem: 'npm'
     directory: '/'
-    versioning-strategy: 'increase-if-necessary'
     schedule:
       interval: 'weekly'
     labels:

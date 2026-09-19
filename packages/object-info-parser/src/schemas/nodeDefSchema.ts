@@ -52,6 +52,9 @@ const zNumericInputOptions = zBaseInputOptions.extend({
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
+  display: z
+    .enum(['slider', 'number', 'knob', 'gradientslider', 'color'])
+    .optional(),
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.

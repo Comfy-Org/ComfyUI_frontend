@@ -409,15 +409,12 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
-import {
-  isEnterprisePlanSlug,
-  isSalesManagedTier,
-  isUnknownTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -460,7 +457,6 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
-  plans,
   billingStatus,
   subscriptionStatus,
   isLoading,
@@ -579,32 +575,11 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
-const formattedChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
-)
-
-const scheduledPlanName = computed(() => {
-  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
-  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
-    return t('subscription.tiers.enterprise.name')
-  }
-  const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === scheduledPlanSlug
-  )
-  if (!scheduledPlan) return ''
-  if (scheduledPlan.tier === 'ENTERPRISE') {
-    return t('subscription.tiers.enterprise.name')
-  }
-  if (scheduledPlan.slug.startsWith('team')) {
-    return t('subscription.teamPlanName')
-  }
-  if (isUnknownTier(scheduledPlan.tier)) {
-    return t('subscription.unknownTierName')
-  }
-  return t(
-    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
-  )
-})
+const {
+  scheduledChange,
+  planName: scheduledPlanName,
+  formattedDate: formattedChangeDate
+} = useScheduledPlanChange()
 
 const showSubscriptionStateCard = computed(
   () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
@@ -641,7 +616,7 @@ const planDateDisplay = computed(() => {
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
   }
-  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+  if (scheduledChange.value) {
     return scheduledPlanName.value && formattedChangeDate.value
       ? t('subscription.changesToPlanOnDate', {
           plan: scheduledPlanName.value,

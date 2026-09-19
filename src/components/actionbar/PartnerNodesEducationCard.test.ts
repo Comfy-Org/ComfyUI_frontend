@@ -1,7 +1,7 @@
+import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,20 +15,23 @@ import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/sto
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 
-vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
-  const { computed, ref } = await import('vue')
-  const hasNodes = ref(true)
-  return {
-    usePartnerNodesInGraph: () => ({
-      hasPartnerNodes: computed(() => hasNodes.value)
-    }),
-    __setHasPartnerNodes: (value: boolean) => {
-      hasNodes.value = value
+vi.mock<unknown>(
+  import('@/composables/node/usePartnerNodesInGraph'),
+  async () => {
+    const { computed, ref } = await import('vue')
+    const hasNodes = ref(true)
+    return {
+      usePartnerNodesInGraph: () => ({
+        hasPartnerNodes: computed(() => hasNodes.value)
+      }),
+      __setHasPartnerNodes: (value: boolean) => {
+        hasNodes.value = value
+      }
     }
   }
-})
+)
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
+vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
   const { computed, ref } = await import('vue')
   const gate = ref<'sign-in' | 'none'>('none')
   return {
@@ -44,10 +47,7 @@ vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
   }
 })
 
-const showApiNodesSignInDialog = vi.fn()
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showApiNodesSignInDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {
@@ -67,11 +67,9 @@ const copy = enMessages.partnerNodesEducation
 
 const CARD_TESTID = 'partner-nodes-education-card'
 
-let pinia: ReturnType<typeof createTestingPinia>
-
 function renderCard() {
   return render(PartnerNodesEducationCard, {
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
 }
 
@@ -87,11 +85,8 @@ function loadPaidTemplate(workflowKey: string) {
 
 describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     __setHasPartnerNodes(true)
     __setGate('none')
-    showApiNodesSignInDialog.mockClear()
   })
 
   it('stays hidden until a paid template load requests it', () => {
@@ -213,7 +208,9 @@ describe('PartnerNodesEducationCard', () => {
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
-    expect(showApiNodesSignInDialog).toHaveBeenCalledWith(['Kling'])
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+      'Kling'
+    ])
   })
 
   it('gives each audio toggle a distinct, side-specific accessible name', async () => {

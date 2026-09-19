@@ -1,11 +1,10 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -16,12 +15,12 @@ import {
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),
   isImageNode: vi.fn()
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   filterOutputNodes: vi.fn()
 }))
 
@@ -62,28 +61,20 @@ function selectSingleNodeWithNodeDef(id: number) {
   vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
 }
 
-function mockSettingValues(overrides: Record<string, unknown> = {}) {
+function mockSettingValues(overrides: Partial<Settings> = {}) {
   const settingStore = useSettingStore()
-  const settingValues: Record<string, unknown> = {
+  const settingValues: Partial<Settings> = {
     'Comfy.UseNewMenu': 'Top',
     'Comfy.NodeLibrary.NewDesign': true,
     'Comfy.Load3D.3DViewerEnable': false,
     ...overrides
   }
 
-  vi.mocked(settingStore.get).mockImplementation(
-    (key: string): unknown => settingValues[key]
-  )
+  vi.mocked(settingStore.get).mockImplementation((key) => settingValues[key])
 }
 
 describe('useSelectionState', () => {
   beforeEach(() => {
-    // Create testing Pinia instance
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn
-      })
-    )
     mockSettingValues()
 
     // Setup mock utility functions

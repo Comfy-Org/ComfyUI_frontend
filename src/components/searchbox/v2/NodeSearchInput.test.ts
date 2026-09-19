@@ -1,30 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 
+import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
-import {
-  setupTestPinia,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   getLinkTypeColor: vi.fn((type: string) =>
     type === 'IMAGE' ? '#64b5f6' : undefined
   )
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
-      if (key === 'Comfy.NodeLibrary.BookmarksCustomization') return {}
-      return undefined
-    }),
-    set: vi.fn()
-  }))
 }))
 
 function createFilter(
@@ -41,10 +27,6 @@ function createFilter(
 }
 
 describe('NodeSearchInput', () => {
-  beforeEach(() => {
-    setupTestPinia()
-  })
-
   function createRender(
     props: Partial<{
       filters: FuseFilterWithValue<ComfyNodeDefImpl>[]

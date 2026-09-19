@@ -7,6 +7,7 @@ import { assert } from '@/base/assert'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
+import { reportError } from '@/platform/telemetry/reportError'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { toRerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
@@ -162,6 +163,11 @@ function isSlotOffsetSnapshotEqual(
   return true
 }
 
+type LayoutListenerScope = 'geometry' | 'global' | 'node'
+type LayoutListener =
+  | ((change: LayoutChange) => void)
+  | ((graphIds: ReadonlySet<UUID>) => void)
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -196,6 +202,14 @@ class LayoutStoreImpl {
   private geometryListeners = new Set<(graphIds: ReadonlySet<UUID>) => void>()
   private pendingGeometryChanges: ReadonlySet<UUID>[] = []
   private isGeometryDispatchQueued = false
+  private readonly reportedListenerFailures: Record<
+    LayoutListenerScope,
+    WeakSet<LayoutListener>
+  > = {
+    geometry: new WeakSet(),
+    global: new WeakSet(),
+    node: new WeakSet()
+  }
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -1271,10 +1285,32 @@ class LayoutStoreImpl {
           try {
             listener(change)
           } catch (error) {
-            console.error('Error in layout geometry listener:', error)
+            this.reportListenerFailure(error, 'geometry', listener)
           }
         }
       }
+    })
+  }
+
+  private reportListenerFailure(
+    error: unknown,
+    scope: LayoutListenerScope,
+    listener: LayoutListener
+  ): void {
+    const reportedFailures = this.reportedListenerFailures[scope]
+    if (reportedFailures.has(listener)) return
+    reportedFailures.add(listener)
+
+    reportError(error, {
+      errorType: 'canvas_layout_listener_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'canvas',
+        operation: 'sync',
+        outcome: 'failed',
+        listener_scope: scope
+      },
+      level: 'error'
     })
   }
 
@@ -1283,7 +1319,7 @@ class LayoutStoreImpl {
       try {
         listener(change)
       } catch (error) {
-        console.error('Error in layout change listener:', error)
+        this.reportListenerFailure(error, 'global', listener)
       }
     })
   }
@@ -1300,7 +1336,7 @@ class LayoutStoreImpl {
         try {
           listener(change)
         } catch (error) {
-          console.error('Error in node-scoped layout change listener:', error)
+          this.reportListenerFailure(error, 'node', listener)
         }
       })
     }

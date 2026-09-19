@@ -81,7 +81,61 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasSafeInputs(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (input) =>
+          isRecord(input) &&
+          typeof input.name === 'string' &&
+          (input.linkIds === undefined || Array.isArray(input.linkIds))
+      ))
+  )
+}
+
+function hasSafeNodes(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.every(
+        (node) =>
+          isRecord(node) &&
+          (node.inputs === undefined ||
+            (Array.isArray(node.inputs) && node.inputs.every(isRecord)))
+      ))
+  )
+}
+
+function hasSafeLinks(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.every(isRecord))
+}
+
+function hasSafeNestedDefinitions(value: unknown): boolean {
+  if (value === undefined) return true
+  if (!isRecord(value)) return false
+  const nested = value.subgraphs
+  return (
+    nested === undefined ||
+    (Array.isArray(nested) && nested.every(isSafeDefinition))
+  )
+}
+
+function isSafeDefinition(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasSafeInputs(value.inputs) &&
+    hasSafeNodes(value.nodes) &&
+    hasSafeLinks(value.links) &&
+    hasSafeNestedDefinitions(value.definitions)
+  )
+}
+
+function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
@@ -100,7 +154,60 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition[key] = plain(value)
     }
   })
-  return definition as unknown as ExportedSubgraph
+  return isSafeDefinition(definition)
+    ? (definition as unknown as ExportedSubgraph)
+    : null
+}
+
+function readField(source: unknown, key: string): unknown {
+  if (source instanceof Y.Map) return source.get(key)
+  if (typeof source !== 'object' || source === null || !(key in source)) {
+    return undefined
+  }
+  return Reflect.get(source, key)
+}
+
+function readList(source: unknown): unknown[] {
+  if (source instanceof Y.Array) return source.toArray()
+  return Array.isArray(source) ? source : []
+}
+
+function collectDefinitionIds(source: unknown, ids: string[]): void {
+  const id = readField(source, 'id')
+  if (typeof id === 'string') ids.push(id)
+  const nested = readField(readField(source, 'definitions'), 'subgraphs')
+  for (const definition of readList(nested)) {
+    collectDefinitionIds(definition, ids)
+  }
+}
+
+function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
+  const root = doc.share.get(DEFINITIONS_ROOT)
+  if (!root) return null
+  if (root instanceof Y.Map) return root
+  if (root.constructor !== Y.AbstractType) return null
+  return doc.getMap<unknown>(DEFINITIONS_ROOT)
+}
+
+export function allSubgraphDefinitions(
+  definitions: readonly ExportedSubgraph[]
+): ExportedSubgraph[] {
+  return [
+    ...definitions,
+    ...definitions.flatMap((definition) =>
+      allSubgraphDefinitions(definition.definitions?.subgraphs ?? [])
+    )
+  ]
+}
+
+export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
+  const ids: string[] = []
+  const root = definitionsMap(doc)
+  if (!root) return ids
+  root.forEach((value) => {
+    if (value instanceof Y.Map) collectDefinitionIds(value, ids)
+  })
+  return ids
 }
 
 /**
@@ -113,13 +220,12 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
  */
 export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   const definitions: ExportedSubgraph[] = []
-  // `doc.getMap` defines the root when it is absent. A document that never
-  // seeded definitions must keep its shape, so only read a root that exists.
-  // (For a root that arrived over the wire, `getMap` upgrades the untyped
-  // shared type in place; that is a read-side view, not new content.)
-  if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
-  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
-    if (value instanceof Y.Map) definitions.push(readDefinition(value))
+  const root = definitionsMap(doc)
+  if (!root) return definitions
+  root.forEach((value) => {
+    if (!(value instanceof Y.Map)) return
+    const definition = readDefinition(value)
+    if (definition) definitions.push(definition)
   })
   return definitions
 }

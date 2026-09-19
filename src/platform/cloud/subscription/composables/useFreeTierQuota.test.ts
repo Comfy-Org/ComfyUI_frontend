@@ -2,31 +2,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useFreeTierQuota } from './useFreeTierQuota'
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: { freeTierJobAllowanceEnabled: true }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { isGraphReady: true, rootGraph: {} }
 }))
-vi.mock('@/systems/badgeSystem', () => ({
+vi.mock<unknown>(import('@/systems/badgeSystem'), () => ({
   graphCreditsBadges: () => mockCreditBadges.value
 }))
 
@@ -34,7 +30,7 @@ const mockRemoteConfig = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return ref({ free_tier_balance: { allowance: 5, remaining: 5 } })
 })
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig
 }))
 
@@ -42,6 +38,7 @@ describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
   function createQuota() {
+    vi.mocked(useFeatureFlags().flags).freeTierJobAllowanceEnabled = true
     const quota = scope.run(() => useFreeTierQuota())
     if (!quota) throw new Error('Failed to create free tier quota')
     return quota

@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
-  mode: { value: 'graph' },
-  isAppMode: { value: false },
   telemetry: {
     trackRunButton: vi.fn()
   },
@@ -20,23 +18,19 @@ const state = vi.hoisted(() => ({
   executionContextError: null as Error | null
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    mode: state.mode,
-    isAppMode: state.isAppMode
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => state.telemetry
 }))
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => {
-    if (state.executionContextError) throw state.executionContextError
-    return state.executionContext
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/getExecutionContext'),
+  () => ({
+    getExecutionContext: () => {
+      if (state.executionContextError) throw state.executionContextError
+      return state.executionContext
+    }
+  })
+)
 
 import {
   getRunButtonTelemetryProperties,
@@ -45,8 +39,6 @@ import {
 
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
-    state.mode.value = 'graph'
-    state.isAppMode.value = false
     state.executionContextError = null
   })
 

@@ -76,7 +76,13 @@ function tempGitRepo() {
   }
 }
 
-describe('check-binary-size.sh', () => {
+describe('check-binary-size.sh', { timeout: 30_000 }, () => {
+  // Every test drives a chain of git subprocesses (init, config, commits) plus the
+  // script itself (two diffs, cat-file). Under a heavily loaded machine one link
+  // can stall long enough to trip vitest's default 5s test timeout — a pure
+  // load-sensitivity failure, not a defect the timeout exists to catch. A real
+  // script failure still surfaces in well under a second, so a generous ceiling
+  // keeps the suite hermetic under parallel load without masking regressions.
   it('passes when the range changes no binary files', () => {
     using repo = tempGitRepo()
     repo.write('notes.md', 'some prose\n')

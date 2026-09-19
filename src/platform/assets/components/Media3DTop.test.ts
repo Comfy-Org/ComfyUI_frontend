@@ -14,11 +14,11 @@ const {
   mockIsAssetPreviewSupported: vi.fn(() => true)
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useIntersectionObserver: mockUseIntersectionObserver
 }))
 
-vi.mock('../utils/assetPreviewUtil', () => ({
+vi.mock(import('../utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,
   isAssetPreviewSupported: mockIsAssetPreviewSupported
 }))

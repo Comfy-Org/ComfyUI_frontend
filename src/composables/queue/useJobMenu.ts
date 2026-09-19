@@ -8,7 +8,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -17,7 +17,10 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -124,18 +127,18 @@ export function useJobMenu(
   const addOutputLoaderNode = async () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
     let widgetName: 'image' | 'file' | 'audio' | null = null
-    if (result.isImage) {
+    if (isImageResult(result)) {
       nodeType = 'LoadImage'
       widgetName = 'image'
-    } else if (result.isVideo) {
+    } else if (isVideoResult(result)) {
       nodeType = 'LoadVideo'
       widgetName = 'file'
-    } else if (result.isAudio) {
+    } else if (isAudioResult(result)) {
       nodeType = 'LoadAudio'
       widgetName = 'audio'
     }
@@ -174,9 +177,9 @@ export function useJobMenu(
   const downloadPreviewAsset = () => {
     const item = currentMenuItem()
     if (!item) return
-    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
+    const result: AugmentedResultItem | undefined = item.taskRef?.previewOutput
     if (!result) return
-    downloadFile(result.url)
+    downloadFile(resultItemUrl(result))
   }
 
   /**

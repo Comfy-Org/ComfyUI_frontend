@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { effectScope, nextTick } from 'vue'
 import { expect, it, vi } from 'vitest'
 
@@ -21,7 +20,6 @@ const createCanvas = (draw: () => void) => {
 }
 
 it('contains CanvasInfo draws to its explicit sources', async () => {
-  setActivePinia(createPinia())
   const node = new LGraphNode('test')
   const slot = node.addInput('input', 'STRING')
   const firstCanvas = createCanvas(() => {

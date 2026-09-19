@@ -4,12 +4,6 @@ import type { Locator, Page } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.use({
-    initialSettings: {
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
-    }
-  })
-
   // These Agent-adjacent path-identity cases are staged behind the stacked
   // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
   test.describe('Agent workflow-tab contract from slice 04', () => {
@@ -200,9 +194,18 @@ test.describe('Workflow tabs', () => {
 
     // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(
-      activeTab.getByTestId('workflow-dirty-indicator')
-    ).toBeVisible()
+    const indicator = activeTab.getByTestId('workflow-dirty-indicator')
+    const closeButton = activeTab.getByTestId('close-workflow-button')
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
+
+    await activeTab.hover()
+    await expect(indicator).toBeHidden()
+    await expect(closeButton).toBeVisible()
+
+    await comfyPage.canvas.hover()
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
   })
 
   test('Can drag tab to end', async ({ comfyPage }) => {
