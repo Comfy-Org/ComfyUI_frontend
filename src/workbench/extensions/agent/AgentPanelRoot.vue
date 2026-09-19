@@ -64,6 +64,7 @@ import {
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
@@ -103,6 +104,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
@@ -203,6 +205,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+const graphActivity = useAgentGraphActivityStore()
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
@@ -527,7 +530,19 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  {
+    onMaterialized({ workflowId, nodeIds }) {
+      if (app.isGraphReady) {
+        graphActivity.recordMaterialized(
+          { workflowId, rootGraphId: String(app.rootGraph.id) },
+          nodeIds
+        )
+        if (status.value === 'idle') graphActivity.finishTurn()
+      }
+    },
+    onReset: graphActivity.resetWorkflow
+  }
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
@@ -565,14 +580,20 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-watch(status, (value) => {
-  if (value === 'idle') {
-    const completedPath = tabActivity.editingTabPath
-    tabActivity.setEditing(null)
-    if (completedPath !== null) tabActivity.markModified(completedPath)
-  } else if (tabActivity.editingTabPath === null)
-    tabActivity.setEditing(resumedTurnTabPath())
-})
+watch(
+  status,
+  (value) => {
+    if (value === 'idle') graphActivity.finishTurn()
+    else graphActivity.startTurn()
+    if (value === 'idle') {
+      const completedPath = tabActivity.editingTabPath
+      tabActivity.setEditing(null)
+      if (completedPath !== null) tabActivity.markModified(completedPath)
+    } else if (tabActivity.editingTabPath === null)
+      tabActivity.setEditing(resumedTurnTabPath())
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 const executionErrorStore = useExecutionErrorStore()
 
@@ -1119,6 +1140,7 @@ function onPanelDrop(event: DragEvent): void {
 </script>
 
 <template>
+  <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
     class="size-full"

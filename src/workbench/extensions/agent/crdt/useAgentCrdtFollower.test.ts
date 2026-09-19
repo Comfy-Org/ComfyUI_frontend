@@ -177,7 +177,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -194,7 +195,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -1014,6 +1016,43 @@ describe('useAgentCrdtFollower', () => {
           { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
         ]
       ])
+      unmount()
+    })
+
+    it('reports only live agent materializations, not reconnect catch-up', () => {
+      const onMaterialized = vi.fn()
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+        onMaterialized
+      })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: true
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turn',
+        nodeIds: [toNodeId(1)]
+      })
       unmount()
     })
   })

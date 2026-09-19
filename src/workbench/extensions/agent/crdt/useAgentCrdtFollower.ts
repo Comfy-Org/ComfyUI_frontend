@@ -12,6 +12,8 @@ import type { Ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -66,6 +68,36 @@ interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
+function liveAddedNodeIds(
+  added: readonly string[],
+  graph: MaterializableGraph | null
+): NodeId[] {
+  if (!graph) return []
+  return added.flatMap((id) => {
+    const nodeId = parseNodeId(id)
+    return nodeId && graph._nodes_by_id[nodeId] ? [nodeId] : []
+  })
+}
+
+function notifyAgentMaterialization(
+  update: DocUpdate & { catchUp?: boolean },
+  added: readonly string[],
+  materialized: readonly NodeId[],
+  graph: MaterializableGraph | null,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (update.catchUp === true || !update.actor?.startsWith('agent:')) return
+  const nodeIds = [
+    ...new Set([...materialized, ...liveAddedNodeIds(added, graph)])
+  ]
+  if (nodeIds.length === 0) return
+  events.onMaterialized?.({
+    workflowId: update.workflowId,
+    actor: update.actor,
+    nodeIds
+  })
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -79,6 +111,15 @@ export interface AgentCrdtStatus {
   updatesApplied: number
   lastFrameType: string | null
   outcomes: AgentCrdtOutcomeCounters
+}
+
+export interface AgentCrdtFollowerEvents {
+  onMaterialized?: (event: {
+    workflowId: string
+    actor: string | undefined
+    nodeIds: readonly NodeId[]
+  }) => void
+  onReset?: (workflowId: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -107,7 +148,8 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: AgentCrdtFollowerEvents = {}
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -144,7 +186,8 @@ export function useAgentCrdtFollower(
           graphMutations,
           userId,
           isTargetActive,
-          getGraph
+          getGraph,
+          events
         )
       )
     },
@@ -171,7 +214,8 @@ function startAgentCrdtFollower(
   graphMutations: MutationsForTarget,
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
-  getGraph: () => MaterializableGraph | null
+  getGraph: () => MaterializableGraph | null,
+  events: AgentCrdtFollowerEvents
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -261,7 +305,7 @@ function startAgentCrdtFollower(
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const update = event.detail as DocUpdate
+    const update = event.detail as DocUpdate & { catchUp?: boolean }
     outcomes.value = {
       ...outcomes.value,
       received: outcomes.value.received + 1
@@ -283,7 +327,9 @@ function startAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    const materialized = applied
+      ? projection.reconcileLiveGraph(update.workflowId)
+      : []
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -295,6 +341,7 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
+    notifyAgentMaterialization(update, added, materialized, getGraph(), events)
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -330,6 +377,7 @@ function startAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type

@@ -25,6 +25,39 @@
   }
 }
 
+@property --agent-banner-sweep {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.agent-banner-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--agent-banner-sweep),
+    rgb(from var(--base-foreground) r g b / 0) 0deg,
+    rgb(from var(--base-foreground) r g b / 0.7) 60deg,
+    rgb(from var(--base-foreground) r g b / 0) 140deg,
+    rgb(from var(--base-foreground) r g b / 0) 360deg
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: agent-banner-sweep 1.8s linear infinite;
+}
+
+@keyframes agent-banner-sweep {
+  to {
+    --agent-banner-sweep: 360deg;
+  }
+}
+
 .agent-work-summary:where([data-state='open']) {
   animation: agent-collapsible-down 200ms ease-out;
 }
@@ -54,6 +87,10 @@
   -webkit-text-fill-color: currentcolor;
 }
 
+.disable-animations .agent-banner-shimmer::after {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .agent-work-summary {
     animation-duration: 0.001ms;
@@ -63,6 +100,10 @@
     animation: none;
     color: var(--color-muted-foreground);
     -webkit-text-fill-color: currentcolor;
+  }
+
+  .agent-banner-shimmer::after {
+    display: none;
   }
 }
 
