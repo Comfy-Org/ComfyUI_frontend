@@ -248,14 +248,14 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
-    // The switch itself settles A's in-flight batch undeliverable (the
-    // composable calls sender.abortIfUnbound() after retargeting the bridge),
-    // so B's batch goes out at once instead of queueing behind A for the
-    // 10 s result-silence window.
+    // The switch itself settles A's transmitted in-flight batch unconfirmed
+    // (the composable calls sender.abortIfUnbound() after retargeting the
+    // bridge), so B's batch goes out at once instead of queueing behind A for
+    // the 10 s result-silence window.
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
       {
-        state: 'undeliverable',
+        state: 'unconfirmed',
         ops: [expect.objectContaining({ op_id: operationAId })]
       }
     )
@@ -307,7 +307,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     enqueue([deleteNode('a-inflight')])
     const operationAId = clientState.sent[0].ops[0].op_id
-    // The switch settles A undeliverable (settlement 0) and B goes out at once.
+    // The switch settles A unconfirmed (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
     enqueue([deleteNode('b-pending')])
     const operationBId = clientState.sent[1].ops[0].op_id
