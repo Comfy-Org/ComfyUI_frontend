@@ -187,3 +187,44 @@ test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
   expect(readout.fits).toBe(true)
   expect(readout.decimals).toBeLessThanOrEqual(3)
 })
+
+// A field that holds every file it can take stops offering to take another.
+// The prompt has to come back when a slot frees, or removing a file would
+// leave the reader with no way to put one back.
+test('the upload prompt leaves a full frame field and returns when it empties', async ({
+  page
+}) => {
+  await page.goto(
+    '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
+  )
+  const lastFrame = page.getByRole('group', { name: 'Last frame', exact: true })
+  const firstFrame = page.getByRole('group', {
+    name: 'First frame',
+    exact: true
+  })
+  const promptIn = (field: typeof lastFrame) =>
+    field.getByText(/select or drop/i)
+
+  // The page opens with its worked example already in both fields, so both
+  // start full.
+  await expect(lastFrame.getByRole('listitem')).toHaveCount(1)
+  await expect(promptIn(lastFrame)).toHaveCount(0)
+  await expect(promptIn(firstFrame)).toHaveCount(0)
+
+  await lastFrame.getByRole('button', { name: /^Remove / }).click()
+
+  await expect(promptIn(lastFrame)).toBeVisible()
+  await expect(promptIn(firstFrame)).toHaveCount(0)
+
+  await lastFrame.locator('input[type=file]').setInputFiles({
+    name: 'last.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+      'base64'
+    )
+  })
+
+  await expect(lastFrame.getByRole('listitem')).toHaveCount(1)
+  await expect(promptIn(lastFrame)).toHaveCount(0)
+})
