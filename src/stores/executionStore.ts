@@ -901,6 +901,25 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
+   * Removes any leftover `progress_text` preview widget from every node that
+   * ran in this job, so a node's completed status line doesn't stick around
+   * and starve other widgets of the node's height on the next run.
+   */
+  function clearTextPreviewsForJob(jobId: JobId) {
+    if (!(jobId in queuedJobs.value)) return
+
+    const { removeTextPreview } = useNodeProgressText()
+    for (const nodeId of Object.keys(queuedJobs.value[jobId].nodes)) {
+      const currentId = getNodeIdIfExecuting(nodeId)
+      if (!currentId) continue
+      const parsedCurrentId = parseNodeId(currentId)
+      if (!parsedCurrentId) continue
+      const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
+      if (node) removeTextPreview(node)
+    }
+  }
+
+  /**
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: JobId | null) {
@@ -916,6 +935,7 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
       jobIdToWorkflow.delete(jobId)
+      clearTextPreviewsForJob(jobId)
     }
     if (jobId) delete queuedJobs.value[jobId]
     activeJobId.value = null

@@ -180,10 +180,6 @@ test.describe(
       comfyPage,
       getWebSocket
     }) => {
-      test.fail(
-        true,
-        'PM-1303/PM-1310 hypothesis D: the persistent progress-text row is an expanding grid row, so it takes the prompt textarea height inside a fixed-height node'
-      )
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
