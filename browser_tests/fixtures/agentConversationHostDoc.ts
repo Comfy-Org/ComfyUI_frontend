@@ -5,7 +5,9 @@ import {
   readGraph
 } from '@comfyorg/comfy-multi-player'
 import type {
+  ApplyOutcome,
   GraphSnapshot,
+  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -25,6 +27,20 @@ const HOST_ACTOR = 'agent:comfy:host'
 export interface HostFrame {
   type: ServerDocFrame['type']
   data: Record<string, unknown>
+}
+
+/** What the host answers to one client `doc_ops` batch. */
+export interface WireApplyResult {
+  result: HostFrame
+  /** The doc delta the applied ops produced; null when nothing landed. */
+  update: HostFrame | null
+  outcomes: ApplyOutcome[]
+}
+
+type RejectedOutcome = Extract<ApplyOutcome, { outcome: 'rejected' }>
+
+function isRejected(outcome: ApplyOutcome): outcome is RejectedOutcome {
+  return outcome.outcome === 'rejected'
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -95,6 +111,50 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  // A batch the client minted itself (envelope included), answered the way
+  // the relay answers a human write: one `doc_ops_result`, then the delta as
+  // a `doc_update` when anything landed. The applier stays the only judge.
+  applyWire(ops: Op[]): WireApplyResult {
+    const before = Y.encodeStateVector(this.doc)
+    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const applied = outcomes
+      .filter((o) => o.outcome === 'applied')
+      .map((o) => o.op_id)
+    const skipped = outcomes
+      .filter((o) => o.outcome === 'no-op' || o.outcome === 'lww-dropped')
+      .map((o) => o.op_id)
+    const rejected = outcomes.find(isRejected)
+    if (applied.length > 0) this.seq += 1
+    const result: HostFrame = {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: rejected === undefined,
+        seq: this.seq,
+        applied,
+        skipped,
+        ...(rejected && {
+          failed: {
+            index: outcomes.indexOf(rejected),
+            op_id: rejected.op_id,
+            code: rejected.reason.code,
+            message: rejected.reason.message
+          }
+        })
+      }
+    }
+    const update =
+      applied.length > 0
+        ? this.updateFrame(
+            Y.encodeStateAsUpdate(this.doc, before),
+            ops[0]?.actor ?? HOST_ACTOR,
+            applied
+          )
+        : null
+    return { result, update, outcomes }
   }
 
   private updateFrame(

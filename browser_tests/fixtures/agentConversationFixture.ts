@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
+import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
@@ -19,11 +20,16 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type {
+  ClientDocFrame,
+  HumanOpsHost
+} from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -133,7 +139,7 @@ async function withTimeout(
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
-class AgentConversationHarness {
+export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
 
@@ -153,7 +159,8 @@ class AgentConversationHarness {
     private readonly page: Page,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
-    caseId: string
+    caseId: string,
+    humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -161,7 +168,8 @@ class AgentConversationHarness {
       page,
       workflow.id,
       this.host,
-      SOCKET_SID
+      SOCKET_SID,
+      humanOpsHost
     )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
@@ -582,6 +590,29 @@ class AgentConversationHarness {
     return parsed.data
   }
 
+  /** Every `doc_*` frame the page has sent so far, oldest first. */
+  clientDocFrames(): ClientDocFrame[] {
+    return this.hostSocket.clientDocFrames()
+  }
+
+  /** The applier's verdict on every human op the host has judged so far. */
+  humanOpOutcomes(): ApplyOutcome[] {
+    return this.hostSocket.humanOpOutcomes()
+  }
+
+  /** Node ids the host document holds right now. */
+  hostNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes)
+  }
+
+  // A host-side edit outside the recording, pushed as one `doc_update`. The
+  // follower applies frames in order, so a rendered effect of this edit
+  // proves every earlier frame (a catch-up included) has been applied too.
+  pushHostOps(operations: RecordedGraphOperation[]): void {
+    this.hostSocket.send(this.host.apply(operations))
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
@@ -604,6 +635,7 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  humanOpsHost: HumanOpsHost
   agentConversation: AgentConversationHarness
 }
 
@@ -613,6 +645,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  humanOpsHost: ['hold', { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -622,7 +655,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming },
+    { page, agentFlagEnabled, conversationCase, replayTiming, humanOpsHost },
     use
   ) => {
     if (conversationCase.length === 0)
@@ -631,7 +664,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
-      conversationCase
+      conversationCase,
+      humanOpsHost
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)
