@@ -5,11 +5,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 
 import { i18n } from '@/i18n'
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
