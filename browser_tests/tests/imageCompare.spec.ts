@@ -170,11 +170,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
         afterImages: [testImage('After', '#00c')]
       })
       await comfyPage.page.evaluate(() => {
-        const em = window.app!.extensionManager as unknown as Record<
-          string,
-          { activeWorkflow?: { changeTracker: { captureCanvasState(): void } } }
-        >
-        em.workflow.activeWorkflow?.changeTracker.captureCanvasState()
+        window.app!.extensionManager.workflow.activeWorkflow?.changeTracker.captureCanvasState()
       })
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -616,7 +612,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     }
   })
 
-  test('A newer run replaces the images and resets the batch index', async ({
+  test('A newer run with fewer images returns to the first image', async ({
     comfyPage
   }) => {
     await setSavedImages(comfyPage, {
@@ -636,19 +632,15 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     ).toHaveText('2 / 2')
 
     await setSavedImages(comfyPage, {
-      beforeImages: [testImage('G1', '#0c0'), testImage('G2', '#090')],
+      beforeImages: [testImage('G2', '#090')],
       afterImages: [testImage('Blue', '#00c')]
     })
 
     await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
       'src',
-      srcOf(testImage('G1', '#0c0'))
+      srcOf(testImage('G2', '#090'))
     )
-    await expect(
-      node
-        .getByTestId(TestIds.imageCompare.beforeBatch)
-        .getByTestId(TestIds.imageCompare.batchCounter)
-    ).toHaveText('1 / 2')
+    await expect(node.getByTestId(TestIds.imageCompare.batchNav)).toBeHidden()
   })
 
   test('Large batch sizes show correct counter and end navigation state', async ({

@@ -8,7 +8,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import messages from '@/locales/en/main.json'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 
@@ -42,7 +42,7 @@ function buildGraph() {
   graph.add(compare)
 
   Object.assign(app, { rootGraph: graph, canvas: { graph } })
-  return { compare }
+  return { compare, graph }
 }
 
 function setSavedImages(
@@ -72,7 +72,7 @@ function renderWidget(compare: LGraphNode) {
         name: 'compare_view',
         type: 'imagecompare',
         value: [],
-        nodeLocatorId: String(compare.id) as NodeLocatorId
+        nodeLocatorId: createNodeLocatorId(null, compare.id)
       },
       nodeId: compare.id
     }
@@ -230,7 +230,35 @@ describe('WidgetImageCompare', () => {
       expect(images[1]).toHaveAttribute('src', savedUrl('a1.png'))
     })
 
-    it('returns to the first image when a newer run replaces the batch', async () => {
+    it('keeps the selected image when an unrelated link changes', async () => {
+      const user = userEvent.setup()
+      const { compare, graph } = buildGraph()
+      setSavedImages(compare, ['a1.png', 'a2.png'], ['b1.png'])
+
+      renderWidget(compare)
+      await user.click(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-next')
+      )
+      expect(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
+      ).toHaveTextContent('2 / 2')
+
+      const producer = new LGraphNode('EmptyImage')
+      producer.addOutput('IMAGE', 'IMAGE')
+      graph.add(producer)
+      const consumer = new LGraphNode('PreviewImage')
+      consumer.addInput('images', 'IMAGE')
+      graph.add(consumer)
+      producer.connect(0, consumer, 0)
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
+        savedUrl('a2.png')
+      )
+    })
+
+    it('returns to the first image when a newer run has fewer images', async () => {
       const user = userEvent.setup()
       const { compare } = buildGraph()
       setSavedImages(compare, ['a1.png', 'a2.png'], ['b1.png'])
@@ -243,16 +271,14 @@ describe('WidgetImageCompare', () => {
         within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
       ).toHaveTextContent('2 / 2')
 
-      setSavedImages(compare, ['a3.png', 'a4.png'], ['b1.png'])
+      setSavedImages(compare, ['a3.png'], ['b1.png'])
       await nextTick()
 
       expect(screen.getAllByRole('img')[1]).toHaveAttribute(
         'src',
         savedUrl('a3.png')
       )
-      expect(
-        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
-      ).toHaveTextContent('1 / 2')
+      expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
     })
   })
 })
