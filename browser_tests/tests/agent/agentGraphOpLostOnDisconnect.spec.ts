@@ -60,10 +60,30 @@ const COMPOSER_LABEL = createI18n({
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
 
-interface PostReconnectDocFrame {
+interface SubscriptionFrame {
   type: 'doc_subscribe' | 'doc_unsubscribe'
   stateVector: string | null
+}
+
+interface PostReconnectDocFrame extends SubscriptionFrame {
   at: number
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+/** The follower's subscription frames for the workflow under test, or null. */
+function subscriptionFrameOf(raw: string | Buffer): SubscriptionFrame | null {
+  const frame: unknown = JSON.parse(raw.toString())
+  if (!isRecord(frame) || !isRecord(frame.data)) return null
+  if (frame.type !== 'doc_subscribe' && frame.type !== 'doc_unsubscribe')
+    return null
+  if (frame.data.workflow_id !== WORKFLOW_ID) return null
+  const { state_vector_b64 } = frame.data
+  return {
+    type: frame.type,
+    stateVector: typeof state_vector_b64 === 'string' ? state_vector_b64 : null
+  }
 }
 
 test.describe(
@@ -124,31 +144,22 @@ test.describe(
           })
         )
         ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (type !== 'doc_subscribe' && type !== 'doc_unsubscribe') return
-          if (typeof data !== 'object' || data === null) return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (workflow_id !== WORKFLOW_ID) return
-          const stateVector =
-            typeof state_vector_b64 === 'string' ? state_vector_b64 : null
+          const frame = subscriptionFrameOf(raw)
+          if (frame === null) return
           if (!isFirstConnection) {
-            postReconnectDocFrames.push({ type, stateVector, at: Date.now() })
+            postReconnectDocFrames.push({ ...frame, at: Date.now() })
           }
-          if (type !== 'doc_subscribe' || stateVector === null) return
-          if (!isFirstConnection && postReconnectSubscribes().length === 1) {
-            // The reconnect's re-subscribe never gets an answer: the general
-            // realtime channel recovered (chat keeps flowing below), but the
-            // host swallows the doc subscription frame. Only a retry of that
-            // subscribe is answered.
+          if (frame.type !== 'doc_subscribe' || frame.stateVector === null)
             return
-          }
+          // The reconnect's re-subscribe never gets an answer: the general
+          // realtime channel recovered (chat keeps flowing below), but the
+          // host swallows the doc subscription frame. Only a retry of that
+          // subscribe is answered.
+          const swallowed =
+            !isFirstConnection && postReconnectSubscribes().length === 1
+          if (swallowed) return
           send(host.subscribed())
-          send(host.catchUp(stateVector))
+          send(host.catchUp(frame.stateVector))
         })
       })
 
