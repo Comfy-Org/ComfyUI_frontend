@@ -160,18 +160,22 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
     if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
-    if (key === 'nodes' && value instanceof Y.Map) {
+    if (!(value instanceof Y.Map)) {
+      definition[key] = plain(value)
+      return
+    }
+    if (key === 'nodes') {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
           const node = readInteriorNode(value.get(id))
           return node ? [node] : []
         }
       )
-    } else if (key === 'links' && value instanceof Y.Map) {
+    } else if (key === 'links') {
       definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
         plain(value.get(id))
       )
-    } else if (key === 'definitions' && value instanceof Y.Map) {
+    } else if (key === 'definitions') {
       definition.definitions = readNestedDefinitions(value)
     } else {
       definition[key] = plain(value)
