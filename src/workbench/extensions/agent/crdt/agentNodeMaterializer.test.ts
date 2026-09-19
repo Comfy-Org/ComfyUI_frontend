@@ -721,7 +721,8 @@ describe('reconcileAgentAdapters', () => {
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',
-        getGraph: () => graph
+        getGraph: () => graph,
+        boundRootGraphId: () => graph.id
       })
     })
 
