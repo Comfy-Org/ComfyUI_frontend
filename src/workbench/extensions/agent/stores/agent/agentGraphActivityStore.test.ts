@@ -65,4 +65,24 @@ describe('agentGraphActivityStore', () => {
 
     expect(activity.state).toMatchObject({ nodeIds: ['1', '2'] })
   })
+
+  it('settles for a full interval after the latest materialization', () => {
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: 'graph-1' },
+      [toNodeId(1)]
+    )
+    activity.finishTurn()
+    vi.advanceTimersByTime(500)
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: 'graph-1' },
+      [toNodeId(2)]
+    )
+    activity.finishTurn()
+    vi.advanceTimersByTime(500)
+
+    expect(activity.state).toMatchObject({ phase: 'settling' })
+    vi.advanceTimersByTime(500)
+    expect(activity.state).toMatchObject({ phase: 'complete' })
+  })
 })

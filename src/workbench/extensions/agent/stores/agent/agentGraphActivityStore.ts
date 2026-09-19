@@ -43,6 +43,8 @@ export const useAgentGraphActivityStore = defineStore(
       nodeIds: readonly NodeId[]
     ): void {
       if (nodeIds.length === 0) return
+      if (settleTimer !== undefined) clearTimeout(settleTimer)
+      settleTimer = undefined
       turnOpen.value = true
       const current = state.value
       const sameTarget =
@@ -60,6 +62,7 @@ export const useAgentGraphActivityStore = defineStore(
     function finishTurn(): void {
       turnOpen.value = false
       if (state.value.phase !== 'running') return
+      if (settleTimer !== undefined) clearTimeout(settleTimer)
       state.value = { ...state.value, phase: 'settling' }
       settleTimer = setTimeout(() => {
         settleTimer = undefined
