@@ -322,17 +322,23 @@ const BLUEPRINT_PLAIN: AddCase = {
   add: (page) => addBlueprint(page, false)
 }
 
-function expectApplied(outcomes: ApplyOutcome[], count: number): void {
-  expect(outcomes.map((outcome) => outcome.outcome)).toEqual(
-    Array<string>(count).fill('applied')
+// The host took every op it was handed: nothing rejected, and the batch that
+// carried the add landed. A blueprint paste can mint more than the one
+// add_node (the applier answers `no-op` for an op that changes nothing).
+function expectApplied(outcomes: ApplyOutcome[], adds: number): void {
+  expect(outcomes.filter((outcome) => outcome.outcome === 'rejected')).toEqual(
+    []
   )
+  expect(
+    outcomes.filter((outcome) => outcome.outcome === 'applied').length
+  ).toBeGreaterThanOrEqual(adds)
 }
 
 test.describe(
   'Human-added node across a workflow tab switch with Agent bound',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test.use({ conversationCase: CASE })
+    test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
     // First half of the mechanism, on its own: the host takes the page's
     // add_node op and the page keeps the node.
@@ -360,8 +366,8 @@ test.describe(
         expect(
           agentConversation
             .clientDocFrames()
-            .filter((f) => f.type === 'doc_ops')
-        ).toHaveLength(1)
+            .filter((f) => f.type === 'doc_ops').length
+        ).toBeGreaterThanOrEqual(1)
         await expect(node).toBeVisible()
       })
     }

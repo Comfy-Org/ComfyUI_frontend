@@ -4,8 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-const ADD_POSITION = { x: 700, y: 500 }
-
 function graphNodeIds(comfyPage: ComfyPage): Promise<string[]> {
   return comfyPage.page.evaluate(() =>
     window.app!.graph.nodes.map((node) => String(node.id))
@@ -18,7 +16,9 @@ async function addThroughSearchBox(
   query: string
 ): Promise<string> {
   const before = new Set(await graphNodeIds(comfyPage))
-  await comfyPage.searchBoxV2.addNode(query, { position: ADD_POSITION })
+  await comfyPage.canvasOps.doubleClick()
+  await comfyPage.searchBox.fillAndSelectFirstNode(query, { exact: true })
+  await expect(comfyPage.searchBox.input).toHaveCount(0)
   await expect
     .poll(async () =>
       (await graphNodeIds(comfyPage)).filter((id) => !before.has(id))

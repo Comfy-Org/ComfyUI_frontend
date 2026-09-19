@@ -160,7 +160,7 @@ export class AgentConversationHarness {
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
     caseId: string,
-    humanOpsHost: HumanOpsHost = 'apply'
+    humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -643,7 +643,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
-  humanOpsHost: ['apply', { option: true }],
+  humanOpsHost: ['hold', { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
