@@ -158,7 +158,12 @@ test.describe(
       // is clickable - the reported "never dismisses" complaint is about the
       // status staying wrong forever, not about this button being disabled
       // or absent.
-      await page.getByRole('button', { name: 'Close' }).click()
+      //
+      // Scoped to `toast`: `page.getByRole('button', { name: 'Close' })`
+      // alone also matches the canvas minimap's close button
+      // (`data-testid="close-minimap-button"`) and is a strict-mode
+      // violation with the minimap visible.
+      await toast.getByRole('button', { name: 'Close' }).click()
 
       await expect(toast).toBeHidden()
     })
