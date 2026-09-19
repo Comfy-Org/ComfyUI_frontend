@@ -61,6 +61,11 @@ export const POST_RECONNECT_EVENT: AgentWsEvent = {
   }
 }
 
+export const TURN_DONE_EVENT: AgentWsEvent = {
+  type: 'agent_message_done',
+  data: { message_id: TURN_ID, thread_id: THREAD_ID }
+}
+
 /**
  * The server's half of a turn, modelled on the real single-active-turn guard:
  * an assistant row goes `streaming` when a turn starts and only leaves that
@@ -185,7 +190,14 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.stop,
       exact: true
     })
-    this.workSummary = this.panel.getByRole('button', { name: /^Worked for / })
+    // WorkSummary.vue renders three labels off the elapsed total: `worked`
+    // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
+    // shared `worked` stem matches all three, so the negative assertions on
+    // this locator cannot go vacuous when a turn is shorter or longer than the
+    // fixture's tool duration, or when the copy is reworded.
+    this.workSummary = this.panel.getByRole('button', {
+      name: new RegExp(`^${enMessages.agent.worked}`)
+    })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
       exact: true
     })
@@ -222,6 +234,7 @@ export class AgentTurnLockHarness {
       .click()
     await expect.poll(() => this.savedPaths()).toBe(1)
     this.finishSave(true)
+    await expect(this.agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
   }
 
   /** Sends a prompt and streams it to the point where a user sees work happening. */
@@ -247,13 +260,13 @@ export class AgentTurnLockHarness {
   }
 
   /**
-   * Mirrors `useWaveAudioPlayer.decodeAudioSource`: open an AudioContext, run
-   * real `decodeAudioData` over WAV bytes, play them, then close the context.
-   * The product's `api.fetchApi` step is deliberately left out — network
-   * isolation fails a test on any unmocked request — so the bytes are built in
-   * the page instead of downloaded.
+   * Runs the Web Audio half of `useWaveAudioPlayer.decodeAudioSource`: open an
+   * AudioContext, `decodeAudioData` real WAV bytes, then close the context.
+   * The product reaches those bytes through `api.fetchApi`, which is left out
+   * because network isolation fails a test on any unmocked request, so they are
+   * built in the page instead of downloaded.
    */
-  async playDecodedAudio(): Promise<void> {
+  async decodeAudioLikeThePlayer(): Promise<void> {
     await this.page.evaluate(async () => {
       const frames = 800
       const bytes = new ArrayBuffer(44 + frames * 2)
@@ -276,11 +289,7 @@ export class AgentTurnLockHarness {
       view.setUint32(40, frames * 2, true)
 
       const context = new AudioContext()
-      const decoded = await context.decodeAudioData(bytes)
-      const source = context.createBufferSource()
-      source.buffer = decoded
-      source.connect(context.destination)
-      source.start()
+      await context.decodeAudioData(bytes)
       await context.close()
     })
   }

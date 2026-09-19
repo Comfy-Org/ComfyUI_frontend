@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
+  TURN_DONE_EVENT,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
 
@@ -90,35 +91,48 @@ test.describe(
 
       // The abandoned turn puts Send back in front of the user, so the nudge
       // reaches a thread the server still has locked and comes back 409
-      // TURN_IN_PROGRESS. Once the client re-attaches, the composer will offer
-      // Stop instead and this test should be rewritten around that; today it
-      // pins the dead end the report ends on.
+      // TURN_IN_PROGRESS. Once the client re-attaches Send is gone, and the
+      // bounded click below then times out in seconds — loudly red, since
+      // test.fail() accepts a failed assertion but not a timeout — rather than
+      // burning the suite timeout. Whoever lands the fix should rewrite this
+      // around the Stop state.
       test.fail()
       await turnLock.composer.fill('are you still there?')
-      await turnLock.sendButton.click()
-      // Wait for the nudge to actually reach the server, or both assertions
-      // below could pass on a race and flip this expected failure green.
-      await expect.poll(() => turnLock.postAttempts()).toBe(2)
+      await turnLock.sendButton.click({ timeout: 5_000 })
+      // Wait for the nudge to actually reach the server, or the assertion below
+      // could pass on a race and flip this expected failure green. Inequality,
+      // so a future client-side retry cannot fail this line instead.
+      await expect.poll(() => turnLock.postAttempts()).toBeGreaterThanOrEqual(2)
       await expect(turnLock.panel.getByRole('alert')).toHaveCount(0)
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 
-    // The report mentions audio playback right before the disconnect, so this is
-    // the control: `playDecodedAudio` runs the AudioContext + decodeAudioData +
-    // close sequence of `useWaveAudioPlayer.decodeAudioSource` while the turn is
-    // live. It passes today, and the three above need no audio at all — together
-    // that is what makes the playback incidental rather than causal.
-    test('keeps the turn running while audio plays in the page', async ({
+    // The report mentions audio playback right before the disconnect, so this
+    // is the control: the audio-output widget and the asset-library preview
+    // both decode through `useWaveAudioPlayer.decodeAudioSource`, and running
+    // that decode mid-turn leaves the turn alone. It passes today, and the
+    // three above need no audio at all — together that is what makes the
+    // playback incidental rather than causal.
+    //
+    // It also carries the only positive assertion on `workSummary`: a turn that
+    // ends normally must produce the summary, so the negative assertions above
+    // cannot be passing on a locator that matches nothing.
+    test('keeps the turn running while an audio preview decodes', async ({
       turnLock,
       getWebSocket
     }) => {
-      await turnLock.playDecodedAudio()
+      const ws = await getWebSocket()
+      await turnLock.decodeAudioLikeThePlayer()
 
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.workSummary).toHaveCount(0)
 
-      turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
+      turnLock.push(ws, POST_RECONNECT_EVENT)
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
+
+      turnLock.push(ws, TURN_DONE_EVENT)
+      await expect(turnLock.workSummary).toBeVisible()
+      await expect(turnLock.sendButton).toBeVisible()
     })
   }
 )
