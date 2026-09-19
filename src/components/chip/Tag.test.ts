@@ -52,6 +52,32 @@ describe('Tag', () => {
     expect(onRemove).toHaveBeenCalledOnce()
   })
 
+  it.for(['{Enter}', ' '])(
+    'removes an interactive tag with the remove button using %s',
+    async (key) => {
+      const user = userEvent.setup()
+      const onClick = vi.fn()
+      const onRemove = vi.fn()
+      render(Tag, {
+        props: {
+          label: 'Test',
+          interactive: true,
+          removable: true,
+          onRemove
+        },
+        attrs: { role: 'button', tabindex: 0, onClick },
+        global: { plugins: [i18n] }
+      })
+      const removeButton = screen.getByRole('button', { name: 'Remove' })
+
+      removeButton.focus()
+      await user.keyboard(key)
+
+      expect(onRemove).toHaveBeenCalledOnce()
+      expect(onClick).not.toHaveBeenCalled()
+    }
+  )
+
   it('uses a context-specific remove label', () => {
     render(Tag, {
       props: {
