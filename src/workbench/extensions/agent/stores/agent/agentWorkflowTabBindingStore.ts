@@ -36,28 +36,33 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       }
     }
 
+    function releaseClosedTab(tab: ComfyWorkflow, path: string): void {
+      const id = workflowIdFor(path)
+      if (
+        id !== undefined &&
+        (!boundInstances.has(id) || boundInstances.get(id) === toRaw(tab))
+      )
+        unbind(path)
+    }
+
+    function adoptOpenTab(tab: ComfyWorkflow, path: string): void {
+      const id = workflowIdFor(path)
+      if (
+        id !== undefined &&
+        !boundInstances.has(id) &&
+        adoptsPersistedBinding(tab)
+      )
+        boundInstances.set(id, toRaw(tab))
+    }
+
     watch(
       () => workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
       (open, previous = []) => {
         for (const { tab, path } of previous) {
-          if (!open.some((entry) => entry.tab === tab)) {
-            const id = workflowIdFor(path)
-            if (
-              id !== undefined &&
-              (!boundInstances.has(id) || boundInstances.get(id) === toRaw(tab))
-            )
-              unbind(path)
-          }
+          if (!open.some((entry) => entry.tab === tab))
+            releaseClosedTab(tab, path)
         }
-        for (const { tab, path } of open) {
-          const id = workflowIdFor(path)
-          if (
-            id !== undefined &&
-            !boundInstances.has(id) &&
-            adoptsPersistedBinding(tab)
-          )
-            boundInstances.set(id, toRaw(tab))
-        }
+        for (const { tab, path } of open) adoptOpenTab(tab, path)
       },
       { immediate: true }
     )
