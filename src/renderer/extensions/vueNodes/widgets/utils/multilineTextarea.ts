@@ -169,7 +169,10 @@ export function createPromotedMultilineWidget(
   // constructed with instead of the shared store entry `_promoteWidget`
   // already registered under `widgetId`, so suppression changes made
   // through the store (e.g. `suppression.byConnection`) never reach it.
-  if (isNodeBindable(widget)) widget.setNodeId(subgraphNode.id)
+  // `setNodeId` would also re-register this DOM widget's own generic
+  // options/label/disabled over the entry `_resolveInputWidget` already
+  // populated from the real interior widget, so alias visibility only.
+  if (isNodeBindable(widget)) widget.aliasVisibility(widgetId)
 
   return widget
 }

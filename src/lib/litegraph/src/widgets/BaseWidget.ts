@@ -416,6 +416,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (visibility) this._visibility = visibility
   }
 
+  /**
+   * Points this widget's visibility at an already-registered store entry,
+   * without touching `_state` or re-registering. Unlike {@link setNodeId},
+   * this never calls `registerWidget()`, so it can't clobber a store entry
+   * another caller already populated from a different source (e.g. a
+   * promoted widget's host-owned DOM widget, whose own
+   * `options`/`label`/`disabled` are DOM-widget concerns, not the promoted
+   * value's).
+   */
+  aliasVisibility(id: WidgetId): void {
+    this.installTypeVisibilityShim()
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (visibility) this._visibility = visibility
+  }
+
   constructor(widget: TWidget & { node: LGraphNode })
   constructor(widget: TWidget, node: LGraphNode)
   constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
