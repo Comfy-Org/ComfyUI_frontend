@@ -95,12 +95,12 @@
           !agentPanelStore.isVisible &&
           !(agentPanelStore.isOpen && isChecking)
         "
-        variant="link"
+        variant="secondary"
         size="sm"
-        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
+        class="no-drag shrink-0 border border-solid border-border-subtle text-base-foreground"
         @click="onAgentEntryClick"
       >
-        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <i class="icon-[comfy--comfy-c] size-3" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
       </Button>
       <Button

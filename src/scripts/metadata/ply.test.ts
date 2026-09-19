@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Override the global @sparkjsdev/spark mock from vitest.setup.ts (the real
@@ -35,17 +36,19 @@ const {
   }
 })
 
-vi.mock('@sparkjsdev/spark', () => ({
-  PlyReader: class {
-    elements: Record<string, StubElement> = {}
-    constructor(_: unknown) {}
-    parseHeader(): Promise<void> {
-      const { elements, error } = nextHeaderResultMock()
-      if (error) return Promise.reject(error)
-      this.elements = elements ?? {}
-      return Promise.resolve()
+vi.mock(import('@sparkjsdev/spark'), () => ({
+  PlyReader: fromAny(
+    class {
+      elements: Record<string, StubElement> = {}
+      constructor(_: unknown) {}
+      parseHeader(): Promise<void> {
+        const { elements, error } = nextHeaderResultMock()
+        if (error) return Promise.reject(error)
+        this.elements = elements ?? {}
+        return Promise.resolve()
+      }
     }
-  }
+  )
 }))
 
 import {

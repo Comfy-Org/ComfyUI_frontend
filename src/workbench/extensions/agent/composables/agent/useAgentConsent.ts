@@ -11,7 +11,10 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 
 const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
-const CONSENT_VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
+const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
+const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
+const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-1280.mp4`
+const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
   () =>
@@ -29,7 +32,8 @@ export function useAgentConsent() {
 
   function showConsentDialog(
     persistOnAccept = true,
-    expectedIdentity?: string
+    expectedIdentity?: string,
+    onShown?: () => void
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       let settled = false
@@ -91,9 +95,15 @@ export function useAgentConsent() {
           titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSrc: CONSENT_VIDEO_SRC,
+          videoSrcMp4: CONSENT_VIDEO_SRC_MP4,
+          posterSrc: CONSENT_POSTER_SRC,
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
+          onVnodeMounted: () => {
+            if (expectedIdentity && identity.value !== expectedIdentity) return
+            onShown?.()
+          },
           onAccept: () => void accept(),
           onReject: () => closeWith(false)
         },
@@ -103,10 +113,9 @@ export function useAgentConsent() {
           closeOnEscape: true,
           modal: true,
           headless: true,
-          size: 'xl',
           overlayClass: 'bg-black/55',
           contentClass:
-            'w-[min(1040px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[1040px]',
+            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true
@@ -117,8 +126,10 @@ export function useAgentConsent() {
     })
   }
 
-  async function acceptAfterSignIn(): Promise<string | null> {
-    if (!(await showConsentDialog(false))) return null
+  async function acceptAfterSignIn(
+    onShown?: () => void
+  ): Promise<string | null> {
+    if (!(await showConsentDialog(false, undefined, onShown))) return null
     try {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
@@ -151,7 +162,9 @@ export function useAgentConsent() {
     }
   }
 
-  async function requestConsentForCurrentUser(): Promise<string | null> {
+  async function requestConsentForCurrentUser(
+    onShown?: () => void
+  ): Promise<string | null> {
     let decisionIdentity: string | null
     try {
       decisionIdentity = await consentStore.ensureScope()
@@ -170,15 +183,21 @@ export function useAgentConsent() {
     }
 
     if (identity.value !== decisionIdentity) return null
-    if (!accepted.value && !(await showConsentDialog(true, decisionIdentity)))
+    if (
+      !accepted.value &&
+      !(await showConsentDialog(true, decisionIdentity, onShown))
+    )
       return null
     return decisionIdentity
   }
 
-  async function withConsent(onAccept: () => void): Promise<void> {
+  async function withConsent(
+    onAccept: () => void,
+    onShown?: () => void
+  ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser()
-      : await acceptAfterSignIn()
+      ? await requestConsentForCurrentUser(onShown)
+      : await acceptAfterSignIn(onShown)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

@@ -4,6 +4,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
@@ -25,8 +26,15 @@ import { useMediaAssetActions as createMediaAssetActions } from './useMediaAsset
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
+const mockDownloadFileAsBlob = vi.hoisted(() => vi.fn())
 vi.mock(import('@/base/common/downloadUtil'), () => ({
-  downloadFile: mockDownloadFile
+  downloadFile: mockDownloadFile,
+  downloadFileAsBlob: mockDownloadFileAsBlob
+}))
+
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -86,11 +94,10 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
-  detectNodeTypeFromFilename: vi.fn(() => ({
-    nodeType: 'LoadImage',
-    widgetName: 'image'
-  }))
+vi.mock(import('@/utils/loaderNodeUtil'), () => ({
+  detectNodeTypeFromFilename: vi.fn(
+    () => ({ nodeType: 'LoadImage', widgetName: 'image' }) as const
+  )
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
@@ -594,13 +601,48 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([asset])
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
         'http://localhost:8188/api/assets/single-output/content',
-        'single-output.png'
+        expect.objectContaining({ filename: 'single-output.png' })
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('preserves successful OSS downloads when another file fails', async () => {
+      const failure = new Error('download failed')
+      mockDownloadFile
+        .mockImplementationOnce(() => {
+          throw failure
+        })
+        .mockImplementationOnce(() => {})
+      const actions = useMediaAssetActions()
+
+      actions.downloadAssets([
+        createMockAsset({ id: 'a', name: 'a.png' }),
+        createMockAsset({ id: 'b', name: 'b.png' })
+      ])
+
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => {
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'success',
+            detail: 'Started downloading 1 file'
+          })
+        )
+        expect(useToastStore().add).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            detail: '1 download failed'
+          })
+        )
+      })
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'error_downloading_asset',
+        context: { filename: 'a.png' }
+      })
     })
 
     it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
@@ -1338,9 +1380,9 @@ describe('useMediaAssetActions', () => {
         ({
           dialogComponentProps
         }: {
-          dialogComponentProps: { onClose: () => void }
+          dialogComponentProps: { onRemoved: () => void }
         }) => {
-          dialogComponentProps.onClose()
+          dialogComponentProps.onRemoved()
         }
       )
       const { actions, unmount } = mountMediaActions()
@@ -1390,9 +1432,18 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockImplementation(
+        ({
+          dialogComponentProps
+        }: {
+          dialogComponentProps: { onRemoved: () => void }
+        }) => {
+          dialogComponentProps.onRemoved()
+        }
+      )
     })
 
-    it('should show user_metadata display names instead of hash filenames', () => {
+    it('should show user_metadata display names instead of hash filenames', async () => {
       const actions = useMediaAssetActions()
 
       const assets = [
@@ -1408,7 +1459,7 @@ describe('useMediaAssetActions', () => {
         })
       ]
 
-      void actions.deleteAssets(assets)
+      await actions.deleteAssets(assets)
 
       expect(mockShowDialog).toHaveBeenCalledTimes(1)
       const dialogProps = mockShowDialog.mock.calls[0][0].props as {
@@ -1420,7 +1471,7 @@ describe('useMediaAssetActions', () => {
       ])
     })
 
-    it('should fall back to asset.name when no display name is available', () => {
+    it('should fall back to asset.name when no display name is available', async () => {
       const actions = useMediaAssetActions()
 
       const asset = createMockAsset({
@@ -1428,7 +1479,7 @@ describe('useMediaAssetActions', () => {
         name: 'fallback-image.png'
       })
 
-      void actions.deleteAssets(asset)
+      await actions.deleteAssets(asset)
 
       const dialogProps = mockShowDialog.mock.calls[0][0].props as {
         itemList: string[]

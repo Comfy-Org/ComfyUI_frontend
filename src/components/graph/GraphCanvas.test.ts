@@ -18,7 +18,6 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
