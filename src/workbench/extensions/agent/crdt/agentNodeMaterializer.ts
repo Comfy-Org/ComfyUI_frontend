@@ -20,6 +20,7 @@ import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+import { parseWidgetValues, serialisedWidgetSlots } from './nodePayload'
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -352,17 +353,15 @@ function missingNode(state: NodeState): LGraphNode {
 }
 
 /**
- * Op-layer serialisations carry widget values keyed by name; `configure()`
- * only reads name-keyed values from `widgets_values_named`.
+ * Op-layer serialisations carry widget values keyed by name in
+ * `widgets_values`; route them through the one shape boundary so
+ * `configure()` reads them from `widgets_values_named`.
  */
 function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  const values = serialised.widgets_values
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    serialised.widgets_values_named !== undefined
-  ) {
-    return serialised
+  if (serialised.widgets_values_named !== undefined) return serialised
+  const { widgets_values, ...rest } = serialised
+  return {
+    ...rest,
+    ...serialisedWidgetSlots(parseWidgetValues(widgets_values))
   }
-  return { ...serialised, widgets_values_named: values }
 }

@@ -372,6 +372,26 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(7)
     })
 
+    it('hands configure() name-keyed values in widgets_values_named only', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const configureSpy = vi.spyOn(WidgetNode.prototype, 'configure')
+
+      reconcileAgentAdapters(graph)
+
+      // `configure()` reads `widgets_values` positionally; a record left
+      // there would make the legacy shadow diff report a false mismatch.
+      expect(configureSpy).toHaveBeenCalledTimes(1)
+      const info = configureSpy.mock.calls[0][0]
+      expect(info.widgets_values_named).toEqual({ value: 7 })
+      expect(info).not.toHaveProperty('widgets_values')
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)

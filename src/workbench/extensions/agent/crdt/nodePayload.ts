@@ -1,4 +1,5 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 /**
@@ -60,6 +61,35 @@ export function parseWidgetValues(value: unknown): WidgetValuePayload {
     }
   }
   return { kind: 'omitted' }
+}
+
+/**
+ * The serialised slots `LGraphNode.configure()` reads for a payload.
+ *
+ * `configure()` treats `widgets_values` as positional and reads name-keyed
+ * values only from `widgets_values_named`. A record left in `widgets_values`
+ * is not an array, so the legacy shadow diff would pair every widget with
+ * `undefined` and report a false mismatch; named payloads therefore leave
+ * `widgets_values` unset.
+ */
+export function serialisedWidgetSlots(
+  widgets: WidgetValuePayload
+): Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'> {
+  switch (widgets.kind) {
+    case 'omitted':
+      return {}
+    case 'positional':
+      return { widgets_values: widgets.values.map(cloneWidgetValue) }
+    case 'named':
+      return {
+        widgets_values_named: Object.fromEntries(
+          [...widgets.values].map(([name, value]) => [
+            name,
+            cloneWidgetValue(value)
+          ])
+        )
+      }
+  }
 }
 
 /** Store records for a node no live widget has registered yet. */
