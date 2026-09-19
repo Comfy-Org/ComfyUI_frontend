@@ -37,10 +37,6 @@ function onOpenChange(next: boolean): void {
 async function onSelectMode(value: string): Promise<void> {
   const match = options.find((option) => option.mode === value)
   if (!match || savingMode.value !== null) return
-  if (match.mode === store.mode) {
-    open.value = false
-    return
-  }
 
   const openedAs = openCount
   savingMode.value = match.mode

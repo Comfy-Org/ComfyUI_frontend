@@ -483,7 +483,7 @@ describe('Composer', () => {
       expect(store.creditLimit).toBeNull()
     })
 
-    it('closes without saving when the active mode is picked again', async () => {
+    it('rewrites the active mode when it is picked again', async () => {
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
@@ -498,7 +498,8 @@ describe('Composer', () => {
       ).toBeNull()
       expect(
         fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
-      ).toHaveLength(0)
+      ).toHaveLength(1)
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
@@ -523,7 +524,9 @@ describe('Composer', () => {
           })
         ).toBeChecked()
       )
-      expect(screen.getByRole('status')).toHaveTextContent('')
+      expect(
+        within(screen.getByRole('menu')).getByRole('status')
+      ).toBeEmptyDOMElement()
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
@@ -559,6 +562,7 @@ describe('Composer', () => {
           name: /Auto-run without approval/
         })
       ).toHaveAttribute('aria-disabled', 'true')
+      expect(ask).toBeChecked()
       await userEvent.click(ask)
       expect(fetchApi).toHaveBeenCalledTimes(1)
 
@@ -601,6 +605,38 @@ describe('Composer', () => {
       await userEvent.keyboard('{Enter}')
 
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
+    })
+
+    it('keeps a re-picked mode when a slower load disagrees', async () => {
+      let resolveGet!: (response: Response) => void
+      const pendingGet = new Promise<Response>((resolve) => {
+        resolveGet = resolve
+      })
+      fetchApi.mockImplementation(async (_route, init) =>
+        init?.method === 'PUT'
+          ? jsonResponse(200, { mode: 'auto', credit_limit: null })
+          : pendingGet
+      )
+      localStorage.setItem(
+        'Comfy.Agent.RunModePreference',
+        JSON.stringify({ mode: 'auto', credit_limit: null })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+      const load = store.load()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      resolveGet(
+        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+      )
+      await load
+
+      expect(store.mode).toBe('auto')
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
