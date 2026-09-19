@@ -43,6 +43,12 @@ function op(id: string, baseVersion: number, payload: object) {
   }
 }
 
+function hostDocDelta(doc: Y.Doc, mutate: () => void): Uint8Array {
+  const before = Y.encodeStateVector(doc)
+  mutate()
+  return Y.encodeStateAsUpdate(doc, before)
+}
+
 describe('EcsFollowerAdapter integration', () => {
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
@@ -956,6 +962,134 @@ describe('EcsFollowerAdapter integration', () => {
     adapter.destroy()
     follower.destroy()
     host.destroy()
+  })
+
+  it('preserves pending frame provenance when a later frame commits it', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let scopeAvailable = false
+    const committedContexts: Parameters<GraphMutations['batch']>[0][] = []
+    const mutations: GraphMutations = {
+      batch: (context, define) => {
+        if (!scopeAvailable) return false
+        committedContexts.push(context)
+        define({
+          addNode: () => undefined,
+          reconcileNode: () => undefined,
+          reconcileNodeFields: () => undefined,
+          setWidget: () => undefined,
+          connect: () => undefined,
+          removeMissing: () => undefined,
+          removeLinks: () => undefined,
+          deleteNode: () => undefined,
+          clearSemanticGraph: () => undefined
+        })
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const first = hostDocDelta(host, () => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'Source')
+      nodesMap(host).set('1', node)
+    })
+    follower.applyRemoteUpdate(first)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: first,
+        actor: 'agent:first',
+        opIds: ['first']
+      })
+    ).toBe(false)
+
+    scopeAvailable = true
+    const second = hostDocDelta(host, () => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'Sink')
+      nodesMap(host).set('2', node)
+    })
+    follower.applyRemoteUpdate(second)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update: second,
+        actor: 'agent:second',
+        opIds: ['second']
+      })
+    ).toBe(true)
+
+    expect(committedContexts).toEqual([
+      {
+        source: 'agent-remote',
+        actor: 'agent:first',
+        opId: 'first',
+        opIds: ['first', 'second']
+      }
+    ])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('retains a throwing frame for retry with its original provenance', () => {
+    const follower = new FollowerDoc()
+    const contexts: Parameters<GraphMutations['batch']>[0][] = []
+    const failure = new Error('transient projection failure')
+    const mutations: GraphMutations = {
+      batch: (context) => {
+        contexts.push(context)
+        if (contexts.length === 1) throw failure
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = new Uint8Array()
+
+    expect(() =>
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:original',
+        opIds: ['original']
+      })
+    ).toThrow(failure)
+    expect(adapter.hasPending('wf')).toBe(true)
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(contexts).toEqual([
+      {
+        source: 'agent-remote',
+        actor: 'agent:original',
+        opId: 'original',
+        opIds: ['original']
+      },
+      {
+        source: 'agent-remote',
+        actor: 'agent:original',
+        opId: 'original',
+        opIds: ['original']
+      }
+    ])
+
+    adapter.destroy()
+    follower.destroy()
   })
 
   // Replacing a node's whole widgets map is recorded in replacedWidgetMaps

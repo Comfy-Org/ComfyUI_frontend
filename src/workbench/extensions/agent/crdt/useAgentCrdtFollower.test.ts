@@ -626,6 +626,24 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reconciles the live graph after a status-frame retry commits', () => {
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+    adapterState.hasPending.mockReturnValueOnce(true)
+    adapterState.retryPending.mockReturnValueOnce(true)
+    const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+      fakeGraph,
+      definitionsState.fakeDefinitions
+    )
+    unmount()
+  })
+
   it('does not bypass refused-subscribe backoff on status frames', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
@@ -854,6 +872,28 @@ describe('useAgentCrdtFollower', () => {
     )
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(adapterState.bind).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('reports one drop per failed-projection episode', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+
+    for (let seq = 1; seq <= 4; seq++)
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq })
+
+    const dropped = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([kind]) => kind === 'doc_update_dropped')
+    expect(dropped).toEqual([
+      ['doc_update_dropped', { workflowId: 'wf-1', seq: 1 }],
+      ['doc_update_dropped', { workflowId: 'wf-1', seq: 4 }]
+    ])
+    expect(reportError).toHaveBeenCalledTimes(2)
     unmount()
   })
 
@@ -1120,6 +1160,21 @@ describe('useAgentCrdtFollower', () => {
     const catchUp = { workflowId: 'wf-a', seq: 8 }
     dispatchFrame('doc_update', catchUp)
     expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
+    unmount()
+  })
+
+  it('retains pending projection state while its target is inactive', async () => {
+    const { unmount, isTargetActive } = mountFollower('wf-a')
+    adapterState.unbind.mockClear()
+    adapterState.retryPending.mockClear()
+
+    isTargetActive.value = false
+    await nextTick()
+    expect(adapterState.unbind).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(adapterState.retryPending).toHaveBeenCalledWith('wf-a')
     unmount()
   })
 

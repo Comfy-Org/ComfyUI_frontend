@@ -276,6 +276,19 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
   }
 }
 
+function mergeMutationContexts(
+  retained: RemoteMutationContext,
+  next: RemoteMutationContext
+): RemoteMutationContext {
+  const opIds = [
+    ...new Set([
+      ...(retained.opIds ?? [retained.opId]),
+      ...(next.opIds ?? [next.opId])
+    ])
+  ]
+  return { ...retained, opIds }
+}
+
 interface TargetSession {
   readonly workflowId: string
   readonly follower: FollowerDoc
@@ -291,6 +304,7 @@ interface TargetSession {
   /** Drift keys already surfaced via `reportError` for this session. */
   readonly reportedErrors: Set<string>
   readonly frameQueue: DocUpdate[]
+  pendingContext: RemoteMutationContext | null
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
@@ -337,7 +351,7 @@ export class EcsFollowerAdapter {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
         if (!frame) continue
-        const committed = this.applyQueuedFrame(session, frameContext(frame))
+        const committed = this.applyQueuedFrameSafely(session, frame)
         if (frame === update) updateCommitted = committed
       }
     } finally {
@@ -346,18 +360,25 @@ export class EcsFollowerAdapter {
     return updateCommitted
   }
 
+  private applyQueuedFrameSafely(
+    session: TargetSession,
+    frame: DocUpdate
+  ): boolean {
+    const context = frameContext(frame)
+    try {
+      return this.applyQueuedFrame(session, context)
+    } catch (error) {
+      session.pendingContext = session.pendingContext
+        ? mergeMutationContexts(session.pendingContext, context)
+        : context
+      throw error
+    }
+  }
+
   /** True while a target has mutations retained from a dropped batch. */
   hasPending(workflowId: string): boolean {
     const session = this.targets.get(workflowId)
-    if (!session) return false
-    return (
-      session.nodeActions.size > 0 ||
-      session.changedWidgets.size > 0 ||
-      session.replacedWidgetMaps.size > 0 ||
-      session.replacedOpaqueWidgets.size > 0 ||
-      session.changedNodeFields.size > 0 ||
-      session.changedLinks.size > 0
-    )
+    return session !== undefined && session.pendingContext !== null
   }
 
   /**
@@ -369,14 +390,10 @@ export class EcsFollowerAdapter {
   retryPending(workflowId: string): boolean {
     const session = this.targets.get(workflowId)
     if (!session || session.applying) return false
-    if (!this.hasPending(workflowId)) return false
+    if (session.pendingContext === null) return false
     session.applying = true
     try {
-      return this.applyQueuedFrame(session, {
-        source: 'agent-remote',
-        actor: 'agent-scope-recovery',
-        opId: `scope-recovery:${workflowId}`
-      })
+      return this.applyQueuedFrame(session, session.pendingContext)
     } finally {
       session.applying = false
     }
@@ -420,6 +437,7 @@ export class EcsFollowerAdapter {
       changedLinks: new Set<string>(),
       reportedErrors: new Set<string>(),
       frameQueue: [],
+      pendingContext: null,
       reconcileNextFrame: true,
       applying: false,
       onNodesChanged: (_events): void => undefined,
@@ -435,6 +453,9 @@ export class EcsFollowerAdapter {
     session: TargetSession,
     context: RemoteMutationContext
   ): boolean {
+    const commitContext = session.pendingContext
+      ? mergeMutationContexts(session.pendingContext, context)
+      : context
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
@@ -488,7 +509,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
       link ? [] : [Number(id)]
     )
-    const committed = session.mutations.batch(context, (batch) => {
+    const committed = session.mutations.batch(commitContext, (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
@@ -626,9 +647,11 @@ export class EcsFollowerAdapter {
     // Either way, only clear reconcileNextFrame and the pending node/widget/
     // link work once we know the batch committed or was deterministically
     // rejected — never on a transient no-scope drop, which must retry.
-    if (committed || this.scopeAvailable(session, context)) {
+    if (committed || this.scopeAvailable(session, commitContext)) {
       session.reconcileNextFrame = false
       this.discardSessionPending(session)
+    } else {
+      session.pendingContext = commitContext
     }
     return committed
   }
@@ -647,6 +670,7 @@ export class EcsFollowerAdapter {
     session.replacedOpaqueWidgets.clear()
     session.changedNodeFields.clear()
     session.changedLinks.clear()
+    session.pendingContext = null
   }
 
   private onNodesChanged(

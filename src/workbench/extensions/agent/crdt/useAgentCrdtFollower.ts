@@ -231,6 +231,7 @@ function startAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
+  let projectionDropActive = false
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -262,35 +263,47 @@ function startAgentCrdtFollower(
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
+    if (!receiveCurrentUpdate(update)) return
+    applyAndRecordUpdate(event.type, update)
+  }
+
+  function receiveCurrentUpdate(update: DocUpdate): boolean {
     outcomes.value = {
       ...outcomes.value,
       received: outcomes.value.received + 1
     }
-    if (
-      !isTargetActive.value ||
-      update.workflowId !== subscribedWorkflowId.value
-    ) {
+    const isCurrent =
+      isTargetActive.value && update.workflowId === subscribedWorkflowId.value
+    if (!isCurrent) {
       outcomes.value = {
         ...outcomes.value,
         skipped: outcomes.value.skipped + 1
       }
-      return
     }
+    return isCurrent
+  }
+
+  function applyAndRecordUpdate(frameType: string, update: DocUpdate): void {
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
-    lastFrameType.value = event.type
-    let projected = false
-    let threw = false
-    try {
-      projected = projection.applyFrame(update)
-    } catch (error) {
-      threw = true
-      reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
-    }
+    lastFrameType.value = frameType
+    const { projected, error } = projectFrame(update)
+    recordProjectionOutcome(update, projected)
+    recordProjectionDrop(update, projected, error)
+    recordNodeChanges()
+  }
+
+  function recordProjectionOutcome(
+    update: DocUpdate,
+    projected: boolean
+  ): void {
     outcomes.value = projected
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (projected) projection.reconcileLiveGraph(update.workflowId)
+    if (projected) {
+      projectionDropActive = false
+      projection.reconcileLiveGraph(update.workflowId)
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -298,29 +311,46 @@ function startAgentCrdtFollower(
       bytes: update.update instanceof Uint8Array ? update.update.length : null,
       projected
     })
-    if (!projected) {
-      recordDevEvent('doc_update_dropped', {
-        workflowId: update.workflowId,
-        seq: update.seq
-      })
-      // No resubscribe: the follower doc already holds these bytes, so a
-      // state-vector Resync returns only an ack and would reset the seq gap
-      // detector. The adapter retains transiently unprojected mutations and
-      // retries them on the next delivered frame.
-      if (!threw) {
-        reportError(new Error('agent CRDT frame dropped'), {
-          errorType: 'agent_crdt_frame_dropped',
-          level: 'warning',
-          context: { workflowId: update.workflowId, seq: update.seq }
-        })
-      }
-    }
+  }
+
+  function recordProjectionDrop(
+    update: DocUpdate,
+    projected: boolean,
+    error: unknown
+  ): void {
+    if (projected || projectionDropActive) return
+    projectionDropActive = true
+    recordDevEvent('doc_update_dropped', {
+      workflowId: update.workflowId,
+      seq: update.seq
+    })
+    if (error !== undefined) return
+    reportError(new Error('agent CRDT frame dropped'), {
+      errorType: 'agent_crdt_frame_dropped',
+      level: 'warning',
+      context: { workflowId: update.workflowId, seq: update.seq }
+    })
+  }
+
+  function recordNodeChanges(): void {
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     knownDocNodeIds = ids
+  }
+
+  function projectFrame(update: DocUpdate): {
+    projected: boolean
+    error?: unknown
+  } {
+    try {
+      return { projected: projection.applyFrame(update) }
+    } catch (error) {
+      reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
+      return { projected: false, error }
+    }
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -356,6 +386,7 @@ function startAgentCrdtFollower(
     }
     projection.clearForReset(detail.workflowId, context)
     connected.value = false
+    projectionDropActive = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -379,6 +410,7 @@ function startAgentCrdtFollower(
       typeof workflowId === 'string' &&
       workflowId === subscribedWorkflowId.value
     ) {
+      projectionDropActive = false
       updatesApplied.value = 0
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
@@ -482,10 +514,17 @@ function startAgentCrdtFollower(
       target !== null &&
       projection.hasPending(target)
     )
-      recordDevEvent('scope_retry', {
-        workflowId: target,
-        projected: projection.retryPending(target)
-      })
+      retryPendingProjection(target)
+  }
+
+  function retryPendingProjection(workflowId: string): boolean {
+    const projected = projection.retryPending(workflowId)
+    recordDevEvent('scope_retry', { workflowId, projected })
+    if (projected) {
+      projectionDropActive = false
+      projection.reconcileLiveGraph(workflowId)
+    }
+    return projected
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -538,12 +577,9 @@ function startAgentCrdtFollower(
       lifecycle.clearForRetarget()
       connected.value = false
       knownDocNodeIds = new Set()
+      projectionDropActive = false
       if (!active) {
         if (next !== null) initialBind = false
-        if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
-          boundWorkflowId = null
-        }
         subscribedWorkflowId.value = null
         retarget(null)
         return
@@ -560,11 +596,9 @@ function startAgentCrdtFollower(
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
-          recordDevEvent('scope_retry', {
-            workflowId: persisted,
-            projected: projection.retryPending(persisted)
-          })
-          if (justActivated) projection.reconcileLiveGraph(persisted)
+          const retried = retryPendingProjection(persisted)
+          if (justActivated && !retried)
+            projection.reconcileLiveGraph(persisted)
           return
         }
         lifecycle.clearPersistedDocId()
@@ -584,15 +618,8 @@ function startAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       retarget(next)
-      // KA-10 (scope-hydration recovery): the tab's scope can finish
-      // hydrating with no further doc_update to trigger the normal drain in
-      // `onUpdate`/`applyQueuedFrame`. Probe once on every activation; a no-op
-      // when nothing is pending or the scope still isn't ready.
-      recordDevEvent('scope_retry', {
-        workflowId: next,
-        projected: projection.retryPending(next)
-      })
-      if (justActivated) projection.reconcileLiveGraph(next)
+      const retried = retryPendingProjection(next)
+      if (justActivated && !retried) projection.reconcileLiveGraph(next)
     },
     { immediate: true }
   )
