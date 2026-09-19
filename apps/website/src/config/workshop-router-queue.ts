@@ -24,6 +24,20 @@ const IN_FLIGHT_RETRIES = 5
 const INTERRUPTION_RETRIES = 20
 const UNREADABLE_RESULT_RETRIES = 2
 const REQUEST_ID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/
+const TERMINAL_RESULT_ERRORS = new Set([
+  'invalid_input',
+  'content_policy_violation',
+  'provider_error',
+  'provider_timeout',
+  'insufficient_credits',
+  'internal_error',
+  'cancelled',
+  'queue_timeout'
+])
+
+interface QueueContext extends AttemptContext {
+  latestToken: string
+}
 
 interface Submitting {
   readonly phase: 'submit'
@@ -80,12 +94,14 @@ function runRequestId(state: QueuedRun): string | null {
 }
 
 async function routerFetch(
-  context: AttemptContext,
+  context: QueueContext,
   url: string,
   init: { readonly method: 'GET' | 'POST' | 'PUT'; readonly body?: string }
 ): Promise<Response> {
   const { options } = context
   const token = (await options.freshToken?.()) ?? options.token
+  context.signal.throwIfAborted()
+  context.latestToken = token
   return fetch(url, {
     ...init,
     credentials: 'omit',
@@ -108,7 +124,7 @@ async function routerFetch(
 
 async function submit(
   state: Submitting,
-  context: AttemptContext
+  context: QueueContext
 ): Promise<QueuedRun> {
   const response = await routerFetch(context, requestsUrl(context), {
     method: 'POST',
@@ -148,55 +164,126 @@ async function submit(
 
 async function collect(
   state: Collecting,
-  context: AttemptContext
+  context: QueueContext
 ): Promise<QueuedRun> {
   const response = await routerFetch(
     context,
     requestsUrl(context, state.requestId),
     { method: 'GET' }
   )
-  if (response.status === 202) {
-    await response.body?.cancel().catch(() => {})
-    return {
-      phase: 'waiting',
-      waitMs: pollDelayMs(response),
-      next: { ...state, interruptions: 0 }
+  const retry = await collectionRetry(response, state)
+  if (retry) return retry
+  return settleQueuedResult(response, state, context)
+}
+
+async function collectionRetry(
+  response: Response,
+  state: Collecting
+): Promise<Waiting | undefined> {
+  const pending = response.status === 202
+  const interrupted = response.status === 429 || response.status === 503
+  if (!pending && (!interrupted || state.interruptions >= INTERRUPTION_RETRIES))
+    return
+  await response.body?.cancel().catch(() => {})
+  return {
+    phase: 'waiting',
+    waitMs: pollDelayMs(response),
+    next: {
+      ...state,
+      interruptions: pending ? 0 : state.interruptions + 1
     }
   }
+}
+
+async function settleQueuedResult(
+  response: Response,
+  state: Collecting,
+  context: QueueContext
+): Promise<QueuedRun> {
+  try {
+    const outputs = await settleRouterResponse(
+      response,
+      state.requestId,
+      context
+    )
+    return { phase: 'complete', requestId: state.requestId, outputs }
+  } catch (error) {
+    if (!(error instanceof WorkshopRouterError)) throw error
+    const errorType = error.response?.errorType
+    throw new WorkshopRouterError(
+      error.reason,
+      error.requestId ?? state.requestId,
+      error.fieldErrors,
+      error.response,
+      error.stage,
+      {
+        cause: error,
+        requestSettlement:
+          errorType && TERMINAL_RESULT_ERRORS.has(errorType)
+            ? 'terminal'
+            : 'pending'
+      }
+    )
+  }
+}
+
+function pendingCollectionFailure(
+  failure: WorkshopRouterError,
+  requestId: string
+): WorkshopRouterError {
+  return new WorkshopRouterError(
+    failure.reason,
+    failure.requestId ?? requestId,
+    failure.fieldErrors,
+    failure.response,
+    failure.stage,
+    { cause: failure, requestSettlement: 'pending' }
+  )
+}
+
+function preserveCollectionSettlement(
+  error: unknown,
+  state: ActiveRun
+): unknown {
   if (
-    (response.status === 429 || response.status === 503) &&
-    state.interruptions < INTERRUPTION_RETRIES
-  ) {
-    await response.body?.cancel().catch(() => {})
-    return {
-      phase: 'waiting',
-      waitMs: pollDelayMs(response),
-      next: { ...state, interruptions: state.interruptions + 1 }
-    }
+    state.phase !== 'collect' ||
+    !(error instanceof WorkshopRouterError) ||
+    error.requestSettlement !== undefined
+  )
+    return error
+  return pendingCollectionFailure(error, state.requestId)
+}
+
+function retryUnreadableResult(
+  error: unknown,
+  state: ActiveRun
+): Waiting | undefined {
+  if (!(error instanceof WorkshopRouterError) || error.reason === 'network')
+    return
+  if (error.requestSettlement === 'terminal') throw error
+  if (
+    state.phase !== 'collect' ||
+    error.reason !== 'response' ||
+    state.unreadableResults >= UNREADABLE_RESULT_RETRIES
+  )
+    throw error
+  return {
+    phase: 'waiting',
+    waitMs: POLL_DEFAULT_MS,
+    next: { ...state, unreadableResults: state.unreadableResults + 1 }
   }
-  const outputs = await settleRouterResponse(response, state.requestId, context)
-  return { phase: 'complete', requestId: state.requestId, outputs }
 }
 
 function afterInterruption(
   error: unknown,
   state: ActiveRun,
-  context: AttemptContext
+  context: QueueContext
 ): QueuedRun {
   context.options.signal.throwIfAborted()
   if (context.signal.aborted) throw error
-  if (error instanceof WorkshopRouterError && error.reason !== 'network') {
-    const unreadable =
-      state.phase === 'collect' &&
-      error.reason === 'response' &&
-      state.unreadableResults < UNREADABLE_RESULT_RETRIES
-    if (!unreadable) throw error
-    return {
-      phase: 'waiting',
-      waitMs: POLL_DEFAULT_MS,
-      next: { ...state, unreadableResults: state.unreadableResults + 1 }
-    }
-  }
+  const failure = preserveCollectionSettlement(error, state)
+  const unreadable = retryUnreadableResult(failure, state)
+  if (unreadable) return unreadable
   if (state.interruptions >= INTERRUPTION_RETRIES)
     throw new WorkshopRouterError(
       'network',
@@ -204,7 +291,12 @@ function afterInterruption(
       {},
       undefined,
       'request',
-      { cause: error }
+      {
+        cause: failure,
+        ...(state.phase === 'collect'
+          ? { requestSettlement: 'pending' as const }
+          : {})
+      }
     )
   return {
     phase: 'waiting',
@@ -215,7 +307,7 @@ function afterInterruption(
 
 async function advance(
   state: PendingRun,
-  context: AttemptContext
+  context: QueueContext
 ): Promise<QueuedRun> {
   if (state.phase === 'waiting') {
     await waitFor(state.waitMs, context.signal)
@@ -230,20 +322,23 @@ async function advance(
   }
 }
 
-function requestCancellation(context: AttemptContext, requestId: string): void {
+function requestCancellation(context: QueueContext, requestId: string): void {
   void fetch(`${requestsUrl(context, requestId)}/cancel`, {
     method: 'PUT',
     credentials: 'omit',
     redirect: 'error',
     keepalive: true,
-    headers: { Authorization: `Bearer ${context.options.token}` }
+    headers: { Authorization: `Bearer ${context.latestToken}` }
   }).catch(() => {})
 }
 
 export async function runWorkshopRouter(
   options: RouterRunOptions
 ): Promise<RouterRunResult> {
-  const context = createAttemptContext(options)
+  const context: QueueContext = {
+    ...createAttemptContext(options),
+    latestToken: options.token
+  }
   let state: QueuedRun = {
     phase: 'submit',
     inFlightRetries: 0,

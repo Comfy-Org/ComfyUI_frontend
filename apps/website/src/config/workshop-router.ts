@@ -270,6 +270,8 @@ async function attempt(
       const { waitMs, ...progress } = state
       return { ...progress, phase: 'request' }
     }
+    const token = (await options.freshToken?.()) ?? options.token
+    signal.throwIfAborted()
     const response = await fetch(
       `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${options.contract.id}`,
       {
@@ -277,7 +279,7 @@ async function attempt(
         credentials: 'omit',
         redirect: 'error',
         headers: {
-          Authorization: `Bearer ${options.token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Idempotency-Key': options.idempotencyKey
         },

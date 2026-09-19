@@ -2,6 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { WorkshopRouterError } from './workshop-router-errors'
 import { runWorkshopRouter } from './workshop-router-queue'
 
 const MODEL = 'bfl/flux-2-pro'
@@ -161,7 +162,36 @@ describe('queued Router delivery', () => {
     vi.stubGlobal('fetch', calls)
     await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
       reason: 'network',
-      requestId: REQUEST_ID
+      requestId: REQUEST_ID,
+      requestSettlement: 'pending'
+    })
+  })
+
+  it('keeps the admitted run recoverable when credential refresh fails while collecting', async () => {
+    stubFetch(admitted())
+    const freshToken = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce('submit-token')
+      .mockRejectedValueOnce(new WorkshopRouterError('unavailable'))
+    await expect(
+      settle(runWorkshopRouter({ ...options(), freshToken }))
+    ).rejects.toMatchObject({
+      reason: 'unavailable',
+      requestId: REQUEST_ID,
+      requestSettlement: 'pending'
+    })
+  })
+
+  it('keeps the admitted run recoverable after repeated result-read refusals', async () => {
+    const refusals = Array.from({ length: 21 }, () =>
+      refusal(503, 'service_unavailable')
+    )
+    stubFetch(admitted(), ...refusals)
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'provider',
+      requestId: REQUEST_ID,
+      response: { status: 503, errorType: 'service_unavailable' },
+      requestSettlement: 'pending'
     })
   })
 
@@ -186,13 +216,21 @@ describe('queued Router delivery', () => {
     await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
       reason: 'provider',
       requestId: REQUEST_ID,
-      response: { status: 502 }
+      response: { status: 502 },
+      requestSettlement: 'terminal'
     })
   })
 
   it('falls back to the synchronous route when queued delivery is not enabled for the caller', async () => {
     const calls = stubFetch(refusal(403, 'not_enabled'), result())
-    const rendered = await settle(runWorkshopRouter(options()))
+    const tokens = ['queued-token', 'synchronous-token']
+    const rendered = await settle(
+      runWorkshopRouter({
+        ...options(),
+        token: 'initial-token',
+        freshToken: async () => tokens.shift() ?? 'exhausted'
+      })
+    )
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
     expect(requestedUrls(calls)).toEqual([
       `POST ${SUBMIT_URL}`,
@@ -201,6 +239,9 @@ describe('queued Router delivery', () => {
     expect(
       new Headers(calls.mock.calls[1][1]?.headers).get('Idempotency-Key')
     ).toBe('logical-run')
+    expect(
+      new Headers(calls.mock.calls[1][1]?.headers).get('Authorization')
+    ).toBe('Bearer synchronous-token')
   })
 
   it('uses a fresh credential for every request of a long run', async () => {
@@ -219,7 +260,7 @@ describe('queued Router delivery', () => {
     ).toEqual(['Bearer first', 'Bearer second', 'Bearer third'])
   })
 
-  it('asks Router to cancel the admitted run when the user cancels', async () => {
+  it('asks Router to cancel the admitted run with the latest credential', async () => {
     const controller = new AbortController()
     const calls = vi.fn<typeof fetch>(async (_, init) => {
       if (init?.method === 'POST') return admitted()
@@ -228,10 +269,19 @@ describe('queued Router delivery', () => {
       throw controller.signal.reason
     })
     vi.stubGlobal('fetch', calls)
+    const tokens = ['submit-token', 'poll-token']
     await expect(
-      settle(runWorkshopRouter(options(controller.signal)))
+      settle(
+        runWorkshopRouter({
+          ...options(controller.signal),
+          freshToken: async () => tokens.shift() ?? 'exhausted'
+        })
+      )
     ).rejects.toMatchObject({ name: 'AbortError' })
     expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+    expect(
+      new Headers(calls.mock.calls.at(-1)?.[1]?.headers).get('Authorization')
+    ).toBe('Bearer poll-token')
   })
 
   it.for([
