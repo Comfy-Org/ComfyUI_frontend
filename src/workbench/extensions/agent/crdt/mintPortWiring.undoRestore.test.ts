@@ -74,7 +74,8 @@ function link(
  * `app.loadGraphData`, which the mint session treats as a teardown and mutes.
  * The doc therefore never learned what undo removed, and the next follower
  * frame re-materialized it. During `_restoringState` the wiring must diff the
- * graph across the load bracket and mint the difference as semantic ops.
+ * graph across the load bracket and mint supported node additions/deletions,
+ * changed present widget values, and link additions as semantic ops.
  */
 describe('attachMintPortWiring undo/redo restore', () => {
   let minted: GraphOperation[]

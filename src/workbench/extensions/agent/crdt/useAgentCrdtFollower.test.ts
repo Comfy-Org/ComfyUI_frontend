@@ -993,7 +993,8 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
@@ -1008,13 +1009,14 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
       expect(
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
         replacementDoc
       )
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions

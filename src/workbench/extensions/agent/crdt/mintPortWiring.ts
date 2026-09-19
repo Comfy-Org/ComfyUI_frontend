@@ -75,7 +75,8 @@ export interface MintPortWiringDeps {
    * True while the active workflow's ChangeTracker replays an undo/redo
    * state (`_restoringState`). Such a load is a human intent whose result
    * must reach the doc, so the wiring diffs the graph across the load bracket
-   * and mints the difference (QAF-51). Optional: absent means never.
+   * and mints node additions/deletions, changed present widget values, and
+   * link additions (QAF-51). Optional: absent means never.
    */
   isRestoringState?(): boolean
 }
@@ -272,11 +273,11 @@ function reportDetachedLinks(
 }
 
 /**
- * Express an undo/redo restore as the semantic ops a human would have minted
- * by hand: deletions first (with the links they severed), then additions,
- * widget changes on surviving nodes, and finally new links. A link that
- * vanished without its node is not representable as a mint here and is
- * surfaced, never silently dropped.
+ * Express the supported undo/redo subset as semantic ops: node deletions
+ * (with the links they severed), node additions, changed values for widget
+ * keys present after restore, and link additions. Removed widget keys and
+ * standalone disconnects are not representable; a standalone disconnect is
+ * surfaced rather than silently dropped.
  */
 function diffRestore(
   before: RestoreSnapshot,
