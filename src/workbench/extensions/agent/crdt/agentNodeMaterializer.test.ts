@@ -8,6 +8,7 @@ import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { inertWidgetEffectPort } from './__fixtures__/widgetEffectPorts'
 import { createGraphMutations } from './graphMutations'
 import {
   LGraph,
@@ -173,7 +174,8 @@ function remoteMutations(scope: GraphScope) {
           }))
         )
       }
-    }
+    },
+    widgets: inertWidgetEffectPort
   })
 }
 
