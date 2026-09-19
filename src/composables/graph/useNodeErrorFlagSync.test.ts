@@ -24,8 +24,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     nodeB.addInput('ckpt_name', 'STRING')
     graph.add(nodeB)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
@@ -141,8 +140,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const store = useExecutionErrorStore()
 
@@ -219,8 +217,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
