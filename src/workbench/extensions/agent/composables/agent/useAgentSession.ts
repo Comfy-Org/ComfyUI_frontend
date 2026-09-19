@@ -340,10 +340,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       if (admission !== undefined) {
+        // `funds_unavailable` is a transient billing-lookup failure (503) the
+        // server asks the client to retry after a delay; `manual_block` is a
+        // deliberate 402 with no retry semantics. Only the former carries
+        // `retryAfterSeconds` through, so the UI never implies a countdown
+        // for an operator-imposed block. See FE-2005.
+        const retryAfterSeconds =
+          admission.reason === 'funds_unavailable' &&
+          error instanceof AgentApiError
+            ? error.retryAfterSeconds
+            : undefined
         conversationStore.recordFailedSend(
           nextLocalErrorId(),
           text,
-          admission.message
+          admission.message,
+          retryAfterSeconds
         )
         return false
       }
