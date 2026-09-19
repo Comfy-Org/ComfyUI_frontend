@@ -216,3 +216,16 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * Where a link to the API-keys page was clicked. The platform reads it to
+ * show the matching call and open the create-key dialog; `model` is the
+ * website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysSource = { source: 'router' } | { source: 'model'; model: string }
+
+export function apiKeysLink(from: ApiKeysSource): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.search = new URLSearchParams(from).toString()
+  return url.href
+}

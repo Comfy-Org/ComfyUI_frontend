@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes, localizeHref } from './routes'
+import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
   it('prefixes an internal path for a non-default locale', () => {
@@ -68,5 +68,24 @@ describe('getRoutes minimaxLicenseProfessionalRequest', () => {
     expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
       '/minimax/license/professional-request'
     )
+  })
+})
+
+describe('apiKeysLink', () => {
+  it.for([
+    {
+      from: { source: 'router' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?source=router'
+    },
+    {
+      from: {
+        source: 'model',
+        model: 'byteplus--seedream-5-pro--generate-images'
+      } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?source=model&model=byteplus--seedream-5-pro--generate-images'
+    }
+  ])('names the source in the query: $from.source', ({ from, href }) => {
+    expect(apiKeysLink(from)).toBe(href)
+    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
   })
 })
