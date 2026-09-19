@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "וידאו latent ריק של Cosmos",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "תמונת latent ריקה של Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Empty HunyuanVideo 1.0 Latent",
+    "display_name": "וידאו latent ריק של Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "וידאו latent ריק של Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "וידאו latent ריק של LTXV",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "latent ריק של Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "מבנה latent ריק של Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "הגדלת latent של Hunyuan Video 1.5 באמצעות מודל",
     "inputs": {
       "crop": {
         "name": "חיתוך"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "שמע latent ריק של LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "ל-MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על פני העומק החזוי. מעברים נוספים מחדדים פרטים וקצוות עדינים בעלות ליניארית בקירוב. 0 משבית את החידוד. האפשרות אינה משפיעה על MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = הכי מהיר, 9 = הכי מפורט."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "ל-MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על פני העומק החזוי. מעברים נוספים מחדדים פרטים וקצוות עדינים בעלות ליניארית בקירוב. 0 משבית את החידוד. האפשרות אינה משפיעה על MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "התניית Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -22751,7 +22759,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "תמונת latent ריקה של Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -22794,7 +22802,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "קידוד VAE של שלב C ב-Stable Cascade",
     "inputs": {
       "compression": {
         "name": "דחיסה"
@@ -23757,7 +23765,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "קידוד טקסט לעריכת תמונה של Qwen",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23787,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "קידוד טקסט לעריכת תמונה של Qwen Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23863,10 @@
       "max_length": {
         "name": "אורך_מקסימלי"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי רב-אסימוני של נקודת הביקורת. ללא משקלי MTP אין לכך השפעה. auto מתאים את עומק הטיוטה; 2-5 מקבעים אותו. הפלט שנדגם נשאר מפולג כראוי, אך שונה מפלט שאינו MTP עבור אותו seed."
+      },
       "prompt": {
         "name": "פרומפט"
       },
@@ -23916,6 +23928,10 @@
       },
       "max_length": {
         "name": "אורך מרבי"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי רב-אסימוני של נקודת הביקורת. ללא משקלי MTP אין לכך השפעה. auto מתאים את עומק הטיוטה; 2-5 מקבעים אותו. הפלט שנדגם נשאר מפולג כראוי, אך שונה מפלט שאינו MTP עבור אותו seed."
       },
       "prompt": {
         "name": "פרומפט"
@@ -24432,7 +24448,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "התניית Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24470,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "שלב הצורה של Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24498,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "שלב המרקם של Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26178,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "פענוח VAE של Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26470,7 +26486,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "פענוח צורה באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26507,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "פענוח מבנה באמצעות VAE של Trellis2",
     "inputs": {
       "resolution": {
         "name": "רזולוציה"
@@ -26511,7 +26527,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "פענוח מרקם באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "דגימות"
@@ -29466,6 +29482,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "חברו את מחולל ABC או ספקו תווים ערוכים. השאירו ריק כדי להשתמש אוטומטית במצב off."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "הנחיה אוטורגרסיבית לסגנון ולמילים. 1.0 משבית את CFG, בהתאם לתהליך העבודה של ABC. השתמשו ב-1.01 כדי להתאים להנחיה המקורית במצב כבוי."
       },
       "clip": {
         "name": "clip"

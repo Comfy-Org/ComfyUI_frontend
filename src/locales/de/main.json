@@ -121,6 +121,7 @@
     "remove": "Entfernen",
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "removeWorkflowReference": "Referenz von {name} entfernen",
+    "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
     "runApproval": {
       "cancel": "Abbrechen",
       "lead": "Dieses Tool möchte den Workflow ausführen:",
@@ -419,7 +420,7 @@
       "contactSupport": "Um Ihr Konto zu löschen, kontaktieren Sie bitte {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Wir konnten Sie mit dieser Methode nicht anmelden. Versuchen Sie eine andere Anmeldemethode oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
+      "auth/account-exists-with-different-credential": "Wir konnten Sie mit dieser Methode nicht anmelden. Versuchen Sie eine andere Anmeldeoption oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
       "auth/email-already-in-use": "Wir konnten mit dieser E-Mail-Adresse kein Konto erstellen. Versuchen Sie stattdessen, sich anzumelden oder Ihr Passwort zurückzusetzen.",
       "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
@@ -528,6 +529,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticatePaymentBlockedDetail": "Ihre Bank hat diese Zahlung nicht genehmigt. Wenden Sie sich an Ihre Bank, bevor Sie einen weiteren Kauf versuchen.",
+    "authenticatePaymentDetail": "Ihre Bank muss diese Zahlung genehmigen. Bitte versuchen Sie es erneut und bestätigen Sie die Zahlung bei Ihrer Bank, wenn Sie dazu aufgefordert werden.",
     "authenticationFailedDetail": "Die Zahlungsbestätigung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
     "authenticationUnavailable": "Sichere Zahlungsbestätigung ist nicht verfügbar. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
     "cancelFailed": "Abonnement konnte nicht gekündigt werden",
@@ -998,9 +1001,11 @@
       "addMoreCredits": "Weitere Credits hinzufügen",
       "addMoreCreditsToRun": "Weitere Credits zum Ausführen hinzufügen",
       "amountToPayLabel": "Zu zahlender Betrag in Dollar",
+      "awaitingBankApprovalBody": "Ihre Bank muss diese Zahlung genehmigen, bevor Ihre Credits hinzugefügt werden. Sie können dies in der App Ihrer Bank oder über den Zahlungslink für diesen Kauf abschließen. Eine neue Aufladung kann erst gestartet werden, wenn diese abgeschlossen ist oder abläuft.",
       "buy": "Kaufen",
       "buyCredits": "Weiter zur Zahlung",
       "buyNow": "Jetzt kaufen",
+      "changeInProgressError": "Ein anderer Credit-Kauf ist noch offen. Warten Sie, bis er abgeschlossen ist oder abläuft, bevor Sie einen neuen starten.",
       "chargedImmediatelyNote": "Ihre gespeicherte Zahlungsmethode wird sofort belastet.",
       "confirmSubtitle": "Credits werden diesem Workspace hinzugefügt, sobald die Zahlung abgeschlossen ist.",
       "confirmTitle": "Bestätigen",
@@ -2060,6 +2065,7 @@
     "status": "Status",
     "stopPlayback": "Wiedergabe stoppen",
     "stopRecording": "Aufnahme stoppen",
+    "subgraphUnpackFailed": "Der ausgewählte Subgraph konnte nicht entpackt werden.",
     "submit": "Absenden",
     "success": "Erfolg",
     "switchToGridView": "Zur Rasteransicht wechseln",
@@ -3234,7 +3240,6 @@
     "hidream": "hidream",
     "hooks": "Hooks",
     "humo": "humo",
-    "hunyhuan video": "hunyhuan video",
     "hunyuan 3d": "hunyuan 3d",
     "hunyuan image": "hunyuan image",
     "hunyuan video": "hunyuan video",
@@ -3280,6 +3285,7 @@
     "schedulers": "Scheduler",
     "scheduling": "Planung",
     "sd": "sd",
+    "seedvr": "seedvr",
     "sensenova": "sensenova",
     "shader": "Shader",
     "sigmas": "Sigmas",
@@ -3299,7 +3305,6 @@
     "training": "Training",
     "transform": "Transformation",
     "trellis": "trellis",
-    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "Upscaling",
@@ -3645,6 +3650,7 @@
   "rightSidePanel": {
     "addFavorite": "Favorit",
     "advancedInputs": "ERWEITERTE EINGÄNGE",
+    "blockedLastRun": "Letzter Durchlauf blockiert",
     "bypass": "Bypass",
     "collapse": "Einklappen",
     "color": "Node-Farbe",

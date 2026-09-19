@@ -121,6 +121,7 @@
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
     "removeWorkflowReference": "移除对 {name} 的引用",
+    "retryAfterSeconds": "您可以在 {seconds}s 后重试。",
     "runApproval": {
       "cancel": "取消",
       "lead": "此工具想要运行以下工作流：",
@@ -419,7 +420,7 @@
       "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。",
+      "auth/account-exists-with-different-credential": "无法通过此方式让您登录。请尝试其他登录选项，或重置密码以继续。",
       "auth/cancelled-popup-request": "另一个登录窗口已打开，因此此窗口已取消。请重试。",
       "auth/email-already-in-use": "无法使用此电子邮件创建账户。请尝试登录或重置密码。",
       "auth/invalid-credential": "登录凭据无效。请检查您的邮箱和密码。",
@@ -528,6 +529,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticatePaymentBlockedDetail": "您的银行未批准此付款。请在尝试再次购买前联系您的银行。",
+    "authenticatePaymentDetail": "您的银行需要批准此付款。请重试，并在收到提示时通过您的银行确认付款。",
     "authenticationFailedDetail": "无法完成付款验证。请重试。",
     "authenticationUnavailable": "安全支付验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
@@ -998,9 +1001,11 @@
       "addMoreCredits": "获取更多积分",
       "addMoreCreditsToRun": "获取更多积分来运行",
       "amountToPayLabel": "支付金额（美元）",
+      "awaitingBankApprovalBody": "您的银行需要批准此付款，然后才能添加积分。您可以通过银行应用或本次购买的付款链接完成操作。在此笔充值完成或过期之前，无法发起新的充值。",
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
+      "changeInProgressError": "另一笔积分购买仍未结束。请等待其完成或过期后再发起新的购买。",
       "chargedImmediatelyNote": "将立即从您保存的支付方式扣款。",
       "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
       "confirmTitle": "确认",
@@ -2060,6 +2065,7 @@
     "status": "状态",
     "stopPlayback": "停止播放",
     "stopRecording": "停止录音",
+    "subgraphUnpackFailed": "无法解包所选子图。",
     "submit": "提交",
     "success": "成功",
     "switchToGridView": "切换到网格视图",
@@ -3234,7 +3240,6 @@
     "hidream": "HiDream",
     "hooks": "约束",
     "humo": "humo",
-    "hunyhuan video": "混幻视频",
     "hunyuan 3d": "混元3D",
     "hunyuan image": "混元图像",
     "hunyuan video": "混元视频",
@@ -3280,6 +3285,7 @@
     "schedulers": "调度器",
     "scheduling": "调度",
     "sd": "sd",
+    "seedvr": "seedvr",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "Sigmas",
@@ -3299,7 +3305,6 @@
     "training": "训练",
     "transform": "变换",
     "trellis": "trellis",
-    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "U-Net",
     "upscaling": "放大",
@@ -3645,6 +3650,7 @@
   "rightSidePanel": {
     "addFavorite": "收藏",
     "advancedInputs": "高级输入",
+    "blockedLastRun": "上次运行被阻止",
     "bypass": "忽略",
     "collapse": "收起",
     "color": "节点颜色",
