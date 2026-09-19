@@ -29,8 +29,6 @@ import type {
   SerialisableLLink
 } from '../types/serialisation'
 
-const MAX_ID = 100_000_000
-
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =
     ExportedSubgraph,
@@ -282,8 +280,10 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, () =>
-        Number(mintNodeId(state))
+      const newId = findNextAvailableId(
+        usedNodeIds,
+        () => Number(mintNodeId(state)),
+        'node'
       )
       remappedIds.set(key, newId)
       node.id = newId
@@ -319,12 +319,13 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
  */
 function findNextAvailableId(
   usedIds: Set<number>,
-  advance: () => number
+  advance: () => number,
+  entity: 'node' | 'group' | 'link' | 'reroute'
 ): number {
   for (;;) {
     const nextId = advance()
-    if (nextId > MAX_ID) {
-      throw new Error('Node ID space exhausted')
+    if (!Number.isSafeInteger(nextId)) {
+      throw new Error(`Cannot allocate a safe ${entity} ID`)
     }
     if (!usedIds.has(nextId)) return nextId
   }
@@ -488,7 +489,7 @@ function remapNumericIds(
   for (const item of items) {
     const oldId = item.id
     if (usedIds.has(oldId)) {
-      const newId = findNextAvailableId(usedIds, nextId)
+      const newId = findNextAvailableId(usedIds, nextId, entity)
       remapped.set(oldId, newId)
       item.id = newId
       usedIds.add(newId)
