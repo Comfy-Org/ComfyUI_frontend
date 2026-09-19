@@ -88,7 +88,18 @@ const SAVED_CARD = {
   is_default: true
 } satisfies SavedPaymentMethod
 
-const BALANCE = { amount_micros: 12_660_000, currency: 'usd' }
+/**
+ * The credits tile renders a breakdown, not the bare amount, so the response
+ * has to carry the monthly and prepaid halves too — the same shape and the same
+ * numbers `creditsTile.spec.ts` proves: 6000 -> 12,660 total.
+ */
+const BALANCE = {
+  amount_micros: 6_000,
+  currency: 'usd',
+  effective_balance_micros: 6_000,
+  cloud_credit_balance_micros: 5_000,
+  prepaid_balance_micros: 1_000
+}
 
 /**
  * Beyond Number.MAX_SAFE_INTEGER, sent as raw JSON: written as a JS literal the
@@ -96,14 +107,18 @@ const BALANCE = { amount_micros: 12_660_000, currency: 'usd' }
  * row exists to prove the reader refuses.
  */
 const UNSAFE_BALANCE_BODY =
-  '{"amount_micros":9007199254740993,"currency":"usd"}'
+  '{"amount_micros":9007199254740993,"currency":"usd",' +
+  '"effective_balance_micros":9007199254740993,' +
+  '"cloud_credit_balance_micros":5000,"prepaid_balance_micros":1000}'
 
 function eventsPage(page: number): BillingEventsResponse {
   return {
     events: [
       {
         event_id: `evt-${page}`,
-        event_type: 'api_usage',
+        // Only `api_usage_completed` renders `params.api_name`; the table has
+        // no branch for a bare `api_usage`.
+        event_type: 'api_usage_completed',
         createdAt: '2026-09-20T00:00:00Z',
         amount: 100,
         params: { api_name: `node-on-page-${page}` }
