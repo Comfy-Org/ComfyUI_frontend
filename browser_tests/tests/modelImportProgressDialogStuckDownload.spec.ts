@@ -115,5 +115,47 @@ test.describe(
         { mask: [page.locator('.timestamp')] }
       )
     })
+
+    test('the stuck failed toast can still be manually dismissed (PM-1302 does not also block the close action)', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+
+      // Same premature-failed sequence as above, minus the later `completed`
+      // message - the point here is only whether the user can get rid of the
+      // wrongly-stuck toast on their own, not whether it self-corrects.
+      await dispatchAssetDownload(page, {
+        task_id: TASK_ID,
+        asset_name: ASSET_NAME,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
+      await dispatchAssetDownload(page, {
+        task_id: TASK_ID,
+        asset_name: ASSET_NAME,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'failed',
+        error: 'Source server error'
+      })
+
+      const toast = page.getByRole('status')
+      await expect(toast).toBeVisible()
+      await expect(
+        page.getByText('1 download failed', { exact: true })
+      ).toBeVisible()
+
+      // `isInProgress` is false once the (falsely) terminal `failed` status
+      // lands, so ModelImportProgressDialog's close (X) button renders and
+      // is clickable - the reported "never dismisses" complaint is about the
+      // status staying wrong forever, not about this button being disabled
+      // or absent.
+      await page.getByRole('button', { name: 'Close' }).click()
+
+      await expect(toast).toBeHidden()
+    })
   }
 )
