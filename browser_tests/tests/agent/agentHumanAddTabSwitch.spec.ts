@@ -18,7 +18,6 @@ const CASE = 'agent-rec-text-only-answer'
 // readiness boundary for "the frames pending on the follower have landed".
 const PROMPT_NODE_ID = '6'
 const ADD_POSITION: [number, number] = [400, 400]
-const UNCATALOGUED = 'uncatalogued_widget_write'
 
 interface NodeLens {
   live: string[]
@@ -298,49 +297,35 @@ async function attachEvidence(
 interface AddCase {
   name: string
   add: (page: Page) => Promise<string>
-  /** The applier's verdict on the add_node op the page mints for it. */
-  verdict: { outcome: 'applied' } | { outcome: 'rejected'; code: string }
 }
 
 // KSampler is in the pinned catalog. Note is registered by a frontend
 // extension and absent from every catalog, the footing a Get/Set node from a
 // custom-node pack stands on. A blueprint host is typed by a definition the
-// doc has never seen; it only carries named widget values when it promotes one.
+// doc has never seen; it only carries widget values when it promotes one. The
+// mint keeps `widgets_values` positional for the uncatalogued classes, the
+// form the applier stores opaquely instead of rejecting.
 const CATALOGUED: AddCase = {
   name: 'a node from the pinned catalog',
-  add: (page) => addNodeOfType(page, 'KSampler'),
-  verdict: { outcome: 'applied' }
+  add: (page) => addNodeOfType(page, 'KSampler')
 }
 const FRONTEND_ONLY: AddCase = {
   name: 'a frontend-only node (the footing Get/Set nodes stand on)',
-  add: (page) => addNodeOfType(page, 'Note'),
-  verdict: { outcome: 'rejected', code: UNCATALOGUED }
+  add: (page) => addNodeOfType(page, 'Note')
 }
 const BLUEPRINT_PROMOTED: AddCase = {
   name: 'a subgraph blueprint with a promoted widget',
-  add: (page) => addBlueprint(page, true),
-  verdict: { outcome: 'rejected', code: UNCATALOGUED }
+  add: (page) => addBlueprint(page, true)
 }
 const BLUEPRINT_PLAIN: AddCase = {
   name: 'a subgraph blueprint without promoted widgets',
-  add: (page) => addBlueprint(page, false),
-  verdict: { outcome: 'applied' }
+  add: (page) => addBlueprint(page, false)
 }
 
-function expectVerdict(
-  outcomes: ApplyOutcome[],
-  verdict: AddCase['verdict']
-): void {
-  expect(outcomes).toHaveLength(1)
-  const [outcome] = outcomes
-  if (verdict.outcome === 'applied') {
-    expect(outcome).toMatchObject({ outcome: 'applied' })
-    return
-  }
-  expect(outcome).toMatchObject({
-    outcome: 'rejected',
-    reason: { code: verdict.code }
-  })
+function expectApplied(outcomes: ApplyOutcome[], count: number): void {
+  expect(outcomes.map((outcome) => outcome.outcome)).toEqual(
+    Array<string>(count).fill('applied')
+  )
 }
 
 test.describe(
@@ -349,15 +334,15 @@ test.describe(
   () => {
     test.use({ conversationCase: CASE })
 
-    // First half of the mechanism, on its own: what the host answers the
-    // page's add_node op, and that the page keeps the node either way.
-    for (const { name, add, verdict } of [
+    // First half of the mechanism, on its own: the host takes the page's
+    // add_node op and the page keeps the node.
+    for (const { name, add } of [
       CATALOGUED,
       FRONTEND_ONLY,
       BLUEPRINT_PROMOTED,
       BLUEPRINT_PLAIN
     ]) {
-      test(`host verdict on ${name}: ${verdict.outcome}, and the canvas keeps the node`, async ({
+      test(`host applies the add of ${name}, and the canvas keeps the node`, async ({
         agentConversation,
         page
       }, testInfo) => {
@@ -370,10 +355,8 @@ test.describe(
         const outcomes = await waitForHumanOps(agentConversation, 1)
         await attachEvidence(testInfo, page, agentConversation, 'after-add')
 
-        expectVerdict(outcomes, verdict)
-        expect(agentConversation.hostNodeIds().includes(nodeId)).toBe(
-          verdict.outcome === 'applied'
-        )
+        expectApplied(outcomes, 1)
+        expect(agentConversation.hostNodeIds()).toContain(nodeId)
         expect(
           agentConversation
             .clientDocFrames()
@@ -383,9 +366,9 @@ test.describe(
       })
     }
 
-    // Both halves: the add the host did not take, then the tab return whose
-    // first frame reconciles the stores against the doc.
-    for (const { name, add, verdict } of [
+    // Both halves: the add, then the tab return whose first frame reconciles
+    // the stores against the doc. A node the doc holds survives it.
+    for (const { name, add } of [
       CATALOGUED,
       BLUEPRINT_PLAIN,
       FRONTEND_ONLY,
@@ -395,10 +378,6 @@ test.describe(
         agentConversation,
         page
       }, testInfo) => {
-        test.fail(
-          verdict.outcome === 'rejected',
-          'The doc host rejected the add, the client swallowed the rejection, and the first frame after the tab return deletes every local node the doc does not hold'
-        )
         test.setTimeout(90_000)
         await agentConversation.runTurns()
         await installTabSwitchObserver(page)
@@ -435,15 +414,11 @@ test.describe(
 
     // The same reconcile without any tab switch: the echo of an accepted add
     // is rejected locally ("already registered") and arms a full reconcile,
-    // which the next frame runs.
+    // which the next frame runs against a doc that now holds the Note too.
     test('keeps a frontend-only node when two catalogued nodes are added after it', async ({
       agentConversation,
       page
     }, testInfo) => {
-      test.fail(
-        true,
-        'The echo of the first catalogued add arms a full reconcile and the echo of the second runs it, deleting the frontend-only node the doc never took'
-      )
       test.setTimeout(90_000)
       await agentConversation.runTurns()
       await installTabSwitchObserver(page)
@@ -465,13 +440,9 @@ test.describe(
         agentConversation,
         'after-adds'
       )
-      expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
-        'rejected',
-        'applied',
-        'applied'
-      ])
+      expectApplied(outcomes, 3)
       expect(agentConversation.hostNodeIds()).toEqual(
-        expect.arrayContaining([samplerId, encoderId])
+        expect.arrayContaining([noteId, samplerId, encoderId])
       )
       await expect(note).toBeVisible()
       expect(lens.observer?.removed).not.toContain(noteId)
