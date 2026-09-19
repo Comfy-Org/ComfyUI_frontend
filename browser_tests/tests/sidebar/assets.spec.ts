@@ -1412,10 +1412,12 @@ test.describe(
           ])
         )
 
-      // Wait for the Vue-rendered node cards to actually paint before
-      // screenshotting the canvas: the graph-model node count above can
-      // settle a render tick before the DOM/canvas catches up.
-      await comfyPage.vueNodes.waitForNodes(7)
+      // This describe block doesn't run with `@vue-nodes`, so nodes paint on
+      // the legacy canvas, not as `[data-node-id]` DOM cards -
+      // `vueNodes.waitForNodes()` would hang forever waiting for elements
+      // that are never created. Wait a render tick instead so the canvas
+      // catches up to the graph-model node count settled above.
+      await comfyPage.nextFrame()
 
       // Visual proof the rebuilt graph actually renders, not just that the
       // success toast fired.
