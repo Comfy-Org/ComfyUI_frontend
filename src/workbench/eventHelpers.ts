@@ -35,6 +35,7 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'reset',
         'search',
         'submit'
-      ].includes(target.type))
+      ].includes(target.type)) ||
+    (target instanceof HTMLElement && target.isContentEditable)
   return isTextInput || useCanvasStore().linearMode || hasTextSelection()
 }

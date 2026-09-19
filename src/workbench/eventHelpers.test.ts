@@ -16,7 +16,7 @@ describe('shouldIgnoreCopyPaste', () => {
     expect(shouldIgnoreCopyPaste(input)).toBe(true)
   })
 
-  it.fails('KNOWN BUG: returns true for a focused contenteditable target', () => {
+  it('returns true for a focused contenteditable target', () => {
     // The agent composer (InlinePromptEditor.vue) mounts a ProseMirror
     // EditorView on a contenteditable div, not a textarea/input. Paste
     // events targeting it should be left to native/ProseMirror handling,

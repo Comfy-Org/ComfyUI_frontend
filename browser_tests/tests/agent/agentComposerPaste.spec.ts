@@ -101,12 +101,6 @@ test(
       path: 'test-results/agent-composer-paste-repro.png'
     })
 
-    // Known bug: shouldIgnoreCopyPaste (src/workbench/eventHelpers.ts)
-    // does not recognise the composer's contenteditable ProseMirror editor,
-    // so the document-level paste handler in usePaste.ts falls through to
-    // canvas.pasteFromClipboard() and re-pastes the last node copied on the
-    // canvas, even though the paste was meant for the composer.
-    test.fail()
     await expect(getNodeCount()).resolves.toBe(1)
   }
 )
