@@ -62,7 +62,8 @@ const cardClass =
         role="region"
       >
         <div
-          class="overflow-hidden mask-[linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)]"
+          class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
+          data-testid="discovery-marquee"
         >
           <div class="group flex w-max gap-3">
             <div
