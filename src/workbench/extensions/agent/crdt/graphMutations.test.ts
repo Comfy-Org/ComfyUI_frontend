@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -1001,5 +1002,60 @@ describe('graphMutations', () => {
 
     expect(graph.serialize().nodes).toHaveLength(1)
     expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  // PM-1273: a combo widget's valid-options list is often kept in sync by the
+  // widget's own `callback` (the `PrimitiveNode.refreshComboInNode` pattern in
+  // `widgetInputs.ts`). The human-edit path in `processedWidgetRenderModel.ts`
+  // always invokes `live.widget.callback?.(...)` after writing a new value
+  // (see `useProcessedWidgets.test.ts`'s "calls widget.callback with the new
+  // value when a live widget exists"). `setWidgetValue` here only ever calls
+  // `widgetStore.setValue`, so an agent-set value never triggers that sync and
+  // a combo can end up holding a value its own stale `options.values` no
+  // longer lists -- rendering the false "invalid" red ring.
+  describe('agent widget writes vs. the live widget callback (PM-1273)', () => {
+    it.fails('fires the widget callback for an agent-set value the same way a human edit does', () => {
+      const callback = vi.fn()
+      // The store record `setWidget` writes through to (`WidgetState`) has
+      // no `callback` field at all -- only a separately-held live LiteGraph
+      // widget object does. A materialized combo widget looks like this.
+      const liveWidget: IBaseWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'sdxl.safetensors',
+        options: { values: ['sdxl.safetensors'] },
+        y: 0,
+        callback
+      }
+      const liveNode = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      liveNode.id = toNodeId(1)
+      liveNode.widgets = [liveWidget]
+
+      mutations().addNode(node(1), context)
+      registerLiveWidgets(1, [
+        {
+          name: 'ckpt_name',
+          type: 'combo',
+          value: 'sdxl.safetensors',
+          options: { values: ['sdxl.safetensors'] }
+        }
+      ])
+
+      mutations().setWidget(
+        toNodeId(1),
+        'ckpt_name',
+        'flux1-dev.safetensors',
+        context
+      )
+
+      expect(callback).toHaveBeenCalledWith(
+        'flux1-dev.safetensors',
+        undefined,
+        expect.any(LGraphNode)
+      )
+    })
   })
 })
