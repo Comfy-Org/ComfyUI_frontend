@@ -24,6 +24,27 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
+const TOOLTIP_PARAM_ALLOWLIST = [
+  'credits_used',
+  'amount',
+  'model',
+  'api_name',
+  'endpoint',
+  'subscription_id',
+  'gpu_seconds',
+  'duration'
+] as const
+
+const DETAILS_COLUMN_PARAM_KEYS: readonly string[] = [
+  'amount',
+  'api_name',
+  'model'
+]
+
+const ADDITIONAL_INFO_PARAM_KEYS = TOOLTIP_PARAM_ALLOWLIST.filter(
+  (key) => !DETAILS_COLUMN_PARAM_KEYS.includes(key)
+)
+
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
   headers: {
@@ -157,17 +178,17 @@ export const useCustomerEventsService = () => {
   }
 
   function hasAdditionalInfo(event: AuditLog) {
-    const { amount, api_name, model, ...otherParams } = event.params || {}
-    return Object.keys(otherParams).length > 0
+    const params = event.params || {}
+    return ADDITIONAL_INFO_PARAM_KEYS.some((key) => params[key] !== undefined)
   }
 
   function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
+    const params = event.params || {}
 
-    return Object.entries(params)
-      .map(([key, value]) => {
+    return TOOLTIP_PARAM_ALLOWLIST.filter((key) => params[key] !== undefined)
+      .map((key) => {
         const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
+        const formattedValue = formatJsonValue(params[key])
         return `<strong>${formattedKey}:</strong> ${formattedValue}`
       })
       .join('<br>')

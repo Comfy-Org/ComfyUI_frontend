@@ -348,92 +348,111 @@ describe('useCustomerEventsService', () => {
     })
   })
 
+  type ParamsCase = [label: string, params: Record<string, unknown> | undefined]
+
+  const makeEvent = (params: Record<string, unknown> | undefined) => ({
+    event_id: 'test',
+    event_type: 'api_node_usage',
+    params,
+    createdAt: '2024-01-01T10:00:00Z'
+  })
+
+  const unrenderableParams = {
+    prompt: 'a private prompt from another workspace member',
+    credits: 500000000,
+    final_unit_deduction: 12345
+  }
+
   describe('hasAdditionalInfo', () => {
-    it('should return true when event has additional parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          api_name: 'test-api',
-          model: 'test-model',
-          duration: 1000,
-          extra_param: 'extra_value'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
+    const withAdditionalInfo: ParamsCase[] = [
+      ['an allowlisted key outside the details column', { duration: 1000 }],
+      ['credits_used', { credits_used: 7 }],
+      ['endpoint', { endpoint: '/v1/images' }],
+      ['subscription_id', { subscription_id: 'sub-1' }],
+      ['gpu_seconds', { gpu_seconds: 3 }]
+    ]
+
+    it.for(withAdditionalInfo)(
+      'should return true when event has %s',
+      ([, params]) => {
+        expect(service.hasAdditionalInfo(makeEvent(params))).toBe(true)
       }
+    )
 
-      expect(service.hasAdditionalInfo(event)).toBe(true)
-    })
+    const withoutAdditionalInfo: ParamsCase[] = [
+      [
+        'only keys already shown in the details column',
+        { amount: 1000, api_name: 'test-api', model: 'test-model' }
+      ],
+      ['only params outside the allowlist', unrenderableParams],
+      [
+        'allowlisted details-column keys alongside excluded params',
+        { api_name: 'test-api', model: 'test-model', ...unrenderableParams }
+      ],
+      ['no params', {}],
+      ['undefined params', undefined]
+    ]
 
-    it('should return false when event only has known parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          amount: 1000,
-          api_name: 'test-api',
-          model: 'test-model'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
+    it.for(withoutAdditionalInfo)(
+      'should return false when event has %s',
+      ([, params]) => {
+        expect(service.hasAdditionalInfo(makeEvent(params))).toBe(false)
       }
-
-      expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
-
-    it('should return false when params is undefined', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
+    )
   })
 
   describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
+    it('should render every allowlisted parameter', () => {
+      const result = service.getTooltipContent(
+        makeEvent({
+          credits_used: 12,
+          amount: 1000,
+          model: 'test-model',
+          api_name: 'test-api',
+          endpoint: '/v1/images',
+          subscription_id: 'sub-1',
+          gpu_seconds: 3,
+          duration: 5000
+        })
+      )
 
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
+      expect(result).toContain('<strong>Credits Used:</strong> 12')
+      expect(result).toContain('<strong>Amount:</strong> 1,000')
+      expect(result).toContain('<strong>Model:</strong> test-model')
+      expect(result).toContain('<strong>Api Name:</strong> test-api')
+      expect(result).toContain('<strong>Endpoint:</strong> /v1/images')
+      expect(result).toContain('<strong>Subscription Id:</strong> sub-1')
+      expect(result).toContain('<strong>Gpu Seconds:</strong> 3')
       expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
       expect(result).toContain('<br>')
     })
 
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
+    it('should never render provider cost params or prompts', () => {
+      const result = service.getTooltipContent(
+        makeEvent({ duration: 5000, ...unrenderableParams })
+      )
 
-      expect(service.getTooltipContent(event)).toBe('')
+      expect(result).toBe('<strong>Duration:</strong> 5,000')
+      expect(result).not.toContain('prompt')
+      expect(result).not.toContain('private')
+      expect(result).not.toContain('500,000,000')
+      expect(result).not.toContain('500000000')
+      expect(result).not.toContain('Final Unit Deduction')
+      expect(result).not.toContain('12,345')
     })
 
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
+    const withNothingToRender: ParamsCase[] = [
+      ['params carry only non-allowlisted keys', unrenderableParams],
+      ['there are no params', {}],
+      ['params are undefined', undefined]
+    ]
 
-      expect(service.getTooltipContent(event)).toBe('')
-    })
+    it.for(withNothingToRender)(
+      'should return empty string when %s',
+      ([, params]) => {
+        expect(service.getTooltipContent(makeEvent(params))).toBe('')
+      }
+    )
   })
 
   describe('formatJsonKey', () => {
