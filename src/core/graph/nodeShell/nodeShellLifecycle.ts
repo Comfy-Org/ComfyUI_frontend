@@ -12,18 +12,38 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 
 /**
+ * Upper bound on id remints before registration is treated as unresolvable.
+ * A minted id is always a fresh counter value, so a single collision should
+ * clear in one retry. A registration that keeps failing is not a collision
+ * that changing the node id can fix — spinning on it only floods the console
+ * and pins the main thread.
+ */
+const MAX_REMINT_ATTEMPTS = 1000
+
+/**
  * Registers a node's shell state and its widget bindings with the app
  * stores. Call once the node has a valid id and graph reference. Retries
  * with a freshly minted id on a registration collision.
+ * @throws If the id could not be reminted into a free one within
+ * {@link MAX_REMINT_ATTEMPTS} attempts.
  */
 export function attachNodeToStores(
   graph: LGraph | Subgraph,
   node: LGraphNode,
   mintId: () => NodeId
 ): void {
+  let remintAttempts = 0
   while (!registerNodeState(graph, node)) {
     const collidedId = node.id
     node.id = mintId()
+    if (++remintAttempts >= MAX_REMINT_ATTEMPTS) {
+      throw new Error(
+        `[nodeShell] Could not register node of type "${node.type}" in root graph ` +
+          `${graph.rootGraph.id}: reminted the id ${MAX_REMINT_ATTEMPTS} times ` +
+          `(last candidate ${node.id}) and every candidate was already registered. ` +
+          'Changing the node id does not resolve this collision.'
+      )
+    }
     console.warn(
       `[nodeShell] Node id ${collidedId} is already registered in root graph ${graph.rootGraph.id}; reminted as ${node.id}.`
     )
