@@ -1245,6 +1245,71 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
+  it('(g15) a deleted current thread is forgotten so the next send starts a new one', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('gone', 404, undefined)
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+
+    await session.sendMessage('again')
+    expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
+  })
+
+  it('(g16) a deleted backgrounded thread settles its turn without touching the current thread', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(async (threadId: string): Promise<AgentMessages> => {
+        if (threadId === 'th-1') throw new AgentApiError('gone', 404, undefined)
+        return []
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('first')
+    emit(deltaIn('th-1', 'msg-1', 'one'))
+    session.newChat()
+    await session.sendMessage('second')
+    emit(deltaIn('th-2', 'msg-2', 'two'))
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() =>
+      expect(
+        useAgentConversationStore()
+          .liveTurns()
+          .map((turn) => turn.threadId)
+      ).toEqual(['th-2'])
+    )
+    expect(session.threadId.value).toBe('th-2')
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-2')
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()

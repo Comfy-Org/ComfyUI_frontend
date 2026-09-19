@@ -99,7 +99,8 @@ const PREPARE_TIMEOUT_MS = 3000
 const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 
 type TurnOutcome =
-  | { kind: 'terminal'; text: string | undefined }
+  | { kind: 'terminal'; text: string }
+  | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
 
@@ -658,6 +659,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           if (stillLive()) conversationStore.settleTurn(turn, outcome.text)
           return
         }
+        if (outcome.kind === 'thread-missing') {
+          if (stillLive()) forgetDeletedThread(turn)
+          return
+        }
         if (outcome.kind === 'error' && !noticed && stillLive()) {
           noticed = true
           pushError(outcome.message)
@@ -677,12 +682,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return { kind: 'terminal', text }
     } catch (error) {
       if (error instanceof AgentApiError && error.status === 404)
-        return { kind: 'terminal', text: undefined }
+        return { kind: 'thread-missing' }
       return {
         kind: 'error',
         message: error instanceof Error ? error.message : String(error)
       }
     }
+  }
+
+  function forgetDeletedThread(turn: LiveTurn): void {
+    conversationStore.settleTurn(turn, undefined)
+    if (conversationStore.threadId !== turn.threadId) return
+    conversationStore.setThreadId(null)
+    localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
   const isSending = computed(() => sending.value)
