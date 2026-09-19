@@ -33,6 +33,20 @@ import {
  * the disconnect and reconnect naturally span enough task-queue turns for
  * the widget to self-heal before anything observes it missing — so they
  * are asserted as normal passing tests instead.
+ *
+ * A fourth, unrelated open bug: `createPromotedMultilineWidget`
+ * (src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.ts)
+ * builds its promoted textarea DOM widget without aliasing the widget's
+ * private `_visibility` to the `WidgetValueStore` entry already registered
+ * under the same widget id, so `suppression.byConnection` changes made
+ * through the store (e.g. via `createPromotedWidgetStoreProjection`) never
+ * reach the textarea's own `connectionSuppressed`/`hidden` getters. Two fix
+ * attempts — aliasing via `BaseWidget.setNodeId()`, then a narrower
+ * `aliasVisibility()` that skips `setNodeId()`'s state re-registration —
+ * both caused widespread, unrelated regressions across
+ * subgraphNested/Promotion/ResizePreservation/Serialization e2e tests, so
+ * both were reverted (commit 8dd0f43) rather than shipped. The visibility
+ * bug remains open and unfixed.
  */
 test.describe(
   'Subgraph promoted widget corruption on interior rewire',
