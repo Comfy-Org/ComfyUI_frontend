@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -17,6 +18,8 @@ const { downloadAssets } = vi.hoisted(() => ({
 vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(
   import('@/platform/assets/schemas/assetMetadataSchema'),
@@ -401,5 +404,31 @@ describe('MediaAssetCard', () => {
     })
 
     expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
+  })
+
+  it('falls back to the real, inline-playable content url for a video with no server preview', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+    const { container } = renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        id: 'agent-video',
+        name: 'agent_generated_video.mp4',
+        preview_url: undefined,
+        thumbnail_url: undefined
+      }
+    })
+
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+
+    expect(video.getAttribute('src')).toBe(
+      '/api/assets/agent-video/content?disposition=inline'
+    )
   })
 })
