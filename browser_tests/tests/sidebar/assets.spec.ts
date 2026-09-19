@@ -1269,7 +1269,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
 //
 // DIAGNOSTIC: temporarily disabled to isolate a pre-existing shard 3 CI
 // failure from this PR's new test. Will be restored before merge.
- 
+
 /*
 const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
 
@@ -1420,4 +1420,3 @@ test.describe(
   }
 )
 */
- 
