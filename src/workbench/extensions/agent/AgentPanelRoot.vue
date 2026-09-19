@@ -214,7 +214,7 @@ const settingStore = useSettingStore()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
-    if (!graph) return
+    if (!graph?.events) return
     const events = graph.events as EventTarget
     const onNodeRemoved: EventListener = (event) => {
       if (!(event instanceof CustomEvent)) return
