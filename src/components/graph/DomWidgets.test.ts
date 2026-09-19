@@ -9,6 +9,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -237,6 +238,38 @@ describe('DomWidgets positioning', () => {
 
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
+})
+
+describe('DomWidgets readonly state', () => {
+  it.for([
+    { picking: false, readonly: false },
+    { picking: true, readonly: true }
+  ])(
+    'picking=$picking marks an editable canvas widget readonly=$readonly',
+    ({ picking, readonly }) => {
+      useAgentNodeSelectionStore().isActive = picking
+      const canvasStore = useCanvasStore()
+      const domWidgetStore = useDomWidgetStore()
+
+      const graph = new LGraph()
+      const node = createNode(graph, 1, 'host', [100, 200])
+      const widget = createWidget('widget-readonly', node, 14)
+      domWidgetStore.registerWidget(widget)
+
+      const canvas = createCanvas(graph)
+      canvasStore.canvas = canvas
+
+      render(DomWidgets, {
+        global: { stubs: { DomWidget: true } }
+      })
+
+      drawFrame(canvas)
+
+      const widgetState = domWidgetStore.widgetStates.get(widget.id)
+      if (!widgetState) throw new Error('Widget state not registered')
+      expect(widgetState.readonly).toBe(readonly)
+    }
+  )
 })
 
 describe('DomWidgets deterministic update matrix', () => {

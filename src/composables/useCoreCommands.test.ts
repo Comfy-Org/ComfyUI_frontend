@@ -7,7 +7,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -52,8 +57,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    select: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
+    state: { selectionChanged: false },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(() => ({ node: {} }))
+    },
     canvas: {
       dispatchEvent: vi.fn(),
       addEventListener: vi.fn(),
@@ -133,7 +144,14 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
+  useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
 }))
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
@@ -358,6 +376,265 @@ describe('useCoreCommands', () => {
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
       expect([...app.canvas.selectedItems]).toEqual([selectedItem])
     })
+  })
+
+  describe('graph mutation commands while picking nodes', () => {
+    function findCommand(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
+
+    const readNode = {
+      mode: (node: LGraphNode) => node.mode,
+      pinned: (node: LGraphNode) => node.pinned,
+      collapsed: (node: LGraphNode) => Boolean(node.flags.collapsed),
+      pos: (node: LGraphNode) => [...node.pos]
+    }
+
+    function pickedNode(): LGraphNode {
+      const node = new LGraphNode('picked')
+      new LGraph().add(node)
+      node.pos = [0, 0]
+      return node
+    }
+
+    beforeEach(() => {
+      app.canvas.selectedItems = new Set()
+      app.canvas.selectOnly = false
+      app.canvas.read_only = false
+      useSettingStore().settingValues['Comfy.SnapToGrid.GridSize'] = 10
+    })
+
+    it.for([
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
+        selectOnly: false,
+        readOnly: false,
+        reads: 'mode',
+        expected: LGraphEventMode.NEVER
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'mode',
+        expected: LGraphEventMode.ALWAYS
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'mode',
+        expected: LGraphEventMode.ALWAYS
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
+        selectOnly: true,
+        readOnly: true,
+        reads: 'mode',
+        expected: LGraphEventMode.ALWAYS
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+        selectOnly: false,
+        readOnly: false,
+        reads: 'pinned',
+        expected: true
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pinned',
+        expected: false
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelected.Pin',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pinned',
+        expected: false
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'collapsed',
+        expected: false
+      },
+      {
+        id: 'Comfy.Canvas.MoveSelectedNodes.Up',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pos',
+        expected: [0, 0]
+      },
+      {
+        id: 'Comfy.Canvas.MoveSelectedNodes.Down',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pos',
+        expected: [0, 0]
+      },
+      {
+        id: 'Comfy.Canvas.MoveSelectedNodes.Left',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pos',
+        expected: [0, 0]
+      },
+      {
+        id: 'Comfy.Canvas.MoveSelectedNodes.Right',
+        selectOnly: true,
+        readOnly: false,
+        reads: 'pos',
+        expected: [0, 0]
+      }
+    ] as const)(
+      '$id with selectOnly=$selectOnly readOnly=$readOnly leaves node $reads at $expected',
+      async ({ id, selectOnly, readOnly, reads, expected }) => {
+        const node = pickedNode()
+        app.canvas.selectedItems = new Set([node])
+        app.canvas.selectOnly = selectOnly
+        app.canvas.read_only = readOnly
+
+        await findCommand(id).function()
+
+        expect(readNode[reads](node)).toEqual(expected)
+      }
+    )
+
+    it.for([
+      { selectOnly: false, resizes: 1 },
+      { selectOnly: true, resizes: 0 }
+    ])(
+      'Comfy.Canvas.Resize with selectOnly=$selectOnly resizes the node $resizes times',
+      async ({ selectOnly, resizes }) => {
+        const node = pickedNode()
+        const setSize = vi.spyOn(node, 'setSize')
+        app.canvas.selectedItems = new Set([node])
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand('Comfy.Canvas.Resize').function()
+
+        expect(setSize).toHaveBeenCalledTimes(resizes)
+      }
+    )
+
+    it.for([
+      {
+        id: 'Comfy.Canvas.PasteFromClipboard',
+        selectOnly: true,
+        pastes: 0
+      },
+      {
+        id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+        selectOnly: true,
+        pastes: 0
+      },
+      {
+        id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+        selectOnly: false,
+        pastes: 1
+      }
+    ])(
+      '$id with selectOnly=$selectOnly pastes $pastes times',
+      async ({ id, selectOnly, pastes }) => {
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand(id).function()
+
+        expect(app.canvas.pasteFromClipboard).toHaveBeenCalledTimes(pastes)
+      }
+    )
+
+    it.for([
+      { id: 'Comfy.Undo', selectOnly: true, spy: 'undo', calls: 0 },
+      { id: 'Comfy.Undo', selectOnly: false, spy: 'undo', calls: 1 },
+      { id: 'Comfy.Redo', selectOnly: true, spy: 'redo', calls: 0 },
+      { id: 'Comfy.ClearWorkflow', selectOnly: true, spy: 'clean', calls: 0 }
+    ] as const)(
+      '$id with selectOnly=$selectOnly calls $spy $calls times',
+      async ({ id, selectOnly, spy, calls }) => {
+        const spies = {
+          undo: mockChangeTracker.undo,
+          redo: mockChangeTracker.redo,
+          clean: app.clean
+        }
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand(id).function()
+
+        expect(spies[spy]).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { selectOnly: false, groupsAdded: 1 },
+      { selectOnly: true, groupsAdded: 0 }
+    ])(
+      'Comfy.Graph.GroupSelectedNodes with selectOnly=$selectOnly adds $groupsAdded groups',
+      async ({ selectOnly, groupsAdded }) => {
+        vi.spyOn(
+          LGraphGroup.prototype,
+          'recomputeInsideNodes'
+        ).mockReturnValue()
+        app.canvas.selectedItems = new Set([pickedNode()])
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+        expect(app.canvas.graph?.add).toHaveBeenCalledTimes(groupsAdded)
+      }
+    )
+
+    it.for([
+      { selectOnly: false, conversions: 1 },
+      { selectOnly: true, conversions: 0 }
+    ])(
+      'Comfy.Graph.ConvertToSubgraph with selectOnly=$selectOnly converts $conversions times',
+      async ({ selectOnly, conversions }) => {
+        app.canvas.selectedItems = new Set([pickedNode()])
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+
+        expect(app.canvas.graph?.convertToSubgraph).toHaveBeenCalledTimes(
+          conversions
+        )
+      }
+    )
+
+    it.for([
+      { selectOnly: false, unpacks: 1 },
+      { selectOnly: true, unpacks: 0 }
+    ])(
+      'Comfy.Graph.UnpackSubgraph with selectOnly=$selectOnly unpacks $unpacks times',
+      async ({ selectOnly, unpacks }) => {
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand('Comfy.Graph.UnpackSubgraph').function()
+
+        expect(mockUnpackSubgraph).toHaveBeenCalledTimes(unpacks)
+      }
+    )
+
+    it.for([
+      { selectOnly: false, resizes: 1 },
+      { selectOnly: true, resizes: 0 }
+    ])(
+      'Comfy.Graph.FitGroupToContents with selectOnly=$selectOnly resizes the group $resizes times',
+      async ({ selectOnly, resizes }) => {
+        const group = new LGraphGroup('picked')
+        new LGraph().add(group)
+        const resizeTo = vi.spyOn(group, 'resizeTo')
+        app.canvas.selectedItems = new Set([group])
+        app.canvas.selectOnly = selectOnly
+
+        await findCommand('Comfy.Graph.FitGroupToContents').function()
+
+        expect(resizeTo).toHaveBeenCalledTimes(resizes)
+      }
+    )
   })
 
   describe('Subgraph metadata commands', () => {

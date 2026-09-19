@@ -28,6 +28,8 @@ vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   }
 }))
 
+const CLONABLE_NODE_TYPE = 'test/clonable'
+
 function createHarness() {
   const canvasElement = document.createElement('canvas')
   canvasElement.width = 800
@@ -63,7 +65,32 @@ describe('LGraphCanvas selectOnly', () => {
   beforeEach(() => {
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
+    LiteGraph.alt_drag_do_clone_nodes = false
+    LiteGraph.registerNodeType(CLONABLE_NODE_TYPE, LGraphNode)
   })
+
+  it.for([
+    { selectOnly: false, nodeCount: 4 },
+    { selectOnly: true, nodeCount: 3 }
+  ])(
+    'alt-click with selectOnly=$selectOnly leaves $nodeCount nodes on the graph',
+    ({ selectOnly, nodeCount }) => {
+      const { canvas, graph } = createHarness()
+      const clonable = LiteGraph.createNode(CLONABLE_NODE_TYPE)
+      if (!clonable) throw new Error('clonable node type is not registered')
+      clonable.pos = [700, 100]
+      graph.add(clonable)
+      LiteGraph.alt_drag_do_clone_nodes = true
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        { canvasX: 710, canvasY: 110, altKey: true } as CanvasPointerEvent,
+        clonable
+      )
+
+      expect(graph.nodes).toHaveLength(nodeCount)
+    }
+  )
 
   it('accumulates ordinary node clicks and toggles a clicked node off', () => {
     const { canvas, firstNode, secondNode } = createHarness()

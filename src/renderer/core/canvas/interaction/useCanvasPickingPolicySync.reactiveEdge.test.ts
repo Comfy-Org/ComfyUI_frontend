@@ -3,10 +3,9 @@ import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// eslint-disable-next-line import-x/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-import { useLitegraphSettings } from './useLitegraphSettings'
+import { useCanvasPickingPolicySync } from './useCanvasPickingPolicySync'
 
 const createCanvas = (draw: () => void) => {
   const element = document.createElement('canvas')
@@ -32,7 +31,7 @@ it('contains CanvasInfo draws to its explicit sources', async () => {
   canvasStore.canvas = firstCanvas
 
   const scope = effectScope()
-  scope.run(useLitegraphSettings)
+  scope.run(useCanvasPickingPolicySync)
   await nextTick()
   vi.mocked(firstCanvas.draw).mockClear()
 

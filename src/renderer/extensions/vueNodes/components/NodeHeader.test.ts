@@ -14,6 +14,7 @@ import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
@@ -184,6 +185,17 @@ describe('NodeHeader.vue', () => {
     expect(onUpdateTitle).not.toHaveBeenCalled()
 
     expect(screen.getByTestId('node-title').textContent).toContain('KeepMe')
+  })
+
+  it('does not open the title editor on double click while picking nodes', async () => {
+    useAgentNodeSelectionStore().isActive = true
+    renderHeader({ nodeData: makeNodeData({ title: 'Locked' }) })
+
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+
+    expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
+    expect(screen.getByTestId('node-title').textContent).toContain('Locked')
   })
 
   it('renders correct chevron icon based on collapsed prop', async () => {

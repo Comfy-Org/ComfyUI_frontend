@@ -441,6 +441,42 @@ describe('TopMenuSection', () => {
       ).not.toBeNull()
     })
 
+    it.for([
+      {
+        component: 'queue-progress-overlay-stub',
+        isActionBarsHidden: false,
+        rendered: true
+      },
+      {
+        component: 'queue-progress-overlay-stub',
+        isActionBarsHidden: true,
+        rendered: false
+      },
+      {
+        component: 'queue-notification-banner-host-stub',
+        isActionBarsHidden: false,
+        rendered: true
+      },
+      {
+        component: 'queue-notification-banner-host-stub',
+        isActionBarsHidden: true,
+        rendered: false
+      }
+    ])(
+      'renders $component: $rendered when action bars hidden is $isActionBarsHidden',
+      async ({ component, isActionBarsHidden, rendered }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        expect(container.querySelector(component) !== null).toBe(rendered)
+      }
+    )
+
     it('renders queue notification banners when QPO V2 is disabled', async () => {
       const pinia = getActivePinia()!
       configureSettings(pinia, false)

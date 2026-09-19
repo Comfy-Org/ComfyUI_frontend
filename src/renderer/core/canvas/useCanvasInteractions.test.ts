@@ -4,6 +4,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 function createMockLGraphCanvas(
   read_only = true,
@@ -74,6 +75,49 @@ describe('useCanvasInteractions', () => {
       expect(canvasElement.dispatchEvent).not.toHaveBeenCalled()
     }
   )
+
+  describe('node policy', () => {
+    it.for([
+      {
+        picking: false,
+        readOnly: false,
+        shouldHandleNodePointerEvents: true,
+        canEditNodes: true
+      },
+      {
+        picking: true,
+        readOnly: false,
+        shouldHandleNodePointerEvents: true,
+        canEditNodes: false
+      },
+      {
+        picking: false,
+        readOnly: true,
+        shouldHandleNodePointerEvents: false,
+        canEditNodes: false
+      },
+      {
+        picking: true,
+        readOnly: true,
+        shouldHandleNodePointerEvents: false,
+        canEditNodes: false
+      }
+    ])(
+      'picking=$picking readOnly=$readOnly selects nodes: $shouldHandleNodePointerEvents, edits nodes: $canEditNodes',
+      (row) => {
+        useAgentNodeSelectionStore().isActive = row.picking
+        useCanvasStore().isReadOnly = row.readOnly
+
+        const { shouldHandleNodePointerEvents, canEditNodes } =
+          useCanvasInteractions()
+
+        expect(shouldHandleNodePointerEvents.value).toBe(
+          row.shouldHandleNodePointerEvents
+        )
+        expect(canEditNodes.value).toBe(row.canEditNodes)
+      }
+    )
+  })
 
   describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {

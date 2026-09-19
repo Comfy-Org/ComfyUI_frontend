@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { markRaw, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -219,6 +219,44 @@ describe('ChangeTracker', () => {
       () => {}
     )
     app.rootGraph.subgraphs.clear()
+  })
+
+  describe('undoRedo', () => {
+    it.for([
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: false,
+        calls: 1
+      },
+      {
+        key: 'z',
+        shiftKey: false,
+        history: 'undo',
+        selectOnly: true,
+        calls: 0
+      },
+      { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
+      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
+    ] as const)(
+      'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
+      async ({ key, shiftKey, history, selectOnly, calls }) => {
+        const tracker = createTracker()
+        const run = vi.spyOn(tracker, history).mockResolvedValue()
+        app.canvas.selectOnly = selectOnly
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+        )
+
+        expect(handled).toBe(true)
+        expect(run).toHaveBeenCalledTimes(calls)
+      }
+    )
   })
 
   describe('captureCanvasState', () => {

@@ -6,26 +6,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-// PM-1329 (child of PM-995): node selection mode left the canvas info
-// overlay (`useLitegraphSettings.ts:19-31`, gated only on
-// `Comfy.Graph.CanvasInfo`) and the floating queue overlay
-// (`TopMenuSection.vue`'s `isQueueProgressOverlayEnabled`, gated only on
-// `isQueuePanelV2Enabled`) visible with no selection-mode check. Both are
-// now fixed in `agentNodeSelectionStore.ts` / `TopMenuSection.vue`. The
-// cases below cover those two symptoms, using the same real-UI entry (Add
-// to prompt -> Nodes) as the existing "exits node selection when the
-// active workflow changes" test in agentPanel.spec.ts.
-//
-// Widget edits and canvas.read_only are deliberately not symptoms here:
-// entering selection mode already sets `canvas.selectOnly = true`
-// (AgentPanelRoot.vue's onSelectNodes), and `LGraphCanvas.ts`'s
-// `_processNodeClick` returns before any widget/collapse/io handling
-// whenever `selectOnly` is set (~line 2755; covered by
-// `LGraphCanvas.selectOnly.test.ts`). Pinning `canvas.read_only` as well
-// was tried and reverted: `_processPrimaryButton` and
-// `useCanvasInteractions.ts`'s `shouldHandleNodePointerEvents` both
-// early-return on `read_only`, which turns node-click-to-select itself
-// into a no-op - the opposite of what selection mode needs.
 async function enterNodeSelectionMode(
   agentPanel: AgentPanel,
   page: Page
@@ -75,20 +55,85 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
-
-      await enterNodeSelectionMode(agentPanel, comfyPage.page)
-
       await comfyPage.command.executeCommand('Comfy.Queue.ToggleOverlay')
       const overlay = comfyPage.page.getByTestId('queue-progress-overlay')
       await expect(overlay).toBeVisible()
 
+      await enterNodeSelectionMode(agentPanel, comfyPage.page)
+
       await comfyPage.page.screenshot({
         path: test
           .info()
-          .outputPath('pm-1329-queue-overlay-visible-in-selection-mode.png')
+          .outputPath('pm-1329-queue-overlay-hidden-in-selection-mode.png')
       })
 
       await expect(overlay).toHaveCount(0)
+
+      await comfyPage.page
+        .getByTestId('node-selection-mode-banner')
+        .getByRole('button', { name: enMessages.agent.nodeSelection.exit })
+        .click()
+
+      await expect(overlay).toBeVisible()
+    })
+
+    test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
+      test.use({ objectInfo: 'server' })
+
+      test('keeps Vue node widgets read-only while picking and still selects the clicked node', async ({
+        agentPanel,
+        comfyPage
+      }) => {
+        const page = comfyPage.page
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode('CLIPTextEncode', undefined, {
+          x: 200,
+          y: 200
+        })
+        await comfyPage.vueNodes.waitForNodes()
+        const node = comfyPage.vueNodes
+          .getNodeByTitle('CLIP Text Encode (Prompt)')
+          .first()
+        const prompt = node.getByRole('textbox')
+        await prompt.click()
+        await page.keyboard.type('before')
+        await expect(prompt).toHaveValue('before')
+
+        await enterNodeSelectionMode(agentPanel, page)
+        await expect(node).toBeInViewport()
+        await node.getByTestId('node-title').hover()
+        const promptBox = await prompt.boundingBox()
+        if (!promptBox) throw new Error('prompt widget is not rendered')
+
+        await page.mouse.click(
+          promptBox.x + promptBox.width / 2,
+          promptBox.y + promptBox.height / 2
+        )
+        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(
+          agentPanel.root.getByRole('button', {
+            name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/
+          })
+        ).toBeVisible()
+        expect(await page.evaluate(() => window.app!.canvas.selectOnly)).toBe(
+          true
+        )
+
+        await page.keyboard.type('x')
+        await expect(prompt).toHaveValue('before')
+        await expect(prompt).not.toBeFocused()
+
+        await page.keyboard.press('Escape')
+        await expect(
+          page.getByTestId('node-selection-mode-banner')
+        ).toHaveCount(0)
+        expect(await page.evaluate(() => window.app!.canvas.selectOnly)).toBe(
+          false
+        )
+        await prompt.click()
+        await page.keyboard.type('x')
+        await expect(prompt).toHaveValue('beforex')
+      })
     })
   }
 )
