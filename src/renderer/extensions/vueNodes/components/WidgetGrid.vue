@@ -39,7 +39,7 @@
             :index="row.widget.slotMetadata.index"
             :socketless="row.widget.simplified.spec?.socketless"
             :standalone="row.standalone"
-            dot-only
+            :dot-only="!row.standalone"
           />
         </div>
         <AppInput
