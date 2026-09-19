@@ -5,8 +5,14 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
+import {
+  inputForWidget,
+  resolveImmediatePromotedWidgetSource
+} from '@/core/graph/subgraph/promotedInputWidget'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -38,6 +44,7 @@ const isLinked = computed(() => {
   return inputForWidget(node, widget)?.widgetId != null
 })
 const canShowInput = computed(() => host != null && !isLinked.value)
+const canHideInput = computed(() => host != null && isLinked.value)
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
 )
@@ -69,6 +76,13 @@ async function handleRename() {
 function handleShowInput() {
   if (!host) return
   promoteWidget(node, widget, [host])
+}
+
+function handleHideInput() {
+  if (!host) return
+  const source = resolveImmediatePromotedWidgetSource(node, widget)
+  if (!source) return
+  demoteWidget(source.sourceNode, source.sourceWidget, [host])
 }
 
 function handleToggleFavorite() {
@@ -124,6 +138,22 @@ function handleResetToDefault() {
       >
         <i class="icon-[lucide--eye] size-4" />
         <span>{{ t('rightSidePanel.showInput') }}</span>
+      </Button>
+
+      <Button
+        v-if="canHideInput"
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        @click="
+          () => {
+            handleHideInput()
+            close()
+          }
+        "
+      >
+        <i class="icon-[lucide--eye-off] size-4" />
+        <span>{{ t('rightSidePanel.hideInput') }}</span>
       </Button>
 
       <Button
