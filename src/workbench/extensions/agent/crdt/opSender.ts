@@ -29,6 +29,13 @@ export interface OpsResultView {
   ok: boolean
   applied: string[]
   skipped: string[]
+  /**
+   * The host's doc seq at the moment it acked the batch (`DocOpsResultFrame.seq`,
+   * omitted on the wire when zero). A `skipped` duplicate is already contained
+   * in doc state at this seq, so a follower that has projected `seq` can
+   * resolve the duplicate's pending shadow (s3-opt-2).
+   */
+  seq?: number
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
   failure?: { op_id?: string }
 }
@@ -57,6 +64,17 @@ export interface OpSenderDeps {
    * budget or no doc was bound.
    */
   onBatchSettled(outcome: BatchOutcome): void
+  /**
+   * Wire identity exists: called once per `enqueue` with the minted ops,
+   * BEFORE any send attempt or the no-doc 'undeliverable' settle, so a
+   * pending ledger can register every id it will later be told about.
+   */
+  onBatchMinted?(ops: Op[]): void
+  /**
+   * The transport accepted a batch. Fires for the first send AND for the
+   * silent-result resend of the same ops, so callers can count attempts.
+   */
+  onBatchTransmitted?(ops: Op[]): void
 }
 
 export type BatchOutcome =
@@ -96,6 +114,7 @@ interface InFlight {
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  const unacknowledged = new Map<string, Op[]>()
   let inFlight: InFlight | null = null
   let detached = false
   // Late-result credits: a batch that settled 'unacknowledged' was
@@ -136,6 +155,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
+    deps.onBatchTransmitted?.(batch.ops)
     armResultTimeout(batch)
   }
 
@@ -150,6 +170,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
+        for (const op of batch.ops) unacknowledged.set(op.op_id, batch.ops)
         staleAnonymousBudget += 2
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
@@ -176,6 +197,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    const identified = [...result.applied, ...result.skipped]
+    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    const matchesInFlight =
+      inFlight !== null && identified.some((opId) => inFlight?.opIds.has(opId))
+    if (identified.length > 0 && !matchesInFlight) {
+      const lateOps = identified
+        .map((opId) => unacknowledged.get(opId))
+        .find(Boolean)
+      if (lateOps) {
+        for (const op of lateOps) unacknowledged.delete(op.op_id)
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
+      } else if (!inFlight && staleAnonymousBudget > 0) {
+        staleAnonymousBudget--
+      }
+      return
+    }
     if (
       !inFlight ||
       (result.workflowId !== undefined &&
@@ -187,10 +225,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
@@ -210,6 +245,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
+      deps.onBatchMinted?.(minted)
       const workflowId = deps.workflowId()
       if (workflowId === null) {
         deps.onBatchSettled({ state: 'undeliverable', ops: minted })

@@ -29,6 +29,7 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { createPendingOpTracker } from './pendingOpTracker'
 
 export { apiTransport, STALE_AFTER_MS }
 
@@ -199,6 +200,20 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe()
   )
   const tabId = createUuidv4()
+  let lastProjectedSequence: number | null = null
+  // s3-opt-6: every minted human op is registered here before it flies and
+  // leaves only on its authoritative doc_update effect, on revert, or — for
+  // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
+  const pendingOps = createPendingOpTracker({
+    // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
+    // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
+    // state, so a skipped result must park there rather than clear on the ack.
+    // An already-current follower (ack, no catch-up) therefore parks a skipped
+    // id until its next applied frame; a still-pending skipped entry means the
+    // effect frame never reached this follower, so one is coming.
+    currentSeq: () => lastProjectedSequence ?? 0,
+    onEvent: (event) => recordDevEvent('pending_ops', event)
+  })
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -210,6 +225,7 @@ function startAgentCrdtFollower(
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
+          ...(typeof detail.seq === 'number' ? { seq: detail.seq } : {}),
           ...(detail.failed && typeof detail.failed === 'object'
             ? { failure: detail.failed }
             : {})
@@ -224,7 +240,12 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchMinted: (ops) => pendingOps.onBatchMinted(ops),
+    onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
+    onBatchSettled: (outcome) => {
+      recordDevEvent('human_ops_settled', outcome)
+      pendingOps.onBatchSettled(outcome)
+    }
   })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -251,6 +272,8 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      if (subscribedWorkflowId.value !== null)
+        retryPendingProjection(subscribedWorkflowId.value)
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -283,7 +306,7 @@ function startAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) projection.reconcileLiveGraph(update.workflowId)
+    if (applied) onProjected(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -335,6 +358,8 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
+    lastProjectedSequence = null
+    pendingOps.reset()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -361,6 +386,8 @@ function startAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       projection.bind(workflowId, bridge.follower)
+      lastProjectedSequence = null
+      pendingOps.reset()
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -421,6 +448,20 @@ function startAgentCrdtFollower(
     bridge.reconcile()
   }
 
+  function onProjected(update: DocUpdate): void {
+    lastProjectedSequence = update.seq
+    projection.reconcileLiveGraph(update.workflowId)
+    if (update.opIds) pendingOps.onDocEffect(update.opIds)
+    pendingOps.onAuthoritativeState(update.seq)
+  }
+
+  function retryPendingProjection(workflowId: string): boolean {
+    const update = projection.retryPending(workflowId)
+    if (!update) return false
+    onProjected(update)
+    return true
+  }
+
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
   bridge.addEventListener('doc_ops_result', onOpsResult)
@@ -445,7 +486,8 @@ function startAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      projection.reconcileLiveGraph(boundWorkflowId)
+      if (!retryPendingProjection(boundWorkflowId))
+        projection.reconcileLiveGraph(boundWorkflowId)
     }
   })
   // Drive the bridge's intent, then give the sender the same eager signal the
@@ -475,6 +517,7 @@ function startAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           projection.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingOps.reset()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -486,7 +529,10 @@ function startAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+            if (boundWorkflowId !== null) {
+              projection.unbind(boundWorkflowId)
+              pendingOps.reset()
+            }
             projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -499,6 +545,7 @@ function startAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           projection.unbind(boundWorkflowId)
           boundWorkflowId = null
+          pendingOps.reset()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -506,7 +553,10 @@ function startAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+        if (boundWorkflowId !== null) {
+          projection.unbind(boundWorkflowId)
+          pendingOps.reset()
+        }
         projection.bind(next, bridge.follower)
         boundWorkflowId = next
       }
@@ -533,6 +583,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => sender.detach(),
+      () => pendingOps.reset(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()

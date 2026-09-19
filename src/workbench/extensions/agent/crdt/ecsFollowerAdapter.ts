@@ -291,6 +291,7 @@ interface TargetSession {
   /** Drift keys already surfaced via `reportError` for this session. */
   readonly reportedErrors: Set<string>
   readonly frameQueue: DocUpdate[]
+  pendingProjection: DocUpdate | null
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
@@ -338,12 +339,28 @@ export class EcsFollowerAdapter {
         const frame = session.frameQueue.shift()
         if (!frame) continue
         const committed = this.applyQueuedFrame(session, frame)
+        session.pendingProjection = committed ? null : frame
         if (frame === update) updateCommitted = committed
       }
     } finally {
       session.applying = false
     }
     return updateCommitted
+  }
+
+  retryPending(workflowId: string): DocUpdate | null {
+    const session = this.targets.get(workflowId)
+    const update = session?.pendingProjection
+    if (!session || !update || session.applying) return null
+
+    session.applying = true
+    try {
+      if (!this.applyQueuedFrame(session, update)) return null
+      session.pendingProjection = null
+      return update
+    } finally {
+      session.applying = false
+    }
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -384,6 +401,7 @@ export class EcsFollowerAdapter {
       changedLinks: new Set<string>(),
       reportedErrors: new Set<string>(),
       frameQueue: [],
+      pendingProjection: null,
       reconcileNextFrame: true,
       applying: false,
       onNodesChanged: (_events): void => undefined,
