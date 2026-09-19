@@ -38,7 +38,7 @@ test.describe(
         .getByRole('button', { name: enMessages.agent.addToPrompt })
         .click()
       await comfyPage.page
-        .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
+        .getByRole('menuitem', { name: enMessages.agent.nodes })
         .click()
       await expect(
         comfyPage.page.getByTestId('node-selection-mode-banner')
@@ -56,7 +56,11 @@ test.describe(
       await expect(removeButton).toHaveCount(0)
 
       await comfyPage.page.screenshot({
-        path: 'test-results/pm-1331-composer-placeholder-missing-after-chip-removal.png'
+        path: test
+          .info()
+          .outputPath(
+            'pm-1331-composer-placeholder-missing-after-chip-removal.png'
+          )
       })
 
       test.fail(
