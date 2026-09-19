@@ -3623,6 +3623,50 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  // PM-1255/PM-986: a browser tab closed without the SPA's own unbind() left
+  // 'wf-abandoned' bound to the default unsaved path in plain, unscoped
+  // localStorage. A brand-new tab that opens at that same default path -
+  // nobody has sent a message or picked a workflow - should never inherit
+  // it. Reproduces end to end through the real tab-binding store and the
+  // real CRDT follower: currently the follower subscribes to the abandoned
+  // workflow's document unprompted.
+  it.fails('does not resubscribe an abandoned tab binding onto a brand-new default-path tab', async () => {
+    const staleWorkflowId = 'wf-abandoned'
+    const defaultPath = 'workflows/Unsaved Workflow.json'
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ [staleWorkflowId]: defaultPath })
+    )
+    const tab = addTab(defaultPath, { isTemporary: true })
+    workflowStore.activeWorkflow = tab
+    mockMessagesEndpoint(staleWorkflowId)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    socketSend.mockClear()
+
+    // The same server push a real tab switch sends - here naming the
+    // abandoned tab's workflow, unprompted, on a chat nobody has touched.
+    ws.emit('agent_active_tab', { workflow_id: staleWorkflowId })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalled()
+    )
+
+    const subscribedStaleDoc = socketSend.mock.calls.some(([frame]) => {
+      if (typeof frame !== 'string') return false
+      const parsed: unknown = JSON.parse(frame)
+      return (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        (parsed as { type?: unknown }).type === 'doc_subscribe' &&
+        (parsed as { data?: { workflow_id?: unknown } }).data?.workflow_id ===
+          staleWorkflowId
+      )
+    })
+    expect(subscribedStaleDoc).toBe(false)
+  })
+
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')

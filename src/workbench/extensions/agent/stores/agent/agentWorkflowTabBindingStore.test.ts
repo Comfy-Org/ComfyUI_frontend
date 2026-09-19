@@ -39,6 +39,31 @@ describe('agentWorkflowTabBindingStore', () => {
     }
   )
 
+  // PM-1255/PM-986: a browser tab closed without the SPA's own cleanup never
+  // calls unbind(), so this localStorage entry is indistinguishable from the
+  // 'reconnects a restored draft' case above - same store-before-tab
+  // ordering, same reused default path. Nothing here marks it as abandoned,
+  // so the store hands the new tab someone else's cloud identity. This test
+  // asserts the fix's contract (no match without confirmed continuity) and
+  // currently fails against that gap.
+  it.fails('does not treat an abandoned tab binding as a restored draft', async () => {
+    const path = 'workflows/Unsaved Workflow.json'
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ 'wf-abandoned': path })
+    )
+    const workflows = useWorkflowStore()
+    useAgentWorkflowTabBindingStore()
+    const fresh = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [fresh.path] })
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(fresh.path).toBe(path)
+    expect(bindings.matchesWorkflow('wf-abandoned', fresh)).toBe(false)
+    expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
+  })
+
   it('releases a closed temporary tab binding before its path is reused', async () => {
     const workflows = useWorkflowStore()
     const first = workflows.createTemporary()
