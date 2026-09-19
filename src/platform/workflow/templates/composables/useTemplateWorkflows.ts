@@ -2,16 +2,32 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyWorkflowJSON,
+  LegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zLegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+
+type PreparedWorkflowTemplate = {
+  id: string
+  sourceModule: string
+  workflowName: string
+  workflow: ComfyWorkflowJSON | LegacyLoadableWorkflow
+}
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -92,42 +108,47 @@ export function useTemplateWorkflows() {
       .trim()
   }
 
-  /**
-   * Loads a workflow template
-   */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
-    if (!isTemplatesLoaded.value) return false
+  const prepareWorkflowTemplate = async (
+    id: string,
+    sourceModule: string
+  ): Promise<PreparedWorkflowTemplate | null> => {
+    if (!isTemplatesLoaded.value) return null
 
-    loadingTemplateId.value = id
-    let json
+    const resolvedSourceModule =
+      sourceModule === 'all'
+        ? allTemplateGroups.value
+            .find(
+              (group) =>
+                group.label ===
+                t(
+                  'templateWorkflows.category.ComfyUI Examples',
+                  'ComfyUI Examples'
+                )
+            )
+            ?.modules.find((module) => module.moduleName === 'all')
+            ?.templates.find((template) => template.name === id)?.sourceModule
+        : sourceModule
+    if (!resolvedSourceModule) return null
 
-    try {
-      // Handle "All" category as a special case
-      if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-        )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
-        )
-        const template = allCategory?.templates.find((t) => t.name === id)
+    const workflow = await fetchTemplateJson(id, resolvedSourceModule)
+    if (!workflow) return null
 
-        if (!template || !template.sourceModule) return false
-
-        // Use the stored source module for loading
-        sourceModule = template.sourceModule
-      }
-
-      // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
-
-      const workflowName =
-        sourceModule === 'default'
+    return {
+      id,
+      sourceModule: resolvedSourceModule,
+      workflowName:
+        resolvedSourceModule === 'default'
           ? t(`templateWorkflows.template.${id}`, id)
-          : id
+          : id,
+      workflow
+    }
+  }
+
+  const openPreparedWorkflowTemplate = async (
+    prepared: PreparedWorkflowTemplate
+  ) => {
+    try {
+      const { id, sourceModule, workflow, workflowName } = prepared
 
       useTelemetry()?.trackTemplate({
         workflow_name: id,
@@ -135,11 +156,8 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      // Bind the card to the workflow THIS load activated, not the global
-      // active one: asset scans keep loadGraphData pending, and the user can
-      // switch workflows in that window.
       const loadedWorkflow = await app.loadGraphData(
-        json,
+        workflow as ComfyWorkflowJSON,
         true,
         true,
         workflowName,
@@ -147,7 +165,8 @@ export function useTemplateWorkflows() {
       )
 
       const template = workflowTemplatesStore.enhancedTemplates.find(
-        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
+        (template) =>
+          template.name === id && template.sourceModule === sourceModule
       )
       const educationStore = usePartnerNodesEducationStore()
       if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
@@ -158,7 +177,22 @@ export function useTemplateWorkflows() {
 
       return true
     } catch (error) {
-      console.error('Error loading workflow template:', error)
+      reportError(error, { errorType: 'workflow_template_open_failed' })
+      return false
+    }
+  }
+
+  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
+    if (!isTemplatesLoaded.value) return false
+
+    loadingTemplateId.value = id
+
+    try {
+      const prepared = await prepareWorkflowTemplate(id, sourceModule)
+      if (!prepared) return false
+      return await openPreparedWorkflowTemplate(prepared)
+    } catch (error) {
+      reportError(error, { errorType: 'workflow_template_prepare_failed' })
       return false
     } finally {
       loadingTemplateId.value = null
@@ -168,15 +202,34 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
-      ).then((r) => r.json())
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string
+  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow | null> => {
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+    const response = await fetch(url)
+    if (!response.ok) {
+      reportError(`Failed to fetch workflow template (${response.status})`, {
+        errorType: 'workflow_template_fetch_failed'
+      })
+      return null
     }
+
+    const workflow: unknown = await response.json()
+    const validatedWorkflow = await validateComfyWorkflow(workflow)
+    if (validatedWorkflow) return validatedWorkflow
+
+    const legacyWorkflow = zLegacyLoadableWorkflow.safeParse(workflow)
+    if (!legacyWorkflow.success) {
+      reportError('Invalid workflow template', {
+        errorType: 'workflow_template_invalid'
+      })
+      return null
+    }
+    return legacyWorkflow.data
   }
 
   return {
@@ -195,6 +248,8 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
+    prepareWorkflowTemplate,
+    openPreparedWorkflowTemplate,
     loadWorkflowTemplate
   }
 }
