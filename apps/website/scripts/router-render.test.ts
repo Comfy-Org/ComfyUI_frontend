@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
 import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
-import {
-  prepareRouterRender,
-  router_for_model,
-  router_render
-} from './router-render'
+import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { createRouterRenderHelpers } from './router-render'
+
+const { prepareRouterRender, router_for_model, router_render } =
+  createRouterRenderHelpers(getAuthoredRouterWorkshopModelDetail)
 
 vi.mock(import('../src/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()

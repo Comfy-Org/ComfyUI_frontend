@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { workshopModels, routerContentBySlug } from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,

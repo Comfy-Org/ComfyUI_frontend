@@ -6,7 +6,10 @@ import { workshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import {
+  getAuthoredRouterWorkshopModelDetail,
+  getRouterWorkshopModelDetail
+} from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -24,7 +27,7 @@ const lastImage = 'https://example.com/last.png'
 const video = 'https://example.com/source.mp4'
 
 function detail(slug: string) {
-  const page = getRouterWorkshopModelDetail(slug)
+  const page = getAuthoredRouterWorkshopModelDetail(slug)
   if (!page?.execution) throw new Error(`Missing page: ${slug}`)
   return { ...page, execution: page.execution }
 }

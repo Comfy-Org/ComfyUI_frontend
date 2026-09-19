@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
 import {
