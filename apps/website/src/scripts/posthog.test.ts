@@ -10,6 +10,7 @@ import {
 const hoisted = vi.hoisted(() => ({
   localDev: false,
   deployEnv: '',
+  vercelProduction: false,
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
   mockOnFeatureFlags: vi.fn<typeof PostHogModule.default.onFeatureFlags>(),
@@ -27,12 +28,16 @@ vi.mock(import('astro:env/client'), () => ({
   },
   get WORKSHOP_DEPLOY_ENV() {
     return hoisted.deployEnv
+  },
+  get WORKSHOP_VERCEL_PRODUCTION() {
+    return hoisted.vercelProduction
   }
 }))
 
 beforeEach(() => {
   hoisted.localDev = false
   hoisted.deployEnv = ''
+  hoisted.vercelProduction = false
 })
 
 type PostHogMock = Pick<
@@ -114,6 +119,16 @@ describe('Workshop visibility', () => {
       expect(useWorkshopEnabledSettled().value).toBe(true)
     }
   )
+
+  it('keeps comfy.org closed when the deploy env is overridden to preview', async () => {
+    hoisted.vercelProduction = true
+    hoisted.deployEnv = 'preview'
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopEnabled } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
 
   it('leaves visibility settled on production, so the gate never waits on a flag answer', async () => {
     hoisted.deployEnv = 'production'

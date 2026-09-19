@@ -74,6 +74,13 @@ export function workshopReleaseGate(): AstroIntegration {
                 context: 'client',
                 access: 'public',
                 default: process.env.VERCEL_ENV ?? ''
+              }),
+              // Read from VERCEL_ENV directly, so overriding the deploy env
+              // above cannot re-open comfy.org.
+              WORKSHOP_VERCEL_PRODUCTION: envField.boolean({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_ENV === 'production'
               })
             }
           },

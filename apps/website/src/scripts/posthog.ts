@@ -1,4 +1,8 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import {
+  WORKSHOP_LOCAL_DEV,
+  WORKSHOP_DEPLOY_ENV,
+  WORKSHOP_VERCEL_PRODUCTION
+} from 'astro:env/client'
 import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -112,9 +116,12 @@ const VISIBILITY_OVERRIDE =
 // 2026-09-18. Of the environments Vercel reports, only a preview may still
 // serve it, so leave the workshop-enabled flag ON to keep reviewing fixes
 // there. An empty deploy env is a non-Vercel build — local, or the e2e CI
-// job — and keeps obeying the flag. Revert this PR to re-open production.
+// job — and keeps obeying the flag. Setting WORKSHOP_DEPLOY_ENV re-opens
+// those, never comfy.org: production is judged on VERCEL_ENV, which the
+// override cannot reach. Revert this PR to re-open production.
 const DEPLOY_DISABLED =
-  WORKSHOP_DEPLOY_ENV !== '' && WORKSHOP_DEPLOY_ENV !== 'preview'
+  WORKSHOP_VERCEL_PRODUCTION ||
+  (WORKSHOP_DEPLOY_ENV !== '' && WORKSHOP_DEPLOY_ENV !== 'preview')
 
 function resolveEnabled(readFlagAnswer: () => boolean = () => false): boolean {
   return !DEPLOY_DISABLED && (VISIBILITY_OVERRIDE || readFlagAnswer())

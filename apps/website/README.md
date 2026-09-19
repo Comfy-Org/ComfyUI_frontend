@@ -199,8 +199,10 @@ with the refreshed snapshot.
 > included, hides Workshop whatever the flag says. `WORKSHOP_DEPLOY_ENV`
 > defaults to `VERCEL_ENV` but is an `astro:env` field in its own right, so
 > setting it explicitly outranks `VERCEL_ENV` — `WORKSHOP_DEPLOY_ENV=preview`
-> restores Workshop in any environment, which is the escape hatch if a build
-> reports a deploy env we did not anticipate.
+> is the escape hatch if a build reports a deploy env we did not anticipate.
+> **It cannot re-open comfy.org**: production is judged separately on
+> `WORKSHOP_VERCEL_PRODUCTION`, which is read from `VERCEL_ENV` itself, so the
+> override reaches every environment except the one this kill is for.
 >
 > A disabled build stops emitting `$feature_flag_called` for
 > `workshop-enabled`, so exposure counts cover previews only. Flag membership
