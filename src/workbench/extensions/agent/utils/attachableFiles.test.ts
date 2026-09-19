@@ -17,7 +17,8 @@ describe('isAgentAttachable', () => {
     'sound.wav',
     'mesh.glb',
     'notes.md',
-    'prompt.txt'
+    'prompt.txt',
+    'workflow.json'
   ])('accepts %s regardless of MIME type', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
@@ -42,9 +43,11 @@ describe('isAgentAttachable', () => {
       '.wav',
       '.glb',
       '.md',
-      '.txt'
+      '.txt',
+      '.json'
     ]) {
       expect(AGENT_ATTACH_ACCEPT).toContain(extension)
     }
+    expect(AGENT_ATTACH_ACCEPT).toContain('application/json')
   })
 })
