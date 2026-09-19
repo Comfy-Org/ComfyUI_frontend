@@ -69,6 +69,8 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
     // own id lives in `user_metadata.assetId`. Only the file id serves the
     // MP4 (with an embedded workflow); every other content URL, including
     // the job id the drag used to publish, gets the backend's 404 body.
+    // Playwright matches the most recently registered route first, so the
+    // catch-all must be registered before the asset-id route.
     await comfyPage.page.route(
       /\/api\/assets\/[^/]+\/content(\?.*)?$/,
       async (route) =>
@@ -103,9 +105,8 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
     const targetPosition = { x: 400, y: 100 }
     await card.dragTo(comfyPage.canvas, { targetPosition })
 
-    test.fail()
-
     const getTabName = () => comfyPage.menu.topbar.getActiveTabName()
     await expect.poll(getTabName).toContain('agent_generated_video')
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
   })
 })

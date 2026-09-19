@@ -2,12 +2,13 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
@@ -40,33 +41,48 @@ const asset: AssetItem = fromPartial({
   }
 })
 
-const jobId = '22222222-2222-4222-a222-222222222222'
-const videoAssetId = '11111111-1111-4111-a111-111111111111'
+function groupByJob(flatAsset: AssetItem): AssetItem {
+  const [grouped] = unflattenOutputAssets([flatAsset])
+  assert.exists(grouped)
+  return grouped
+}
 
-const jobGroupedVideo: AssetItem = fromPartial({
-  id: jobId,
-  name: 'agent_generated_video.mp4',
-  tags: ['output'],
-  user_metadata: {
-    jobId,
-    subfolder: '',
-    assetId: videoAssetId,
-    allOutputs: [
-      {
-        filename: 'agent_generated_video.mp4',
-        subfolder: '',
-        type: 'output',
-        assetId: videoAssetId
-      }
-    ]
-  }
-})
+const videoAssetId = '11111111-1111-4111-a111-111111111111'
+const imageAssetId = '33333333-3333-4333-a333-333333333333'
+
+const jobGroupedVideo = groupByJob(
+  fromPartial({
+    id: videoAssetId,
+    job_id: '22222222-2222-4222-a222-222222222222',
+    name: 'agent_generated_video.mp4',
+    tags: ['output'],
+    created_at: '2026-09-18T00:00:00.000Z'
+  })
+)
+
+const jobGroupedImage = groupByJob(
+  fromPartial({
+    id: imageAssetId,
+    job_id: '44444444-4444-4444-a444-444444444444',
+    name: 'c6cadcee57dd.png',
+    tags: ['output'],
+    created_at: '2026-09-18T00:00:00.000Z',
+    preview_url: '/api/view?filename=c6cadcee57dd.png'
+  })
+)
 
 const modelWithThumbnail: AssetItem = fromPartial({
   id: 'model',
   name: 'model.glb',
   tags: ['output'],
   preview_id: 'model-thumbnail'
+})
+
+const historyImage: AssetItem = fromPartial({
+  id: 'history-job',
+  name: 'a.png',
+  tags: ['output'],
+  preview_url: '/api/view?filename=a.png&type=output&subfolder='
 })
 
 function renderCard(
@@ -158,24 +174,34 @@ describe('MediaAssetCard', () => {
 
     it.for([
       {
-        kind: 'an image with a server preview',
-        item: asset,
-        fileUrl: 'http://localhost:3000/api/assets/a/content'
+        kind: 'a job-grouped image with a self-preview',
+        assetsEnabled: true,
+        item: jobGroupedImage,
+        fileUrl: `http://localhost:3000/api/assets/${imageAssetId}/content`
       },
       {
         kind: 'a job-grouped video with no preview',
+        assetsEnabled: true,
         item: jobGroupedVideo,
         fileUrl: `http://localhost:3000/api/assets/${videoAssetId}/content`
       },
       {
         kind: 'a 3D model with a persisted thumbnail',
+        assetsEnabled: true,
         item: modelWithThumbnail,
         fileUrl: 'http://localhost:3000/api/assets/model/content'
+      },
+      {
+        kind: 'a history-backed image with the assets API off',
+        assetsEnabled: false,
+        item: historyImage,
+        fileUrl:
+          'http://localhost:3000/api/view?filename=a.png&type=output&subfolder='
       }
     ])(
       'offers the file URL, not the preview, as the uri-list flavour for $kind',
-      ({ item, fileUrl }) => {
-        vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      ({ assetsEnabled, item, fileUrl }) => {
+        vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
         const { container } = renderCard({ asset: item })
 
         const { add } = dispatchDragStart(container, { assetId: item.id })

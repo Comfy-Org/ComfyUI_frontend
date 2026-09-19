@@ -383,7 +383,8 @@ function dragStart(e: DragEvent) {
   if (!dataTransfer) return
 
   const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
-  const url = URL.parse(resolvePreviewUrl(asset), location.href)
+  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
+  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
   const assetInfo = {
     ...(output?.filename
       ? {
@@ -399,12 +400,12 @@ function dragStart(e: DragEvent) {
         }),
     attachment_ref: getAssetUrlFilename(asset),
     media_kind: fileKind.value,
-    preview_url: fileKind.value === 'image' ? url?.toString() : undefined
+    preview_url: fileKind.value === 'image' ? previewUrl?.toString() : undefined
   }
   dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
 
-  if (!url) return
+  if (!fileUrl) return
 
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  dataTransfer.items.add(fileUrl.toString(), 'text/uri-list')
 }
 </script>
