@@ -20,6 +20,8 @@ import type {
 } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -386,9 +388,12 @@ function useSubscriptionInternal() {
   ): Promise<BillingStatusResponse | null> {
     if (!isCloud) return null
 
-    let statusData: BillingStatusResponse
+    const rail = useBillingReadRail()
+    let statusData: BillingStatusResponse | undefined
     try {
-      statusData = await workspaceApi.getBillingStatus()
+      statusData = rail
+        ? await readOnRail(rail.readStatus)
+        : await workspaceApi.getBillingStatus()
     } catch (error) {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
@@ -396,6 +401,8 @@ function useSubscriptionInternal() {
         })
       )
     }
+    // A superseded read publishes nothing: the scope moved on under it.
+    if (statusData === undefined) return null
     if (
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId
