@@ -18,6 +18,13 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
  * lost presentation-only node color, a stomped local title rename, and a
  * widget value overwritten mid-edit with no focus guard.
  *
+ * The color and title symptoms are fixed in `graphMutations.ts`'s
+ * `prepareNode`: a reconcile now merges onto the live node's color and only
+ * applies a title that genuinely differs from the node's last-synced doc
+ * baseline, instead of always trusting the doc's own (possibly stale)
+ * snapshot. The widget-mid-edit symptom is left as a known, intentionally
+ * unfixed repro below — see that test for why.
+ *
  * Unit-level proof of the first two lives alongside the code:
  * src/workbench/extensions/agent/crdt/graphMutations.test.ts
  * ("keeps a locally renamed title...", "keeps a locally set node color...").
@@ -154,12 +161,6 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Known bug: a canvas rename
-      // (useNodeEventHandlers.ts's handleNodeTitleUpdate) only ever
-      // touches the live node, never the CRDT doc. nodePayload.ts's
-      // nodeTitle() has no "keep the live title" fallback, so the doc's
-      // stale (pre-rename) title wins on the next reconcile.
-      test.fail()
       await expect(titleLocator).toHaveText(CUSTOM_TITLE)
     })
   }

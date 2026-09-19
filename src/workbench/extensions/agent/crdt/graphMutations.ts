@@ -226,6 +226,28 @@ function readPair(
     : fallback
 }
 
+/**
+ * A canvas rename only ever mutates the live node (see
+ * useNodeEventHandlers.ts's `handleNodeTitleUpdate`); it never writes back
+ * into the CRDT doc. So the payload's title is only as fresh as the last doc
+ * mutation that actually changed it, and `existing.lastSerialization.title`
+ * is the title the doc held as of the last reconcile. When the incoming
+ * title matches that baseline, nothing about the doc's title changed since
+ * then, so keep the live node's current title instead of replaying the same
+ * stale value over an unsynced local rename. An incoming title that differs
+ * from the baseline is a genuine doc-side change — e.g. the agent naming or
+ * renaming the node — and still wins.
+ */
+function resolveNodeTitle(
+  payload: SemanticNodePayload,
+  existing?: NodeState
+): string {
+  if (existing && payload.title === existing.lastSerialization?.title) {
+    return existing.title
+  }
+  return nodeTitle(payload.title, payload.type)
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -239,7 +261,7 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title: nodeTitle(payload.title, payload.type),
+    title: resolveNodeTitle(payload, existing),
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),

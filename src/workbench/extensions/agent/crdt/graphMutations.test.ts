@@ -259,10 +259,11 @@ describe('graphMutations', () => {
 
   // A canvas rename never writes back into the CRDT doc
   // (useNodeEventHandlers.ts's handleNodeTitleUpdate only touches the live
-  // node), so the doc keeps replaying the pre-rename title on every later
-  // reconcile, silently reverting a user's rename the moment any unrelated
-  // agent edit (or resync) reaches this node.
-  it.fails('keeps a locally renamed title through a reconcile carrying the stale doc title', () => {
+  // node), so `prepareNode` compares the incoming title against the title
+  // recorded on the node's `lastSerialization` baseline: an unchanged doc
+  // title is a stale replay and keeps the live rename, while a title that
+  // differs from that baseline is a genuine doc-side change and still wins.
+  it('keeps a locally renamed title through a reconcile carrying the stale doc title', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
     const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
@@ -279,6 +280,23 @@ describe('graphMutations', () => {
     expect(
       useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
     ).toBe('My Custom Sampler')
+  })
+
+  it('still applies a title the doc payload genuinely changed to', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    live.title = 'My Custom Sampler'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Renamed By Agent' })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Renamed By Agent')
   })
 
   // Node color is presentation-only and the CRDT doc never carries it, so
