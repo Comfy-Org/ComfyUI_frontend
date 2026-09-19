@@ -4,18 +4,23 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * Utility functions for handling workbench events
  */
 
-/**
- * Whether the user has selected text that a copy or paste should act on
- * instead of the graph: any selection when nothing specific has focus, or a
- * selection inside the focused element. A selection elsewhere (the agent
- * transcript, a side panel) does not claim a copy or paste aimed at the canvas.
- */
-function hasTextSelectionFor(target: EventTarget | null): boolean {
+function selectedText(): Selection | null {
   const selection = window.getSelection()
-  if (selection === null || selection.toString().trim().length === 0)
-    return false
-  if (!(target instanceof Element) || target === document.body) return true
-  return selection.anchorNode !== null && target.contains(selection.anchorNode)
+  return selection !== null && selection.toString().trim().length > 0
+    ? selection
+    : null
+}
+
+/**
+ * Collapse a text selection that starts outside `container`, the way a plain
+ * mousedown would before the canvas called `preventDefault()` on it. A copy
+ * or paste that follows a click on the graph then reaches the graph instead
+ * of the stale selection.
+ */
+export function collapseTextSelectionOutside(container: Element): void {
+  const selection = selectedText()
+  if (selection?.anchorNode && !container.contains(selection.anchorNode))
+    selection.removeAllRanges()
 }
 
 /**
@@ -43,7 +48,5 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'search',
         'submit'
       ].includes(target.type))
-  return (
-    isTextInput || useCanvasStore().linearMode || hasTextSelectionFor(target)
-  )
+  return isTextInput || useCanvasStore().linearMode || selectedText() !== null
 }

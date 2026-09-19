@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import {
+  collapseTextSelectionOutside,
+  shouldIgnoreCopyPaste
+} from '@/workbench/eventHelpers'
 
 function mount<T extends HTMLElement>(element: T): T {
   document.body.append(element)
@@ -57,30 +60,17 @@ describe('shouldIgnoreCopyPaste', () => {
     expect(shouldIgnoreCopyPaste(button)).toBe(false)
   })
 
-  it('handles events targeting the canvas while text is selected elsewhere', () => {
+  it('ignores events while text is selected anywhere', () => {
     const canvas = mount(document.createElement('canvas'))
     selectTextOf(mount(textBlock('agent reply')))
 
-    expect(shouldIgnoreCopyPaste(canvas)).toBe(false)
+    expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
   })
 
-  it('ignores events whose target contains the selected text', () => {
-    const panel = mount(document.createElement('section'))
-    const text = textBlock('selected inside the target')
-    panel.append(text)
-    selectTextOf(text)
-
-    expect(shouldIgnoreCopyPaste(panel)).toBe(true)
-  })
-
-  it('ignores events with no focused element while text is selected', () => {
-    selectTextOf(mount(textBlock('agent reply')))
-
-    expect(shouldIgnoreCopyPaste(document.body)).toBe(true)
-  })
-
-  it('handles events with no focused element and no selection', () => {
-    expect(shouldIgnoreCopyPaste(document.body)).toBe(false)
+  it('handles events without a text selection', () => {
+    expect(shouldIgnoreCopyPaste(mount(document.createElement('canvas')))).toBe(
+      false
+    )
   })
 
   it('ignores every event in linear mode', () => {
@@ -88,5 +78,32 @@ describe('shouldIgnoreCopyPaste', () => {
     const canvas = mount(document.createElement('canvas'))
 
     expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
+  })
+})
+
+describe('collapseTextSelectionOutside', () => {
+  beforeEach(() => {
+    document.body.replaceChildren()
+    window.getSelection()?.removeAllRanges()
+  })
+
+  it('collapses a selection that starts outside the container', () => {
+    const container = mount(document.createElement('div'))
+    selectTextOf(mount(textBlock('agent reply')))
+
+    collapseTextSelectionOutside(container)
+
+    expect(window.getSelection()?.toString()).toBe('')
+  })
+
+  it('keeps a selection inside the container', () => {
+    const container = mount(document.createElement('div'))
+    const text = textBlock('node title')
+    container.append(text)
+    selectTextOf(text)
+
+    collapseTextSelectionOutside(container)
+
+    expect(window.getSelection()?.toString()).toBe('node title')
   })
 })

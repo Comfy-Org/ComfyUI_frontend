@@ -202,7 +202,10 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import {
+  collapseTextSelectionOutside,
+  shouldIgnoreCopyPaste
+} from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -628,7 +631,17 @@ onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
+function collapseOutsideSelectionOnClick(e: PointerEvent) {
+  if (e.button === 0 && e.target instanceof Element)
+    collapseTextSelectionOutside(e.target)
+}
+
+useEventListener(canvasRef, 'pointerdown', collapseOutsideSelectionOnClick, {
+  capture: true
+})
+
 function forwardPointerDownPanEvent(e: PointerEvent) {
+  collapseOutsideSelectionOnClick(e)
   forwardPanEvent(e, isMiddlePointerInput)
 }
 
