@@ -2861,6 +2861,10 @@ Enterprise`
     en: 'If you want to shape the future of creativity, come build with us.',
     'zh-CN': '如果你想塑造创意的未来，来和我们一起构建。'
   },
+  'careers.hero.videoLabel': {
+    en: 'Comfy recruiting video',
+    'zh-CN': 'Comfy 招聘视频'
+  },
 
   // CareersWhyJoinSection
   'careers.whyJoin.reason1': {
