@@ -18,22 +18,18 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-// Agent template placement bug:
-// when the in-app Comfy Agent inserts a workflow template onto a canvas that
-// already has a node on it, the template's nodes land wherever the template's
-// own baked-in absolute layout says, with no regard for what is already on
-// the canvas or the current viewport. Root cause: prepareNode() in
-// src/workbench/extensions/agent/crdt/graphMutations.ts reads payload.pos
-// verbatim (`const [x, y] = readPair(payload.pos, [0, 0])`) -- there is no
-// bounding-box, viewport, or collision-avoidance logic anywhere in
-// src/workbench/extensions/agent/crdt/. This spec drives the real CRDT
-// follower and the real canvas, the way the agent-integration-replay
-// mechanism does (browser_tests/fixtures/agentConversationFixture.ts), but
-// with a hand-built conversation instead of a recording: recording a new
-// fixture requires a live Comfy-Org/cloud stack (see
-// browser_tests/fixtures/data/agent/README.md), which is unavailable here,
-// and the bug is a frontend placement gap independent of what any particular
-// recording contains.
+// Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
+// Agent inserts a workflow template onto a canvas that already has a node on
+// it, the template's raw baked-in absolute coordinates must not be forwarded
+// verbatim -- a batch landing disconnected from and offscreen of existing
+// content is translated, as one unit, to sit beside that content. This spec
+// drives the real CRDT follower and the real canvas, the way the
+// agent-integration-replay mechanism does
+// (browser_tests/fixtures/agentConversationFixture.ts), but with a hand-built
+// conversation instead of a recording: recording a new fixture requires a
+// live Comfy-Org/cloud stack (see browser_tests/fixtures/data/agent/README.md),
+// which is unavailable here, and the placement guarantee is a frontend
+// invariant independent of what any particular recording contains.
 
 const THREAD_ID = 'a1b2c3d4-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'a1b2c3d4-0000-4000-8000-000000000002'
@@ -61,8 +57,8 @@ const TEMPLATE_NODE_POSITIONS: Record<number, [number, number]> = {
 }
 
 // A generous notion of "not absurdly far": within a handful of default
-// viewport widths of the existing node's bounding box. The bug currently
-// lands the template thousands of px past this.
+// viewport widths of the existing node's bounding box. Unfixed forwarding of
+// the template's raw coordinates lands thousands of px past this.
 const REASONABLE_PLACEMENT_MARGIN_PX = 2500
 
 function markdownNode(id: number, pos: [number, number], text: string) {
@@ -235,6 +231,16 @@ class TemplatePlacementHarness {
       })
     )
     await this.waitForSubscribe()
+    // The subscribe catch-up (the user's pre-existing canvas) must be applied
+    // before the template tool call arrives, as it is in production: sending
+    // both back-to-back coalesces them into the follower's first frame, a
+    // resync, which by design never repositions.
+    await this.page.waitForFunction(
+      (id) =>
+        !!window.app &&
+        window.app.graph.nodes.some((node) => String(node.id) === id),
+      String(EXISTING_NODE_ID)
+    )
     this.send(this.host.apply(templateAddNodeOps()))
     this.send(
       this.stampEvent({
@@ -337,10 +343,6 @@ test.describe(
   { tag: ['@cloud', '@agent'] },
   () => {
     // Driven through the real CRDT follower onto a real canvas.
-    // Structure first (this part is not expected to be broken): the template
-    // materializes, alongside the pre-existing node. test.fail() below marks
-    // where the known placement defect starts, per this repo's convention
-    // (see browser_tests/tests/groupNode.spec.ts).
     test('positions inserted template nodes relative to the existing node, not at the raw template coordinates', async ({
       page
     }, testInfo) => {
@@ -369,8 +371,8 @@ test.describe(
 
       // Visual proof, from two lenses on the same real canvas.
       //
-      // Lens 1: centered on the pre-existing node. The template is nowhere
-      // in frame, because it landed thousands of px away.
+      // Lens 1: centered on the pre-existing node. The repositioned template
+      // sits beside it, in frame.
       await page.evaluate((pos: [number, number]) => {
         const canvas = window.app!.canvas
         canvas.ds.scale = 1
@@ -386,8 +388,8 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Lens 2: centered on the template's own baked-in origin. It rendered,
-      // but as an island with nothing from the pre-existing graph in sight.
+      // Lens 2: centered on the template's own baked-in origin, now empty --
+      // nothing was left behind at the raw coordinates.
       await page.evaluate((pos: [number, number]) => {
         const canvas = window.app!.canvas
         canvas.ds.scale = 0.5
@@ -398,15 +400,11 @@ test.describe(
         canvas.setDirty(true, true)
       }, TEMPLATE_ORIGIN)
       await nextFrame(page)
-      await testInfo.attach('template-island-viewport.png', {
+      await testInfo.attach('template-origin-viewport.png', {
         body: await page.screenshot(),
         contentType: 'image/png'
       })
 
-      // Below is the known defect: graphMutations.ts#prepareNode
-      // forwards payload.pos verbatim, with no viewport, bounding-box, or
-      // collision-avoidance adjustment against what is already on the canvas.
-      test.fail()
       for (const id of TEMPLATE_NODE_IDS) {
         const pos = positions[id]!
         const distance = Math.hypot(

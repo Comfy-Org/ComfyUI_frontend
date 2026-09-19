@@ -16,6 +16,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import type { SemanticPlacementPort } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -74,9 +75,34 @@ const noteWidgets: readonly LiveWidget[] = [
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
+  const createdLayouts = new Map<
+    string,
+    {
+      position: { x: number; y: number }
+      size: { width: number; height: number }
+    }
+  >()
+  const placement: SemanticPlacementPort = {
+    nodeBounds: (_scope, nodeId) => {
+      const layout = createdLayouts.get(String(nodeId))
+      return layout
+        ? {
+            x: layout.position.x,
+            y: layout.position.y,
+            width: layout.size.width,
+            height: layout.size.height
+          }
+        : null
+    },
+    viewportBounds: () => null
+  }
 
   beforeEach(() => {
+    createdLayouts.clear()
     createLayout.mockReset()
+    createLayout.mockImplementation((_scope, nodeId, layout) => {
+      createdLayouts.set(String(nodeId), layout)
+    })
     deleteLayouts.mockReset()
     mockReportError.mockReset()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
@@ -85,7 +111,8 @@ describe('graphMutations', () => {
   function mutations() {
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     })
   }
 
@@ -283,21 +310,11 @@ describe('graphMutations', () => {
     )
   })
 
-  // A template's own baked-in absolute layout lands on an agent
-  // canvas verbatim, with no adjustment for what is already there. Reported
-  // in the field: a template landed far from a
-  // LoadImage node the user had just placed. graphMutations.ts has no
-  // bounding-box, viewport, or collision logic anywhere in prepareNode(); it
-  // forwards payload.pos untouched (src/workbench/extensions/agent/crdt/graphMutations.ts:235).
-  it.fails('KNOWN BUG: does not reposition a template node placed far from an existing node', () => {
+  it('repositions a template node placed far from an existing node', () => {
     const graph = mutations()
-    // The user's own node, near the origin/viewport.
     graph.addNode({ ...node(1), pos: [0, 0] }, context)
     createLayout.mockClear()
 
-    // A template's own literal layout coordinates, forwarded unchanged by
-    // the (private, cloud-owned) server -- thousands of px from anything
-    // already on the canvas.
     expect(graph.addNode({ ...node(2), pos: [9000, 9000] }, context)).toBe(true)
 
     const [, , layout] = createLayout.mock.calls[0]
@@ -306,7 +323,49 @@ describe('graphMutations', () => {
       layout.position.y - 0
     )
     expect(distanceFromExistingNode).toBeLessThan(2000)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+        ?.lastSerialization?.pos
+    ).toEqual([layout.position.x, layout.position.y])
   })
+
+  it('keeps a far batch layout intact, moved by one shared offset', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({ ...node(2), pos: [9000, 9000] })
+        batch.addNode({ ...node(3), pos: [9400, 9100] })
+      })
+    ).toBe(true)
+
+    const [first, second] = createLayout.mock.calls.map(
+      ([, , layout]) => layout.position
+    )
+    expect(second.x - first.x).toBe(400)
+    expect(second.y - first.y).toBe(100)
+    expect(Math.hypot(first.x, first.y)).toBeLessThan(2000)
+  })
+
+  it.for(['reconcileNode', 'reconcileNodeFields'] as const)(
+    'keeps doc coordinates when a resync materializes a missing node via %s',
+    (via) => {
+      const graph = mutations()
+      graph.addNode({ ...node(1), pos: [0, 0] }, context)
+      createLayout.mockClear()
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch[via]({ ...node(2), pos: [9000, 9000] })
+        })
+      ).toBe(true)
+
+      const [, , layout] = createLayout.mock.calls[0]
+      expect(layout.position).toEqual({ x: 9000, y: 9000 })
+    }
+  )
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
@@ -415,7 +474,8 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     })
     sibling.addNode(node(9), context)
     createLayout.mockClear()
@@ -444,7 +504,8 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     })
     sibling.batch(context, (batch) => {
       batch.addNode(node(8))
@@ -997,7 +1058,8 @@ describe('graphMutations', () => {
     const graph = new LGraph()
     createGraphMutations({
       getScope: () => graphScopeOf(graph),
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     }).addNode(
       {
         id: 1,
