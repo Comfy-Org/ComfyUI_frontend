@@ -56,10 +56,6 @@ test.describe(
 
       await enterNodeSelectionMode(agentPanel, comfyPage.page)
 
-      test.fail(
-        true,
-        'PM-1329: agentNodeSelectionStore never sets canvas.read_only, so the canvas stays writable during node selection mode'
-      )
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
     })
 
@@ -85,10 +81,6 @@ test.describe(
           )
       })
 
-      test.fail(
-        true,
-        'PM-1329: useLitegraphSettings only gates show_info on Comfy.Graph.CanvasInfo, with no selection-mode check'
-      )
       expect(
         await comfyPage.page.evaluate(() => window.app!.canvas.show_info)
       ).toBe(false)
@@ -112,10 +104,6 @@ test.describe(
           .outputPath('pm-1329-queue-overlay-visible-in-selection-mode.png')
       })
 
-      test.fail(
-        true,
-        'PM-1329: TopMenuSection only gates QueueProgressOverlay on isQueuePanelV2Enabled, with no selection-mode check'
-      )
       await expect(overlay).toHaveCount(0)
     })
   }
