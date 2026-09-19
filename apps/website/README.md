@@ -188,15 +188,22 @@ with the refreshed snapshot.
 ## Models rollout
 
 > **Workshop visibility and the run UI are currently switched off on
-> comfy.org**, because 108 of 238 runs failed on 2026-09-18. The `/models`
-> catalogue and the model-detail routes stay published and keep serving their
-> marketing content — nothing 404s; only the run surface is withdrawn. A
-> production build hides it regardless of `workshop-enabled`, and so does any
-> deploy environment other than `preview`. Previews and local dev still obey
-> the flag, so leave it **on** to keep reviewing fixes there. Production also
-> hides the header account menu, so a signed-in customer can neither see or
-> spend credits nor sign out from the site while this is in place; balances
-> are untouched server-side and existing sessions persist until they expire.
+> comfy.org**, because 108 of 238 runs failed on 2026-09-18. Nothing 404s:
+> `/models` and every model-detail route stay published and fall back to the
+> shared Models showcase page.
+>
+> A build serves Workshop only when `WORKSHOP_DEPLOY_ENV` is `preview` or
+> unset — unset meaning a non-Vercel build, so local `astro dev` and the e2e
+> CI job are unaffected and still obey `workshop-enabled`. Leave that flag
+> **on** to keep reviewing fixes on previews. Every other value, `production`
+> included, hides Workshop whatever the flag says, and production no longer
+> records `workshop-enabled` exposures, so PostHog reports preview traffic
+> only.
+>
+> The kill takes the header account menu with it, so a signed-in customer can
+> neither see nor spend credits, and cannot sign out from the site, while it
+> is in place; balances are untouched server-side and existing sessions
+> persist until they expire.
 >
 > To re-open production, revert the PR that added `DEPLOY_DISABLED` to
 > `src/scripts/posthog.ts` rather than raising the flag: that removes the
