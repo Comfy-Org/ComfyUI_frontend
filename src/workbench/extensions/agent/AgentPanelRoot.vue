@@ -571,7 +571,7 @@ const {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
-          { workflowId, rootGraphId: String(app.rootGraph.id) },
+          { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
           nodeIds
         )
         if (status.value === 'idle') graphActivity.finishTurn()

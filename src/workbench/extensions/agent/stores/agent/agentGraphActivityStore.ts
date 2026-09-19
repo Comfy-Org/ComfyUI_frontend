@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 const SETTLE_MS = 1_000
 
 interface AgentGraphTarget {
   workflowId: string
-  rootGraphId: string
+  rootGraphId: RootGraphId
 }
 
 interface ActivityPayload extends AgentGraphTarget {
@@ -24,10 +27,10 @@ export const useAgentGraphActivityStore = defineStore(
   () => {
     const state = ref<ActivityState>({ phase: 'idle' })
     const turnOpen = ref(false)
-    const currentTurnId = ref<string | null>(null)
+    const currentTurnId = ref<TurnId | null>(null)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
 
-    function startTurn(turnId: string | null = null): void {
+    function startTurn(turnId: TurnId | null = null): void {
       if (turnOpen.value && currentTurnId.value === turnId) return
       const previous = state.value
       const resumesCurrentTurn =

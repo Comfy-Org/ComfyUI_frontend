@@ -9,6 +9,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
@@ -58,7 +59,7 @@ describe('AgentGraphActivityBar', () => {
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
     activity.recordMaterialized(
-      { workflowId: 'wf-1', rootGraphId: 'another-graph' },
+      { workflowId: 'wf-1', rootGraphId: toRootGraphId('another-graph') },
       [toNodeId(1)]
     )
     await nextTick()
