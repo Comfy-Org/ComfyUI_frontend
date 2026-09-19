@@ -24,9 +24,8 @@ test.describe(
       )
     })
 
-    test('advertises .json in the attach accept list and attaches a .json file end to end', async ({
-      agentPanel,
-      comfyPage
+    test('advertises .json in the attach accept list and accepts a .json file through the file browser', async ({
+      agentPanel
     }) => {
       await agentPanel.open()
       const panel = agentPanel.root
@@ -40,7 +39,9 @@ test.describe(
       )
 
       // Browse flow: picking a .json file through the input lands it in the
-      // composer instead of being silently ignored.
+      // composer instead of being silently ignored. This is the actual bug
+      // that was reported (the OS picker hid .json files) and the actual fix
+      // (AGENT_ATTACH_ACCEPT now lists .json/application/json).
       await fileInput.setInputFiles(assetPath('default.json'))
       const assetSection = panel.getByTestId('composer-asset-section')
       await expect(assetSection).toContainText('default.json')
@@ -52,10 +53,26 @@ test.describe(
         .getByRole('button', { name: enMessages.agent.remove, exact: true })
         .click()
       await expect(assetSection).toHaveCount(0)
+    })
 
-      // Drag-and-drop flow: this is the path application code actually gates
-      // (`isAgentAttachable`/`EXTRA_ATTACHABLE_EXTENSIONS`), so it is the real
-      // end-to-end proof that dropped .json files are accepted too.
+    test('leaves a drag-and-dropped .json file unclaimed for the graph loader', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      // Drag-and-drop is a different path from the file browser above, gated
+      // by `isAgentAttachable`/`EXTRA_ATTACHABLE_EXTENSIONS`, which
+      // deliberately excludes .json: a saved workflow file dropped anywhere
+      // in the app -- including over the agent panel -- must stay unclaimed
+      // so the pre-existing "drop a workflow onto the canvas to open it"
+      // graph loader can still pick it up. See attachableFiles.ts and the
+      // AgentPanelRoot.test.ts unit coverage for the same contract; the
+      // graph loader's own drag-and-drop behavior is already covered by
+      // metadataWorkflowImport.spec.ts, so it is not re-asserted here.
+      await agentPanel.open()
+      const panel = agentPanel.root
+      const assetSection = panel.getByTestId('composer-asset-section')
+      await expect(assetSection).toHaveCount(0)
+
       const panelBox = await panel.boundingBox()
       if (!panelBox) throw new Error('Agent panel is not visible')
       await comfyPage.dragDrop.dragAndDropFile('default.json', {
@@ -64,7 +81,9 @@ test.describe(
           y: panelBox.y + panelBox.height / 2
         }
       })
-      await expect(assetSection).toContainText('default.json')
+
+      // The composer must not have claimed it.
+      await expect(assetSection).toHaveCount(0)
     })
   }
 )
