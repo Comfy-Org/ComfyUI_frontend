@@ -496,10 +496,9 @@ describe('Composer', () => {
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
-      expect(fetchApi).not.toHaveBeenCalledWith(
-        '/agent/run-mode',
-        expect.objectContaining({ method: 'PUT' })
-      )
+      expect(
+        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+      ).toHaveLength(0)
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
