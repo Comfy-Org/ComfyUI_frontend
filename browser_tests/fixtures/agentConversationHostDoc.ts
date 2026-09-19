@@ -95,6 +95,14 @@ export class HostDoc {
     return project(this.doc, this.catalog)
   }
 
+  // Test-only: removes meta.schema_version after mint() wrote it, so the next
+  // frame this host produces carries the exact "unreadable schema" shape
+  // KA-11's read gate (schemaGuard.ts) refuses — an absent version, not a
+  // merely different one.
+  corruptSchemaVersion(): void {
+    this.doc.getMap('meta').delete('schema_version')
+  }
+
   subscribed(): HostFrame {
     return {
       type: 'doc_subscribed',

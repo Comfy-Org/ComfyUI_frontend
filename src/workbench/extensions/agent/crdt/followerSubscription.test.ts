@@ -1069,6 +1069,50 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
+  it('latches on an undefined schema_version too, dropping a later valid frame until reset', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected, schemaErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // No meta at all: the exact "unreadable" catch-up shape KA-11 refuses.
+    const host = new Y.Doc()
+    const unreadableNode = new Y.Map<unknown>()
+    unreadableNode.set('type', 'LoadImage')
+    host.getMap('nodes').set('unreadable-seed', unreadableNode)
+    const unreadableState = Y.encodeStateVector(host)
+    transport.deliver('doc_update', docUpdateFrame(Y.encodeStateAsUpdate(host)))
+
+    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+    expect(projected).toHaveLength(0)
+
+    // A second, independently schema-valid frame for the SAME lineage still
+    // never merges or projects: the gate latches the whole lineage, not just
+    // the frame that tripped it.
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    const laterNode = new Y.Map<unknown>()
+    laterNode.set('type', 'MarkdownNote')
+    nodesMap(host).set('added-after-latch', laterNode)
+    const laterUpdate = Y.encodeStateAsUpdate(host, unreadableState)
+    transport.deliver('doc_update', docUpdateFrame(laterUpdate, WORKFLOW_ID, 2))
+
+    expect(projected).toHaveLength(0)
+    expect(nodesMap(bridge.follower.doc).has('added-after-latch')).toBe(false)
+    expect(nodesMap(bridge.follower.doc).has('unreadable-seed')).toBe(true)
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: undefined }
+    ])
+    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+
+    // Only an explicit doc_reset lifts the latch.
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 2 })
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    expect(bridge.lastSchemaError).toBeNull()
+    expect(projected).toHaveLength(1)
+    error.mockRestore()
+  })
+
   it('reads the version through the package public API, not a local copy', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const doc = mint({ nodes: [], links: [] }, { types: {} })
