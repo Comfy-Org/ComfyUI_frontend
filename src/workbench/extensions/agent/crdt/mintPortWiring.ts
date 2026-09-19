@@ -47,6 +47,13 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * The bound document's root graph id, latched by the composition root when
+   * the doc binding became true; null when untracked or unbound. Scopes
+   * layout mints to that graph so a load already in flight when the binding
+   * flips cannot mint the new graph's nodes into the old document.
+   */
+  boundRootGraphId(): string | null
 }
 
 export interface MintPortWiring {
@@ -164,6 +171,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    boundRootGraphId: deps.boundRootGraphId,
     source: {
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)

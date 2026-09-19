@@ -37,12 +37,17 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
   let wiring: MintPortWiring
   let liveGraph: LGraph
   let graphNodes: Map<string, LGraphNode>
+  let boundRootGraphId: string
 
   beforeEach(() => {
     minted = []
     graphNodes = new Map()
     liveGraph = new LGraph()
     liveGraph.id = createUuidv4()
+    // Latched once, as `AgentPanelRoot.vue`'s watch on `isBoundWorkflowActive`
+    // does: it does not relatch during the race below, because that boolean
+    // never transitions across it (see the test body).
+    boundRootGraphId = liveGraph.id
 
     const graphAdapter: MintableGraph = {
       get id() {
@@ -66,7 +71,8 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-      getGraph: () => graphAdapter
+      getGraph: () => graphAdapter,
+      boundRootGraphId: () => boundRootGraphId
     })
   })
 

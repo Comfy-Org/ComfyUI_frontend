@@ -78,6 +78,7 @@ describe('attachLayoutMintPort', () => {
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      boundRootGraphId: () => 'root',
       source: {
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
@@ -234,6 +235,86 @@ describe('attachLayoutMintPort', () => {
         node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
       }
     ])
+  })
+
+  it.for([
+    [
+      'create',
+      {
+        ...createNodeChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    ],
+    [
+      'delete',
+      {
+        ...deleteChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    ]
+  ] as const)(
+    "drops a root %s whose graph is not the bound document's root graph",
+    ([_action, operation]) => {
+      deliver({ operation })
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenLastCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_op_for_unbound_graph',
+        context: { graphId: 'other', boundRootGraphId: 'root', nodeId: '1' }
+      })
+    }
+  )
+
+  it('reports an unbound-graph createNode only once per tick', async () => {
+    const operation = {
+      ...createNodeChange('1').operation,
+      graphId: 'other',
+      ownerGraphId: 'other'
+    }
+    deliver({ operation })
+    deliver({ operation: { ...operation, nodeId: '2' } })
+
+    expect(reportError).toHaveBeenCalledOnce()
+
+    await Promise.resolve()
+    deliver({ operation: { ...operation, nodeId: '3' } })
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('mints a root createNode when no root graph is latched as bound (untracked, not restricted)', () => {
+    port.detach()
+    port = attachLayoutMintPort({
+      changes: {
+        onChange: (listener) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }
+      },
+      session,
+      severedLinks: { take: (nodeId) => severed.get(nodeId) ?? [] },
+      localActorPrefix: LOCAL_PREFIX,
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      boundRootGraphId: () => null,
+      source: {
+        serializeNode: (id) => graphNodes.get(id) ?? null,
+        nodeIds: () => [...graphNodes.keys()]
+      },
+      enqueue: (operations) => minted.push(...operations)
+    })
+
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    })
+
+    expect(minted).toHaveLength(1)
   })
 
   it.for([
