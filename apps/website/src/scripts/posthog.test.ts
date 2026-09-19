@@ -120,14 +120,19 @@ describe('Workshop visibility', () => {
     }
   )
 
-  it('keeps comfy.org closed when the deploy env is overridden to preview', async () => {
+  it('holds visibility and the auth override shut when the deploy env is overridden to preview', async () => {
     hoisted.vercelProduction = true
     hoisted.deployEnv = 'preview'
-    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
-    const { initPostHog, useWorkshopEnabled } = await import('./posthog')
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key !== 'workshop-auth'
+    )
+    const { initPostHog, useWorkshopEnabled, useWorkshopAuthFlag } =
+      await import('./posthog')
     initPostHog()
     emitFeatureFlags()
     expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopAuthFlag().value).toBe(false)
   })
 
   it('leaves visibility settled on production, so the gate never waits on a flag answer', async () => {

@@ -219,7 +219,11 @@ with the refreshed snapshot.
 > and cannot sign out from the site, while this is in place; balances are
 > untouched server-side and existing sessions persist until they expire. The
 > homepage Model Discovery section also drops out of `/` and `/zh-CN/`, with
-> no fallback content in its place. `/login/`, `/signup/` and
+> no fallback content in its place. Both nav entries pointing at `/models` —
+> the header **Models** item and the Products-menu **Comfy Workshop** link —
+> go with it, so while the page still serves, it is reachable only by direct
+> URL or search. (The header's **Supported Models** entry is a different
+> page, `/p/supported-models`, and is unaffected.) `/login/`, `/signup/` and
 > `/forgot-password/` are _not_ gated on visibility — they answer to
 > `workshop-auth` and `workshop-signup-turnstile` — so someone arriving from a
 > bookmark or a password-reset mail can still create an account and will land

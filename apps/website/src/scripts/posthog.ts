@@ -117,8 +117,9 @@ const VISIBILITY_OVERRIDE =
 // serve it, so leave the workshop-enabled flag ON to keep reviewing fixes
 // there. An empty deploy env is a non-Vercel build — local, or the e2e CI
 // job — and keeps obeying the flag. Setting WORKSHOP_DEPLOY_ENV re-opens
-// those, never comfy.org: production is judged on VERCEL_ENV, which the
-// override cannot reach. Revert this PR to re-open production.
+// those, never comfy.org: production is judged separately on
+// WORKSHOP_VERCEL_PRODUCTION, which that override cannot reach. Remove
+// DEPLOY_DISABLED and its uses to re-open production.
 const DEPLOY_DISABLED =
   WORKSHOP_VERCEL_PRODUCTION ||
   (WORKSHOP_DEPLOY_ENV !== '' && WORKSHOP_DEPLOY_ENV !== 'preview')
