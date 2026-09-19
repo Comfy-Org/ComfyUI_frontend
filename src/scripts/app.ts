@@ -294,6 +294,11 @@ function createNodeOutputsMutationView(
   })
 }
 
+function beginGraphLoad(suppressWorkflowReset: boolean) {
+  useWorkflowService().beforeLoadNewGraph(suppressWorkflowReset)
+  ChangeTracker.invalidateCanvasTracker()
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -1293,7 +1298,7 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean !== false)
+    beginGraphLoad(clean !== false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
@@ -2157,7 +2162,7 @@ export class ComfyApp {
         async () => {
           try {
             // false: final destination; no later load republishes the hash.
-            useWorkflowService().beforeLoadNewGraph(false)
+            beginGraphLoad(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
             useMissingNodesErrorStore().setMissingNodeTypes([])
@@ -2333,7 +2338,7 @@ export class ComfyApp {
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
+    beginGraphLoad(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     this.clean()

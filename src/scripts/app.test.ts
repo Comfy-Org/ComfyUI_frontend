@@ -67,6 +67,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
+import { ChangeTracker } from './changeTracker'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
 
@@ -220,6 +221,7 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -269,6 +271,33 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
+    it('invalidates canvas ownership after deactivating the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = outgoing
+      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
+      let couldCaptureDuringDeactivate = false
+      vi.mocked(outgoing.changeTracker.deactivate).mockImplementation(() => {
+        couldCaptureDuringDeactivate = ChangeTracker.canCaptureCanvas(
+          outgoing.changeTracker
+        )
+      })
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(couldCaptureDuringDeactivate).toBe(true)
+      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+    })
+
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
