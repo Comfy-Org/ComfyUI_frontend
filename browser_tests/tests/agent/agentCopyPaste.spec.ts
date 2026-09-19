@@ -27,10 +27,13 @@ test.describe(
   { tag: ['@cloud', '@agent'] },
   () => {
     test.use({ conversationCase: CASE })
+    // An unexpectedly passing test.fail case is a finding, not a flake; a
+    // retry would only replay the recorded turn three more times.
+    test.describe.configure({ retries: 0 })
     test.setTimeout(120_000)
 
     test.beforeEach(async ({ agentConversation }) => {
-      await agentConversation.runTurns()
+      await agentConversation.replayTurn(0)
     })
 
     test('control: copying an agent-added node and pasting duplicates it', async ({
@@ -40,7 +43,7 @@ test.describe(
       const before = await agentConversation.graphNodes()
       const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
 
-      await agentConversation.vueNodes.selectNode(source.id)
+      await agentConversation.selectNode(source.id)
       await page.keyboard.press('Control+c')
       await page.keyboard.press('Control+v')
 
@@ -64,11 +67,11 @@ test.describe(
           const reply = agentConversation.transcript.first()
 
           if (order === 'node first') {
-            await agentConversation.vueNodes.selectNode(source.id)
+            await agentConversation.selectNode(source.id)
             await reply.selectText()
           } else {
             await reply.selectText()
-            await agentConversation.vueNodes.selectNode(source.id)
+            await agentConversation.selectNode(source.id)
           }
           await page.keyboard.press('Control+c')
           await page.keyboard.press('Control+v')
@@ -92,7 +95,7 @@ test.describe(
         const reply = agentConversation.transcript.first()
         const replyText = (await reply.innerText()).trim()
 
-        await agentConversation.vueNodes.selectNode(source.id)
+        await agentConversation.selectNode(source.id)
         await page.keyboard.press('Control+c')
         await reply.selectText()
         await page.keyboard.press('Control+c')
@@ -115,9 +118,9 @@ test.describe(
         const before = await agentConversation.graphNodes()
         const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
 
-        await agentConversation.vueNodes.selectNode(EARLIER_COPY_ID)
+        await agentConversation.selectNode(EARLIER_COPY_ID)
         await page.keyboard.press('Control+c')
-        await agentConversation.vueNodes.selectNode(source.id)
+        await agentConversation.selectNode(source.id)
         await agentConversation.composer.click()
         await page.keyboard.press('Control+c')
         await page.locator('#graph-canvas').focus()
@@ -143,9 +146,9 @@ test.describe(
         const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
         const reply = agentConversation.transcript.first()
 
-        await agentConversation.vueNodes.selectNode(EARLIER_COPY_ID)
+        await agentConversation.selectNode(EARLIER_COPY_ID)
         await page.keyboard.press('Control+c')
-        await agentConversation.vueNodes.selectNode(source.id)
+        await agentConversation.selectNode(source.id)
         await reply.selectText()
         await page.keyboard.press('Control+c')
         await reply.click()
@@ -172,7 +175,7 @@ test.describe(
         const before = await agentConversation.graphNodes()
         const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
 
-        await agentConversation.vueNodes.selectNode(source.id)
+        await agentConversation.selectNode(source.id)
         await page.keyboard.press('Control+c')
         await page.keyboard.press('Control+v')
         await expect
