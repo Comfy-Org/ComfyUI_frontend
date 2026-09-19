@@ -187,6 +187,57 @@ with the refreshed snapshot.
 
 ## Models rollout
 
+> **Workshop visibility and the run UI are currently switched off on
+> comfy.org**, because 108 of 238 runs failed on 2026-09-18. Nothing 404s:
+> `/models` and every model-detail route stay published and fall back to the
+> shared Models showcase page.
+>
+> A build serves Workshop only when `WORKSHOP_DEPLOY_ENV` is `preview` or
+> unset — unset meaning a non-Vercel build, so local `astro dev` and the e2e
+> CI job are unaffected and still obey `workshop-enabled`. Leave that flag
+> **on** to keep reviewing fixes on previews. Every other value, `production`
+> included, hides Workshop whatever the flag says. `WORKSHOP_DEPLOY_ENV`
+> defaults to `VERCEL_ENV` but is an `astro:env` field in its own right, so
+> setting it explicitly outranks `VERCEL_ENV` — `WORKSHOP_DEPLOY_ENV=preview`
+> is the escape hatch if a build reports a deploy env we did not anticipate —
+> `development`, say. **On its own it cannot re-open comfy.org**: production
+> is judged separately on `WORKSHOP_VERCEL_PRODUCTION`, whose default derives
+> from `VERCEL_ENV` independently, and which also holds the auth override
+> shut. That is a second lever rather than an unsettable one — it is an
+> ordinary `astro:env` field, so `WORKSHOP_VERCEL_PRODUCTION=false` on the
+> production project would re-open comfy.org. Nobody should need to set
+> either variable on production; reverting is the supported path.
+>
+> A disabled build stops emitting `$feature_flag_called` for
+> `workshop-enabled`, so exposure counts cover previews only. Flag membership
+> still rides along on production events in `$active_feature_flags`, so an
+> insight filtered on the flag _property_ rather than the exposure _event_
+> will still show production traffic — that is not the kill leaking.
+>
+> Everything gated on Workshop visibility goes with it. The header account
+> menu disappears, so a signed-in customer can neither see nor spend credits,
+> and cannot sign out from the site, while this is in place; balances are
+> untouched server-side and existing sessions persist until they expire. The
+> homepage Model Discovery section also drops out of `/` and `/zh-CN/`, with
+> no fallback content in its place. Both nav entries pointing at `/models` —
+> the header **Models** item and the Products-menu **Comfy Workshop** link —
+> go with it, so while the page still serves, it is reachable only by direct
+> URL or search. (The header's **Supported Models** entry is a different
+> page, `/p/supported-models`, and is unaffected.) `/login/`, `/signup/` and
+> `/forgot-password/` are _not_ gated on visibility — they answer to
+> `workshop-auth` and `workshop-signup-turnstile` — so someone arriving from a
+> bookmark or a password-reset mail can still create an account and will land
+> on `/` with nothing indicating they are signed in.
+>
+> To re-open production, revert the PR that added `DEPLOY_DISABLED` to
+> `src/scripts/posthog.ts` rather than raising the flag: that removes the
+> constant, this banner and the deploy-env test table together. Note that both
+> levers are build-time — `astro:env` inlines `WORKSHOP_DEPLOY_ENV` — so the
+> override above and this revert each need a production redeploy to take
+> effect, which runs the `WEBSITE_CLOUD_API_KEY` check and the production-only
+> cloud-nodes freshness gate. Neither is a switch that acts on its own. The
+> rest of this section describes the behaviour that resumes afterwards.
+
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the
 build and authentication switches. It defaults off, including while flags are
@@ -252,8 +303,10 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 ```
 
 `PUBLIC_WORKSHOP_ENABLED` is honored only by a local `astro dev` command. Built
-previews and production always use PostHog. This is a frontend visibility
-control; the APIs continue to enforce authentication and billing.
+previews use PostHog; production ignores the `workshop-enabled` flag while the
+kill above is in place, though `workshop-auth` and `workshop-signup-turnstile`
+still apply there. This is a frontend visibility control; the APIs continue to
+enforce authentication and billing.
 
 ### Models analytics
 

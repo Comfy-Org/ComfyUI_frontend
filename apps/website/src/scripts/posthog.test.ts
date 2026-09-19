@@ -10,6 +10,7 @@ import {
 const hoisted = vi.hoisted(() => ({
   localDev: false,
   deployEnv: '',
+  vercelProduction: false,
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
   mockOnFeatureFlags: vi.fn<typeof PostHogModule.default.onFeatureFlags>(),
@@ -27,12 +28,16 @@ vi.mock(import('astro:env/client'), () => ({
   },
   get WORKSHOP_DEPLOY_ENV() {
     return hoisted.deployEnv
+  },
+  get WORKSHOP_VERCEL_PRODUCTION() {
+    return hoisted.vercelProduction
   }
 }))
 
 beforeEach(() => {
   hoisted.localDev = false
   hoisted.deployEnv = ''
+  hoisted.vercelProduction = false
 })
 
 type PostHogMock = Pick<
@@ -94,6 +99,69 @@ describe('Workshop visibility', () => {
     }
     emitFeatureFlags(true)
     expect(enabled.value).toBe(true)
+  })
+
+  it.for([
+    { build: 'non-Vercel', deployEnv: '', reaches: true },
+    { build: 'preview', deployEnv: 'preview', reaches: true },
+    { build: 'production', deployEnv: 'production', reaches: false },
+    { build: 'other deploy env', deployEnv: 'development', reaches: false }
+  ])(
+    'an enabled flag reaches the run surface on a $build build: $reaches',
+    async ({ deployEnv, reaches }) => {
+      hoisted.deployEnv = deployEnv
+      hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+      const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+        await import('./posthog')
+      initPostHog()
+      emitFeatureFlags()
+      expect(useWorkshopEnabled().value).toBe(reaches)
+      expect(useWorkshopEnabledSettled().value).toBe(true)
+    }
+  )
+
+  it('holds visibility and the auth override shut when the deploy env is overridden to preview', async () => {
+    hoisted.vercelProduction = true
+    hoisted.deployEnv = 'preview'
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key !== 'workshop-auth'
+    )
+    const { initPostHog, useWorkshopEnabled, useWorkshopAuthFlag } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopAuthFlag().value).toBe(false)
+  })
+
+  it('leaves visibility settled on production, so the gate never waits on a flag answer', async () => {
+    hoisted.deployEnv = 'production'
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    identifyWorkshopUser({ uid: 'staff-uid', email: 'a@comfy.org' })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('records no workshop-enabled exposure on production, where the answer is discarded', async () => {
+    hoisted.deployEnv = 'production'
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    const exposures = hoisted.mockIsFeatureEnabled.mock.calls.filter(
+      ([key, options]) =>
+        key === 'workshop-enabled' && options?.send_event !== false
+    )
+    expect(exposures).toEqual([])
   })
 
   it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
@@ -625,7 +693,7 @@ describe('useWorkshopAuthFlag', () => {
   })
 
   it('allows sign-in without an auth flag while Models stays disabled, and honors explicit auth changes', async () => {
-    hoisted.deployEnv = 'production'
+    hoisted.deployEnv = 'preview'
     hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
       key === 'workshop-enabled' ? false : undefined
     )

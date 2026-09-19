@@ -1,4 +1,8 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import {
+  WORKSHOP_LOCAL_DEV,
+  WORKSHOP_DEPLOY_ENV,
+  WORKSHOP_VERCEL_PRODUCTION
+} from 'astro:env/client'
 import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -107,7 +111,24 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
-const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+
+// Workshop is switched off on comfy.org after 108 of 238 runs failed on
+// 2026-09-18. Of the environments Vercel reports, only a preview may still
+// serve it, so leave the workshop-enabled flag ON to keep reviewing fixes
+// there. An empty deploy env is a non-Vercel build — local, or the e2e CI
+// job — and keeps obeying the flag. Setting WORKSHOP_DEPLOY_ENV re-opens
+// those, never comfy.org: production is judged separately on
+// WORKSHOP_VERCEL_PRODUCTION, which that override cannot reach. Remove
+// DEPLOY_DISABLED and its uses to re-open production.
+const DEPLOY_DISABLED =
+  WORKSHOP_VERCEL_PRODUCTION ||
+  (WORKSHOP_DEPLOY_ENV !== '' && WORKSHOP_DEPLOY_ENV !== 'preview')
+
+function resolveEnabled(readFlagAnswer: () => boolean = () => false): boolean {
+  return !DEPLOY_DISABLED && (VISIBILITY_OVERRIDE || readFlagAnswer())
+}
+
+const workshopEnabled = ref(resolveEnabled())
 // Default to the resolved public experience. The gate only leaves it once
 // `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
 // environment that never initializes PostHog — local dev, no key, SSR — shows
@@ -129,6 +150,10 @@ function markFlagResolved(): void {
 }
 
 function awaitFlagAnswer(): void {
+  if (DEPLOY_DISABLED) {
+    markFlagResolved()
+    return
+  }
   if (flagResolutionTimer !== undefined) clearTimeout(flagResolutionTimer)
   workshopEnabledSettled.value = false
   flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
@@ -169,7 +194,7 @@ function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
     user &&
     posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
   if (cachedAnswer !== undefined) return
-  workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopEnabled.value = resolveEnabled()
   awaitFlagAnswer()
   posthog.reloadFeatureFlags()
 }
@@ -179,7 +204,7 @@ function adoptNewIdentity(
   persistedUid: string | undefined,
   waitForIdentityAnswer: boolean
 ): void {
-  workshopEnabled.value = VISIBILITY_OVERRIDE
+  workshopEnabled.value = resolveEnabled()
   if (waitForIdentityAnswer) awaitFlagAnswer()
   else markFlagResolved()
   if (persistedUid) posthog.reset()
@@ -203,13 +228,14 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
     adoptNewIdentity(user, persistedUid, !VISIBILITY_OVERRIDE && user !== null)
   } catch (error) {
     workshopUser = previous
-    workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabled.value = resolveEnabled()
     markFlagResolved()
     console.error('PostHog identity failed', error)
   }
 }
 
 const OVERRIDDEN_ON =
+  !WORKSHOP_VERCEL_PRODUCTION &&
   WORKSHOP_DEPLOY_ENV !== 'production' &&
   import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(true)
@@ -231,7 +257,9 @@ export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
   // Enter the awaiting state before init can throw, so the gate holds the
   // loader (not the public page) through the whole fetch and the timeout is
-  // always armed the moment visibility becomes unresolved.
+  // always armed the moment visibility becomes unresolved. Under
+  // DEPLOY_DISABLED there is nothing to await: the call resolves at once
+  // and no loader or timeout is involved.
   if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
     posthog.init(POSTHOG_KEY, {
@@ -254,7 +282,7 @@ export function initPostHog() {
       expectedUid === persistedUid ||
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
-      workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopEnabled.value = resolveEnabled(() => persistedAnswer)
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -262,9 +290,9 @@ export function initPostHog() {
         markFlagResolved()
         return
       }
-      workshopEnabled.value =
-        VISIBILITY_OVERRIDE ||
-        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      workshopEnabled.value = resolveEnabled(
+        () => posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      )
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
