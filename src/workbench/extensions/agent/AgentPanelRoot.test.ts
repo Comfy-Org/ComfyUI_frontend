@@ -3623,36 +3623,88 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  // PM-1255/PM-986: a browser tab closed without the SPA's own unbind() left
-  // 'wf-abandoned' bound to the default unsaved path in plain, unscoped
-  // localStorage. A brand-new tab that opens at that same default path -
-  // nobody has sent a message or picked a workflow - should never inherit
-  // it. Reproduces end to end through the real tab-binding store and the
-  // real CRDT follower: currently the follower subscribes to the abandoned
-  // workflow's document unprompted.
-  it.fails('does not resubscribe an abandoned tab binding onto a brand-new default-path tab', async () => {
+  // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
+  // bound to the default unsaved path in localStorage, and the thread pointer
+  // survived beside it. On the next boot the thread hydrates and names that
+  // workflow; the panel must not resolve it to the brand-new tab that merely
+  // reuses the path. Today it binds the fresh tab at hydrate, posts the next
+  // turn as that workflow, and the real CRDT follower pulls the abandoned
+  // document onto the empty canvas.
+  it.fails('does not restore an abandoned tab binding onto a brand-new default-path tab', async () => {
     const staleWorkflowId = 'wf-abandoned'
     const defaultPath = 'workflows/Unsaved Workflow.json'
     localStorage.setItem(
       'Comfy.Agent.WorkflowTabBindings',
       JSON.stringify({ [staleWorkflowId]: defaultPath })
     )
-    const tab = addTab(defaultPath, { isTemporary: true })
-    workflowStore.activeWorkflow = tab
-    mockMessagesEndpoint(staleWorkflowId)
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-    socketSend.mockClear()
-
-    // The same server push a real tab switch sends - here naming the
-    // abandoned tab's workflow, unprompted, on a chat nobody has touched.
-    ws.emit('agent_active_tab', { workflow_id: staleWorkflowId })
-
-    await vi.waitFor(() =>
-      expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalled()
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-stale')
+    const fresh = addTab(defaultPath, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: '5c1c3a7e-2a44-4c8e-9a44-0f1e2d3c4b5a'
+      })
+    })
+    workflowStore.activeWorkflow = fresh
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-stale',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: staleWorkflowId,
+        content: { text: 'Earlier request' }
+      }
+    ]
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack(staleWorkflowId))
+        }
+        if (url.includes('/messages')) return json(200, history)
+        if (url.includes('/workflows'))
+          return json(200, {
+            // Re-targeting the fresh tab saves it as a new cloud workflow.
+            data: fresh.isTemporary
+              ? []
+              : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
     )
 
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().canRestoreWorkflow).toBe(false)
+    )
+
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor(staleWorkflowId)
+    ).toBeUndefined()
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(defaultPath)
+    ).toBeUndefined()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Unsaved Workflow' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    await sendFromComposer('continue here')
+
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).not.toMatchObject({ workflow_id: staleWorkflowId })
+    expect(workflowStore.activeWorkflow.path).toBe(defaultPath)
     const subscribedStaleDoc = socketSend.mock.calls.some(([frame]) => {
       if (typeof frame !== 'string') return false
       const parsed: unknown = JSON.parse(frame)

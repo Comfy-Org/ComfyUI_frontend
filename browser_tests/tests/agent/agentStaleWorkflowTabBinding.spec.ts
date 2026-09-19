@@ -1,61 +1,83 @@
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
+import type {
+  AgentMessage,
+  AgentThreadListResponse
+} from '@comfyorg/ingest-types'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type {
+  AgentTurnAccepted,
+  CloudWorkflowEntry
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
-const STALE_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
+const LEGACY_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
+const THREAD_KEY = 'Comfy.Agent.ThreadId'
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
+const DEFAULT_TAB_NAME = 'Unsaved Workflow'
+const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'
+const TURN_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
+const EARLIER_REQUEST = 'Earlier request'
 
-// PM-1255 / PM-986: a browser tab closed without the SPA's own cleanup never
-// runs agentWorkflowTabBindingStore's unbind(), so `Comfy.Agent.WorkflowTabBindings`
-// - plain, unscoped localStorage with no TTL and no per-page-load nonce -
-// still names the abandoned tab's workflow under the shared default path
-// every new/unsaved tab uses. A brand-new tab that opens at that same
-// default path silently inherits the binding, and the CRDT follower
-// subscribes to (and renders) that workflow's real content before the user
-// has asked for anything.
+// A browser tab closed without the SPA's own cleanup never runs
+// agentWorkflowTabBindingStore's unbind(), so `Comfy.Agent.WorkflowTabBindings`
+// still names the abandoned tab's workflow under the default path every
+// unsaved tab reuses, and the thread pointer survives beside it. On the next
+// boot the thread hydrates and names that workflow; the panel resolves it to
+// the brand-new default-path tab, the next turn is posted as that workflow,
+// and the CRDT follower pulls its real content onto the empty canvas.
 //
 // This is a pinned repro, not a fix, so it seeds the exact abandoned-tab
-// condition and asserts the correct behavior (no inherited content), which
-// currently fails. See agentWorkflowTabBindingStore.test.ts and
-// AgentPanelRoot.test.ts ("does not resubscribe an abandoned tab binding
-// onto a brand-new default-path tab") for narrower, backend-free
-// reproductions of the same root cause.
+// condition and asserts the correct behavior (the fresh tab keeps its own
+// empty canvas), which currently fails. See agentWorkflowTabBindingStore.test.ts
+// and AgentPanelRoot.test.ts ("does not restore an abandoned tab binding onto
+// a brand-new default-path tab") for narrower, backend-free reproductions of
+// the same chain.
 test.describe(
-  'Agent stale workflow tab binding (PM-1255/PM-986)',
+  'Agent stale workflow tab binding',
   { tag: ['@cloud', '@agent'] },
   () => {
     test("a brand-new default-path tab does not inherit an abandoned tab's real content", async ({
       page,
       agentFlagEnabled
     }, testInfo) => {
-      // Pinned repro (PM-1255/PM-986): the whole test is expected-to-fail
-      // until the stale-binding leak is fixed, so this must run before any
-      // assertion can throw.
+      // Pinned repro: the whole test is expected-to-fail until the
+      // stale-binding leak is fixed, so this must run before any assertion
+      // can throw.
       test.fail()
-      test.setTimeout(60_000)
+      test.setTimeout(90_000)
 
       const { workflow } = loadAgentConversation('agent-workflow-editing-05')
       const staleWorkflowId = workflow.id
       const host = new HostDoc(staleWorkflowId, workflow.seed, workflow.catalog)
 
       // The previous tab's own in-app cleanup never ran (its browser tab was
-      // simply closed), so the binding cache survives untouched into this
-      // brand-new page load.
+      // simply closed), so the binding cache and the thread pointer survive
+      // untouched into this brand-new page load.
       await page.addInitScript(
-        ([key, id, path]) => {
-          localStorage.setItem(key, JSON.stringify({ [id]: path }))
+        ([bindingKey, threadKey, id, path, threadId]) => {
+          localStorage.setItem(bindingKey, JSON.stringify({ [id]: path }))
+          localStorage.setItem(threadKey, threadId)
         },
-        [STALE_BINDING_KEY, staleWorkflowId, DEFAULT_TAB_PATH] as const
+        [
+          LEGACY_BINDING_KEY,
+          THREAD_KEY,
+          staleWorkflowId,
+          DEFAULT_TAB_PATH,
+          THREAD_ID
+        ] as const
       )
 
       let socket: WebSocketRoute | undefined
@@ -94,14 +116,62 @@ test.describe(
           })
         )
       })
+
+      const history: AgentMessage[] = [
+        {
+          id: 'user-1',
+          thread_id: THREAD_ID,
+          turn_id: TURN_ID,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          workflow_id: staleWorkflowId,
+          content: { text: EARLIER_REQUEST }
+        }
+      ]
+      const threads: AgentThreadListResponse = {
+        threads: [
+          {
+            id: THREAD_ID,
+            title: 'Earlier chat',
+            preview: EARLIER_REQUEST,
+            workflow_id: staleWorkflowId,
+            status: 'active',
+            message_count: 1,
+            created_at: '2026-09-11T10:00:00Z',
+            updated_at: '2026-09-11T10:00:00Z',
+            last_message_at: '2026-09-11T10:00:00Z'
+          }
+        ],
+        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      }
+      const posted: unknown[] = []
       await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+        route.fulfill(jsonRoute(threads))
       )
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() === 'GET')
+          return route.fulfill(jsonRoute(history))
+        posted.push(route.request().postDataJSON())
+        // The thread's server-side pointer still names the abandoned workflow.
+        const accepted: AgentTurnAccepted = {
+          thread_id: THREAD_ID,
+          message_id: TURN_ID,
+          workflow_id: staleWorkflowId
+        }
+        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+      })
+      const cloudWorkflows: CloudWorkflowEntry[] = []
       await page.route('**/api/workflows**', (route) =>
         route.fulfill(
           jsonRoute({
-            data: [],
-            pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+            data: cloudWorkflows,
+            pagination: {
+              has_more: false,
+              limit: 100,
+              offset: 0,
+              total: cloudWorkflows.length
+            }
           })
         )
       )
@@ -116,27 +186,72 @@ test.describe(
         objectInfo: 'server'
       })
 
-      // The leak fires on the WS `status` frame during boot, before any
-      // explicit tab-switch push - the canvas is already poisoned here.
+      // Re-targeting the fresh tab saves it as a new cloud workflow. These
+      // routes go on after boot so they win over the boot mocks' userdata stub.
+      const savedFiles: UserDataFullInfo[] = []
+      await page.route('**/api/userdata?*', (route) => {
+        const dir = new URL(route.request().url()).searchParams.get('dir')
+        if (dir !== 'workflows') return route.fallback()
+        return route.fulfill(
+          jsonRoute(
+            savedFiles.map((file) => ({
+              ...file,
+              path: file.path.slice('workflows/'.length)
+            }))
+          )
+        )
+      })
+      await page.route('**/api/userdata/*', (route) => {
+        const path = decodeURIComponent(
+          new URL(route.request().url()).pathname.split('/userdata/')[1]
+        )
+        if (!path.startsWith('workflows/')) return route.fallback()
+        if (route.request().method() !== 'POST')
+          return route.fulfill({ status: 404 })
+        cloudWorkflows.push({
+          id: 'a81718a4-02ae-41e6-ae85-000000000001',
+          name: path.slice('workflows/'.length, -'.json'.length)
+        })
+        const file: UserDataFullInfo = {
+          path,
+          modified: Date.now(),
+          size: route.request().postDataBuffer()?.length ?? 1
+        }
+        savedFiles.push(file)
+        return route.fulfill(jsonRoute(file))
+      })
 
-      // A brand-new chat: nobody has selected a workflow or sent a message.
+      const topbar = new Topbar(page)
+      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      await expect(tabs).toHaveCount(1)
+
+      // A brand-new page on the surviving thread: nobody has sent anything.
       await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
       const panel = page.locator('#agent-panel-root')
       await expect(panel).toBeVisible()
-
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        EARLIER_REQUEST
+      ])
       if (!socket) throw new Error('the app never opened /ws')
-      // The same server push a real tab switch sends - here naming the
-      // abandoned tab's workflow, unprompted, on a chat nobody has touched.
-      socket.send(
-        JSON.stringify({
-          type: 'agent_active_tab',
-          data: { workflow_id: staleWorkflowId, name: workflow.name }
-        })
-      )
+
+      // The user continues the thread in the fresh tab.
+      const workflowPicker = panel.getByRole('button', {
+        name: enMessages.agent.switchWorkflow
+      })
+      await workflowPicker.click()
+      await page
+        .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
+        .click()
+      await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
+      await panel.getByRole('textbox').fill('continue here')
+      await panel
+        .getByRole('button', { name: enMessages.agent.send, exact: true })
+        .click()
+      await expect.poll(() => posted.length).toBe(1)
 
       // Give the (buggy) follower a chance to subscribe and materialize the
       // abandoned workflow's nodes before judging the canvas. Once fixed,
-      // this never resolves and the catch lets the final assertion run.
+      // this never resolves and the catch lets the final assertions run.
       await page
         .getByTestId('node-title')
         .first()
@@ -150,9 +265,11 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Pinned repro: production currently subscribes the brand-new tab to
-      // the abandoned workflow's document and renders its real nodes
-      // (LoadImage, VAEEncode, KSampler, VAEDecode, SaveImage) here.
+      // The fresh tab is the only tab and still the active one; its canvas
+      // must stay empty. Production currently subscribes it to the abandoned
+      // workflow's document and renders that workflow's real nodes here.
+      await expect(tabs).toHaveCount(1)
+      await expect(topbar.getActiveTab()).toContainText(DEFAULT_TAB_NAME)
       await expect(page.getByTestId('node-title')).toHaveCount(0)
     })
   }
