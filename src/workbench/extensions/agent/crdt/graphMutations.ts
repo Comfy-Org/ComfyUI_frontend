@@ -237,12 +237,20 @@ function readPair(
  * stale value over an unsynced local rename. An incoming title that differs
  * from the baseline is a genuine doc-side change — e.g. the agent naming or
  * renaming the node — and still wins.
+ *
+ * `existing.lastSerialization` itself is only ever written here, so a node
+ * whose live state was rebuilt outside this reconcile loop — e.g. a
+ * workflow tab that was serialized away and reloaded — carries no baseline
+ * at all. With no recorded doc title to compare against, there is no
+ * evidence the doc side changed, so the reloaded live title wins the same
+ * way an unchanged baseline would.
  */
 function resolveNodeTitle(
   payload: SemanticNodePayload,
   existing?: NodeState
 ): string {
-  if (existing && payload.title === existing.lastSerialization?.title) {
+  const baseline = existing?.lastSerialization?.title
+  if (existing && (baseline === undefined || payload.title === baseline)) {
     return existing.title
   }
   return nodeTitle(payload.title, payload.type)
