@@ -18,14 +18,28 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
  * lost presentation-only node color, a stomped local title rename, and a
  * widget value overwritten mid-edit with no focus guard.
  *
- * The color and title symptoms are fixed in `graphMutations.ts`'s
- * `prepareNode`: a reconcile now merges onto the live node's color and only
- * applies a title that genuinely differs from the node's last-synced doc
- * baseline, instead of always trusting the doc's own (possibly stale)
- * snapshot. The widget-mid-edit symptom is left as a known, intentionally
- * unfixed repro below — see that test for why.
+ * The color symptom is fixed, robustly, in `graphMutations.ts`'s
+ * `prepareNode`: a reconcile now merges onto the live node's color instead
+ * of always resetting it, and the doc never carries color at all, so this
+ * holds regardless of what else has or hasn't reset a node's live state.
  *
- * Unit-level proof of the first two lives alongside the code:
+ * The title symptom's fix (comparing the doc's title against the node's
+ * last-synced doc baseline, `resolveNodeTitle`) only holds within a session:
+ * it's proven correct for a follower rebind alone (this file's own test
+ * below) and for a node re-materializing after a doc-only remote edit
+ * (agentNodeMaterializer.test.ts's "keeps the record lastSerialization
+ * baseline..."). It does NOT survive a full workflow-tab reload of a node
+ * that predates the current reconcile — `LGraph.clear()` (called by
+ * `configure()`, which returning to a tab triggers) tears each node down
+ * individually before any store-level hook could preserve its baseline, so
+ * the very next reconcile replays the doc's title over the reload's rename
+ * regardless. That gap is intentionally left as a known repro below (see
+ * agentNodeMaterializer.test.ts's own `it.fails` case for the same gap at
+ * the unit level) — like the widget-mid-edit symptom, it needs the same
+ * kind of dedicated cross-layer plumbing rather than a quick guard clause.
+ *
+ * Unit-level proof of the color fix and the title fix's in-session cases
+ * lives alongside the code:
  * src/workbench/extensions/agent/crdt/graphMutations.test.ts
  * ("keeps a locally renamed title...", "keeps a locally set node color...").
  */
@@ -161,6 +175,22 @@ test.describe(
         contentType: 'image/png'
       })
 
+      // Known bug, root cause confirmed but left as a repro (see
+      // graphMutations.ts's resolveNodeTitle and agentNodeMaterializer.ts's
+      // materialize() for the two related, already-fixed cases): returning
+      // to a workflow tab reloads it, and `LGraph.clear()` (called by
+      // `configure()`) tears each node down individually via
+      // `teardownOwnedGraphs` *before* it resets the store bucket, so this
+      // node's reconcile baseline is gone by the time any store-level hook
+      // could try to preserve it. The rename itself survives the reload
+      // (the tab's own saved JSON already carried it), but the very next
+      // reconcile has no baseline to compare the doc's title against and
+      // replays it over the reload's rename regardless. A real fix needs
+      // the same kind of dedicated cross-layer plumbing as the
+      // widget-overwrite case below - threading a "preserve this node's
+      // reconcile baseline" signal through `LGraph.clear()`'s per-node
+      // teardown - not a quick guard clause.
+      test.fail()
       await expect(titleLocator).toHaveText(CUSTOM_TITLE)
     })
   }

@@ -234,6 +234,44 @@ describe('reconcileAgentAdapters', () => {
     ).toEqual(beforeSerialization)
   })
 
+  // Known, intentionally unfixed gap: returning to a workflow tab reloads
+  // it, and `LGraph.clear()` (called by `configure()`) tears its nodes down
+  // individually via `teardownOwnedGraphs` *before* it resets the
+  // nodeDataStore bucket, so each node's reconcile baseline
+  // (`lastSerialization`, graphMutations.ts's `resolveNodeTitle`) is gone by
+  // the time any bucket-level hook could try to preserve it. A live rename
+  // does survive the reload itself (`serialize()` captured it), but the very
+  // next reconcile has no baseline to compare the doc's title against and
+  // replays it over the reload's rename regardless. A real fix needs the
+  // same kind of dedicated cross-layer plumbing as the widget-overwrite
+  // case below - threading a "preserve this node's reconcile baseline"
+  // signal through `LGraph.clear()`'s per-node teardown - not a change
+  // local to this module.
+  it.fails('keeps a live rename after the workflow tab reloads and an unrelated reconcile runs', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const docPayload = {
+      id: 1,
+      type: 'dummy',
+      title: 'Positive prompt',
+      pos: [0, 0],
+      size: [100, 80],
+      inputs: [],
+      outputs: []
+    }
+    remoteMutations(scope).addNode(docPayload, { ...REMOTE, opId: 'op-1' })
+    reconcileAgentAdapters(graph)
+
+    graph.getNodeById(toNodeId(1))!.title = 'My Custom Prompt'
+    graph.configure(graph.serialize())
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-2' }, (batch) => {
+      batch.reconcileNode(docPayload)
+    })
+
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
+  })
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
