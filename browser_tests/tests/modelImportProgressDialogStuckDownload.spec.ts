@@ -106,10 +106,16 @@ test.describe(
         page.getByText('All downloads completed', { exact: true })
       ).toBeVisible()
 
+      // Scoped to the toast: a full-`body` screenshot also captures the
+      // canvas graph background, which isn't pixel-stable across CI runs.
+      const toast = page
+        .getByRole('status')
+        .filter({ hasText: 'All downloads completed' })
+
       // Visual proof of the recovered, completed toast state.
-      await expect(page.locator('body')).toHaveScreenshot(
+      await expect(toast).toHaveScreenshot(
         'model-import-progress-toast-recovered-completed.png',
-        { mask: [page.locator('.timestamp')] }
+        { mask: [toast.locator('.timestamp')] }
       )
     })
 
