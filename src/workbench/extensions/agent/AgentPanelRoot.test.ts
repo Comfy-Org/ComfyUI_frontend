@@ -5956,7 +5956,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('edit the selected workflow')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      selection: { node_ids: ['12'] }
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
     })
   })
 
@@ -6294,7 +6294,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
-    makeTab()
+    makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
       graph: {
@@ -6317,7 +6317,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
+    })
   })
 
   it('never subscribes to the retired draft_patch frame', async () => {
