@@ -138,6 +138,7 @@ test.describe(
           host.corruptSchemaVersion()
           send(host.subscribed())
           send(host.catchUp(state_vector_b64))
+          host.repairSchemaVersion()
         })
       })
 

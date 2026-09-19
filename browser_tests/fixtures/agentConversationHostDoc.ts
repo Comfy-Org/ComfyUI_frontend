@@ -1,4 +1,5 @@
 import {
+  SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
   linksMap,
@@ -101,6 +102,14 @@ export class HostDoc {
   // merely different one.
   corruptSchemaVersion(): void {
     this.doc.getMap('meta').delete('schema_version')
+  }
+
+  // Test-only: restores meta.schema_version after a corrupted catch-up frame
+  // has already been encoded and sent (Y.encodeStateAsUpdate above copies the
+  // bytes at call time), so the host's own later apply()/graph() calls stop
+  // tripping the same read gate the browser under test is still latched on.
+  repairSchemaVersion(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION)
   }
 
   subscribed(): HostFrame {
