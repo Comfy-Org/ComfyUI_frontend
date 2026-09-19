@@ -97,10 +97,10 @@ function interruptedRequestDelayMs(
   if (!value) return interruptionDelayMs(interruptions)
   const numericDelay = /^\d+$/.test(value) ? Number(value) * 1000 : NaN
   const dateDelay = Date.parse(value) - Date.now()
-  const delay = Number.isFinite(numericDelay) ? numericDelay : dateDelay
-  return Number.isFinite(delay)
-    ? Math.min(Math.max(delay, 0), MAX_TIMER_MS)
-    : interruptionDelayMs(interruptions)
+  if (Number.isFinite(numericDelay)) return Math.min(numericDelay, MAX_TIMER_MS)
+  if (Number.isFinite(dateDelay) && dateDelay > 0)
+    return Math.min(dateDelay, MAX_TIMER_MS)
+  return interruptionDelayMs(interruptions)
 }
 
 function runRequestId(state: QueuedRun): string | null {

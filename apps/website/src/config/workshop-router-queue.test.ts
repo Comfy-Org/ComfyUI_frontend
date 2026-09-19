@@ -154,6 +154,17 @@ describe('queued Router delivery', () => {
     expect(Date.now() - startedAt).toBe(6_000)
   })
 
+  it('backs off an interrupted result read with a past HTTP-date', async () => {
+    stubFetch(
+      admitted(),
+      refusal(503, 'service_unavailable', 'Sat, 19 Sep 2026 11:59:00 GMT'),
+      result()
+    )
+    const startedAt = Date.now()
+    await settle(runWorkshopRouter(options()))
+    expect(Date.now() - startedAt).toBe(2_000)
+  })
+
   it('resubmits an interrupted submit with the identical key and body', async () => {
     const calls = stubFetch(
       new TypeError('Failed to fetch'),
