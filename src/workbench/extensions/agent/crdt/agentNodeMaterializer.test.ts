@@ -843,6 +843,46 @@ describe('reconcileAgentAdapters', () => {
     })
   })
 
+  describe('regression: agent-reconstructed subgraph unpack keeps comfy-cli mint_id-shaped ids', () => {
+    // comfy_cli/workflow_ops.py's mint_id() ("Identity is leaderless &
+    // collision-free"): `_ID_FLOOR | random.getrandbits(52)` with
+    // `_ID_FLOOR = 1 << 40` -- deliberately large so a leaderless agent write
+    // never collides with the frontend's small sequential counter
+    // (idAllocation.ts). services/agent/internal/loop/tools.go has no
+    // "unpack" tool at all, so when asked to unpack a subgraph the agent
+    // decomposes it into one add_node per interior node (each minting one of
+    // these ids) plus delete_node for the subgraph host, instead of going
+    // through LGraph.unpackSubgraph()/materializeSubgraphNodes, which always
+    // re-mints a small sequential id via idAllocation.ts's mintNodeId. This
+    // reconciler adopts the op-supplied id verbatim (`node.id = state.id`)
+    // with no re-mint step, so the large id becomes the permanent on-canvas
+    // id. Reported live on nightly (2026-09-08): flattened nodes showed IDs
+    // like #3999039427639531.
+    it.fails('gives reconstructed nodes reasonably-sized ids, the way the native Unpack Subgraph command does', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mintedIds = [3999039427639531, 3086567801007485, 2149084457244098]
+
+      for (const id of mintedIds) {
+        remoteMutations(scope).addNode(nodePayload(id), {
+          ...REMOTE,
+          opId: `op-${id}`
+        })
+      }
+
+      reconcileAgentAdapters(graph)
+
+      for (const id of mintedIds) {
+        const node = graph.getNodeById(toNodeId(id))
+        expect(node).toBeTruthy()
+        // Desired: reasonably-sized, readable IDs instead of large random
+        // numbers. Currently fails -- the id materializes exactly as
+        // comfy-cli minted it.
+        expect(node!.id).toBeLessThan(1_000_000)
+      }
+    })
+  })
+
   describe('subgraph definitions', () => {
     /**
      * Deliver a full-document frame minted from `workflow` to a fresh follower
