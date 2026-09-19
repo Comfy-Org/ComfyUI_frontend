@@ -305,6 +305,8 @@ describe('native Router requests', () => {
       'Bearer test-workspace-token'
     )
     expect(requests[0].headers.get('X-API-Key')).toBeNull()
+    expect(requests[0].headers.get('X-Comfy-Traffic-Source')).toBeNull()
+    expect(requests[0].headers.get('X-Comfy-Client-Attempt-Id')).toBeNull()
     expect(requests[0].headers.get('Idempotency-Key')).toBe('same-logical-run')
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
@@ -493,12 +495,22 @@ describe('native Router requests', () => {
       body: { prompt: 'Test', seed: 42 },
       token: 'test-token',
       idempotencyKey: 'parked-run',
+      clientAttemptId: '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4',
       signal: new AbortController().signal
     })
     expect(requests).toHaveLength(2)
     expect(
       requests.map((request) => request.headers.get('Idempotency-Key'))
     ).toEqual(['parked-run', 'parked-run'])
+    expect(
+      requests.map((request) => [
+        request.headers.get('X-Comfy-Traffic-Source'),
+        request.headers.get('X-Comfy-Client-Attempt-Id')
+      ])
+    ).toEqual([
+      ['models', '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4'],
+      ['models', '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4']
+    ])
     const [first, second] = await Promise.all(
       requests.map((request) => request.text())
     )

@@ -95,6 +95,7 @@ interface RouterRunOptions {
   readonly token: string
   readonly idempotencyKey: string
   readonly signal: AbortSignal
+  readonly clientAttemptId?: string
   readonly onRequestId?: (requestId: string | null) => void
   readonly rasterizeSvg?: WorkshopSvgRasterizer
 }
@@ -265,7 +266,13 @@ async function attempt(
         headers: {
           Authorization: `Bearer ${options.token}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': options.idempotencyKey
+          'Idempotency-Key': options.idempotencyKey,
+          ...(options.clientAttemptId
+            ? {
+                'X-Comfy-Traffic-Source': 'models',
+                'X-Comfy-Client-Attempt-Id': options.clientAttemptId
+              }
+            : {})
         },
         body: context.body,
         signal

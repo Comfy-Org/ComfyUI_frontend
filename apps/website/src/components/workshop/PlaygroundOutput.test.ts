@@ -1,5 +1,11 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -26,6 +32,25 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it.for(['video', 'audio'] as const)(
+    'reports decoded %s data instead of metadata alone',
+    async (kind) => {
+      const media = {
+        kind,
+        url: 'https://assets.example/result',
+        fileName: 'result'
+      }
+      const view = render(PlaygroundOutput, {
+        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+      })
+      const element = screen.getByLabelText('Output', { selector: kind })
+      await fireEvent(element, new Event('loadedmetadata'))
+      expect(view.emitted().delivery).toBeUndefined()
+      await fireEvent(element, new Event('loadeddata'))
+      expect(view.emitted().delivery).toEqual([[media.url, 'succeeded']])
+    }
+  )
+
   it('contains focus in the expanded image and restores it on Escape', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {
