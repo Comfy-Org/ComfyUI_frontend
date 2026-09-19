@@ -451,7 +451,13 @@ describe('SelectionToolbox', () => {
         forwardEventToCanvas: forwardEventToCanvasSpy,
         shouldHandleNodePointerEvents: { value: true } as ReturnType<
           typeof useCanvasInteractions
-        >['shouldHandleNodePointerEvents']
+        >['shouldHandleNodePointerEvents'],
+        canEditNodes: { value: true } as ReturnType<
+          typeof useCanvasInteractions
+        >['canEditNodes'],
+        canOpenMenus: { value: true } as ReturnType<
+          typeof useCanvasInteractions
+        >['canOpenMenus']
       })
 
       const mockExtensionService = vi.mocked(useExtensionService)

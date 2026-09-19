@@ -16,20 +16,6 @@ export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
 
-  watch(
-    [
-      () => settingStore.get('Comfy.Graph.CanvasInfo'),
-      () => canvasStore.canvas
-    ],
-    ([canvasInfoEnabled, canvas]) => {
-      if (canvas) {
-        canvas.show_info = canvasInfoEnabled
-        canvas.draw(false, true)
-      }
-    },
-    { immediate: true }
-  )
-
   watchEffect(() => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')
     if (canvasStore.canvas) {

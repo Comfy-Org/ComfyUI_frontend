@@ -19,6 +19,7 @@ import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 const domWidgetStore = useDomWidgetStore()
@@ -116,12 +117,13 @@ const updateWidgets = () => {
       }
 
       widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
-      widgetState.readonly = lgCanvas.read_only
+      widgetState.readonly = !canEditNodes.value
     }
   }
 }
 
 const canvasStore = useCanvasStore()
+const { canEditNodes } = useCanvasInteractions()
 whenever(
   () => canvasStore.canvas,
   (canvas) =>

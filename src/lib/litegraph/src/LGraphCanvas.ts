@@ -2466,6 +2466,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
+      !this.selectOnly &&
       LiteGraph.alt_drag_do_clone_nodes &&
       e.altKey &&
       !e.ctrlKey &&

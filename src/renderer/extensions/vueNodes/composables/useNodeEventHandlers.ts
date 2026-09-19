@@ -19,7 +19,8 @@ import type { NodeId } from '@/types/nodeId'
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
   const { bringNodeToFront } = useNodeZIndex()
-  const { shouldHandleNodePointerEvents } = useCanvasInteractions()
+  const { shouldHandleNodePointerEvents, canEditNodes } =
+    useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
     return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
@@ -64,7 +65,7 @@ function useNodeEventHandlersIndividual() {
    * Uses LiteGraph's native collapse method for proper state management
    */
   function handleNodeCollapse(nodeId: NodeId, collapsed: boolean) {
-    if (!shouldHandleNodePointerEvents.value) return
+    if (!canEditNodes.value) return
 
     const node = getNode(nodeId)
     if (!node) return
@@ -81,7 +82,7 @@ function useNodeEventHandlersIndividual() {
    * Updates the title in LiteGraph for persistence across sessions
    */
   function handleNodeTitleUpdate(nodeId: NodeId, newTitle: string) {
-    if (!shouldHandleNodePointerEvents.value) return
+    if (!canEditNodes.value) return
 
     const node = getNode(nodeId)
     if (!node) return
@@ -100,7 +101,7 @@ function useNodeEventHandlersIndividual() {
    * Integrates with LiteGraph's context menu system
    */
   function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
-    if (!shouldHandleNodePointerEvents.value) return
+    if (!canEditNodes.value) return
 
     if (!canvasStore.canvas) return
 

@@ -267,7 +267,7 @@ const shouldShowInlineProgressSummary = computed(
     isRunProgressBarEnabled.value
 )
 const shouldShowQueueNotificationBanners = computed(
-  () => isActionbarEnabled.value
+  () => isActionbarEnabled.value && !isActionBarsHidden.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {

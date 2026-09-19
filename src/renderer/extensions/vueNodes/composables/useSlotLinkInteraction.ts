@@ -24,7 +24,7 @@ import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -151,7 +151,7 @@ export function useSlotLinkInteraction({
     setCompatibleForKey,
     clearCompatible
   } = useSlotLinkDragUIState()
-  const canvasStore = useCanvasStore()
+  const { canEditNodes } = useCanvasInteractions()
   const conversion = useSharedCanvasPositionConversion()
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
@@ -460,7 +460,7 @@ export function useSlotLinkInteraction({
   const canvas = app.canvas
   const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
-    if (!pointerSession.matches(event) || canvasStore.isReadOnly) return
+    if (!pointerSession.matches(event) || !canEditNodes.value) return
 
     event.stopPropagation()
 
@@ -577,7 +577,7 @@ export function useSlotLinkInteraction({
 
     raf.flush()
 
-    if (!state.source) {
+    if (!state.source || !canEditNodes.value) {
       cleanupInteraction()
       app.canvas.setDirty(true, true)
       return
@@ -643,6 +643,7 @@ export function useSlotLinkInteraction({
     if (event.button !== 0) return
     if (!nodeId) return
     if (pointerSession.isActive()) return
+    if (!canEditNodes.value) return
     event.preventDefault()
     event.stopPropagation()
 
@@ -838,7 +839,7 @@ export function useSlotLinkInteraction({
   })
 
   function onDoubleClick(e: PointerEvent) {
-    if (!nodeId) return
+    if (!nodeId || !canEditNodes.value) return
     const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
@@ -847,7 +848,7 @@ export function useSlotLinkInteraction({
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
-    if (!nodeId) return
+    if (!nodeId || !canEditNodes.value) return
     const { graph } = app.canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)

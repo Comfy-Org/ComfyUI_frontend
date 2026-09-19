@@ -15,6 +15,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
@@ -492,10 +493,10 @@ export class ChangeTracker {
       const key = e.key.toUpperCase()
       // Redo: Ctrl + Y, or Ctrl + Shift + Z
       if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
+        if (!isSelectOnly(app.canvas)) await this.redo()
         return true
       } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
+        if (!isSelectOnly(app.canvas)) await this.undo()
         return true
       }
     }

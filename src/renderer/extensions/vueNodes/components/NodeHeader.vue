@@ -81,6 +81,7 @@ import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -113,6 +114,7 @@ onErrorCaptured((error) => {
 
 // Editing state
 const isEditing = ref(false)
+const { canEditNodes } = useCanvasInteractions()
 
 const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
   nodeData?.type || ''
@@ -178,6 +180,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
+  if (!canEditNodes.value) return
   isEditing.value = true
 }
 
