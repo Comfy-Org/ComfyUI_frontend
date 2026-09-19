@@ -34,10 +34,27 @@ the same flags.
 Record flags:
 
 - `--distribution <cloud|cloud-staging|cloud-prod|local>` selects the backend environment.
-- `--backend <url>` connects to a custom backend and implies a custom distribution.
+- `--backend <url>` connects to a custom backend and implies a custom distribution. Use it for any host without a named distribution, such as `--backend https://nightly.engcomfy.com`. For `record` it takes precedence when `--distribution` is also supplied; `check` rejects the combination instead. (`custom` is the internal id `--backend` produces — it is not a value you can pass to `--distribution`.)
 - `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
 - `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
 - `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
+
+### Backends behind Cloudflare Access
+
+The recorder opens a fresh browser profile with no Cloudflare Access session, so
+a gated backend bounces every request to the Access login page and the app hangs
+on the loading screen. Supply a service token instead — the dev server forwards
+it on every proxied backend request:
+
+```bash
+export DEV_SERVER_CF_ACCESS_CLIENT_ID=<client id>
+export DEV_SERVER_CF_ACCESS_CLIENT_SECRET=<client secret>
+pnpm comfy-test record --backend https://nightly.engcomfy.com
+```
+
+Ask the team that owns the environment for a service token; never commit one.
+Both variables must be set together, and the token is only forwarded to an
+`https` backend (or a loopback address).
 
 The distribution selector fetches and displays the currently deployed backend
 version for each cloud environment. `comfy-test check --distribution <id>`

@@ -18,6 +18,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { cloudflareAccessHeaders } from './build/cloudflareAccess.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
@@ -230,8 +231,25 @@ if (DEV_AGENT_URL) {
   }
 }
 
-const cloudProxyConfig =
-  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+const accessHeaders = cloudflareAccessHeaders(
+  process.env,
+  DEV_SERVER_COMFYUI_URL
+)
+
+if (accessHeaders && VITE_REMOTE_DEV) {
+  throw new Error(
+    'Cloudflare Access credentials cannot be used with VITE_REMOTE_DEV; bind the authenticated proxy to loopback.'
+  )
+}
+
+// Cloudflare routes on the Host header, so a token is only usable on a request
+// that carries the backend's host rather than the dev server's.
+const backendProxyConfig: ProxyOptions = {
+  ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
+  ...(accessHeaders
+    ? { headers: accessHeaders, changeOrigin: true, secure: true }
+    : {})
+}
 
 // The agent proxy adds the session token, so only the dev server's own pages may use it.
 function isCrossOrigin(req: IncomingMessage): boolean {
@@ -314,7 +332,7 @@ function handleGcsRedirect(
 
 const gcsRedirectProxyConfig: ProxyOptions = {
   target: DEV_SERVER_COMFYUI_URL,
-  ...cloudProxyConfig,
+  ...backendProxyConfig,
   selfHandleResponse: true,
   configure: (proxy) => {
     proxy.on('proxyRes', handleGcsRedirect)
@@ -356,7 +374,7 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(DISTRIBUTION === 'cloud'
@@ -395,7 +413,7 @@ export default defineConfig({
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
+        ...backendProxyConfig,
         bypass: (req, res, _options) => {
           if (!res) return null
 
@@ -419,7 +437,7 @@ export default defineConfig({
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
+        ...backendProxyConfig,
         bypass: (req) => {
           const path = (req.url ?? '').split('?')[0]
           if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
@@ -432,31 +450,31 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
               target: DEV_SERVER_COMFYUI_URL,
-              ...cloudProxyConfig
+              ...backendProxyConfig
             }
           }
         : {}),
