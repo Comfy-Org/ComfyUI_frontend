@@ -885,18 +885,19 @@ describe('useAgentSession (v1 composition root)', () => {
   // drive exactly that arrange — start, sendMessage, emit, the isStreaming
   // precondition — so a fixture or setup regression reddens there instead of
   // being absorbed here. Keep them unmarked for as long as these two exist.
-  // The server still has this turn open, so its history says `streaming` and
-  // carries what the turn has produced so far. That is what decides which
-  // repairs count as fixed: re-attaching the local transport and re-hydrating
-  // from the server are both plausible, and a double answering with an empty
-  // transcript would keep these red after the second one shipped.
-  const streamingTurnRest = (reply: string) =>
+  // Backend invariant (cloud `newAssistantMessage` + the complete/fail writes):
+  // an assistant row carries content only once it goes terminal, so a live turn
+  // has nothing to re-hydrate from. Keep this row contentless — giving it text
+  // would let a repair that re-hydrates mid-turn satisfy these pins, when that
+  // repair blanks the reply on screen.
+  const streamingTurnRest = () =>
     fakeRest({
       getMessages: vi.fn(
         async (): Promise<AgentMessages> => [
           historyRow(1, 'user', 'msg-1', 'go'),
           {
-            ...historyRow(2, 'assistant', 'msg-1', reply, 'msg-1'),
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
             status: 'streaming'
           }
         ]
@@ -904,7 +905,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
   it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
-    const rest = streamingTurnRest('partial')
+    const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -927,11 +928,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
-    // The server already holds the whole reply, so a re-hydrate repair recovers
-    // it without the delta, and a transport re-attach appends the delta to the
-    // 'partial' it already had. Both land on the same text, and exact equality
-    // still rejects a repair that does both and duplicates the suffix.
-    const rest = streamingTurnRest('partial and the rest')
+    const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
