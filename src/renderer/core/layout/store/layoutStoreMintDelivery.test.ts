@@ -118,7 +118,8 @@ describe('mint ports against the real layout store delivery', () => {
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => graphId
     })
   })
 

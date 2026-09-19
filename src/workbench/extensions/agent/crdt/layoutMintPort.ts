@@ -56,6 +56,12 @@ export interface LayoutMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /**
+   * The bound document's root graph id, or null when untracked or unbound.
+   * A root-scoped change naming a different graph belongs to a workflow load
+   * still in flight and must not mint into this document.
+   */
+  boundRootGraphId(): string | null
   source: MintSnapshotSource
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
@@ -74,6 +80,7 @@ export interface LayoutMintPort {
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
   const reportedInteriorChanges = new Set<string>()
+  const reportedUnboundGraphChanges = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -136,6 +143,36 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     return true
   }
 
+  function reportOpForUnboundGraph(
+    operation: LayoutChangeView['operation'],
+    action: 'create' | 'delete'
+  ): boolean {
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId === null) return false
+    if (operation.graphId === undefined) return false
+    if (operation.graphId === boundRootGraphId) return false
+
+    const reportKey = `${action}:${operation.graphId}:${boundRootGraphId}`
+    if (reportedUnboundGraphChanges.has(reportKey)) return true
+
+    reportedUnboundGraphChanges.add(reportKey)
+    queueMicrotask(() => reportedUnboundGraphChanges.delete(reportKey))
+    reportError(
+      new Error(
+        `${action}Node targets graph ${operation.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`
+      ),
+      {
+        errorType: 'agent_crdt_op_for_unbound_graph',
+        context: {
+          graphId: operation.graphId,
+          boundRootGraphId,
+          nodeId: operation.nodeId
+        }
+      }
+    )
+    return true
+  }
+
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
     const inTeardown = deps.session.inTeardown()
@@ -143,6 +180,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'createNode': {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'create')) return
+        if (reportOpForUnboundGraph(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -168,6 +206,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
+        if (reportOpForUnboundGraph(operation, 'delete')) return
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {
