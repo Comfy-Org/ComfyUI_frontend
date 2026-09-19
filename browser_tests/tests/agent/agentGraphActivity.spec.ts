@@ -21,41 +21,48 @@ test.describe(
       const added = agentConversation.addedNodeIds()
       expect(added).toHaveLength(3)
 
-      const before = await page.evaluate(() => {
-        const { ds } = window.app!.canvas
-        return { scale: ds.scale, offset: [...ds.offset] }
-      })
-
-      await agentConversation.runTurns()
-
-      // Agent writes never move the user's camera implicitly.
-      expect(
-        await page.evaluate(() => {
+      await test.step('replay reports arrivals without moving the camera', async () => {
+        const before = await page.evaluate(() => {
           const { ds } = window.app!.canvas
           return { scale: ds.scale, offset: [...ds.offset] }
         })
-      ).toEqual(before)
-      expect(
-        await agentConversation.nodesOutsideVisibleCanvas(added)
-      ).not.toEqual([])
 
-      // The minimap is the passive locator while the camera remains under the
-      // user's control. This screenshot proves the three scoped activity marks
-      // are visible without relying on renderer internals.
-      const minimap = page.getByTestId('minimap-container')
-      await expect(minimap).toBeVisible()
-      await expect(minimap).toHaveScreenshot(
-        'agent-generated-node-minimap-markers.png'
-      )
+        await agentConversation.runTurns()
 
-      const report = page.getByTestId('agent-graph-added-toast')
-      await expect(report).toBeVisible()
-      await expect(report).toContainText('The agent added 3 nodes to the graph')
+        // Agent writes never move the user's camera implicitly.
+        expect(
+          await page.evaluate(() => {
+            const { ds } = window.app!.canvas
+            return { scale: ds.scale, offset: [...ds.offset] }
+          })
+        ).toEqual(before)
+        expect(
+          await agentConversation.nodesOutsideVisibleCanvas(added)
+        ).not.toEqual([])
 
-      await report.getByRole('button', { name: /View nodes/i }).click()
-      await expect
-        .poll(() => agentConversation.nodesOutsideVisibleCanvas(added))
-        .toEqual([])
+        // The minimap is the passive locator while the camera remains under the
+        // user's control. This screenshot proves the three scoped activity marks
+        // are visible without relying on renderer internals.
+        const minimap = page.getByTestId('minimap-container')
+        await expect(minimap).toBeVisible()
+        await expect(minimap).toHaveScreenshot(
+          'agent-generated-node-minimap-markers.png'
+        )
+
+        const report = page.getByTestId('agent-graph-added-toast')
+        await expect(report).toBeVisible()
+        await expect(report).toContainText(
+          'The agent added 3 nodes to the graph'
+        )
+      })
+
+      await test.step('View nodes frames every added node', async () => {
+        const report = page.getByTestId('agent-graph-added-toast')
+        await report.getByRole('button', { name: /View nodes/i }).click()
+        await expect
+          .poll(() => agentConversation.nodesOutsideVisibleCanvas(added))
+          .toEqual([])
+      })
     })
   }
 )
