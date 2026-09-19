@@ -40,3 +40,10 @@ export class WorkshopRouterError extends Error {
     super(`Router request failed: ${reason}`, options)
   }
 }
+
+export function workshopRunMayStillSettle(
+  failure: WorkshopRouterError
+): boolean {
+  if (['network', 'response', 'conflict'].includes(failure.reason)) return true
+  return failure.reason === 'timeout' && !failure.response
+}
