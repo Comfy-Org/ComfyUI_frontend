@@ -283,6 +283,31 @@ describe('graphMutations', () => {
     )
   })
 
+  // PM-1143: a template's own baked-in absolute layout lands on an agent
+  // canvas verbatim, with no adjustment for what is already there. Reported
+  // by Jo Zhang: the GPT Image 2.5 Sunburst template landed far from a
+  // LoadImage node the user had just placed. graphMutations.ts has no
+  // bounding-box, viewport, or collision logic anywhere in prepareNode(); it
+  // forwards payload.pos untouched (src/workbench/extensions/agent/crdt/graphMutations.ts:235).
+  it.fails('KNOWN BUG: does not reposition a template node placed far from an existing node', () => {
+    const graph = mutations()
+    // The user's own node, near the origin/viewport.
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    // A template's own literal layout coordinates, forwarded unchanged by
+    // the (private, cloud-owned) server -- thousands of px from anything
+    // already on the canvas.
+    expect(graph.addNode({ ...node(2), pos: [9000, 9000] }, context)).toBe(true)
+
+    const [, , layout] = createLayout.mock.calls[0]
+    const distanceFromExistingNode = Math.hypot(
+      layout.position.x - 0,
+      layout.position.y - 0
+    )
+    expect(distanceFromExistingNode).toBeLessThan(2000)
+  })
+
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
