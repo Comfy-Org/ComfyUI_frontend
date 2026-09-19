@@ -7,7 +7,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 // thread, message and raw-capture digest.
 const SEQUENTIAL_CASE = 'agent-rec-three-sequential-adds'
 
-test.describe('Agent graph activity', { tag: ['@cloud', '@canvas'] }, () => {
+test.describe('Agent graph activity', { tag: ['@cloud', '@canvas', '@vue-nodes'] }, () => {
   test.use({ conversationCase: SEQUENTIAL_CASE })
 
   test(`recorded ${SEQUENTIAL_CASE} reports every added node and frames them only on request`, async ({
