@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
+import { AccountMenu } from './fixtures/accountMenu'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
 const WORKSPACES: ListWorkspacesResponse = {
@@ -84,20 +85,6 @@ async function startRun(page: Page) {
   return output
 }
 
-function accountMenu(page: Page) {
-  const trigger = page
-    .getByTestId('desktop-nav-cta')
-    .getByTestId('header-account')
-  return {
-    open: () => trigger.click(),
-    pickTeam: async () => {
-      await trigger.click()
-      await page.getByTestId('account-workspace').click()
-      await page.getByTestId(`account-workspace-${TEAM.id}`).click()
-    }
-  }
-}
-
 test('switching workspace during a run asks before it throws the run away', async ({
   page,
   modelsAccount
@@ -108,9 +95,9 @@ test('switching workspace during a run asks before it throws the run away', asyn
 
   await signIn(page, modelsAccount)
   const output = await startRun(page)
-  const menu = accountMenu(page)
+  const menu = new AccountMenu(page)
 
-  await menu.pickTeam()
+  await menu.pickWorkspace(TEAM.id)
   const dialog = page.getByTestId('run-leave-dialog')
   await expect(dialog).toBeVisible()
 
@@ -118,7 +105,7 @@ test('switching workspace during a run asks before it throws the run away', asyn
   await expect(dialog).toBeHidden()
   await expect(output).toHaveAttribute('data-state', 'running')
 
-  await menu.pickTeam()
+  await menu.pickWorkspace(TEAM.id)
   await page.getByTestId('run-leave-confirm').click()
   await expect(output).toHaveAttribute('data-state', 'cancelled')
 
@@ -150,9 +137,9 @@ test('a run that ends under the question answers it', async ({
 
   await signIn(page, modelsAccount)
   const output = await startRun(page)
-  const menu = accountMenu(page)
+  const menu = new AccountMenu(page)
 
-  await menu.pickTeam()
+  await menu.pickWorkspace(TEAM.id)
   const dialog = page.getByTestId('run-leave-dialog')
   await expect(dialog).toBeVisible()
 
