@@ -97,9 +97,10 @@ describe('Workshop visibility', () => {
   })
 
   it.for([
-    { build: 'local', deployEnv: '', reaches: true },
+    { build: 'non-Vercel', deployEnv: '', reaches: true },
     { build: 'preview', deployEnv: 'preview', reaches: true },
-    { build: 'production', deployEnv: 'production', reaches: false }
+    { build: 'production', deployEnv: 'production', reaches: false },
+    { build: 'other deploy env', deployEnv: 'development', reaches: false }
   ])(
     'an enabled flag reaches the run surface on a $build build: $reaches',
     async ({ deployEnv, reaches }) => {

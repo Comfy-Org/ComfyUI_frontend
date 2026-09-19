@@ -187,17 +187,21 @@ with the refreshed snapshot.
 
 ## Models rollout
 
-> **Models is currently switched off on comfy.org.** A production build hides
-> it regardless of `workshop-enabled`, because 108 of 238 runs failed on
-> 2026-09-18. Previews and local dev still obey the flag, so leave it **on**
-> to keep reviewing fixes there. Re-open production by reverting the PR that
-> added `PRODUCTION_DISABLED` to `src/scripts/posthog.ts`, not by raising the
-> flag — the constant, this banner and the deploy-env test table have to come
-> back together. Production hides the header account menu with everything
-> else, so a signed-in customer can neither see or spend credits nor sign out
-> from the site while this is in place; balances are untouched server-side and
-> existing sessions persist until they expire. The rest of this section
-> describes the flag-driven behaviour that resumes once the revert lands.
+> **Workshop visibility and the run UI are currently switched off on
+> comfy.org**, because 108 of 238 runs failed on 2026-09-18. The `/models`
+> catalogue and the model-detail routes stay published and keep serving their
+> marketing content — nothing 404s; only the run surface is withdrawn. A
+> production build hides it regardless of `workshop-enabled`, and so does any
+> deploy environment other than `preview`. Previews and local dev still obey
+> the flag, so leave it **on** to keep reviewing fixes there. Production also
+> hides the header account menu, so a signed-in customer can neither see or
+> spend credits nor sign out from the site while this is in place; balances
+> are untouched server-side and existing sessions persist until they expire.
+>
+> To re-open production, revert the PR that added `DEPLOY_DISABLED` to
+> `src/scripts/posthog.ts` rather than raising the flag: that removes the
+> constant, this banner and the deploy-env test table together. The rest of
+> this section describes the flag-driven behaviour that resumes afterwards.
 
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the

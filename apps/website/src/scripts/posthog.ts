@@ -109,13 +109,15 @@ const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 
 // Workshop is switched off on comfy.org after 108 of 238 runs failed on
-// 2026-09-18. Production now ignores the workshop-enabled flag; previews
-// still obey it, so leave that flag ON to keep reviewing fixes there.
-// Revert this PR to re-open production.
-const PRODUCTION_DISABLED = WORKSHOP_DEPLOY_ENV === 'production'
+// 2026-09-18. Of the environments Vercel reports, only a preview may still
+// serve it, so leave the workshop-enabled flag ON to keep reviewing fixes
+// there. An empty deploy env is a non-Vercel build — local, or the e2e CI
+// job — and keeps obeying the flag. Revert this PR to re-open production.
+const DEPLOY_DISABLED =
+  WORKSHOP_DEPLOY_ENV !== '' && WORKSHOP_DEPLOY_ENV !== 'preview'
 
 function resolveEnabled(readFlagAnswer: () => boolean = () => false): boolean {
-  return !PRODUCTION_DISABLED && (VISIBILITY_OVERRIDE || readFlagAnswer())
+  return !DEPLOY_DISABLED && (VISIBILITY_OVERRIDE || readFlagAnswer())
 }
 
 const workshopEnabled = ref(resolveEnabled())
@@ -140,7 +142,7 @@ function markFlagResolved(): void {
 }
 
 function awaitFlagAnswer(): void {
-  if (PRODUCTION_DISABLED) {
+  if (DEPLOY_DISABLED) {
     markFlagResolved()
     return
   }
@@ -247,7 +249,7 @@ export function initPostHog() {
   // Enter the awaiting state before init can throw, so the gate holds the
   // loader (not the public page) through the whole fetch and the timeout is
   // always armed the moment visibility becomes unresolved. Under
-  // PRODUCTION_DISABLED there is nothing to await: the call resolves at once
+  // DEPLOY_DISABLED there is nothing to await: the call resolves at once
   // and no loader or timeout is involved.
   if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
