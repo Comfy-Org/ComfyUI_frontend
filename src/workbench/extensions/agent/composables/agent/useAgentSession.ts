@@ -641,7 +641,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
     recoveringTurns.add(turn.messageId)
     const generation = ownedGeneration
-    const stillLive = () =>
+    let noticed = false
+    try {
+      for (const ms of TURN_RECOVERY_DELAYS_MS) {
+        await delay(ms)
+        if (!isTurnLive(turn, generation)) return
+        const outcome = await fetchTurnOutcome(turn)
+        if (!isTurnLive(turn, generation)) return
+        if (settleFinishedTurn(turn, outcome)) return
+        if (outcome.kind === 'error' && !noticed) {
+          noticed = true
+          pushError(outcome.message)
+        }
+      }
+    } finally {
+      recoveringTurns.delete(turn.messageId)
+    }
+  }
+
+  function isTurnLive(turn: LiveTurn, generation: number): boolean {
+    return (
       generation === sessionGeneration &&
       conversationStore
         .liveTurns()
@@ -649,27 +668,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
           (live) =>
             live.threadId === turn.threadId && live.messageId === turn.messageId
         )
-    let noticed = false
-    try {
-      for (const ms of TURN_RECOVERY_DELAYS_MS) {
-        await delay(ms)
-        if (!stillLive()) return
-        const outcome = await fetchTurnOutcome(turn)
-        if (outcome.kind === 'terminal') {
-          if (stillLive()) conversationStore.settleTurn(turn, outcome.text)
-          return
-        }
-        if (outcome.kind === 'thread-missing') {
-          if (stillLive()) forgetDeletedThread(turn)
-          return
-        }
-        if (outcome.kind === 'error' && !noticed && stillLive()) {
-          noticed = true
-          pushError(outcome.message)
-        }
-      }
-    } finally {
-      recoveringTurns.delete(turn.messageId)
+    )
+  }
+
+  function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
+    switch (outcome.kind) {
+      case 'terminal':
+        conversationStore.settleTurn(turn, outcome.text)
+        return true
+      case 'thread-missing':
+        forgetDeletedThread(turn)
+        return true
+      default:
+        return false
     }
   }
 
