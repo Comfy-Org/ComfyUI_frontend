@@ -5,6 +5,10 @@ import './contextMenuFilter'
 import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
+// v1 and v2 conversions are loaded side-by-side during the migration window
+// (D6 parallel paths). v2 extensions register under distinct names
+// (e.g. `Comfy.DynamicPrompts.V2`), so no idempotent guard is needed.
+import './dynamicPrompts.v2'
 import './editAttention'
 import './electronAdapter'
 import './groupNode'
@@ -12,6 +16,7 @@ import './groupOptions'
 import './imageCompare'
 import './imageCompositor'
 import './imageCrop'
+import './imageCrop.v2'
 import './layerEditor'
 // load3d and saveMesh are loaded on-demand to defer THREE.js (~1.8MB)
 // The lazy loader triggers loading when a 3D node is used
@@ -23,6 +28,7 @@ if (!isCloud) {
 import './noteNode'
 import './painter'
 import './previewAny'
+import './previewAny.v2'
 import './saveText'
 import './rerouteNode'
 import './saveImageExtraOutput'
