@@ -109,6 +109,7 @@ const appMock = vi.hoisted(() => {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
+    isGraphReady: false,
     canvas: undefined as
       | {
           graph: {
@@ -252,6 +253,17 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringDeps | null
+}))
+vi.mock<unknown>(import('./crdt/mintPortWiring'), () => ({
+  attachMintPortWiring: (deps: MintPortWiringDeps) => {
+    mintPortWiringDeps.current = deps
+    return fromPartial<MintPortWiring>({ detach: vi.fn() })
+  }
+}))
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -312,8 +324,10 @@ beforeEach(() => {
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
-  Object.assign(appMock.rootGraph, { subgraphs: new Map() })
+  Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
+  appMock.isGraphReady = false
   appMock.canvas = undefined
+  mintPortWiringDeps.current = null
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -6328,5 +6342,27 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it("latches the bound workflow's root graph id once its tab becomes active", async () => {
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-abc' })
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('graph-abc')
+    )
+  })
+
+  it('leaves the bound root graph id null while no workflow is bound and active', () => {
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-abc' })
+
+    renderWithSelectedTarget()
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
   })
 })
