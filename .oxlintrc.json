@@ -238,21 +238,6 @@
       }
     },
     {
-      "files": [
-        "src/scripts/metadata/json.ts",
-        "src/scripts/metadata/mp3.ts",
-        "src/scripts/metadata/ogg.ts",
-        "src/scripts/metadata/parser.ts",
-        "src/scripts/metadata/ply.ts",
-        "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.ts",
-        "src/scripts/pnginfo.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
