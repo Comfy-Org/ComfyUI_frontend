@@ -1,8 +1,7 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams, Settings } from '@/platform/settings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 
 import { ComfyDialog } from './dialog'
@@ -113,7 +112,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * })
    * ```
    */
-  addSetting(params: SettingParams) {
+  addSetting<K extends keyof Settings>(
+    params: SettingParams<Settings[K]> & { id: K }
+  ) {
     const settingStore = useSettingStore()
     settingStore.addSetting(params)
 
@@ -122,7 +123,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         return settingStore.get(params.id)
       },
       set value(v) {
-        settingStore.set(params.id, v)
+        void settingStore.set(params.id, v)
       }
     }
   }

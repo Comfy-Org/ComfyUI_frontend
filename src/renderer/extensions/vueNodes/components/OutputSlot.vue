@@ -1,6 +1,12 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
+  <div
+    v-else
+    v-tooltip.right="tooltipConfig"
+    :class="slotWrapperClass"
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
+  >
     <div class="relative flex h-full min-w-0 items-center">
       <!-- Slot Name -->
       <span
@@ -35,6 +41,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -78,7 +85,14 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'output'
+})
+
 onErrorCaptured((error) => {
+  unrevealLinks()
   renderError.value = error.message
   toastErrorHandler(error)
   return false

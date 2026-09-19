@@ -9,20 +9,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import LiteGraphCanvasSplitterOverlay from '../LiteGraphCanvasSplitterOverlay.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
-})
-
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isSelectMode: ref(false),
-      isBuilderMode: ref(false)
-    })
-  }
 })
 
 const slotStub = (testid: string) => `<div data-testid="${testid}" />`
