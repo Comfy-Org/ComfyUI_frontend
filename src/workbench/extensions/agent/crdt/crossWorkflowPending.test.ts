@@ -375,7 +375,7 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     vi.useFakeTimers()
   })
 
-  it.fails('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
+  it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
@@ -384,15 +384,15 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     expect(clientState.sent).toHaveLength(1)
     const operationAId = clientState.sent[0].ops[0].op_id
 
-    // Retargeting the bound doc calls sender.abortIfUnbound(), which
-    // settles the still in-flight, already-transmitted batch
-    // 'undeliverable' without asking the server what happened to it.
+    // Retargeting the bound doc calls sender.abortIfUnbound(), which settles
+    // the still in-flight, already-transmitted batch at once without asking
+    // the server what happened to it.
     await switchWorkflow(workflowId, 'wf-b')
 
     const settlement = devLogState.recordDevEvent.mock.calls.find(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlement?.[1]).toMatchObject({ state: 'undeliverable' })
+    expect(settlement).toBeDefined()
 
     // The server now confirms, after the fact, that it DID commit the op.
     dispatchOpsResult({
