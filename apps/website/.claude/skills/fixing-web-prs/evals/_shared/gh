@@ -81,7 +81,7 @@ render_view() {
   sed -e "s#__TITLE__#$V_TITLE#" -e "s#__STATE__#$V_STATE#" -e "s#__MERGE_STATE__#$V_MERGE_STATE#" \
       -e "s#__REVIEW_DECISION__#$V_REVIEW_DECISION#" -e "s#__REVIEW_AT__#$V_REVIEW_AT#g" \
       -e "s#__BRANCH__#${V_BRANCH:-$(branch)}#" -e "s#__HEAD__#$(head_sha)#g" \
-      -e 's#"__BODY__"#null#' -e 's#__LABELS__#null#' "$state/pr_view.json" \
+      "$state/pr_view.json" \
     | jq --arg b "$(printf '%b' "${V_BODY:-}")" --argjson l "${V_LABELS:-[]}" '.body = $b | .labels = $l'
 }
 serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }

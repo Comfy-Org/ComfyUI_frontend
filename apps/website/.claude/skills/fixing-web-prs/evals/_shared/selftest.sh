@@ -52,7 +52,7 @@ published_fence() { awk -v want="$1" '/^```bash/{n++; next} n==want&&/^```$/{exi
 # The published thread read, with the placeholder assignment line replaced by real values.
 published_threads_read() { local cmd; cmd="$(published_fence 1 | sed "s/^owner=<owner>; name=<repo>; number=<number>$/owner=$1; name=$2; number=$3/")"; env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
 # The published reply: the body goes into a file, never through the shell or sed.
-published_reply() { local threadId="$1" body="$2" cmd; printf '%s' "$body" > "$PWD/bin/reply-body.txt"
+published_reply() { local threadId="$1" body="$2" cmd; printf '%s' "$body" > "$PWD/bin/reply-body.src"; cp "$PWD/bin/reply-body.src" "$PWD/bin/reply-body.txt"
   cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=$threadId; bodyFile=$PWD/bin/reply-body.txt|")"
   env PATH="$PWD/bin:$PATH" bash -c "$cmd"; }
 published_resolve() { local threadId="$1" cmd; cmd="$(published_fence 2 | awk 'f{print} NF==0{f=1}')"; env PATH="$PWD/bin:$PATH" threadId="$threadId" bash -c "$cmd"; }
@@ -186,12 +186,16 @@ expect_fail ./bin/gh api graphql -F threadId=T1 -f body="answered" -f query="$OL
 expect_fail ./bin/gh api graphql -F threadId=NOPE -f body="answered" -f query="$REPLY_Q"
 nasty_body="$(printf "It's fixed: the stale copy is gone, and \"quotes\" survive\nREPLY\n\$HOME and a back\\slash, a | pipe and an & ampersand\nlast line, no newline")"
 expect_ok published_reply T1 "$nasty_body"
-if cmp -s bin/reply-body.txt bin/state/last-reply-body.txt; then ok "reply body received byte for byte (multiline, apostrophe, quotes, dollar, backslash, delimiters)"; else bad "reply body altered in transit"; fi
+if cmp -s bin/reply-body.src bin/state/last-reply-body.txt; then ok "reply body received byte for byte (multiline, apostrophe, quotes, dollar, backslash, delimiters)"; else bad "reply body altered in transit"; fi
+if [[ ! -e bin/reply-body.txt ]]; then ok "published reply deleted its body file on success"; else bad "body file left behind on success"; fi
+printf 'x' > bin/reply-body.txt; published_reply NOPE "x" >/dev/null 2>&1 || true
+if [[ ! -e bin/reply-body.txt ]]; then ok "published reply deleted its body file on failure"; else bad "body file left behind on failure"; fi
 for nl in 1 2; do printf 'trailing newlines%s' "$(printf '\n%.0s' $(seq "$nl"))" > bin/reply-body.txt; expect_ok published_reply T1 "$(cat bin/reply-body.txt)"; done
-printf 'two trailing\n\n' > bin/reply-body.txt
+printf 'two trailing\n\n' > bin/reply-body.src; cp bin/reply-body.src bin/reply-body.txt
 cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=T1; bodyFile=$PWD/bin/reply-body.txt|")"
 env PATH="$PWD/bin:$PATH" bash -c "$cmd" >/dev/null
-if cmp -s bin/reply-body.txt bin/state/last-reply-body.txt; then ok "two trailing newlines preserved"; else bad "trailing newlines lost"; fi
+if cmp -s bin/reply-body.src bin/state/last-reply-body.txt; then ok "two trailing newlines preserved"; else bad "trailing newlines lost"; fi
+printf 'literal' > bin/reply-body.txt
 expect_ok ./bin/gh api graphql -F threadId=T1 -f body="@$PWD/bin/reply-body.txt" -f query="$REPLY_Q"
 if [[ "$(cat bin/state/last-reply-body.txt)" == "@$PWD/bin/reply-body.txt" ]]; then ok "-f body=@file is taken literally"; else bad "-f body=@file was dereferenced"; fi
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"

@@ -57,7 +57,8 @@ and carry on without waiting.
 
 When the reading shows a current approval, the pull request is not stuck on
 its comments: answer them in their threads and leave the code alone. Each
-thread you answered now needs its author's approval dated after your reply
+human thread you answered and left unresolved now needs its author's approval
+dated after your reply
 (the approval that exists is earlier), so name that person and that approval
 as the remaining person-only blocker, wait for it, and only then take the
 gate reading. A push here dismisses the approval and costs a fresh review from
@@ -141,7 +142,11 @@ queued unread, and only when every line below is true in that one reading:
 The merge command only adds the pull request to the queue. You have merged it
 when `gh pr view <number>` reports the state as `MERGED`, and nothing short of
 that counts: not "added to the merge queue", not `mergeStateStatus` of
-`QUEUED`, not a green queue run. Keep reading `gh pr view <number>` (state,
+`QUEUED`, not a green queue run. The very next command after the merge
+command is `gh pr view <number> --json state,mergeStateStatus,headRefOid`, and
+a hand-off that says "queued" or "waiting for the queue" is not an allowed
+end state: the designer asked for a merge, so you stay, reading again each
+time, until the state is `MERGED` or the queue removes the pull request. Keep reading `gh pr view <number>` (state,
 `mergeStateStatus`, head sha), the issue comments, and the whole timeline
 (`gh api --paginate repos/<owner>/<repo>/issues/<number>/timeline`; without
 `--paginate` you get only the first page and can miss the removal on a busy

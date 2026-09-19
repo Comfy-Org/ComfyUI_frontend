@@ -111,7 +111,7 @@ pull request that changes what a visitor sees. Keep one pull request to one
 request from the designer.
 
 Write a pull request description from `git diff origin/main...HEAD` after the
-push, never from what you intended to do. PR 17850 described two routes as
+push and after `git fetch origin main`, never from what you intended to do. PR 17850 described two routes as
 removed while the pushed branch still contained both, and reviewers approved the
 description.
 

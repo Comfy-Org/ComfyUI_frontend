@@ -37,12 +37,13 @@ one with these two commands, exactly as written, after setting `threadId` to
 the thread's `id` from the query and writing your reply, any characters over
 any number of lines, to a new file under `/temp/` named for the thread (use
 your file-writing tool; the shell never sees the text). `/temp/` is
-git-ignored in this repository; delete the file right after the command,
-whether it succeeded or failed, so reviewer text never sits in the checkout
-or reaches a commit:
+git-ignored in this repository, and the command's `trap` deletes the file
+when the shell exits, whether the call succeeded or failed, so reviewer text
+never sits in the checkout or reaches a commit:
 
 ```bash
 threadId=<id>; bodyFile=<path to the file holding your reply>
+trap 'rm -f "$bodyFile"' EXIT
 gh api graphql -F threadId="$threadId" -F body="@$bodyFile" -f query='
 mutation($threadId:ID!,$body:String!){
   addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$threadId,body:$body}){ comment{ id } } }'

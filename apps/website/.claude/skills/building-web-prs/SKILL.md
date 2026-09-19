@@ -91,9 +91,9 @@ designer asked for, and say in the pull request which baselines moved and why.
 ## Open the pull request
 
 Work on a branch named for the request, never on `main`. Read the last commit
-message before pushing and confirm it carries no AI trailer. Push, then write
-the description from `git diff origin/main...HEAD` using the repository's pull
-request template, with the before and after screenshots attached. A pull
+message before pushing and confirm it carries no AI trailer. Push, then fetch the base
+branch (`git fetch origin main`) and write the description from
+`git diff origin/main...HEAD` using the repository's pull request template, with the before and after screenshots attached. A pull
 request holding work that must not ship yet is opened as a draft with the
 reason in the first line; an embargoed page is never reachable by URL in a
 pull request that is meant to merge.
