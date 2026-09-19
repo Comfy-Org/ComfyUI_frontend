@@ -36,9 +36,7 @@ test.describe('Agent edit undo/redo', { tag: '@cloud' }, () => {
     // is on the undo stack before redo is exercised.
     await page.locator('#graph-canvas').click()
     await page.keyboard.press('ControlOrMeta+z')
-    await expect
-      .poll(() => graphNodeCount(page))
-      .toBe(afterAgentEdit - 1)
+    await expect.poll(() => graphNodeCount(page)).toBe(afterAgentEdit - 1)
 
     // Below is the known defect: redo (the standard shortcut) should restore
     // the node the undo above just removed, and does not.
