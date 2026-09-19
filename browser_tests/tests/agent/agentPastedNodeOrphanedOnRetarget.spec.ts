@@ -4,8 +4,8 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 
-// Five wired seed nodes; we only need an existing node to copy, the recorded
-// turns themselves are never run in this spec.
+// Five wired seed nodes; the recorded turn only sets widget values, leaving
+// every node in place to copy.
 const SEED_CASE = 'agent-rec-set-widget-existing'
 
 interface RenderedGraphNode {
@@ -40,9 +40,8 @@ test.describe(
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
 
-      await expect
-        .poll(() => agentConversation.subscribeCount())
-        .toBeGreaterThan(0)
+      // The follower binds and subscribes on the first turn's ack.
+      await agentConversation.runTurns()
       const before = await readNodes(page)
       expect(before.length).toBeGreaterThan(0)
 
