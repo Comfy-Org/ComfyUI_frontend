@@ -153,7 +153,19 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
-const mockReadStatus = vi.fn()
+const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
+
+const buildStatus = (
+  overrides: Partial<BillingStatusResponse> = {}
+): BillingStatusResponse => ({
+  is_active: true,
+  has_funds: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scheduled_change: null,
+  team_credit_stop: null,
+  ...overrides
+})
 
 /**
  * The two clients the status read can go through, so the rows below pin one
@@ -165,7 +177,7 @@ const statusReadPaths = [
     select: () => {
       railState.rail = null
     },
-    resolve: (status: Partial<BillingStatusResponse>) => {
+    resolve: (status: BillingStatusResponse) => {
       mockGetBillingStatus.mockResolvedValue(status)
     },
     fail: () => {
@@ -181,7 +193,7 @@ const statusReadPaths = [
     select: () => {
       railState.rail = { readStatus: mockReadStatus }
     },
-    resolve: (status: Partial<BillingStatusResponse>) => {
+    resolve: (status: BillingStatusResponse) => {
       mockReadStatus.mockResolvedValue({ status: 'ok', value: status })
     },
     fail: () => {
@@ -351,12 +363,10 @@ describe('useSubscription', () => {
     it.for(statusReadPaths)(
       'publishes a status read through $reader and updates the workspace billing rail',
       async (path) => {
-        const status = {
-          is_active: true,
-          has_funds: true,
+        const status = buildStatus({
           renewal_date: '2025-11-16',
-          billing_rail: 'stripe' as const
-        }
+          billing_rail: 'stripe'
+        })
         path.select()
         path.resolve(status)
 
@@ -391,10 +401,8 @@ describe('useSubscription', () => {
     )
 
     it('keeps the published status when a rail read is superseded', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true
-      })
+      const published = buildStatus({ renewal_date: '2025-11-16' })
+      mockGetBillingStatus.mockResolvedValue(published)
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       await fetchStatus()
 
@@ -405,10 +413,7 @@ describe('useSubscription', () => {
       })
       await expect(fetchStatus()).resolves.toBeNull()
 
-      expect(subscriptionStatus.value).toEqual({
-        is_active: true,
-        has_funds: true
-      })
+      expect(subscriptionStatus.value).toEqual(published)
     })
 
     it('does not apply the previous account response after an identity switch', async () => {
