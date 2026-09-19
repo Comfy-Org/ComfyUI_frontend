@@ -104,16 +104,14 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(1)
     })
 
-    // KNOWN BUG PM-1302 / PM-1309: cloud's HandleDownloadFile (download_file.go)
-    // broadcasts a terminal `failed` WS message for ANY retryable error before
-    // asynq decides whether to retry, then StatusMiddleware.ProcessTask quietly
-    // resets the task to pending and asynq retries it. When the retry succeeds,
-    // the backend broadcasts a later `completed` message for the same task_id -
-    // but handleAssetDownload's terminal-state short circuit (lines 100-103)
-    // treats the earlier `failed` as final and silently drops it, so the store
-    // (and the toast reading from it) stays wrong forever even though the
-    // asset actually downloaded successfully.
-    it.fails('does not get stuck on a premature failed status once a later completed message arrives (PM-1302)', () => {
+    // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
+    // (download_file.go) can broadcast a terminal `failed` WS message for a
+    // retryable error before asynq decides whether to retry, then
+    // StatusMiddleware.ProcessTask quietly resets the task to pending and
+    // asynq retries it. handleAssetDownload now treats `failed` as
+    // recoverable (only `completed` is a trusted terminal state), so a later
+    // `completed` message for the same task_id still updates the store.
+    it('does not get stuck on a premature failed status once a later completed message arrives (PM-1302)', () => {
       const store = useAssetDownloadStore()
 
       // Backend reported a retryable error as a terminal failure...
@@ -127,6 +125,20 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].error).toBeUndefined()
     })
 
+    // OPEN DESIGN QUESTION PM-1302 / PM-1309: `activeDownloads` is also the
+    // UI's `isInProgress` signal (see ModelImportProgressDialog.vue), and an
+    // existing, unmarked test above ("moves download to finished when
+    // failed") requires a `failed` download to leave `activeDownloads` so
+    // the dialog can show its failed state and close button. Reconciliation
+    // of a `failed`-then-actually-`completed` task is now handled
+    // separately (pollStaleDownloads() re-checks `failed` downloads too, and
+    // a later WS message is no longer dropped - see the test above), but
+    // deliberately without pulling `failed` downloads back into
+    // `activeDownloads`, which would make the dialog show them as
+    // in-progress again. Changing that UI-facing meaning of `activeDownloads`
+    // is a product decision, not a mechanical fix, so this assertion is left
+    // pinned as a known, deliberate gap for further discussion rather than
+    // flipped.
     it.fails('excludes a failed-then-actually-completed task from activeDownloads so it is never reconciled (PM-1302)', () => {
       const store = useAssetDownloadStore()
 

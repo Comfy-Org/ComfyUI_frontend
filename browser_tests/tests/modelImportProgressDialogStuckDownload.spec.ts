@@ -6,22 +6,21 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 /**
- * KNOWN BUG PM-1302 / PM-1309 (frontend half):
+ * REGRESSION COVERAGE PM-1302 / PM-1309 (frontend half):
  *
- * `assetDownloadStore.handleAssetDownload` (src/stores/assetDownloadStore.ts)
- * locks a download into a terminal `completed`/`failed` status on the first
- * terminal WS message it sees for a `task_id`, and silently drops any later
- * message for that same task. On the cloud side, `HandleDownloadFile`
- * (download_file.go) broadcasts a terminal `failed` message for ANY
- * retryable error before asynq decides whether a retry will happen, then
- * quietly retries. When the retry succeeds, cloud broadcasts a later
- * `completed` message that the frontend never applies - so the
- * ModelImportProgressDialog toast keeps telling the user the download
- * failed even though it actually finished successfully.
+ * On the cloud side, `HandleDownloadFile` (download_file.go) can broadcast a
+ * terminal `failed` message for a retryable error before asynq decides
+ * whether a retry will happen, then quietly retries. `assetDownloadStore`
+ * (src/stores/assetDownloadStore.ts) now treats a `failed` status as
+ * recoverable rather than final, so a later `completed` message for the same
+ * `task_id` still updates it - keeping the ModelImportProgressDialog toast
+ * from getting stuck reporting a download as failed forever when it actually
+ * finished successfully.
  *
  * This test drives that exact WS sequence through the real `asset_download`
  * client event (the same event `assetDownloadStore` listens on in
- * production) and proves the toast is stuck showing "failed" forever.
+ * production) and proves the toast recovers once the later success message
+ * arrives.
  */
 const TASK_ID = 'pm-1302-repro-task'
 const ASSET_NAME = 'stuck-model.safetensors'
@@ -50,7 +49,7 @@ test.describe(
   'Model import progress toast - stuck download status',
   { tag: ['@screenshot'] },
   () => {
-    test('keeps showing a failed download as failed even after the backend silently retries and completes it (PM-1302)', async ({
+    test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
       comfyPage
     }) => {
       const { page } = comfyPage
@@ -100,30 +99,29 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      // BUG: the later `completed` message is silently dropped by
-      // handleAssetDownload's terminal-state short circuit, so the toast
-      // keeps reporting the download as failed forever instead of updating
-      // to reflect the real, successful outcome.
-      await expect(failedFooterText).toBeVisible()
+      // The later `completed` message updates the download rather than
+      // being dropped, so the toast reflects the real, successful outcome.
+      await expect(failedFooterText).toBeHidden()
       await expect(
         page.getByText('All downloads completed', { exact: true })
-      ).toBeHidden()
+      ).toBeVisible()
 
-      // Visual proof of the stuck "failed" toast state.
+      // Visual proof of the recovered, completed toast state.
       await expect(page.locator('body')).toHaveScreenshot(
-        'model-import-progress-toast-stuck-failed.png',
+        'model-import-progress-toast-recovered-completed.png',
         { mask: [page.locator('.timestamp')] }
       )
     })
 
-    test('the stuck failed toast can still be manually dismissed (PM-1302 does not also block the close action)', async ({
+    test('a failed download toast can still be manually dismissed when no later recovery message arrives (PM-1302)', async ({
       comfyPage
     }) => {
       const { page } = comfyPage
 
       // Same premature-failed sequence as above, minus the later `completed`
-      // message - the point here is only whether the user can get rid of the
-      // wrongly-stuck toast on their own, not whether it self-corrects.
+      // message - the point here is only whether the user can get rid of a
+      // failed toast on their own when the backend never does send a
+      // recovery message.
       await dispatchAssetDownload(page, {
         task_id: TASK_ID,
         asset_name: ASSET_NAME,
@@ -153,11 +151,10 @@ test.describe(
         page.getByText('1 download failed', { exact: true })
       ).toBeVisible()
 
-      // `isInProgress` is false once the (falsely) terminal `failed` status
-      // lands, so ModelImportProgressDialog's close (X) button renders and
-      // is clickable - the reported "never dismisses" complaint is about the
-      // status staying wrong forever, not about this button being disabled
-      // or absent.
+      // `isInProgress` is false once a `failed` status lands, so
+      // ModelImportProgressDialog's close (X) button renders and is
+      // clickable regardless of whether a later recovery message ever
+      // arrives.
       //
       // Scoped to `toast`: `page.getByRole('button', { name: 'Close' })`
       // alone also matches the canvas minimap's close button
