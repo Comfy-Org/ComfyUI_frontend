@@ -36,6 +36,7 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -485,12 +486,13 @@ useExtensionService().registerExtension({
               return returnVal
             }
 
-            // The scene moved while we captured. Retry a bounded number of
-            // times; a capture that raced a change is still a real capture
-            // of a recent scene, and queueing must never stall on a
-            // revision that keeps moving. The node stays dirty so the next
-            // queue re-captures.
-            if (attempt >= MAX_STALE_CAPTURE_RETRIES) return returnVal
+            if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
+              reportError(
+                new Error('Load3D scene did not stabilize during capture'),
+                { errorType: 'load3d_scene_capture_unstable' }
+              )
+              return null
+            }
           }
         }
       }
