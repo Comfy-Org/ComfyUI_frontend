@@ -1,6 +1,6 @@
 ---
 name: building-web-prs
-description: 'Builds a comfy.org website change from a design-team request and takes it to a reviewed pull request, or to a hand-off naming what is still open and who must act. Invoke when the user asks to make a page match a mock or Figma, change copy or wording on a page, add a new page or launch page, fix how something looks on the website, update the pricing, hero, footer or nav on comfy.org, or says "take this through to a PR". Loops on the live page until it matches, opens the pull request, then loops on review comments and failing checks. Never merges.'
+description: 'Builds a comfy.org website change from a design-team request and takes it to a reviewed pull request, or to a hand-off naming what is still open and who must act. Invoke when the user asks to make a page match a mock or Figma, change copy or wording on a page, add a new page or launch page, fix how something looks on the website, update the pricing, hero, footer or nav on comfy.org, or says "take this through to a PR". Loops on the live page until it matches or three rounds leave the same line unresolved, opens the pull request, then loops on review comments and failing checks until merge-ready or escalated. Never merges.'
 argument-hint: '<what to build or change, with the mock or page>'
 ---
 

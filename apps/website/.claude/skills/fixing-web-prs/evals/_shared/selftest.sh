@@ -190,7 +190,10 @@ if cmp -s bin/reply-body.src bin/state/last-reply-body.txt; then ok "reply body 
 if [[ ! -e bin/reply-body.txt ]]; then ok "published reply deleted its body file on success"; else bad "body file left behind on success"; fi
 printf 'x' > bin/reply-body.txt; published_reply NOPE "x" >/dev/null 2>&1 || true
 if [[ ! -e bin/reply-body.txt ]]; then ok "published reply deleted its body file on failure"; else bad "body file left behind on failure"; fi
-for nl in 1 2; do printf 'trailing newlines%s' "$(printf '\n%.0s' $(seq "$nl"))" > bin/reply-body.txt; expect_ok published_reply T1 "$(cat bin/reply-body.txt)"; done
+printf 'one trailing\n' > bin/reply-body.src; cp bin/reply-body.src bin/reply-body.txt
+cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=T1; bodyFile=$PWD/bin/reply-body.txt|")"
+env PATH="$PWD/bin:$PATH" bash -c "$cmd" >/dev/null
+if cmp -s bin/reply-body.src bin/state/last-reply-body.txt; then ok "one trailing newline preserved"; else bad "one trailing newline lost"; fi
 printf 'two trailing\n\n' > bin/reply-body.src; cp bin/reply-body.src bin/reply-body.txt
 cmd="$(published_fence 2 | awk 'NF==0{exit} {print}' | sed "s|^threadId=<id>; bodyFile=<path to the file holding your reply>$|threadId=T1; bodyFile=$PWD/bin/reply-body.txt|")"
 env PATH="$PWD/bin:$PATH" bash -c "$cmd" >/dev/null
@@ -243,6 +246,11 @@ printf 'REVIEW_AT=2026-09-17T20:00:00Z\n' > bin/state/view.env
 full_gate
 expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"   # comment 101 at 23:00 postdates the approval
 
+echo "quoted titles render as valid JSON"
+build merges-on-fresh-head
+printf 'TITLE=feat(website): say "hello" & ship #1\n' > bin/state/view.env
+if ./bin/gh pr view 4242 | jq -e '.title == "feat(website): say \"hello\" & ship #1"' >/dev/null; then ok "title with quotes, ampersand and hash survives"; else bad "title corrupted the JSON"; fi
+
 echo "numbered view deltas accumulate"
 build merges-on-fresh-head
 mkdir -p bin/state/phases/0
@@ -259,6 +267,7 @@ git checkout -q -b website/copy-change && echo x >> apps/website/src/pages/prici
 expect_fail ./bin/gh pr create --base wrong-base --head website/copy-change --title t
 expect_fail ./bin/gh pr create --base main --head wrong-head --title t
 expect_fail ./bin/gh pr create --base main --head website/copy-change
+expect_fail ./bin/gh pr create --head website/copy-change --title t
 expect_ok ./bin/gh pr create --base main --head website/copy-change --title "feat(website): copy"
 if grep -q "feat(website): copy" bin/created-pr/commit-messages.txt && grep -qx "apps/website/src/pages/pricing.astro" bin/created-pr/changed-files.txt; then ok "created-pr snapshot from git"; else bad "created-pr snapshot missing"; fi
 echo x > extra.ts && git add extra.ts && git commit -q -m "chore: extra"
@@ -274,14 +283,14 @@ git checkout -q main && git checkout -q website/copy-change
 if [[ -f bin/created-pr/commit-messages.txt ]]; then ok "post-checkout hook regenerated the snapshot"; else bad "post-checkout hook did not run"; fi
 git checkout -q -b side main && echo s > side.ts && git add side.ts && git commit -q -m "chore: side" && git checkout -q website/copy-change && git merge -q --no-ff -m "chore: merge side" side
 if grep -q "chore: merge side" bin/created-pr/commit-messages.txt && grep -qx "side.ts" bin/created-pr/changed-files.txt; then ok "post-merge hook refreshed the snapshot"; else bad "post-merge hook did not run"; fi
-if ./bin/gh pr view 4242 | grep -q '"headRefName": "website/copy-change"'; then ok "view reports the created branch"; else bad "view does not report the created branch"; fi
+v="$(./bin/gh pr view 4242)"; if grep -q '"headRefName": "website/copy-change"' <<<"$v"; then ok "view reports the created branch"; else bad "view does not report the created branch"; fi
 
 echo "every fixture scaffolds"
 while IFS= read -r fx; do d="$(dirname "$fx")"; w="$tmp/scaffold-$(basename "$d")"; rm -rf "$w"; mkdir -p "$w"; if (cd "$w" && bash "$fx" >/dev/null 2>&1 && test -x bin/gh && test -f bin/state/pr_number); then ok "scaffolds: $(basename "$(dirname "$d")")/$(basename "$d")"; else bad "scaffold failed: $fx"; fi; done < <(find "$skills_dir" -name fixture.sh -not -path '*/results/*' | sort)
 
 echo "hold-blocks-merge"
 build hold-blocks-merge
-if ./bin/gh pr view 4242 | grep -q "DO NOT MERGE"; then ok "title carries the hold"; else bad "hold title missing"; fi
+v="$(./bin/gh pr view 4242)"; if grep -q "DO NOT MERGE" <<<"$v"; then ok "title carries the hold"; else bad "hold title missing"; fi
 
 echo "waits-in-queue-until-merged"
 build waits-in-queue-until-merged
@@ -307,6 +316,7 @@ read_rest
 assert_eq "view 3" "$(read_view)" "OPEN CLEAN"
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 assert_eq "second attempt" "$(read_view)" "MERGED CLEAN"
+if grep -q "^merge accepted" bin/events.log && tail -1 bin/events.log | grep -q "^view MERGED"; then ok "events log records merges and the MERGED observation"; else bad "events log incomplete"; fi
 
 echo "escalates-after-three-removals"
 build escalates-after-three-removals

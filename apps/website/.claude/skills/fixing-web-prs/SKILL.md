@@ -153,6 +153,11 @@ time, until the state is `MERGED` or the queue removes the pull request. Keep re
 pull request) every few minutes until the state is `MERGED`; the queue runs the required checks again on a
 merge group, so this can take as long as a full check run.
 
+A reading that shows the state `CLOSED` ends the work: someone closed the
+pull request, it can no longer merge, and no retry changes that. Read the
+paginated timeline once for who closed it and any stated reason, report it to
+the designer as not merged with that person named, and stop.
+
 The queue can remove the pull request: a check fails in the merge group, `main`
 moves so the branch conflicts, an approval is dismissed, or a person pulls it.
 You see this as the state back at `OPEN` with `mergeStateStatus` no longer

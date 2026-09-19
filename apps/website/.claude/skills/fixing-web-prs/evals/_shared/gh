@@ -78,11 +78,11 @@ render_view() {
   for (( i=1; i<=k; i++ )); do [[ -f "$state/phases/$p/view.$i.env" ]] && envs+=("$state/phases/$p/view.$i.env"); done
   [[ -f "$state/merged.env" ]] && envs+=("$state/merged.env")
   load_env "${envs[@]}"
-  sed -e "s#__TITLE__#$V_TITLE#" -e "s#__STATE__#$V_STATE#" -e "s#__MERGE_STATE__#$V_MERGE_STATE#" \
-      -e "s#__REVIEW_DECISION__#$V_REVIEW_DECISION#" -e "s#__REVIEW_AT__#$V_REVIEW_AT#g" \
-      -e "s#__BRANCH__#${V_BRANCH:-$(branch)}#" -e "s#__HEAD__#$(head_sha)#g" \
-      "$state/pr_view.json" \
-    | jq --arg b "$(printf '%b' "${V_BODY:-}")" --argjson l "${V_LABELS:-[]}" '.body = $b | .labels = $l'
+  jq --arg title "$V_TITLE" --arg st "$V_STATE" --arg ms "$V_MERGE_STATE" --arg rd "$V_REVIEW_DECISION" \
+     --arg at "$V_REVIEW_AT" --arg br "${V_BRANCH:-$(branch)}" --arg head "$(head_sha)" \
+     --arg b "$(printf '%b' "${V_BODY:-}")" --argjson l "${V_LABELS:-[]}" \
+     '.title = $title | .state = $st | .mergeStateStatus = $ms | .reviewDecision = $rd | .headRefName = $br
+      | .headRefOid = $head | .body = $b | .labels = $l | .latestReviews |= map(.submittedAt = $at)' "$state/pr_view.json"
 }
 serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
 
@@ -175,8 +175,8 @@ parse_api_args() {
   done
 }
 # -F key=@file reads the value from the file, as gh does; -f never does.
-# Prints the value with a trailing marker so callers can keep trailing
-# newlines: use field_file to get it into a file byte for byte.
+# field prints the value through command substitution, which strips trailing
+# newlines; callers use field_file when trailing bytes matter.
 field() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cat "${v#@}"; else printf '%s' "$v"; fi; return; fi; done; printf ''; }
 field_file() { local f kind v; for f in "${api_fields[@]}"; do kind="${f%%:*}"; f="${f#*:}"; if [[ "$f" == "$1="* ]]; then v="${f#*=}"; if [[ "$kind" == typed && "$v" == @* ]]; then cp "${v#@}" "$2"; else printf '%s' "$v" > "$2"; fi; return; fi; done; : > "$2"; }
 
@@ -242,7 +242,9 @@ case "${1:-} ${2:-}" in
     echo "$k" > "$state/view_count"
     if [[ -f "$state/phases/$(phase)/advance_head.$k" ]]; then advance_head; fi
     touch_gate view
-    render_view "$k" ;;
+    out="$(render_view "$k")"
+    printf 'view %s %s\n' "$(jq -r .state <<<"$out")" "$(jq -r .mergeStateStatus <<<"$out")" >> "$here/events.log"
+    printf '%s\n' "$out" ;;
   "pr checks")
     require_number "${3:-}"
     if [[ " $* " == *" --required "* ]]; then touch_gate checks_required; serve "$(fixture checks_required.tsv)"; else touch_gate checks; serve "$(fixture checks.tsv)"; fi ;;
@@ -279,6 +281,7 @@ case "${1:-} ${2:-}" in
     fi
     reset_gate
     printf 'accepted merge of #%s at %s\n' "$(pr_number)" "$sha" >> "$here/merges.log"
+    printf 'merge accepted\n' >> "$here/events.log"
     cat "$msg" ;;
   "pr create")
     shift 2
@@ -294,7 +297,7 @@ case "${1:-} ${2:-}" in
     done
     current="$(git -C "$repo" branch --show-current)"
     [[ -n "$head_ref" ]] || head_ref="$current"
-    [[ "$base" == "" || "$base" == "main" ]] || fail "pr create refused: base must be main, got $base"
+    [[ "$base" == "main" ]] || fail "pr create refused: --base main must be given explicitly (got '${base:-nothing}')"
     [[ "$head_ref" == "$current" ]] || fail "pr create refused: --head $head_ref is not the checked-out branch $current"
     [[ "$current" != "main" ]] || fail "pr create refused: you are on main; create the pull request from a branch"
     [[ -n "$title" ]] || fail "pr create refused: --title is required"

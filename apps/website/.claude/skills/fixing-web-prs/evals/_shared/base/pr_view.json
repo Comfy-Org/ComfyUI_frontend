@@ -1,18 +1,18 @@
 {
   "number": 4242,
-  "title": "__TITLE__",
-  "state": "__STATE__",
+  "title": "",
+  "state": "OPEN",
   "isDraft": false,
   "author": {
     "login": "dana-comfy"
   },
   "labels": [],
-  "headRefName": "__BRANCH__",
-  "headRefOid": "__HEAD__",
+  "headRefName": "",
+  "headRefOid": "",
   "baseRefName": "main",
   "mergeable": "MERGEABLE",
-  "mergeStateStatus": "__MERGE_STATE__",
-  "reviewDecision": "__REVIEW_DECISION__",
+  "mergeStateStatus": "CLEAN",
+  "reviewDecision": "APPROVED",
   "body": "",
   "latestReviews": [
     {
@@ -20,21 +20,21 @@
         "login": "frontend-reviewer"
       },
       "state": "APPROVED",
-      "submittedAt": "__REVIEW_AT__"
+      "submittedAt": ""
     },
     {
       "author": {
         "login": "website-reviewer"
       },
       "state": "APPROVED",
-      "submittedAt": "__REVIEW_AT__"
+      "submittedAt": ""
     },
     {
       "author": {
         "login": "coderabbitai"
       },
       "state": "APPROVED",
-      "submittedAt": "__REVIEW_AT__"
+      "submittedAt": ""
     }
   ],
   "url": "https://github.com/example/site/pull/4242"
