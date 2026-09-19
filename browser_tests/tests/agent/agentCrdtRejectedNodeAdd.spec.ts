@@ -132,17 +132,20 @@ test.describe(
       // createNode that the layout store stamps with this session's human
       // actor, so layoutMintPort mints the same add_node op as UI insertion.
       // (The cloud project has no working double-click search flow to drive.)
-      await comfyPage.nodeOps.addNode('LoadImage')
+      const added = await comfyPage.nodeOps.addNode('LoadImage')
+      expect(added.id).toBeDefined()
       await comfyPage.nextFrame()
-      await expect
-        .poll(
-          async () =>
-            (await comfyPage.nodeOps.getNodeRefsByType('LoadImage')).length
-        )
-        .toBe(1)
 
-      // The host rejects the sync; the mock above already replied.
-      await rejectedOpId
+      // The host double replies to the add_node frame synchronously, so the
+      // revert can land within milliseconds of the add: the transient
+      // one-node canvas is not reliably observable. The round-trip is pinned
+      // instead - the op id proves the minted add_node reached the host, and
+      // the poll surfaces this step by name if the frame never arrives.
+      let rejected: string | undefined
+      void rejectedOpId.then((opId) => {
+        rejected = opId
+      })
+      await expect.poll(() => rejected, { timeout: 30_000 }).toBeDefined()
 
       // The node the host never accepted is removed.
       await expect
