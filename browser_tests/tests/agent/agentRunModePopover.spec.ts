@@ -4,6 +4,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
+import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -65,7 +66,12 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     await page.route('**/api/agent/run-mode', async (route) => {
       const request = route.request()
       if (request.method() !== 'PUT')
-        return route.fulfill(jsonRoute({ mode: 'ask_approval' }))
+        return route.fulfill(
+          jsonRoute({
+            mode: 'ask_approval',
+            credit_limit: null
+          } satisfies AgentRunModePreference)
+        )
       const saved = zAgentRunMode.parse(request.postDataJSON())
       savedModes.push(saved.mode)
       return route.fulfill(jsonRoute(saved))
