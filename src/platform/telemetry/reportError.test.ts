@@ -321,4 +321,29 @@ describe('reportError', () => {
     ).not.toThrow()
     expect(addError).toHaveBeenCalledOnce()
   })
+
+  it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    const nested = new Error('Graph serialization state mismatch')
+    captureException.mockImplementationOnce(() => {
+      reportError(nested, { errorType: 'graph_serialization_state_mismatch' })
+    })
+
+    reportError(new Error('bad subgraph'), {
+      errorType: 'subgraph_load_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('graph_serialization_state_mismatch'),
+      nested
+    )
+
+    reportError(new Error('later'), { errorType: 'http_error' })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
 })
