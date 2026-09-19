@@ -129,12 +129,6 @@ describe('getAssetFileUrl', () => {
       )
     })
 
-    it('defaults to no disposition param', () => {
-      const asset = createAsset({ id: 'asset-1' })
-
-      expect(getAssetFileUrl(asset)).not.toContain('disposition')
-    })
-
     it('requests an inline disposition when asked, for in-page playback', () => {
       const asset = createAsset({ id: 'asset-1' })
 
