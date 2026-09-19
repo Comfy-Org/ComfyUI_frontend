@@ -5,17 +5,18 @@
  * rejection `useAgentCrdtFollower.ts` feeds the tracker's `reverted` event to
  * `applyPendingOpRevert`, which removes the node. This test drives the real
  * transport (a mocked `/ws`), the real mint ports, and the real canvas: it
- * binds the CRDT doc through an actual agent turn, adds a node the way a
- * person would (double-click search), rejects that node's `doc_ops` frame the
- * way the reported host failure did (`invalid_node_payload`), and proves the
- * node the host never accepted is removed. See
+ * binds the CRDT doc through an actual agent turn, adds a node as a local
+ * human edit (the `nodeOps.addNode` fixture drives `graph.add`, whose
+ * actor-less layout operation the store stamps with this session's human
+ * actor, the same mint path as UI insertion), rejects that node's `doc_ops`
+ * frame the way the reported host failure did (`invalid_node_payload`), and
+ * proves the node the host never accepted is removed. See
  * `src/workbench/extensions/agent/crdt/rejectedHumanAddNodeRevert.test.ts`
  * for the equivalent proof against the composable wiring directly.
  */
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -108,11 +109,6 @@ test.describe(
       comfyPage,
       getWebSocket
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-
       const ws = await getWebSocket()
       const { subscribed, rejectedOpId } = installCrdtHostDouble(ws)
 
@@ -130,15 +126,11 @@ test.describe(
       await agentPanel.openButton.click()
       await expect(panel).toBeHidden()
 
-      // A person adds a node the ordinary way: double-click search, pick it.
-      // Canvas-relative, not page (10, 10): in the cloud layout the page's
-      // top-left corner is topbar chrome, so the search box never opens there.
-      await comfyPage.canvasOps.mouseDblclickAt(
-        DefaultGraphPositions.emptyCanvasClick
-      )
-      await comfyPage.searchBox.fillAndSelectFirstNode('Load Image', {
-        exact: true
-      })
+      // A local human edit: the fixture's graph.add lands an actor-less
+      // createNode that the layout store stamps with this session's human
+      // actor, so layoutMintPort mints the same add_node op as UI insertion.
+      // (The cloud project has no working double-click search flow to drive.)
+      await comfyPage.nodeOps.addNode('LoadImage')
       await comfyPage.nextFrame()
       await expect
         .poll(
