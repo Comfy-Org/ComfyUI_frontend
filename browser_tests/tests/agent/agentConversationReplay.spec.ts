@@ -2,9 +2,15 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
+
+// Synthesized (not a cloud capture, see the fixture's `source.note`), so it
+// lives under conversations/repro/ rather than conversations/ and is
+// deliberately absent from listRecordedConversations() below.
+const ASSET_GRID_CASE = 'repro/pm-1135-asset-grid-fragmentation'
 
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
   test.describe('wire evidence', () => {
@@ -25,6 +31,65 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         { mask: [agentConversation.panel] }
       )
     })
+  })
+
+  // PM-1135 / PM-1313: agentEventTransport.ts closes the open TextPart
+  // (closeOpenText) on every agent_thinking / agent_tool_call /
+  // agent_active_tab / agent_ask event, so a batch of assets separated by any
+  // of those lands as N separate one-asset TextParts. AgentMessage.vue's
+  // `groups` computed then gives every TextPart its own render group with no
+  // merging, so each asset renders through its own MarkdownStream, and thus
+  // its own ReplyAssetGroup, one asset at a time. ReplyAssetGroup's own grid
+  // math (`multi = visual.length > 1`) is correct; it just never sees more
+  // than one asset per render. This replays a turn shaped exactly like that
+  // (two generate_image tool calls, one per asset) through the real chat
+  // panel and checks the two assets land in a single grid, not two stacked
+  // single-item ones.
+  test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
+    test.use({ conversationCase: ASSET_GRID_CASE })
+
+    test.fail(
+      'PM-1135: a batch reply renders every generated asset in one grid, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+      { tag: ['@screenshot'] },
+      async ({ agentConversation, page }) => {
+        test.setTimeout(90_000)
+        await page.route(
+          'https://assets.example/outputs/render_a.png',
+          (route) =>
+            route.fulfill({ path: assetPath('agent/asset-grid-repro-a.png') })
+        )
+        await page.route(
+          'https://assets.example/outputs/render_b.png',
+          (route) =>
+            route.fulfill({ path: assetPath('agent/asset-grid-repro-b.png') })
+        )
+
+        await agentConversation.runTurns()
+
+        const images = agentConversation.panel.getByRole('img', {
+          name: /^render_[ab]\.png$/
+        })
+        await expect(images).toHaveCount(2)
+
+        // Visual proof of the fragmentation: today this pins the two assets as
+        // separate fullwidth blocks stacked in one column, not a grid.
+        await expect(agentConversation.panel).toHaveScreenshot(
+          'asset-grid-fragmentation.png'
+        )
+
+        // Both assets should land inside the SAME grid container. Today each
+        // TextPart renders its own ReplyAssetGroup, so this is two distinct
+        // one-item grids stacked in a column instead of one two-item grid.
+        const gridCount = await agentConversation.panel.evaluate((panel) => {
+          const imgs = [...panel.querySelectorAll('img[alt^="render_"]')]
+          const grids = new Set(
+            imgs.map((img) => img.closest('[class*="grid-cols-"]'))
+          )
+          return grids.size
+        })
+        expect(gridCount).toBe(1)
+      }
+    )
   })
 
   for (const conversationCase of listRecordedConversations()) {

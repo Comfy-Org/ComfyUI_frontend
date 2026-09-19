@@ -151,7 +151,9 @@ describe('committed recordings', () => {
     process.cwd(),
     'browser_tests/fixtures/data/agent/conversations'
   )
-  const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
+  const files = readdirSync(dir, { recursive: true })
+    .map(String)
+    .filter((file) => file.endsWith('.json'))
   const load = (file: string): unknown =>
     JSON.parse(readFileSync(join(dir, file), 'utf8'))
 
