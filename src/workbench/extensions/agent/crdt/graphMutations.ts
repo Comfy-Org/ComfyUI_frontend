@@ -184,30 +184,56 @@ function cloneRecord(value: unknown): Record<string, unknown> {
  * keep the link of the `existing` slot at the same index, or `null` when the
  * node has no slot there yet.
  */
+function applySlotLink(
+  slot: Record<string, unknown>,
+  index: number,
+  existing?: NodeState['inputs']
+): void {
+  if (typeof slot.link === 'number') {
+    slot.link = toLinkId(slot.link)
+    return
+  }
+  if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
+}
+
+/**
+ * The CRDT payload never carries the autogrow-computed display name, so a
+ * prior slot at the same index and name (i.e. this is a reconcile of a slot
+ * the live node already has, not a genuinely new one) keeps its display
+ * metadata instead of losing it to the thin payload.
+ */
+function preserveSlotDisplayMetadata(
+  slot: Record<string, unknown>,
+  priorSlot?: NodeState['inputs'][number]
+): void {
+  if (!priorSlot || priorSlot.name !== slot.name) return
+  if (slot.localized_name === undefined)
+    slot.localized_name = priorSlot.localized_name
+  if (slot.label === undefined) slot.label = priorSlot.label
+}
+
+function prepareInputSlot(
+  raw: Record<string, unknown>,
+  index: number,
+  existing?: NodeState['inputs']
+): NodeState['inputs'][number] {
+  const slot = structuredClone(raw)
+  applySlotLink(slot, index, existing)
+  preserveSlotDisplayMetadata(slot, existing?.[index])
+  return {
+    ...slot,
+    boundingRect: [0, 0, 0, 0]
+  } as unknown as NodeState['inputs'][number]
+}
+
 function prepareInputSlots(
   value: unknown,
   existing?: NodeState['inputs']
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw, index) => {
-    const slot = structuredClone(raw)
-    if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
-    if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
-    // The CRDT payload never carries the autogrow-computed display name, so a
-    // prior slot at the same index and name (i.e. this is a reconcile of a
-    // slot the live node already has, not a genuinely new one) keeps its
-    // display metadata instead of losing it to the thin payload.
-    const priorSlot = existing?.[index]
-    if (priorSlot && priorSlot.name === slot.name) {
-      if (slot.localized_name === undefined)
-        slot.localized_name = priorSlot.localized_name
-      if (slot.label === undefined) slot.label = priorSlot.label
-    }
-    return {
-      ...slot,
-      boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['inputs'][number]
-  })
+  return value
+    .filter(isRecord)
+    .map((raw, index) => prepareInputSlot(raw, index, existing))
 }
 
 function prepareOutputSlots(value: unknown): NodeState['outputs'] {
@@ -238,6 +264,13 @@ function readPair(
 
 type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
 
+function resolveColorField(
+  value: unknown,
+  existing?: string
+): string | undefined {
+  return typeof value === 'string' ? value : existing
+}
+
 /**
  * Node color is a client-only presentation property the CRDT document never
  * carries (see ComfyNode's constructor), so a payload without it keeps the
@@ -247,12 +280,9 @@ function resolveNodeColors(
   payload: SemanticNodePayload,
   existing?: NodeState
 ): Partial<NodeColors> {
-  const bgcolor =
-    typeof payload.bgcolor === 'string' ? payload.bgcolor : existing?.bgcolor
-  const boxcolor =
-    typeof payload.boxcolor === 'string' ? payload.boxcolor : existing?.boxcolor
-  const color =
-    typeof payload.color === 'string' ? payload.color : existing?.color
+  const bgcolor = resolveColorField(payload.bgcolor, existing?.bgcolor)
+  const boxcolor = resolveColorField(payload.boxcolor, existing?.boxcolor)
+  const color = resolveColorField(payload.color, existing?.color)
   return {
     ...(bgcolor !== undefined && { bgcolor }),
     ...(boxcolor !== undefined && { boxcolor }),
