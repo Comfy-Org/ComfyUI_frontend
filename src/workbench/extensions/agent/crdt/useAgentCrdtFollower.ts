@@ -8,6 +8,7 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -79,6 +80,23 @@ function liveAddedNodeIds(
   })
 }
 
+function updateNodeIds(update: Uint8Array): NodeId[] {
+  try {
+    return Y.decodeUpdate(update).structs.flatMap((struct) => {
+      if (!(struct instanceof Y.Item)) return []
+      if (
+        String(struct.parent) !== 'nodes' ||
+        typeof struct.parentSub !== 'string'
+      )
+        return []
+      const nodeId = parseNodeId(struct.parentSub)
+      return nodeId ? [nodeId] : []
+    })
+  } catch {
+    return []
+  }
+}
+
 function emitPendingMaterializations(
   workflowId: string,
   actor: string | undefined,
@@ -103,6 +121,10 @@ function notifyAgentMaterialization(
   const isLiveAgentUpdate =
     !update.catchUp && update.actor?.startsWith('agent:') === true
   if (isLiveAgentUpdate) {
+    if (update.update instanceof Uint8Array) {
+      for (const nodeId of updateNodeIds(update.update))
+        pendingLiveNodeIds.add(nodeId)
+    }
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of added) {
       const nodeId = parseNodeId(id)

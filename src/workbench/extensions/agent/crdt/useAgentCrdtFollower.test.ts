@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
@@ -1082,6 +1083,49 @@ describe('useAgentCrdtFollower', () => {
         workflowId: 'wf-1',
         actor: 'agent:thread:turn',
         nodeIds: [toNodeId(1)]
+      })
+      unmount()
+    })
+
+    it('retains a live add until a dependency makes the node visible', () => {
+      const onMaterialized = vi.fn()
+      const graph = {
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+      let nodes: Record<string, unknown> = {}
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 5,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 4,
+        actor: 'host:catch-up',
+        catchUp: true,
+        update: new Uint8Array()
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
       })
       unmount()
     })

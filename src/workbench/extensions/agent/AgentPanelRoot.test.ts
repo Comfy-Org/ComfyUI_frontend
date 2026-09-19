@@ -2447,8 +2447,7 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages') && init?.method === 'POST')
           return json(202, ack('wf-42'))
         if (url.includes('/messages')) return delayedHistory
-        if (url.includes('/agent/threads'))
-          return json(200, agentThreadList())
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return new Response('{}', { status: 200 })
       })
     )
