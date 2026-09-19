@@ -109,7 +109,8 @@ const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 
 // Workshop is switched off on comfy.org after 108 of 238 runs failed on
-// 2026-09-18. Preview builds keep serving it so the fixes can be reviewed.
+// 2026-09-18. Production now ignores the workshop-enabled flag; previews
+// still obey it, so leave that flag ON to keep reviewing fixes there.
 // Revert this PR to re-open production.
 const PRODUCTION_DISABLED = WORKSHOP_DEPLOY_ENV === 'production'
 
