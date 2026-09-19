@@ -146,7 +146,7 @@ export function createAgentRestClient() {
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
       zAgentTurnAccepted
     )
@@ -154,7 +154,7 @@ export function createAgentRestClient() {
 
   async function getMessages(threadId: string): Promise<AgentMessages> {
     return request(
-      `/agent/threads/${threadId}/messages`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       { method: 'GET' },
       zAgentMessages
     )
@@ -232,7 +232,7 @@ export function createAgentRestClient() {
     messageId: string
   ): Promise<AgentCancelAccepted> {
     return request(
-      `/agent/threads/${threadId}/messages/${messageId}/cancel`,
+      `/agent/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
     )

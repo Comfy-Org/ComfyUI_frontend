@@ -7,7 +7,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 import UserCredit from './UserCredit.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 describe('UserCredit', () => {
   beforeEach(() => {
