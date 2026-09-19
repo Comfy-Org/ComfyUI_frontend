@@ -32,19 +32,17 @@ const TURN_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
 const EARLIER_REQUEST = 'Earlier request'
 
 // A browser tab closed without the SPA's own cleanup never runs
-// agentWorkflowTabBindingStore's unbind(), so `Comfy.Agent.WorkflowTabBindings`
-// still names the abandoned tab's workflow under the default path every
-// unsaved tab reuses, and the thread pointer survives beside it. On the next
-// boot the thread hydrates and names that workflow; the panel resolves it to
-// the brand-new default-path tab, the next turn is posted as that workflow,
-// and the CRDT follower pulls its real content onto the empty canvas.
+// agentWorkflowTabBindingStore's unbind(), so its legacy record still names
+// the abandoned tab's workflow under the default path every unsaved tab
+// reuses, and the thread pointer survives beside it. On the next boot the
+// thread hydrates and names that workflow. The binding store must refuse to
+// hand that workflow to the brand-new default-path tab (its document id is not
+// the abandoned one), so the next turn is not posted as that workflow and the
+// CRDT follower never pulls its real content onto the empty canvas.
 //
-// This is a pinned repro, not a fix, so it seeds the exact abandoned-tab
-// condition and asserts the correct behavior (the fresh tab keeps its own
-// empty canvas), which currently fails. See agentWorkflowTabBindingStore.test.ts
-// and AgentPanelRoot.test.ts ("does not restore an abandoned tab binding onto
-// a brand-new default-path tab") for narrower, backend-free reproductions of
-// the same chain.
+// See agentWorkflowTabBindingStore.test.ts and AgentPanelRoot.test.ts ("does
+// not restore an abandoned tab binding onto a brand-new default-path tab") for
+// narrower, backend-free coverage of the same chain.
 test.describe(
   'Agent stale workflow tab binding',
   { tag: ['@cloud', '@agent'] },
@@ -53,10 +51,6 @@ test.describe(
       page,
       agentFlagEnabled
     }, testInfo) => {
-      // Pinned repro: the whole test is expected-to-fail until the
-      // stale-binding leak is fixed, so this must run before any assertion
-      // can throw.
-      test.fail()
       test.setTimeout(90_000)
 
       const { workflow } = loadAgentConversation('agent-workflow-editing-05')
@@ -249,9 +243,9 @@ test.describe(
         .click()
       await expect.poll(() => posted.length).toBe(1)
 
-      // Give the (buggy) follower a chance to subscribe and materialize the
-      // abandoned workflow's nodes before judging the canvas. Once fixed,
-      // this never resolves and the catch lets the final assertions run.
+      // Give a leaking follower a chance to subscribe and materialize the
+      // abandoned workflow's nodes before judging the canvas; a correct one
+      // never does, and the catch lets the final assertions run.
       await page
         .getByTestId('node-title')
         .first()
@@ -266,8 +260,7 @@ test.describe(
       })
 
       // The fresh tab is the only tab and still the active one; its canvas
-      // must stay empty. Production currently subscribes it to the abandoned
-      // workflow's document and renders that workflow's real nodes here.
+      // must stay empty.
       await expect(tabs).toHaveCount(1)
       await expect(topbar.getActiveTab()).toContainText(DEFAULT_TAB_NAME)
       await expect(page.getByTestId('node-title')).toHaveCount(0)

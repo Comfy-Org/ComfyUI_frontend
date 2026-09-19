@@ -73,7 +73,7 @@ describe('agentWorkflowTabBindingStore', () => {
   // so its record reaches the next page load exactly like a restored draft's:
   // same store-before-tab ordering, same reused default path. Only the
   // document identity tells the two apart, and a legacy record has none.
-  it.fails('does not treat an abandoned tab binding as a restored draft', async () => {
+  it('does not treat an abandoned tab binding as a restored draft', async () => {
     localStorage.setItem(
       LEGACY_KEY,
       JSON.stringify({ 'wf-abandoned': DEFAULT_PATH })
@@ -145,6 +145,24 @@ describe('agentWorkflowTabBindingStore', () => {
         confirmedAt: expect.any(Number)
       }
     })
+  })
+
+  it('does not hand a refused draft the binding when it is saved in place at its path', async () => {
+    localStorage.setItem(
+      LEGACY_KEY,
+      JSON.stringify({ 'wf-abandoned': DEFAULT_PATH })
+    )
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const fresh = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [fresh.path] })
+    await nextTick()
+
+    fresh.size = 1
+    expect(fresh.isTemporary).toBe(false)
+
+    expect(bindings.tabPathFor('wf-abandoned')).toBeUndefined()
+    expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
   })
 
   it('adopts two restored drafts that share a base name independently', async () => {

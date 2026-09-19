@@ -56,11 +56,14 @@ A persisted binding is keyed by tab path and proven by document identity.
   break ack adoption (`tabPathFor(...) === undefined`) and `workflowIdFor`'s
   string comparison. Bindings made while rolled back are not migrated
   afterwards.
-- A temporary tab may adopt a record only when its graph id is equivalent to
-  the record's (`areWorkflowIdsEquivalent`, so a draft whose legacy non-UUID
-  root id was re-minted on restore still matches through `legacyId`). A saved
-  (non-temporary) workflow adopts by path as before, since saved paths do not
-  collide.
+- A tab may adopt a record only when its graph id is equivalent to the
+  record's (`areWorkflowIdsEquivalent`, so a draft whose legacy non-UUID root
+  id was re-minted on restore still matches through `legacyId`). A saved
+  (non-temporary) workflow adopts by path alone only when the record predates
+  ids or the tab's own id is not known yet; a temporary tab never does. A tab
+  refused as a draft stays refused for that record while it is open, so
+  saving it in place at the record's path (which is what re-targeting a draft
+  named `Unsaved Workflow` does) cannot promote it to owner.
 - Refusal is non-destructive. A record whose path is occupied by an unproven
   temporary tab does not resolve through `tabPathFor` / `workflowIdFor` while
   that tab is open, but it is neither adopted nor deleted, because it may
@@ -120,6 +123,11 @@ mismatch (would orphan a live tab's binding from an unrelated tab).
   a bound tab and comes back to a fresh default tab on the same thread. It is
   the correct store outcome, but it is user-visible; skipping it when the
   store reports a blocked record is a possible follow-up.
+- A draft saved under the default name outside the agent's own re-targeting
+  flow, then reloaded, is a saved workflow at a legacy record's path with no
+  id to compare, and the legacy record re-attaches to it until the TTL or the
+  next `bind()` at that path retires it. Records written by this build carry
+  an id and are not affected.
 - Saving or renaming a bound draft leaves its record at the old default path
   (the watcher sees the same tab object). In-session that record blocks a new
   default tab correctly; after a reload it is refused by id and retired by the

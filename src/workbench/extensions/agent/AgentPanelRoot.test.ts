@@ -2606,11 +2606,21 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
+    const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
-      JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-minted': {
+          tabPath: 'workflows/minted.json',
+          graphId: draftGraphId,
+          confirmedAt: Date.now()
+        }
+      })
     )
-    const restored = addTab('workflows/minted.json', { isTemporary: true })
+    const restored = addTab('workflows/minted.json', {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: draftGraphId })
+    })
     useAgentConversationStore().setThreadId('th-1')
     const bodies: unknown[] = []
     const history: AgentMessages = [
@@ -3627,10 +3637,9 @@ describe('AgentPanelRoot workflow binding', () => {
   // bound to the default unsaved path in localStorage, and the thread pointer
   // survived beside it. On the next boot the thread hydrates and names that
   // workflow; the panel must not resolve it to the brand-new tab that merely
-  // reuses the path. Today it binds the fresh tab at hydrate, posts the next
-  // turn as that workflow, and the real CRDT follower pulls the abandoned
-  // document onto the empty canvas.
-  it.fails('does not restore an abandoned tab binding onto a brand-new default-path tab', async () => {
+  // reuses the path, or the next turn posts as that workflow and the real CRDT
+  // follower pulls the abandoned document onto the empty canvas.
+  it('does not restore an abandoned tab binding onto a brand-new default-path tab', async () => {
     const staleWorkflowId = 'wf-abandoned'
     const defaultPath = 'workflows/Unsaved Workflow.json'
     localStorage.setItem(
