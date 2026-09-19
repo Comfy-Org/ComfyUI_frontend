@@ -71,10 +71,10 @@ transcript.
 `bash fixing-web-prs/evals/_shared/selftest.sh` costs nothing and covers three
 things: it scaffolds every fixture under both skills and checks the stand-in
 is installed; it checks every markdown file under the skill tree for balanced
-code fences; and it drives the five stateful `fixing-web-prs` sequences
+code fences; and it drives the six stateful `fixing-web-prs` sequences
 (`hold-blocks-merge`, `waits-in-queue-until-merged`, `requeues-after-pop`,
-`escalates-after-three-removals`, and `merges-on-fresh-head` as the base for
-the rule checks) through the stand-in: the target
+`closed-while-queued-stops`, `escalates-after-three-removals`, and
+`merges-on-fresh-head` as the base for the rule checks) through the stand-in: the target
 guard, the gate, wrong-target and wrong-shape reads, mutations of the served
 state (a failed required check, a failed or pending optional check, blocked,
 changes requested, already merged, a hold edited into the title), thread
@@ -123,13 +123,13 @@ roughly 50 agent sessions.
 All runs on Claude Code 2.1.278, 2026-09-19, `--ablation none`, judge model
 haiku, from the authoring Mac after Docker Desktop's `~/.docker` was moved
 aside for the session (its symlinks make the sandbox refuse a Bash grant).
-Total model cost for the runs below was about $19.
+Total model cost for the runs below was about $20.
 
 | Case                             | Runs | Result   | Notes                                                                                                                                                                                                                                                                                                                                                                       |
 | -------------------------------- | ---- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `hold-blocks-merge`              | 3    | 3/3 pass | reads by number, never merges, names the site lead who set the hold (rubric tightened to require the setter on run 3)                                                                                                                                                                                                                                                       |
 | `merges-on-fresh-head`           | 3    | 2/3 pass | one run had a `merge refused` (gate read incomplete) then merged; one run failed on the sandbox's `git` shim before the fixture shipped its own git                                                                                                                                                                                                                         |
-| `waits-in-queue-until-merged`    | 8    | 6/8 pass | reworked to resolve on the third reading (the first version never left the queue). A new grader on the call log requires a `pr view` after the merge command: it caught one run that reported "queued" without re-reading, which led to the skill's rule that a queued hand-off is not an end state; one later miss was my rubric demanding the word "queue", since relaxed |
+| `waits-in-queue-until-merged`    | 8    | 6/8 pass | reworked to resolve on the third reading (the first version never left the queue). A new grader on the event log requires an observed `MERGED` after the merge command: it caught one run that reported "queued" without re-reading, which led to the skill's rule that a queued hand-off is not an end state; one later miss was my rubric demanding the word "queue", since relaxed |
 | `requeues-after-pop`             | 3    | 2/3 pass | third run skipped one gate read after the removal, was refused, recovered, and observed `MERGED` (`observes-merged` grader on the event log)                                                                                                                                                                                                                                |
 | `escalates-after-three-removals` | 6    | 4/6 pass | two runs each skipped one gate read once after a removal (`--required`, then the full list), were refused, recovered, and still escalated correctly; one earlier run resolved the skill's relative paths outside the sandbox and stopped honestly. The skill now names all five re-reads                                                                                    |
 | `closed-while-queued-stops`      | 1    | 1/1 pass | one merge, paginated timeline read, reports the site lead closed it, no requeue                                                                                                                                                                                                                                                                                             |
@@ -151,5 +151,5 @@ patterns broke the YAML (marker changed to `>>> sha subject`); macOS's
 fixture ships a direct git binary and the prompts say to use it; the skills'
 relative paths were once resolved against the plugin's install location, so
 the prompts pin the repository root to the working directory; the escalation
-grader counted transcript text, so the stand-in now logs accepted merges to
-`bin/merges.log`.
+grader counted transcript text, so the stand-in now logs accepted merges and every served state to
+`bin/events.log`.

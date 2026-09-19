@@ -155,8 +155,9 @@ merge group, so this can take as long as a full check run.
 
 A reading that shows the state `CLOSED` ends the work: someone closed the
 pull request, it can no longer merge, and no retry changes that. Read the
-paginated timeline once for who closed it and any stated reason, report it to
-the designer as not merged with that person named, and stop.
+paginated timeline once for who closed it, and the paginated issue comments
+once for the reason they gave, report it to the designer as not merged with
+that person and reason named, and stop.
 
 The queue can remove the pull request: a check fails in the merge group, `main`
 moves so the branch conflicts, an approval is dismissed, or a person pulls it.

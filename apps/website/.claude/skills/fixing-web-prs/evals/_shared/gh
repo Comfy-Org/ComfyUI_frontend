@@ -224,8 +224,9 @@ rest() {
   local path="${api_path%%\?*}" prefix
   prefix="repos/$(owner)/$(repo_name)"
   case "$path" in
-    "$prefix/issues/$(pr_number)/comments") [[ "$api_paginate" == 1 ]] && touch_gate comments; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
+    "$prefix/issues/$(pr_number)/comments") if [[ "$api_paginate" == 1 ]]; then touch_gate comments; printf 'read comments\n' >> "$here/events.log"; fi; if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture comments.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture comments.json)"; fi ;;
     "$prefix/issues/$(pr_number)/timeline")
+      [[ "$api_paginate" == 1 ]] && printf 'read timeline\n' >> "$here/events.log"
       if [[ "$api_paginate" == 1 ]]; then jq -c --argjson n "$PAGE_SIZE" '[range(0; length; $n) as $i | .[$i:$i+$n]] | .[]' "$(fixture timeline.json)"; else jq -c --argjson n "$PAGE_SIZE" '.[:$n]' "$(fixture timeline.json)"; fi ;;
     "$prefix/pulls/$(pr_number)/commits") serve "$(fixture commits.json)" ;;
     "$prefix/pulls/$(pr_number)/reviews") render_view "$(cat "$state/view_count" 2>/dev/null || echo 0)" | jq '.latestReviews' ;;
