@@ -77,6 +77,7 @@ export const useAgentNodeSelectionStore = defineStore(
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
     let restoreMinimap = false
+    let restoreShowInfo = false
 
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
@@ -106,6 +107,12 @@ export const useAgentNodeSelectionStore = defineStore(
         // restored on exit.
         restoreMinimap = settingStore.get(MINIMAP_SETTING)
         if (restoreMinimap) void settingStore.set(MINIMAP_SETTING, false)
+
+        // Same restore-on-exit treatment for the canvas info overlay, but as
+        // a direct canvas property rather than a user setting.
+        const canvas = canvasStore.canvas
+        restoreShowInfo = canvas?.show_info ?? false
+        if (canvas && restoreShowInfo) canvas.show_info = false
         return
       }
 
@@ -128,6 +135,12 @@ export const useAgentNodeSelectionStore = defineStore(
       if (restoreMinimap) {
         restoreMinimap = false
         void settingStore.set(MINIMAP_SETTING, true)
+      }
+
+      if (restoreShowInfo) {
+        restoreShowInfo = false
+        const canvas = canvasStore.canvas
+        if (canvas) canvas.show_info = true
       }
     })
 

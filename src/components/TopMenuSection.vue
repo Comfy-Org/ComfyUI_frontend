@@ -258,7 +258,7 @@ const isIntegratedTabBar = computed(
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
-  () => !isQueuePanelV2Enabled.value
+  () => !isQueuePanelV2Enabled.value && !isActionBarsHidden.value
 )
 const shouldShowInlineProgressSummary = computed(
   () =>
