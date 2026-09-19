@@ -31,7 +31,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       agentPanel,
       postedMessages
     }) => {
@@ -169,9 +169,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       crdtDebugEnabled: true
     })
 
-    test('copies with privacy sources turned off', async ({
+    test('copies retained tool metadata with privacy sources turned off', async ({
       agentPanel,
-      comfyPage
+      comfyPage,
+      getWebSocket
     }) => {
       await test.step('turn off every optional privacy source', async () => {
         await agentPanel.open()
@@ -179,7 +180,23 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await agentPanel.turnOffOptionalReportSources()
       })
 
-      await test.step('copy a report that marks every source turned off', async () => {
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
         await agentPanel.copyReportButton.click()
         await expect(agentPanel.copiedButton).toBeVisible()
         await expect
@@ -188,10 +205,22 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
             return {
               serverLogs: report.includes('- Server logs: turned off'),
               settings: report.includes('- Settings: turned off'),
-              workflow: report.includes('- Workflow: turned off')
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
             }
           })
-          .toEqual({ serverLogs: true, settings: true, workflow: true })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
       })
     })
   })

@@ -1,5 +1,5 @@
-import type { BillingOperationTelemetryEvent } from '@comfyorg/account/billing'
-import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account/billing'
+import type { BillingOperationTelemetryEvent } from '@comfyorg/account-core/billing'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 

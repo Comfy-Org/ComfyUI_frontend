@@ -1,8 +1,10 @@
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -104,12 +106,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockDialogService = vi.hoisted(() => ({
-  prompt: vi.fn()
-}))
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/services/dialogService'))
 
 const mockResetView = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
@@ -132,17 +129,7 @@ vi.mock<unknown>(
   })
 )
 
-const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return mockFeatureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -257,7 +244,6 @@ describe('useCoreCommands', () => {
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
     mockDistributionState.isCloud = false
-    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
@@ -411,12 +397,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set description on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('Test description')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'Test description'
+        )
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -425,14 +413,14 @@ describe('useCoreCommands', () => {
 
         await setDescCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
         expect(mockChangeTracker.captureCanvasState).toHaveBeenCalled()
       })
 
       it('should not set description when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setDescCommand = commands.find(
@@ -457,12 +445,14 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(useDialogService().prompt).not.toHaveBeenCalled()
       })
 
       it('should set search aliases on subgraph.extra', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          'alias1, alias2, alias3'
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -471,7 +461,7 @@ describe('useCoreCommands', () => {
 
         await setAliasesCommand.function()
 
-        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(useDialogService().prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
           'alias1',
           'alias2',
@@ -482,7 +472,9 @@ describe('useCoreCommands', () => {
 
       it('should trim whitespace and filter empty strings', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+        vi.mocked(useDialogService().prompt).mockResolvedValue(
+          '  alias1  ,  , alias2 ,  '
+        )
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -499,7 +491,7 @@ describe('useCoreCommands', () => {
 
       it('should set undefined when empty input', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue('')
+        vi.mocked(useDialogService().prompt).mockResolvedValue('')
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -513,7 +505,7 @@ describe('useCoreCommands', () => {
 
       it('should not set aliases when user cancels', async () => {
         app.canvas.subgraph = mockSubgraph
-        mockDialogService.prompt.mockResolvedValue(null)
+        vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
         const commands = useCoreCommands()
         const setAliasesCommand = commands.find(
@@ -774,7 +766,7 @@ describe('useCoreCommands', () => {
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
     async function selectAssetFromBrowser() {
-      mockFeatureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       await browseModelAssets().function()
 
@@ -783,8 +775,6 @@ describe('useCoreCommands', () => {
     }
 
     it('does not open the browser when the assets capability is missing', async () => {
-      mockFeatureFlagState.assetsEnabled = false
-
       await expect(browseModelAssets().function()).resolves.toBeUndefined()
 
       expect(mockAssetBrowse).not.toHaveBeenCalled()

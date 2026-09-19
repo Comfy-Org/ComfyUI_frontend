@@ -9,7 +9,7 @@ import type {
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
-} from '@/core/graph/graphMutations'
+} from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
@@ -51,10 +51,6 @@ export type MutationsForTarget =
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**
@@ -460,30 +456,17 @@ export class EcsFollowerAdapter {
       // host's input list in place, which drops the `widgetId` /
       // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
       // host with no widgets at all. Resync the host's scalar fields (title,
-      // mode, flags, properties, colors) and write the promoted values by name
-      // instead; `readSemanticNode` has already keyed them from the
-      // definition. A host whose stored values are not a record (malformed
-      // opaque payload) keeps its widgets untouched rather than wiped.
+      // mode, flags, properties, colors) and promoted values only;
+      // `readSemanticNode` has already keyed the values from the definition.
       const isHost = (payload: SemanticNodePayload) =>
         definitions().has(payload.type)
       const upsertNode = (
         payload: SemanticNodePayload,
         mode: 'add' | 'reconcile'
       ) => {
-        if (mode === 'add') {
-          batch.addNode(payload)
-          return
-        }
-        if (!isHost(payload)) {
-          batch.reconcileNode(payload)
-          return
-        }
-        batch.reconcileNodeFields(payload)
-        const values = payload.widgets_values
-        if (!isRecord(values)) return
-        for (const [name, value] of Object.entries(values)) {
-          batch.setWidget(toNodeId(payload.id), name, value)
-        }
+        if (mode === 'add') batch.addNode(payload)
+        else if (isHost(payload)) batch.reconcileNodeFields(payload)
+        else batch.reconcileNode(payload)
       }
 
       if (reconcile) {

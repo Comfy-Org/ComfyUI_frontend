@@ -351,7 +351,7 @@ Settings are automatically grouped for UI based on their `category` or derived f
 ## Related Documentation
 
 - Feature flag system: `docs/FEATURE_FLAGS.md`
-- Settings schema for backend: `src/schemas/apiSchema.ts` (zSettings)
+- Frontend settings types: `src/platform/settings/types.ts` (`Settings`)
 - Server configuration (separate from user settings): `src/constants/serverConfig.ts`
 
 ## Summary

@@ -37,9 +37,12 @@ pnpm --filter @comfyorg/website test:router-models [options]
   --report PATH.md         Persistent public results grid (default: MODELS_TEST_RESULTS.md)
   --help                   Show this help
 
---execute requires COMFY_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
+--execute requires COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
 and ffprobe/ffmpeg on PATH. A request is repeated only to collect a generation
-Router parked at its deadline, with the same key and body; nothing else retries.
+Router parked at its deadline, follows bounded in-flight retry advice, or recovers
+one interrupted connection, always with the same key and body. HTTP failures
+otherwise do not retry. This Node grid does not certify browser upload CORS.
+Use test:workshop-upload separately to verify the live browser upload path.
 Preflight validates defaults without network calls; ready is not a generation pass.
 Each run writes manifest.json, append-only events.jsonl, summary.json and artifacts.
 Parsed outputs and full JSON/text attachments are saved before media verification.
@@ -75,6 +78,7 @@ function failureEvidence(error: unknown, token: string) {
       ? {
           requestId: error.requestId,
           fieldErrors: error.fieldErrors,
+          stage: error.stage,
           ...(error.response
             ? {
                 response: {
@@ -116,7 +120,7 @@ async function main() {
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
   const timeoutMs = positiveInteger(values['timeout-seconds'], 2700) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
-  const token = process.env.COMFY_KEY ?? ''
+  const token = process.env.COMFY_API_KEY ?? ''
   const runId = `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`
   const directory = values.output
     ? resolve(values.output)
@@ -255,7 +259,7 @@ async function main() {
     )
     let results: string[] = []
     if (values.execute && ready.length) {
-      if (!token) throw new Error('Set COMFY_KEY before using --execute')
+      if (!token) throw new Error('Set COMFY_API_KEY before using --execute')
       if (
         !['prod', 'staging', 'test'].includes(
           process.env.PUBLIC_WORKSHOP_CLOUD_ENV ?? ''
@@ -437,6 +441,6 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(failureEvidence(error, process.env.COMFY_KEY ?? '').message)
+  console.error(failureEvidence(error, process.env.COMFY_API_KEY ?? '').message)
   process.exitCode = 1
 })

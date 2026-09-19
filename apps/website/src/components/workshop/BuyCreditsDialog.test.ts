@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import type {
+  HostedTopupCheckoutResult,
+  TopupCommand
+} from '@comfyorg/account-core/billing'
+
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
@@ -16,6 +21,7 @@ import type {
   watchForTopUp
 } from '../../config/workshop-credits'
 import type { useWorkshopSession } from '../../config/workshop-session-state'
+import { captureWorkshopEvent } from '../../scripts/posthog'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
 type WorkshopCreditsState = ReturnType<typeof useWorkshopCredits>
@@ -43,6 +49,12 @@ const credits = vi.hoisted(() => ({
   refresh: vi.fn<typeof refreshWorkshopCredits>()
 }))
 
+const sdk = vi.hoisted(() => ({
+  createHostedTopupCheckout: vi.fn<TopupCommand['createHostedTopupCheckout']>(),
+  createTopupCheckout: vi.fn<TopupCommand['createTopupCheckout']>(),
+  readFlag: vi.fn<() => Promise<boolean>>()
+}))
+
 vi.mock(import('../../config/workshop-credits'), async () => {
   const { computed, ref } = await import('vue')
   const balance = ref<WorkshopBalance>({ status: 'unknown' })
@@ -61,8 +73,15 @@ vi.mock(import('../../config/workshop-credits'), async () => {
   }
 })
 
+vi.mock(import('../../config/workshop-billing-sdk'), () => ({
+  workshopTopupCommand: (): TopupCommand => ({
+    createHostedTopupCheckout: sdk.createHostedTopupCheckout,
+    createTopupCheckout: sdk.createTopupCheckout
+  })
+}))
+
 vi.mock(import('../../config/workshop-features'), () => ({
-  readBillingSdkTopupEnabled: () => Promise.resolve(false)
+  readBillingSdkTopupEnabled: sdk.readFlag
 }))
 
 vi.mock(import('../../config/workshop-session-state'), async () => {
@@ -86,6 +105,10 @@ vi.mock(import('../../config/workshop-session-state'), async () => {
     })
   }
 })
+
+vi.mock(import('../../scripts/posthog'), () => ({
+  captureWorkshopEvent: vi.fn()
+}))
 
 const credential = {
   token: 'workspace-jwt',
@@ -183,6 +206,8 @@ describe('BuyCreditsDialog', () => {
       credits.topUp!.value = { status: 'idle' }
     })
     credits.refresh.mockReset().mockResolvedValue(undefined)
+    sdk.createHostedTopupCheckout.mockReset()
+    sdk.readFlag.mockReset().mockResolvedValue(false)
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
 
@@ -556,6 +581,7 @@ describe('BuyCreditsDialog', () => {
     expect(screen.queryByTestId('checkout-error')).toBeNull()
     expect(credits.watchForTopUp).not.toHaveBeenCalled()
     expect(fetchCheckout).toHaveBeenCalledTimes(2)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('keeps the rollout fallback link when the claimed tab cannot navigate', async () => {
@@ -588,6 +614,70 @@ describe('BuyCreditsDialog', () => {
 
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        http_status: 404
+      }
+    })
+  })
+
+  it('omits an HTTP status when the billing SDK received no response', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    sdk.readFlag.mockResolvedValue(true)
+    sdk.createHostedTopupCheckout.mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    } satisfies HostedTopupCheckoutResult)
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        error_code: 'REQUEST_FAILED'
+      }
+    })
+  })
+
+  it('omits an unrecognized checkout error code from analytics', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    stubCheckout(
+      { code: 'PRIVATE_CUSTOMER_STATE', message: 'Private account detail' },
+      500
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        attempt_id: attemptId,
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'checkout',
+        http_status: 500
+      }
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('PRIVATE_CUSTOMER_STATE')
   })
 
   it('refuses checkout when the scoped balance is unavailable', async () => {
@@ -602,6 +692,14 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'balance'
+      }
+    })
   })
 
   it('refuses checkout if refreshing changes the signed-in identity', async () => {
@@ -622,6 +720,37 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('does not report checkout failure if the session changes while credentials are pending', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    let resolveCredential!: (value: {
+      status: 'ok'
+      session: typeof credential
+    }) => void
+    auth.ensureFresh.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCredential = resolve
+        })
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(auth.ensureFresh).toHaveBeenCalledOnce())
+    auth.session!.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
+    }
+    resolveCredential({ status: 'ok', session: credential })
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('refuses checkout when the fresh credential belongs to another workspace', async () => {
@@ -647,6 +776,14 @@ describe('BuyCreditsDialog', () => {
     expect(fetchCheckout).not.toHaveBeenCalled()
     expect(tab.location.assign).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'checkout_failed',
+      properties: {
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id,
+        stage: 'credential'
+      }
+    })
   })
 
   it('does not open checkout if the session changes while checkout is pending', async () => {
@@ -685,6 +822,7 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('checkout-error')).toBeTruthy()
     expect(tab.location.assign).not.toHaveBeenCalled()
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
   it('aborts an in-flight checkout when the dialog unmounts', async () => {
@@ -704,5 +842,6 @@ describe('BuyCreditsDialog', () => {
       timeoutMs: 15_000
     })
     expect(tab.close).toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })

@@ -22,7 +22,7 @@ describe('getExportFormatOptions', () => {
     ])
   })
 
-  it.each(['ply', 'spz', 'splat', 'ksplat'])(
+  it.for(['ply', 'spz', 'splat', 'ksplat'])(
     'offers only the source format for direct-export type %s',
     (format) => {
       expect(getExportFormatOptions(format)).toEqual([
@@ -43,7 +43,7 @@ describe('Assets browser recognizes every Load3D-uploadable format', () => {
   // with the formats Load3D accepts. A format Load3D can load but the Assets
   // browser tags as 'other' gets no 3D preview and can't be opened in the
   // 3D viewer.
-  it.each([...SUPPORTED_EXTENSIONS])(
+  it.for([...SUPPORTED_EXTENSIONS])(
     'classifies %s uploads as 3D media',
     (ext) => {
       expect(getMediaTypeFromFilename(`model${ext}`)).toBe('3D')

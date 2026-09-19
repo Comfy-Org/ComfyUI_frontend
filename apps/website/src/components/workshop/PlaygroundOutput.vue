@@ -72,6 +72,12 @@ const mediaControlClass =
 const failureKey: Record<RunFailure, TranslationKey> = {
   validation: 'workshop.error.validation',
   provider: 'workshop.error.provider',
+  upload: 'workshop.error.upload',
+  network: 'workshop.error.network',
+  response: 'workshop.error.response',
+  client: 'workshop.error.client',
+  concurrency: 'workshop.error.concurrency',
+  conflict: 'workshop.error.conflict',
   rateLimit: 'workshop.error.rateLimit',
   policy: 'workshop.error.policy',
   noCredits: 'workshop.error.noCredits',
@@ -89,7 +95,7 @@ const statusMessage = computed(() => {
       '{workspace}',
       memberWorkspace
     )
-  if (state.status === 'failed') return t(failureKey[state.reason], locale)
+  if (state.status === 'failed') return t(failureTranslationKey(state), locale)
   if (state.status === 'running') return t('workshop.run.running', locale)
   if (state.status === 'cancelled')
     return t('workshop.output.cancelled', locale)
@@ -102,6 +108,17 @@ const statusMessage = computed(() => {
     )
   return ''
 })
+
+function failureTranslationKey(
+  failure: Extract<RunState, { status: 'failed' }>
+): TranslationKey {
+  if (
+    failure.reason === 'validation' &&
+    !Object.keys(failure.fieldErrors).length
+  )
+    return 'workshop.error.inputRejected'
+  return failureKey[failure.reason]
+}
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
@@ -352,7 +369,7 @@ const earlierClass = (active: boolean) =>
         {{ t('nav.buyCredits', locale) }}
       </Button>
       <Button
-        v-else-if="state.reason !== 'validation'"
+        v-else-if="!['validation', 'policy'].includes(state.reason)"
         variant="outline"
         size="sm"
         @click="emit('retry')"
