@@ -1055,6 +1055,46 @@ describe('useAgentCrdtFollower', () => {
       })
       unmount()
     })
+
+    it('does not attribute a human recreation after a pending node was deleted', () => {
+      const onMaterialized = vi.fn()
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      let nodes: Record<string, unknown> = {}
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+
+      nodes = { '3': {} }
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      nodes = {}
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      graph.value = fakeGraph
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      expect(onMaterialized).not.toHaveBeenCalled()
+      unmount()
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {

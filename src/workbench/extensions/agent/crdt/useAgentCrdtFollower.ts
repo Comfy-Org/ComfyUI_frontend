@@ -366,6 +366,10 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
+    for (const id of removed) {
+      const nodeId = parseNodeId(id)
+      if (nodeId) pendingLiveNodeIds.delete(nodeId)
+    }
     notifyAgentMaterialization(
       update,
       added,
