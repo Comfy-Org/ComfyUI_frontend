@@ -25,6 +25,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -313,6 +314,23 @@ class AgentConversationHarness {
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
     }
+  }
+
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.waitForSubscribe()
+    this.send(this.host.apply(ops))
+    const addedNodeIds = ops.flatMap((op) =>
+      op.op === 'add_node' && op.node_id != null ? [String(op.node_id)] : []
+    )
+    await expect
+      .poll(() =>
+        this.page.evaluate((ids) => {
+          const graph = window.app!.graph
+          const renderedIds = new Set(graph._nodes.map(({ id }) => String(id)))
+          return ids.filter((id) => !renderedIds.has(id))
+        }, addedNodeIds)
+      )
+      .toEqual([])
   }
 
   private async panelCounts(): Promise<PanelCounts> {

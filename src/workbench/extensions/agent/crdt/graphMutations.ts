@@ -1,3 +1,5 @@
+import { isPlainObject } from 'es-toolkit'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -42,6 +44,30 @@ export interface SemanticLinkPayload {
   /** Final semantic slot records after the shared applier handled this link. */
   originOutputs?: readonly ISerialisableNodeOutput[]
   targetInputs?: readonly ISerialisableNodeInput[]
+}
+
+function isSlotRecord(value: unknown): value is { name?: unknown } {
+  return value !== null && typeof value === 'object'
+}
+
+/**
+ * Copies a serialized slot's fields onto the live slot object so the node
+ * keeps its slot identity; an omitted field keeps the live value. A plain
+ * store record takes `link`/`links` as data, while a node's slot instance
+ * derives them from the link store and must not have them assigned.
+ */
+function patchLiveSlot(live: object, serialized: object): void {
+  const derivesLinks = !isPlainObject(live)
+  Object.assign(
+    live,
+    Object.fromEntries(
+      Object.entries(serialized).filter(
+        ([key, value]) =>
+          value !== undefined &&
+          !(derivesLinks && (key === 'link' || key === 'links'))
+      )
+    )
+  )
 }
 
 interface SemanticNodeLayout {
@@ -156,6 +182,8 @@ type PreparedMutation =
       topology: LinkTopology
       originOutputs?: NodeState['outputs']
       targetInputs?: NodeState['inputs']
+      liveOriginOutputs?: NodeState['outputs']
+      liveTargetInputs?: NodeState['inputs']
     }
   | {
       kind: 'removeMissing'
@@ -186,7 +214,7 @@ function cloneRecord(value: unknown): Record<string, unknown> {
  */
 function prepareInputSlots(
   value: unknown,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
   return value.filter(isRecord).map((raw, index) => {
@@ -212,6 +240,31 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
       boundingRect: [0, 0, 0, 0]
     } as unknown as NodeState['outputs'][number]
   })
+}
+
+/**
+ * Merges supplied input slots into the live list by name: a live slot the
+ * document also names takes the document's fields, a live slot the document
+ * omits (a runtime-grown input) stays where it is, and a document slot the
+ * node lacks is appended. Live order wins over document order.
+ */
+function mergeInputSlotsByName(
+  live: NodeState['inputs'],
+  supplied: unknown
+): NodeState['inputs'] {
+  const documentInputs = Array.isArray(supplied)
+    ? supplied.filter(isRecord)
+    : []
+  const liveByName = documentInputs.map((slot) =>
+    live.find((input) => input.name === slot.name)
+  )
+  const merged = [...live]
+  for (const input of prepareInputSlots(documentInputs, liveByName)) {
+    const index = merged.findIndex((local) => local.name === input.name)
+    if (index < 0) merged.push(input)
+    else merged[index] = input
+  }
+  return merged
 }
 
 function readPair(
@@ -306,7 +359,7 @@ function detachedLinkSlots(
   if (origin?.outputs[topology.originSlot]) {
     const slots = slotsFor(origin)
     slots.outputs = slots.outputs.map((output, index) =>
-      index === topology.originSlot
+      index === topology.originSlot && isPlainObject(output)
         ? {
             ...output,
             links: output.links?.filter((id) => id !== topology.id) ?? null
@@ -319,7 +372,9 @@ function detachedLinkSlots(
   if (target?.inputs[topology.targetSlot]?.link === topology.id) {
     const slots = slotsFor(target)
     slots.inputs = slots.inputs.map((input, index) =>
-      index === topology.targetSlot ? { ...input, link: null } : input
+      index === topology.targetSlot && isPlainObject(input)
+        ? { ...input, link: null }
+        : input
     )
   }
 
@@ -425,6 +480,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
+          if (
+            mutation.kind === 'reconcileNode' &&
+            existing &&
+            existing.type === node.state.type
+          ) {
+            node.state.inputs = mergeInputSlotsByName(
+              existing.inputs,
+              mutation.payload.inputs
+            )
+          }
           nodes.set(key, node.state)
           prepared.push({
             kind:
@@ -517,9 +582,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const originOutputs = mutation.link.originOutputs
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs, target.inputs)
-            : target.inputs
+          let targetInputs = target.inputs
+          if (mutation.link.targetInputs) {
+            if (target.inputs.some((input) => !isSlotRecord(input))) {
+              return 'connect target inputs contain a malformed live slot'
+            }
+            const name = mutation.link.targetInputs
+              .filter(isRecord)
+              .at(topology.targetSlot)?.name
+            if (typeof name !== 'string') {
+              return `connect target slot ${topology.targetSlot} does not exist`
+            }
+            targetInputs = mergeInputSlotsByName(
+              target.inputs,
+              mutation.link.targetInputs
+            )
+            topology.targetSlot = targetInputs.findIndex(
+              (input) => input.name === name
+            )
+          }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
@@ -554,10 +635,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             kind: mutation.kind,
             topology,
             ...(mutation.link.originOutputs && {
-              originOutputs
+              originOutputs,
+              liveOriginOutputs: [...origin.outputs]
             }),
             ...(mutation.link.targetInputs && {
-              targetInputs
+              targetInputs,
+              liveTargetInputs: [...target.inputs]
             })
           })
           break
@@ -887,6 +970,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeKey(mutation.topology.targetNodeId)
           )
           if (origin && mutation.originOutputs) {
+            for (const [index, output] of (
+              mutation.liveOriginOutputs ?? origin.outputs
+            ).entries()) {
+              const serialized = mutation.originOutputs[index]
+              if (isSlotRecord(output) && isSlotRecord(serialized)) {
+                patchLiveSlot(output, serialized)
+              }
+              mutation.originOutputs[index] = output
+            }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
@@ -898,6 +990,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           }
           if (target && mutation.targetInputs) {
+            for (const input of mutation.liveTargetInputs ?? target.inputs) {
+              if (!isSlotRecord(input)) continue
+              const index = mutation.targetInputs.findIndex(
+                (serialized) => serialized.name === input.name
+              )
+              if (index < 0) continue
+              patchLiveSlot(input, mutation.targetInputs[index])
+              mutation.targetInputs[index] = input
+            }
             nodeStore.updateNodeSlots(
               scope,
               target.id,
