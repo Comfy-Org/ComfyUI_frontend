@@ -4,7 +4,7 @@ Date: 2026-09-19
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -179,14 +179,26 @@ Six call sites write `LGraphNode.title` (or a static class `title`) today.
 Each is classified by whether it represents a human deliberately choosing a
 name, or code assigning a default:
 
-| Site                                                                                             | What it does                                                                                                                                                                                                                                                                                           | Sets the flag?                                                                                                                          |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts` (`handleNodeTitleUpdate`) | Vue-canvas node title editor commit. The exact path #18065's repro uses.                                                                                                                                                                                                                               | **Yes**                                                                                                                                 |
-| `src/components/rightSidePanel/RightSidePanel.vue` (`handleTitleEdit`)                           | Right-side-panel title field. Operates on `selectedGroups.value[0] \|\| selectedNodes.value[0]` — the target can be an `LGraphGroup`, which has no `NodeId`/CRDT representation.                                                                                                                       | **Yes, guarded**: only when the edited item is an `LGraphNode` (e.g. `'graph' in target` or an `isLGraphNode` check), never for a group |
-| `src/components/breadcrumb/SubgraphBreadcrumb.vue` (`updateTitle`)                               | Renaming a subgraph via its breadcrumb tab applies the new name to **every** live `SubgraphNode` instance of that subgraph definition, via `forEachSubgraphNode`.                                                                                                                                      | **Yes**, once per instance visited by `forEachSubgraphNode`                                                                             |
-| `src/lib/litegraph/src/LGraphCanvas.ts` (`fUpdate`, case `'Title'`, ~line 8421)                  | The legacy (non-Vue) canvas's node-properties panel title field. `LGraph.ts` already imports `clearNodeOwnedStoreState` (a Pinia store call) at this same layer, so a store call from litegraph-core is an established pattern, not a new architectural seam.                                          | **Yes**                                                                                                                                 |
-| `src/services/litegraphService.ts` (~lines 527, 634)                                             | `node.title = nodeDef.display_name \|\| nodeDef.name` — assigns the **default** title on the node _type's constructor_ during node-type registration (`node` here is a class, not an instance). No `NodeId` exists to key on, and it is exactly the default this feature must remain free to reassert. | **No**                                                                                                                                  |
-| `src/extensions/core/widgetInputs.ts` (~line 673)                                                | Auto-creates a `PrimitiveNode` when a widget input is double-clicked and names it after the input it feeds (`node.title = input.name`). This is a system-chosen default for a brand-new node, not a user editing an existing node's identity.                                                          | **No**                                                                                                                                  |
+| Site                                                                                             | What it does                                                                                                                                                                                                                                                                                           | Sets the flag?                                                                                                                       |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts` (`handleNodeTitleUpdate`) | Vue-canvas node title editor commit. The exact path #18065's repro uses.                                                                                                                                                                                                                               | **Yes**                                                                                                                              |
+| `src/components/rightSidePanel/RightSidePanel.vue` (`handleTitleEdit`)                           | Right-side-panel title field. Operates on `selectedGroups.value[0] \|\| selectedNodes.value[0]` — the target can be an `LGraphGroup`, which has no `NodeId`/CRDT representation.                                                                                                                       | **Yes, guarded**: only when `selectedGroups.value[0]` is absent and `selectedNodes.value[0]` is the edited target, never for a group |
+| `src/components/breadcrumb/SubgraphBreadcrumb.vue` (`updateTitle`)                               | Renaming a subgraph via its breadcrumb tab applies the new name to **every** live `SubgraphNode` instance of that subgraph definition, via `forEachSubgraphNode`.                                                                                                                                      | **Yes**, once per instance visited by `forEachSubgraphNode`                                                                          |
+| `src/lib/litegraph/src/LGraphCanvas.ts` (`fUpdate`, case `'Title'`, ~line 8421)                  | The legacy (non-Vue) canvas's node-properties panel title field. `LGraph.ts` already imports `clearNodeOwnedStoreState` (a Pinia store call) at this same layer, so a store call from litegraph-core is an established pattern, not a new architectural seam.                                          | **Yes**                                                                                                                              |
+| `src/services/litegraphService.ts` (~lines 527, 634)                                             | `node.title = nodeDef.display_name \|\| nodeDef.name` — assigns the **default** title on the node _type's constructor_ during node-type registration (`node` here is a class, not an instance). No `NodeId` exists to key on, and it is exactly the default this feature must remain free to reassert. | **No**                                                                                                                               |
+| `src/extensions/core/widgetInputs.ts` (~line 673)                                                | Auto-creates a `PrimitiveNode` when a widget input is double-clicked and names it after the input it feeds (`node.title = input.name`). This is a system-chosen default for a brand-new node, not a user editing an existing node's identity.                                                          | **No**                                                                                                                               |
+
+**Adversarial-review correction on the `RightSidePanel.vue` guard.** The
+initial draft proposed `'graph' in target` (or an `isLGraphNode` check) to
+tell an `LGraphNode` apart from an `LGraphGroup` in `handleTitleEdit`.
+`LGraphGroup` also declares a public `graph` field, so that guard is always
+true and never actually excludes a group. The fix branches on which selection
+array actually held the edited target, mirroring the precedence
+`handleTitleEdit` already uses to pick it (group over node): resolve
+`group = selectedGroups.value[0]` and `node = selectedNodes.value[0]`
+separately, keep the existing `target = group || node` for the rename itself,
+and call `markCustomized` only in the `!group && node` branch — a group edit
+never sets the flag, a node edit always does.
 
 ### What sets it and when
 
@@ -198,20 +210,15 @@ where a full `GraphScope` is not otherwise in scope). No new event or
 composable is introduced for this — it is one extra call inside each existing
 handler.
 
-### What clears it: node deletion, via the existing removal choke point
+### What clears it: node deletion, via the existing removal choke point — plus one gap the review found
 
 `src/stores/clearNodeOwnedStoreState.ts` already exists precisely for this
 purpose: "clear per-node-id local store state when a node is removed,
 regardless of which removal path fired." It is called from exactly two
-places, both of which cover every node-removal path in the app:
+places:
 
 - `src/lib/litegraph/src/LGraph.ts`'s `fireNodeRemovalLifecycle()` — the
-  function `LGraph.remove()` (and its callers) always goes through. This
-  covers manual/UI deletion **and** the agent's CRDT-driven deletion: when
-  `agentNodeMaterializer.ts` detects a node that is no longer present in the
-  reconciled `nodeStore` records (an "orphan"), it calls
-  `graph.remove(orphan, { preserveCanonicalState: true })`, which still fires
-  this same lifecycle.
+  function `LGraph.remove()` (and its callers) always goes through.
 - `src/platform/nodeReplacement/useNodeReplacement.ts` — node-type
   replacement, which tears down and reconstructs the `LGraphNode` instance
   for the same id.
@@ -220,10 +227,79 @@ Adding `useNodeTitleCustomizationStore().clearNode(rootGraphId, nodeId)`
 inside `clearNodeOwnedStoreState()` (alongside the existing
 `widgetValueStore().clearNode(...)` and `previewExposureStore().clearHost(...)`
 calls) gives the new store the same cleanup guarantee `widgetValueStore`
-already has, with no new call sites and no risk of missing a removal path:
-node ids are reused after deletion (`nodeDataStore` bucket eviction, layout
-key reuse), so a stale entry is not just a leak — it would eventually flag an
-unrelated future node at the same id as "customized" for no reason.
+already has for **ordinary** removal (manual/UI deletion, and an agent
+deletion where nothing later reoccupies the id): node ids are reused after
+deletion (`nodeDataStore` bucket eviction, layout key reuse), so a stale entry
+is not just a leak — it would eventually flag an unrelated future node at the
+same id as "customized" for no reason.
+
+**Blocking gap found in adversarial review: this hook does not fire on an
+agent type-change reconcile.** `LGraph.ts`'s private `removeNode()` computes:
+
+```ts
+const successor =
+  options.preserveCanonicalState &&
+  this._nodes_by_id[node.id] !== node &&
+  this._nodes_by_id[node.id] != null
+    ? this._nodes_by_id[node.id]
+    : undefined
+// ...
+if (!successor) clearNodeOwnedStoreState(node)
+```
+
+`agentNodeMaterializer.ts`'s `materialize()` — the exact `replaceNode`/
+type-change path `prepareNode`'s `existing.type !== payload.type` guard
+targets — builds the new-type node, sets `node.id = state.id` (the same id as
+the stale node it is replacing), and calls `graph.add(node)`, which writes
+`this._nodes_by_id[node.id] = node` immediately. Only afterward does
+`reconcile()` remove the old orphan via
+`graph.remove(orphan, { preserveCanonicalState: true })`. By then the id slot
+already holds the new node, so `removeNode()`'s `successor` check is truthy
+for the orphan's removal and `clearNodeOwnedStoreState` is skipped entirely.
+The old node's customization flag for that id survives and wrongly protects
+whatever new, differently-typed node the agent has just materialized at the
+same id — precisely the case `prepareNode`'s `existing.type === payload.type`
+guard exists to rule out, undermined at the layer below it.
+
+This "successor" skip is deliberate and correct for the stores it was written
+for: `widgetValueStore` and `previewExposureStore` must **not** be cleared
+here, because by the time the orphan is removed, `graphMutations.ts`'s
+`commit()` has already deleted the old node's entries and registered the new
+node's own widgets under the same id (see `deleteNode()` →
+`widgetStore.clearNode(...)` and the `replaceNode` branch's
+`nodeStore.registerNode(...)` in `graphMutations.ts`); clearing again here
+would wipe the brand-new data instead of the stale data. (This is exactly
+what `agentNodeMaterializer.test.ts`'s existing
+`'runs stale-node lifecycle without clearing successor-owned state'` test
+guards.) The customization store is different in kind: nothing in
+`graphMutations.ts`'s commit path knows about it or re-marks a node
+customized on the agent's behalf (by design — see "The agent's own
+title-setting does not need to set the flag" below), so there is no
+freshly-written replacement value for a generic clear to protect. The correct
+fix is therefore **not** to touch `LGraph.ts`'s successor-skip logic (that
+would risk widening the blast radius onto stores that correctly rely on it
+staying narrow), but to clear the flag at the one place that actually knows a
+type-change replace is happening: `agentNodeMaterializer.ts` itself.
+
+**Decision: fix at the materializer (Option a), not at `LGraph.ts` (Option
+b).** `materialize()` already receives the stale node as its `orphan`
+parameter precisely when this id is being reused for a replacement (as
+opposed to a genuine delete, where no record shares the id and `orphan` is
+`undefined`). Right after `graph.add(node)` succeeds — so a failed add,
+whose rollback restores the orphan, does not prematurely clear a flag that
+still correctly protects the still-live old node — `materialize()` calls
+`useNodeTitleCustomizationStore().clearNode(scope.rootGraphId, state.id)`
+whenever `orphan` is defined. This is small, targeted, colocated with the
+exact code path that creates the ambiguity, and touches no logic any other
+store depends on. The alternative (Option b: change `removeNode()`'s
+successor-skip to still clear node-keyed store state even when a successor
+exists) was rejected: it would either clear `widgetValueStore` and
+`previewExposureStore` too (a real regression, undoing the "keep
+successor-owned state" guarantee `graphMutations.ts`'s replace path relies
+on) or require threading a "which stores are node-identity-scoped vs.
+id-slot-scoped" distinction into `LGraph.ts` — solving a one-store problem by
+adding a new concept to shared removal logic every other store must now
+reason about.
 
 ### Where the flag is read: `prepareNode` in `graphMutations.ts`
 
@@ -332,13 +408,73 @@ the agent can never flag its own writes and therefore can never end up
   the same live document has no way to learn "this title was deliberately
   set" and will see it reset on their own next reconcile-triggering event, if
   their client independently re-derives title from the doc.
+- **Accepted limitation, found in adversarial review: an undo/redo clears
+  every customization flag for the document, not just the undone rename.**
+  `changeTracker.ts`'s `undo()`/`redo()` both call `updateState()`, which
+  calls `app.loadGraphData(prevState, ...)` regardless of the `clean` flag
+  undo/redo pass; `loadGraphData` unconditionally calls
+  `this.rootGraph.configure(graphData)` with no `keep_old` argument, so
+  `configure()`'s `clearGraph` is always `true` there. `configure()` then
+  calls `this.clear()` → `resetAfterClear()`, which — for a root graph —
+  unconditionally mints a fresh id: `this.id = createUuidv4()`. Since
+  `nodeTitleCustomizationStore` is keyed by `RootGraphId` (per the
+  established `nodeDataStore`/`widgetValueStore` convention, to avoid
+  cross-document node-id collisions), every undo or redo action orphans the
+  entire customization map for that document under the old id: the map entry
+  under the old `RootGraphId` becomes unreachable (a harmless memory leak,
+  not a correctness bug — a later different document reuses a different
+  fresh id, so it can never read the orphaned entry back), and the document's
+  customization state, wanted or not, resets to empty under the new id. The
+  title text itself is unaffected (it is baked into the serialized snapshot
+  `configure()` restores), so #18065's repro — which does not undo/redo —
+  still passes; the failure mode is specifically "rename, then undo/redo
+  anything, then trigger an unrelated agent reconcile" silently losing the
+  rename's protection, with no error or warning.
+
+  **This ADR accepts this as a known, deliberate limitation rather than
+  fixing it**, for three reasons. First, `resetAfterClear()` cannot tell "the
+  same document, restored by undo/redo" apart from "a genuinely different
+  document being loaded" — both go through the identical generic
+  `LGraph.clear()`/`configure()` path with no caller context, so any fix
+  belongs at a call site that knows which case it is, not in `LGraph.ts`;
+  the only such call site is `changeTracker.ts`'s `updateState()`. Second,
+  the correct fix at that call site — capture the root graph id before
+  `loadGraphData`, and afterward migrate the old id's customized-node-id set
+  onto the new id — is a new `migrateRoot(oldId, newId)` store method plus a
+  new cross-file call site outside the write/clear pattern every other
+  consumer of this store follows, for a scenario the reported bug
+  (PM-1296/PM-1297) does not exercise. Third, and most importantly, this
+  entire feature (Option B) is already an explicitly session-local,
+  best-effort mitigation — it does not survive a reload and does not reach a
+  collaborator, both accepted above for the same reason: the durable,
+  fully-correct fix is Option A's CRDT title op, tracked separately. Adding
+  undo/redo-survival to a stopgap that is not expected to survive far more
+  common events (a reload) is disproportionate scope for this fix; a test
+  (`nodeTitleCustomizationStore.test.ts`) locks in this exact behavior so a
+  future regression — or a future decision to invest in surviving undo/redo
+  — is a deliberate, visible change rather than a silent one.
+
 - One more per-node store to keep in sync with node lifecycle, though it
   reuses the existing `clearNodeOwnedStoreState` hook rather than adding a
-  new one.
-- `RightSidePanel.vue`'s `handleTitleEdit` must special-case "is this an
-  `LGraphNode`, not an `LGraphGroup`" to call the new store correctly; this
-  is a small but real new branch in a call site that previously treated both
-  targets identically for `.title = ...` assignment.
+  new one for ordinary removal. The type-change/replace path needed one more,
+  narrowly-scoped hook of its own directly in `agentNodeMaterializer.ts` — see
+  "What clears it" above.
+- The store's own `clearGraph(rootGraphId)` action has no call site yet (nothing
+  needs it: id regeneration on `LGraph.clear()` already isolates a
+  genuinely new document from a prior one's flags, as described above, so
+  proactively clearing is not required for correctness, only for reclaiming
+  the otherwise-unreachable memory). It exists for API symmetry with
+  `nodeDataStore`/`widgetValueStore` and is covered by a direct unit test;
+  wiring it up is left for whoever next touches this store's memory
+  footprint, not blocking here.
+- `RightSidePanel.vue`'s `handleTitleEdit` must resolve which selection
+  (`selectedGroups.value[0]` vs. `selectedNodes.value[0]`) actually supplied
+  the edited target to call the new store correctly, rather than a type guard
+  on the merged value — `'graph' in target` does not work, because
+  `LGraphGroup` also declares a public `graph` field (adversarial-review
+  finding; see the write-site table above). This is a small but real new
+  branch in a call site that previously treated both targets identically for
+  `.title = ...` assignment.
 
 ## Alternatives Considered
 
@@ -360,6 +496,31 @@ the agent can never flag its own writes and therefore can never end up
   Given equivalent effort, B is a strict improvement.
 
 ## Notes
+
+### Adversarial review
+
+Before implementation, this ADR went through one adversarial review round,
+which found three blocking gaps and one should-fix, all addressed above and
+in the implementation:
+
+1. The `clearNodeOwnedStoreState` cleanup hook does not fire for a node
+   removed as part of an agent type-change reconcile, because `LGraph.ts`'s
+   successor-skip logic treats the new replacement node as the old node's
+   "successor." Fixed directly in `agentNodeMaterializer.ts` (Option a; see
+   "What clears it").
+2. Undo/redo regenerates the root graph id on every action, orphaning the
+   entire customization map for the document. Accepted and documented as a
+   known limitation, with a regression test locking in the exact behavior
+   (see "Consequences" → Negative).
+3. The originally proposed test only exercised the batch-only
+   `graphMutations.ts` layer, which never calls `clearNodeOwnedStoreState` —
+   it could not have caught gap 1. Replaced with tests that drive the real
+   `LGraph.remove()` and `agentNodeMaterializer.ts` reconcile paths (see
+   "Test plan").
+4. (Should-fix) `RightSidePanel.vue`'s proposed `'graph' in target` guard
+   cannot distinguish an `LGraphNode` from an `LGraphGroup`, since
+   `LGraphGroup` also declares a public `graph` field. Fixed by branching on
+   which selection array supplied the edited target instead.
 
 ### Related PRs
 
@@ -398,8 +559,12 @@ the agent can never flag its own writes and therefore can never end up
     `graphScopeOf(node.graph)` or the existing
     `graph.isRootGraph ? graph.id : graph.rootGraph.id` pattern).
 - `src/components/rightSidePanel/RightSidePanel.vue`
-  - `handleTitleEdit()`: same call, guarded to only fire when the edited
-    target is an `LGraphNode` (skip for `LGraphGroup`).
+  - `handleTitleEdit()`: resolve `group = selectedGroups.value[0]` and
+    `node = selectedNodes.value[0]` as separate bindings (`target = group ||
+node` still drives the rename itself), and call `markCustomized` only in
+    the `!group && node` branch. **Not** a type guard on the merged value —
+    see the adversarial-review correction above for why `'graph' in target`
+    is wrong.
 - `src/components/breadcrumb/SubgraphBreadcrumb.vue`
   - `updateTitle()`: call once per node visited inside the existing
     `forEachSubgraphNode(rootGraph, subgraph.id, (node) => { ... })`
@@ -409,46 +574,65 @@ the agent can never flag its own writes and therefore can never end up
     `node.graph` the same way `LGraph.ts` already does for
     `clearNodeOwnedStoreState`.
 - `src/stores/clearNodeOwnedStoreState.ts`
-  - Add `useNodeTitleCustomizationStore().clearNode(rootGraphId, nodeId)`
-    alongside the existing `widgetValueStore().clearNode(...)` call.
+  - Add `useNodeTitleCustomizationStore().clearNode(toRootGraphId(rootGraphId), nodeId)`
+    alongside the existing `widgetValueStore().clearNode(...)` call. Covers
+    ordinary removal only — see the next item for the type-change/replace gap.
+- `src/workbench/extensions/agent/crdt/agentNodeMaterializer.ts`
+  - `materialize()`: immediately after `graph.add(node)` succeeds, when
+    `orphan` is defined (a type-change replace, not a genuine delete), call
+    `useNodeTitleCustomizationStore().clearNode(scope.rootGraphId, state.id)`.
+    This is the gap-1 fix described above under "What clears it" — it is
+    **not** a change to `clearNodeOwnedStoreState()` or to `LGraph.ts`'s
+    successor-skip logic.
 - `docs/adr/README.md` — index entry for this ADR (done as part of this
   change).
 
 ### Test plan
 
 - **New unit tests, `src/stores/nodeTitleCustomizationStore.test.ts`**: the
-  store's four operations in isolation (see above).
+  store's four operations in isolation, the root-graph-scoping case (same
+  `NodeId` under two different `RootGraphId`s must be independently
+  customized/cleared), and a direct regression test for the accepted gap-2
+  limitation: mark a node customized on a real `LGraph`'s id, call
+  `graph.clear()` (the same call `configure()`'s `clearGraph` path makes,
+  which regenerates the root graph id), and assert the flag is unreachable
+  under the new id.
+- **New unit tests, `src/stores/clearNodeOwnedStoreState.test.ts`** (gap-3
+  fix — this is the "exercise the real removal path" coverage the review
+  found missing; a mutation of the batch-only `graphMutations.ts` layer,
+  which never calls `clearNodeOwnedStoreState`, cannot prove this hook
+  fires): construct a real `LGraph`, add a real `LGraphNode`, mark it
+  customized, and call the real `graph.remove(node)` (no
+  `preserveCanonicalState`, i.e. an ordinary removal with no successor) —
+  assert the flag clears. A second case proves a later node that reuses the
+  same freed id is not wrongly flagged as customized.
 - **Modified unit test,
   `src/workbench/extensions/agent/crdt/graphMutations.test.ts`**: the
   existing table-driven case
   `it.for([...])('titles a reconciled $type node with $title as $expected', ...)`
-  (around line 236) currently only varies `title`/`type`/`expected`. It needs
-  a `customized: boolean` column so it proves both branches of the new gate,
-  e.g.:
-  - `{ customized: false, title: undefined, type: 'ContractSampler', expected: 'Contract Sampler' }`
-    (unchanged existing behavior)
-  - `{ customized: true, title: undefined, type: 'ContractSampler', expected: 'Before' }`
-    (new: customized node keeps its incumbent title even though the payload
-    carries none)
-  - `{ customized: true, title: 'FromPayload', type: 'ContractSampler', expected: 'Before' }`
-    (new: customized node keeps its incumbent title even when the payload
-    _does_ carry one — the flag means "ignore the payload's title", not
-    merely "fill in when absent")
-  - `{ customized: true, title: undefined, type: 'DifferentType', expected: 'Different Type' or type default }`
-    (new: a type change resets title even when customized, proving the
-    `existing.type === payload.type` guard)
-    Each `customized: true` case calls
-    `useNodeTitleCustomizationStore().markCustomized(scope.rootGraphId, toNodeId(1))`
-    before the `batch.reconcileNode(...)` call, mirroring how `addNode` seeds
-    the "Before" title in the existing cases.
-    Add one more standalone test proving node deletion clears the flag: mark a
-    node customized, delete it via `batch.deleteNode(...)`, re-add a node at
-    the same id with no title, and assert it gets the type default rather than
-    the stale customized title (the memory-leak/reused-id scenario the cleanup
-    hook exists to prevent). This test belongs in `graphMutations.test.ts`
-    because it is really exercising `clearNodeOwnedStoreState`'s effect through
-    the same store the reconcile path reads; a note on the test should point
-    back to `clearNodeOwnedStoreState.ts` so the two aren't read as unrelated.
+  gained `customized: boolean` and `addType: string` columns (the latter so a
+  case can add under one type and reconcile under a different one, proving
+  the `existing.type === payload.type` guard) so it proves every branch of
+  the new gate: unmarked node resets as before; customized node keeps its
+  incumbent title with no payload title; customized node keeps its incumbent
+  title even when the payload _does_ carry one (the flag means "ignore the
+  payload's title", not merely "fill in when absent"); and a type change
+  resets the title even when customized.
+- **New/modified unit tests,
+  `src/workbench/extensions/agent/crdt/agentNodeMaterializer.test.ts`** (the
+  gap-1 regression, exercised through the real materializer/`LGraph`
+  integration point rather than the batch layer): mark a live agent-seeded
+  node customized, drive a real type-change replace through
+  `remoteMutations(scope).deleteNode(...)` + `.addNode(...)` with a
+  different registered type followed by `reconcileAgentAdapters(graph)` (the
+  same real `graph.add()` → `graph.remove(orphan, { preserveCanonicalState:
+true })` sequence production code runs), and assert the old id's
+  customized flag is cleared once the replacement is live. This test failed
+  before the `agentNodeMaterializer.ts` fix (confirmed red) and passes after
+  it (confirmed green), alongside the full existing suite in this file,
+  including the adjacent `'runs stale-node lifecycle without clearing
+successor-owned state'` test that proves the fix does not regress
+  `widgetValueStore`/`previewExposureStore`'s successor-skip behavior.
 - **Playwright**,
   `browser_tests/tests/agent/agentConversationReplay.spec.ts`: once the
   implementation above lands, the `title reset on reconcile` test's

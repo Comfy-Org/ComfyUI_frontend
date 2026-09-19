@@ -31,6 +31,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -443,6 +444,42 @@ describe('reconcileAgentAdapters', () => {
       expect(graph._nodes).not.toContain(stale)
       expect(stale?.graph).toBeNull()
       expect(graph.serialize().nodes).toHaveLength(1)
+    })
+
+    it('clears the old node id customized-title flag when a type-change reconcile replaces it', () => {
+      // Regression for ADR-CRDT-TITLE-0035 gap 1: `LGraph.removeNode()` skips
+      // `clearNodeOwnedStoreState` whenever the id slot already holds a
+      // successor (the new node `materialize()` already `graph.add()`ed
+      // before the orphan is removed with `preserveCanonicalState: true`).
+      // The customization flag must therefore be cleared here, directly by
+      // the materializer, rather than relying on that generic hook.
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))
+      expect(stale).toBeDefined()
+
+      const customizationStore = useNodeTitleCustomizationStore()
+      customizationStore.markCustomized(scope.rootGraphId, toNodeId(1))
+      expect(
+        customizationStore.isCustomized(scope.rootGraphId, toNodeId(1))
+      ).toBe(true)
+
+      const mutations = remoteMutations(scope)
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(nodePayload(1, 'widget-node'), {
+        ...REMOTE,
+        opId: 'op-1-retyped'
+      })
+
+      const materialized = reconcileAgentAdapters(graph)
+
+      expect(materialized).toEqual([toNodeId(1)])
+      const replacement = graph.getNodeById(toNodeId(1))
+      expect(replacement).not.toBe(stale)
+      expect(
+        customizationStore.isCustomized(scope.rootGraphId, toNodeId(1))
+      ).toBe(false)
     })
 
     it('runs stale-node lifecycle without clearing successor-owned state', () => {

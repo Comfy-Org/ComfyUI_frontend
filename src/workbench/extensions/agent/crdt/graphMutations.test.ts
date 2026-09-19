@@ -4,6 +4,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   graphScopeOf,
@@ -235,15 +236,66 @@ describe('graphMutations', () => {
   })
 
   it.for([
-    { title: undefined, type: 'ContractSampler', expected: 'Contract Sampler' },
-    { title: '', type: 'ContractSampler', expected: 'Contract Sampler' },
-    { title: 'Custom', type: 'ContractSampler', expected: 'Custom' },
-    { title: undefined, type: 'Unregistered', expected: 'Unregistered' }
-  ])(
-    'titles a reconciled $type node with $title as $expected',
-    ({ title, type, expected }) => {
+    {
+      customized: false,
+      addType: 'ContractSampler',
+      title: undefined,
+      type: 'ContractSampler',
+      expected: 'Contract Sampler'
+    },
+    {
+      customized: false,
+      addType: 'ContractSampler',
+      title: '',
+      type: 'ContractSampler',
+      expected: 'Contract Sampler'
+    },
+    {
+      customized: false,
+      addType: 'ContractSampler',
+      title: 'Custom',
+      type: 'ContractSampler',
+      expected: 'Custom'
+    },
+    {
+      customized: false,
+      addType: 'Unregistered',
+      title: undefined,
+      type: 'Unregistered',
+      expected: 'Unregistered'
+    },
+    {
+      customized: true,
+      addType: 'ContractSampler',
+      title: undefined,
+      type: 'ContractSampler',
+      expected: 'Before'
+    },
+    {
+      customized: true,
+      addType: 'ContractSampler',
+      title: 'FromPayload',
+      type: 'ContractSampler',
+      expected: 'Before'
+    },
+    {
+      customized: true,
+      addType: 'ContractSampler',
+      title: undefined,
+      type: 'DifferentType',
+      expected: 'DifferentType'
+    }
+  ] as const)(
+    'titles a reconciled $type node with $title as $expected (customized=$customized)',
+    ({ customized, addType, title, type, expected }) => {
       const graph = mutations()
-      graph.addNode({ ...node(1), type, title: 'Before' }, context)
+      graph.addNode({ ...node(1), type: addType, title: 'Before' }, context)
+      if (customized) {
+        useNodeTitleCustomizationStore().markCustomized(
+          scope.rootGraphId,
+          toNodeId(1)
+        )
+      }
 
       expect(
         graph.batch(context, (batch) => {

@@ -14,6 +14,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
@@ -91,6 +93,12 @@ function useNodeEventHandlersIndividual() {
 
     // Update the node title in LiteGraph for persistence
     node.title = newTitle
+    if (node.graph) {
+      useNodeTitleCustomizationStore().markCustomized(
+        graphScopeOf(node.graph).rootGraphId,
+        nodeId
+      )
+    }
 
     // If this is a subgraph node, sync the subgraph name for breadcrumb reactivity
     if (node.isSubgraphNode()) {

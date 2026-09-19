@@ -25,6 +25,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -8419,6 +8420,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               )
 
             node.title = value
+            if (node.graph) {
+              useNodeTitleCustomizationStore().markCustomized(
+                graphScopeOf(node.graph).rootGraphId,
+                node.id
+              )
+            }
             break
           case 'Mode': {
             if (typeof value !== 'string')

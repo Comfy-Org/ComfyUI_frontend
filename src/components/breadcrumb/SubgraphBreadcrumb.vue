@@ -78,8 +78,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
 const MIN_WIDTH = 28
@@ -137,6 +139,12 @@ const items = computed(() => {
 
       forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
         node.title = title
+        if (node.graph) {
+          useNodeTitleCustomizationStore().markCustomized(
+            graphScopeOf(node.graph).rootGraphId,
+            node.id
+          )
+        }
       })
     }
   }))

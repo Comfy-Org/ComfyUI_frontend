@@ -23,8 +23,10 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -332,14 +334,25 @@ function handleTitleEdit(newTitle: string) {
   const trimmedTitle = newTitle.trim()
   if (!trimmedTitle) return
 
-  const node = selectedGroups.value[0] || selectedNodes.value[0]
-  if (!node) return
+  const group = selectedGroups.value[0]
+  const node = selectedNodes.value[0]
+  const target = group || node
+  if (!target) return
 
-  if (trimmedTitle === node.title) return
+  if (trimmedTitle === target.title) return
 
-  node.title = trimmedTitle
+  target.title = trimmedTitle
   panelTitle.value = trimmedTitle
   canvasStore.canvas?.setDirty(true, true)
+
+  // A group has no NodeId/CRDT representation, so only a node's rename is
+  // tracked as a deliberate customization (ADR-CRDT-TITLE-0035).
+  if (!group && node?.graph) {
+    useNodeTitleCustomizationStore().markCustomized(
+      graphScopeOf(node.graph).rootGraphId,
+      node.id
+    )
+  }
 }
 
 function handleTitleCancel() {

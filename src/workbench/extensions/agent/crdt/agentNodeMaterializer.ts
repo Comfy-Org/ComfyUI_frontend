@@ -10,6 +10,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -327,6 +328,16 @@ function materialize(
     return rollback(cause)
   }
   if (!added) return rollback('LGraph.add returned no node')
+
+  // `orphan` is only set for a type-change replace: this id's slot already
+  // holds `node` by the time `orphan` is removed below, so `LGraph.remove()`
+  // treats `node` as `orphan`'s successor and skips `clearNodeOwnedStoreState`
+  // for it. Clear the customized-title flag here instead of relying on that
+  // generic hook, so it cannot wrongly protect the title of whatever
+  // different-typed node now occupies this id (ADR-CRDT-TITLE-0035).
+  if (orphan) {
+    useNodeTitleCustomizationStore().clearNode(scope.rootGraphId, state.id)
+  }
 
   try {
     node.configure(withNamedWidgetValues(serialised))

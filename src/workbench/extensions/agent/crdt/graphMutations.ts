@@ -6,6 +6,7 @@ import type {
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeTitleCustomizationStore } from '@/stores/nodeTitleCustomizationStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -235,11 +236,21 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  // A human-customized title survives an unrelated reconcile, but never
+  // across a type change: the id being reused for a different type is a
+  // different node in every sense that matters, and keeping the old type's
+  // title here would repeat the FE-2265 mechanism (see ADR-CRDT-TITLE-0035).
+  const keepCustomizedTitle =
+    existing !== undefined &&
+    existing.type === payload.type &&
+    useNodeTitleCustomizationStore().isCustomized(scope.rootGraphId, id)
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title: nodeTitle(payload.title, payload.type),
+    title: keepCustomizedTitle
+      ? existing.title
+      : nodeTitle(payload.title, payload.type),
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
