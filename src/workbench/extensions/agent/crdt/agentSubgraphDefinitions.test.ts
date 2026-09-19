@@ -4,7 +4,11 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode,
+  SerialisableLLink
+} from '@/lib/litegraph/src/types/serialisation'
 
 import {
   readSubgraphDefinitionIds,
@@ -18,19 +22,30 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function interiorNode(id: number, type = 'dummy', extra: object = {}) {
+function interiorNode(
+  id: number,
+  type = 'dummy',
+  extra: Partial<ISerialisedNode> = {}
+): ISerialisedNode {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: [],
     ...extra
   }
 }
 
-function interiorLink(id: number, origin: number, target: number) {
+function interiorLink(
+  id: number,
+  origin: number,
+  target: number
+): SerialisableLLink {
   return {
     id,
     origin_id: origin,
@@ -78,8 +93,8 @@ describe('readSubgraphDefinitions', () => {
 
   it('projects a definition back to the shape it was minted from', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(3), interiorNode(1)] as never,
-      links: [interiorLink(9, 3, 1), interiorLink(4, 1, 3)] as never
+      nodes: [interiorNode(3), interiorNode(1)],
+      links: [interiorLink(9, 3, 1), interiorLink(4, 1, 3)]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -89,12 +104,12 @@ describe('readSubgraphDefinitions', () => {
 
   it('keeps interior nodes and links in mint order, not key order', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(10), interiorNode(2), interiorNode(7)] as never,
+      nodes: [interiorNode(10), interiorNode(2), interiorNode(7)],
       links: [
         interiorLink(30, 10, 2),
         interiorLink(5, 2, 7),
         interiorLink(12, 7, 10)
-      ] as never
+      ]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -108,7 +123,7 @@ describe('readSubgraphDefinitions', () => {
       nodes: [
         interiorNode(1, 'widget-node', { widgets_values: [42, 20] }),
         interiorNode(2, 'unknown-node', { widgets_values: ['a', 'b'] })
-      ] as never
+      ]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -123,7 +138,7 @@ describe('readSubgraphDefinitions', () => {
 
   it('drops the op layer incarnation stamp from interior nodes', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     const stored = doc
@@ -138,9 +153,9 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('passes nested definitions through untouched', () => {
-    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const outer = createTestSubgraphData({
-      nodes: [interiorNode(2, inner.id)] as never,
+      nodes: [interiorNode(2, inner.id)],
       definitions: { subgraphs: [inner] }
     })
 
@@ -174,9 +189,9 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('projects top-level and nested definition ids without reading bodies', () => {
-    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const outer = createTestSubgraphData({
-      nodes: [interiorNode(2, inner.id)] as never,
+      nodes: [interiorNode(2, inner.id)],
       definitions: { subgraphs: [inner] }
     })
 
@@ -185,7 +200,7 @@ describe('readSubgraphDefinitions', () => {
 
   it('skips definition and node entries that are not records', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
@@ -252,8 +267,8 @@ describe('readSubgraphDefinitions', () => {
 
   it('reads a node named twice in the order register once', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(2)] as never,
-      links: [interiorLink(5, 1, 2)] as never
+      nodes: [interiorNode(1), interiorNode(2)],
+      links: [interiorLink(5, 1, 2)]
     })
     const doc = seed(definition)
     const stored = doc.getMap<Y.Map<unknown>>('definitions').get(definition.id)
@@ -268,7 +283,7 @@ describe('readSubgraphDefinitions', () => {
 
   it('skips a node whose widgets entry is not a map, as the package does', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(2)] as never
+      nodes: [interiorNode(1), interiorNode(2)]
     })
     const doc = seed(definition)
     doc.transact(() => {
@@ -292,7 +307,7 @@ describe('readSubgraphDefinitions', () => {
     // node on the canvas. `structuredClone` throws on any Y type; a doc host
     // folding in a raw update can put any of them into a value slot.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
@@ -320,7 +335,7 @@ describe('readSubgraphDefinitions', () => {
 
   it('drops a `__proto__` key instead of assigning through it', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
