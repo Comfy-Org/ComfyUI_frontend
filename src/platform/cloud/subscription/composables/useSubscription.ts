@@ -382,16 +382,17 @@ function useSubscriptionInternal() {
     return fetchPromise
   }
 
-  async function performFetchSubscriptionStatus(
-    ownerId: string | null,
-    workspaceId: string | null
-  ): Promise<BillingStatusResponse | null> {
-    if (!isCloud) return null
-
+  /**
+   * The status read on whichever rail is on, in the failure shape the legacy
+   * client threw in. The rail is taken before the read and held for it: a flag
+   * flip mid-read must not start on one client and publish through the other.
+   */
+  async function readSubscriptionStatus(): Promise<
+    BillingStatusResponse | undefined
+  > {
     const rail = useBillingReadRail()
-    let statusData: BillingStatusResponse | undefined
     try {
-      statusData = rail
+      return rail
         ? await readOnRail(rail.readStatus)
         : await workspaceApi.getBillingStatus()
     } catch (error) {
@@ -401,6 +402,15 @@ function useSubscriptionInternal() {
         })
       )
     }
+  }
+
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
+
+    const statusData = await readSubscriptionStatus()
     // A superseded read publishes nothing: the scope moved on under it.
     if (statusData === undefined) return null
     if (
