@@ -1,7 +1,6 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
@@ -164,15 +163,6 @@ export function createPromotedMultilineWidget(
 
   bindMultilineTextareaWidget(widget, element)
   useDomWidgetStore().registerWidget(widget)
-
-  // Without this, the widget keeps the private `_visibility` it was
-  // constructed with instead of the shared store entry `_promoteWidget`
-  // already registered under `widgetId`, so suppression changes made
-  // through the store (e.g. `suppression.byConnection`) never reach it.
-  // `setNodeId` would also re-register this DOM widget's own generic
-  // options/label/disabled over the entry `_resolveInputWidget` already
-  // populated from the real interior widget, so alias visibility only.
-  if (isNodeBindable(widget)) widget.aliasVisibility(widgetId)
 
   return widget
 }

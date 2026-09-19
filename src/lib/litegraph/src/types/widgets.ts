@@ -23,12 +23,6 @@ import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
   setNodeId(nodeId: NodeId): void
-  /**
-   * Aliases this widget's visibility to an already-registered
-   * `WidgetValueStore` entry, without registering or overwriting store
-   * state.
-   */
-  aliasVisibility(id: WidgetId): void
 }
 
 export interface IWidgetOptions<TValues = unknown> {

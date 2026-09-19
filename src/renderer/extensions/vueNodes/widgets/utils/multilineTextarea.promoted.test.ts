@@ -86,17 +86,6 @@ describe('createPromotedMultilineWidget', () => {
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('edited')
   })
 
-  it('aliases its visibility to the host widget store entry', () => {
-    const widget = promote()
-    expect(widget).toBeDefined()
-
-    const visibility = useWidgetValueStore().getWidgetVisibility(WIDGET_ID)
-    expect(visibility).toBeDefined()
-    visibility!.suppression.byConnection = true
-
-    expect(widget?.connectionSuppressed).toBe(true)
-  })
-
   it('falls back to the canvas projection for non-DOM widgets', () => {
     const widget = promote(fromAny({ name: 'prompt', type: 'number' }))
     expect(widget).toBeUndefined()
