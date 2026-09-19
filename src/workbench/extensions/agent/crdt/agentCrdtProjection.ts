@@ -10,7 +10,7 @@ import {
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
@@ -20,9 +20,10 @@ export class AgentCrdtProjection {
   constructor(
     mutations: MutationsForTarget,
     private readonly getGraph: () => MaterializableGraph | null,
-    private readonly getFollowerDoc: () => Y.Doc
+    private readonly getFollowerDoc: () => Y.Doc,
+    intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations)
+    this.adapter = new EcsFollowerAdapter(mutations, intent)
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
