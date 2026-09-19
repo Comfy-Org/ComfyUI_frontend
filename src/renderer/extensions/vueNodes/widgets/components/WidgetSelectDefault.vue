@@ -338,14 +338,21 @@ const selectedOption = computed(() =>
 
 const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
-const isInvalid = computed(
+const hasUnmatchedValue = computed(
   () =>
     modelValue.value != null && modelValue.value !== '' && !selectedOption.value
 )
 
+// While the options list is still empty (loading, or an agent-created
+// widget's placeholder), it cannot judge the value one way or the other, so
+// only ring once there is a real list to compare against.
+const isInvalid = computed(
+  () => hasUnmatchedValue.value && normalizedOptions.value.length > 0
+)
+
 const selectedLabel = computed(() => {
   if (selectedOption.value) return selectedOption.value.label
-  if (isInvalid.value) return String(modelValue.value)
+  if (hasUnmatchedValue.value) return String(modelValue.value)
   return ''
 })
 

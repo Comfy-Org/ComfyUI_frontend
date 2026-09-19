@@ -420,7 +420,7 @@ describe('WidgetSelectDefault', () => {
     // (widgetValueStore placeholder `options: {}`), and a remote combo starts
     // with `values: []` until its inventory loads. Neither list can judge the
     // value, so neither should paint the stale-value ring.
-    it.fails.for([
+    it.for([
       { name: 'no values key', values: undefined },
       { name: 'an empty list', values: [] }
     ])(
