@@ -442,7 +442,8 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
-      ChangeTracker.canvasTracker === workflow.changeTracker &&
+      workflow.changeTracker !== null &&
+      ChangeTracker.isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
       return Promise.resolve(true)
@@ -468,7 +469,6 @@ export const useWorkflowService = () => {
           return false
         }
 
-        ChangeTracker.invalidateCanvasTracker()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
@@ -748,7 +748,7 @@ export const useWorkflowService = () => {
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
-      ChangeTracker.canvasTracker = loadedWorkflow.changeTracker
+      ChangeTracker.bindCanvasTracker(loadedWorkflow.changeTracker)
       return loadedWorkflow
     }
 
