@@ -24,7 +24,7 @@ const visibleState = computed(() => {
   const state = activity.state
   if (
     state.phase === 'idle' ||
-    !canvas ||
+    !canvas?.graph ||
     String(canvas.graph.id) !== state.rootGraphId
   )
     return null

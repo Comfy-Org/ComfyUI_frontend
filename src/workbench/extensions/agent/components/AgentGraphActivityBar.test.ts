@@ -19,10 +19,10 @@ import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivitySt
 const graph = fromPartial<LGraph>({ id: 'graph-1' })
 const node = fromPartial<LGraphNode>({
   id: toNodeId(1),
-  graph,
   pos: [10, 20],
   size: [100, 80]
 })
+node.graph = graph
 const canvas = fromPartial<LGraphCanvas>({
   graph,
   canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) },
