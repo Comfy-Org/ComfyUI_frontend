@@ -47,6 +47,19 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
+  test('keeps every pagination bar inside the banner on a phone', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!bars || !card_) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
+    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+  })
+
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
