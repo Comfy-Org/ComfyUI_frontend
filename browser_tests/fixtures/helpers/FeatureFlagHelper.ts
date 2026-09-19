@@ -11,18 +11,10 @@ export class FeatureFlagHelper {
    * `useFeatureFlags.ts`). Must be called before `comfyPage.setup()` /
    * `page.goto()`.
    *
-   * The previous implementation wrote an `ff:`-prefixed localStorage entry
-   * via `addInitScript`, which `devFeatureFlagOverride.ts` reads. That read
-   * is gated on `import.meta.env.DEV`, which is compiled to `false` in the
-   * production build CI serves for e2e, so the entry was seeded correctly
-   * but never read there — the bug was never seeding timing, it was that
-   * the whole read path is dead code outside a dev server.
-   *
-   * `remoteConfig` has no such gate, so mocking its source is what actually
-   * reaches `useFeatureFlags()`'s getters on CI. This only affects flags
-   * whose getter falls back to `remoteConfig.value` (most of them); one
-   * resolved purely from the server's WS `feature_flags` handshake needs
-   * `seedServerFlags()`/`setServerFlagsPersistent()` instead.
+   * Only reaches flags whose getter falls back to `remoteConfig.value`
+   * (most of them); one resolved purely from the server's WS
+   * `feature_flags` handshake needs `seedServerFlags()`/
+   * `setServerFlagsPersistent()` instead.
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
     await this.mockServerFeatures(flags)
