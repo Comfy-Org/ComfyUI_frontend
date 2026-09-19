@@ -21,14 +21,12 @@ export function createPositionBounds(
     extents.push([x, y, x + width, y + height])
   }
   if (extents.length === 0) return null
-  const [minX, minY, maxX, maxY] = extents.reduce(
-    (bounds, extent) => [
-      Math.min(bounds[0], extent[0]),
-      Math.min(bounds[1], extent[1]),
-      Math.max(bounds[2], extent[2]),
-      Math.max(bounds[3], extent[3])
-    ]
-  )
+  const [minX, minY, maxX, maxY] = extents.reduce((bounds, extent) => [
+    Math.min(bounds[0], extent[0]),
+    Math.min(bounds[1], extent[1]),
+    Math.max(bounds[2], extent[2]),
+    Math.max(bounds[3], extent[3])
+  ])
   return [
     minX - padding,
     minY - padding,

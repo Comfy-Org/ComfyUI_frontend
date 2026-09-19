@@ -291,7 +291,10 @@ export class LayoutFollowerBridge extends EventTarget {
     // onto the canvas by a v1 reader.
     if (!this.isReadableUpdate(update)) return
 
-    const classifiedUpdate: ClassifiedDocUpdate = { ...update, catchUp: isCatchUp }
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
     this.dispatchEvent(
       new CustomEvent('doc_update', {
         detail: classifiedUpdate
