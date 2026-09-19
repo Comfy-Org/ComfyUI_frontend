@@ -21,27 +21,52 @@ vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: () => ({
-      allOutputs: [
-        {
-          filename: 'a.png',
-          subfolder: '',
-          type: 'output',
-          display_name: 'Display A'
-        }
-      ]
-    })
-  })
-)
-
 const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
   tags: [],
-  preview_url: '/preview.png'
+  preview_url: '/preview.png',
+  user_metadata: {
+    jobId: 'job-a',
+    subfolder: '',
+    allOutputs: [
+      {
+        filename: 'a.png',
+        subfolder: '',
+        type: 'output',
+        display_name: 'Display A'
+      }
+    ]
+  }
+})
+
+const jobId = '22222222-2222-4222-a222-222222222222'
+const videoAssetId = '11111111-1111-4111-a111-111111111111'
+
+const jobGroupedVideo: AssetItem = fromPartial({
+  id: jobId,
+  name: 'agent_generated_video.mp4',
+  tags: ['output'],
+  user_metadata: {
+    jobId,
+    subfolder: '',
+    assetId: videoAssetId,
+    allOutputs: [
+      {
+        filename: 'agent_generated_video.mp4',
+        subfolder: '',
+        type: 'output',
+        assetId: videoAssetId
+      }
+    ]
+  }
+})
+
+const modelWithThumbnail: AssetItem = fromPartial({
+  id: 'model',
+  name: 'model.glb',
+  tags: ['output'],
+  preview_id: 'model-thumbnail'
 })
 
 function renderCard(
@@ -69,7 +94,7 @@ function renderCard(
 
 function dispatchDragStart(
   container: Element,
-  init: { ctrlKey?: boolean; metaKey?: boolean } = {}
+  init: { ctrlKey?: boolean; metaKey?: boolean; assetId?: string } = {}
 ) {
   const dataTransfer = new DataTransfer()
   const add = vi.spyOn(dataTransfer.items, 'add').mockImplementation(() => null)
@@ -80,8 +105,9 @@ function dispatchDragStart(
     ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
+  const cardSelector = `[data-asset-id="${init.assetId ?? 'a'}"]`
   // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
-  container.querySelector('[data-asset-id="a"]')!.dispatchEvent(event)
+  container.querySelector(cardSelector)!.dispatchEvent(event)
   return { event, add }
 }
 
@@ -130,17 +156,33 @@ describe('MediaAssetCard', () => {
       )
     })
 
-    it('offers the preview URL as a uri-list flavour for external drop targets', () => {
-      const { container } = renderCard()
+    it.for([
+      {
+        kind: 'an image with a server preview',
+        item: asset,
+        fileUrl: 'http://localhost:3000/api/assets/a/content'
+      },
+      {
+        kind: 'a job-grouped video with no preview',
+        item: jobGroupedVideo,
+        fileUrl: `http://localhost:3000/api/assets/${videoAssetId}/content`
+      },
+      {
+        kind: 'a 3D model with a persisted thumbnail',
+        item: modelWithThumbnail,
+        fileUrl: 'http://localhost:3000/api/assets/model/content'
+      }
+    ])(
+      'offers the file URL, not the preview, as the uri-list flavour for $kind',
+      ({ item, fileUrl }) => {
+        vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+        const { container } = renderCard({ asset: item })
 
-      const { add } = dispatchDragStart(container)
+        const { add } = dispatchDragStart(container, { assetId: item.id })
 
-      expect(add).toHaveBeenNthCalledWith(
-        2,
-        'http://localhost:3000/api/preview.png',
-        'text/uri-list'
-      )
-    })
+        expect(add).toHaveBeenCalledWith(fileUrl, 'text/uri-list')
+      }
+    )
   })
 
   it('keeps download and more actions independent from selection', async () => {

@@ -143,6 +143,28 @@ describe('eventUtils', () => {
       expect(actual).toHaveLength(1)
     })
 
+    it('returns no file when the URI answers with an error status', async () => {
+      const uri = 'https://example.com/api/assets/missing/content'
+      fetchSpy.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: 'ASSET_NOT_FOUND',
+            message: 'Asset not found'
+          }),
+          { status: 404, headers: { 'content-type': 'application/json' } }
+        )
+      )
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual).toEqual([])
+    })
+
     it('should return empty array when URI fetch fails', async () => {
       const uri = 'https://example.com/api/view?filename=test.png&type=input'
       fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'))

@@ -65,16 +65,27 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
   test('dragging the video asset onto the canvas carries its workflow metadata', async ({
     comfyPage
   }) => {
-    // The real current behavior for agent-generated video: no embedded
-    // workflow metadata (this may be a backend pipeline gap rather than a
-    // frontend one; this test only pins today's observable behavior).
-    // `plain_video.mp4` is the same "no embedded workflow" fixture the agent
-    // chat panel mocks already use.
+    // The card is grouped per job, so its `id` is the job id and the file's
+    // own id lives in `user_metadata.assetId`. Only the file id serves the
+    // MP4 (with an embedded workflow); every other content URL, including
+    // the job id the drag used to publish, gets the backend's 404 body.
     await comfyPage.page.route(
-      '**/api/assets/*/content',
+      /\/api\/assets\/[^/]+\/content(\?.*)?$/,
       async (route) =>
         await route.fulfill({
-          path: assetPath('plain_video.mp4'),
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'ASSET_NOT_FOUND',
+            message: 'Asset not found'
+          })
+        })
+    )
+    await comfyPage.page.route(
+      new RegExp(`/api/assets/${AGENT_VIDEO_ASSET.id}/content(\\?.*)?$`),
+      async (route) =>
+        await route.fulfill({
+          path: assetPath('workflowInMedia/workflow.mp4'),
           contentType: 'video/mp4'
         })
     )
