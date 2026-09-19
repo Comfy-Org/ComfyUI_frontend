@@ -6,6 +6,8 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {
@@ -74,6 +76,26 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  // The agent-CRDT follower writes with widgetValueStore.setValue(), which
+  // lands on the record the selector's value getter reads but never runs its
+  // setter, so the option widgets the new selection reveals are not built.
+  test.fails('a store write to the selector rebuilds its option widgets like a direct write does', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    const selector = node.widgets[0]
+    expect(node.widgets.length).toBe(2)
+
+    const written = useWidgetValueStore().setValue(
+      widgetId(graph.rootGraph.id, node.id, selector.name),
+      '1'
+    )
+
+    expect(written).toBe(true)
+    expect(selector.value).toBe('1')
+    expect(node.widgets.length).toBe(3)
   })
   test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
     const graph = new LGraph()

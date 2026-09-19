@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
@@ -260,10 +260,26 @@ export function assertOpsApply(conversation: AgentConversation): HostDoc {
   return host
 }
 
-export function loadAgentConversation(caseId: string): AgentConversation {
-  const file = fileURLToPath(
-    new URL(`./conversations/${caseId}.json`, import.meta.url)
+// `conversations/` holds recordings, the only fixtures the replay suite lists.
+// `repros/` holds synthesized bug repros whose ops were minted with comfy-cli
+// against the pinned catalog; a spec names one explicitly and it never enters
+// the replay suite.
+const CONVERSATION_DIRS = ['conversations', 'repros'] as const
+
+function conversationFile(caseId: string): string {
+  for (const dir of CONVERSATION_DIRS) {
+    const file = fileURLToPath(
+      new URL(`./${dir}/${caseId}.json`, import.meta.url)
+    )
+    if (existsSync(file)) return file
+  }
+  throw new Error(
+    `no agent conversation fixture named ${caseId} under ${CONVERSATION_DIRS.join(' or ')}`
   )
+}
+
+export function loadAgentConversation(caseId: string): AgentConversation {
+  const file = conversationFile(caseId)
   const conversation = zAgentConversation.parse(
     JSON.parse(readFileSync(file, 'utf-8'))
   )
