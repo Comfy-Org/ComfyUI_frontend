@@ -25,6 +25,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -590,6 +591,16 @@ class AgentConversationHarness {
   // Every subscribe, unsubscribe and human-ops frame the follower has sent, in order.
   docFrames(): readonly ClientDocFrame[] {
     return this.hostSocket.docFrames()
+  }
+
+  // Node ids the host document holds right now.
+  hostNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes)
+  }
+
+  // Applies ops on the host side, as the agent would mid-turn, and pushes the update.
+  applyHostOps(ops: RecordedGraphOperation[]): void {
+    this.hostSocket.send(this.host.apply(ops))
   }
 }
 

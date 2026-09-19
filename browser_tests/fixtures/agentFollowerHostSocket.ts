@@ -13,14 +13,23 @@ const SUBSCRIBE_TIMEOUT = 15_000
 export interface ClientDocFrame {
   type: 'doc_subscribe' | 'doc_unsubscribe' | 'doc_ops'
   workflowId: string
-  ops: { op: string }[]
+  ops: { op: string; node_id?: string | number }[]
 }
 
 const zClientDocFrame = z.object({
   type: z.enum(['doc_subscribe', 'doc_unsubscribe', 'doc_ops']),
   data: z.object({
     workflow_id: z.string(),
-    ops: z.array(z.object({ op: z.string() }).passthrough()).default([])
+    ops: z
+      .array(
+        z
+          .object({
+            op: z.string(),
+            node_id: z.union([z.string(), z.number()]).optional()
+          })
+          .passthrough()
+      )
+      .default([])
   })
 })
 

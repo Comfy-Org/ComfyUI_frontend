@@ -39,6 +39,21 @@ describe('agentWorkflowTabBindingStore', () => {
     }
   )
 
+  it('does not adopt a persisted scratch binding for a blank tab that was not restored from a draft', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ 'wf-stale': 'workflows/Unsaved Workflow.json' })
+    )
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const blank = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [blank.path] })
+    await nextTick()
+
+    expect(blank.path).toBe('workflows/Unsaved Workflow.json')
+    expect(bindings.matchesWorkflow('wf-stale', blank)).toBe(false)
+  })
+
   it('releases a closed temporary tab binding before its path is reused', async () => {
     const workflows = useWorkflowStore()
     const first = workflows.createTemporary()

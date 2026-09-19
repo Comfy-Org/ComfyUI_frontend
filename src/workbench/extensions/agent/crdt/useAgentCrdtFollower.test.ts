@@ -6,6 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -43,7 +44,7 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn((_workflowId: string, _tab: string, _ops: Op[]) => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -1035,7 +1036,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('sends minted human operations through the doc client', () => {
+  it('sends minted human operations through the doc client', async () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1059,6 +1060,7 @@ describe('useAgentCrdtFollower', () => {
         removed_links: []
       }
     ])
+    await Promise.resolve()
 
     expect(clientState.sendOps).toHaveBeenCalledWith(
       'wf-1',
@@ -1088,6 +1090,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // The real bridge clears its send reality on doc_subscribed{ok:false}
@@ -1125,6 +1128,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // Mirror the real bridge's onDocSubscribed: it clears send reality
@@ -1168,6 +1172,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     workflowId.value = 'wf-2'
@@ -1180,6 +1185,101 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
     expect(settledStates).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  function mountWithHumanOps(): {
+    enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
+    workflowId: Ref<string | null>
+    unmount: () => void
+  } {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    return { enqueue, workflowId, unmount }
+  }
+
+  async function settledHumanOpStates(): Promise<string[]> {
+    const { recordDevEvent } = await import('./devPanelLog')
+    return vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+  }
+
+  it('sends eight same-tick human deletes as one doc_ops batch in node order', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    for (let id = 1; id <= 8; id++)
+      enqueue([{ op: 'delete_node', node_id: String(id), removed_links: [] }])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+    expect(ops.map((op) => ('node_id' in op ? op.node_id : undefined))).toEqual(
+      ['1', '2', '3', '4', '5', '6', '7', '8']
+    )
+    unmount()
+  })
+
+  it('a doc_reset for the bound doc settles the in-flight and queued human batches undeliverable at once', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    // No timer advance: the lineage break itself is the abort signal, and the
+    // queued batch must not ride into the replacement document either.
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(await settledHumanOpStates()).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    unmount()
+  })
+
+  it('unbinding with queued human batches settles every one undeliverable and sends nothing more', async () => {
+    vi.useFakeTimers()
+    const { enqueue, workflowId, unmount } = mountWithHumanOps()
+    bridge().unsubscribe.mockImplementation(() => {
+      bridge().subscribedWorkflowId = null
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '3', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    workflowId.value = null
+    await nextTick()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(await settledHumanOpStates()).toEqual([
+      'undeliverable',
+      'undeliverable',
+      'undeliverable'
+    ])
     unmount()
   })
 
