@@ -246,7 +246,9 @@ export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
   // Enter the awaiting state before init can throw, so the gate holds the
   // loader (not the public page) through the whole fetch and the timeout is
-  // always armed the moment visibility becomes unresolved.
+  // always armed the moment visibility becomes unresolved. Under
+  // PRODUCTION_DISABLED there is nothing to await: the call resolves at once
+  // and no loader or timeout is involved.
   if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
     posthog.init(POSTHOG_KEY, {

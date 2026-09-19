@@ -194,8 +194,9 @@ with the refreshed snapshot.
 > added `PRODUCTION_DISABLED` to `src/scripts/posthog.ts`, not by raising the
 > flag — the constant, this banner and the deploy-env test table have to come
 > back together. Production hides the header account menu with everything
-> else, so a signed-in customer cannot see or spend credits while this is in
-> place; their balances are untouched server-side. The rest of this section
+> else, so a signed-in customer can neither see or spend credits nor sign out
+> from the site while this is in place; balances are untouched server-side and
+> existing sessions persist until they expire. The rest of this section
 > describes the flag-driven behaviour that resumes once the revert lands.
 
 Models is included in production and preview builds by default. The boolean
@@ -263,9 +264,10 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 ```
 
 `PUBLIC_WORKSHOP_ENABLED` is honored only by a local `astro dev` command. Built
-previews use PostHog; production ignores it while the kill above is in place.
-This is a frontend visibility control; the APIs continue to enforce
-authentication and billing.
+previews use PostHog; production ignores the `workshop-enabled` flag while the
+kill above is in place, though `workshop-auth` and `workshop-signup-turnstile`
+still apply there. This is a frontend visibility control; the APIs continue to
+enforce authentication and billing.
 
 ### Models analytics
 
