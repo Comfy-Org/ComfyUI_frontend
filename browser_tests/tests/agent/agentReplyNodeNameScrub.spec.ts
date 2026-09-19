@@ -8,34 +8,29 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 // PM-1323: the cloud agent's reply-scrubbing step (services/agent/internal/loop/
-// scrub.go, ruleNodeClasses) swaps a known node CLASS NAME for the literal word
-// "node" with no awareness of the surrounding text, and ships the garbled result
-// to the browser over the same agent_message_delta/agent_message_done events this
-// spec injects. The Go-side regression (TestScrubNodeClassCompoundingBugPM1323 in
-// Comfy-Org/cloud) proves the CAUSE at the scrub function itself; this spec proves
-// the CONSEQUENCE — that the garbled text the server already produced actually
-// reaches and renders in the real chat panel, because the panel here renders
-// whatever text the mocked API sends, unmodified. Each case is a `test.fail()`:
-// the panel currently DOES show the garbled string, when a fixed backend would
-// instead send (and the panel would show) the sane text on the `want` side.
+// scrub.go, ruleNodeClasses) used to swap a known node CLASS NAME for the literal
+// word "node" with no awareness of the surrounding text, garbling the reply
+// before it ever reached the browser. The Go-side regression
+// (TestScrubNodeClassCompoundingBugPM1323 in Comfy-Org/cloud) proves the fix at
+// the scrub function itself; this spec proves the CONSEQUENCE side — that the
+// sane text a fixed backend now sends over agent_message_delta/agent_message_done
+// reaches and renders in the real chat panel verbatim, because the panel does no
+// scrubbing of its own and simply renders whatever the mocked API delivers.
 const TURN_ID = '9c9c6c33-3f0e-4d2e-8e9d-5f2b5b7a3f01'
 const THREAD_ID = 'b6e9d9e1-9f3a-4a7b-9a7f-2d0f1a6c3e02'
 
-const cases: { name: string; garbled: string; want: string }[] = [
+const cases: { name: string; text: string }[] = [
   {
     name: 'class name immediately followed by the word "node"',
-    garbled: 'the node node is on the canvas',
-    want: 'the node is on the canvas'
+    text: 'the node is on the canvas'
   },
   {
     name: 'sole class-name identifier next to a bare id citation',
-    garbled: 'node (#1364808305178364)',
-    want: 'KSampler (#1364808305178364)'
+    text: 'KSampler (#1364808305178364)'
   },
   {
     name: 'class name cited in parens right after its display name',
-    garbled: 'Load Checkpoint (node)',
-    want: 'Load Checkpoint'
+    text: 'Load Checkpoint'
   }
 ]
 
@@ -46,13 +41,13 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
 }
 
 test.describe(
-  'Agent chat panel renders PM-1323 scrub garbling verbatim',
+  'Agent chat panel renders the fixed PM-1323 scrub output verbatim',
   { tag: ['@cloud', '@agent'] },
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    for (const { name, garbled, want } of cases) {
-      test(`reply text reaching the panel is garbled: ${name}`, async ({
+    for (const { name, text } of cases) {
+      test(`reply text reaching the panel is sane: ${name}`, async ({
         agentPanel,
         getWebSocket
       }) => {
@@ -71,12 +66,13 @@ test.describe(
         const ws = await getWebSocket()
         await sendButton.click()
 
-        // This is the already-scrubbed text a fixed cloud agent would send: the
-        // server, not the frontend, is responsible for not garbling it, and the
-        // panel here just renders whatever the mocked API delivers.
+        // This is the scrubbed text the fixed cloud agent sends (see
+        // scrubNodeClasses in Comfy-Org/cloud's scrub.go): the server, not the
+        // frontend, is responsible for not garbling it, and the panel here just
+        // renders whatever the mocked API delivers.
         pushEvent(ws, {
           type: 'agent_message_delta',
-          data: { delta: garbled, message_id: TURN_ID, thread_id: THREAD_ID }
+          data: { delta: text, message_id: TURN_ID, thread_id: THREAD_ID }
         })
         pushEvent(ws, {
           type: 'agent_message_done',
@@ -93,10 +89,7 @@ test.describe(
           }
         })
 
-        // Today the panel shows the garbled text unchanged, not the sane text a
-        // fixed scrub would have sent.
-        test.fail()
-        await expect(panel.getByText(want, { exact: true })).toBeVisible()
+        await expect(panel.getByText(text, { exact: true })).toBeVisible()
       })
     }
   }
