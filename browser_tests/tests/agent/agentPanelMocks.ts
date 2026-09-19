@@ -148,6 +148,7 @@ async function mockAgentBoot(
     agentConsentSave,
     agentConsentWrites,
     agentFlagEnabled,
+    agentObjectInfo,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     crdtDebugEnabled,
@@ -201,6 +202,7 @@ async function mockAgentBoot(
 
   await mockCloudBootRoutes(page, {
     features: agentFeatures(agentFlagEnabled),
+    objectInfo: agentObjectInfo,
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false
@@ -361,6 +363,7 @@ type AgentFixtures = {
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
+  agentObjectInfo: 'server' | undefined
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -377,6 +380,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
+  agentObjectInfo: [undefined, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
@@ -389,6 +393,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
+      agentObjectInfo,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
@@ -402,6 +407,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
+      agentObjectInfo,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
