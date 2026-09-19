@@ -5,7 +5,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { TURN_ID, THREAD_ID, agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 // PM-1323: the cloud agent's reply-scrubbing step (services/agent/internal/loop/
 // scrub.go, ruleNodeClasses) used to swap a known node CLASS NAME for the literal
@@ -16,8 +16,6 @@ import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 // sane text a fixed backend now sends over agent_message_delta/agent_message_done
 // reaches and renders in the real chat panel verbatim, because the panel does no
 // scrubbing of its own and simply renders whatever the mocked API delivers.
-const TURN_ID = '9c9c6c33-3f0e-4d2e-8e9d-5f2b5b7a3f01'
-const THREAD_ID = 'b6e9d9e1-9f3a-4a7b-9a7f-2d0f1a6c3e02'
 
 const cases: { name: string; text: string }[] = [
   {
