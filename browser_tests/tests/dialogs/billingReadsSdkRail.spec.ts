@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
 import type {
   BillingEventsResponse,
   BillingPlansResponse,
@@ -35,13 +35,20 @@ import {
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-/** The six routes `useBillingReadRail` serves, in the order they are listed. */
+/**
+ * The reads Settings ▸ Plan & Credits drives: four on the Credits tab and the
+ * billing events on Activity.
+ *
+ * The sixth reader on the rail, saved payment methods, is not read by this
+ * panel — the top-up dialog reads it for its saved-card note, so it belongs to
+ * `topUpSdkRail.spec.ts` rather than here. Asserting it from this flow would
+ * mean driving a dialog this spec has no other reason to open.
+ */
 const READ_ROUTES = [
   '/api/billing/status',
   '/api/billing/balance',
   '/api/billing/plans',
   '/api/billing/capabilities',
-  '/api/billing/payment-methods',
   '/api/billing/events'
 ] as const
 
@@ -257,6 +264,16 @@ async function openPlanAndCredits(page: Page) {
   return dialog.getByRole('main')
 }
 
+/**
+ * The usage log lives behind the panel's Activity tab; the Credits tab it opens
+ * on never mounts `UsageLogsTable`, so the events read does not go out until
+ * this click.
+ */
+async function openActivity(content: Locator) {
+  await content.getByRole('button', { name: 'Activity' }).click()
+  return content
+}
+
 /** Which transport issued the request, and so which rail served it. */
 function transport(request: Request): string {
   return request.resourceType()
@@ -296,8 +313,13 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
 
     await expect(content.getByText('Total credits')).toBeVisible()
     await expect(content.getByText('12,660')).toBeVisible()
+
+    await openActivity(content)
+
     await expect(content.getByText('node-on-page-1')).toBeVisible()
-    await expect.poll(() => routesRead(routes.reads).size).toBe(6)
+    await expect
+      .poll(() => routesRead(routes.reads).size)
+      .toBe(READ_ROUTES.length)
     expect(routes.reads.map(transport)).not.toContain('fetch')
   })
 
@@ -315,8 +337,13 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     // a rendered number.
     await expect(content.getByText('Total credits')).toBeVisible()
     await expect(content.getByText('12,660')).toBeVisible()
+
+    await openActivity(content)
+
     await expect(content.getByText('node-on-page-1')).toBeVisible()
-    await expect.poll(() => routesRead(routes.reads).size).toBe(6)
+    await expect
+      .poll(() => routesRead(routes.reads).size)
+      .toBe(READ_ROUTES.length)
     // One read going out on the legacy client would mean a surface reading a
     // backend the rail did not settle.
     expect(routes.reads.map(transport)).not.toContain('xhr')
@@ -351,7 +378,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     await enableReadRail(page)
     await bootApp(page)
 
-    const content = await openPlanAndCredits(page)
+    const content = await openActivity(await openPlanAndCredits(page))
     await expect(content.getByText('node-on-page-1')).toBeVisible()
 
     await content.getByRole('button', { name: 'Next Page' }).click()
