@@ -23,7 +23,7 @@ test.describe('Qwen Image 2.1 announcement page @smoke', () => {
     await expect(logoMask.locator('img')).toHaveCount(0)
     await expect(
       logoMask.getByTestId('model-launch-hero-logo-fallback')
-    ).toBeAttached()
+    ).toBeVisible()
   })
 
   test('keeps the flat logo for visitors who prefer reduced motion', async ({
