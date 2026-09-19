@@ -1,5 +1,5 @@
 <template>
-  <div class="w-64 pt-1">
+  <div class="w-80 pt-1">
     <div class="py-2">
       <span class="text-md pl-3 font-semibold text-neutral-500">
         {{ $t('manager.selectVersion') }}
@@ -22,16 +22,21 @@
     </div>
     <Listbox
       v-else
-      v-model="selectedVersion"
+      :model-value="selectedVersion"
       option-label="label"
       option-value="value"
-      option-disabled="isInstalled"
+      option-disabled="isDisabled"
       :options="processedVersionOptions"
       :highlight-on-select="false"
       class="max-h-[50vh] w-full rounded-md border-none shadow-none"
       :pt="{
         listContainer: { class: 'scrollbar-hide' }
       }"
+      @update:model-value="
+        (version: string | null) => {
+          if (version) selectedVersion = version
+        }
+      "
     >
       <template #option="slotProps">
         <div class="flex w-full items-center justify-between p-1">
@@ -47,10 +52,17 @@
                   showDelay: 300
                 }"
                 class="icon-[lucide--triangle-alert] text-warning-background"
+                role="img"
+                :aria-label="slotProps.option.conflictMessage"
               />
               <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>
             <span>{{ slotProps.option.label }}</span>
+            <PackStatusMessage
+              v-if="slotProps.option.isFlagged"
+              status-type="NodeVersionStatusFlagged"
+              class="shrink-0"
+            />
           </div>
           <i
             v-if="slotProps.option.isSelected"
@@ -85,7 +97,7 @@
 import { whenever } from '@vueuse/core'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { valid as validSemver } from 'semver'
+import { maxSatisfying, valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -95,6 +107,7 @@ import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
+import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -139,14 +152,24 @@ const { checkNodeCompatibility } = useConflictDetection()
 const isQueueing = ref(false)
 const selectedVersion = ref<string>(SelectedVersionValues.LATEST)
 const isInstallDisabled = computed(
-  () => isQueueing.value || isVersionInstalled(selectedVersion.value)
+  () =>
+    !nodePack.id ||
+    isLoadingVersions.value ||
+    isQueueing.value ||
+    (selectedVersion.value === SelectedVersionValues.LATEST &&
+      !latestActiveVersion.value) ||
+    managerStore.isPackInstalling(nodePack.id) ||
+    isVersionInstalled(selectedVersion.value)
 )
 onMounted(() => {
   const initialVersion =
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    validSemver(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
+    validSemver(initialVersion) ||
+    initialVersion === SelectedVersionValues.LATEST
+      ? initialVersion
+      : SelectedVersionValues.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {
@@ -161,7 +184,9 @@ const getInitialSelectedVersion = () => {
     return managerStore.getInstalledPackVersion(nodePack.id)
 
   // If node pack is not installed, set selected version to latest
-  return nodePack.latest_version?.version
+  return nodePack.latest_version
+    ? SelectedVersionValues.LATEST
+    : SelectedVersionValues.NIGHTLY
 }
 
 const fetchVersions = async () => {
@@ -177,6 +202,17 @@ const versionOptions = ref<
 >([])
 
 const fetchedVersions = ref<components['schemas']['NodeVersion'][]>([])
+const latestActiveVersion = computed(() => {
+  const activeVersions = fetchedVersions.value.filter(
+    (version) => version.status === 'NodeVersionStatusActive'
+  )
+  const latest = maxSatisfying(
+    activeVersions.map((version) => version.version ?? ''),
+    '*',
+    { includePrerelease: true }
+  )
+  return activeVersions.find((version) => version.version === latest)
+})
 
 const isLoadingVersions = ref(false)
 
@@ -187,7 +223,7 @@ const onNodePackChange = async () => {
   const versions = await fetchVersions()
   fetchedVersions.value = versions
 
-  const latestVersionNumber = nodePack.latest_version?.version
+  const latestVersionNumber = latestActiveVersion.value?.version
 
   const availableVersionOptions = versions
     .map((version) => ({
@@ -232,16 +268,18 @@ whenever(
 )
 
 const handleSubmit = async () => {
+  if (isInstallDisabled.value) return
   if (!nodePack.id) {
     console.error('Node ID is required for installation')
     return
   }
-  isQueueing.value = true
-  // Convert 'latest' to actual version number for installation
   const actualVersion =
     selectedVersion.value === 'latest'
-      ? (nodePack.latest_version?.version ?? 'latest')
+      ? latestActiveVersion.value?.version
       : selectedVersion.value
+
+  if (!actualVersion) return
+  isQueueing.value = true
 
   await managerStore.installPack.call({
     id: nodePack.id,
@@ -257,25 +295,12 @@ const handleSubmit = async () => {
 }
 
 const getVersionData = (version: string) => {
-  const latestVersionNumber = nodePack.latest_version?.version
-  const useLatestVersionData =
-    version === 'latest' || version === latestVersionNumber
-  if (useLatestVersionData) {
-    const latestVersionData = nodePack.latest_version
-    return {
-      ...latestVersionData
-    }
-  }
+  if (version === 'latest') return latestActiveVersion.value ?? {}
   const versionData = fetchedVersions.value.find((v) => v.version === version)
-  if (versionData) {
-    return {
-      ...versionData
-    }
-  }
-  // Fallback to nodePack data
-  return {
-    ...nodePack
-  }
+  if (versionData) return versionData
+  return version === nodePack.latest_version?.version
+    ? (nodePack.latest_version ?? nodePack)
+    : nodePack
 }
 // Main function to get version compatibility info
 const getVersionCompatibility = (version: string) => {
@@ -296,7 +321,7 @@ const isOptionSelected = (optionValue: string) => {
   }
   if (
     optionValue === 'latest' &&
-    selectedVersion.value === nodePack.latest_version?.version
+    selectedVersion.value === latestActiveVersion.value?.version
   ) {
     return true
   }
@@ -308,7 +333,7 @@ const isVersionInstalled = (version: string) => {
     : undefined
   if (!installed) return false
   if (version === 'latest')
-    return installed === nodePack.latest_version?.version
+    return installed === latestActiveVersion.value?.version
   return version === installed
 }
 
@@ -317,10 +342,17 @@ const processedVersionOptions = computed(() => {
     const compatibility = getVersionCompatibility(option.value)
     return {
       ...option,
+      isFlagged:
+        option.value !== 'latest' &&
+        option.value !== 'nightly' &&
+        getVersionData(option.value).status === 'NodeVersionStatusFlagged',
       hasConflict: compatibility.hasConflict,
       conflictMessage: compatibility.conflictMessage,
       isSelected: isOptionSelected(option.value),
-      isInstalled: isVersionInstalled(option.value)
+      isDisabled:
+        isVersionInstalled(option.value) ||
+        (option.value === SelectedVersionValues.LATEST &&
+          !latestActiveVersion.value)
     }
   })
 })

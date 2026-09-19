@@ -466,6 +466,8 @@
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
+    "queueWaitingToContinue": "Tasks are pending. Retry to continue.",
+    "retryQueueStart": "Retry",
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
