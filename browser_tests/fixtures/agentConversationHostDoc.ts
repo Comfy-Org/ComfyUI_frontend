@@ -1,4 +1,5 @@
 import {
+  SCHEMA_VERSION,
   applyOps,
   mint,
   project,
@@ -56,6 +57,22 @@ export class HostDoc {
   // nodes, titles, inputs and link tuples the canvas is expected to show.
   projection(): WorkflowJSON {
     return project(this.doc, this.catalog)
+  }
+
+  // Test-only: removes meta.schema_version after mint() wrote it, so the next
+  // frame this host produces carries the exact "unreadable schema" shape
+  // KA-11's read gate (schemaGuard.ts) refuses — an absent version, not a
+  // merely different one.
+  corruptSchemaVersion(): void {
+    this.doc.getMap('meta').delete('schema_version')
+  }
+
+  // Test-only: restores meta.schema_version after a corrupted catch-up frame
+  // has already been encoded and sent (Y.encodeStateAsUpdate above copies the
+  // bytes at call time), so the host's own later apply()/graph() calls stop
+  // tripping the same read gate the browser under test is still latched on.
+  repairSchemaVersion(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION)
   }
 
   subscribed(): HostFrame {
