@@ -15,40 +15,60 @@ inside `allOutputs`.
 
 An asset has up to two server resources: its file
 (`/api/assets/{assetId}/content`) and an optional preview, either a
-`preview_url` or a `preview_id` naming a separate thumbnail asset. The backend
-builds a `preview_url` for images, and that URL happens to serve the image
-file itself. Video, audio and 3D assets get no preview unless a client
-persisted a thumbnail, in which case `preview_id` points at a PNG that is not
-the file.
+`preview_url` or a `preview_id` naming a separate thumbnail asset. The cloud
+backend builds a `preview_url` for images only, and that URL points at the
+image file itself (a self-preview). Video, audio and 3D assets get no preview
+unless a client persisted a thumbnail, in which case `preview_id` points at a
+PNG that is not the file. Any rule that lets a preview stand in for the file
+therefore works for images and fails for every other kind.
+
+A dragged card publishes two flavours: `application/x-comfy-asset-info` (the
+asset's filename, display name, media kind, attachment reference and, for
+images, a preview URL) and `text/uri-list`. Node drop targets that declare
+`onResultItemDrop` consume the asset-info payload and never touch the URI.
+The URI matters to the canvas drop path, which fetches it and hands the
+result to `handleFile`, and to node targets without `onResultItemDrop`, which
+fetch it and derive a `File`.
 
 `MediaAssetCard`'s `dragStart` published `resolvePreviewUrl(asset)` as the
-`text/uri-list` payload that canvas and node drop handlers fetch. Images
-worked by accident. A job-grouped video with no preview fell back to
-`/api/assets/{jobId}/content`, which the backend answers with a 404 JSON
+URI. Images worked by accident. A job-grouped video with no preview fell back
+to `/api/assets/{jobId}/content`, which the backend answers with a 404 JSON
 error. A 3D asset with a persisted thumbnail handed over the thumbnail PNG.
-
 `fetchDroppedAsset` then wrapped whatever the fetch returned, including that
 JSON error body, in a `File`, so the canvas tried to load
 `{"code":"ASSET_NOT_FOUND"}` as a workflow and showed an invalid-workflow
-error for a drop that never contained a workflow.
+error. A node target without `onResultItemDrop` named the fetched `File`
+after the last URL segment, which for a content URL is the literal `content`.
 
 ## Decision
 
-- The drag payload's `text/uri-list` value is always `getAssetFileUrl(asset)`,
-  which resolves the file through `user_metadata.assetId || asset.id` and
-  never consults a preview. The rule is media-kind agnostic.
-- Previews stay a rendering concern. `application/x-comfy-asset-info` keeps
-  `preview_url` for image previews (the agent composer reads it), and
-  `resolvePreviewUrl` remains the source for `<img>` and `<video>` elements.
-- Drop handlers that turn a URI into a `File` treat a non-OK response as no
-  file. `useNodeDragAndDrop` already does; `fetchDroppedAsset` follows.
+1. The drag URI names the asset's file, never a preview. `MediaAssetCard`
+   builds `text/uri-list` from `getAssetFileUrl(asset)`, which resolves the
+   file through `getAssetContentId` (`user_metadata.assetId || asset.id`).
+   The rule is media-kind agnostic: no consumer may assume a preview is the
+   file, even when a preview exists.
+2. Previews stay a rendering concern. `application/x-comfy-asset-info` keeps
+   `preview_url` for image previews, and `resolvePreviewUrl` remains the
+   source for `<img>` and `<video>` elements. Its own fallback resolves
+   through `getAssetContentId` as well, so no code path derives a content URL
+   from a job id.
+3. Drop consumers take the display name from the asset-info payload, not
+   from the URI. `useNodeDragAndDrop` prefers `parseAssetInfo(...).filename`
+   and falls back to the URL-derived name only for drags that carry no
+   asset-info flavour.
+4. A non-OK response is not a file, and the user is told. `fetchDroppedAsset`
+   returns `undefined` on `!response.ok` (status-based, never content-type
+   sniffing). The canvas drop handler, when a drop that carried the
+   asset-info flavour yields no file, reports the failure through
+   `reportError` and shows a toast instead of a silent no-op. Drops that
+   never carried asset-info (plain links from elsewhere) stay silent.
 
 ### Alternatives considered
 
 - Fix only `resolvePreviewUrl`'s fallback to use the file's content id.
-  Rejected: it removes the 404 but the drag would still hand over a preview
-  whenever one exists, as with a persisted 3D thumbnail. The drag must never
-  use a preview.
+  Rejected as the whole fix: it removes the 404 but the drag would still
+  hand over a preview whenever one exists, as with a persisted 3D thumbnail.
+  Adopted only as the supporting tightening in rule 2.
 - Wait for the backend to populate previews for video. Rejected: a preview is
   still not the file; the drop would then deliver a poster frame to the
   canvas.
@@ -60,14 +80,18 @@ error for a drop that never contained a workflow.
 ### Positive
 
 - Dropped video, audio and 3D cards carry their real file, so embedded
-  workflow metadata loads on the canvas.
-- A failed fetch is a no-op instead of a misleading invalid-workflow toast.
+  workflow metadata loads on the canvas and node targets receive a `File`
+  with its real name.
+- A failed fetch surfaces as a toast plus a telemetry report instead of a
+  misleading invalid-workflow error.
 - No server change is needed.
 
 ### Negative
 
-- Failed drops are now silent. Whether to surface a toast is deferred to a
-  follow-up.
 - The card's `id` stays the job id, which remains a trap for new consumers.
-  `getAssetFileUrl` is the sanctioned resolver for the file; nothing else
-  should derive a content URL from `asset.id`.
+  `getAssetFileUrl` and `getAssetContentId` are the sanctioned resolvers;
+  nothing else should derive a content URL from `asset.id`.
+- Node targets without `onResultItemDrop` (for example `LoadAudio`) still
+  re-upload the fetched file rather than referencing the existing asset.
+  Adding `onResultItemDrop` to those targets is a follow-up, not part of this
+  decision.
