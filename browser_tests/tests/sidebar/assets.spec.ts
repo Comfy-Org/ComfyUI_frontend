@@ -1266,11 +1266,6 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
 // API-format `prompt` graph plus a separate top-level `workflow_id`. Every
 // agent-submitted job has this shape, not just ones with a particular
 // `--workflow-id` or tab selection.
-//
-// DIAGNOSTIC: temporarily disabled to isolate a pre-existing shard 3 CI
-// failure from this PR's new test. Will be restored before merge.
-
-/*
 const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
 
 const PM_1150_API_PROMPT = {
@@ -1390,9 +1385,12 @@ test.describe(
       // Before PR #13957 this always failed with "No workflow data available"
       // for every agent-submitted job, since none of them embed an editor
       // workflow. Assert both outcomes so a regression back to that state fails
-      // loudly instead of merely not-succeeding.
-      await expect(comfyPage.toast.toastWarnings).toBeHidden({ timeout: 1500 })
+      // loudly instead of merely not-succeeding. Check the expected outcome
+      // first, with the default timeout, since rebuilding a 7-node graph from
+      // an API-format prompt is slower than a plain dialog interaction; only
+      // once it has settled is it safe to assert the warning stayed hidden.
       await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+      await expect(comfyPage.toast.toastWarnings).toBeHidden({ timeout: 1500 })
 
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
@@ -1400,16 +1398,24 @@ test.describe(
 
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
 
-      const nodeTypes = await comfyPage.page.evaluate(() =>
-        window.app!.graph.nodes.map((node) => node.type)
-      )
-      expect(nodeTypes).toEqual(
-        expect.arrayContaining([
-          'CheckpointLoaderSimple',
-          'KSampler',
-          'SaveImage'
-        ])
-      )
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.map((node) => node.type)
+          )
+        )
+        .toEqual(
+          expect.arrayContaining([
+            'CheckpointLoaderSimple',
+            'KSampler',
+            'SaveImage'
+          ])
+        )
+
+      // Wait for the Vue-rendered node cards to actually paint before
+      // screenshotting the canvas: the graph-model node count above can
+      // settle a render tick before the DOM/canvas catches up.
+      await comfyPage.vueNodes.waitForNodes(7)
 
       // Visual proof the rebuilt graph actually renders, not just that the
       // success toast fired.
@@ -1419,4 +1425,3 @@ test.describe(
     })
   }
 )
-*/
