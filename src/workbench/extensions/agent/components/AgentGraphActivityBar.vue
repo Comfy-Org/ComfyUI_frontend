@@ -24,6 +24,20 @@ const visibleState = computed(() =>
   activity.state.phase === 'idle' ? null : activity.state
 )
 const isComplete = computed(() => visibleState.value?.phase === 'complete')
+const presentation = computed(() => ({
+  testId: isComplete.value
+    ? 'agent-graph-added-toast'
+    : 'agent-graph-activity-bar',
+  accent: isComplete.value
+    ? 'border-l-success-background'
+    : 'border-l-base-foreground',
+  iconClass: isComplete.value
+    ? 'icon-[lucide--check] text-success-background'
+    : 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin',
+  title: isComplete.value
+    ? t('agent.nodesAdded', visibleState.value?.nodeIds.length ?? 0)
+    : t('agent.updatingGraph')
+}))
 const liveNodes = computed(() => {
   const state = visibleState.value
   if (!state || !canvas || String(app.rootGraph.id) !== state.rootGraphId)
@@ -60,34 +74,20 @@ function viewNodes(): void {
       class="pointer-events-none absolute inset-x-2 bottom-8 z-1100 flex justify-center"
     >
       <CanvasBanner
-        :data-testid="
-          isComplete ? 'agent-graph-added-toast' : 'agent-graph-activity-bar'
-        "
+        :data-testid="presentation.testId"
         role="status"
-        :accent="
-          isComplete
-            ? 'border-l-success-background'
-            : 'border-l-base-foreground'
-        "
+        :accent="presentation.accent"
         class="max-w-full flex-wrap gap-3"
       >
         <template #icon>
           <i
-            :class="
-              isComplete
-                ? 'icon-[lucide--check] text-success-background'
-                : 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
-            "
+            :class="presentation.iconClass"
             class="size-4 shrink-0"
             aria-hidden="true"
           />
         </template>
         <template #title>
-          {{
-            isComplete
-              ? t('agent.nodesAdded', visibleState.nodeIds.length)
-              : t('agent.updatingGraph')
-          }}
+          {{ presentation.title }}
         </template>
         <template v-if="!isComplete" #description>
           {{ t('agent.editWhileWorking') }}

@@ -398,15 +398,11 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
-  private displayName(type: string): string {
-    const name = this.displayNames.get(type)
-    if (name === undefined)
-      throw new Error(`the server registers no node type ${type}`)
-    return name
-  }
-
-  private expectedTitle(node: { type: string; title?: string }): string {
-    return node.title || this.displayName(node.type)
+  private expectedTitle(node: {
+    type: string
+    title?: string
+  }): string | undefined {
+    return node.title || this.displayNames.get(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -505,9 +501,16 @@ class AgentConversationHarness {
       const id = String(node.id)
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
-      await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(node)
+      const expectedTitle = this.expectedTitle(node)
+      if (expectedTitle !== undefined)
+        await expect(locator.getByTestId('node-title')).toHaveText(
+          expectedTitle
+        )
+      const liveType = await this.page.evaluate(
+        (nodeId) => window.app?.graph.getNodeById(nodeId)?.type,
+        id
       )
+      expect(liveType).toBe(node.type)
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
