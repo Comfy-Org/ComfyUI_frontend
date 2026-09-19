@@ -61,6 +61,7 @@
         </ModelInfoField>
         <ModelInfoField :label="t('g.status')">
           <PackStatusMessage
+            :has-import-failed="importFailed"
             :status-type="
               nodePack.status as components['schemas']['NodeVersionStatus']
             "

@@ -1,11 +1,12 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -29,11 +30,16 @@ type ManagerTaskHistory = Record<
 type ManagerTaskQueue = components['schemas']['TaskStateMessage']
 type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 
+function isTaskForRequest(taskId: string, requestId: string) {
+  return taskId === requestId || taskId.startsWith(`${requestId}_`)
+}
+
 /**
  * Store for state of installed node packs
  */
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerService = useComfyManagerService()
+  const toastStore = useToastStore()
 
   const installedPacks = ref<InstalledPacksResponse>({})
   const enabledPacksIds = ref<Set<NodePackId>>(new Set())
@@ -46,6 +52,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const failedTasksLogs = ref<TaskLog[]>([])
 
   const taskHistory = ref<ManagerTaskHistory>({})
+  const queueError = ref<string | null>(null)
   const succeededTasksIds = ref<string[]>([])
   const failedTasksIds = ref<string[]>([])
   const taskQueue = ref<ManagerTaskQueue>({
@@ -59,17 +66,47 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const taskIdToPackId = ref(new Map<string, NodePackId>())
 
   const managerQueue = useManagerQueue(taskHistory, taskQueue, installedPacks)
+  const pendingRequests = ref(
+    new Map<string, 'submitting' | 'queued' | 'confirmed'>()
+  )
+  let queueStartRequest = 0
+  const isProcessingTasks = computed(
+    () => managerQueue.isProcessing.value || pendingRequests.value.size > 0
+  )
 
-  // Listen for task completion events to clean up installing state
   useEventListener(
     app.api,
-    'cm-task-completed',
-    (event: CustomEvent<{ ui_id?: string }>) => {
-      const taskId = event.detail.ui_id
-      if (taskId && taskIdToPackId.value.has(taskId)) {
-        const packId = taskIdToPackId.value.get(taskId)!
-        installingPacksIds.value.delete(packId)
+    ['cm-task-started', 'cm-task-completed'],
+    (
+      event: CustomEvent<
+        | components['schemas']['MessageTaskStarted']
+        | components['schemas']['MessageTaskDone']
+      >
+    ) => {
+      const { ui_id: taskId, state } = event.detail
+      const observedIds = [
+        ...state.running_queue.map((task) => task.ui_id),
+        ...state.pending_queue.map((task) => task.ui_id),
+        ...Object.keys(state.history)
+      ]
+      for (const [requestId, requestState] of pendingRequests.value) {
+        if (
+          requestState === 'confirmed' ||
+          observedIds.some((id) => isTaskForRequest(id, requestId))
+        ) {
+          pendingRequests.value.delete(requestId)
+        }
+      }
+      if (event.type === 'cm-task-completed') {
+        const packId = taskIdToPackId.value.get(taskId)
+        if (packId) installingPacksIds.value.delete(packId)
         taskIdToPackId.value.delete(taskId)
+      }
+      if (
+        managerQueue.currentQueueLength.value > 0 ||
+        !isProcessingTasks.value
+      ) {
+        queueError.value = null
       }
     }
   )
@@ -78,11 +115,24 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isStale.value = true
   }
 
+  function isTaskFailed(requestId: string) {
+    return failedTasksIds.value.some((id) => isTaskForRequest(id, requestId))
+  }
+
+  function isTaskInProgress(requestId: string) {
+    return (
+      pendingRequests.value.has(requestId) ||
+      [...taskQueue.value.running_queue, ...taskQueue.value.pending_queue].some(
+        (task) => isTaskForRequest(task.ui_id, requestId)
+      )
+    )
+  }
+
   const partitionTaskLogs = () => {
     const successTaskLogs: TaskLog[] = []
     const failTaskLogs: TaskLog[] = []
     for (const log of taskLogs.value) {
-      if (failedTasksIds.value.includes(log.taskId)) {
+      if (isTaskFailed(log.taskId)) {
         failTaskLogs.push(log)
       } else {
         successTaskLogs.push(log)
@@ -198,8 +248,50 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   whenever(isStale, refreshInstalledList, { immediate: true })
 
+  async function confirmQueuedRequests() {
+    const queuedRequests = [...pendingRequests.value]
+      .filter(([, state]) => state !== 'submitting')
+      .map(([id]) => id)
+    if (!queuedRequests.length) return true
+
+    const runningQueue = taskQueue.value.running_queue
+    const requestId = queueStartRequest
+    const status = await managerService.getQueueStatus(
+      api.clientId ?? api.initialClientId ?? 'unknown'
+    )
+    if (requestId !== queueStartRequest) return true
+    if (status === null) return false
+
+    const hasNewQueueState = taskQueue.value.running_queue !== runningQueue
+    for (const id of queuedRequests) {
+      if (status.total_count > 0 && !hasNewQueueState) {
+        pendingRequests.value.set(id, 'confirmed')
+      } else {
+        pendingRequests.value.delete(id)
+      }
+    }
+    return true
+  }
+
+  async function startQueue() {
+    const requestId = ++queueStartRequest
+    queueError.value = null
+    const result = await managerService.startQueue()
+    if (requestId !== queueStartRequest) return
+    if (result !== null && (await confirmQueuedRequests())) return
+
+    if (requestId === queueStartRequest && isProcessingTasks.value) {
+      queueError.value = managerService.error.value ?? t('g.unknownError')
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: queueError.value
+      })
+    }
+  }
+
   const enqueueTaskWithLogs = async (
-    task: (taskId: string) => Promise<null>,
+    task: (taskId: string) => Promise<string | null>,
     taskName: string
   ) => {
     const taskId = uuidv4()
@@ -208,20 +300,23 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       immediate: true
     })
 
-    try {
-      managerQueue.isProcessing.value = true
+    pendingRequests.value.set(taskId, 'submitting')
+    taskLogs.value.push({ taskName, taskId, logs: logs.value })
+    partitionTaskLogs()
 
-      // Prepare logging hook
-      taskLogs.value.push({ taskName, taskId, logs: logs.value })
+    const result = await task(taskId)
+    if (result === null) {
+      const packId = taskIdToPackId.value.get(taskId)
+      if (packId) installingPacksIds.value.delete(packId)
+      taskIdToPackId.value.delete(taskId)
+      pendingRequests.value.delete(taskId)
+      const message = managerService.error.value ?? t('g.unknownError')
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: message
+      })
 
-      // Queue the task to the server
-      await task(taskId)
-    } catch (error) {
-      // Reset processing state on error
-      managerQueue.isProcessing.value = false
-
-      // The server has authority over task history in general, but in rare
-      // case of client-side error, we add that to failed tasks from the client side
       taskHistory.value[taskId] = {
         ui_id: taskId,
         client_id: api.clientId || 'unknown',
@@ -230,16 +325,21 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         status: {
           status_str: 'error',
           completed: false,
-          messages: [error instanceof Error ? error.message : String(error)]
+          messages: [message]
         },
         timestamp: new Date().toISOString()
       }
+      return
     }
+    if (pendingRequests.value.has(taskId)) {
+      pendingRequests.value.set(taskId, 'queued')
+    }
+    await startQueue()
   }
 
   const installPack = useCachedRequest<InstallPackParams, void>(
     async (params: InstallPackParams, signal?: AbortSignal) => {
-      if (!params.id) return
+      if (!params.id || installingPacksIds.value.has(params.id)) return
 
       let actionDescription = t('g.installing')
       if (installedPacksIds.value.has(params.id)) {
@@ -330,6 +430,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const getInstalledPackVersion = (packId: NodePackId) => {
+    if (!Object.hasOwn(installedPacks.value, packId)) return
     const pack = installedPacks.value[packId]
     return pack.ver
   }
@@ -339,6 +440,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const resetTaskState = () => {
+    queueError.value = null
     // Clear all task-related reactive state for fresh start after restart
     taskLogs.value = []
     taskHistory.value = {}
@@ -348,6 +450,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     failedTasksLogs.value = []
     installingPacksIds.value.clear()
     taskIdToPackId.value.clear()
+    pendingRequests.value.clear()
+    queueStartRequest++
+    managerQueue.isProcessing.value = false
 
     // Reset task queue to initial state
     taskQueue.value = {
@@ -379,9 +484,13 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     // Task queue state and actions
     taskHistory,
     taskQueue,
-    isProcessingTasks: managerQueue.isProcessing,
+    queueError,
+    startQueue,
+    isProcessingTasks,
     succeededTasksIds,
     failedTasksIds,
+    isTaskFailed,
+    isTaskInProgress,
     succeededTasksLogs,
     failedTasksLogs,
     managerQueue,
