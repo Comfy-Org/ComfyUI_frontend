@@ -11,6 +11,11 @@ import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
+/** A document update after the follower bridge has classified its provenance. */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
+
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
@@ -286,9 +291,10 @@ export class LayoutFollowerBridge extends EventTarget {
     // onto the canvas by a v1 reader.
     if (!this.isReadableUpdate(update)) return
 
+    const classifiedUpdate: ClassifiedDocUpdate = { ...update, catchUp: isCatchUp }
     this.dispatchEvent(
       new CustomEvent('doc_update', {
-        detail: { ...update, catchUp: isCatchUp }
+        detail: classifiedUpdate
       })
     )
   }

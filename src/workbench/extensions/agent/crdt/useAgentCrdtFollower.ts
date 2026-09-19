@@ -24,11 +24,13 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import {
+  LayoutFollowerBridge,
+  type ClassifiedDocUpdate
+} from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -80,7 +82,7 @@ function liveAddedNodeIds(
 }
 
 function notifyAgentMaterialization(
-  update: DocUpdate & { catchUp?: boolean },
+  update: ClassifiedDocUpdate,
   added: readonly string[],
   materialized: readonly NodeId[],
   graph: MaterializableGraph | null,
@@ -317,7 +319,7 @@ function startAgentCrdtFollower(
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const update = event.detail as DocUpdate & { catchUp?: boolean }
+    const update = event.detail as ClassifiedDocUpdate
     outcomes.value = {
       ...outcomes.value,
       received: outcomes.value.received + 1
