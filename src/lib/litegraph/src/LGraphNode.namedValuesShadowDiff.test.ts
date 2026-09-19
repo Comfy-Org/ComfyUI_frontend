@@ -94,6 +94,44 @@ describe('LGraphNode configure named values shadow diff', () => {
     expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
   })
 
+  it('does not treat a name-keyed extension payload as a positional shadow', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = agreeingInfo()
+    Reflect.set(info, 'widgets_values', {
+      steps: 30,
+      seed: 12345,
+      length: 2
+    })
+    let configuredValues: unknown
+    node.onConfigure = (configured) => {
+      configuredValues = Reflect.get(configured, 'widgets_values')
+    }
+
+    node.configure(info)
+
+    expect(configuredValues).toEqual({ steps: 30, seed: 12345, length: 2 })
+    expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
+  })
+
+  it('still checks a non-iterable array-like positional shadow', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = mismatchInfo()
+    Reflect.set(info, 'widgets_values', {
+      0: 30,
+      1: 12345,
+      length: 2
+    })
+
+    node.configure(info)
+
+    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        mismatch_widget_count: 1,
+        checked_widget_count: 2
+      })
+    )
+  })
+
   it('reports has_on_serialize_hook and has_on_configure_hook as false with no hooks set', () => {
     LiteGraph.namedValuesRestore = true
 

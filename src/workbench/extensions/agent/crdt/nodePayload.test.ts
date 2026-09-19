@@ -56,10 +56,6 @@ describe('serialisedWidgetSlots', () => {
   })
 
   it('moves named values to widgets_values_named and leaves widgets_values unset', () => {
-    // `LGraphNode.configure()` reads name-keyed values only from
-    // `widgets_values_named`, and treats `widgets_values` as positional: a
-    // record left there is not an array, so the legacy shadow diff would
-    // pair every widget with `undefined` and report a false mismatch.
     const slots = serialisedWidgetSlots({
       kind: 'named',
       values: new Map<string, unknown>([

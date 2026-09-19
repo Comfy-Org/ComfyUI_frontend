@@ -67,10 +67,9 @@ export function parseWidgetValues(value: unknown): WidgetValuePayload {
  * The serialised slots `LGraphNode.configure()` reads for a payload.
  *
  * `configure()` treats `widgets_values` as positional and reads name-keyed
- * values only from `widgets_values_named`. A record left in `widgets_values`
- * is not an array, so the legacy shadow diff would pair every widget with
- * `undefined` and report a false mismatch; named payloads therefore leave
- * `widgets_values` unset.
+ * values only from `widgets_values_named`. Named payloads therefore use the
+ * separate named slot; callers may retain the original record for extension
+ * hooks.
  */
 export function serialisedWidgetSlots(
   widgets: WidgetValuePayload

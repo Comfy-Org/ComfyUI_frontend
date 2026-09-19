@@ -15,15 +15,21 @@ export interface LegacyWidgetShadowEntry {
 
 export function computeLegacyWidgetShadow(
   widgets: readonly IBaseWidget[],
-  widgetsValues: unknown[] | undefined
+  widgetsValues: ArrayLike<unknown> | undefined
 ): LegacyWidgetShadowEntry[] {
   const shadow: LegacyWidgetShadowEntry[] = []
-  if (!widgetsValues) return shadow
+  if (
+    !widgetsValues ||
+    !Number.isSafeInteger(widgetsValues.length) ||
+    widgetsValues.length < 0
+  )
+    return shadow
 
   let i = 0
   for (const [widgetIndex, widget] of widgets.entries()) {
     if (widget.serialize === false) continue
     if (i >= widgetsValues.length) break
+    if (!(i in widgetsValues)) break
     shadow.push({ widgetIndex, name: widget.name, value: widgetsValues[i++] })
   }
   return shadow

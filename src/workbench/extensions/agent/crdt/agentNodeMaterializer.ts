@@ -354,14 +354,31 @@ function missingNode(state: NodeState): LGraphNode {
 
 /**
  * Op-layer serialisations carry widget values keyed by name in
- * `widgets_values`; route them through the one shape boundary so
- * `configure()` reads them from `widgets_values_named`.
+ * `widgets_values`; route them through the one shape boundary so restoration
+ * reads `widgets_values_named` while extension hooks retain the wire shape.
  */
 function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  if (serialised.widgets_values_named !== undefined) return serialised
+  if (serialised.widgets_values_named !== undefined) {
+    if (serialised.widgets_values !== undefined) return serialised
+    const configureInfo = { ...serialised }
+    Reflect.set(
+      configureInfo,
+      'widgets_values',
+      serialised.widgets_values_named
+    )
+    return configureInfo
+  }
   const { widgets_values, ...rest } = serialised
+  const widgets = parseWidgetValues(widgets_values)
+  if (widgets.kind === 'named') {
+    return {
+      ...rest,
+      widgets_values,
+      ...serialisedWidgetSlots(widgets)
+    }
+  }
   return {
     ...rest,
-    ...serialisedWidgetSlots(parseWidgetValues(widgets_values))
+    ...serialisedWidgetSlots(widgets)
   }
 }
