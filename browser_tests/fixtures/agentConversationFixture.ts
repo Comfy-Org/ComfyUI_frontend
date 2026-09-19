@@ -114,6 +114,12 @@ async function attachJson(
   })
 }
 
+/** One live graph node as the canvas holds it. */
+interface LiveGraphNode {
+  id: string
+  type: string
+}
+
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
 const zProjectedLink = z
   .tuple([
@@ -170,6 +176,10 @@ export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
+  /** The prompt editor (a ProseMirror contenteditable, not a textarea). */
+  readonly composer: Locator
+  /** Every assistant text block the panel has rendered, in order. */
+  readonly transcript: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -209,6 +219,8 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
+    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.transcript = this.streams
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -327,8 +339,7 @@ export class AgentConversationHarness {
 
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
-    await composer.fill(content)
+    await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     // Replay frames are dropped until the page has applied the ack's thread id.
     // useAgentSession records the user turn straight after storing that id, so
@@ -374,6 +385,42 @@ export class AgentConversationHarness {
       if (index === this.conversation.turns[turn].cancel_after)
         await this.stopTurn(turn)
     }
+  }
+
+  // Lands one batch of agent graph operations on the document outside any
+  // recorded turn, the way a later tool call of the same thread would.
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.waitForSubscribe()
+    this.send(this.host.apply(ops))
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  // The nodes the live graph holds right now, whatever put them there.
+  graphNodes(): Promise<LiveGraphNode[]> {
+    return this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => ({
+        id: String(node.id),
+        type: node.type
+      }))
+    )
+  }
+
+  // The one live node of `type`; a recording is expected to hold exactly one.
+  async nodeOfType(type: string): Promise<LiveGraphNode> {
+    const matches = (await this.graphNodes()).filter(
+      (node) => node.type === type
+    )
+    if (matches.length !== 1)
+      throw new Error(
+        `expected exactly one live ${type} node, found ${matches.length}`
+      )
+    return matches[0]
+  }
+
+  // Live nodes that were not on the graph when `before` was taken.
+  async nodesAddedSince(before: LiveGraphNode[]): Promise<LiveGraphNode[]> {
+    const known = new Set(before.map((node) => node.id))
+    return (await this.graphNodes()).filter((node) => !known.has(node.id))
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
