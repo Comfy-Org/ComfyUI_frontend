@@ -29,6 +29,14 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 //    SubgraphNode._setWidget/ensureWidgetRemoved at all (SubgraphNode has no
 //    onConnectInput/onConnectionsChange override), so it is a genuinely
 //    different code path from the interior-rewire case above.
+//
+// Caveat for the undo tests: the change tracker does not capture a Vue slot
+// drag-connect (useSlotLinkInteraction.ts preventDefault()s pointerdown,
+// which suppresses the mouseup capture changeTracker.ts relies on), so the
+// wire action itself may not create its own undo snapshot -- undo may
+// restore an earlier snapshot than the one these tests assume. If an undo
+// assertion here fails unexpectedly, check which snapshot undo actually
+// targeted before blaming the widget-promotion code.
 
 const KSAMPLER_ID = '3'
 const EMPTY_LATENT_ID = '5'
