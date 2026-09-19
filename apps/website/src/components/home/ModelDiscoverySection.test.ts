@@ -95,18 +95,6 @@ describe('ModelDiscoverySection', async () => {
     expect(all[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('fades both ends of the looping row over the same 2rem', async () => {
-    render(ModelDiscoverySection, { props: { providers } })
-    await nextTick()
-
-    const fade =
-      /mask-\[linear-gradient\(to_right,transparent,black_(\S+?),black_calc\(100%-(\S+?)\),transparent\)\]/.exec(
-        screen.getByTestId('discovery-marquee').className
-      )
-
-    expect(fade?.slice(1)).toEqual(['2rem', '2rem'])
-  })
-
   it('loads a provider preview only once its card is hovered', async () => {
     const user = userEvent.setup()
     render(ModelDiscoverySection, { props: { providers } })

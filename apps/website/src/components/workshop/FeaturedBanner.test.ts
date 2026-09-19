@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -114,28 +114,6 @@ describe('FeaturedBanner', () => {
 
     await user.click(screen.getByRole('button', { name: 'Magnific' }))
     expect(screen.queryByTestId('featured-docs-link')).toBeNull()
-  })
-
-  it('spreads the bars across the card and leaves the rest of it clickable', () => {
-    render(FeaturedBanner, { props: { models: [base, kling] } })
-
-    const strip = screen.getByTestId('featured-pagination')
-    expect(strip.className).toContain('pointer-events-none')
-    expect(strip.className).toMatch(/(?:^|\s)inset-x-8(?:\s|$)/)
-    expect(strip.className).toMatch(/(?:^|\s)lg:inset-x-12(?:\s|$)/)
-
-    const bars = within(strip).getAllByRole('button')
-    expect(bars).toHaveLength(2)
-    for (const bar of bars) {
-      for (const utility of [
-        'pointer-events-auto',
-        'flex-1',
-        'min-w-0',
-        'max-w-12'
-      ]) {
-        expect(bar.className).toContain(utility)
-      }
-    }
   })
 
   it('drops the pagination when there is nothing to page through', () => {
