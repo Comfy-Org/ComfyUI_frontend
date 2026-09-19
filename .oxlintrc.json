@@ -167,12 +167,6 @@
       }
     },
     {
-      "files": ["src/extensions/core/groupNode.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
