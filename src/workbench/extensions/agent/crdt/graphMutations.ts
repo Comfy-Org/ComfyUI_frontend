@@ -65,6 +65,14 @@ interface SemanticLayoutMutationPort {
     nodeIds: readonly NodeId[],
     context: RemoteMutationContext
   ): void
+  /**
+   * Reads a node's current renderer-owned layout, regardless of what created
+   * it (a prior agent op, a human edit, or the workflow's initial load).
+   * Optional so existing callers/mocks keep compiling; when absent (or a
+   * queried node has no layout yet), new-node placement below falls back to
+   * the payload's own coordinates, unchanged from before this port existed.
+   */
+  getLayout?(scope: GraphScope, nodeId: NodeId): SemanticNodeLayout | null
 }
 
 interface GraphMutationBatch {
@@ -226,6 +234,77 @@ function readPair(
     : fallback
 }
 
+interface Bounds {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/** How far a brand-new node's own coordinates may sit from existing graph
+ * content before it is treated as "lands nowhere near anything" rather than
+ * an intentional nearby placement. */
+const FAR_FROM_EXISTING_CONTENT_PX = 2000
+const NEW_NODE_PLACEMENT_MARGIN_PX = 60
+
+function rectBounds(layout: SemanticNodeLayout): Bounds {
+  return {
+    minX: layout.position.x,
+    minY: layout.position.y,
+    maxX: layout.position.x + layout.size.width,
+    maxY: layout.position.y + layout.size.height
+  }
+}
+
+function mergeBounds(a: Bounds, b: Bounds): Bounds {
+  return {
+    minX: Math.min(a.minX, b.minX),
+    minY: Math.min(a.minY, b.minY),
+    maxX: Math.max(a.maxX, b.maxX),
+    maxY: Math.max(a.maxY, b.maxY)
+  }
+}
+
+function distanceToBounds(x: number, y: number, bounds: Bounds): number {
+  const dx = Math.max(bounds.minX - x, 0, x - bounds.maxX)
+  const dy = Math.max(bounds.minY - y, 0, y - bounds.maxY)
+  return Math.hypot(dx, dy)
+}
+
+/**
+ * A brand-new node's own baked-in coordinates (e.g. a template's absolute
+ * layout, authored assuming an empty canvas) may land far from whatever is
+ * already on the graph. When they do, place it just outside existing
+ * content's bounds instead of at those raw coordinates, so a loaded template
+ * lands next to the user's work rather than thousands of px away
+ * (effectively invisible/unreachable). Returns the layout unchanged, plus
+ * `bounds` extended to include it, when nothing needed to move.
+ */
+function placeNewNode(
+  layout: SemanticNodeLayout,
+  bounds: Bounds | null
+): { layout: SemanticNodeLayout; bounds: Bounds } {
+  const rect = rectBounds(layout)
+  if (
+    bounds === null ||
+    distanceToBounds(layout.position.x, layout.position.y, bounds) <=
+      FAR_FROM_EXISTING_CONTENT_PX
+  ) {
+    return { layout, bounds: bounds ? mergeBounds(bounds, rect) : rect }
+  }
+  const placed: SemanticNodeLayout = {
+    position: {
+      x: bounds.maxX + NEW_NODE_PLACEMENT_MARGIN_PX,
+      y: bounds.minY
+    },
+    size: layout.size
+  }
+  return {
+    layout: placed,
+    bounds: mergeBounds(bounds, rectBounds(placed))
+  }
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope,
@@ -381,6 +460,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
+    // Bounds of everything already on the graph, so a brand-new node's raw
+    // coordinates can be checked against it (see `placeNewNode`). Read once
+    // up front, then extended as this batch adds nodes of its own, so
+    // several template nodes in one batch land near each other too.
+    let bounds: Bounds | null = null
+    for (const node of nodes.values()) {
+      const layout = deps.layout.getLayout?.(scope, node.id)
+      if (!layout) continue
+      bounds = bounds
+        ? mergeBounds(bounds, rectBounds(layout))
+        : rectBounds(layout)
+    }
     const validateNodeUpsert = (
       node: PreparedNode,
       key: string
@@ -425,6 +516,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
+          if (!existing) {
+            const placed = placeNewNode(node.layout, bounds)
+            node.layout = placed.layout
+            bounds = placed.bounds
+          }
           nodes.set(key, node.state)
           prepared.push({
             kind:
@@ -452,6 +548,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (!existing || existing.type !== node.state.type) {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
+            if (!existing) {
+              const placed = placeNewNode(node.layout, bounds)
+              node.layout = placed.layout
+              bounds = placed.bounds
+            }
             nodes.set(key, node.state)
             prepared.push({
               kind: existing ? 'replaceNode' : 'addNode',

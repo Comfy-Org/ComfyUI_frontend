@@ -83,9 +83,26 @@ describe('graphMutations', () => {
   })
 
   function mutations() {
+    // `createLayout` also records each node's placed layout, so `getLayout`
+    // can answer with what the port itself just created (mirroring how the
+    // real port reads back the renderer-owned layoutStore it writes to).
+    const layouts = new Map<
+      string,
+      {
+        position: { x: number; y: number }
+        size: { width: number; height: number }
+      }
+    >()
+    createLayout.mockImplementation((_scope, nodeId, layout) => {
+      layouts.set(String(nodeId), layout)
+    })
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        getLayout: (_scope, nodeId) => layouts.get(String(nodeId)) ?? null
+      }
     })
   }
 
@@ -257,14 +274,13 @@ describe('graphMutations', () => {
     }
   )
 
-  // Agent template placement bug: `prepareNode` takes `payload.pos` verbatim via
-  // `readPair` with zero viewport-centering, bounding-box, or
-  // collision-avoidance logic. An agent's "load template" tool emits
-  // `add_node` ops carrying the template's own baked-in absolute layout
-  // coordinates (authored assuming an empty canvas), so a template node lands
-  // wherever the template file says regardless of where existing content
-  // already is.
-  it.fails('positions a newly added node near existing graph content instead of at its raw baked-in coordinates', () => {
+  // Regression test for the agent template placement bug: a template's own
+  // baked-in absolute layout coordinates (authored assuming an empty canvas)
+  // used to land verbatim via `readPair`, regardless of where existing
+  // content already was. `prepare()` now checks a brand-new node's raw
+  // coordinates against existing content's bounds (read from the layout
+  // port) and repositions it nearby when they land far outside those bounds.
+  it('positions a newly added node near existing graph content instead of at its raw baked-in coordinates', () => {
     const graph = mutations()
     graph.addNode(node(1), context) // existing content near the origin
 

@@ -7,14 +7,15 @@ import {
   agentConversationTest
 } from '@e2e/fixtures/agentConversationFixture'
 
-// Agent template placement bug: `prepareNode` (graphMutations.ts) takes an `add_node` op's
-// `pos` verbatim, with zero viewport-centering, bounding-box, or
-// collision-avoidance logic. An agent's "load template" tool emits `add_node`
-// ops carrying the template's own baked-in absolute layout coordinates
-// (authored assuming an empty canvas), so template nodes land wherever the
-// template file says, regardless of where the user's existing content
-// already is. This conversation is hand-authored (not a capture), so it is
-// marked `response_side: 'synthesized'` per agentConversation.ts's schema.
+// Regression test for the agent template placement bug: `prepareNode`
+// (graphMutations.ts) used to take an `add_node` op's `pos` verbatim, with
+// zero viewport-centering, bounding-box, or collision-avoidance logic, so an
+// agent's "load template" tool emitting the template's own baked-in absolute
+// layout coordinates (authored assuming an empty canvas) landed the new node
+// wherever the template file said, regardless of where the user's existing
+// content already was. This conversation is hand-authored (not a capture),
+// so it is marked `response_side: 'synthesized'` per agentConversation.ts's
+// schema.
 const CONVERSATION: AgentConversation = {
   schema_version: 'agent-conversation.v2',
   source: {
@@ -98,11 +99,11 @@ const CONVERSATION: AgentConversation = {
 }
 
 agentConversationTest.describe(
-  'Agent template load ignores existing canvas content',
+  'Agent template load respects existing canvas content',
   { tag: ['@cloud', '@agent'] },
   () => {
     agentConversationTest(
-      'places a newly loaded template node far from existing canvas content instead of near it',
+      'places a newly loaded template node near existing canvas content instead of far from it',
       async ({ page, agentFlagEnabled }, testInfo) => {
         const harness = new AgentConversationHarness(
           page,
@@ -114,15 +115,6 @@ agentConversationTest.describe(
         await harness.sendPrompt(0)
         await harness.replayResponse(0)
         await harness.waitForTurnComplete()
-
-        // Marked expected-to-fail up front: the position bug can also make
-        // the template node fail to render into view at all (culled far
-        // outside the viewport), so every assertion below — not only the
-        // final distance check — is covered by this repro.
-        agentConversationTest.fail(
-          true,
-          'prepareNode takes payload.pos verbatim (readPair, no offset/collision-avoidance logic), so the template node lands at its raw baked-in coordinates instead of near the existing Load Image node'
-        )
 
         const existingLoadImage = harness.vueNodes.getNodeLocator('1')
         await expect(existingLoadImage).toBeVisible()
@@ -144,10 +136,13 @@ agentConversationTest.describe(
           templatePos[1] - existingPos[1]
         )
 
-        await testInfo.attach('template-node-far-from-existing-content.png', {
-          body: await page.screenshot(),
-          contentType: 'image/png'
-        })
+        await testInfo.attach(
+          'template-node-placed-near-existing-content.png',
+          {
+            body: await page.screenshot(),
+            contentType: 'image/png'
+          }
+        )
 
         expect(distance).toBeLessThan(2000)
       }

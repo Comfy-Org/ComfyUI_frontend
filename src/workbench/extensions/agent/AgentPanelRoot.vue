@@ -272,6 +272,10 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      },
+      getLayout(scope, nodeId) {
+        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+        return layout ? { position: layout.position, size: layout.size } : null
       }
     }
   })
