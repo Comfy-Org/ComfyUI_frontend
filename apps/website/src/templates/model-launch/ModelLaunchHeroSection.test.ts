@@ -45,7 +45,11 @@ describe('ModelLaunchHeroSection', () => {
       }
     })
 
-    expect(screen.getByTestId('model-launch-hero-logo-mask')).toBeTruthy()
+    const logoMask = screen.getByTestId('model-launch-hero-logo-mask')
+    expect(
+      within(logoMask).getByTestId('model-launch-hero-logo-fallback')
+    ).toBeTruthy()
+    expect(within(logoMask).queryByRole('img', { hidden: true })).toBeNull()
     expect(screen.queryByAltText('')).toBeNull()
   })
 })

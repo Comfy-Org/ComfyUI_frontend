@@ -25,6 +25,7 @@ const { loaded } = useHeroLogo(container, {
     class="relative flex h-64 w-full items-center justify-center lg:h-80"
   >
     <svg
+      data-testid="model-launch-hero-logo-fallback"
       :viewBox="COMFY_LOGO_VIEWBOX"
       :class="
         cn(
