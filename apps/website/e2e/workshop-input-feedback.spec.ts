@@ -155,3 +155,35 @@ test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async
     )
   ).toBe(true)
 })
+
+test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-pro-1.1-ultra--generate-images/')
+  await page.getByTestId('playground-advanced').locator('summary').click()
+
+  const slider = page.getByRole('slider', {
+    name: 'Image influence',
+    exact: true
+  })
+  const value = page.getByRole('spinbutton', {
+    name: 'Image influence value',
+    exact: true
+  })
+  await expect(value).toHaveValue('0.1')
+
+  // A 0-to-1 range with no declared step reports the thumb's pixel position in
+  // full double precision, so this drag used to hand back 0.367299194177281.
+  const track = await slider.boundingBox()
+  await slider.click({
+    position: { x: (track?.width ?? 0) * 0.37, y: (track?.height ?? 0) / 2 }
+  })
+  await expect(value).not.toHaveValue('0.1')
+
+  const readout = await value.evaluate((box: HTMLInputElement) => ({
+    fits: box.scrollWidth <= box.clientWidth,
+    decimals: (box.value.split('.')[1] ?? '').length
+  }))
+  expect(readout.fits).toBe(true)
+  expect(readout.decimals).toBeLessThanOrEqual(3)
+})

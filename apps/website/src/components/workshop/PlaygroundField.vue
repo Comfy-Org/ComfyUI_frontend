@@ -217,6 +217,30 @@ function sliderFill(field: {
   return `${Math.min(Math.max(ratio, 0), 1) * 100}%`
 }
 
+const SLIDER_POSITIONS = 1000
+
+function fractionDigits(step: number) {
+  const text = String(step)
+  return text.includes('e') ? 3 : (text.split('.')[1]?.length ?? 0)
+}
+
+// A range with no declared step reports the thumb's pixel position in full
+// double precision, so dragging a 0-to-1 field lands on 0.367299194177281.
+// A thousandth of the span is finer than the control can be aimed and is a
+// number a reader can take in, so the slider moves on that grid while the box
+// still accepts whatever the provider allows.
+const sliderStep = computed(() => {
+  if (field.kind !== 'number') return undefined
+  if (field.step !== 'any') return field.step
+  const span = (field.max ?? 0) - (field.min ?? 0)
+  if (span <= 0) return field.step
+  const digits = Math.min(
+    12,
+    Math.max(0, Math.ceil(Math.log10(SLIDER_POSITIONS / span)))
+  )
+  return 10 ** -digits
+})
+
 // A resolution needs four digits and a seed needs ten, so one width either
 // wastes the row or hides most of the number. `ch` cannot do this: the face
 // carries tracking the unit does not count.
@@ -225,9 +249,11 @@ const valueBoxWidth = computed(() => {
   const bounds = [field.min, field.max].filter(
     (bound): bound is number => bound !== undefined
   )
-  const fraction = field.step === 'any' || !Number.isInteger(field.step) ? 3 : 0
+  const step = sliderStep.value
+  const digits = typeof step === 'number' ? fractionDigits(step) : 3
   const characters =
-    Math.max(4, ...bounds.map((bound) => String(bound).length)) + fraction
+    Math.max(4, ...bounds.map((bound) => String(bound).length)) +
+    (digits > 0 ? digits + 1 : 0)
   if (characters <= 5) return 'w-20'
   return characters <= 8 ? 'w-28' : 'w-40'
 })
@@ -422,7 +448,7 @@ function booleanValue(fallback = false): boolean {
       type="range"
       :min="field.min"
       :max="field.max"
-      :step="field.step"
+      :step="sliderStep"
       :value="numberValue(field.defaultValue)"
       :disabled
       :aria-invalid="invalid()"

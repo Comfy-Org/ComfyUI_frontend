@@ -645,6 +645,72 @@ describe('PlaygroundField', () => {
     expect(polycount).toBeLessThan(seed)
   })
 
+  // A range with no declared step reports the thumb's pixel position in full
+  // double precision, so Image influence handed back 0.367299194177281 and the
+  // box could show a third of it. The grid is a thousandth of the span, which
+  // is finer than the control can be aimed.
+  it.for([
+    { span: 1, min: 0, max: 1, step: '0.001' },
+    { span: 100, min: 0, max: 100, step: '0.1' },
+    { span: 10000, min: 0, max: 10000, step: '1' }
+  ])(
+    'drags a $span-wide continuous field in steps of $step',
+    ({ min, max, step }) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name: 'image_prompt_strength',
+        label: 'Image influence',
+        min,
+        max,
+        step: 'any',
+        defaultValue: min
+      }
+      mountField(field, defaultValues([field]))
+
+      const slider: HTMLInputElement = screen.getByRole('slider', {
+        name: 'Image influence'
+      })
+      expect(slider.step).toBe(step)
+    }
+  )
+
+  it('leaves the box free of the slider grid and no wider than a seed needs', () => {
+    const influence: FieldSchema = {
+      kind: 'number',
+      name: 'image_prompt_strength',
+      label: 'Image influence',
+      min: 0,
+      max: 1,
+      step: 'any',
+      defaultValue: 0.1
+    }
+    mountField(influence, defaultValues([influence]))
+    const box: HTMLInputElement = screen.getByRole('spinbutton', {
+      name: 'Image influence value'
+    })
+    expect(box.step).toBe('any')
+    const influenceWidth = Number(box.className.match(/\bw-(\d+)\b/)?.[1] ?? 0)
+
+    const seed: FieldSchema = {
+      kind: 'number',
+      name: 'seed',
+      label: 'Seed',
+      min: -1,
+      max: 2147483647,
+      step: 1,
+      defaultValue: -1
+    }
+    mountField(seed, defaultValues([seed]))
+    const seedWidth = Number(
+      screen
+        .getByTestId('field-seed-value')
+        .className.match(/\bw-(\d+)\b/)?.[1] ?? 0
+    )
+
+    expect(influenceWidth).toBeGreaterThan(0)
+    expect(influenceWidth).toBeLessThan(seedWidth)
+  })
+
   it('moves the value box with the slider and carries the slider bounds', async () => {
     const field: FieldSchema = {
       kind: 'number',
