@@ -1,4 +1,9 @@
-import { useDocumentVisibility, useIntervalFn, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useIntervalFn,
+  usePreferredReducedMotion,
+  useRafFn
+} from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
@@ -40,6 +45,7 @@ export function useMinimap({
 
   const visible = ref(true)
   const initialized = ref(false)
+  const motionPreference = usePreferredReducedMotion()
 
   const width = 250
   const height = 200
@@ -57,7 +63,7 @@ export function useMinimap({
     const rows = getMinimapDecorations(graphScopeOf(graph.value))
     const reducedMotion =
       settingStore.get('Comfy.Appearance.DisableAnimations') ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      motionPreference.value === 'reduce'
     return reducedMotion
       ? rows.map((row) => ({
           ...row,
@@ -132,34 +138,48 @@ export function useMinimap({
 
   const decorationFrames = useRafFn(
     () => {
-      renderer.forceFullRedraw()
-      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       const now = performance.now()
       if (
+        !canDraw.value ||
         decorations.value.every(
           ({ enteredAt }) =>
             enteredAt === undefined ||
             now - enteredAt >= MINIMAP_DECORATION_POP_MS
         )
-      )
+      ) {
         decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
     },
     { immediate: false }
   )
 
-  watch(decorations, () => {
-    if (!canDraw.value) return
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-    if (
+  const shouldAnimateDecorations = computed(
+    () =>
+      canDraw.value &&
       decorations.value.some(
         ({ enteredAt }) =>
           enteredAt !== undefined &&
           performance.now() - enteredAt < MINIMAP_DECORATION_POP_MS
       )
-    )
-      decorationFrames.resume()
-  })
+  )
+
+  watch(
+    shouldAnimateDecorations,
+    (active) => {
+      if (!canDraw.value) {
+        decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      if (active) decorationFrames.resume()
+      else decorationFrames.pause()
+    },
+    { immediate: true }
+  )
 
   // Most edits reach the digest comparison through useMinimapGraph's event
   // hooks. This loop is the backstop for state that emits no event at all:
