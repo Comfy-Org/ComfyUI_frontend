@@ -190,10 +190,13 @@ with the refreshed snapshot.
 > **Models is currently switched off on comfy.org.** A production build hides
 > it regardless of `workshop-enabled`, because 108 of 238 runs failed on
 > 2026-09-18. Previews and local dev still obey the flag, so leave it **on**
-> to keep reviewing fixes there. Re-open production by reverting the
-> `PRODUCTION_DISABLED` constant in `src/scripts/posthog.ts`, not by raising
-> the flag. The rest of this section describes the flag-driven behaviour that
-> resumes once that revert lands.
+> to keep reviewing fixes there. Re-open production by reverting the PR that
+> added `PRODUCTION_DISABLED` to `src/scripts/posthog.ts`, not by raising the
+> flag — the constant, this banner and the deploy-env test table have to come
+> back together. Production hides the header account menu with everything
+> else, so a signed-in customer cannot see or spend credits while this is in
+> place; their balances are untouched server-side. The rest of this section
+> describes the flag-driven behaviour that resumes once the revert lands.
 
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the

@@ -130,6 +130,19 @@ describe('Workshop visibility', () => {
     expect(useWorkshopEnabled().value).toBe(false)
   })
 
+  it('records no workshop-enabled exposure on production, where the answer is discarded', async () => {
+    hoisted.deployEnv = 'production'
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    const exposures = hoisted.mockIsFeatureEnabled.mock.calls.filter(
+      ([key, options]) =>
+        key === 'workshop-enabled' && options?.send_event !== false
+    )
+    expect(exposures).toEqual([])
+  })
+
   it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
     vi.stubEnv('DEV', true)
     vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')

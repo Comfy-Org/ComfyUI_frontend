@@ -114,8 +114,8 @@ const VISIBILITY_OVERRIDE =
 // Revert this PR to re-open production.
 const PRODUCTION_DISABLED = WORKSHOP_DEPLOY_ENV === 'production'
 
-function resolveEnabled(flagAnswer = false): boolean {
-  return !PRODUCTION_DISABLED && (VISIBILITY_OVERRIDE || flagAnswer)
+function resolveEnabled(readFlagAnswer: () => boolean = () => false): boolean {
+  return !PRODUCTION_DISABLED && (VISIBILITY_OVERRIDE || readFlagAnswer())
 }
 
 const workshopEnabled = ref(resolveEnabled())
@@ -269,7 +269,7 @@ export function initPostHog() {
       expectedUid === persistedUid ||
       (!expectedUid && !persistedUid)
     if (persistedAnswer !== undefined && persistedIdentityMatches) {
-      workshopEnabled.value = resolveEnabled(persistedAnswer)
+      workshopEnabled.value = resolveEnabled(() => persistedAnswer)
       markFlagResolved()
     }
     posthog.onFeatureFlags((_flags, _variants, context) => {
@@ -278,7 +278,7 @@ export function initPostHog() {
         return
       }
       workshopEnabled.value = resolveEnabled(
-        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+        () => posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
       )
       markFlagResolved()
       if (!OVERRIDDEN_ON) {
