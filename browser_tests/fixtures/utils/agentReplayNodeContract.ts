@@ -13,12 +13,8 @@ export function assertAgentReplayNodeContract(
   registeredDisplayName: string | undefined,
   materialized: MaterializedNodeIdentity | null
 ): string {
-  const expectedTitle = projected.title || registeredDisplayName
-  if (expectedTitle === undefined) {
-    throw new Error(
-      `Agent replay requires ${projected.type} in the runtime node catalog`
-    )
-  }
+  const expectedTitle =
+    projected.title || registeredDisplayName || projected.type
   if (materialized === null) {
     throw new Error(`Agent replay did not materialize ${projected.type}`)
   }

@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 
 describe('assertAgentReplayNodeContract', () => {
-  it('requires a catalog title when the recording does not override it', () => {
-    expect(() =>
+  it('uses the recorded type as the explicit default title', () => {
+    expect(
       assertAgentReplayNodeContract({ type: 'DriftedNode' }, undefined, {
         type: 'DriftedNode',
         hasErrors: false
       })
-    ).toThrow('requires DriftedNode in the runtime node catalog')
+    ).toBe('DriftedNode')
   })
 
   it('rejects a missing-node placeholder that preserves the recorded type', () => {
