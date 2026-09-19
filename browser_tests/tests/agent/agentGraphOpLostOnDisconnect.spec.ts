@@ -9,6 +9,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
@@ -21,23 +22,20 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
- * PM-1260 / PM-1050 repro: "test-agent creates content without adding it to
- * the graph, again" (linear.app/comfyorg/issue/PM-1260).
+ * Regression for "the agent says it added a node, but the canvas never shows
+ * it".
  *
  * The tester's CRDT debug report showed `Connected: false` moments after the
  * complaint, with `add_node` operations present in the CRDT event log but
- * only 2 nodes in the follower's own document — the op was recorded
- * authoritatively (as the "server-side graph" PM-1050 describes) but the
- * update carrying it never reached the connected live canvas. This spec
- * reproduces that shape directly: the doc host applies an `add_node` op (the
- * op enters the record) at the exact moment the transport carrying it drops;
- * the underlying websocket then reconnects (so chat keeps working, matching
- * "the agent reports it built the thing"), but the CRDT doc subscription
- * that reconnect should re-establish never completes, so the node the agent
- * added never appears on the canvas the user is looking at.
- *
- * No fix is attempted here. See PM-1050's still-open children (PM-1066,
- * PM-1073, PM-1260, ...) for the family of reports this belongs to.
+ * only 2 nodes in the follower's own document: the op was recorded
+ * authoritatively, but the update carrying it never reached the connected
+ * live canvas. This spec reproduces that shape directly: the doc host applies
+ * an `add_node` op (the op enters the record) at the exact moment the
+ * transport carrying it drops; the underlying websocket then reconnects (so
+ * chat keeps working, matching "the agent reports it built the thing"), and
+ * the host never answers the doc subscription that reconnect re-sends. The
+ * follower has to notice the silence, retry the same-lineage subscribe once
+ * the ack timeout expires, and land the node the agent added.
  */
 
 const WORKFLOW_ID = 'a3f6a3d2-7e3b-4b8a-9c1e-6e2a1c9f0a11'
@@ -62,11 +60,17 @@ const COMPOSER_LABEL = createI18n({
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
 
+interface PostReconnectDocFrame {
+  type: 'doc_subscribe' | 'doc_unsubscribe'
+  stateVector: string | null
+  at: number
+}
+
 test.describe(
   'Agent graph op lost on disconnect',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('a node the agent adds while the doc connection drops still appears on the live canvas (PM-1260)', async ({
+    test('a node the agent adds while the doc connection drops still appears on the live canvas', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -75,7 +79,9 @@ test.describe(
 
       let socket: WebSocketRoute | null = null
       let connectionCount = 0
-      let sawSecondSubscribeAttempt = false
+      const postReconnectDocFrames: PostReconnectDocFrame[] = []
+      const postReconnectSubscribes = (): PostReconnectDocFrame[] =>
+        postReconnectDocFrames.filter(({ type }) => type === 'doc_subscribe')
 
       const send = (frame: AgentWsEvent | HostFrame): void => {
         if (
@@ -121,31 +127,28 @@ test.describe(
           const frame: unknown = JSON.parse(raw.toString())
           if (typeof frame !== 'object' || frame === null) return
           const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
+          if (type !== 'doc_subscribe' && type !== 'doc_unsubscribe') return
+          if (typeof data !== 'object' || data === null) return
           const { workflow_id, state_vector_b64 } = data as {
             workflow_id?: unknown
             state_vector_b64?: unknown
           }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
+          if (workflow_id !== WORKFLOW_ID) return
+          const stateVector =
+            typeof state_vector_b64 === 'string' ? state_vector_b64 : null
           if (!isFirstConnection) {
+            postReconnectDocFrames.push({ type, stateVector, at: Date.now() })
+          }
+          if (type !== 'doc_subscribe' || stateVector === null) return
+          if (!isFirstConnection && postReconnectSubscribes().length === 1) {
             // The reconnect's re-subscribe never gets an answer: the general
-            // realtime channel recovered (chat keeps flowing below), but
-            // whatever carries the CRDT doc subscription does not — the same
-            // shape the debug report's `Connected: false` describes.
-            sawSecondSubscribeAttempt = true
+            // realtime channel recovered (chat keeps flowing below), but the
+            // host swallows the doc subscription frame. Only a retry of that
+            // subscribe is answered.
             return
           }
           send(host.subscribed())
-          send(host.catchUp(state_vector_b64))
+          send(host.catchUp(stateVector))
         })
       })
 
@@ -210,9 +213,9 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint, still expected to pass: the follower actually bound
-      // and subscribed once before anything is allowed to go wrong.
-      await expect.poll(() => connectionCount).toBeGreaterThanOrEqual(1)
+      // Setup checkpoint: the follower actually bound and subscribed once on
+      // the first (and so far only) connection before anything goes wrong.
+      await expect.poll(() => connectionCount).toBe(1)
 
       const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
       await composer.fill('Add a note to the canvas.')
@@ -272,10 +275,14 @@ test.describe(
       void update
       await socket!.close()
 
-      // The main realtime channel recovers (a real reconnect happens: chat
-      // keeps working below), so the agent can still report success.
-      await expect.poll(() => connectionCount).toBeGreaterThanOrEqual(2)
-      await expect.poll(() => sawSecondSubscribeAttempt).toBe(true)
+      // The main realtime channel recovers (exactly one reconnect: chat keeps
+      // working below), so the agent can still report success. The follower's
+      // re-subscribe went out on the new socket and is being ignored.
+      await expect.poll(() => connectionCount).toBe(2)
+      await expect.poll(() => postReconnectDocFrames.length).toBe(1)
+      expect(postReconnectDocFrames.map(({ type }) => type)).toEqual([
+        'doc_subscribe'
+      ])
 
       send({
         type: 'agent_message_delta',
@@ -290,8 +297,8 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint, still expected to pass: the agent's turn completes
-      // and reports success in the panel, exactly as the tester saw it do.
+      // Setup checkpoint: the agent's turn completes and reports success in
+      // the panel, exactly as the tester saw it do.
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -300,11 +307,31 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The known defect: the agent said it added the note, and the op is in
-      // the document's own record (asserted above) -- but it never reached the
-      // live canvas the user is looking at.
+      // The agent said it added the note, and the op is in the document's own
+      // record (asserted above). The follower must notice that its subscribe
+      // was never acknowledged, retry it, and land the node on the live canvas.
       test.fail()
-      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
+        timeout: SUBSCRIBE_ACK_TIMEOUT_MS + 10_000
+      })
+
+      // The retry is the fix's fingerprint: one more `doc_subscribe` on the
+      // same lineage (unchanged state vector, no unsubscribe in between) after
+      // the ack timeout, never an immediate retarget or a reset.
+      await expect
+        .poll(() => postReconnectSubscribes().length, {
+          message: 'the follower never retried the unanswered doc_subscribe'
+        })
+        .toBe(2)
+      expect(postReconnectDocFrames.map(({ type }) => type)).toEqual([
+        'doc_subscribe',
+        'doc_subscribe'
+      ])
+      const [silenced, retried] = postReconnectSubscribes()
+      expect(retried.stateVector).toBe(silenced.stateVector)
+      expect(retried.at - silenced.at).toBeGreaterThanOrEqual(
+        SUBSCRIBE_ACK_TIMEOUT_MS - 500
+      )
     })
   }
 )
