@@ -10032,6 +10032,10 @@ Enterprise`
     en: 'Default: {value}',
     'zh-CN': '默认值：{value}'
   },
+  'workshop.field.exactValue': {
+    en: '{label} value',
+    'zh-CN': '{label}数值'
+  },
   'workshop.field.off': { en: 'Off', 'zh-CN': '关闭' },
   'workshop.form.required': {
     en: 'This field is required',

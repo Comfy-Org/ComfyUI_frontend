@@ -260,12 +260,31 @@ function booleanValue(fallback = false): boolean {
             :label="field.hint"
           />
         </div>
-        <span
+        <input
           v-if="field.kind === 'number' && isSlider"
-          class="text-xs text-primary-warm-white tabular-nums"
-        >
-          {{ numberValue(field.defaultValue) }}
-        </span>
+          type="number"
+          :min="field.min"
+          :max="field.max"
+          :step="field.step"
+          :value="numberValue(field.defaultValue)"
+          :disabled
+          :aria-label="
+            t('workshop.field.exactValue', locale).replace(
+              '{label}',
+              field.label
+            )
+          "
+          :aria-invalid="invalid()"
+          :aria-describedby="describedBy"
+          :data-testid="`field-${field.name}-value`"
+          :class="
+            cn(
+              inputClass,
+              'h-8 w-28 rounded-lg px-2 text-right text-xs tabular-nums'
+            )
+          "
+          @input="onNumber"
+        />
       </div>
       <p v-if="field.hint" :id="`help-${field.name}`" class="sr-only">
         {{ field.hint }}

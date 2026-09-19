@@ -130,3 +130,19 @@ test('Magnific Skin Enhancer uploads a source image instead of asking for a URL'
     source.getByRole('button', { name: 'Replace portrait.png' })
   ).toBeVisible()
 })
+
+test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-2-max--generate-images/')
+  const slider = page.getByRole('slider', { name: 'Height', exact: true })
+  const value = page.getByRole('spinbutton', {
+    name: 'Height value',
+    exact: true
+  })
+  await slider.fill('1023')
+  await expect(value).toHaveValue('1023')
+  await value.fill('1024')
+  await expect(slider).toHaveValue('1024')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})

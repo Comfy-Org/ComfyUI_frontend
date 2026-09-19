@@ -560,6 +560,93 @@ describe('PlaygroundField', () => {
     expect(number.value.count).toBe(27)
   })
 
+  // The three shapes in the catalogue whose span is wider than the track has
+  // pixels. Dragging lands on a neighbour of the value the reader wants, so
+  // the exact value has to be reachable some other way.
+  it.for([
+    {
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      defaultValue: 1024,
+      reachable: '1023',
+      wanted: 1024
+    },
+    {
+      name: 'seed',
+      label: 'Seed',
+      min: -1,
+      max: 2147483647,
+      defaultValue: -1,
+      reachable: '1258291200',
+      wanted: 1234567890
+    },
+    {
+      name: 'target_polycount',
+      label: 'Target polycount',
+      min: 100,
+      max: 300000,
+      defaultValue: 30000,
+      reachable: '29873',
+      wanted: 30000
+    }
+  ])(
+    'reaches $wanted on $name, which dragging cannot land on',
+    async ({ name, label, min, max, defaultValue, reachable, wanted }) => {
+      const field: FieldSchema = {
+        kind: 'number',
+        name,
+        label,
+        min,
+        max,
+        step: 1,
+        defaultValue
+      }
+      const values = mountField(field, defaultValues([field]))
+      const slider = screen.getByRole('slider', { name: label })
+      await fireEvent.update(slider, reachable)
+      expect(values.value[name]).toBe(Number(reachable))
+
+      const box = screen.getByRole('spinbutton', { name: `${label} value` })
+      await fireEvent.update(box, String(wanted))
+      expect(values.value[name]).toBe(wanted)
+      expect((slider as HTMLInputElement).value).toBe(String(wanted))
+      expect(screen.queryByRole('alert')).toBeNull()
+    }
+  )
+
+  it('moves the value box with the slider and carries the slider bounds', async () => {
+    const field: FieldSchema = {
+      kind: 'number',
+      name: 'height',
+      label: 'Height',
+      min: 256,
+      max: 2048,
+      step: 1,
+      defaultValue: 1024
+    }
+    mountField(field, defaultValues([field]))
+    const box = screen.getByRole('spinbutton', {
+      name: 'Height value'
+    }) as HTMLInputElement
+    expect(box.value).toBe('1024')
+    await fireEvent.update(
+      screen.getByRole('slider', { name: 'Height' }),
+      '512'
+    )
+    expect(box.value).toBe('512')
+    expect(box.min).toBe('256')
+    expect(box.max).toBe('2048')
+    expect(box.step).toBe('1')
+  })
+
+  it('leaves a field without slider bounds with the one control it already had', () => {
+    mountField({ kind: 'number', name: 'count', label: 'Count', step: 1 })
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1)
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
   it('discloses zero and false defaults, localized, without treating them as missing', async () => {
     const field: FieldSchema = {
       kind: 'number',
