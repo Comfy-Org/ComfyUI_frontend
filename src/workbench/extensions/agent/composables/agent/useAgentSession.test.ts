@@ -911,7 +911,13 @@ describe('useAgentSession (v1 composition root)', () => {
     status(false)
     status(true)
 
-    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
+    // runs out its budget THROWS, and a throw is what marks the case green — so
+    // a tight budget here would quietly disarm the tripwire against any repair
+    // that debounces recovery after the socket flaps.
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
+      timeout: 2000
+    })
   })
 
   it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
@@ -945,7 +951,7 @@ describe('useAgentSession (v1 composition root)', () => {
           .join('')
         expect(replyText).toBe('partial and the rest')
       },
-      { timeout: 200 }
+      { timeout: 2000 }
     )
   })
 
