@@ -51,19 +51,36 @@ describe('agentGraphActivityStore', () => {
 
   it('treats an idle dip followed by activity as the same turn', () => {
     const activity = useAgentGraphActivityStore()
-    activity.startTurn()
+    activity.startTurn('turn-1')
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: 'graph-1' },
       [toNodeId(1)]
     )
     activity.finishTurn()
-    activity.startTurn()
+    activity.startTurn('turn-1')
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: 'graph-1' },
       [toNodeId(2)]
     )
 
     expect(activity.state).toMatchObject({ nodeIds: ['1', '2'] })
+  })
+
+  it('starts a fresh report for a distinct turn during settlement', () => {
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn('turn-1')
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: 'graph-1' },
+      [toNodeId(1)]
+    )
+    activity.finishTurn()
+    activity.startTurn('turn-2')
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: 'graph-1' },
+      [toNodeId(2)]
+    )
+
+    expect(activity.state).toMatchObject({ nodeIds: ['2'] })
   })
 
   it('settles for a full interval after the latest materialization', () => {
