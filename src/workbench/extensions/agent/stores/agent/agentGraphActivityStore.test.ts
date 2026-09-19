@@ -63,6 +63,6 @@ describe('agentGraphActivityStore', () => {
       [toNodeId(2)]
     )
 
-    expect(activity.activeNodes).toEqual(['1', '2'])
+    expect(activity.state).toMatchObject({ nodeIds: ['1', '2'] })
   })
 })

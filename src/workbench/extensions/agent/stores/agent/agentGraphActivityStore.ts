@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type { NodeId } from '@/types/nodeId'
 
@@ -25,10 +25,6 @@ export const useAgentGraphActivityStore = defineStore(
     const state = ref<ActivityState>({ phase: 'idle' })
     const turnOpen = ref(false)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
-
-    const activeNodes = computed(() =>
-      state.value.phase === 'idle' ? [] : state.value.nodeIds
-    )
 
     function startTurn(): void {
       if (turnOpen.value) return
@@ -85,7 +81,6 @@ export const useAgentGraphActivityStore = defineStore(
 
     return {
       state,
-      activeNodes,
       startTurn,
       recordMaterialized,
       finishTurn,
