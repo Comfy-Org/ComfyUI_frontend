@@ -23,7 +23,7 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // Also unmapped: segformer_b2_clothes, segformer_b3_clothes,
   // segformer_b3_fashion, lama, layer_model, LLM/llava-llama-3-8b-*,
   // LLM/Llama-3.2-3B-Instruct, LLM/Florence-2-large-PromptGen-v2.0
-  // (id widgets); sam3, sharp, BEN, BiRefNet/pth (node/widget names don't
+  // (id widgets); sharp, BEN, BiRefNet/pth (node/widget names don't
   // exist); depthanything, CogVideo/GGUF, checkpoints/dynamicrafter/*,
   // transparent-background (asset names not accepted by the node's enum);
   // interpolation, clip, onnx (empty or unreachable dirs).
@@ -96,6 +96,7 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Detection models (vitpose, yolo) ----
   ['detection', 'OnnxDetectionModelLoader', 'yolo_model'],
+  ['detection', 'SAM3DBody_Loader', 'model_file'],
 
   // ---- CogVideoX (comfyui-cogvideoxwrapper) ----
   ['CogVideo', 'DownloadAndLoadCogVideoModel', ''],
