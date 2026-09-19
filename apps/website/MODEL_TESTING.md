@@ -235,9 +235,11 @@ disables it. Entries are keyed by page slug:
 ```
 
 A disabled page leaves the catalogue, search, its detail route and every
-legacy redirect, and the tester no longer selects it. The build fails if an
-entry names a page that does not exist. The grid keeps a disabled page's last
-result and marks it `Disabled` with the reason.
+legacy redirect, and the tester omits it from default sweeps. An explicit
+`--slug` still selects a disabled authored page so it can be verified before
+re-enabling. The build fails if an entry names a page that does not exist. The
+grid keeps a disabled page's last result and marks it `Disabled` with the
+reason.
 
 Availability is publication state only. Authored model details, contracts,
 examples and canonical template joins remain testable while a page is

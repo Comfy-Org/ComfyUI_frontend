@@ -72,4 +72,9 @@ export function createRouterRenderHelpers(
 
 const defaultRouterRenderHelpers = createRouterRenderHelpers()
 
-export const { resolveRouterRender, router_render } = defaultRouterRenderHelpers
+export const {
+  prepareRouterRender,
+  resolveRouterRender,
+  router_for_model,
+  router_render
+} = defaultRouterRenderHelpers

@@ -1,28 +1,19 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
+import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
 
-const availability: unknown = JSON.parse(
-  readFileSync(
-    new URL('../src/data/workshop-model-availability.json', import.meta.url),
-    'utf8'
+const availability = workshopModelAvailabilitySchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL('../src/data/workshop-model-availability.json', import.meta.url),
+      'utf8'
+    )
   )
 )
-if (
-  typeof availability !== 'object' ||
-  availability === null ||
-  Array.isArray(availability)
-)
-  throw new Error('Invalid model availability manifest')
 const disabledModelSlugs = Object.entries(availability).flatMap(
-  ([slug, state]) =>
-    typeof state === 'object' &&
-    state !== null &&
-    'disabled' in state &&
-    state.disabled === true
-      ? [slug]
-      : []
+  ([slug, state]) => (state.disabled ? [slug] : [])
 )
 
 test('availability manifest withholds disabled models from catalogue and routes', async ({
