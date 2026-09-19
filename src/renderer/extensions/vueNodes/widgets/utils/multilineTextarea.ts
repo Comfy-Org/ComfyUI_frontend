@@ -162,6 +162,8 @@ export function createPromotedMultilineWidget(
   })
 
   bindMultilineTextareaWidget(widget, element)
+  const visibility = widgetStore.getWidgetVisibility(widgetId)
+  if (visibility) widget.bindVisibility(visibility)
   useDomWidgetStore().registerWidget(widget)
 
   return widget

@@ -413,7 +413,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const visibility = useWidgetValueStore().getWidgetVisibility(
       widgetId(graphId, nodeId, this.name)
     )
-    if (visibility) this._visibility = visibility
+    if (visibility) this.bindVisibility(visibility)
+  }
+
+  /**
+   * Shares a store-owned visibility component, so suppression written through
+   * this widget (e.g. on connection changes) is read by every renderer.
+   */
+  bindVisibility(visibility: WidgetVisibilityComponent): void {
+    this._visibility = visibility
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
