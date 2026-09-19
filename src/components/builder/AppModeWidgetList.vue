@@ -199,6 +199,7 @@ defineExpose({ handleDragDrop })
         :entries="[
           {
             label: t('g.rename'),
+            // fallow-ignore-next-line css-token-drift
             icon: 'icon-[lucide--pencil]',
             command: () => promptRenameWidget(action.widget, action.node, t)
           },
@@ -215,6 +216,7 @@ defineExpose({ handleDragDrop })
             size="icon"
             data-testid="widget-actions-menu"
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
