@@ -11,13 +11,13 @@ test.describe(
   'Agent graph activity',
   { tag: ['@cloud', '@canvas', '@vue-nodes'] },
   () => {
+    test.describe.configure({ timeout: 90_000 })
     test.use({ conversationCase: SEQUENTIAL_CASE })
 
     test(`recorded ${SEQUENTIAL_CASE} reports every added node and frames them only on request`, async ({
       agentConversation,
       page
     }) => {
-      test.setTimeout(90_000)
       const added = agentConversation.addedNodeIds()
       expect(added).toHaveLength(3)
 
