@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'

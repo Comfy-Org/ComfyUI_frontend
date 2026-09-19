@@ -1,7 +1,9 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../src/config/models-catalogue'
-import { workshopModels } from '../src/config/models-catalogue'
+import { workshopModels } from '../src/config/workshop-browse-content'
 import hubTemplates from '../src/data/hubTemplates.json'
 import templateModelJoin from '../src/data/templateModelJoin.json'
 import {
@@ -112,7 +114,7 @@ describe('buildTemplateModelJoin', () => {
     expect(partnerModelFor(row, workshopModels)?.slug).toBe(
       'byteplus--seedance-2-5-reference--generate-videos'
     )
-    expect(useCaseForTemplate(row, workshopModels)).toBe('generate-videos')
+    expect(useCaseForTemplate(row, workshopModels)).toBe('animate-images')
   })
 
   it('reproduces canonical targets that all exist in the published catalogue', () => {

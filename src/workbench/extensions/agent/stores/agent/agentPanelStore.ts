@@ -3,7 +3,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import type {
+  AgentPanelCloseSource,
+  AgentPanelOpenedMetadata
+} from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
@@ -78,11 +81,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
-  function open(): void {
+  function open(
+    source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
+  ): void {
     if (isOpen.value) return
     isOpen.value = true
     openedAt = Date.now()
-    useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
+    useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
   function close(source: AgentPanelCloseSource): void {

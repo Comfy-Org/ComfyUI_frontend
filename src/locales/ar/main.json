@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "اسحب أصلاً من لوحة الأصول",
     "addNodesFromGraph": "اذكر العُقد من الرسم البياني",
-    "addPromptToSend": "أضف مطالبة لإرسالها",
     "addToPrompt": "إضافة إلى المطالبة",
     "alpha": "ألفا",
     "askComfyAgent": "اسأل Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "اختر سير عمل",
     "chooseWorkflowForChat": "اختر سير عمل لهذه الدردشة",
     "close": "إغلاق",
+    "coachBody": "صِف أفكارك واطلب منه إنشاء مهام سير العمل وتشغيلها. يمكنه رؤية لوحة الرسم والملفات الخاصة بك.",
+    "coachGraphBody": "لا يزال بإمكانك تحرير المخطط أو تبديل علامات التبويب أثناء عمل الوكيل.",
+    "coachGraphTitle": "دع الوكيل يعمل أثناء التحرير",
+    "coachHistoryBody": "تُحفظ المحادثات السابقة هنا. افتح إحداها لمراجعتها أو لمتابعة العمل مع الوكيل.",
+    "coachHistoryTitle": "تابع من حيث توقفت",
+    "coachProgress": "{current} من {total}",
+    "coachTitle": "تعرّف على وكيل Comfy",
+    "coachWorkflowBody": "يحرر الوكيل مهمة سير العمل التي تختارها فقط. يمكنك أيضًا رفع ملفات مرجعية أو ذكر مهام سير عمل أخرى.",
+    "coachWorkflowTitle": "حدّد مهمة سير عمل ليحررها وكيلك",
     "consent": {
       "accept": "ابدأ استخدام Comfy Agent",
       "body1": "يساعدك Comfy Agent على تخطيط سير العمل وبنائه وتشغيله وتكراره. صِف ما تريد إنشاءه، وسيعمل Comfy Agent كزميل قوي لك.",
@@ -49,6 +57,13 @@
     "credits": "الرصيد",
     "currentTab": "علامة التبويب الحالية",
     "delete": "حذف",
+    "diagnosticReport": {
+      "clipboardFailed": "فشل الوصول إلى الحافظة. حدّد التقرير أدناه وانسخه، أو أعد المحاولة.",
+      "collectionFailed": "تعذّر جمع التقرير. أعد المحاولة، أو عطّل المصادر الاختيارية ثم أعد المحاولة.",
+      "includedSources": "تضمين في التقرير (مفعّل افتراضيًا)",
+      "manualCopy": "تقرير للنسخ",
+      "retry": "إعادة محاولة نسخ التقرير"
+    },
     "dismiss": "تجاهل",
     "downloadAssets": "تنزيل الأصول",
     "dragAndDropAssets": "اسحب الأصول وأفلتها هنا",
@@ -144,6 +159,7 @@
     "showMore": "إظهار المزيد",
     "skip": "تخطي",
     "stop": "إيقاف",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "أنشئ بطة صفراء ترتدي قناع هوكي",
       "اعرض سير العمل المحفوظ لدي",
@@ -403,9 +419,9 @@
       "contactSupport": "لحذف حسابك، يرجى التواصل مع {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "يوجد حساب بالفعل بعنوان البريد الإلكتروني هذا، لكنه يستخدم طريقة تسجيل دخول مختلفة. يُرجى تسجيل الدخول بالطريقة التي استخدمتها في الأصل.",
+      "auth/account-exists-with-different-credential": "تعذّر علينا تسجيل دخولك بهذه الطريقة. جرّب طريقة تسجيل دخول أخرى، أو أعد تعيين كلمة المرور للمتابعة.",
       "auth/cancelled-popup-request": "كانت نافذة تسجيل دخول أخرى مفتوحة بالفعل، لذا تم إلغاء هذه النافذة. يُرجى المحاولة مرة أخرى.",
-      "auth/email-already-in-use": "يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول بدلاً من ذلك.",
+      "auth/email-already-in-use": "تعذّر علينا إنشاء حساب بهذا البريد الإلكتروني. حاول تسجيل الدخول أو إعادة تعيين كلمة المرور بدلاً من ذلك.",
       "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
       "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
       "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
@@ -414,9 +430,7 @@
       "auth/popup-closed-by-user": "أُغلقت نافذة تسجيل الدخول قبل اكتمال تسجيل الدخول. يُرجى المحاولة مرة أخرى.",
       "auth/too-many-requests": "محاولات تسجيل دخول كثيرة جداً. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
       "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
-      "auth/user-not-found": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
       "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
-      "auth/wrong-password": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
       "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
       "signupBlocked": "تعذر إنشاء حسابك الآن. يرجى المحاولة لاحقًا. إذا استمرت المشكلة، راسل support@comfy.org."
     },
@@ -3163,6 +3177,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3246,7 @@
     "latent": "كامِن",
     "loaders": "التحميلات",
     "logic": "منطق",
+    "looping": "تكرار",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3279,7 @@
     "scail": "scail",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "سيجمات",
@@ -4500,6 +4517,7 @@
       "applyQuoteBeforeContinuing": "طبّق الرمز الترويجي لتحديث عرض السعر قبل المتابعة.",
       "backToAllPlans": "العودة إلى جميع الخطط",
       "billedEachMonth": "{amount} يتم تحصيلها كل شهر. يمكنك الإلغاء في أي وقت.",
+      "billingAddress": "عنوان الفوترة",
       "changePaymentMethod": "تغيير",
       "commitment": "الالتزام",
       "completePayment": "أكمل عملية الدفع",
@@ -5143,6 +5161,13 @@
     },
     "invite": "دعوة",
     "inviteLimitReached": "لقد وصلت إلى الحد الأقصى البالغ {count} من الأعضاء",
+    "inviteLinks": {
+      "copied": "تم النسخ!",
+      "copyAll": "نسخ رابط الدعوة | نسخ كل الروابط ({count})",
+      "copyLink": "نسخ رابط الدعوة",
+      "sentLead": "لكل دعوة رابط شخصي يمكنك مشاركته مباشرةً:",
+      "sentTitle": "تم إرسال {count} دعوة | تم إرسال {count} دعوات"
+    },
     "inviteMember": "دعوة عضو",
     "inviteMemberDialog": {
       "failedCount": "تعذر إرسال {count} دعوة. حاول مرة أخرى. | تعذر إرسال {count} دعوات. حاول مرة أخرى.",
@@ -5170,6 +5195,7 @@
       "actions": {
         "cancelInvite": "إلغاء الدعوة",
         "changeRole": "تغيير الدور",
+        "copyInviteLink": "نسخ رابط الدعوة",
         "removeMember": "إزالة العضو",
         "resendInvite": "إعادة إرسال الدعوة",
         "setCreditLimit": "تعيين حد الرصيد"

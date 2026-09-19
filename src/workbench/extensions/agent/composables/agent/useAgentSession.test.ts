@@ -188,7 +188,8 @@ type AgentAdmissionReason = AgentAdmissionError['error']['reason']
 
 function admissionError(
   reason: AgentAdmissionReason,
-  message: string
+  message: string,
+  retryAfterSeconds?: number
 ): AgentApiError {
   const serviceUnavailable = reason === 'funds_unavailable'
   const body = zAgentAdmissionError.parse({
@@ -198,7 +199,12 @@ function admissionError(
       reason
     }
   })
-  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+  return new AgentApiError(
+    message,
+    serviceUnavailable ? 503 : 402,
+    body,
+    retryAfterSeconds
+  )
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -639,6 +645,56 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('carries retryAfterSeconds through on a funds_unavailable denial so the UI can honour Retry-After', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message, 30))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        { type: 'notice', level: 'error', text: message, retryAfterSeconds: 30 }
+      ]
+    })
+  })
+
+  it('never attaches retryAfterSeconds to a manual_block denial, even if the transport carried one', async () => {
+    const message =
+      'This workspace is blocked. Contact support to restore access.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      // A 402 has no standard Retry-After semantics; assert the reason gate,
+      // not merely the header's absence, in case a proxy ever forwards one.
+      .mockRejectedValue(admissionError('manual_block', message, 30))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    const notice = session.entries.value.at(-1)
+    expect(notice).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+    expect(
+      (notice as { parts: Array<{ retryAfterSeconds?: number }> }).parts[0]
+        .retryAfterSeconds
+    ).toBeUndefined()
+  })
+
   it('does not infer no_funds from a 402 without an admission reason', async () => {
     const postMessage = vi
       .fn<
@@ -1030,11 +1086,11 @@ describe('useAgentSession (v1 composition root)', () => {
   )
 
   it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()
@@ -1090,11 +1146,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     let releasePrepare: () => void = () => undefined
@@ -1143,11 +1199,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-b'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const adopted = vi.fn()

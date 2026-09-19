@@ -42,7 +42,7 @@ export function prepareRouterRender(
   signal: AbortSignal = new AbortController().signal
 ) {
   return prepareModelRouterRender(modelFor(slug), parameters, {
-    token: process.env.COMFY_KEY,
+    token: process.env.COMFY_API_KEY,
     signal
   })
 }
@@ -55,6 +55,6 @@ export function router_render(
   return render(slug, parameters, {
     ...options,
     model: modelFor(slug),
-    token: options.token ?? process.env.COMFY_KEY
+    token: options.token ?? process.env.COMFY_API_KEY
   })
 }

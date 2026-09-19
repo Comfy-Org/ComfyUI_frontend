@@ -1,3 +1,4 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -7,7 +8,7 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref, computed } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
@@ -31,7 +32,6 @@ const ACCEPT_DEADLINE_MS = 15_000
 const mocks = vi.hoisted(() => {
   return {
     canRunWorkflows: { value: true },
-    showSubscriptionDialog: vi.fn(),
     workflowStatus: { value: new Map<unknown, WorkflowExecutionStatus>() },
 
     steps: [] as CoachStep[],
@@ -40,12 +40,7 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canRunWorkflows: mocks.canRunWorkflows,
-    showSubscriptionDialog: mocks.showSubscriptionDialog
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('./firstRunTourDefinition'), () => ({
   firstRunTourSteps: (_templateId: string, runState: Ref<string>) => {
@@ -178,6 +173,10 @@ function mountRunButton(
 }
 
 beforeEach(() => {
+  const billing = useBillingContext()
+  billing.canRunWorkflows = computed(() => mocks.canRunWorkflows.value)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   Object.assign(useOnboardingTourStore(), {
     activeTour:
       ref<ReturnType<typeof useOnboardingTourStore>['activeTour']>(null),
@@ -205,8 +204,8 @@ describe('useFirstRunTourController', () => {
     useWorkflowStore().activeWorkflow = null
     useCanvasStore().linearMode = false
     useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
-    vi.mocked(useSettingStore().set).mockImplementation(async (_key, value) => {
-      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = value
+    vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
       return Promise.resolve()
     })
     mocks.steps = []
@@ -995,7 +994,7 @@ describe('useFirstRunTourController', () => {
         'the subscribe button opens the paywall itself, with its own reason and telemetry'
       ).toHaveBeenCalled()
       expect(
-        mocks.showSubscriptionDialog,
+        useBillingContext().showSubscriptionDialog,
         'opening it here too would replace the button reason with the tour own'
       ).not.toHaveBeenCalled()
       expect(

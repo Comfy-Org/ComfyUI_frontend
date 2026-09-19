@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,7 +41,8 @@ describe('useSubgraphOperations', () => {
   })
 
   it('preserves previews and history when every unpack is refused', () => {
-    const subgraphNode = createSubgraphNode()
+    const firstSubgraphNode = createSubgraphNode()
+    const secondSubgraphNode = createSubgraphNode()
     const unpackSubgraph = vi.fn(() => false)
     const revokeSubgraphPreviews = vi
       .spyOn(useNodeOutputStore(), 'revokeSubgraphPreviews')
@@ -48,17 +50,27 @@ describe('useSubgraphOperations', () => {
     vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
       fromPartial<LGraphCanvas>({
         graph: fromPartial<LGraph>({ unpackSubgraph }),
-        selectedItems: new Set([subgraphNode])
+        selectedItems: new Set([firstSubgraphNode, secondSubgraphNode])
       })
     )
 
     useSubgraphOperations().unpackSubgraph()
 
-    expect(unpackSubgraph).toHaveBeenCalledWith(subgraphNode, {
+    expect(unpackSubgraph).toHaveBeenCalledWith(firstSubgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(unpackSubgraph).toHaveBeenCalledWith(secondSubgraphNode, {
       skipMissingNodes: true
     })
     expect(revokeSubgraphPreviews).not.toHaveBeenCalled()
     expect(captureCanvasState).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to unpack the selected subgraph.'
+      }
+    ])
   })
 
   it('updates previews and history only for successful unpacks', () => {
