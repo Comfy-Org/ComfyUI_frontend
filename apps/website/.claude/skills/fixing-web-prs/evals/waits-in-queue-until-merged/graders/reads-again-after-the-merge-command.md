@@ -1,5 +1,5 @@
 ---
 type: regex
 target: { source: file, path: bin/events.log }
-pattern: 'merge accepted\n(?:[^\n]*\n)*view MERGED '
+pattern: 'merge accepted #4242[^\n]*\n(?:[^\n]*\n)*view MERGED '
 ---

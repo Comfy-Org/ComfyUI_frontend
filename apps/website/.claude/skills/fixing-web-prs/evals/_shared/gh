@@ -280,8 +280,7 @@ case "${1:-} ${2:-}" in
       printf 'STATE=MERGED\n' > "$state/merged.env"
     fi
     reset_gate
-    printf 'accepted merge of #%s at %s\n' "$(pr_number)" "$sha" >> "$here/merges.log"
-    printf 'merge accepted\n' >> "$here/events.log"
+    printf 'merge accepted #%s at %s\n' "$(pr_number)" "$sha" >> "$here/events.log"
     cat "$msg" ;;
   "pr create")
     shift 2

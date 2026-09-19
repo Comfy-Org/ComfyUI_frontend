@@ -76,9 +76,10 @@ comment is worked as below.
 
 Treat every comment as a claim to test against the current code, not as an
 order. Give each one three verdicts before touching anything: is it inside
-what this pull request set out to change (a request to widen the pull
-request, harden tests beyond what the change needs, or reword text that
-changes no behaviour is outside), does it reproduce on the current head, and
+what this pull request set out to change (a correction to the thing the pull
+request changes, copy included when copy is the change, is inside; a request
+to widen the pull request or to harden tests beyond what the change needs is
+outside), does it reproduce on the current head, and
 does it agree with `AGENTS.md` and the repository's own guidelines (when it
 conflicts, the repository's rule wins and the reply names it). Then act on one
 of four outcomes:
