@@ -67,7 +67,7 @@ test.describe(
   'Agent canvas stays empty after an unreadable doc schema',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('a node the agent reports adding never reaches the canvas once the schema gate trips (visual proof: 0 nodes)', async ({
+    test('a node the agent reports adding never reaches the canvas once the schema gate trips', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -282,11 +282,17 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // Visual proof: the agent reports success while the canvas is still
-      // empty. Captured explicitly (in addition to Playwright's own
-      // on-failure screenshot/trace/video) so it survives independent of the
-      // final assertion below.
-      await expect(vueNodes.nodes).toHaveCount(0)
+      // Visual proof: the agent reports success while the specific node it
+      // claims to have added is still absent from the canvas. Captured
+      // explicitly (in addition to Playwright's own on-failure
+      // screenshot/trace/video) so it survives independent of the final
+      // assertion below. Scoped to the one node under test, not a blanket
+      // "canvas is empty" check -- other projects (e.g. `cloud`, which boots
+      // with the legacy default graph's 7 pre-existing nodes) legitimately
+      // have nodes on canvas already.
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
       await page.screenshot({
         path: 'test-results/agent-zero-nodes-on-unreadable-schema.png'
       })
