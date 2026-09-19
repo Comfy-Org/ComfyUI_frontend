@@ -19,6 +19,7 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -584,6 +585,11 @@ class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  // Every subscribe, unsubscribe and human-ops frame the follower has sent, in order.
+  docFrames(): readonly ClientDocFrame[] {
+    return this.hostSocket.docFrames()
   }
 }
 

@@ -1,4 +1,5 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
+import { z } from 'zod'
 
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -8,10 +9,26 @@ import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
+/** A doc frame the follower put on the wire, as the host received it. */
+export interface ClientDocFrame {
+  type: 'doc_subscribe' | 'doc_unsubscribe' | 'doc_ops'
+  workflowId: string
+  ops: { op: string }[]
+}
+
+const zClientDocFrame = z.object({
+  type: z.enum(['doc_subscribe', 'doc_unsubscribe', 'doc_ops']),
+  data: z.object({
+    workflow_id: z.string(),
+    ops: z.array(z.object({ op: z.string() }).passthrough()).default([])
+  })
+})
+
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private socket: WebSocketRoute | null = null
   private subscribes = 0
+  private readonly clientDocFrames: ClientDocFrame[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -74,6 +91,7 @@ export class AgentFollowerHostSocket {
   private onClientFrame(raw: string | Buffer): void {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
+    this.recordClientDocFrame(frame)
     const { type, data } = frame as { type?: unknown; data?: unknown }
     if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
       return
@@ -89,8 +107,24 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed?.()
   }
 
+  private recordClientDocFrame(frame: unknown): void {
+    const parsed = zClientDocFrame.safeParse(frame)
+    if (!parsed.success) return
+    const { type, data } = parsed.data
+    this.clientDocFrames.push({
+      type,
+      workflowId: data.workflow_id,
+      ops: data.ops
+    })
+  }
+
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  /** Every subscribe, unsubscribe and human-ops frame the follower has sent, in order. */
+  docFrames(): readonly ClientDocFrame[] {
+    return this.clientDocFrames
   }
 }
