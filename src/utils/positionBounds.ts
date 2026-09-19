@@ -5,11 +5,16 @@ interface PositionableItem {
   size?: ArrayLike<number>
 }
 
-export function createPositionBounds(
-  items: Iterable<PositionableItem>,
-  padding: number
-): ReadOnlyRect | null {
-  if (!Number.isFinite(padding)) return null
+export interface PositionExtents {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+export function calculatePositionExtents(
+  items: Iterable<PositionableItem>
+): PositionExtents | null {
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -26,7 +31,17 @@ export function createPositionBounds(
     maxX = Math.max(maxX, x + width)
     maxY = Math.max(maxY, y + height)
   }
-  if (minX === Infinity) return null
+  return minX === Infinity ? null : { minX, minY, maxX, maxY }
+}
+
+export function createPositionBounds(
+  items: Iterable<PositionableItem>,
+  padding: number
+): ReadOnlyRect | null {
+  if (!Number.isFinite(padding)) return null
+  const extents = calculatePositionExtents(items)
+  if (!extents) return null
+  const { minX, minY, maxX, maxY } = extents
   return [
     minX - padding,
     minY - padding,

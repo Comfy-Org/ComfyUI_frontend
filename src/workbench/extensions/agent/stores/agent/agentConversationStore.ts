@@ -12,7 +12,7 @@ import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
-export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
 export interface UserAttachment {
   name: string
