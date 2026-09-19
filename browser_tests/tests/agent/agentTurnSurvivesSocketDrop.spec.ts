@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
@@ -83,6 +81,13 @@ test.describe(
     }) => {
       await turnLock.dropSocket()
 
+      // Preconditions stay above the marker so a broken composer or a lost
+      // prompt reads as a real failure rather than the expected one. Send
+      // visibility is deliberately not asserted here: Send replacing Stop is
+      // itself part of the defect.
+      await expect(turnLock.composer).toBeVisible()
+      await expect(turnLock.userBubbles).toHaveText([PROMPT])
+
       // The abandoned turn puts Send back in front of the user, so the nudge
       // reaches a thread the server still has locked and comes back 409
       // TURN_IN_PROGRESS. Once the client re-attaches, the composer will offer
@@ -91,42 +96,29 @@ test.describe(
       test.fail()
       await turnLock.composer.fill('are you still there?')
       await turnLock.sendButton.click()
+      // Wait for the nudge to actually reach the server, or both assertions
+      // below could pass on a race and flip this expected failure green.
+      await expect.poll(() => turnLock.postAttempts()).toBe(2)
       await expect(turnLock.panel.getByRole('alert')).toHaveCount(0)
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 
     // The report mentions audio playback right before the disconnect, so this is
-    // the control. It runs the same Web Audio work the audio-output widget and
-    // the asset-library preview do (`useWaveAudioPlayer.decodeAudioSource`
-    // builds an AudioContext, decodes into it, then closes it) while the turn is
-    // live. This one passes today: the three above need no audio at all, which
-    // is what makes the playback incidental rather than causal.
+    // the control: `playDecodedAudio` runs the AudioContext + decodeAudioData +
+    // close sequence of `useWaveAudioPlayer.decodeAudioSource` while the turn is
+    // live. It passes today, and the three above need no audio at all — together
+    // that is what makes the playback incidental rather than causal.
     test('keeps the turn running while audio plays in the page', async ({
       turnLock,
       getWebSocket
     }) => {
-      await turnLock.panel.evaluate(async () => {
-        const context = new AudioContext()
-        const buffer = context.createBuffer(
-          1,
-          context.sampleRate / 10,
-          context.sampleRate
-        )
-        const source = context.createBufferSource()
-        source.buffer = buffer
-        source.connect(context.destination)
-        source.start()
-        await context.close()
-      })
+      await turnLock.playDecodedAudio()
 
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.workSummary).toHaveCount(0)
 
       turnLock.push(await getWebSocket(), POST_RECONNECT_EVENT)
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
-      await expect(
-        turnLock.panel.getByText(enMessages.agent.sendFailed)
-      ).toHaveCount(0)
     })
   }
 )

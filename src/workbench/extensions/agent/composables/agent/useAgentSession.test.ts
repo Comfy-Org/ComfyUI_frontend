@@ -910,13 +910,14 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     emit(delta('msg-1', ' and the rest'))
 
-    expect(session.entries.value).toMatchObject([
-      { role: 'user', text: 'go' },
-      {
-        role: 'assistant',
-        parts: [{ type: 'text', text: 'partial and the rest' }]
-      }
-    ])
+    // Joined rather than part-by-part: a re-attach that opens a fresh text part
+    // on reconnect still shows the user the whole reply, and must count as
+    // fixed.
+    const assistant = session.entries.value.at(-1)
+    const replyText = (assistant && 'parts' in assistant ? assistant.parts : [])
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('')
+    expect(replyText).toBe('partial and the rest')
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {

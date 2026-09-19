@@ -14,6 +14,8 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -69,6 +71,7 @@ class TurnLockServer {
   private streaming = false
   private prompt = ''
   private rejected = 0
+  private posts = 0
 
   get turnIsStreaming(): boolean {
     return this.streaming
@@ -76,6 +79,15 @@ class TurnLockServer {
 
   get rejectedPosts(): number {
     return this.rejected
+  }
+
+  /** Every post the server answered, accepted or rejected. */
+  get postAttempts(): number {
+    return this.posts
+  }
+
+  countPost(): void {
+    this.posts++
   }
 
   completeTurn(): void {
@@ -125,6 +137,7 @@ async function routeTurnLock(
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'GET')
       return route.fulfill(jsonRoute(server.transcript()))
+    server.countPost()
     if (server.turnIsStreaming)
       return route.fulfill({ ...jsonRoute(server.rejectPost()), status: 409 })
     const request = zAgentPostMessageRequest.parse(
@@ -151,6 +164,7 @@ export class AgentTurnLockHarness {
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly userBubbles: Locator
+  private readonly agentPanel: AgentPanel
 
   constructor(
     private readonly page: Page,
@@ -160,7 +174,8 @@ export class AgentTurnLockHarness {
     private readonly getWebSocket: () => Promise<WebSocketRoute>,
     private readonly nextWebSocket: () => Promise<WebSocketRoute>
   ) {
-    this.panel = page.locator('#agent-panel-root')
+    this.agentPanel = new AgentPanel(page)
+    this.panel = this.agentPanel.root
     this.composer = this.panel.getByRole('textbox')
     this.sendButton = this.panel.getByRole('button', {
       name: enMessages.agent.send,
@@ -181,15 +196,16 @@ export class AgentTurnLockHarness {
     return this.server.rejectedPosts
   }
 
+  postAttempts(): number {
+    return this.server.postAttempts
+  }
+
   /** Opens the panel on a blank workflow and points the composer at that tab. */
   async openOnBlankWorkflow(): Promise<void> {
     await expect(
-      this.page.getByTestId('integrated-tab-bar-actions')
+      this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 15_000 })
-    await this.page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
-      .click()
-    await expect(this.panel).toBeVisible()
+    await this.agentPanel.open()
     await this.page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -197,9 +213,10 @@ export class AgentTurnLockHarness {
       })
       .click()
     await expect(this.panel).toBeVisible()
-    await this.panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
+    // Not AgentPanel.selectWorkflow(): it asserts the picker label straight
+    // after the menu click, but under this fixture the label only settles once
+    // the pending workflow save is released below.
+    await this.agentPanel.workflowPicker.click()
     await this.page
       .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
       .click()
@@ -212,7 +229,13 @@ export class AgentTurnLockHarness {
     const live = await this.getWebSocket()
     await this.composer.fill(prompt)
     await this.sendButton.click()
-    await expect(this.stopButton).toBeVisible()
+    // Stop is NOT an ack: Composer renders it from `isSending`, which
+    // useAgentSession sets before the POST (and before a prepare() race worth
+    // up to PREPARE_TIMEOUT_MS). The user bubble comes from recordUser(), one
+    // line above startTurn(), so it is the first signal that activeTurnId is
+    // set. Pushing a frame before that point gets it silently dropped by
+    // agentConversationStore.ingest, with no retry.
+    await expect(this.userBubbles).toHaveText([prompt])
     this.push(live, TURN_THINKING_EVENT)
     await expect(this.panel.getByText(TURN_THINKING_TEXT)).toBeVisible()
     this.push(live, TURN_TOOL_EVENT)
@@ -221,6 +244,45 @@ export class AgentTurnLockHarness {
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {
     ws.send(JSON.stringify(event))
+  }
+
+  /**
+   * Mirrors `useWaveAudioPlayer.decodeAudioSource`: open an AudioContext, run
+   * real `decodeAudioData` over WAV bytes, play them, then close the context.
+   * The product's `api.fetchApi` step is deliberately left out — network
+   * isolation fails a test on any unmocked request — so the bytes are built in
+   * the page instead of downloaded.
+   */
+  async playDecodedAudio(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const frames = 800
+      const bytes = new ArrayBuffer(44 + frames * 2)
+      const view = new DataView(bytes)
+      const ascii = (offset: number, text: string) => {
+        for (let i = 0; i < text.length; i++)
+          view.setUint8(offset + i, text.charCodeAt(i))
+      }
+      ascii(0, 'RIFF')
+      view.setUint32(4, 36 + frames * 2, true)
+      ascii(8, 'WAVEfmt ')
+      view.setUint32(16, 16, true)
+      view.setUint16(20, 1, true)
+      view.setUint16(22, 1, true)
+      view.setUint32(24, 8000, true)
+      view.setUint32(28, 16000, true)
+      view.setUint16(32, 2, true)
+      view.setUint16(34, 16, true)
+      ascii(36, 'data')
+      view.setUint32(40, frames * 2, true)
+
+      const context = new AudioContext()
+      const decoded = await context.decodeAudioData(bytes)
+      const source = context.createBufferSource()
+      source.buffer = decoded
+      source.connect(context.destination)
+      source.start()
+      await context.close()
+    })
   }
 
   /** Drops the live socket and resolves with the one the client reconnects on. */
