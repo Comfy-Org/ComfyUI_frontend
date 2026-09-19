@@ -1558,10 +1558,13 @@ describe('useSubscriptionCheckout', () => {
       })
 
       it('falls back to the legacy client when the route is not deployed', async () => {
-        railPortal({ status: 'unavailable' })
+        const openPaymentPortal = railPortal({ status: 'unavailable' })
 
         await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
 
+        expect(openPaymentPortal).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
         expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
           'https://app.test/subscribe'
         )
