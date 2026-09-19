@@ -90,9 +90,10 @@ Alternatives considered:
   unmounts.
 - The eager abort on a null subscription is kept for the refusal path, so a
   refused resubscribe on return still drops the held batch.
-- A stale `base_version` is sent on a delayed batch; the applier's delete
-  identity is the node id, so this is expected to apply, but it is host
-  behavior this repository cannot verify.
+- A delayed batch carries the `base_version` it was minted with. The applier
+  orders a delete against the node's stamp, so a node another actor touched
+  at a higher version while the tab was away can win and the delete is
+  dropped as `lww-dropped`; the follower then converges to the host's view.
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
