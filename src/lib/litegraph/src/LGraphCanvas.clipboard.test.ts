@@ -682,7 +682,7 @@ describe('clipboard reroute id integrity', () => {
 // wrong position, even though the node visibly lands in the right place on
 // canvas once `configure()` runs.
 describe('paste-time createNode layout snapshot ordering', () => {
-  it.fails('the createNode layout snapshot carries the pasted position, not the pre-configure default', () => {
+  it('the createNode layout snapshot carries the pasted position, not the pre-configure default', () => {
     const nodeType = 'test/pm1295-position-fingerprint'
     registerClipboardNodeType(nodeType)
 
