@@ -121,12 +121,12 @@ const showBatchNav = computed(
   () => beforeImages.value.length > 1 || afterImages.value.length > 1
 )
 
-watch(beforeImages, () => {
-  beforeIndex.value = 0
+watch(beforeImages, (images) => {
+  if (beforeIndex.value >= images.length) beforeIndex.value = 0
 })
 
-watch(afterImages, () => {
-  afterIndex.value = 0
+watch(afterImages, (images) => {
+  if (afterIndex.value >= images.length) afterIndex.value = 0
 })
 
 const beforeImage = computed(() => beforeImages.value[beforeIndex.value] ?? '')
