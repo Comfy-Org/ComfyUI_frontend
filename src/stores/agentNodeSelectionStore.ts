@@ -42,23 +42,6 @@ export const useAgentNodeSelectionStore = defineStore(
     let restoreSidebarTabId: string | null = null
     let restoreMinimap = false
     let restoreShowInfo = false
-    let unwatchReadOnly: (() => void) | undefined
-
-    // Selection mode is a picking surface, not an editing one: the canvas is
-    // pinned read-only for the duration, with a watcher re-pinning it in case
-    // anything else flips it back mid-mode. Mirrors `appModeStore.ts`'s
-    // `enforceReadOnly`.
-    function enforceReadOnly(active: boolean): void {
-      const canvas = canvasStore.canvas
-      if (!canvas) return
-      canvas.read_only = active
-      unwatchReadOnly?.()
-      if (active)
-        unwatchReadOnly = watch(
-          () => canvas.read_only,
-          () => (canvas.read_only = true)
-        )
-    }
 
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)
@@ -68,8 +51,6 @@ export const useAgentNodeSelectionStore = defineStore(
       // component registers on `isActive`. That is what lets GlobalToast replay
       // its deferred messages onto an already-visible layer.
       document.body.classList.toggle(NODE_SELECTION_CLASS, active)
-
-      enforceReadOnly(active)
 
       if (active) {
         isActionBarsHidden.value = true
