@@ -879,6 +879,12 @@ describe('useAgentSession (v1 composition root)', () => {
   // user needs instead, and are the lowest level that proves it — the browser
   // spec `agentTurnSurvivesSocketDrop.spec.ts` covers the same defect through
   // the real socket and the rendered panel.
+  //
+  // `it.fails` accepts a throw from anywhere in the body, so the arrange these
+  // two share cannot guard itself. (g) and (g2) directly above are unmarked and
+  // drive exactly that arrange — start, sendMessage, emit, the isStreaming
+  // precondition — so a fixture or setup regression reddens there instead of
+  // being absorbed here. Keep them unmarked for as long as these two exist.
   // The server still has this turn open, so its history says `streaming` and
   // carries what the turn has produced so far. That is what decides which
   // repairs count as fixed: re-attaching the local transport and re-hydrating

@@ -51,11 +51,16 @@ test.describe(
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
       // The server never stopped running this turn, so it keeps broadcasting the
-      // same message_id down the new socket. `agentConversationStore.ingest`
-      // drops every one of them: `transport` is null after the abort, and
-      // `dropBackgroundTurns()` emptied the map it would otherwise fall back to.
-      test.fail()
+      // same message_id down the new socket. Sending it stays above the marker
+      // with the rest of the arrange: `ws.send()` throws on a dead route, and
+      // below test.fail() that throw would read as the expected failure without
+      // the assertion ever running.
       turnLock.push(reconnected, POST_RECONNECT_EVENT)
+
+      // `agentConversationStore.ingest` drops every one of those frames:
+      // `transport` is null after the abort, and `dropBackgroundTurns()` emptied
+      // the map it would otherwise fall back to.
+      test.fail()
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
     })
 
