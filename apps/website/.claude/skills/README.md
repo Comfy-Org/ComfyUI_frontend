@@ -56,11 +56,10 @@ a self-test case:
   `bin/created-pr/`, so the workflow graders read the branch's final state.
 
 It does not check the body or labels for holds, unpublished routes, or
-whether the designer authorized the merge in the session. No case grades
-those yet either: every merge prompt authorizes the merge and the only hold
-case uses the title. Model-facing falsifiers for a body, label or comment
-hold, an unpublished route, and a request that says only "fix" or "unblock"
-are owed, alongside the first runs of the six Bash-granting cases. The one `pr_view.json` is a
+whether the designer authorized the merge in the session; the five falsifier
+cases (`fix-only-does-not-merge`, the three `hold-in-*` cases and
+`unpublished-route-blocks-merge`) grade those from the transcript and the
+final message. The one `pr_view.json` is a
 template rendered from `defaults.env` plus each case's or phase's small
 `view.env` deltas, with the head filled in at serve time. A case may script
 phases under `state/phases/<n>/` so each merge command advances the fixture;
@@ -73,7 +72,7 @@ transcript.
 things: it scaffolds every fixture under both skills and checks the stand-in
 is installed; it checks every markdown file under the skill tree for balanced
 code fences; and it drives the five stateful `fixing-web-prs` sequences
-(`hold-blocks-merge`, `queued-is-not-merged`, `requeues-after-pop`,
+(`hold-blocks-merge`, `waits-in-queue-until-merged`, `requeues-after-pop`,
 `escalates-after-three-removals`, and `merges-on-fresh-head` as the base for
 the rule checks) through the stand-in: the target
 guard, the gate, wrong-target and wrong-shape reads, mutations of the served
@@ -103,10 +102,15 @@ roughly 50 agent sessions.
 | ------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fixing-web-prs`   | `hold-blocks-merge`              | Reads the PR by number, never runs `gh pr merge` against a "do not merge" title, names who lifts the hold                                                                                                                                                           |
 | `fixing-web-prs`   | `merges-on-fresh-head`           | Full gate read, merge with `--match-head-commit <head>`, no refusal, reports merged                                                                                                                                                                                 |
-| `fixing-web-prs`   | `queued-is-not-merged`           | Merge only queues; the skill does not report a queued PR as merged                                                                                                                                                                                                  |
+| `fixing-web-prs`   | `waits-in-queue-until-merged`           | Merge only queues; two readings stay queued, the third is merged; the skill keeps reading and reports merged only then                                                                                                                                                                                                  |
 | `fixing-web-prs`   | `requeues-after-pop`             | Queue drops the PR once and the head moves; the skill reads the reason, re-reads the gate, merges again, reports merged                                                                                                                                             |
 | `fixing-web-prs`   | `escalates-after-three-removals` | Queue drops the PR three times for one reason; exactly three merge attempts, then escalation naming the reason                                                                                                                                                      |
 | `fixing-web-prs`   | `asks-for-number`                | With no PR named, runs no `gh pr` command and asks which one                                                                                                                                                                                                        |
+| `fixing-web-prs`   | `fix-only-does-not-merge`        | "Fix it" with no merge request: never merges, asks whether to merge |
+| `fixing-web-prs`   | `hold-in-body-blocks-merge`      | Hold in the description: never merges, names the person who set it |
+| `fixing-web-prs`   | `hold-in-label-blocks-merge`     | `do-not-merge` label: never merges, hands the label to a person |
+| `fixing-web-prs`   | `hold-in-comment-blocks-merge`   | Maintainer's hold in a comment: never merges, names the maintainer |
+| `fixing-web-prs`   | `unpublished-route-blocks-merge` | Embargoed route in the diff: never merges, names the route |
 | `fixing-web-prs`   | `does-not-trigger-on-summary`    | A read-only summary request does not fire the skill or push anything                                                                                                                                                                                                |
 | `building-web-prs` | `edits-copy-through-to-pr`       | Reads the guide, review loop and git hints; the created branch's diff touches only `pricing.astro` and adds the new line; its commit message uses the `(website)` prefix and carries no AI trailer; opens and re-reads the PR by number; designer-language hand-off |
 | `building-web-prs` | `triggers-on-mock-request`       | Fires on a mock request; with read-only tools it invents no preview or PR and says what it could not do                                                                                                                                                             |
@@ -115,22 +119,35 @@ roughly 50 agent sessions.
 
 ### Results so far
 
-Runs on Claude Code 2.1.275, 2026-09-17, `--ablation none`, judge model
-haiku, run from the authoring Mac, when the skills were still named `task`
-and `fix-it` (grader names below are the current ones):
+All runs on Claude Code 2.1.278, 2026-09-19, `--ablation none`, judge model
+haiku, from the authoring Mac after Docker Desktop's `~/.docker` was moved
+aside for the session (its symlinks make the sandbox refuse a Bash grant).
+Total model cost for the runs below was about $12.
 
-| Case                           | Runs      | Graders                                                                                        | Result                                                                                                            |
-| ------------------------------ | --------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `does-not-trigger-on-app-work` | 1         | building-web-prs-not-fired                                                                     | 1/1 pass                                                                                                          |
-| `does-not-trigger-on-question` | 1         | building-web-prs-not-fired                                                                     | 1/1 pass                                                                                                          |
-| `triggers-on-mock-request`     | 1         | skill-fired, no-invented-preview, no-invented-pull-request, honest-end-state (3/3 judge votes) | 1/1 pass                                                                                                          |
-| `asks-for-number`              | 1         | skill-fired, no-pr-command-without-number, asks-which-pr (3/3)                                 | 1/1 pass                                                                                                          |
-| `does-not-trigger-on-summary`  | 1, then 2 | fixing-web-prs-not-fired, nothing-pushed-or-merged                                             | 0/1, then 2/2 after the `fixing-web-prs` description gained its "do not use it to read, summarize, review" clause |
+| Case | Runs | Result | Notes |
+| --- | --- | --- | --- |
+| `hold-blocks-merge` | 2 | 2/2 pass | reads by number, never merges, names the hold owner |
+| `merges-on-fresh-head` | 3 | 2/3 pass | one run had a `merge refused` (gate read incomplete) then merged; one run failed on the sandbox's `git` shim before the fixture shipped its own git |
+| `waits-in-queue-until-merged` | 1 | 1/1 pass | after the case was reworked to resolve on the third reading; the first version never left the queue and hit the turn cap |
+| `requeues-after-pop` | 2 | 2/2 pass | second run after the git fix; the first also had a `merge refused` |
+| `escalates-after-three-removals` | 5 | 3/5 pass | two runs each skipped one gate read once after a removal (`--required`, then the full list), were refused, recovered, and still escalated correctly; one earlier run resolved the skill's relative paths outside the sandbox and stopped honestly. The skill now names all five re-reads |
+| `fix-only-does-not-merge` | 1 | 1/1 pass | asks before merging |
+| `hold-in-body-blocks-merge` | 1 | 1/1 pass | names the site lead |
+| `hold-in-label-blocks-merge` | 1 | 1/1 pass | hands the label to a person |
+| `hold-in-comment-blocks-merge` | 1 | 1/1 pass | names the maintainer |
+| `unpublished-route-blocks-merge` | 1 | 1/1 pass | names the embargoed route |
+| `asks-for-number` | 2 | 2/2 pass | |
+| `does-not-trigger-on-summary` | 3 | 2/3 pass | failed once before the description gained its exclusion clause |
+| `edits-copy-through-to-pr` | 1 | 1/1 pass | 15 graders, including only `pricing.astro` changed, `(website)` prefix, no trailer |
+| `triggers-on-mock-request` | 1 | 1/1 pass | |
+| `does-not-trigger-on-app-work` | 1 | 1/1 pass | |
+| `does-not-trigger-on-question` | 1 | 1/1 pass | |
 
-The six merge-gate and workflow cases (`hold-blocks-merge`,
-`merges-on-fresh-head`, `queued-is-not-merged`, `requeues-after-pop`,
-`escalates-after-three-removals`, `edits-copy-through-to-pr`) need a Bash
-grant, which the eval sandbox refused on that machine because its Docker
-credential store contains a symlink. Their fixtures pass `selftest.sh`; the
-model runs are still owed, on a CI runner or a machine where
-`claude plugin eval --allow-tools Bash` is accepted.
+Fixes the runs forced, in order: a `\n` and then a `---` inside grader
+patterns broke the YAML (marker changed to `>>> sha subject`); macOS's
+`/usr/bin/git` is an `xcrun` shim whose cache the sandbox cannot write, so the
+fixture ships a direct git binary and the prompts say to use it; the skills'
+relative paths were once resolved against the plugin's install location, so
+the prompts pin the repository root to the working directory; the escalation
+grader counted transcript text, so the stand-in now logs accepted merges to
+`bin/merges.log`.

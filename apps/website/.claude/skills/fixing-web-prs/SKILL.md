@@ -164,8 +164,12 @@ reason. Say in the
 hand-off which of the three sources you used. When that happens, do not stop and do not report it as merged or queued:
 read the reason, treat it as a new blocker, run the review loop on it (a queue
 check failure is read from its run log the same way; a conflict is settled the
-same way), then take the whole gate reading again and, when every line holds,
-run the merge command again with the new head sha. Count each removal. After
+same way), then take the whole gate reading again, all five reads, none
+carried over from before the removal: `gh pr view <number>` with the fields
+listed above, `gh pr checks <number>`, `gh pr checks <number> --required`,
+the paginated threads query, and the paginated issue comments. When every
+line holds, run the merge command again with the head sha from that fresh
+view. Count each removal. After
 three removals for the same reason, or when the reason is one only a person
 can fix (a dismissed approval, a queue that is paused), stop and escalate with
 the reason and the link, per `review-loop.md`.

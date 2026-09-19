@@ -6,14 +6,14 @@
   "author": {
     "login": "dana-comfy"
   },
-  "labels": [],
+  "labels": __LABELS__,
   "headRefName": "__BRANCH__",
   "headRefOid": "__HEAD__",
   "baseRefName": "main",
   "mergeable": "MERGEABLE",
   "mergeStateStatus": "__MERGE_STATE__",
   "reviewDecision": "__REVIEW_DECISION__",
-  "body": "Adds the pricing subheading the design team asked for.\n\n## Changes\n- pricing.astro: one new paragraph under the heading",
+  "body": "__BODY__",
   "latestReviews": [
     {
       "author": {

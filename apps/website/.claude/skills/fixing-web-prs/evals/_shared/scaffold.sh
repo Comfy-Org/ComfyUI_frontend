@@ -38,6 +38,11 @@ mkdir -p bin
 cp "$shared/gh" bin/gh
 cp "$shared/snapshot-pr.sh" bin/snapshot-pr.sh
 chmod +x bin/snapshot-pr.sh
+# macOS's /usr/bin/git is an xcrun shim that needs a writable cache the eval
+# sandbox denies, so give the workspace a direct git binary resolved now.
+real_git="$(xcrun -f git 2>/dev/null || command -v git)"
+printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$real_git" > bin/git
+chmod +x bin/git
 chmod +x bin/gh
 mkdir -p bin/state
 cp -R "$shared/base/." bin/state/
@@ -48,6 +53,9 @@ branch="$(cat bin/state/branch)"
 if [[ "$mode" == "with-branch" ]]; then
   git checkout -q -b "$branch"
   printf -- '---\n---\n<h1>Pricing</h1>\n<p>Start free, upgrade when you need more.</p>\n<p>No card needed to start.</p>\n' > apps/website/src/pages/pricing.astro
+  if [[ -f bin/state/branch_files.txt ]]; then
+    while IFS='|' read -r path content; do [[ -n "$path" ]] || continue; mkdir -p "$(dirname "$path")"; printf '%b' "$content" > "$path"; done < bin/state/branch_files.txt
+  fi
   git add -A && git commit -q -m "feat(website): add the pricing subheading"
   git checkout -q main
   git update-ref "refs/remotes/origin/$branch" "$branch"

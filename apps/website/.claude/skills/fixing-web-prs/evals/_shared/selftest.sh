@@ -279,11 +279,14 @@ echo "hold-blocks-merge"
 build hold-blocks-merge
 if ./bin/gh pr view 4242 | grep -q "DO NOT MERGE"; then ok "title carries the hold"; else bad "hold title missing"; fi
 
-echo "queued-is-not-merged"
-build queued-is-not-merged
+echo "waits-in-queue-until-merged"
+build waits-in-queue-until-merged
 full_gate
 expect_ok ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
-assert_eq "after merge" "$(read_view)" "OPEN QUEUED"
+assert_eq "view 1 after merge" "$(read_view)" "OPEN QUEUED"
+assert_eq "view 2 after merge" "$(read_view)" "OPEN QUEUED"
+assert_eq "view 3 after merge" "$(read_view)" "MERGED CLEAN"
+expect_fail ./bin/gh pr merge 4242 --squash --match-head-commit "$(head_now)"
 
 echo "requeues-after-pop"
 build requeues-after-pop
@@ -322,6 +325,7 @@ assert_eq "paginated output is one document per page" "$pages" "2"
 composed="$(./bin/gh api --paginate repos/example/site/issues/4242/timeline | jq -s 'add | map(.id)' -c)"
 assert_eq "pages compose to the three events in order" "$composed" "[7001,7002,7003]"
 assert_eq "one removal reason across the three" "$(reasons)" "1"
+assert_eq "accepted merges logged" "$(grep -c '^accepted merge of #4242' bin/merges.log)" "3"
 awk '/"id": 7003/{f=1} f && /"reason"/{sub(/timed out on shard 3 of 4/,"failed on a merge conflict"); f=0} {print}' bin/state/phases/3/timeline.json > bin/state/tl.tmp && mv bin/state/tl.tmp bin/state/phases/3/timeline.json
 assert_eq "changed-reason falsifier is detected" "$(reasons)" "2"
 

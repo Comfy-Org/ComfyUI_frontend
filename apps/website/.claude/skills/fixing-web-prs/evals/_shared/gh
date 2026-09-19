@@ -34,6 +34,7 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
+[[ -x "$here/git" ]] && git() { "$here/git" "$@"; }
 state="$here/state"
 gate="$state/gate"
 log="$here/calls.log"
@@ -79,7 +80,9 @@ render_view() {
   load_env "${envs[@]}"
   sed -e "s#__TITLE__#$V_TITLE#" -e "s#__STATE__#$V_STATE#" -e "s#__MERGE_STATE__#$V_MERGE_STATE#" \
       -e "s#__REVIEW_DECISION__#$V_REVIEW_DECISION#" -e "s#__REVIEW_AT__#$V_REVIEW_AT#g" \
-      -e "s#__BRANCH__#${V_BRANCH:-$(branch)}#" -e "s#__HEAD__#$(head_sha)#g" "$state/pr_view.json"
+      -e "s#__BRANCH__#${V_BRANCH:-$(branch)}#" -e "s#__HEAD__#$(head_sha)#g" \
+      -e 's#"__BODY__"#null#' -e 's#__LABELS__#null#' "$state/pr_view.json" \
+    | jq --arg b "$(printf '%b' "${V_BODY:-}")" --argjson l "${V_LABELS:-[]}" '.body = $b | .labels = $l'
 }
 serve() { sed "s/__HEAD__/$(head_sha)/g" "$1"; }
 
@@ -275,6 +278,7 @@ case "${1:-} ${2:-}" in
       printf 'STATE=MERGED\n' > "$state/merged.env"
     fi
     reset_gate
+    printf 'accepted merge of #%s at %s\n' "$(pr_number)" "$sha" >> "$here/merges.log"
     cat "$msg" ;;
   "pr create")
     shift 2
