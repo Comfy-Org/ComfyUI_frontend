@@ -85,7 +85,9 @@ describe('minimapCanvasRenderer', () => {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
+        colors: {
+          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
+        },
         light_theme: false
       }
     })
@@ -299,7 +301,9 @@ describe('minimapCanvasRenderer', () => {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
+        colors: {
+          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#000' }
+        },
         light_theme: true
       }
     })
@@ -345,5 +349,37 @@ describe('minimapCanvasRenderer', () => {
     // Canvas is 250x200, so offset should be (250-100)/2 = 75, (200-50)/2 = 75
     // This affects node positioning
     expect(mockContext.fillRect).toHaveBeenCalled()
+  })
+
+  it('renders a scoped semantic decoration after the base node fill', () => {
+    renderMinimapToCanvas(mockCanvas, mockGraph, {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: false,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200,
+      decorations: [
+        {
+          target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+          tone: 'accent',
+          treatment: 'fill',
+          enter: 'pop',
+          enteredAt: 1_000
+        }
+      ],
+      now: 2_000
+    })
+
+    expect(mockContext.fillRect).toHaveBeenCalledTimes(3)
+    expect(mockContext.fillRect).toHaveBeenLastCalledWith(50, 50, 75, 40)
+    expect(mockContext.strokeRect).toHaveBeenCalledAfter(
+      vi.mocked(mockContext.fillRect)
+    )
   })
 })

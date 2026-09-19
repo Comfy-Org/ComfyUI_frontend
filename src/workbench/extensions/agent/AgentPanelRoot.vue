@@ -17,6 +17,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -34,6 +35,10 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// The composition root publishes declarative rows to the renderer-owned port;
+// agent CRDT and state modules remain independent of minimap implementation.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { registerMinimapDecorationLayer } from '@/renderer/extensions/minimap/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -207,6 +212,36 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
+const settingStore = useSettingStore()
+const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+watch(
+  () => graphActivity.state,
+  (activity) => {
+    if (activity.phase === 'idle') {
+      agentMinimapLayer.replace([])
+      return
+    }
+    const rootGraphId = toRootGraphId(activity.rootGraphId)
+    agentMinimapLayer.replace(
+      activity.nodeIds.map((nodeId) => ({
+        target: {
+          rootGraphId,
+          owningGraphId: toOwningGraphId(activity.rootGraphId),
+          nodeId
+        },
+        tone: 'accent',
+        treatment: 'fill',
+        enter: 'pop'
+      }))
+    )
+    if (
+      activity.phase === 'running' &&
+      !settingStore.get('Comfy.Minimap.Visible')
+    )
+      void settingStore.set('Comfy.Minimap.Visible', true)
+  },
+  { immediate: true }
+)
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
@@ -755,6 +790,7 @@ onBeforeUnmount(() => {
   stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
+  agentMinimapLayer.dispose()
 })
 
 const history = useAgentChatHistoryStore()
