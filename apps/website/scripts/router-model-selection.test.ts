@@ -22,6 +22,10 @@ describe('Router model test selection', () => {
     )
   })
 
+  it('treats an empty slug list as a default sweep', () => {
+    expect(selectRouterModels({ slugs: [] })).toEqual(selectRouterModels({}))
+  })
+
   it('allows an explicitly named disabled authored page to be rechecked', () => {
     const disabled = authoredWorkshopModels.find(
       (model) =>

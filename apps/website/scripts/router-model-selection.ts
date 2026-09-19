@@ -23,14 +23,15 @@ export function selectRouterModels(
 ): WorkshopModel[] {
   const authored = catalogs.authored ?? authoredWorkshopModels
   const published = catalogs.published ?? workshopModels
-  const explicit = Boolean(selection.slugs?.length)
+  const explicitSlugs = selection.slugs?.length ? selection.slugs : undefined
+  const explicit = Boolean(explicitSlugs)
   const candidates = (explicit ? authored : published).filter(
     (model) =>
       isMediaKind(model.modality) &&
       (!selection.modality || model.modality === selection.modality)
   )
   const selected = new Set(
-    selection.slugs ?? candidates.map((model) => model.slug)
+    explicitSlugs ?? candidates.map((model) => model.slug)
   )
   for (const slug of selected)
     if (!candidates.some((model) => model.slug === slug))
