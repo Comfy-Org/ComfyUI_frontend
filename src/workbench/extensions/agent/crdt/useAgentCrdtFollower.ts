@@ -251,11 +251,13 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      resumeHeldOpsIfSubscribed()
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
+      releaseHeldOps()
       sender.abortIfUnbound()
     }
   }
@@ -419,6 +421,7 @@ function startAgentCrdtFollower(
   const onSocketActivity: EventListener = () => {
     if (lifecycle.hasPendingSubscribeRetry()) return
     bridge.reconcile()
+    resumeHeldOpsIfSubscribed()
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -448,13 +451,43 @@ function startAgentCrdtFollower(
       projection.reconcileLiveGraph(boundWorkflowId)
     }
   })
+  // The bound workflow whose tab went inactive while the sender still held
+  // batches for it. A tab switch pauses the subscription without rebinding
+  // the session, so those batches are held rather than aborted (see
+  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
+  // them into the normal abort path.
+  let heldForWorkflowId: string | null = null
+  const releaseHeldOps = (): void => {
+    heldForWorkflowId = null
+    sender.resume()
+  }
+  const resumeHeldOpsIfSubscribed = (): void => {
+    if (
+      heldForWorkflowId !== null &&
+      bridge.subscribedWorkflowId === heldForWorkflowId
+    ) {
+      releaseHeldOps()
+    }
+  }
+  const holdOpsForInactiveTab = (workflowId: string): void => {
+    heldForWorkflowId = workflowId
+    sender.suspend()
+    bridge.unsubscribe()
+  }
   // Drive the bridge's intent, then give the sender the same eager signal the
   // refusal branch gets: `reconcile()` clears send reality synchronously when
   // the desired doc changes, and a batch minted for the old doc would
-  // otherwise wait out the 10 s result-silence window before noticing.
+  // otherwise wait out the 10 s result-silence window before noticing. The
+  // one exception is the workflow whose ops are held: its subscribe may not
+  // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
+    if (next !== null && next === heldForWorkflowId) {
+      resumeHeldOpsIfSubscribed()
+      return
+    }
+    releaseHeldOps()
     sender.abortIfUnbound()
   }
   watch(
@@ -477,7 +510,8 @@ function startAgentCrdtFollower(
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
-        retarget(null)
+        if (next !== null && next === previous?.[0]) holdOpsForInactiveTab(next)
+        else retarget(null)
         return
       }
       if (next === null) {
