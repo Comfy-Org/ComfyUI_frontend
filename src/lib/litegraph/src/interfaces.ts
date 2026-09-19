@@ -379,6 +379,13 @@ export interface INodeInputSlot extends INodeSlot {
    * Internal use only; API is not finalised and may change at any time.
    */
   _widget?: IBaseWidget
+
+  /**
+   * Internal use only. Set while a promoted widget's demotion is deferred by
+   * a microtask, so a same-tick reconnect (a rewire) can cancel it instead
+   * of the widget being torn down and immediately rebuilt.
+   */
+  _pendingDemotionToken?: symbol
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
