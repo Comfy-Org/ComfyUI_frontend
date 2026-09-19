@@ -135,7 +135,7 @@ const options: {
       @escape-key-down="open = false"
     >
       <div class="flex flex-col gap-0.5">
-        <div class="text-sm/5 font-medium text-base-foreground">
+        <div class="text-sm/5 font-normal text-base-foreground">
           {{ t('agent.runPermissions') }}
         </div>
         <div class="text-xs/4 text-muted-foreground">

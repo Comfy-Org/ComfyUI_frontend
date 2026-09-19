@@ -28,7 +28,7 @@ const kindIconClass = computed(() =>
 
 <template>
   <span
-    class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background px-2.5 text-xs/4 font-medium text-base-foreground"
+    class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background px-2.5 text-xs/4 font-normal text-base-foreground"
   >
     <span
       v-if="uploading"
