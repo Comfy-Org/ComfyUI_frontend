@@ -13,10 +13,25 @@ describe('PricingSection', () => {
     }
     expect(screen.getAllByText('$3.49/hr')).toHaveLength(2)
     expect(
-      screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
-    ).toHaveLength(2)
-    expect(screen.getAllByText('$0.13/GB/mo')).toHaveLength(2)
+      screen.getAllByText(t('platform.pricing.storage.networkTitle', 'en'))
+    ).toHaveLength(4)
+    expect(screen.getAllByText('$0.091/GB/mo')).toHaveLength(2)
+    expect(screen.getAllByText('$0.065/GB/mo')).toHaveLength(2)
+    expect(screen.queryByText('$0.182/GB/mo')).toBeNull()
+    expect(screen.queryByText('$0.13/GB/mo')).toBeNull()
+    expect(screen.queryByText(/container disk/i)).toBeNull()
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'warns once in %s that beta pricing may change',
+    (locale) => {
+      render(PricingSection, { props: { locale } })
+
+      expect(
+        screen.getByText(t('platform.pricing.betaNote', locale))
+      ).toBeTruthy()
+    }
+  )
 
   it('uses the platform heading by default and accepts overrides', () => {
     render(PricingSection, { props: { locale: 'en' } })
