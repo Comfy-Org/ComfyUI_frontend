@@ -2,6 +2,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionRail } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 
 const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
@@ -32,7 +33,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/platform/telemetry'))
 
 const { mockRailSubscribe, railState } = vi.hoisted(() => ({
-  mockRailSubscribe: vi.fn(),
+  mockRailSubscribe: vi.fn<SubscriptionRail['subscribe']>(),
   railState: { on: false }
 }))
 vi.mock<unknown>(
