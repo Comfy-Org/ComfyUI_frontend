@@ -11,7 +11,12 @@ import type {
   FieldValue,
   FormValues
 } from '../../config/workshop-playground'
-import { urlUploadField, validateForm } from '../../config/workshop-playground'
+import {
+  MAX_UPLOAD_BYTES,
+  urlUploadField,
+  validateForm
+} from '../../config/workshop-playground'
+import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import { isHttpImageSource } from '../../config/workshop-image-source'
 import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -61,6 +66,18 @@ const fieldError = computed(() =>
   edited.value
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
+)
+const errorMessage = computed(() =>
+  fieldError.value
+    ? t(errorKey[fieldError.value], locale).replace(
+        '{limit}',
+        formatWorkshopUploadLimit(
+          (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
+            MAX_UPLOAD_BYTES,
+          locale
+        )
+      )
+    : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(
@@ -485,7 +502,7 @@ function booleanValue(fallback = false): boolean {
       role="alert"
       :data-testid="`error-${field.name}`"
     >
-      {{ t(errorKey[fieldError], locale) }}
+      {{ errorMessage }}
     </p>
   </div>
 </template>

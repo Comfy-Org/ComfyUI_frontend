@@ -12,7 +12,7 @@ import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'

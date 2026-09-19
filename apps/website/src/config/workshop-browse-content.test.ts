@@ -34,7 +34,7 @@ describe('canonical model display names', () => {
   it('preserves editorial names and distinguishes a native alias’s selected mode', () => {
     expect(
       getRouterWorkshopModelDetail('vertexai--gemini-3-pro-image')?.name
-    ).toBe('Nano Banana Pro')
+    ).toBe('Nano Banana Pro Text-to-Image')
     expect(
       getRouterWorkshopModelDetail(
         'byteplus--dreamina-seedance-2-0-fast-260128'
@@ -42,10 +42,23 @@ describe('canonical model display names', () => {
     ).toBe('Seedance 2.0 Fast Text-to-Video')
   })
 
+  it.for([
+    {
+      slug: 'vertexai--veo-3--animate-images',
+      name: 'Veo 3 Image-to-Video'
+    },
+    {
+      slug: 'vertexai--veo-3--generate-videos',
+      name: 'Veo 3 Text-to-Video'
+    }
+  ])('keeps task-specific model names coherent for $slug', ({ slug, name }) => {
+    expect(getRouterWorkshopModelDetail(slug)?.name).toBe(name)
+  })
+
   it('places reference and corrected text-to-image models in their intended use cases', () => {
     const placements = [
       'byteplus--seedance-2-5-reference--generate-videos',
-      'openai--gpt-image-2--edit-images'
+      'openai--gpt-image-2--generate-images'
     ].map((slug) => {
       const model = workshopModels.find((item) => item.slug === slug)
       return [model?.useCases, model?.task]
@@ -55,6 +68,15 @@ describe('canonical model display names', () => {
       [['animate-images'], 'image-to-video'],
       [['generate-images'], 'text-to-image']
     ])
+  })
+
+  it('keeps unqualified redirects on a generation role when split pages have examples', () => {
+    expect(
+      getRouterWorkshopModelDetail('byteplus--seedream-5-0-pro-260628')?.slug
+    ).toBe('byteplus--seedream-5-pro--generate-images')
+    expect(getRouterWorkshopModelDetail('xai--grok-imagine-video')?.slug).toBe(
+      'xai--grok-imagine-video--generate-videos'
+    )
   })
 })
 

@@ -11,6 +11,9 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
+vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
@@ -39,12 +42,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ topup: mockContextTopup })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })
@@ -58,6 +56,7 @@ vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
 let harness: ReturnType<typeof fakeBillingSdk>
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true

@@ -5352,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "סיום לולאה",
+    "inputs": {
+      "accumulate": {
+        "name": "הצטברות",
+        "tooltip": "החזר את ערך_הפלט מכל איטרציה כאשר הצטברות מופעלת; אחרת, החזר רק את האיטרציה האחרונה."
+      },
+      "next_iteration_value": {
+        "name": "ערך_האיטרציה_הבאה",
+        "tooltip": "ערך הנשלח מסיום לולאה בחזרה להתחלת לולאה עבור האיטרציה הבאה."
+      },
+      "output_value": {
+        "name": "ערך_פלט",
+        "tooltip": "הערך המוחזר על ידי סיום לולאה. מוחזרת האיטרציה האחרונה או כל האיטרציות בהתאם להצטברות."
+      },
+      "terminations": {
+        "name": "סיומות",
+        "tooltip": "חבר פלטים שחייבים לפעול בכל איטרציה. הערכים שלהם אינם מוחזרים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פלטים",
+        "tooltip": "ערך_הפלט של האיטרציה האחרונה, או ערכים שנצברו לאורך האיטרציות כאשר הצטברות מופעלת."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Epsilon Scaling",
     "inputs": {
@@ -6825,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "צור תשובות טקסט באמצעות מודלי Gemini של Google. ספק פרומפט טקסט, ובאופן אופציונלי תמונה אחת או יותר, קטעי שמע, סרטונים או קבצים כהקשר רב-אופני.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל Gemini המשמש ליצירת התשובה."
+      },
+      "model_max_output_tokens": {
+        "name": "אסימוני_פלט_מרביים"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_system_prompt": {
+        "name": "פרומפט_מערכת"
+      },
+      "model_thinking_level": {
+        "name": "רמת_חשיבה"
+      },
+      "model_video_processing": {
+        "name": "עיבוד_וידאו"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "יצירת וידאו עם אודיו מפרומפט טקסט באמצעות מודל Gemini Omni Flash של Google. ניתן לספק תמונות ו/או סרטונים רפרנס להכוונה או עריכה של התוצאה. תאר/י את האורך הרצוי (3-10 שניות) ואת יחס הגובה-רוחב (16:9 או 9:16) ישירות בפרומפט.",
     "display_name": "Google Gemini Omni (וידאו)",
@@ -7012,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "קבלת פריט מרשימה",
+    "inputs": {
+      "index": {
+        "name": "אינדקס"
+      },
+      "list": {
+        "name": "רשימה"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11623,6 +11702,73 @@
       "1": {
         "name": "טקסטים",
         "tooltip": "רשימת כתוביות טקסט."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "איטרציית לולאה",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "ערך_האיטרציה_הנוכחית"
+      },
+      "is_first": {
+        "name": "הוא_ראשון"
+      },
+      "is_last": {
+        "name": "הוא_אחרון"
+      },
+      "iteration_index": {
+        "name": "אינדקס_איטרציה"
+      },
+      "list_item": {
+        "name": "פריט_רשימה"
+      },
+      "reuse_cache": {
+        "name": "שימוש_חוזר_במטמון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "התקדמות לולאה",
+    "inputs": {
+      "position": {
+        "name": "מיקום"
+      },
+      "start_id": {
+        "name": "מזהה_התחלה"
+      },
+      "total": {
+        "name": "סך_הכול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "תוצאת לולאה",
+    "inputs": {
+      "close_id": {
+        "name": "מזהה_סגירה"
       }
     }
   },
@@ -18058,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "הנפשת תמונה לסרטון באמצעות מודלי הווידאו של Pruna, עם פריים אחרון אופציונלי, צליל שנוצר או רצועת שמע.",
+    "display_name": "Pruna P-Video-2 מתמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_draft": {
+        "name": "טיוטה"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "יוצר וידאו מפרומפט טקסט באמצעות מודלי הווידאו של Pruna, עם צליל שנוצר באופן אופציונלי או רצועת שמע להנעתו.",
+    "display_name": "Pruna P-Video-2 טקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "טיוטה"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "מתכונים:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "טעינת CLIP (מרובע)",
@@ -22701,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "התחלת לולאה",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "שימוש חוזר בתוצאות איטרציה שלא השתנו מהרצות קודמות. יש להשבית כדי להריץ מחדש כל איטרציה."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "הערך נחשף כ-current_iteration_value באיטרציה הראשונה."
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "מצב האיטרציה של הלולאה."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "חברו iteration_index מ-Start Loop חיצוני כדי לקנן לולאה זו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "האינדקס של איטרציית הלולאה הנוכחית."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "True במהלך האיטרציה הראשונה של הלולאה."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "נכון במהלך האיטרציה האחרונה של הלולאה."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "הפריט הנוכחי מהרשימה בעת שימוש במצב List. ללא ערך במצבי Simple ו-For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "ערך המועבר לאורך הלולאה עבור האיטרציה הנוכחית: initial_iteration_value באיטרציה הראשונה, ולאחר מכן next_iteration_value מהצומת End Loop בכל איטרציה שלאחר מכן."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "השוואת טקסט",
     "inputs": {
@@ -24896,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים בעל טופולוגיה נקייה מתמונה, כרשת משולשים (GLB) או כרשת בעלת רוב של מרובעים (FBX).",
+    "display_name": "Tripo P2: מתמונה למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "model_auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "model_compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "model_enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "model_export_uv"
+      },
+      "model_face_limit": {
+        "name": "model_face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_model_seed"
+      },
+      "model_orientation": {
+        "name": "כיוון"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_quad": {
+        "name": "מרובע"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים בעל טופולוגיה נקייה מתצוגה קדמית, בתוספת אחת עד שלוש מהתצוגות השמאלית, האחורית והימנית, כרשת משולשים (GLB) או כרשת בעלת רוב של מרובעים (FBX).",
+    "display_name": "Tripo P2: מתצוגות מרובות למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "model_auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "model_compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "model_export_uv"
+      },
+      "model_face_limit": {
+        "name": "model_face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_model_seed"
+      },
+      "model_orientation": {
+        "name": "כיוון"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_quad": {
+        "name": "מרובע"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים עם טופולוגיה נקייה מפרומפט טקסט, כרשת משולשים (GLB) או כרשת המבוססת בעיקר על מרובעים (FBX).",
+    "display_name": "Tripo P2: טקסט למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },

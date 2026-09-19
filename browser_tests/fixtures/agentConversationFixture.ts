@@ -1,9 +1,9 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
 
@@ -14,13 +14,13 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -38,7 +38,6 @@ const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
-const SUBSCRIBE_TIMEOUT = 15_000
 const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
@@ -68,6 +67,13 @@ interface RecordedWidgetValue {
   nodeId: string
   widget: string
   value: string | number
+}
+
+interface RenderedWidgetRow {
+  nodeId: string
+  label: string
+  value: string
+  invalid: boolean
 }
 
 interface PanelCounts {
@@ -132,21 +138,16 @@ class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
 
   private readonly host: HostDoc
+  private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
   private readonly summaries: Locator
-  private readonly seedIds: Set<string>
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
-  private socket: WebSocketRoute | null = null
   private postedTurns = 0
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
 
   constructor(
     private readonly page: Page,
@@ -156,8 +157,13 @@ class AgentConversationHarness {
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
-    this.seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
-    this.seenIds = new Set(this.seedIds)
+    this.hostSocket = new AgentFollowerHostSocket(
+      page,
+      workflow.id,
+      this.host,
+      SOCKET_SID
+    )
+    this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
     const recorded = expectations?.length ?? 0
     if (recorded !== conversation.turns.length)
@@ -173,20 +179,7 @@ class AgentConversationHarness {
 
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
-    // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
@@ -283,10 +276,11 @@ class AgentConversationHarness {
         await new Promise((resolve) =>
           setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
         )
-      if (entry.kind === 'event') this.send(this.stampTurn(entry.event, turn))
+      if (entry.kind === 'event')
+        this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
-        await this.waitForSubscribe()
-        this.send(this.host.apply(entry.ops))
+        await this.hostSocket.waitForSubscribe()
+        this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -375,20 +369,8 @@ class AgentConversationHarness {
     return name
   }
 
-  // A recorded title renders verbatim and a node the agent added shows its
-  // display name. A node the catch-up materialized is not settled today:
-  // the follower's reconcile titles it by type in most replays and by
-  // display name in some (#17171), so that path accepts either spelling of
-  // the same identity until the fix lands, and then narrows to the name.
-  private expectedTitle(
-    id: string,
-    node: { type: string; title?: string }
-  ): string | RegExp {
-    if (node.title) return node.title
-    const name = this.displayName(node.type)
-    if (!this.seedIds.has(id)) return name
-    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`^(?:${escape(name)}|${escape(node.type)})$`)
+  private expectedTitle(node: { type: string; title?: string }): string {
+    return node.title || this.displayName(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -449,6 +431,30 @@ class AgentConversationHarness {
     }
   }
 
+  renderedWidgetRows(): Promise<RenderedWidgetRow[]> {
+    return this.page.getByTestId(TestIds.widgets.widget).evaluateAll(
+      (rows, labelTestId) =>
+        rows.map((row) => {
+          const control = row.querySelector('input, textarea')
+          return {
+            nodeId:
+              row.closest('[data-node-id]')?.getAttribute('data-node-id') ?? '',
+            label:
+              row
+                .querySelector(`[data-testid="${labelTestId}"]`)
+                ?.textContent.trim() ?? '',
+            value:
+              control instanceof HTMLInputElement ||
+              control instanceof HTMLTextAreaElement
+                ? control.value
+                : row.textContent.trim(),
+            invalid: row.querySelector('[aria-invalid="true"]') !== null
+          }
+        }),
+      TestIds.widgets.layoutFieldLabel
+    )
+  }
+
   // What the canvas shows after the given turn, judged the way a user would
   // (which nodes, under which titles, with which widget values, wired on
   // both slot rows) against the workflow the production library projects.
@@ -464,7 +470,7 @@ class AgentConversationHarness {
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
       await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(id, node)
+        this.expectedTitle(node)
       )
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
@@ -574,44 +580,10 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | HostFrame): void {
-    // Every host frame must satisfy production's own parser, so a host that
-    // stopped emitting a required field fails here, not silently on the client.
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
-  }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (
-      workflow_id !== this.conversation.workflow.id ||
-      typeof state_vector_b64 !== 'string'
-    )
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.resolveSubscribed?.()
-  }
-
-  private waitForSubscribe(): Promise<void> {
-    return withTimeout(
-      this.subscribed,
-      SUBSCRIBE_TIMEOUT,
-      'the follower never subscribed to the conversation workflow; graph_ops need an agent_active_tab (or a bound tab) first'
-    )
+  // Rises once per follower subscribe; a tab return re-subscribes and the
+  // host answers with the catch-up frame this counter has just sent.
+  subscribeCount(): number {
+    return this.hostSocket.subscribeCount()
   }
 }
 

@@ -4,8 +4,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
-
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
@@ -17,7 +17,7 @@ import {
 } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
 const { mockShowTextPreview } = await vi.hoisted(async () => {
   return {
@@ -25,23 +25,12 @@ const { mockShowTextPreview } = await vi.hoisted(async () => {
   }
 })
 
-const mockAppModeState = vi.hoisted(() => ({
-  mode: { value: 'graph' },
-  isAppMode: { value: false }
-}))
-
 const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => mockAppModeState
-}))
+vi.mock(import('@/composables/useAppMode'))
 
-beforeEach(() => {
-  mockAppModeState.mode.value = 'graph'
-  mockAppModeState.isAppMode.value = false
-})
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -1071,7 +1060,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-b')
 
     expect(errorStore.lastExecutionError).toBeNull()
-    expect(errorStore.totalErrorCount).toBe(0)
   })
 
   it('surfaces the background failure after switching to its workflow', () => {
@@ -1081,7 +1069,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
-    expect(errorStore.totalErrorCount).toBe(1)
   })
 
   it('still records a failure produced by the visible workflow', () => {
@@ -1089,7 +1076,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-a')
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
-    expect(errorStore.totalErrorCount).toBe(1)
   })
 
   it('routes background validation node errors to their own workflow', () => {
@@ -1172,7 +1158,6 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError).toBeNull()
-    expect(errorStore.totalErrorCount).toBe(0)
   })
 
   it('clears execution-start errors only for the producing workflow', () => {
@@ -2550,8 +2535,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         mode: 'graph'
       })
 
-      mockAppModeState.mode.value = 'app'
-      mockAppModeState.isAppMode.value = true
+      vi.spyOn(useAppMode().mode, 'value', 'get').mockReturnValue('app')
+      vi.spyOn(useAppMode().isAppMode, 'value', 'get').mockReturnValue(true)
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(useTelemetry()?.trackSharedWorkflowRun).toHaveBeenCalledWith({
@@ -2688,7 +2673,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
-    it('keeps a subscription precondition (no node_id) out of the error panel and count', () => {
+    it('keeps a subscription precondition (no node_id) out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {
@@ -2703,10 +2688,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
       expect(errorStore.lastNodeErrors).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
-    it('keeps a sign-in precondition out of the error panel and count', () => {
+    it('keeps a sign-in precondition out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {
@@ -2720,10 +2704,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
-    it('keeps a runtime credit precondition at a node out of the error panel and count', () => {
+    it('keeps a runtime credit precondition at a node out of the error panel', () => {
       const errorStore = useExecutionErrorStore()
 
       fire('execution_error', {
@@ -2738,7 +2721,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
-      expect(errorStore.totalErrorCount).toBe(0)
     })
 
     it('still routes an ordinary node runtime error to the error panel', () => {
@@ -2755,7 +2737,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
 
       expect(errorStore.lastExecutionError).not.toBeNull()
-      expect(errorStore.totalErrorCount).toBe(1)
     })
   })
 

@@ -30,8 +30,11 @@ import { useI18n } from 'vue-i18n'
 import FormItem from '@/components/common/FormItem.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingOption, SettingParams } from '@/platform/settings/types'
-import type { Settings } from '@/schemas/apiSchema'
+import type {
+  SettingOption,
+  SettingParams,
+  Settings
+} from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
@@ -77,9 +80,10 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = async <K extends keyof Settings>(
-  newValue: Settings[K]
-) => {
-  await settingStore.set(props.setting.id, newValue)
+async function updateSettingValue(newValue: unknown) {
+  await settingStore.set(
+    props.setting.id,
+    newValue as Settings[typeof props.setting.id]
+  )
 }
 </script>
