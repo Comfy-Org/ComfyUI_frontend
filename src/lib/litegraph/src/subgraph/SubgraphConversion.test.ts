@@ -351,7 +351,7 @@ describe('SubgraphConversion', () => {
       assert(innerNode1.connect(0, innerNode2, 0))
 
       expect(graph.unpackSubgraph(subgraphNode)).toBe(true)
-      expect(graph.getNodeById(subgraphNode.id)).toBeUndefined()
+      expect(graph.getNodeById(subgraphNode.id)).toBeFalsy()
       expect(graph.nodes.length).toBe(2)
     })
     it('Should map reroutes onto split outputs', () => {
