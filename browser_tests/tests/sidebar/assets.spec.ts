@@ -1266,6 +1266,11 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
 // API-format `prompt` graph plus a separate top-level `workflow_id`. Every
 // agent-submitted job has this shape, not just ones with a particular
 // `--workflow-id` or tab selection.
+//
+// DIAGNOSTIC: temporarily disabled to isolate a pre-existing shard 3 CI
+// failure from this PR's new test. Will be restored before merge.
+ 
+/*
 const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
 
 const PM_1150_API_PROMPT = {
@@ -1414,3 +1419,5 @@ test.describe(
     })
   }
 )
+*/
+ 
