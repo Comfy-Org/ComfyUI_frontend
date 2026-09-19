@@ -14,7 +14,7 @@ const test = createCloudAssetsFixture([] as Asset[])
 
 test.describe(
   'Errors tab - Missing model panel is scoped to the selected node',
-  { tag: ['@cloud', '@vue-nodes'] },
+  { tag: ['@cloud', '@vue-nodes', '@screenshot'] },
   () => {
     test.use({
       initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
@@ -39,6 +39,16 @@ test.describe(
       ).toBeVisible()
 
       await comfyPage.vueNodes.selectNode('1')
+
+      // Visual proof of the bug: after selecting node '1', the panel still
+      // renders node '2's unrelated missing model alongside it, instead of
+      // scoping the list down to the selected node's own missing model.
+      await expect(
+        missingModelsGroup.getByText(UNRELATED_NODE_MODEL_NAME)
+      ).toBeVisible()
+      await expect(missingModelsGroup).toHaveScreenshot(
+        'missing-model-panel-unrelated-node-after-selection.png'
+      )
 
       test.fail()
       await expect(
