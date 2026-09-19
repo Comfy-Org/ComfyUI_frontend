@@ -23,7 +23,6 @@ import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const DOC_PROTOCOL_VERSION = 1
 
 interface WireFrame {
@@ -103,31 +102,31 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('is removed from the canvas', async ({ comfyPage, getWebSocket }) => {
+    test('is removed from the canvas', async ({
+      agentPanel,
+      comfyPage,
+      getWebSocket
+    }) => {
       await comfyPage.settings.setSetting(
         'Comfy.NodeSearchBoxImpl',
         'v1 (legacy)'
       )
 
-      const page = comfyPage.page
       const ws = await getWebSocket()
       const { subscribed, rejectedOpId } = installCrdtHostDouble(ws)
 
       // Bind the CRDT doc to the active tab through a real agent turn - the
       // production path (AgentPanelRoot.vue's onWorkflowAdopted) that gates
-      // layoutMintPort's isDocBound().
-      const openButton = page.getByRole('button', {
-        name: OPEN_AGENT_LABEL,
-        exact: true
-      })
-      await openButton.click()
-      const panel = page.locator('#agent-panel-root')
-      await expect(panel).toBeVisible()
+      // layoutMintPort's isDocBound(). The turn targets a workflow only after
+      // one is picked, so select the active tab first.
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      const panel = agentPanel.root
       const firstPrompt = enMessages.agent.suggestedPrompts[0]
       await panel.getByRole('button', { name: firstPrompt }).click()
       await panel.getByRole('button', { name: 'Send' }).click()
       await subscribed
-      await openButton.click()
+      await agentPanel.openButton.click()
       await expect(panel).toBeHidden()
 
       // A person adds a node the ordinary way: double-click search, pick it.
