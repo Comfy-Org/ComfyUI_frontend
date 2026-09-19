@@ -14,6 +14,7 @@ function makeViewModel(
   opts: {
     url?: string
     directory?: string
+    sources?: { provider: string; url: string }[]
   } = {}
 ): MissingModelViewModel {
   return {
@@ -26,7 +27,8 @@ function makeViewModel(
       isAssetSupported: true,
       isMissing: true,
       url: opts.url,
-      directory: opts.directory
+      directory: opts.directory,
+      sources: opts.sources
     },
     referencingNodes: [{ nodeId: '1', widgetName: 'ckpt_name' }]
   }
@@ -84,6 +86,26 @@ describe('missingModelViewUtils', () => {
           })
         )
       ).toBeNull()
+    })
+
+    it('uses a supported alternative when the primary URL is unavailable', () => {
+      const modelscopeUrl =
+        'https://modelscope.cn/models/org/model/resolve/master/model.safetensors'
+
+      expect(
+        toDownloadableModel(
+          makeViewModel('model.safetensors', {
+            url: 'https://example.com/model.safetensors',
+            directory: 'checkpoints',
+            sources: [{ provider: 'modelscope', url: modelscopeUrl }]
+          })
+        )
+      ).toEqual({
+        name: 'model.safetensors',
+        url: modelscopeUrl,
+        directory: 'checkpoints',
+        sources: [{ provider: 'modelscope', url: modelscopeUrl }]
+      })
     })
   })
 

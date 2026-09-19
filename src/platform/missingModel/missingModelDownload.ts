@@ -3,11 +3,14 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
+import type { ModelSource } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
   'https://civitai.red/',
-  'https://huggingface.co/'
+  'https://huggingface.co/',
+  'https://modelscope.cn/',
+  'https://www.modelscope.cn/'
 ] as const
 
 // Intentionally restrictive subset of model extensions permitted for download.
@@ -41,6 +44,50 @@ export interface ModelWithUrl {
   name: string
   url: string
   directory: string
+  sources?: ModelSource[]
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  civitai: 'Civitai',
+  huggingface: 'Hugging Face',
+  modelscope: 'ModelScope'
+}
+
+function inferModelProvider(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase()
+    if (hostname === 'huggingface.co') return 'huggingface'
+    if (hostname === 'civitai.com' || hostname === 'civitai.red') {
+      return 'civitai'
+    }
+    if (hostname === 'modelscope.cn' || hostname === 'www.modelscope.cn') {
+      return 'modelscope'
+    }
+    return hostname
+  } catch {
+    return 'custom'
+  }
+}
+
+export function getModelSourceLabel(source: ModelSource): string {
+  const provider = source.provider.trim().toLowerCase()
+  return SOURCE_LABELS[provider] ?? source.provider
+}
+
+/** Returns the primary workflow URL followed by unique declared alternatives. */
+export function getModelSources(
+  model: Pick<ModelWithUrl, 'url' | 'sources'>
+): ModelSource[] {
+  const sources = [
+    { provider: inferModelProvider(model.url), url: model.url },
+    ...(model.sources ?? [])
+  ]
+  const seen = new Set<string>()
+  return sources.filter((source) => {
+    if (!source.url || seen.has(source.url)) return false
+    seen.add(source.url)
+    return true
+  })
 }
 
 async function startDesktop2ModelDownload(
