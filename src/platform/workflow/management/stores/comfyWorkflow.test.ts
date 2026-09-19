@@ -13,7 +13,7 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 // temporary workflow -- e.g. one that failed graph validation on import --
 // for the first time, since that is exactly the path that reaches
 // `promptSave()` before any filename has been assigned.
-vi.mock('@/services/dialogService', () => ({}))
+vi.mock(import('@/services/dialogService'), () => ({}))
 
 describe('ComfyWorkflow.promptSave', () => {
   it('resolves to null instead of throwing when useDialogService is unavailable', async () => {
