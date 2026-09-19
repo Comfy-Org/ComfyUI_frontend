@@ -351,3 +351,60 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     })
   })
 })
+
+// `abortIfUnbound()` (opSender.ts) settles an in-flight batch
+// 'undeliverable' purely because its mint-time workflow no longer matches
+// the currently bound one - without checking whether the transport had
+// already carried it, or whether the server ever committed it. A batch that
+// was accepted by `sendOps()` (so it left the client) and that the server
+// later confirms applying is still reported 'undeliverable', contradicting
+// that outcome's own contract ("the transport never carried it ... or no doc
+// was bound", opSender.ts:57-58). For a bulk add (paste/insert-workflow)
+// racing a doc unbind/resubscribe, this is the mechanism that leaves an
+// orphaned node in the CRDT doc while the client believes the add failed.
+describe('abortIfUnbound settles delivered ops as undeliverable', () => {
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+    bridgeState.current = null
+    bridgeState.transport.up = true
+    clientState.transportUp = true
+    clientState.attempts = []
+    clientState.sent = []
+    clientState.sendOps.mockClear()
+    devLogState.recordDevEvent.mockClear()
+    vi.useFakeTimers()
+  })
+
+  it.fails('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
+    const { workflowId, enqueue } = mountFollower('wf-a')
+
+    enqueue([deleteNode('a-inflight')])
+    // The transport accepted the batch: sendOps() returned true and it is
+    // recorded as sent, not merely attempted.
+    expect(clientState.sent).toHaveLength(1)
+    const operationAId = clientState.sent[0].ops[0].op_id
+
+    // Retargeting the bound doc calls sender.abortIfUnbound(), which
+    // settles the still in-flight, already-transmitted batch
+    // 'undeliverable' without asking the server what happened to it.
+    await switchWorkflow(workflowId, 'wf-b')
+
+    const settlement = devLogState.recordDevEvent.mock.calls.find(
+      ([event]) => event === 'human_ops_settled'
+    )
+    expect(settlement?.[1]).toMatchObject({ state: 'undeliverable' })
+
+    // The server now confirms, after the fact, that it DID commit the op.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [operationAId],
+      skipped: []
+    })
+
+    // Desired behavior: a batch the transport already carried, and that
+    // the server confirms applying, must never have been reported
+    // 'undeliverable'. It was today.
+    expect(settlement?.[1].state).not.toBe('undeliverable')
+  })
+})
