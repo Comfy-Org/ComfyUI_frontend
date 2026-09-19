@@ -31,6 +31,19 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
     },
     ['LATENT']
   ),
+  ImageStitch: node(
+    'ImageStitch',
+    'Image Stitch',
+    {
+      image1: ['IMAGE', {}],
+      image2: ['IMAGE', {}],
+      direction: combo(['right']),
+      match_image_size: ['BOOLEAN', { default: true }],
+      spacing_width: ['INT', { default: 0, min: 0, max: 1_024 }],
+      spacing_color: ['STRING', { default: 'white' }]
+    },
+    ['IMAGE']
+  ),
   KSampler: node(
     'KSampler',
     'KSampler',
@@ -56,6 +69,21 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
     },
     ['LATENT']
   ),
+  LoadImage: node(
+    'LoadImage',
+    'Load Image',
+    { image: combo([]), upload: ['IMAGEUPLOAD', {}] },
+    ['IMAGE', 'MASK']
+  ),
+  PreviewImage: {
+    ...node(
+      'PreviewImage',
+      'Preview Image',
+      { images: ['IMAGE', {}] },
+      []
+    ),
+    output_node: true
+  },
   PrimitiveStringMultiline: node(
     'PrimitiveStringMultiline',
     'Primitive String (Multiline)',
@@ -79,6 +107,12 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
     'VAE Decode',
     { samples: ['LATENT', {}], vae: ['VAE', {}] },
     ['IMAGE']
+  ),
+  VAEEncode: node(
+    'VAEEncode',
+    'VAE Encode',
+    { pixels: ['IMAGE', {}], vae: ['VAE', {}] },
+    ['LATENT']
   )
 }
 
