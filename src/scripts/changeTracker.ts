@@ -34,6 +34,13 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+  const key = e.key.toUpperCase()
+  if (key === 'Y' && !e.shiftKey) return 'redo'
+  if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
+}
+
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
@@ -489,17 +496,12 @@ export class ChangeTracker {
   }
 
   async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        if (!isSelectOnly(app.canvas)) await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        if (!isSelectOnly(app.canvas)) await this.undo()
-        return true
-      }
+    const shortcut = historyShortcut(e)
+    if (!shortcut) return
+    if (!isSelectOnly(app.canvas)) {
+      await (shortcut === 'redo' ? this.redo() : this.undo())
     }
+    return true
   }
 
   beforeChange() {
