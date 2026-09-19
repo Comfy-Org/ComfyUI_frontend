@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
+import en from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 import { toNodeId } from '@/types/nodeId'
@@ -50,6 +51,12 @@ vi.mock<unknown>(
   () => ({
     useWorkflowService: vi.fn(() => mockWorkflowService)
   })
+)
+
+const mockOpenDeployDialog = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+vi.mock<unknown>(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: mockOpenDeployDialog })
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -362,6 +369,29 @@ describe('useWorkflowActionsMenu', () => {
     const bookmark = findItem(menuItems.value, 'tabMenu.addToBookmarks')
 
     expect(bookmark.disabled).toBe(true)
+  })
+
+  it('offers Deploy to ComfyAPI as a new root-level item', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    expect(en.deployToComfyApi.buttonLabel).toBe('Deploy to ComfyAPI')
+    expect(deploy.isNew).toBe(true)
+    expect(deploy.badge).toBe('g.new')
+
+    const nested = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
+    expect(menuLabels(nested.menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('deploy command opens the Deploy to ComfyAPI dialog', async () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+    const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
+
+    await deploy.command?.()
+
+    expect(mockOpenDeployDialog).toHaveBeenCalledOnce()
   })
 
   it('switches to custom workflow before executing rename', async () => {
