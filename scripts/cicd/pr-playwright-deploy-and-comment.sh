@@ -280,6 +280,7 @@ else
     new_tests_counts="{}"
     if [ -d "reports/playwright-report-new-tests" ]; then
         echo "Found new-tests report, deploying..."
+        "$SCRIPT_DIR/prepare-new-test-report.sh" "reports/playwright-report-new-tests"
         new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
 
         EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
