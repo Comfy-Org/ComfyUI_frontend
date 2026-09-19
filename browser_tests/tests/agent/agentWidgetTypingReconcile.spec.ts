@@ -47,10 +47,17 @@ test.describe(
 
       // Typed via real per-key dispatch, not `.fill()`, which writes the
       // value in one shot and never exercises the store-write/render-flush
-      // round trip this bug lives in. `resyncWidget` is fired without
-      // awaiting `pressSequentially` so the doc frame it sends lands
-      // mid-keystroke rather than before or after the whole string types.
-      const typing = field.pressSequentially(APPENDED, { delay: 20 })
+      // round trip this bug lives in. The first chunk is typed and awaited
+      // so the widget's live value is already partway through `APPENDED`
+      // before `resyncWidget` captures it; the remaining chunk is then
+      // typed without awaiting the resync first, so the doc frame's
+      // store-write round trip lands mid-keystroke instead of racing the
+      // very start of `pressSequentially`, before any character has landed.
+      const FIRST_CHUNK = APPENDED.slice(0, 5)
+      const REST_CHUNK = APPENDED.slice(5)
+      await field.pressSequentially(FIRST_CHUNK, { delay: 20 })
+
+      const typing = field.pressSequentially(REST_CHUNK, { delay: 20 })
       agentConversation.resyncWidget(NEW_NODE_ID, 'text')
       await typing
 
