@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import { routerContentBySlug, workshopModels } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,

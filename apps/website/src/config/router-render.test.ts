@@ -4,7 +4,7 @@ import type { RouterRenderOptions } from './router-render'
 import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { releaseRouterOutputs } from './workshop-response'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function router_render(
   slug: string,
