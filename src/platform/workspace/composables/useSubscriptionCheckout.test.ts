@@ -4,6 +4,7 @@ import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
@@ -266,16 +267,12 @@ function railStub(
   }
 }
 
-interface RailOperation {
-  opId: string
-  status: string
-  workspaceId: string
-  actionUrl?: string | null
-  phase?: string | null
-  authenticationState?: string | null
-  errorMessage?: string | null
-  isAuthenticating?: boolean
-}
+/**
+ * The rail hands back the production record, so the stub uses it rather than a
+ * widened copy — a fixture cannot then encode a state the real projection
+ * could never produce.
+ */
+type RailOperation = BillingOperationRecordView
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)
@@ -3232,10 +3229,14 @@ describe('useSubscriptionCheckout', () => {
   describe('the operation the checkout watches', () => {
     const PARKED: RailOperation = {
       opId: 'op-parked',
+      kind: 'subscription',
       status: 'pending',
       workspaceId: 'workspace-1',
+      actionUrl: null,
       phase: 'awaiting_payment_method',
       authenticationState: 'failed_retryable',
+      isAuthenticating: false,
+      canRetryAuthentication: false,
       errorMessage: 'Your card was declined.'
     }
 
