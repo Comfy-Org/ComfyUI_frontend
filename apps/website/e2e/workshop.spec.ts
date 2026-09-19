@@ -479,7 +479,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
-  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
+  test('restores sign-in and keeps Run and uploads enabled after catalog navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -507,12 +507,11 @@ test.describe('Model playground', () => {
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
 
+    await page.goto('/models/')
     await page
-      .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Models', exact: true })
+      .getByTestId('section-generate-images')
+      .getByRole('link', { name: /Seedream 4\.5/ })
       .click()
-    await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
-    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Seedream 4.5 Image Edit'
     )

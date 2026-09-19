@@ -21,13 +21,8 @@ import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
-  locale?: Locale
-  workshopInBuild?: boolean
-}>()
-const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
-)
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const mainNavigation = computed(() => getMainNavigation(locale))
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
@@ -64,19 +59,42 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <ul class="flex w-max gap-16">
-              <NavFeaturedCard
-                v-if="navItem.featured"
-                :featured="navItem.featured"
-              />
-              <NavColumn
-                v-for="column in navItem.columns"
-                :key="column.header"
-                :column="column"
-                :locale="locale"
-                :current-path="currentPath"
-              />
-            </ul>
+            <div class="w-max">
+              <ul class="flex gap-16">
+                <NavFeaturedCard
+                  v-if="navItem.featured"
+                  :featured="navItem.featured"
+                />
+                <NavColumn
+                  v-for="(column, columnIndex) in navItem.columns.filter(
+                    (column) => column.placement !== 'footer'
+                  )"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                />
+              </ul>
+              <ul
+                v-if="
+                  navItem.columns.some(
+                    (column) => column.placement === 'footer'
+                  )
+                "
+                class="mt-6 border-t border-primary-warm-gray/20 pt-5"
+              >
+                <NavColumn
+                  v-for="(column, columnIndex) in navItem.columns.filter(
+                    (column) => column.placement === 'footer'
+                  )"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                  layout="row"
+                />
+              </ul>
+            </div>
           </NavigationMenuContent>
         </template>
         <NavigationMenuLink

@@ -166,6 +166,10 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   eventHostApplicationForm: 'https://form.typeform.com/to/Fr2FrB6c',
   docs: 'https://docs.comfy.org/',
+  docsAppMode: (locale: Locale = 'en') =>
+    locale === 'en'
+      ? 'https://docs.comfy.org/interface/app-mode'
+      : `https://docs.comfy.org/${locale === 'zh-CN' ? 'zh' : locale}/interface/app-mode`,
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',

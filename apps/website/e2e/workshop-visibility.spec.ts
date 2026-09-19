@@ -27,9 +27,6 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
       dataRequests.push(request.url())
   })
   await page.goto('/')
-  await expect(
-    page.getByRole('link', { name: 'Models', exact: true })
-  ).toHaveCount(0)
   await expect(page.getByTestId('model-discovery')).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: 'Sign in', exact: true })

@@ -21,9 +21,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 for (const viewport of viewports) {
-  test(`enabled Models navigation fits at ${viewport.name}`, async ({
-    page
-  }) => {
+  test(`simplified navigation fits at ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: 900 })
     await page.goto('/')
 
@@ -36,8 +34,11 @@ for (const viewport of viewports) {
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
       await expect(
-        desktopLinks.getByRole('link', { name: 'Models', exact: true })
-      ).toHaveAttribute('href', '/models')
+        desktopLinks.getByRole('button', { name: 'Products', exact: true })
+      ).toBeVisible()
+      await expect(
+        desktopLinks.getByRole('button', { name: 'Enterprise', exact: true })
+      ).toBeVisible()
       await expect(menuButton).toBeHidden()
     } else {
       await expect(desktopLinks).toBeHidden()
@@ -46,10 +47,16 @@ for (const viewport of viewports) {
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
       await expect(
-        menu.getByRole('link', { name: /^Models\b/ })
-      ).toHaveAttribute('href', '/models')
+        menu.getByRole('button', { name: /^Products\b/ })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('button', { name: /^Enterprise\b/ })
+      ).toBeVisible()
     }
 
+    await expect(
+      navigation.getByRole('button', { name: /^Models\b/ })
+    ).toHaveCount(0)
     await expectNoHorizontalOverflow(page)
   })
 }

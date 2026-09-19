@@ -6,15 +6,28 @@ import type { NavColumn } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
 
-defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
+defineProps<{
+  column: NavColumn
+  locale: Locale
+  currentPath: string
+  layout?: 'column' | 'row'
+}>()
 </script>
 
 <template>
-  <li class="flex flex-col space-y-4">
-    <p class="pl-2 font-formula text-sm font-medium text-primary-warm-gray">
+  <li
+    :class="
+      layout === 'row' ? 'flex items-center gap-8' : 'flex flex-col space-y-4'
+    "
+  >
+    <p
+      v-if="column.header"
+      class="font-formula text-xs font-medium text-primary-warm-gray"
+      :class="layout === 'row' ? '' : 'pl-2'"
+    >
       {{ column.header }}
     </p>
-    <ul class="flex flex-col">
+    <ul :class="layout === 'row' ? 'flex items-center gap-1' : 'flex flex-col'">
       <li v-for="item in column.items" :key="item.label">
         <NavigationMenuLink
           as-child
