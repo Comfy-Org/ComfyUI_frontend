@@ -89,7 +89,11 @@ test(
     })
 
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    await composer.fill('use this generation')
+    // `fill` clears the editor's whole ProseMirror doc before typing, which
+    // deletes the atom node the drop above just inserted (see
+    // agentInlineReferences.spec.ts for the same constraint) - use
+    // `pressSequentially` to append text without dropping the attachment.
+    await composer.pressSequentially('use this generation')
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })
       .click()
