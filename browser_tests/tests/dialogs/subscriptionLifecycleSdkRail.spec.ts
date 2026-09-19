@@ -289,7 +289,7 @@ test.describe(
         await bootApp(page)
 
         const panel = await openPlanAndCredits(page)
-        await panel.getByRole('button', { name: 'Reactivate plan' }).click()
+        await panel.getByRole('button', { name: 'Resume subscription' }).click()
 
         await expect.poll(() => routes.resubscribeRequests.length).toBe(1)
         const [issued] = routes.resubscribeRequests
@@ -307,7 +307,7 @@ test.describe(
         await enableSdkRail(page)
 
         const panel = await openPlanAndCredits(page)
-        await panel.getByRole('button', { name: 'Reactivate plan' }).click()
+        await panel.getByRole('button', { name: 'Resume subscription' }).click()
 
         await expect.poll(() => routes.resubscribeRequests.length).toBe(1)
         const [issued] = routes.resubscribeRequests
@@ -328,7 +328,7 @@ test.describe(
         routes.refuseResubscribe()
 
         const panel = await openPlanAndCredits(page)
-        await panel.getByRole('button', { name: 'Reactivate plan' }).click()
+        await panel.getByRole('button', { name: 'Resume subscription' }).click()
 
         await expect.poll(() => routes.resubscribeRequests.length).toBe(2)
         const [sdkAttempt, legacyAttempt] = routes.resubscribeRequests
