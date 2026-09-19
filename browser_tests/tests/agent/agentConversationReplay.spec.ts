@@ -27,6 +27,49 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
     })
   })
 
+  test.describe('title reset on reconcile', () => {
+    test.use({ conversationCase: 'agent-rec-clarifying-question' })
+
+    // PM-1297: renaming a node through the canvas title editor writes only
+    // to the local node store (useNodeEventHandlers.handleNodeTitleUpdate);
+    // nothing mints that rename into the CRDT doc. The next agent reconcile
+    // derives the node's title straight from that stale doc
+    // (graphMutations.ts prepareNode -> nodePayload.ts nodeTitle), so the
+    // rename is silently lost even though this turn's only edit is the
+    // node's "steps" widget.
+    test('keeps a manual rename across an unrelated agent widget update', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const CUSTOM_TITLE = 'My renamed sampler'
+
+      // Turn 0 asks a clarifying question with no graph edits; its
+      // agent_active_tab event is what subscribes the follower and
+      // materializes the seed graph, including KSampler (node 3), onto the
+      // canvas.
+      await agentConversation.sendPrompt(0)
+      await agentConversation.replayResponse(0)
+      await agentConversation.waitForTurnComplete()
+
+      const sampler =
+        await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+      await sampler.setTitle(CUSTOM_TITLE)
+      await expect(sampler.title).toHaveText(CUSTOM_TITLE)
+
+      // Turn 1's only graph edit is set_widget('steps') on that same node
+      // (node 3); it never touches title.
+      await agentConversation.sendPrompt(1)
+      await agentConversation.replayResponse(1)
+      await agentConversation.waitForTurnComplete()
+
+      test.fail(
+        true,
+        'PM-1297: an unrelated agent reconcile resets a manually renamed node back to its default title'
+      )
+      await expect(sampler.title).toHaveText(CUSTOM_TITLE)
+    })
+  })
+
   for (const conversationCase of listRecordedConversations()) {
     test.describe(`recorded ${conversationCase}`, () => {
       test.use({ conversationCase })
