@@ -128,7 +128,17 @@ function setupRaceUntilReturn() {
     baseVersion: () => frameSeq,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
-  const adapter = new EcsFollowerAdapter(mutations)
+  const adapter = new EcsFollowerAdapter(mutations, {
+    pendingDeletes: (workflowId) =>
+      new Set(
+        sender
+          .pendingOps()
+          .filter((batch) => batch.workflowId === workflowId)
+          .flatMap((batch) => batch.ops)
+          .filter((op) => op.op === 'delete_node')
+          .map((op) => String(op.node_id))
+      )
+  })
   adapter.bind(WORKFLOW, follower)
 
   let opSequence = 0
@@ -245,7 +255,7 @@ describe('agent-added node delete across a tab switch', () => {
     race.teardown()
   })
 
-  it.fails('KNOWN BUG: the rebind reconcile recreates the node while its delete is still in flight', () => {
+  it('the rebind reconcile leaves the node alone while its delete is still in flight', () => {
     const race = setupRaceUntilReturn()
 
     // The resubscribe catch-up arrives before the delete has landed on the

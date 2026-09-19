@@ -279,11 +279,6 @@ function startAgentCrdtFollower(
 
   const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc
-  )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
@@ -292,6 +287,10 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
+  // Doc node ids whose human delete the host has applied but whose effect
+  // frame has not yet removed them from the doc. Kept pending for the
+  // reconcile so the result-to-effect window cannot resurrect them.
+  const confirmedDeletes = new Set<string>()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -317,8 +316,37 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchSettled: (outcome) => {
+      if (outcome.state === 'acknowledged') {
+        const applied = new Set(outcome.result.applied)
+        for (const op of outcome.ops) {
+          if (op.op === 'delete_node' && applied.has(op.op_id))
+            confirmedDeletes.add(String(op.node_id))
+        }
+      }
+      recordDevEvent('human_ops_settled', outcome)
+    }
   })
+  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
+    const docNodeIds = currentDocNodeIds()
+    for (const id of confirmedDeletes) {
+      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+    }
+    const pending = new Set(confirmedDeletes)
+    for (const batch of sender.pendingOps()) {
+      if (batch.workflowId !== workflowId) continue
+      for (const op of batch.ops) {
+        if (op.op === 'delete_node') pending.add(String(op.node_id))
+      }
+    }
+    return pending
+  }
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc,
+    { pendingDeletes: pendingHumanDeletes }
+  )
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -460,6 +488,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
+    confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -480,6 +509,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      confirmedDeletes.clear()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',

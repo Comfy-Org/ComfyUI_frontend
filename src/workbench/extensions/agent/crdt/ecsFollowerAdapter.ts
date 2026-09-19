@@ -48,6 +48,18 @@ export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
 
+/**
+ * The local human's edits the host has not yet reflected in the doc. A full
+ * reconcile treats the doc as authoritative for everything else; without
+ * this seam it would recreate a node whose delete is still on its way.
+ */
+export interface LocalIntent {
+  /** Doc node ids (string keys) with a pending human `delete_node`. */
+  pendingDeletes(workflowId: string): ReadonlySet<string>
+}
+
+const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -306,7 +318,10 @@ interface TargetSession {
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
 
-  constructor(private readonly mutations: MutationsForTarget) {}
+  constructor(
+    private readonly mutations: MutationsForTarget,
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+  ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
@@ -470,15 +485,18 @@ export class EcsFollowerAdapter {
       }
 
       if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(
-            doc,
-            id,
-            definitions,
-            session.reportedErrors
-          )
-          return payload ? [payload] : []
-        })
+        const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+        const nodes = [...session.nodes.keys()]
+          .filter((id) => !pendingDeletes.has(id))
+          .flatMap((id) => {
+            const payload = readSemanticNode(
+              doc,
+              id,
+              definitions,
+              session.reportedErrors
+            )
+            return payload ? [payload] : []
+          })
         const links = [...session.links.keys()].flatMap((id) => {
           const link = readSemanticLink(
             doc,
@@ -486,7 +504,11 @@ export class EcsFollowerAdapter {
             definitions(),
             session.reportedErrors
           )
-          return link ? [link] : []
+          return link &&
+            !pendingDeletes.has(String(link.originNodeId)) &&
+            !pendingDeletes.has(String(link.targetNodeId))
+            ? [link]
+            : []
         })
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),

@@ -51,6 +51,9 @@ const clientState = vi.hoisted(() => ({
 }))
 
 const adapterState = vi.hoisted(() => ({
+  intent: null as {
+    pendingDeletes(workflowId: string): ReadonlySet<string>
+  } | null,
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
@@ -115,6 +118,15 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
+    constructor(
+      _mutations: unknown,
+      intent: {
+        pendingDeletes(workflowId: string): ReadonlySet<string>
+      }
+    ) {
+      adapterState.intent = intent
+    }
+
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
@@ -1522,6 +1534,25 @@ describe('useAgentCrdtFollower', () => {
         expect.any(String),
         [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
       )
+      unmount()
+    })
+
+    it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const intent = adapterState.intent!
+      let docNodes: Record<string, unknown> = { '1': {} }
+      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+
+      enqueue([deleteNode('1')])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      expect([...intent.pendingDeletes('wf-2')]).toEqual([])
+
+      ackSent(0)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      docNodes = {}
+      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
       unmount()
     })
 
