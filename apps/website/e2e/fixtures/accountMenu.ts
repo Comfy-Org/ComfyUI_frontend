@@ -2,24 +2,18 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 export class AccountMenu {
-  constructor(private readonly page: Page) {}
+  public readonly trigger: Locator
+  public readonly menu: Locator
+  public readonly workspaceSwitcher: Locator
+  public readonly workspaceList: Locator
 
-  get trigger(): Locator {
-    return this.page
+  constructor(page: Page) {
+    this.trigger = page
       .getByTestId('desktop-nav-cta')
       .getByTestId('header-account')
-  }
-
-  get menu(): Locator {
-    return this.page.getByTestId('header-account-menu')
-  }
-
-  get workspaceSwitcher(): Locator {
-    return this.page.getByTestId('account-workspace')
-  }
-
-  get workspaceList(): Locator {
-    return this.page.getByTestId('account-workspaces')
+    this.menu = page.getByTestId('header-account-menu')
+    this.workspaceSwitcher = page.getByTestId('account-workspace')
+    this.workspaceList = page.getByTestId('account-workspaces')
   }
 
   workspaceItem(workspaceId: string): Locator {
@@ -27,30 +21,15 @@ export class AccountMenu {
   }
 
   async open(): Promise<void> {
-    await expect(this.trigger).toBeVisible()
-    await expect(async () => {
-      if (!(await this.menu.isVisible())) {
-        await this.trigger.click({ timeout: 2_000 })
-      }
-      await expect(this.menu).toBeVisible({ timeout: 2_000 })
-    }).toPass()
+    if (!(await this.menu.isVisible())) await this.trigger.click()
+    await expect(this.menu).toBeVisible()
   }
 
   async pickWorkspace(workspaceId: string): Promise<void> {
     await this.open()
-    await expect(async () => {
-      if (!(await this.workspaceList.isVisible())) {
-        await expect(this.workspaceSwitcher).toBeVisible({
-          timeout: 2_000
-        })
-        await this.workspaceSwitcher.click({ timeout: 2_000 })
-      }
-      await expect(this.workspaceList).toBeVisible({ timeout: 2_000 })
-      const item = this.workspaceItem(workspaceId)
-      await expect(item).toBeAttached({ timeout: 2_000 })
-      await expect(item).toBeVisible({ timeout: 2_000 })
-      await expect(item).toBeEnabled({ timeout: 2_000 })
-      await item.click({ timeout: 2_000 })
-    }).toPass()
+    if (!(await this.workspaceList.isVisible()))
+      await this.workspaceSwitcher.click()
+    await expect(this.workspaceList).toBeVisible()
+    await this.workspaceItem(workspaceId).click()
   }
 }
