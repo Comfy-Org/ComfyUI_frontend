@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -44,7 +43,7 @@ const cases: {
 ]
 
 describe('SurfaceToggle', () => {
-  it.each(cases)(
+  it.for(cases)(
     'marks $active current and links the other surface for $locale',
     ({ locale, active, activeName, linkName, href }) => {
       render(SurfaceToggle, { props: { locale, active } })

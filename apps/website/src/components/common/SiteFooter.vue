@@ -41,7 +41,12 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
       { label: t('nav.comfyAgent', locale), href: routes.agent },
-      { label: t('nav.comfyCli', locale), href: routes.cli },
+      { label: t('nav.comfyCli', locale), href: routes.cli }
+    ]
+  },
+  {
+    title: t('footer.models', locale),
+    links: [
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
@@ -57,6 +62,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('footer.ltx', locale), href: routes.ltx },
       { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
+      {
+        label: t('footer.chatgptImage25', locale),
+        href: routes.chatgptImage25
+      },
+      { label: t('footer.qwenImage21', locale), href: routes.qwenImage21 },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
@@ -196,8 +206,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
           </div>
         </div>
 
-        <!-- Desktop: 3-col, Company+Contact merged -->
-        <div class="hidden grid-cols-3 gap-12 lg:grid">
+        <!-- Desktop: 4-col, Company+Contact merged -->
+        <div class="hidden grid-cols-4 gap-12 lg:grid">
           <FooterLinkColumn
             v-for="column in topColumns"
             :key="column.title"

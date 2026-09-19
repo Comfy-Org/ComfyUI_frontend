@@ -14,7 +14,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 import SignUpForm from './SignUpForm.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockTurnstileEnabled = ref(false)
 const mockTurnstileToken = ref('')
@@ -175,6 +174,27 @@ describe('SignUpForm', () => {
         'new-password'
       )
     })
+  })
+
+  it('renders the password rule list with the markup the platform ships', async () => {
+    const { user } = renderComponent()
+    await user.type(
+      screen.getByLabelText(enMessages.auth.signup.passwordLabel),
+      'short'
+    )
+
+    expect(
+      screen.getByText(`${enMessages.validation.password.requirements}:`)
+        .outerHTML
+    ).toBe(
+      '<div class="text-sm">Password requirements: <ul class="mt-1 space-y-1">' +
+        '<li class="text-red-500">Must be between 8 and 32 characters</li>' +
+        '<li class="text-red-500">Must contain at least one uppercase letter</li>' +
+        '<li class="">Must contain at least one lowercase letter</li>' +
+        '<li class="text-red-500">Must contain at least one number</li>' +
+        '<li class="text-red-500">Must contain at least one special character</li>' +
+        '</ul></div>'
+    )
   })
 
   it('hides password requirements when the field loses focus', async () => {

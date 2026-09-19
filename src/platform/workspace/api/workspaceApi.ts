@@ -131,6 +131,9 @@ export type BillingDeclineReason = NonNullable<
 export type BillingOperationPhase = NonNullable<
   BillingOpStatusResponse['phase']
 >
+export type BillingRecoveryAction = NonNullable<
+  BillingOpStatusResponse['recovery_action']
+>
 
 interface GetBillingEventsParams {
   page?: number

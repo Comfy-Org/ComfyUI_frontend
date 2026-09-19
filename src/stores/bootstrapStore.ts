@@ -7,7 +7,6 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { CustomNodesI18n } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
@@ -16,7 +15,7 @@ import { useUserStore } from '@/stores/userStore'
  * Backends that vendor no custom-node locale files do not implement
  * `/api/i18n`, so a 404 means "no custom-node translations", not a failure.
  */
-async function fetchCustomNodesI18n(): Promise<CustomNodesI18n | undefined> {
+async function fetchCustomNodesI18n() {
   try {
     return await api.getCustomNodesI18n()
   } catch (error) {

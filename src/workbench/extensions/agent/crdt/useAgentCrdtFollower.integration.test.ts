@@ -5,9 +5,11 @@ import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+import type { GraphMutations } from './graphMutations'
 
 const apiState = vi.hoisted(() => {
   const docFrames = new EventTarget()
@@ -79,6 +81,7 @@ function mountFollower(initialWorkflowId: string | null): {
 
 describe('useAgentCrdtFollower production subscription composition', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     sessionStorage.clear()
     apiState.send.mockClear()
   })

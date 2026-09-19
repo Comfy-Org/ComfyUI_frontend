@@ -130,10 +130,10 @@ watch([active, onScreen], ([current, visible], [previous]) => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto w-full p-6 md:py-10 lg:px-12">
+  <section class="mx-auto w-full max-w-9xl p-6 md:py-10 lg:px-12">
     <div
       ref="sectionRef"
-      class="relative h-[clamp(300px,44vw,520px)] rounded-[2.5rem] border-[1.5px] border-white/15"
+      class="relative h-[clamp(300px,44vw,520px)] rounded-5xl border-[1.5px] border-white/15"
       role="region"
       aria-roledescription="carousel"
       :aria-label="t('featuredWorkflows.label', locale)"
@@ -179,7 +179,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             <a
               :href="slide.href"
               :aria-label="slide.title"
-              class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+              class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none focus-visible:ring-inset"
             />
 
             <div

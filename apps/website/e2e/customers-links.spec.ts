@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import { customerVideoStories } from '../src/data/customerVideos'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -47,18 +46,16 @@ test.describe('Customer-story internal links @smoke', () => {
     ).toHaveAttribute('href', '/customers')
   })
 
-  test('pricing page shows a compact customer-proof section linking to both watch pages', async ({
+  test('pricing page enterprise CTA links to the Enterprise page', async ({
     page
   }) => {
     await page.goto('/pricing')
-    await expect(
-      page.getByText(t('pricing.customerProof.heading', 'en'))
-    ).toBeVisible()
 
-    for (const story of customerVideoStories) {
-      await expect(
-        page.locator(`a[href="/customers/videos/${story.slug}"]`)
-      ).toBeVisible()
-    }
+    await expect(
+      page.getByRole('link', {
+        name: t('pricing.enterprise.learnMore', 'en'),
+        exact: true
+      })
+    ).toHaveAttribute('href', '/enterprise')
   })
 })
