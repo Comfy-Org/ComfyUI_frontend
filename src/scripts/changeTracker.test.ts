@@ -33,6 +33,7 @@ vi.mock(import('@/scripts/app'), () => ({
     nodeOutputs: {},
     nodePreviewImages: {},
     graph: {},
+    isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({
         nodes: [],
@@ -218,11 +219,11 @@ describe('ChangeTracker', () => {
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when app.graph is falsy', () => {
+      it('is a no-op when the graph is not ready', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -706,7 +707,6 @@ describe('ChangeTracker', () => {
           node.id = String(node.id)
         }
         const initialLink = initial.links[0]
-        if (!initialLink) throw new Error('link missing')
         initialLink[1] = String(initialLink[1])
         initialLink[3] = String(initialLink[3])
         changed.nodes[0].pos = [40, 50]
@@ -906,7 +906,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
         interior.size = [200, 100]
         mockCanvasState(changed)
@@ -925,7 +924,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -961,12 +959,10 @@ describe('ChangeTracker', () => {
           throw new Error('nested subgraph definitions missing')
         }
         const [leaf] = rootDefinitions.splice(leafIndex, 1)
-        if (!leaf) throw new Error('nested leaf definition missing')
         parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
-        if (!initialLeafNode) throw new Error('nested leaf node missing')
         initialLeafNode.widgets_values = [1]
         const tracker = createTracker(initial)
 
@@ -974,7 +970,6 @@ describe('ChangeTracker', () => {
         const changedLeaf = findSubgraphDefinition(changed, leafId)
         if (!changedLeaf) throw new Error('nested leaf definition missing')
         const changedLeafNode = changedLeaf.nodes[0]
-        if (!changedLeafNode) throw new Error('nested leaf node missing')
         changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -989,7 +984,6 @@ describe('ChangeTracker', () => {
         const initial = await createSubgraphState()
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         omitOptionalSubgraphCollections(initial)
         omitOptionalSubgraphCollections(changed)
