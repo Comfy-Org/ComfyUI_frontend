@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
+type AudioWidget = (node: LGraphNode, inputName: string) => unknown
+
 const {
   mockAddAlert,
   mockApiURL,
@@ -170,7 +172,7 @@ async function loadAudioUploadWidget() {
   if (!extension)
     throw new Error('Comfy.UploadAudio extension was not registered')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUploadWidget>).AUDIOUPLOAD
+  return (widgets as Record<string, AudioWidget>).AUDIOUPLOAD
 }
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
@@ -302,7 +304,7 @@ async function loadAudioUIWidget() {
   if (!extension)
     throw new Error('Comfy.AudioWidget extension was not registered')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+  return (widgets as Record<string, AudioWidget>).AUDIO_UI
 }
 
 describe('Comfy.AudioWidget AUDIO_UI widget', () => {
@@ -325,9 +327,16 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 })
 
 async function loadAudioRecordWidget() {
-  const widget = await getCustomWidget('Comfy.RecordAudio', 'AUDIO_RECORD')
-  return (node: LGraphNode, inputName: string) =>
-    widget(node, inputName, fromAny({}), fromAny({}))
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.RecordAudio')
+  if (!extension)
+    throw new Error('Comfy.RecordAudio extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioWidget>).AUDIO_RECORD
 }
 
 const RECORDER_FAILURE_REPORT = {
