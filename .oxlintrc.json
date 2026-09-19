@@ -210,18 +210,6 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["**/*.spec.ts"],
       "excludeFiles": [
         "browser_tests/tests/**/*.spec.ts",
