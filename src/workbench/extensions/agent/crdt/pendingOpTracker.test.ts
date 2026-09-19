@@ -328,6 +328,31 @@ describe('createPendingOpTracker', () => {
     expect(tracker.entries()).toEqual([])
   })
 
+  it('reports only still-tracked ops as delivery unknown after a partial effect', () => {
+    tracker.onBatchMinted(ops)
+    tracker.onBatchTransmitted(ops)
+    tracker.onBatchTransmitted(ops)
+    tracker.onDocEffect(['op-1'])
+    tracker.onBatchSettled({ state: 'unacknowledged', ops })
+
+    expect(events).toEqual([
+      { type: 'cleared', opIds: ['op-1'] },
+      { type: 'delivery_unknown', opIds: ['op-2', 'op-3'] }
+    ])
+  })
+
+  it('emits no delivery-unknown event when effects already settled the batch', () => {
+    tracker.onBatchMinted(ops)
+    tracker.onBatchTransmitted(ops)
+    tracker.onBatchTransmitted(ops)
+    tracker.onDocEffect(['op-1', 'op-2', 'op-3'])
+    tracker.onBatchSettled({ state: 'unacknowledged', ops })
+
+    expect(events).toEqual([
+      { type: 'cleared', opIds: ['op-1', 'op-2', 'op-3'] }
+    ])
+  })
+
   it('reconciles a rejected suffix reported after delivery became unknown', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)

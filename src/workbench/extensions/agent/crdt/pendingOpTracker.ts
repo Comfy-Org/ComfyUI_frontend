@@ -136,7 +136,11 @@ export function createPendingOpTracker(
     onBatchSettled(outcome) {
       const batch = outcome.ops.map((op) => op.op_id)
       if (outcome.state === 'unacknowledged') {
-        emit({ type: 'delivery_unknown', opIds: batch })
+        // A doc_update effect may already have retired part of the batch;
+        // only what the ledger still tracks is genuinely delivery-unknown.
+        const stillPending = batch.filter((opId) => ledger.get(opId))
+        if (stillPending.length > 0)
+          emit({ type: 'delivery_unknown', opIds: stillPending })
         return
       }
       if (outcome.state !== 'acknowledged') {

@@ -311,6 +311,35 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('a repeated identified late result drains its credit instead of starving a newer batch', () => {
+    sender.enqueue([addNode(1)])
+    const lateOpId = sent[0].ops[0].op_id
+    // Silence through the resend: the batch settles unacknowledged and its
+    // send + resend arm two stale credits.
+    vi.advanceTimersByTime(20_000)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
+
+    sender.enqueue([addNode(2)])
+    const lateResult = { ok: true, applied: [lateOpId], skipped: [] }
+    // The send and the resend each produce a host result for the old batch.
+    resultListener?.(lateResult)
+    resultListener?.(lateResult)
+
+    // Both credits are gone, so the newer batch's own anonymous failure is
+    // attributed to it rather than swallowed as stale.
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(settled[2].state === 'acknowledged' && settled[2].result.ok).toBe(
+      false
+    )
+    expect(settled[2].ops.map((op) => op.op_id)).not.toContain(lateOpId)
+  })
+
   it('splits an oversized enqueue into serialized wire batches', () => {
     sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
 

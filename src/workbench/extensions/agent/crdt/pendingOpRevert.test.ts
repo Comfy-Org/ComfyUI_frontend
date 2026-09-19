@@ -15,7 +15,9 @@ import {
 } from './pendingOpRevert'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const ACTOR = 'human:test-user:tab-1'
 

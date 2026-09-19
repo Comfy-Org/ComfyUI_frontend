@@ -307,6 +307,68 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('re-reads a rejected incremental frame from the doc on retry', () => {
+    let scopeAvailable = true
+    const mutations = createGraphMutations({
+      getScope: () => (scopeAvailable ? scope : null),
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    // Committed baseline: the bind-time full reconcile is consumed, so the
+    // next frame takes the incremental path.
+    const baseline = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(baseline)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: baseline })
+    ).toBe(true)
+
+    const before = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('late-add', 1, {
+          op: 'add_node',
+          node_id: 7,
+          class_type: 'Sink',
+          pos: [5, 5],
+          node: { id: 7, type: 'Sink', pos: [5, 5] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    const delta = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(delta)
+
+    scopeAvailable = false
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: delta })
+    ).toBe(false)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+    // The rejection consumed the frame's captured deltas; the retry must not
+    // commit an empty incremental batch and report the frame projected. The
+    // armed full reconcile re-reads the doc, so node 7 lands.
+    scopeAvailable = true
+    expect(adapter.retryPending('wf')).toEqual({
+      workflowId: 'wf',
+      seq: 2,
+      update: delta
+    })
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(7)])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('clears only the target owner for an empty authoritative snapshot', () => {
     const targetScope = scope
     const siblingScope = {

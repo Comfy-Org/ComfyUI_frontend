@@ -392,8 +392,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    lastProjectedSequence = null
-    pendingOps.reset()
+    resetPendingCorrelation()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -420,8 +419,7 @@ function startAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       projection.bind(workflowId, bridge.follower)
-      lastProjectedSequence = null
-      pendingOps.reset()
+      resetPendingCorrelation()
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -437,6 +435,9 @@ function startAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
+    // The read path is closed, so no doc_update effect can ever retire what
+    // is pending; drop the correlation instead of leaving it stranded.
+    resetPendingCorrelation()
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
@@ -480,6 +481,18 @@ function startAgentCrdtFollower(
   const onSocketActivity: EventListener = () => {
     if (lifecycle.hasPendingSubscribeRetry()) return
     bridge.reconcile()
+  }
+
+  /**
+   * Every binding or lineage break drops both halves of the pending
+   * correlation together: the tracker's entries AND the projected-seq
+   * watermark. Each subscription is its own sequence lineage, so a stale
+   * watermark from workflow A could otherwise clear workflow B's parked
+   * skipped duplicates before B ever projects (s3-opt-2).
+   */
+  function resetPendingCorrelation(): void {
+    lastProjectedSequence = null
+    pendingOps.reset()
   }
 
   function onProjected(update: DocUpdate): void {
@@ -551,7 +564,7 @@ function startAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           projection.unbind(boundWorkflowId)
           boundWorkflowId = null
-          pendingOps.reset()
+          resetPendingCorrelation()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -565,7 +578,7 @@ function startAgentCrdtFollower(
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) {
               projection.unbind(boundWorkflowId)
-              pendingOps.reset()
+              resetPendingCorrelation()
             }
             projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
@@ -579,7 +592,7 @@ function startAgentCrdtFollower(
         if (boundWorkflowId !== null) {
           projection.unbind(boundWorkflowId)
           boundWorkflowId = null
-          pendingOps.reset()
+          resetPendingCorrelation()
         }
         subscribedWorkflowId.value = null
         retarget(null)
@@ -589,7 +602,7 @@ function startAgentCrdtFollower(
       if (boundWorkflowId !== next) {
         if (boundWorkflowId !== null) {
           projection.unbind(boundWorkflowId)
-          pendingOps.reset()
+          resetPendingCorrelation()
         }
         projection.bind(next, bridge.follower)
         boundWorkflowId = next
@@ -617,7 +630,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => sender.detach(),
-      () => pendingOps.reset(),
+      () => resetPendingCorrelation(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()

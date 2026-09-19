@@ -65,11 +65,11 @@ describe('enqueue', () => {
 })
 
 describe('markInFlight', () => {
-  it('transitions queued entries and reports unknown ids back', () => {
+  it('transitions a fully known batch to inflight', () => {
     const ledger = createPendingOpLedger<string>()
     ledger.enqueue('op-1', 's1')
-    expect(ledger.markInFlight(['op-1', 'op-ghost'])).toEqual(['op-ghost'])
-    expect(ledger.get('op-1')?.state).toBe('queued')
+    expect(ledger.markInFlight(['op-1'])).toEqual([])
+    expect(ledger.get('op-1')?.state).toBe('inflight')
   })
 
   it('rejects a mixed batch without partially transitioning valid ids', () => {

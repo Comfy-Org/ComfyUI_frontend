@@ -1090,6 +1090,85 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a workflow switch resets the projected-seq watermark so a skipped duplicate parks', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-a')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    // wf-a projects a high sequence, moving the watermark to 9.
+    dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 9 })
+
+    workflowId.value = 'wf-b'
+    await nextTick()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+    // wf-b acks the op as a skipped duplicate at seq 5. wf-a's stale
+    // watermark (9) must not count as coverage for wf-b's lineage.
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [],
+      skipped: [opId],
+      seq: 5
+    })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'skipped_awaiting',
+      seq: 5,
+      opIds: [opId]
+    })
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'skipped_cleared' })
+    )
+    unmount()
+  })
+
+  it('a schema_error drops pending correlation instead of stranding it', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+
+    // The read gate closed this doc: no doc_update effect can ever retire the
+    // pending entry, so the correlation is dropped rather than stranded.
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'reset',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
   it('settles pending state only after a rejected projection retries', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     let enqueue!: ReturnType<

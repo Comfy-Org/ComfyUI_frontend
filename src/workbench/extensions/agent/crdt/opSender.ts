@@ -115,6 +115,12 @@ interface InFlight {
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   const unacknowledged = new Map<string, Op[]>()
+  // Op ids of a late-settled batch, kept so the SECOND identified result of a
+  // resent batch (send + resend can each produce one) still consumes a stale
+  // credit instead of leaving it armed to swallow a newer batch's anonymous
+  // result. One repeat is possible per resent batch, so the id set is dropped
+  // as soon as that repeat is seen.
+  const settledLate = new Set<string>()
   let inFlight: InFlight | null = null
   let detached = false
   // Late-result credits: a batch that settled 'unacknowledged' was
@@ -206,9 +212,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         .map((opId) => unacknowledged.get(opId))
         .find(Boolean)
       if (lateOps) {
-        for (const op of lateOps) unacknowledged.delete(op.op_id)
+        for (const op of lateOps) {
+          unacknowledged.delete(op.op_id)
+          settledLate.add(op.op_id)
+        }
         if (staleAnonymousBudget > 0) staleAnonymousBudget--
         deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
+      } else if (identified.some((opId) => settledLate.has(opId))) {
+        for (const opId of identified) settledLate.delete(opId)
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
       } else if (!inFlight && staleAnonymousBudget > 0) {
         staleAnonymousBudget--
       }
