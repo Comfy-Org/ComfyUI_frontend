@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -66,6 +67,7 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -163,7 +165,6 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
-    useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = false
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
   })
@@ -422,7 +423,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
       )
@@ -441,7 +442,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       renderComponent()
       await nextTick()
 

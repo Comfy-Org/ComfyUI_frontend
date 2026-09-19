@@ -1,12 +1,22 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  scanNodeModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/missingModel/missingModelScan'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/scripts/widgets'
@@ -32,26 +42,18 @@ vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useFeatureFlags: () => {
-      const featureFlags = actual.useFeatureFlags()
-      return {
-        ...featureFlags,
-        flags: { ...featureFlags.flags, assetsEnabled: false }
-      }
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () =>
+    fromPartial({
+      flags: { assetsEnabled: false }
+    })
+}))
 
 vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
@@ -62,7 +64,7 @@ vi.mock(import('@/i18n'), () => ({
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseAssetBrowser: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false)
   }
 }))
 
@@ -136,13 +138,12 @@ beforeEach(() => {
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    vi.mocked(useSettingStore().get).mockReturnValue(false)
     vi.mocked(useAssetsStore().getInputName).mockImplementation(
       (hash: string) => hash
     )
     vi.mocked(useAssetsStore().getAssets).mockImplementation(() => [])
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
     mockDistributionState.isCloud = false
     useAssetsStore().inputAssets.items = []
     useAssetsStore().inputAssets.isLoading = false
@@ -170,10 +171,43 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create normal combo widget when asset API is disabled', () => {
+  it('settles the first-load lifecycle before judging a restored remote value', async () => {
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: ['other.safetensors'] })
+    const graph = new LGraph()
+    const node = createMockNode('RemoteFileNode')
+    Object.defineProperty(node, 'type', { value: 'RemoteFileNode' })
+    const widget = useComboWidget()(
+      node,
+      createMockInputSpec({
+        name: 'file_name',
+        remote: { route: '/remote-files/first-load' }
+      })
+    )
+    widget.value = 'restored.safetensors'
+    node.widgets = [widget]
+    graph.add(node)
+    const candidates = scanNodeModelCandidates(graph, node, () => false)
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(widget.value).toBe('other.safetensors')
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('registers a loading inventory for remote combos', () => {
+    const node = createMockNode()
+    const widget = useComboWidget()(
+      node,
+      createMockInputSpec({ remote: { route: '/remote-files' } })
+    )
+
+    if (!isComboWidget(widget)) throw new Error('expected a combo widget')
+    expect(getComboWidgetInventory(widget)?.getStatus()).toBe('loading')
+  })
+
+  it('should create normal combo widget when the widget asset picker is disabled', () => {
     mockDistributionState.isCloud = true
-    vi.mocked(useSettingStore().get).mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget()
@@ -206,7 +240,7 @@ describe('useComboWidget', () => {
       inputSpecOverrides: Partial<InputSpec> = {}
     ) {
       mockDistributionState.isCloud = true
-      vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({
@@ -239,7 +273,7 @@ describe('useComboWidget', () => {
       })
 
       expect(
-        vi.mocked(assetService.shouldUseAssetBrowser)
+        vi.mocked(assetService.shouldUseWidgetAssetPicker)
       ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'asset',
@@ -312,7 +346,7 @@ describe('useComboWidget', () => {
 
   it('should show Select model when asset widget has undefined current value', () => {
     mockDistributionState.isCloud = true
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({

@@ -16,6 +16,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
@@ -536,8 +537,14 @@ export function isCandidateScopeActive(
   candidate: {
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
+  if (candidate.promotedSources) {
+    return candidate.promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  }
   const executionId = getCandidateActivityExecutionId(candidate)
   return executionId == null || isExecutionPathActive(rootGraph, executionId)
 }
@@ -557,6 +564,7 @@ export function isMissingCandidateActive(
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
     isMissing?: boolean | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
   if (candidate.isMissing !== true) return false

@@ -64,6 +64,7 @@ coverage/
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser_tests/**/*-darwin.png
 browser_tests/local/
 browser_tests/tests/_recording-session.spec.ts
 browser_tests/tests/_recorded-code.txt
@@ -114,3 +115,6 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+
+# Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
+browser_tests/fixtures/data/agent/conversations/recordings/

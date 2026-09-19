@@ -1,15 +1,37 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import {
+  remoteConfigErrorStatus,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+
+import {
+  stubAccountIdentityPort,
+  stubFirebaseAuthHarness
+} from '@/utils/__tests__/stubAccountIdentityPort'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+  stubAccountIdentityPort()
+})
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -20,51 +42,25 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockLogout = vi.fn()
-
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({ logout: mockLogout })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
 
-const mockRemoteConfigState = vi.hoisted(() => ({
-  value: 'authenticated' as
-    | 'uninitialized'
-    | 'anonymous'
-    | 'authenticated'
-    | 'error'
-}))
-const mockRemoteConfigErrorStatus = vi.hoisted(() => ({
-  value: null as number | null
-}))
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfigState: mockRemoteConfigState,
-  remoteConfigErrorStatus: mockRemoteConfigErrorStatus
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get unifiedCloudAuthEnabled() {
-        return mockUnifiedCloudAuthEnabled.value
-      }
-    }
-  })
-}))
+type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
+const mockBillingCapabilitiesInitialize = vi.hoisted(() =>
+  vi.fn<BillingCapabilities['initialize']>()
+)
 
-const mockBillingCapabilitiesInitialize = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workspace/composables/useBillingCapabilities'),
   () => ({
-    useBillingCapabilities: () => ({
-      initialize: mockBillingCapabilitiesInitialize
-    })
+    useBillingCapabilities: (): BillingCapabilities =>
+      fromPartial({ initialize: mockBillingCapabilitiesInitialize })
   })
 )
 
@@ -76,6 +72,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 beforeEach(() => {
+  useWorkspaceAuthStore().destroy()
   vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
   vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(undefined)
 })
@@ -96,9 +93,8 @@ describe('WorkspaceAuthGate', () => {
     Object.assign(useAuthStore(), { isInitialized: false })
     Object.assign(useAuthStore(), { currentUser: null })
     Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
-    mockUnifiedCloudAuthEnabled.value = false
-    mockRemoteConfigState.value = 'authenticated'
-    mockRemoteConfigErrorStatus.value = null
+    remoteConfigState.value = 'authenticated'
+    remoteConfigErrorStatus.value = null
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-123'
@@ -305,7 +301,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
-        mockUnifiedCloudAuthEnabled.value = true
+        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       })
 
       mountComponent()
@@ -341,9 +337,9 @@ describe('WorkspaceAuthGate', () => {
 
     it('aborts capability initialization when unmounted', async () => {
       mockBillingCapabilitiesInitialize.mockImplementationOnce(
-        (signal: AbortSignal) =>
+        (signal) =>
           new Promise<void>((resolve) => {
-            signal.addEventListener('abort', () => resolve(), { once: true })
+            signal?.addEventListener('abort', () => resolve(), { once: true })
           })
       )
 
@@ -357,7 +353,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(signal).toBeInstanceOf(AbortSignal)
-      expect(signal.aborted).toBe(true)
+      expect(signal?.aborted).toBe(true)
       expect(mockReportError).not.toHaveBeenCalled()
     })
 
@@ -446,7 +442,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
-      mockRemoteConfigState.value = 'error'
+      remoteConfigState.value = 'error'
 
       mountComponent()
       await flushPromises()
@@ -459,8 +455,8 @@ describe('WorkspaceAuthGate', () => {
 
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
-      mockRemoteConfigState.value = 'error'
-      mockRemoteConfigErrorStatus.value = 401
+      remoteConfigState.value = 'error'
+      remoteConfigErrorStatus.value = 401
 
       mountComponent()
       await flushPromises()
@@ -473,11 +469,11 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Log Out' }))
-      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -519,7 +515,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -608,15 +604,8 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(retrySignal.aborted).toBe(true)
-      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
       expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

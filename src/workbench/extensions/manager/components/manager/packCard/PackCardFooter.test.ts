@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -27,13 +27,6 @@ vi.mock<unknown>(
   })
 )
 
-// Mock composables
-let mockIsPackInstalled: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackInstalled']>
->
-beforeEach(() => {
-  mockIsPackInstalled = vi.mocked(useComfyManagerStore().isPackInstalled)
-})
 const mockCheckNodeCompatibility = vi.fn()
 
 vi.mock<unknown>(
@@ -76,7 +69,7 @@ describe('PackCardFooter', () => {
 
   describe('component rendering', () => {
     it('shows download count when available', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -87,7 +80,7 @@ describe('PackCardFooter', () => {
     })
 
     it('shows install button for uninstalled packages', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -100,7 +93,7 @@ describe('PackCardFooter', () => {
     })
 
     it('shows enable toggle for installed packages', () => {
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       renderComponent()
 
@@ -111,7 +104,7 @@ describe('PackCardFooter', () => {
 
   describe('conflict detection for uninstalled packages', () => {
     it('passes conflict info to install button when conflicts exist', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: true,
         conflicts: [
@@ -131,7 +124,7 @@ describe('PackCardFooter', () => {
     })
 
     it('does not pass conflict info when no conflicts exist', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -147,7 +140,7 @@ describe('PackCardFooter', () => {
 
   describe('installed packages', () => {
     it('does not pass has-conflict prop to enable toggle', () => {
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       renderComponent()
 

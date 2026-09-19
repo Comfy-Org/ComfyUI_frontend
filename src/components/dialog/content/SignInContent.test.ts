@@ -5,17 +5,9 @@ import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn(),
-    signUpWithEmail: vi.fn(),
-    accessError: ref(false)
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@/base/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/utils/hostWhitelist'), () => ({
@@ -47,7 +39,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock(import('@/utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

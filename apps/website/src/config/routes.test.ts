@@ -9,6 +9,12 @@ describe('localizeHref', () => {
 
   it('leaves the default locale unprefixed', () => {
     expect(localizeHref('/mcp', 'en')).toBe('/mcp')
+    expect(localizeHref('/models/seedance-2/', 'zh-CN')).toBe(
+      '/models/seedance-2/'
+    )
+    expect(localizeHref('/models/sign-in?return=%2Fmodels', 'ja')).toBe(
+      '/models/sign-in?return=%2Fmodels'
+    )
   })
 
   it('passes external URLs through unchanged', () => {
@@ -28,6 +34,20 @@ describe('localizeHref', () => {
   it('only localizes the Japanese homepage', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
     expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
+})
+
+describe('getRoutes workshop', () => {
+  it('keeps the workshop routes locale-invariant', () => {
+    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+      expect(getRoutes(locale).workshop).toBe('/models')
+      expect(getRoutes(locale).workshopSignIn).toBe('/login/')
+    }
+  })
+
+  it('still localizes the rest of the Japanese routes', () => {
+    expect(getRoutes('ja').home).toBe('/ja/')
+    expect(getRoutes('ja').cloud).toBe('/cloud')
   })
 })
 

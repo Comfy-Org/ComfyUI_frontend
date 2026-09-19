@@ -23,10 +23,16 @@ import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const WORKFLOW_ID = 'wf-1'
 
@@ -270,7 +276,6 @@ describe('human op gating around subscription acknowledgement', () => {
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
   it('releases every transport listener and the doc when unsubscribe cannot send', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -285,6 +290,17 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(transport.listenerCount).toBe(0)
     expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
 
     // The torn-down bridge is inert: a frame arriving after the socket recovers
     // must not reach it. A bridge that survived here would double-apply every
@@ -293,11 +309,9 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     expect(projected).toHaveLength(0)
     expect(bridge.follower.updatesApplied).toBe(0)
-    warn.mockRestore()
   })
 
   it('a doc_update delivered mid-teardown cannot resurrect the follower', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -315,7 +329,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(projected).toHaveLength(0)
     expect(second.projected).toHaveLength(1)
-    warn.mockRestore()
   })
 })
 
@@ -465,6 +478,41 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.lastSequence).toBe(8)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
+
+  it.for([
+    { label: 'absent seq', ack: {} },
+    { label: 'seq 0', ack: { seq: 0 } }
+  ])(
+    'treats a doc_subscribed ok ack with $label as a valid baseline-0 subscription',
+    ({ ack }) => {
+      const { transport, bridge, projected } = wire()
+      transport.open = true
+      bridge.subscribe(WORKFLOW_ID)
+      transport.deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        ...ack
+      })
+
+      // Cloud emits DocSubscribedFrame.Seq with json:"omitempty", so an
+      // unminted doc's seq-0 success ack arrives with no seq at all. That is
+      // a subscribed baseline, not a malformed ack: no unsubscribe, no retry.
+      expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+      expect(bridge.hasPendingSubscribe).toBe(false)
+      expect(bridge.lastSequence).toBe(0)
+      expect(transport.framesOfType('doc_unsubscribe')).toHaveLength(0)
+      expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+
+      transport.deliver(
+        'doc_update',
+        docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+      )
+      expect(projected).toHaveLength(1)
+      expect(bridge.lastSequence).toBe(1)
+      expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+    }
+  )
 
   it('arms the gap detector from the ack: a first frame beyond ack+1 forces a resync', () => {
     const { transport, bridge, projected } = wire()

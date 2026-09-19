@@ -18,7 +18,7 @@ const TITLE = t('minimaxLicense.professionalRequest.title')
 const { siteUrl } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const routes = getRoutes('en')
 ---
@@ -32,19 +32,20 @@ const routes = getRoutes('en')
     { name: t('breadcrumb.home'), url: absoluteUrl(Astro.site, '/') },
     {
       name: t('minimaxLicense.breadcrumb.model'),
-      url: absoluteUrl(Astro.site, routes.minimaxLicense),
+      url: absoluteUrl(Astro.site, routes.minimaxLicense)
     },
-    { name: TITLE },
+    { name: TITLE }
   ]}
 >
-  <section class="px-6 pt-20 pb-24 lg:pt-32 lg:pb-32">
+  <section class="px-6 pt-20 pb-24 lg:py-32">
     <div class="mx-auto max-w-2xl">
       <h1 class="text-4xl font-light text-primary-comfy-canvas lg:text-5xl">
         {TITLE}
       </h1>
 
       <p class="mt-6 text-sm text-primary-comfy-canvas">
-        {t('minimaxLicense.professionalRequest.intro')} <a
+        {t('minimaxLicense.professionalRequest.intro')}
+        <a
           href={routes.minimaxLicense}
           class="text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
           >{t('minimaxLicense.professionalRequest.introCta')}</a
