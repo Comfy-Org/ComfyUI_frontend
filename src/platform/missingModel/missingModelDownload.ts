@@ -148,13 +148,17 @@ export function downloadModel(
   }
 }
 
-interface ModelMetadata {
+export interface ModelMetadata {
   fileSize: number | null
   gatedRepoUrl: string | null
 }
 
-interface MetadataFetchResult {
+export type ModelMetadataFetchOutcome = {
   metadata: ModelMetadata
+  resolution: 'resolved' | 'failed'
+}
+
+interface MetadataFetchResult extends ModelMetadataFetchOutcome {
   cacheable: boolean
 }
 
@@ -167,15 +171,18 @@ interface CivitaiModelVersionResponse {
   files: CivitaiModelFile[]
 }
 
-const metadataCache = new Map<string, ModelMetadata>()
-const inflight = new Map<string, Promise<ModelMetadata>>()
+const metadataCache = new Map<string, ModelMetadataFetchOutcome>()
+const inflight = new Map<string, Promise<ModelMetadataFetchOutcome>>()
 
 export function clearMetadataCache(): void {
   metadataCache.clear()
   inflight.clear()
 }
 
-async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
+async function fetchCivitaiMetadata(
+  url: string,
+  signal?: AbortSignal
+): Promise<MetadataFetchResult> {
   try {
     const pathname = new URL(url).pathname
     const versionIdMatch =
@@ -185,16 +192,18 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     if (!versionIdMatch) {
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
+        resolution: 'failed',
         cacheable: false
       }
     }
 
     const [, modelVersionId] = versionIdMatch
     const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
-    const res = await fetch(apiUrl)
+    const res = signal ? await fetch(apiUrl, { signal }) : await fetch(apiUrl)
     if (!res.ok) {
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
+        resolution: 'failed',
         cacheable: false
       }
     }
@@ -211,11 +220,13 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return {
       metadata: { fileSize, gatedRepoUrl: null },
+      resolution: 'resolved',
       cacheable: true
     }
   } catch {
     return {
       metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed',
       cacheable: false
     }
   }
@@ -224,67 +235,103 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
 const GATED_STATUS_CODES = new Set([401, 403, 451])
 const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 
-async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
-  try {
-    // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
-    const response = await fetch(url, { method: 'HEAD' })
-    if (!response.ok) {
-      if (
-        isTrustedHuggingFaceUrl(url) &&
-        GATED_STATUS_CODES.has(response.status) &&
-        response.headers.get('x-error-code') === HUGGING_FACE_GATED_ERROR_CODE
-      ) {
-        return {
-          metadata: {
-            fileSize: null,
-            gatedRepoUrl: downloadUrlToHfRepoUrl(url)
-          },
-          cacheable: true
-        }
-      }
-      return {
-        metadata: { fileSize: null, gatedRepoUrl: null },
-        cacheable: false
-      }
-    }
-    const size = response.headers.get('content-length')
-    const parsedSize = size ? parseInt(size, 10) : null
-    return {
-      metadata: {
-        fileSize:
-          parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
-        gatedRepoUrl: null
-      },
-      cacheable: true
-    }
-  } catch {
-    return {
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      cacheable: false
-    }
+function failedMetadataResult(): MetadataFetchResult {
+  return {
+    metadata: { fileSize: null, gatedRepoUrl: null },
+    resolution: 'failed',
+    cacheable: false
   }
 }
 
-export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+function getGatedRepoUrl(url: string, response: Response): string | null {
+  if (!isTrustedHuggingFaceUrl(url)) return null
+  if (!GATED_STATUS_CODES.has(response.status)) return null
+  if (response.headers.get('x-error-code') !== HUGGING_FACE_GATED_ERROR_CODE) {
+    return null
+  }
+  return downloadUrlToHfRepoUrl(url)
+}
+
+function getResolvedHeadMetadata(response: Response): MetadataFetchResult {
+  const contentLength = response.headers.get('content-length')
+  const parsedSize = contentLength ? parseInt(contentLength, 10) : null
+  const fileSize =
+    parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null
+  return {
+    metadata: { fileSize, gatedRepoUrl: null },
+    resolution: 'resolved',
+    cacheable: true
+  }
+}
+
+function getFailedHeadMetadata(
+  url: string,
+  response: Response
+): MetadataFetchResult {
+  const gatedRepoUrl = getGatedRepoUrl(url, response)
+  if (!gatedRepoUrl) return failedMetadataResult()
+  return {
+    metadata: { fileSize: null, gatedRepoUrl },
+    resolution: 'resolved',
+    cacheable: true
+  }
+}
+
+async function fetchHeadMetadata(
+  url: string,
+  signal?: AbortSignal
+): Promise<MetadataFetchResult> {
+  try {
+    // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
+    const response = await fetch(url, {
+      method: 'HEAD',
+      ...(signal && { signal })
+    })
+    return response.ok
+      ? getResolvedHeadMetadata(response)
+      : getFailedHeadMetadata(url, response)
+  } catch {
+    return failedMetadataResult()
+  }
+}
+
+async function fetchMetadataResult(
+  url: string,
+  signal?: AbortSignal
+): Promise<ModelMetadataFetchOutcome> {
+  const result = isCivitaiModelUrl(url)
+    ? await fetchCivitaiMetadata(url, signal)
+    : await fetchHeadMetadata(url, signal)
+  const outcome: ModelMetadataFetchOutcome = {
+    metadata: result.metadata,
+    resolution: result.resolution
+  }
+  if (result.cacheable) metadataCache.set(url, outcome)
+  return outcome
+}
+
+export async function fetchModelMetadataWithStatus(
+  url: string,
+  { signal }: { signal?: AbortSignal } = {}
+): Promise<ModelMetadataFetchOutcome> {
   if (!isModelUrlAllowlisted(url)) {
-    return { fileSize: null, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'resolved'
+    }
   }
 
   const cached = metadataCache.get(url)
   if (cached !== undefined) return cached
 
+  // A cancellable consumer owns its request lifecycle. Do not join a shared
+  // request that cannot be aborted with the caller's signal.
+  if (signal) return fetchMetadataResult(url, signal)
+
   const existing = inflight.get(url)
   if (existing) return existing
 
-  const promise = (async () => {
-    const result = isCivitaiModelUrl(url)
-      ? await fetchCivitaiMetadata(url)
-      : await fetchHeadMetadata(url)
-    if (result.cacheable) {
-      metadataCache.set(url, result.metadata)
-    }
-    return result.metadata
-  })()
+  const promise = fetchMetadataResult(url)
 
   inflight.set(url, promise)
   try {
@@ -292,4 +339,8 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   } finally {
     inflight.delete(url)
   }
+}
+
+export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+  return (await fetchModelMetadataWithStatus(url)).metadata
 }

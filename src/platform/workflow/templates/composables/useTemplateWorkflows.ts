@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
@@ -22,7 +23,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 
-type PreparedWorkflowTemplate = {
+export type PreparedWorkflowTemplate = {
   id: string
   sourceModule: string
   workflowName: string
@@ -33,6 +34,18 @@ export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
   const dialogStore = useDialogStore()
+  const toastStore = useToastStore()
+
+  const notifyOpenFailure = () => {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error', 'Error'),
+      detail: t(
+        'templateWorkflows.error.openFailed',
+        'Could not open this template. Please try again.'
+      )
+    })
+  }
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
@@ -144,8 +157,28 @@ export function useTemplateWorkflows() {
     }
   }
 
+  const prepareWorkflowTemplateForOpen = async (
+    id: string,
+    sourceModule: string
+  ): Promise<PreparedWorkflowTemplate | null> => {
+    try {
+      const prepared = await prepareWorkflowTemplate(id, sourceModule)
+      if (prepared) return prepared
+
+      const error = new Error('Workflow template is unavailable')
+      reportError(error, { errorType: 'workflow_template_prepare_failed' })
+      notifyOpenFailure()
+      return null
+    } catch (error) {
+      reportError(error, { errorType: 'workflow_template_prepare_failed' })
+      notifyOpenFailure()
+      return null
+    }
+  }
+
   const openPreparedWorkflowTemplate = async (
-    prepared: PreparedWorkflowTemplate
+    prepared: PreparedWorkflowTemplate,
+    { closeDialog = true }: { closeDialog?: boolean } = {}
   ) => {
     try {
       const { id, sourceModule, workflow, workflowName } = prepared
@@ -155,7 +188,7 @@ export function useTemplateWorkflows() {
         template_source: sourceModule
       })
 
-      dialogStore.closeDialog()
+      if (closeDialog) dialogStore.closeDialog()
       const loadedWorkflow = await app.loadGraphData(
         workflow as ComfyWorkflowJSON,
         true,
@@ -178,6 +211,7 @@ export function useTemplateWorkflows() {
       return true
     } catch (error) {
       reportError(error, { errorType: 'workflow_template_open_failed' })
+      notifyOpenFailure()
       return false
     }
   }
@@ -188,12 +222,9 @@ export function useTemplateWorkflows() {
     loadingTemplateId.value = id
 
     try {
-      const prepared = await prepareWorkflowTemplate(id, sourceModule)
+      const prepared = await prepareWorkflowTemplateForOpen(id, sourceModule)
       if (!prepared) return false
       return await openPreparedWorkflowTemplate(prepared)
-    } catch (error) {
-      reportError(error, { errorType: 'workflow_template_prepare_failed' })
-      return false
     } finally {
       loadingTemplateId.value = null
     }
@@ -249,6 +280,7 @@ export function useTemplateWorkflows() {
     getTemplateTitle,
     getTemplateDescription,
     prepareWorkflowTemplate,
+    prepareWorkflowTemplateForOpen,
     openPreparedWorkflowTemplate,
     loadWorkflowTemplate
   }
