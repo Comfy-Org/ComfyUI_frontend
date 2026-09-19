@@ -86,19 +86,24 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
+// The table only ever calls `readEvents`; the other five are here so the
+// factory satisfies `BillingReadRail` and the module type stays checked.
 const mockBillingReadRail = vi.hoisted(() => ({
   enabled: false,
+  readStatus: vi.fn(),
+  readBalance: vi.fn(),
+  readPlans: vi.fn(),
+  readCapabilities: vi.fn(),
+  readPaymentMethods: vi.fn(),
   readEvents: vi.fn()
 }))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({
-    useBillingReadRail: () =>
-      mockBillingReadRail.enabled
-        ? { readEvents: mockBillingReadRail.readEvents }
-        : null
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
+  useBillingReadRail: () => {
+    if (!mockBillingReadRail.enabled) return null
+    const { enabled: _enabled, ...rail } = mockBillingReadRail
+    return rail
+  }
+}))
 
 const i18n = createI18n({
   legacy: false,
