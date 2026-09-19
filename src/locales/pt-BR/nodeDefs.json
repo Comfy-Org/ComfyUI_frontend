@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Vídeo latent Cosmos vazio",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Imagem latent Hunyuan vazia",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Empty HunyuanVideo 1.0 Latent",
+    "display_name": "Latent Hunyuan Video 1.0 vazio",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "Latent Hunyuan Video 1.5 vazio",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Vídeo latent LTXV vazio",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Latent Hunyuan 3D v2 vazio",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Estrutura latent Trellis2 vazia",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Ampliação de latent Hunyuan Video 1.5 com modelo",
     "inputs": {
       "crop": {
         "name": "corte"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Áudio Latente Vazio",
+    "display_name": "Áudio latent LTXV vazio",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Somente MoGe-3: etapas de refinamento volumétrico esparso sobre a profundidade prevista. Mais etapas tornam detalhes finos e bordas mais nítidos, com um custo aproximadamente linear. 0 desativa o refinamento. Ignorado por MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = mais rápido, 9 = mais detalhado."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Somente MoGe-3: etapas de refinamento volumétrico esparso sobre a profundidade prevista. Mais etapas tornam detalhes finos e bordas mais nítidos, com um custo aproximadamente linear. 0 desativa o refinamento. Ignorado por MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Condicionamento Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -22751,7 +22759,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Imagem latent stable cascade vazia",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -22794,7 +22802,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Codificação VAE do estágio C stable cascade",
     "inputs": {
       "compression": {
         "name": "compressão"
@@ -23757,7 +23765,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Codificação de texto para edição de imagem Qwen",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23787,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Codificação de texto para edição de imagem Qwen Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23863,10 @@
       "max_length": {
         "name": "comprimento_máximo"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificação especulativa com a cabeça de previsão de múltiplos tokens do checkpoint. Não tem efeito sem pesos MTP. auto adapta a profundidade do rascunho; 2-5 a fixa. A saída amostrada mantém a distribuição correta, mas difere da saída sem MTP para a mesma semente."
+      },
       "prompt": {
         "name": "prompt"
       },
@@ -23916,6 +23928,10 @@
       },
       "max_length": {
         "name": "comprimento_máximo"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificação especulativa com a cabeça de previsão de múltiplos tokens do checkpoint. Não tem efeito sem pesos MTP. auto adapta a profundidade do rascunho; 2-5 a fixa. A saída amostrada mantém a distribuição correta, mas difere da saída sem MTP para a mesma semente."
       },
       "prompt": {
         "name": "prompt"
@@ -24432,7 +24448,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Condicionamento Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24470,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Estágio de forma Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24498,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Estágio de textura Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26178,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Decodificação VAE Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26470,7 +26486,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Decodificação de forma VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26507,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Decodificação de estrutura VAE Trellis2",
     "inputs": {
       "resolution": {
         "name": "Resolução"
@@ -26511,7 +26527,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Decodificação de textura VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "Amostras"
@@ -29466,6 +29482,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Conecte o gerador ABC ou forneça uma partitura editada. Deixe vazio para usar automaticamente o modo desativado."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Orientação autorregressiva para estilo e letras. 1.0 desativa o CFG, correspondendo ao fluxo de trabalho ABC. Use 1.01 para corresponder à orientação original no modo desativado."
       },
       "clip": {
         "name": "clip"
