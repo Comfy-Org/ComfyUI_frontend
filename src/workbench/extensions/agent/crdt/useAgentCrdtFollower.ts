@@ -348,6 +348,31 @@ function startAgentCrdtFollower(
       events
     )
   }
+  const incrementOutcome = (
+    key: 'received' | 'applied' | 'skipped' | 'reset'
+  ): void => {
+    outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
+  }
+  const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
+    isTargetActive.value && workflowId === subscribedWorkflowId.value
+  const trackNodeChanges = (): string[] => {
+    const ids = currentDocNodeIds()
+    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
+    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
+    if (added.length > 0 || removed.length > 0)
+      recordDevEvent('doc_nodes_changed', { added, removed })
+    for (const id of removed) {
+      const nodeId = parseNodeId(id)
+      if (nodeId) pendingLiveNodeIds.delete(nodeId)
+    }
+    knownDocNodeIds = ids
+    return added
+  }
+  const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
+    const applied = projection.applyFrame(update)
+    incrementOutcome(applied ? 'applied' : 'skipped')
+    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+  }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -369,45 +394,22 @@ function startAgentCrdtFollower(
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as ClassifiedDocUpdate
-    outcomes.value = {
-      ...outcomes.value,
-      received: outcomes.value.received + 1
-    }
-    if (
-      !isTargetActive.value ||
-      update.workflowId !== subscribedWorkflowId.value
-    ) {
-      outcomes.value = {
-        ...outcomes.value,
-        skipped: outcomes.value.skipped + 1
-      }
+    incrementOutcome('received')
+    if (!isCurrentWorkflow(update.workflowId)) {
+      incrementOutcome('skipped')
       return
     }
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = projection.applyFrame(update)
-    outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
-      : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    const materialized = applied
-      ? projection.reconcileLiveGraph(update.workflowId)
-      : []
+    const materialized = applyAndReconcile(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    for (const id of removed) {
-      const nodeId = parseNodeId(id)
-      if (nodeId) pendingLiveNodeIds.delete(nodeId)
-    }
+    const added = trackNodeChanges()
     notifyAgentMaterialization(
       update,
       added,
@@ -416,7 +418,6 @@ function startAgentCrdtFollower(
       pendingLiveNodeIds,
       events
     )
-    knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -435,12 +436,8 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as DocResetDetail)
         : undefined
-    outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
-    if (
-      !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
-    )
-      return
+    incrementOutcome('reset')
+    if (!isCurrentWorkflow(detail?.workflowId)) return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
