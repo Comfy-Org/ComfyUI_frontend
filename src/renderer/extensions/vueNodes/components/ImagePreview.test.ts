@@ -323,21 +323,6 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(1)
     })
 
-    it('does not open the lightbox from the navigation dots', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
-
-      await user.click(
-        screen.getByRole('button', { name: 'View image 1 of 2' })
-      )
-      await nextTick()
-      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
-      await user.dblClick(dots[dots.length - 1])
-
-      expect(galleryStore.activeIndex).toBe(-1)
-    })
-
     it('does not open the lightbox while the grid is showing', async () => {
       renderImagePreview()
       const user = userEvent.setup()
@@ -348,60 +333,55 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(-1)
     })
 
-    // Gallery controls are revealed under a cursor that has not moved, so on
-    // the grid->gallery switch they would otherwise take the second click --
-    // downloading a file or jumping to another image instead of opening the
-    // lightbox. jsdom cannot hit-test, so assert the inert marker directly.
-    it.for([
-      { name: 'action bar', control: 'Download image' },
-      { name: 'navigation row', control: 'Grid view' }
-    ])(
-      'makes the $name inert across the switch to gallery',
-      async ({ control }) => {
-        renderImagePreview()
-        const user = userEvent.setup()
+    // Gallery controls appear under the cursor mid-gesture, so the second
+    // click of a double-click aimed at the image can land on one. They must
+    // ignore it rather than download a file or jump to another image.
+    it('ignores the second click of a double-click on an action button', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const download = screen.getByRole('button', { name: 'Download image' })
 
-        await user.click(
-          screen.getByRole('button', { name: 'View image 1 of 2' })
-        )
-        await nextTick()
+      await fireEvent.click(download, { detail: 1 })
+      expect(downloadFile).toHaveBeenCalledTimes(1)
 
-        expect(
-          screen.getAllByRole('button', { name: control })[0].parentElement
-        ).toHaveClass('pointer-events-none')
-      }
-    )
+      await fireEvent.click(download, { detail: 2 })
 
-    it('restores the gallery controls once the pointer moves', async () => {
+      expect(downloadFile).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores the second click of a double-click on a navigation dot', async () => {
       renderImagePreview()
       const user = userEvent.setup()
-
       await user.click(
         screen.getByRole('button', { name: 'View image 1 of 2' })
       )
       await nextTick()
-      await fireEvent.pointerMove(screen.getByRole('region'))
+
+      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
+      await fireEvent.click(dots[dots.length - 1], { detail: 2 })
       await nextTick()
 
-      expect(
-        screen.getByRole('button', { name: 'Download image' }).parentElement
-      ).not.toHaveClass('pointer-events-none')
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        defaultProps.imageUrls[0]
+      )
     })
 
-    // A tap emits no pointermove, so disarming would leave the controls
-    // permanently inert for touch users.
-    it('leaves the gallery controls active for a touch tap', async () => {
+    it('still lets a deliberate single click reach a gallery control', async () => {
       renderImagePreview()
-
-      await fireEvent(
-        screen.getByRole('button', { name: 'View image 1 of 2' }),
-        new PointerEvent('click', { bubbles: true, pointerType: 'touch' })
+      const user = userEvent.setup()
+      await user.click(
+        screen.getByRole('button', { name: 'View image 1 of 2' })
       )
       await nextTick()
 
-      expect(
-        screen.getByRole('button', { name: 'Download image' }).parentElement
-      ).not.toHaveClass('pointer-events-none')
+      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
+      await user.click(dots[dots.length - 1])
+      await nextTick()
+
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        defaultProps.imageUrls[1]
+      )
     })
 
     it('does not put live preview blobs into the lightbox', async () => {
@@ -410,18 +390,6 @@ describe('ImagePreview', () => {
       const galleryStore = useMediaAssetGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
-
-      expect(galleryStore.activeIndex).toBe(-1)
-    })
-
-    it('does not open the lightbox from the action buttons', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
-      const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
-
-      await user.dblClick(
-        screen.getByRole('button', { name: 'Download image' })
-      )
 
       expect(galleryStore.activeIndex).toBe(-1)
     })

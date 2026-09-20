@@ -4,7 +4,6 @@
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
     @dblclick.stop="handleGalleryDoubleClick"
-    @pointermove="controlsArmed = true"
   >
     <!-- Grid View -->
     <div
@@ -25,7 +24,7 @@
             total: imageUrls.length
           })
         "
-        @click="handleGridClick(index, $event)"
+        @click="withSingleClick($event, () => handleGridClick(index))"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -83,8 +82,7 @@
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
-        @click="openHdrViewer(currentImageUrl)"
-        @dblclick.stop
+        @click="withSingleClick($event, () => openHdrViewer(currentImageUrl))"
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -108,12 +106,7 @@
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
-        :class="
-          cn(
-            'actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible',
-            transientControlClass
-          )
-        "
+        class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- Mask/Edit Button -->
         <button
@@ -121,8 +114,7 @@
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
-          @click="handleEditMask"
-          @dblclick.stop
+          @click="withSingleClick($event, handleEditMask)"
         >
           <i-comfy:mask class="size-4" />
         </button>
@@ -133,8 +125,7 @@
           :class="actionButtonClass"
           :title="$t('g.openLayerEditor')"
           :aria-label="$t('g.openLayerEditor')"
-          @click="handleOpenLayerEditor"
-          @dblclick.stop
+          @click="withSingleClick($event, handleOpenLayerEditor)"
         >
           <i class="icon-[lucide--layers] size-4" />
         </button>
@@ -145,8 +136,7 @@
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
-          @click="handleDownload"
-          @dblclick.stop
+          @click="withSingleClick($event, handleDownload)"
         >
           <i class="icon-[lucide--download] size-4" />
         </button>
@@ -157,8 +147,7 @@
           :class="actionButtonClass"
           :title="$t('g.viewGrid')"
           :aria-label="$t('g.viewGrid')"
-          @click="viewMode = 'grid'"
-          @dblclick.stop
+          @click="withSingleClick($event, () => (viewMode = 'grid'))"
         >
           <i class="icon-[lucide--layout-grid] size-4" />
         </button>
@@ -188,20 +177,14 @@
     <!-- Multiple Images Navigation (gallery mode only) -->
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
-      :class="
-        cn(
-          'flex flex-wrap items-center justify-center gap-1 pt-4',
-          transientControlClass
-        )
-      "
+      class="flex flex-wrap items-center justify-center gap-1 pt-4"
     >
       <!-- Back to Grid button -->
       <button
         class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
-        @click="viewMode = 'grid'"
-        @dblclick.stop
+        @click="withSingleClick($event, () => (viewMode = 'grid'))"
       >
         <i class="icon-[lucide--layout-grid] size-3.5" />
       </button>
@@ -218,8 +201,7 @@
             total: imageUrls.length
           })
         "
-        @click="setCurrentIndex(index)"
-        @dblclick.stop
+        @click="withSingleClick($event, () => setCurrentIndex(index))"
       />
     </div>
   </div>
@@ -285,10 +267,6 @@ const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-const controlsArmed = ref(true)
-const transientControlClass = computed(() =>
-  controlsArmed.value ? undefined : 'pointer-events-none'
-)
 const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -410,25 +388,20 @@ function setCurrentIndex(index: number) {
   }
 }
 
-async function openImageInGallery(index: number, disarmControls = false) {
+async function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
-  // Gallery controls mount under a cursor that has not moved, so they would
-  // otherwise swallow the second click of a double-click. Only a pointer that
-  // can hover gets disarmed: a tap emits no pointermove to re-arm them.
-  if (disarmControls) controlsArmed.value = false
   await nextTick()
   galleryPanelEl.value?.focus()
 }
 
-function handleGridClick(index: number, event: MouseEvent) {
+function handleGridClick(index: number) {
   const url = imageUrls[index]
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
   }
-  const isTouch = 'pointerType' in event && event.pointerType === 'touch'
-  void openImageInGallery(index, !isTouch)
+  void openImageInGallery(index)
 }
 
 function isObjectUrl(url: string): boolean {
@@ -471,6 +444,15 @@ function openInLightbox(index: number) {
   const lightboxUrls = imageUrls.filter(isRenderable)
   const activeIndex = imageUrls.slice(0, index).filter(isRenderable).length
   galleryStore.openItems(lightboxUrls.map(toGalleryItem), activeIndex)
+}
+
+// Gallery controls are revealed under the cursor mid-double-click, so the
+// second click can land on one of them. The browser still counts it as the
+// second click, which is how they tell it apart from a deliberate press and
+// let it through to the root handler.
+function withSingleClick(event: MouseEvent, action: () => void) {
+  if (event.detail > 1) return
+  action()
 }
 
 function handleGalleryDoubleClick() {
