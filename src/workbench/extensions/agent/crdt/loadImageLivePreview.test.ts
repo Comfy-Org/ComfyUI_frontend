@@ -7,6 +7,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
@@ -161,7 +162,8 @@ function remoteMutations(scope: GraphScope) {
         })
       },
       deleteNodes: vi.fn()
-    }
+    },
+    placement: inertPlacementPort
   })
 }
 
