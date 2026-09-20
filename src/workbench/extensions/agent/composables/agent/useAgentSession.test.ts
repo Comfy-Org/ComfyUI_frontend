@@ -1531,6 +1531,52 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {
+    // `onStatus` floats the recovery job (`void reconcileTurn(turn)`), so a
+    // rethrow past the fetch has no rejection owner: it becomes a global
+    // `unhandledrejection` the session never sees and telemetry files as an
+    // uncaught error rather than an agent failure. `getMessages` already maps
+    // its own failures onto `TurnOutcome`, so the remaining sources are the
+    // settlement calls — here `localStorage`, which throws in Safari private
+    // mode.
+    const storageFailure = new Error('localStorage is unavailable')
+    const removeItem = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation((key: string) => {
+        if (key === 'Comfy.Agent.ThreadId') throw storageFailure
+      })
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          throw new AgentApiError('gone', 404, undefined)
+        })
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(storageFailure, {
+          errorType: 'agent_turn_recovery_failed'
+        })
+      )
+      expect(removeItem).toHaveBeenCalledWith('Comfy.Agent.ThreadId')
+      // The job still cleans up after itself: the turn is settled and the
+      // deleted thread is forgotten in memory despite the storage failure.
+      expect(useAgentConversationStore().liveTurns()).toEqual([])
+      expect(session.threadId.value).toBe(null)
+    } finally {
+      removeItem.mockRestore()
+    }
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()

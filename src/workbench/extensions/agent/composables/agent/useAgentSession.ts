@@ -663,7 +663,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       await recoverTurn(turn, ownedGeneration, recovery.signal)
     } catch (error) {
-      if (!recovery.signal.aborted) throw error
+      // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
+      // would land as an `unhandledrejection` the session never sees. Abort is
+      // the expected end of a cancelled job; anything else is an unexpected
+      // settlement or storage failure and goes through the module's reporter.
+      if (!recovery.signal.aborted)
+        reportError(error, { errorType: 'agent_turn_recovery_failed' })
     } finally {
       clearTimeout(deadline)
       recoveringTurns.delete(key)
