@@ -159,8 +159,14 @@ export const useAgentNodeSelectionStore = defineStore(
         oldWorkflowPath === newWorkflowPath
       )
         return
+      // `in`, not a falsy check on the indexed value: the map is typed
+      // `Record<string, string[]>`, so TypeScript believes every lookup returns
+      // an array and flags `if (!ids)` as an always-falsy condition. The key
+      // really can be absent at runtime, and moving a workflow that never had a
+      // selection must leave the destination untouched rather than write
+      // `undefined` into it.
+      if (!(oldWorkflowPath in nodeIdsByWorkflow.value)) return
       const { [oldWorkflowPath]: ids, ...remaining } = nodeIdsByWorkflow.value
-      if (!ids) return
       nodeIdsByWorkflow.value = { ...remaining, [newWorkflowPath]: ids }
     }
 

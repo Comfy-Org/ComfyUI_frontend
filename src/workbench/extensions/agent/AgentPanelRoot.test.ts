@@ -6426,6 +6426,31 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(selection.canvas.selectOnly).toBe(true)
   })
 
+  it('does not carry a saved node selection onto a different workflow', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    await startVueNodeSelection()
+
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds('workflows/current.json', ['9', '12'])
+
+    // A rename keeps the same workflow object and changes only its path, which
+    // is the one case `moveNodeIds` exists for. A switch replaces the object,
+    // and carrying the selection across would hand the newly opened workflow
+    // node ids that belong to the previous one. The agent's own selected
+    // target is deliberately left alone here so the later `selectedTarget`
+    // watcher does not fire and clear both entries, which would hide the
+    // difference.
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([
+      '9',
+      '12'
+    ])
+    expect(selectionStore.nodeIds('workflows/other.json')).toEqual([])
+  })
+
   it('keeps each workflow node selection separate after a graph load', async () => {
     makeTab()
     const selection = await startVueNodeSelection()

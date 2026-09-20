@@ -250,4 +250,65 @@ describe('agentNodeSelectionStore', () => {
     expect(store.nodeIds('workflows/original.json')).toEqual([])
     expect(store.nodeIds('workflows/renamed.json')).toEqual(['9', '12'])
   })
+
+  // Every rejected move must be a no-op on the WHOLE map, not just on the two
+  // paths named. The implementation rebuilds `nodeIdsByWorkflow` by spreading
+  // the rest around the moved entry, so a mishandled early return is exactly
+  // the shape of bug that drops an unrelated workflow's selection. The
+  // bystander assertion is the point of these cases.
+  //
+  // Which of `moveNodeIds`' three early returns these actually pin, checked by
+  // deleting each one:
+  //   - `!oldWorkflowPath || !newWorkflowPath` IS pinned; the
+  //     undefined-destination case goes red without it.
+  //   - `oldWorkflowPath === newWorkflowPath` is not pinnable. The rebuild
+  //     deletes and re-adds the same key, so removing it changes nothing
+  //     observable.
+  //   - the presence check is not pinnable either. Without it the map gains
+  //     `{ [destination]: undefined }`, and `nodeIds()` coalesces that to `[]`,
+  //     so the reader hides it.
+  // Both unpinnable guards are still worth keeping: they stop `undefined` and
+  // redundant rewrites entering the map. Stated here so nobody later reads a
+  // green suite as proof that all three are covered.
+  describe('moveNodeIds rejects a move it cannot make', () => {
+    const BYSTANDER = 'workflows/untouched.json'
+
+    it.for([
+      {
+        label: 'the source path is undefined',
+        from: undefined,
+        to: 'workflows/renamed.json'
+      },
+      {
+        label: 'the destination path is undefined',
+        from: 'workflows/original.json',
+        to: undefined
+      },
+      { label: 'both paths are undefined', from: undefined, to: undefined },
+      {
+        label: 'the paths are identical',
+        from: 'workflows/original.json',
+        to: 'workflows/original.json'
+      }
+    ])('keeps every saved selection when $label', ({ from, to }) => {
+      const store = useAgentNodeSelectionStore()
+      store.saveNodeIds('workflows/original.json', ['9', '12'])
+      store.saveNodeIds(BYSTANDER, ['3'])
+
+      store.moveNodeIds(from, to)
+
+      expect(store.nodeIds('workflows/original.json')).toEqual(['9', '12'])
+      expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
+    })
+
+    it('leaves the destination empty when the source has no saved selection', () => {
+      const store = useAgentNodeSelectionStore()
+      store.saveNodeIds(BYSTANDER, ['3'])
+
+      store.moveNodeIds('workflows/never-saved.json', 'workflows/renamed.json')
+
+      expect(store.nodeIds('workflows/renamed.json')).toEqual([])
+      expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
+    })
+  })
 })
