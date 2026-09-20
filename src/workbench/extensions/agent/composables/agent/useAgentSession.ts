@@ -118,6 +118,19 @@ function recoveryKey(turn: LiveTurn): string {
   return `${turn.threadId}/${turn.messageId}`
 }
 
+function turnOutcomeFromError(
+  error: unknown,
+  signal: AbortSignal
+): TurnOutcome {
+  if (signal.aborted) return { kind: 'cancelled' }
+  if (error instanceof AgentApiError && error.status === 404)
+    return { kind: 'thread-missing' }
+  return {
+    kind: 'error',
+    message: error instanceof Error ? error.message : String(error)
+  }
+}
+
 let sessionGeneration = 0
 
 /**
@@ -652,26 +665,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
       () => recovery.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
-    const generation = ownedGeneration
-    let noticed = false
     try {
-      for (const ms of TURN_RECOVERY_DELAYS_MS) {
-        await delay(ms, { signal: recovery.signal })
-        if (!isTurnLive(turn, generation)) return
-        const outcome = await fetchTurnOutcome(turn, recovery.signal)
-        if (outcome.kind === 'cancelled') return
-        if (!isTurnLive(turn, generation)) return
-        if (settleFinishedTurn(turn, outcome)) return
-        if (outcome.kind === 'error' && !noticed) {
-          noticed = true
-          pushError(outcome.message)
-        }
-      }
+      await recoverTurn(turn, ownedGeneration, recovery.signal)
     } catch (error) {
       if (!recovery.signal.aborted) throw error
     } finally {
       clearTimeout(deadline)
       recoveringTurns.delete(key)
+    }
+  }
+
+  async function recoverTurn(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<void> {
+    let noticed = false
+    for (const ms of TURN_RECOVERY_DELAYS_MS) {
+      await delay(ms, { signal })
+      if (!isTurnLive(turn, generation)) return
+      const outcome = await fetchTurnOutcome(turn, signal)
+      if (outcome.kind === 'cancelled') return
+      if (!isTurnLive(turn, generation)) return
+      if (settleFinishedTurn(turn, outcome)) return
+      if (outcome.kind === 'error' && !noticed) {
+        noticed = true
+        pushError(outcome.message)
+      }
     }
   }
 
@@ -711,13 +731,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
-      if (signal.aborted) return { kind: 'cancelled' }
-      if (error instanceof AgentApiError && error.status === 404)
-        return { kind: 'thread-missing' }
-      return {
-        kind: 'error',
-        message: error instanceof Error ? error.message : String(error)
-      }
+      return turnOutcomeFromError(error, signal)
     }
   }
 
