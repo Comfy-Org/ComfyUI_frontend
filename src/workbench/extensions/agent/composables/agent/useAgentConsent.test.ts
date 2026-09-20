@@ -1,9 +1,8 @@
-import { useDialogService } from '@/services/dialogService'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-import { computed, defineComponent, h, reactive } from 'vue'
+import { defineComponent, h } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
