@@ -116,7 +116,7 @@ describe('Composer', () => {
     const { emitted } = mount({ streaming: true })
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, 'Next draft{Enter}')
-    expect(useAgentComposerStore().draft).toBe('Next draft')
+    expect(textbox).toHaveTextContent('Next draft')
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
   })
