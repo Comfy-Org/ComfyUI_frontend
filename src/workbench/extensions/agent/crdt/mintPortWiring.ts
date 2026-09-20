@@ -39,6 +39,8 @@ export interface MintPortWiringDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** The bound workflow's root graph id, or null while none is resolvable. */
+  boundRootGraphId(): string | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The layout store's `onChange`, injected by the composition root. */
@@ -185,6 +187,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    boundRootGraphId: deps.boundRootGraphId,
     source: {
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)

@@ -108,6 +108,7 @@ describe('human add_node rejection regression pin', () => {
     const wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
+      boundRootGraphId: () => 'root',
       enqueue: (operations) => sender.enqueue(operations),
       layoutChanges: (listener) => {
         layoutListeners.add(listener)

@@ -770,6 +770,7 @@ describe('reconcileAgentAdapters', () => {
       wiring = attachMintPortWiring({
         isEnabled: () => true,
         isDocBound: () => true,
+        boundRootGraphId: () => 'root',
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',

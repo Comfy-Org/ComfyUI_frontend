@@ -115,6 +115,7 @@ describe('mint ports against the real layout store delivery', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
+      boundRootGraphId: () => graphId,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',

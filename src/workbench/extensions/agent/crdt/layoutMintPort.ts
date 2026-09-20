@@ -56,6 +56,14 @@ export interface LayoutMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /**
+   * The bound workflow's root graph id, or null while none is resolvable.
+   * Tab activation flips after the incoming graph configures, so a layout
+   * change from the incoming tab can arrive while `isDocBound` still reads
+   * true for the outgoing one; an op minted then would enter the wrong doc,
+   * be refused by the host, and undo the user's local node on revert.
+   */
+  boundRootGraphId(): string | null
   source: MintSnapshotSource
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
@@ -89,9 +97,11 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
+    const graphId = change.operation.graphId
     return (
       change.operation.source !== 'agent-remote' &&
       actor?.startsWith(deps.localActorPrefix) === true &&
+      (graphId === undefined || graphId === deps.boundRootGraphId()) &&
       shouldMint({
         flagEnabled: deps.isEnabled(),
         docBound: deps.isDocBound(),

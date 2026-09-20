@@ -78,6 +78,7 @@ describe('attachLayoutMintPort', () => {
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      boundRootGraphId: () => 'root',
       source: {
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
@@ -126,6 +127,20 @@ describe('attachLayoutMintPort', () => {
         }
       }
     ])
+  })
+
+  it('mints nothing for a change on a graph other than the bound one', () => {
+    const otherRoot = { graphId: 'other-root', ownerGraphId: 'other-root' }
+
+    deliver({
+      operation: { ...createNodeChange('1').operation, ...otherRoot }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, ...otherRoot }
+    })
+
+    expect(minted).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('surfaces interior create and delete without minting root operations', () => {

@@ -625,6 +625,11 @@ const {
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
+  boundRootGraphId: () => {
+    const bound = boundWorkflowId.value
+    if (bound === null) return null
+    return boundOrOpenWorkflowFor(bound)?.activeState?.id ?? null
+  },
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
