@@ -344,11 +344,11 @@ class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(): Promise<void> {
+  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn)
+      await this.replayResponse(turn, beforeFirstGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -653,6 +653,29 @@ class AgentConversationHarness {
         { op: 'set_widget', node_id: nodeId, widget, value, old: value }
       ] as RecordedGraphOperation[])
     )
+  }
+
+  hostNodePositions(): (number[] | undefined)[] {
+    return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  async reloadWithoutLocalWorkflow(): Promise<void> {
+    await this.page.evaluate(() => {
+      for (const storage of [localStorage, sessionStorage]) {
+        const workflowKeys = Object.keys(storage).filter((key) =>
+          key.startsWith('Comfy.Workflow.')
+        )
+        for (const key of workflowKeys) storage.removeItem(key)
+      }
+    })
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.page.waitForFunction(() => window.app?.extensionManager)
+    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
+      state: 'hidden',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectWorkflowTarget()
   }
 }
 

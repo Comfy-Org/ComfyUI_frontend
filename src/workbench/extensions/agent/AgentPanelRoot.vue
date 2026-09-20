@@ -118,6 +118,7 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
+import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -272,6 +273,11 @@ const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
 >()
+const liveWidgets = createLiveWidgetProjection({
+  getRootGraph: () => app.rootGraphOrUndefined,
+  getCanvas: () => app.canvas,
+  markDirty: () => app.canvas?.setDirty(true)
+})
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
@@ -322,7 +328,32 @@ const graphMutations = (workflowId: string) => {
           }))
         )
       }
-    }
+    },
+    placement: {
+      nodeBounds(scope, nodeId) {
+        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+        return layout
+          ? {
+              x: layout.position.x,
+              y: layout.position.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
+          : null
+      },
+      viewportBounds(scope) {
+        const canvas = canvasStore.canvas
+        if (
+          !canvas ||
+          String(canvas.graph?.id) !== String(scope.owningGraphId)
+        ) {
+          return null
+        }
+        const [x, y, width, height] = canvas.ds.visible_area
+        return { x, y, width, height }
+      }
+    },
+    liveWidgets
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations
@@ -940,6 +971,10 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
+  // A new chat targets whatever tab is on screen right now, not the previous
+  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
+  // so restoreTarget() can re-apply the loaded thread's own binding.
+  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
 }
 

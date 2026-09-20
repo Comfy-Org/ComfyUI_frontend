@@ -363,7 +363,22 @@ export class ComfyApp {
     return !!this.rootGraphInternal
   }
 
-  canvas!: LGraphCanvas
+  private canvasInternal: LGraphCanvas | undefined
+
+  /** The canvas, once {@link setup} has created it. Accessing it earlier is a bug. */
+  get canvas(): LGraphCanvas {
+    return this.canvasInternal!
+  }
+
+  set canvas(value: LGraphCanvas) {
+    this.canvasInternal = value
+  }
+
+  /** Same as {@link canvas}, but `undefined` before {@link setup} creates it. */
+  get canvasOrUndefined(): LGraphCanvas | undefined {
+    return this.canvasInternal
+  }
+
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -729,9 +744,10 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        canvas.graph_mouse[0] = event.canvasX
+        canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -807,11 +823,9 @@ export class ComfyApp {
       this.canvasElRef,
       'dragover',
       (event: DragEvent) => {
-        this.canvas.adjustMouseEvent(event)
-        const node = this.canvas.graph?.getNodeOnPos(
-          event.canvasX,
-          event.canvasY
-        )
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        const node = canvas.graph?.getNodeOnPos(event.canvasX, event.canvasY)
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null
