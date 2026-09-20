@@ -10,22 +10,36 @@ import { describe, expect, it } from 'vitest'
  * renderer became reactive, and spreads half-applied state that later code
  * has to remember to roll back.
  *
- * Each entry pins how many times a forbidden token appears in a file today.
- * A count may only go down; delete an entry when it reaches zero. A new use
- * anywhere under `crdt/` fails this test.
+ * Each entry pins how many times a forbidden operation appears in a file
+ * today. A count may only go down; delete an entry when it reaches zero. A
+ * new use anywhere under `crdt/` fails this test.
+ *
+ * This is a lexical scan, not an AST lint rule: it matches the member-access
+ * forms TypeScript offers (`a.b(`, `a?.b(`, `a['b'](`, `a?.['b'](`) so a
+ * rewrite cannot dodge the ratchet by changing call syntax. Aliasing the
+ * store to another name is the remaining gap, deferred to an ESLint rule.
  *
  * @see https://linear.app/comfyorg/issue/PM-1293
  */
-const FORBIDDEN_TOKENS = [
+
+/** `receiver.member(`, `receiver?.member(`, `receiver['member'](`, `receiver?.['member'](`. */
+function memberCall(receiver: string, member: string): RegExp {
+  const dot = String.raw`\??\.\s*${member}`
+  const bracket = String.raw`(?:\?\.)?\s*\[\s*['"]${member}['"]\s*\]`
+  return new RegExp(String.raw`\b${receiver}\s*(?:${dot}|${bracket})\s*\(`, 'g')
+}
+
+const FORBIDDEN_OPERATIONS = {
   // LiteGraph's private node index. Use `graph.getNodeById()` / `graph.add()`.
-  '_nodes_by_id',
+  _nodes_by_id: /_nodes_by_id/g,
   // Store-record surgery around `graph.add()` / `graph.remove()`. Store
   // records belong to `graphMutations` (the store leg), not the materializer.
-  'nodeStore.deleteNode(',
-  'nodeStore.registerNode('
-] as const
+  'nodeStore.deleteNode(': memberCall('nodeStore', 'deleteNode'),
+  'nodeStore.registerNode(': memberCall('nodeStore', 'registerNode')
+} as const satisfies Record<string, RegExp>
 
-type ForbiddenToken = (typeof FORBIDDEN_TOKENS)[number]
+type ForbiddenToken = keyof typeof FORBIDDEN_OPERATIONS
+const FORBIDDEN_TOKENS = Object.keys(FORBIDDEN_OPERATIONS) as ForbiddenToken[]
 
 const RATCHET: Record<string, Partial<Record<ForbiddenToken, number>>> = {
   'agentNodeMaterializer.ts': {
@@ -40,14 +54,8 @@ const RATCHET: Record<string, Partial<Record<ForbiddenToken, number>>> = {
   }
 }
 
-function countOccurrences(source: string, token: string): number {
-  let count = 0
-  let index = source.indexOf(token)
-  while (index !== -1) {
-    count++
-    index = source.indexOf(token, index + token.length)
-  }
-  return count
+function countOccurrences(source: string, token: ForbiddenToken): number {
+  return [...source.matchAll(FORBIDDEN_OPERATIONS[token])].length
 }
 
 /** Every `.ts` source under `crdt/`, nested directories included, relative to it. */
@@ -61,6 +69,29 @@ function sourceFiles(): readonly string[] {
         !name.endsWith('.d.ts')
     )
 }
+
+describe('forbidden-operation matcher', () => {
+  it.for([
+    'nodeStore.deleteNode(node)',
+    'nodeStore?.deleteNode(node)',
+    "nodeStore['deleteNode'](node)",
+    'nodeStore?.["deleteNode"](node)',
+    'nodeStore\n  .deleteNode(node)'
+  ])('matches %j', (snippet) => {
+    expect(countOccurrences(snippet, 'nodeStore.deleteNode(')).toBe(1)
+  })
+
+  it.for([
+    // A different receiver: the CRDT batch API, not the node store.
+    'batch.deleteNode(id)',
+    // A reference without a call.
+    'const fn = nodeStore.deleteNode',
+    // A different member.
+    'nodeStore.deleteNodes(ids)'
+  ])('ignores %j', (snippet) => {
+    expect(countOccurrences(snippet, 'nodeStore.deleteNode(')).toBe(0)
+  })
+})
 
 describe('agent follower stays on the public graph API', () => {
   const files = sourceFiles()
@@ -87,7 +118,9 @@ describe('agent follower stays on the public graph API', () => {
     for (const [file, tokens] of Object.entries(RATCHET)) {
       expect(files, `${file} no longer exists`).toContain(file)
       const source = readFileSync(resolve(__dirname, file), 'utf-8')
-      for (const [token, allowed] of Object.entries(tokens)) {
+      for (const token of FORBIDDEN_TOKENS) {
+        const allowed = tokens[token]
+        if (allowed === undefined) continue
         const observed = countOccurrences(source, token)
         expect(
           observed,

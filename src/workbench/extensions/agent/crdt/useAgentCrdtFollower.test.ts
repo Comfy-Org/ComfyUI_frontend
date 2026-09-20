@@ -1094,7 +1094,7 @@ describe('useAgentCrdtFollower', () => {
       const graph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
         getNodeById: (id: NodeId) =>
-          id === toNodeId(3) ? ({} as LGraphNode) : null
+          id === toNodeId(3) ? fromPartial<LGraphNode>({}) : null
       })
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
@@ -1139,7 +1139,7 @@ describe('useAgentCrdtFollower', () => {
       const readyGraph = fromPartial<MaterializableGraph>({
         ...fakeGraph,
         getNodeById: (id: NodeId) =>
-          id === toNodeId(3) ? ({} as LGraphNode) : null
+          id === toNodeId(3) ? fromPartial<LGraphNode>({}) : null
       })
       let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {

@@ -69,6 +69,30 @@ describe('serialisedWidgetSlots', () => {
     expect(slots).not.toHaveProperty('widgets_values')
   })
 
+  it('detaches nested positional values from the payload', () => {
+    const nested = { tags: ['a'], size: { w: 1 } }
+    const slots = serialisedWidgetSlots({
+      kind: 'positional',
+      values: [nested]
+    })
+    nested.tags.push('b')
+    nested.size.w = 2
+    expect(slots.widgets_values).toEqual([{ tags: ['a'], size: { w: 1 } }])
+  })
+
+  it('detaches nested named values from the payload', () => {
+    const nested = { tags: ['a'], size: { w: 1 } }
+    const slots = serialisedWidgetSlots({
+      kind: 'named',
+      values: new Map([['options', nested]])
+    })
+    nested.tags.push('b')
+    nested.size.w = 2
+    expect(slots.widgets_values_named).toEqual({
+      options: { tags: ['a'], size: { w: 1 } }
+    })
+  })
+
   it('round-trips through parseWidgetValues without changing shape', () => {
     for (const raw of [[1, 2], { a: 1, b: 2 }, undefined]) {
       const once = serialisedWidgetSlots(parseWidgetValues(raw))
