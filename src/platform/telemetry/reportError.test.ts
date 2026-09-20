@@ -14,7 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry/initHostTelemetry'), () => ({
+vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
   isHostTelemetryEnabled: () => hostTelemetryEnabled()
 }))
 

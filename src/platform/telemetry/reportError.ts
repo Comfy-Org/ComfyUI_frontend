@@ -6,7 +6,7 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import { isCloud } from '@/platform/distribution/types'
-import { isHostTelemetryEnabled } from '@/platform/telemetry/initHostTelemetry'
+import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
 
 /**
