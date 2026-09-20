@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -69,7 +70,24 @@ export class Topbar {
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.allTabs().nth(index)
+  }
+
+  allTabs(): Locator {
+    return this.page.locator('.workflow-tabs .p-togglebutton')
+  }
+
+  /**
+   * Opens a second, blank workflow tab and returns to the first one — the
+   * lever agent tab-switch specs use to force the agent CRDT follower to
+   * unbind and rebind against the original workflow.
+   */
+  async openBlankTabAndReturn(): Promise<void> {
+    await expect(this.allTabs()).toHaveCount(1)
+    await this.newWorkflowButton.click()
+    await expect(this.allTabs()).toHaveCount(2)
+    await this.getTab(0).click()
+    await expect(this.getTab(0)).toHaveClass(/p-togglebutton-checked/)
   }
 
   getActiveTab(): Locator {

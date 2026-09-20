@@ -344,7 +344,7 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title: resolveNodeTitle(payload, existing),
+    title: resolveNodeTitle(payload, incumbent),
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),

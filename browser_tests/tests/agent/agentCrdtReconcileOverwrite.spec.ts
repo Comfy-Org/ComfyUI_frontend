@@ -1,47 +1,45 @@
 import { expect } from '@playwright/test'
 
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture';
+import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture';
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 /**
- * Root cause (shared by all three specs below): whenever a follower session
- * is (re)bound (`EcsFollowerAdapter.bind`, ecsFollowerAdapter.ts), the very
- * next doc frame it applies is forced through a full reconcile
+ * The color and title specs below share one root cause: whenever a follower
+ * session is (re)bound (`EcsFollowerAdapter.bind`, ecsFollowerAdapter.ts),
+ * the very next doc frame it applies is forced through a full reconcile
  * (`reconcileNextFrame`), which replays the CRDT doc's own snapshot over the
  * live node with no "is this field newer locally" check anywhere in
  * graphMutations.ts. Returning to a workflow tab (inactive -> active) is the
  * confirmed trigger for that rebind — see agentTabSwitchCatchUp.spec.ts,
- * whose "second follower subscribe" is exactly this rebind. These specs
- * reuse that same lever to reproduce three symptoms of the one defect:
- * lost presentation-only node color, a stomped local title rename, and a
- * widget value overwritten mid-edit with no focus guard.
+ * whose "second follower subscribe" is exactly this rebind.
  *
- * The color symptom is fixed, robustly, in `graphMutations.ts`'s
- * `prepareNode`: a reconcile now merges onto the live node's color instead
- * of always resetting it, and the doc never carries color at all, so this
- * holds regardless of what else has or hasn't reset a node's live state.
+ * Color is fixed, robustly, in `graphMutations.ts`'s `prepareNode`: a
+ * reconcile now merges onto the live node's color instead of always
+ * resetting it, and the doc never carries color at all, so this holds
+ * regardless of what else has or hasn't reset a node's live state. Unit-level
+ * proof: `graphMutations.test.ts`'s "keeps a locally set node color...".
  *
- * The title symptom's fix (comparing the doc's title against the node's
- * last-synced doc baseline, `resolveNodeTitle`) only holds within a session:
- * it's proven correct for a follower rebind alone (this file's own test
- * below) and for a node re-materializing after a doc-only remote edit
- * (agentNodeMaterializer.test.ts's "keeps the record lastSerialization
- * baseline..."). It does NOT survive a full workflow-tab reload of a node
- * that predates the current reconcile — `LGraph.clear()` (called by
- * `configure()`, which returning to a tab triggers) tears each node down
- * individually before any store-level hook could preserve its baseline, so
- * the very next reconcile replays the doc's title over the reload's rename
- * regardless. That gap is intentionally left as a known repro below (see
- * agentNodeMaterializer.test.ts's own `it.fails` case for the same gap at
- * the unit level) — like the widget-mid-edit symptom, it needs the same
- * kind of dedicated cross-layer plumbing rather than a quick guard clause.
+ * Title's fix (comparing the doc's title against the node's last-synced doc
+ * baseline, `resolveNodeTitle`) only holds within a session — it does NOT
+ * survive a full workflow-tab reload of a node that predates the current
+ * reconcile, because `LGraph.clear()` (called by `configure()`, which
+ * returning to a tab triggers) tears each node down individually before any
+ * store-level hook could preserve its baseline. That gap is intentionally
+ * left as a known repro below (see agentNodeMaterializer.test.ts's own
+ * `it.fails` case for the same gap at the unit level). Unit-level proof of
+ * the in-session case: `graphMutations.test.ts`'s "keeps a locally renamed
+ * title...".
  *
- * Unit-level proof of the color fix and the title fix's in-session cases
- * lives alongside the code:
- * src/workbench/extensions/agent/crdt/graphMutations.test.ts
- * ("keeps a locally renamed title...", "keeps a locally set node color...").
+ * The widget-overwrite spec at the bottom of this file is a *different*
+ * mechanism, not a third symptom of the reconcile root cause above: it never
+ * goes through a follower rebind at all. It replays an agent turn's
+ * `set_widget` while the target widget is focused, which is a plain
+ * local-edit-vs-remote-write collision in `applyWidgetValues`/
+ * `setWidgetValue` (`graphMutations.ts`) — those write straight into
+ * `widgetValueStore` with no focus/in-progress-edit guard.
  */
 
 // Five wired nodes (checkpoint -> CLIPTextEncode -> KSampler -> VAEDecode ->
@@ -59,17 +57,21 @@ const ADDED_NODE_ID = '2785690574723683'
 
 const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
-/** Opens a second, blank workflow tab and returns to the first one, forcing
- * the agent CRDT follower to unbind and rebind against the original
- * workflow (see agentTabSwitchCatchUp.spec.ts for the mechanism this
- * mirrors). */
-async function reconcileByReturningToTab(topbar: Topbar): Promise<void> {
-  const tabs = topbar.workflowTabs.locator('.p-togglebutton')
-  await expect(tabs).toHaveCount(1)
-  await topbar.newWorkflowButton.click()
-  await expect(tabs).toHaveCount(2)
-  await topbar.getTab(0).click()
-  await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+/**
+ * Opens a second, blank workflow tab and returns to the first one, forcing
+ * the agent CRDT follower to unbind and rebind against the original workflow
+ * (see agentTabSwitchCatchUp.spec.ts for the mechanism this mirrors), then
+ * waits for the follower's replay boundary — the tab control switching back
+ * only proves the click landed, not that the reload, follower rebind, and
+ * reconcile it triggers have finished.
+ */
+async function reconcileByReturningToTab(
+  topbar: Topbar,
+  agentConversation: AgentConversationHarness,
+  throughTurn: number
+): Promise<void> {
+  await topbar.openBlankTabAndReturn()
+  await agentConversation.expectCanvasReplayed(throughTurn)
 }
 
 test.describe(
@@ -89,6 +91,7 @@ test.describe(
       const wrapper = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)
         .getByTestId('node-inner-wrapper')
+      const lastTurn = agentConversation.conversation.turns.length - 1
 
       await agentConversation.runTurns()
 
@@ -114,7 +117,7 @@ test.describe(
       })
 
       await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
-        await reconcileByReturningToTab(topbar)
+        await reconcileByReturningToTab(topbar, agentConversation, lastTurn)
       })
 
       await testInfo.attach('node-color-after-reconcile', {
@@ -147,6 +150,7 @@ test.describe(
       const titleLocator = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)
         .getByTestId('node-title')
+      const lastTurn = agentConversation.conversation.turns.length - 1
 
       await agentConversation.runTurns()
 
@@ -165,7 +169,7 @@ test.describe(
       })
 
       await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
-        await reconcileByReturningToTab(topbar)
+        await reconcileByReturningToTab(topbar, agentConversation, lastTurn)
       })
 
       await testInfo.attach('node-title-after-reconcile', {
@@ -175,21 +179,10 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Known bug, root cause confirmed but left as a repro (see
-      // graphMutations.ts's resolveNodeTitle and agentNodeMaterializer.ts's
-      // materialize() for the two related, already-fixed cases): returning
-      // to a workflow tab reloads it, and `LGraph.clear()` (called by
-      // `configure()`) tears each node down individually via
-      // `teardownOwnedGraphs` *before* it resets the store bucket, so this
-      // node's reconcile baseline is gone by the time any store-level hook
-      // could try to preserve it. The rename itself survives the reload
-      // (the tab's own saved JSON already carried it), but the very next
-      // reconcile has no baseline to compare the doc's title against and
-      // replays it over the reload's rename regardless. A real fix needs
-      // the same kind of dedicated cross-layer plumbing as the
-      // widget-overwrite case below - threading a "preserve this node's
-      // reconcile baseline" signal through `LGraph.clear()`'s per-node
-      // teardown - not a quick guard clause.
+      // Known, intentionally unfixed repro: the workflow-tab reload wipes
+      // this node's reconcile baseline before the fix above ever runs — see
+      // the file-level comment and agentNodeMaterializer.test.ts's matching
+      // `it.fails` case for the mechanism.
       test.fail()
       await expect(titleLocator).toHaveText(CUSTOM_TITLE)
     })

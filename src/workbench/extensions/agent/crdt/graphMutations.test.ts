@@ -266,7 +266,8 @@ describe('graphMutations', () => {
   it('keeps a locally renamed title through a reconcile carrying the stale doc title', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
-    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
     live.title = 'My Custom Sampler'
 
     expect(
@@ -285,7 +286,8 @@ describe('graphMutations', () => {
   it('still applies a title the doc payload genuinely changed to', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
-    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
     live.title = 'My Custom Sampler'
 
     expect(
@@ -299,6 +301,27 @@ describe('graphMutations', () => {
     ).toBe('Renamed By Agent')
   })
 
+  it('uses the replacement payload title on a type-changing reconcile, not a stale local rename', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.title = 'Local title'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1, { replacement: 2 }),
+          type: 'Replacement'
+        })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Node 1')
+  })
+
   // Node color is presentation-only and the CRDT doc never carries it, so
   // `prepareNode` only conditionally spreads `color`/`bgcolor` when the
   // payload has one; `assignNodeFields` (nodeDataStore.ts) leaves both
@@ -307,7 +330,8 @@ describe('graphMutations', () => {
   it('keeps a locally set node color through a reconcile whose payload carries none', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
-    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
     live.color = '#ff0000'
 
     expect(

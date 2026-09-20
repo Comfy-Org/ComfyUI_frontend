@@ -5,7 +5,7 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
@@ -240,6 +240,34 @@ describe('reconcileAgentAdapters', () => {
     ).toEqual(beforeSerialization)
   })
 
+  // Proves the behavior the carried-over baseline above exists for, not just
+  // that the field was copied: after materialization, a local rename must
+  // survive an unrelated reconcile, and a genuine remote rename must still
+  // win, exactly as it would without ever having gone through materialize().
+  it('preserves a local rename after materialization through an unchanged reconcile, but not a changed one', () => {
+    const graph = new LGraph()
+    const scope = seedAgentAddedNode(graph, 1)
+    reconcileAgentAdapters(graph)
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Title'
+
+    remoteMutations(scope).batch(
+      { ...REMOTE, opId: 'op-unchanged' },
+      (batch) => {
+        batch.reconcileNode(nodePayload(1))
+      }
+    )
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Title')
+
+    remoteMutations(scope).batch({ ...REMOTE, opId: 'op-changed' }, (batch) => {
+      batch.reconcileNode({ ...nodePayload(1), title: 'Renamed By Agent' })
+    })
+    reconcileAgentAdapters(graph)
+    expect(graph.getNodeById(toNodeId(1))?.title).toBe('Renamed By Agent')
+  })
+
   // Known, intentionally unfixed gap: returning to a workflow tab reloads
   // it, and `LGraph.clear()` (called by `configure()`) tears its nodes down
   // individually via `teardownOwnedGraphs` *before* it resets the
@@ -268,7 +296,9 @@ describe('reconcileAgentAdapters', () => {
     remoteMutations(scope).addNode(docPayload, { ...REMOTE, opId: 'op-1' })
     reconcileAgentAdapters(graph)
 
-    graph.getNodeById(toNodeId(1))!.title = 'My Custom Prompt'
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Prompt'
     graph.configure(graph.serialize())
 
     remoteMutations(scope).batch({ ...REMOTE, opId: 'op-2' }, (batch) => {
