@@ -191,7 +191,15 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
-const REFUSAL_CODES = new Set([
+type KnownRefusalCode =
+  | 'auth_reject'
+  | 'not_found'
+  | 'schema_mismatch'
+  | 'catalog_mismatch'
+  | 'rate_limited'
+type RefusalCode = KnownRefusalCode | 'unknown'
+
+const REFUSAL_CODES: ReadonlySet<string> = new Set<KnownRefusalCode>([
   'auth_reject',
   'not_found',
   'schema_mismatch',
@@ -205,9 +213,13 @@ const AUTH_REFUSAL_TOKENS = new Set([
   'permission'
 ])
 
-function refusalCode(code: DocSubscribed['code']): string {
+function isKnownRefusalCode(code: string): code is KnownRefusalCode {
+  return REFUSAL_CODES.has(code)
+}
+
+function refusalCode(code: DocSubscribed['code']): RefusalCode {
   if (code === undefined) return 'unknown'
-  if (REFUSAL_CODES.has(code)) return code
+  if (isKnownRefusalCode(code)) return code
   return code
     .toLowerCase()
     .split(/[^a-z0-9]+/)
