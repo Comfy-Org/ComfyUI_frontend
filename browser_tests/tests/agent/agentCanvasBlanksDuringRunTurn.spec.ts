@@ -129,6 +129,42 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 
 /**
+ * Parses a raw `/ws` message down to its `doc_subscribe` payload, or `null`
+ * if the frame is malformed or is some other frame type. Extracted from the
+ * mock's `onMessage` handler to keep that handler's branching to the
+ * post-parse decisions (reset-gating, catch-up dropping).
+ */
+function parseDocSubscribeData(
+  raw: Buffer | string
+): Record<string, unknown> | null {
+  const frame: unknown = JSON.parse(raw.toString())
+  if (typeof frame !== 'object' || frame === null) return null
+  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
+    return null
+  return data as Record<string, unknown>
+}
+
+/**
+ * Validates a parsed `doc_subscribe` payload against the workflow under
+ * test and extracts the state vector the mock needs to build a catch-up
+ * frame. Returns `null` for any other workflow's subscribe (there are
+ * none in this suite, but the guard mirrors the shape a real backend would
+ * check).
+ */
+function parseDocSubscribeFields(
+  data: Record<string, unknown>
+): { stateVectorB64: string } | null {
+  const { workflow_id, state_vector_b64 } = data as {
+    workflow_id?: unknown
+    state_vector_b64?: unknown
+  }
+  if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
+    return null
+  return { stateVectorB64: state_vector_b64 }
+}
+
+/**
  * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
  * whose first post-reset resubscribe has its catch-up withheld, per
  * `dropCatchUpAfterReset`, and asserts the canvas goes blank the moment the
@@ -200,25 +236,18 @@ async function driveThroughDocReset(
       })
     )
     ws.onMessage((raw) => {
-      const frame: unknown = JSON.parse(raw.toString())
-      if (typeof frame !== 'object' || frame === null) return
-      const { type, data } = frame as { type?: unknown; data?: unknown }
-      if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-        return
-      const { workflow_id, state_vector_b64 } = data as {
-        workflow_id?: unknown
-        state_vector_b64?: unknown
-      }
-      if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-        return
+      const data = parseDocSubscribeData(raw)
+      if (data === null) return
+      const fields = parseDocSubscribeFields(data)
+      if (fields === null) return
       send(host.subscribed())
       if (!resetSent) {
-        send(host.catchUp(state_vector_b64))
+        send(host.catchUp(fields.stateVectorB64))
         return
       }
       resubscribeCountAfterReset += 1
       if (!dropCatchUpAfterReset(resubscribeCountAfterReset))
-        send(host.catchUp(state_vector_b64))
+        send(host.catchUp(fields.stateVectorB64))
     })
   })
 
