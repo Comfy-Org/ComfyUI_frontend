@@ -17,6 +17,18 @@ import type { FollowerDoc } from './followerDoc'
 
 export class AgentCrdtProjection {
   private readonly adapter: EcsFollowerAdapter
+  /**
+   * Workflow whose lineage break arrived before any live graph existed, if
+   * any. The graph-ready reconcile that follows is an ordinary one, and its
+   * ID-only fast path would see the reused definition ids already registered
+   * and keep the outgoing generation's definitions, so the replacement intent
+   * has to outlive the missing graph.
+   *
+   * It stores the workflow id rather than a boolean because the binding can
+   * change while no graph exists: a reset for `wf-1` followed by a retarget to
+   * `wf-2` must not make `wf-2`'s first reconcile retire `wf-1`'s definitions.
+   */
+  private pendingDefinitionReplacementFor: string | null = null
 
   constructor(
     mutations: MutationsForTarget,
@@ -27,6 +39,12 @@ export class AgentCrdtProjection {
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
+    // Retargeting abandons any deferred intent that did not belong to the
+    // incoming workflow; leaving it set would hand one document's retirement
+    // to another's first reconcile.
+    if (this.pendingDefinitionReplacementFor !== workflowId) {
+      this.pendingDefinitionReplacementFor = null
+    }
     this.adapter.bind(workflowId, follower)
   }
 
@@ -53,7 +71,7 @@ export class AgentCrdtProjection {
    */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const cleared = this.adapter.clearForReset(workflowId, context)
-    this.reconcileLiveGraph(workflowId)
+    this.reconcileLiveGraph(workflowId, true)
     return cleared
   }
 
@@ -61,19 +79,46 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
-  /** @returns ids that received a new live node on this pass. */
-  reconcileLiveGraph(workflowId: string): NodeId[] {
+  /**
+   * @param replaceSubgraphDefinitions retire the definitions the outgoing
+   * generation registered instead of keeping them. Set on a lineage break;
+   * deferred to the next call when no graph exists yet.
+   * @returns ids that received a new live node on this pass.
+   */
+  reconcileLiveGraph(
+    workflowId: string,
+    replaceSubgraphDefinitions = false
+  ): NodeId[] {
     const graph = this.getGraph()
-    if (!graph) return []
+    if (!graph) {
+      if (replaceSubgraphDefinitions) {
+        this.pendingDefinitionReplacementFor = workflowId
+      }
+      return []
+    }
+    const replaceDefinitions =
+      replaceSubgraphDefinitions ||
+      this.pendingDefinitionReplacementFor === workflowId
+    this.pendingDefinitionReplacementFor = null
     const followerDoc = this.getFollowerDoc()
+    // The ID-only fast path probes the live root graph, which still holds the
+    // outgoing generation's definitions at a lineage break — nothing reads as
+    // missing there, so a replacement has to take the full read
+    // unconditionally or retirement would leave the replacement document with
+    // no definitions to register.
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
     const hasMissingDefinition = definitionIds.some(
       (id) => !graph.rootGraph.subgraphs.has(id)
     )
-    const definitions = hasMissingDefinition
-      ? readSubgraphDefinitions(followerDoc)
-      : []
-    const nodeIds = reconcileAgentAdapters(graph, definitions)
+    const definitions =
+      replaceDefinitions || hasMissingDefinition
+        ? readSubgraphDefinitions(followerDoc)
+        : []
+    const nodeIds = replaceDefinitions
+      ? reconcileAgentAdapters(graph, definitions, {
+          replaceSubgraphDefinitions: true
+        })
+      : reconcileAgentAdapters(graph, definitions)
     // A frame that only wires or rewires nodes moves no layout, so nothing
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)

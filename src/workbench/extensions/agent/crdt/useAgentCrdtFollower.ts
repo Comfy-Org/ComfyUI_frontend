@@ -447,6 +447,8 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
+    // `clearForReset` empties the stores and sweeps the live graph in the same
+    // step, retiring the outgoing generation's subgraph definitions.
     projection.clearForReset(detail.workflowId, context)
     events.onReset?.(detail.workflowId)
     connected.value = false
