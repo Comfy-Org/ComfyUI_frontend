@@ -16,7 +16,7 @@ test.describe('Qwen-Image 2.1 launch page @smoke', () => {
     ).toHaveAttribute('href', /template=image_qwen_image_2_1_t2i/)
     await expect(page.locator('video')).toHaveAttribute(
       'src',
-      'https://media.comfy.org/website/qwen-image-2.1/hero-sizzle.mp4'
+      'https://media.comfy.org/website/qwen-image-2.1/hero-sizzle-v2.mp4'
     )
   })
 
@@ -70,7 +70,7 @@ test.describe('Qwen-Image 2.1 launch page — phones', () => {
 
     await expect(page.locator('video')).toHaveAttribute(
       'src',
-      'https://media.comfy.org/website/qwen-image-2.1/hero-sizzle-mobile.mp4'
+      'https://media.comfy.org/website/qwen-image-2.1/hero-sizzle-v2-mobile.mp4'
     )
   })
 })
