@@ -9,8 +9,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -142,7 +144,12 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
@@ -177,7 +184,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -194,7 +202,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -366,11 +375,50 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', { ok: false })
     dispatchFrame('doc_subscribed', { ok: true })
-    // Below the staleness budget: anything firing here would be the retry.
-    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    // Below the retry backoff's own delay: anything firing here would be
+    // FE-1901's refused-subscribe retry, not the PM-1405 catch-up probe.
+    vi.advanceTimersByTime(499)
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('PM-1405: a confirmed subscribe with no catch-up actively resubscribes well before the stale budget', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    // No catch-up doc_update ever arrives: the missing-catch-up probe should
+    // fire, not the full STALE_AFTER_MS heartbeat.
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('PM-1405: a catch-up that lands before the probe cancels it', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
+
+    // The catch-up landed just in time: the probe is disarmed and the
+    // channel now follows the full recency budget, not the short grace one.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 2)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(2)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
 
@@ -497,6 +545,14 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: clears the PM-1405 grace probe before it can fire, same
+    // as a healthy subscribe would in production.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 0,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
     const stampedAt = persistedRecord()?.expiresAt
     expect(stampedAt).toBeTypeOf('number')
 
@@ -918,6 +974,36 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports a pending live arrival when graph readiness materializes it', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const onMaterialized = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => ({ '3': {} }) })
+      }
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
     it('does not reconcile for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
@@ -1016,6 +1102,133 @@ describe('useAgentCrdtFollower', () => {
       ])
       unmount()
     })
+
+    it('reports only live agent materializations, not reconnect catch-up', () => {
+      const onMaterialized = vi.fn()
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+        onMaterialized
+      })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: true
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turn',
+        nodeIds: [toNodeId(1)]
+      })
+      unmount()
+    })
+
+    it('retains a live add until a dependency makes the node visible', () => {
+      const onMaterialized = vi.fn()
+      const graph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+      let nodes: Record<string, unknown> = {}
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 5,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 4,
+        actor: 'host:catch-up',
+        catchUp: true,
+        update: new Uint8Array()
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
+    it('does not attribute a human recreation after a pending node was deleted', () => {
+      const onMaterialized = vi.fn()
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const readyGraph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      let nodes: Record<string, unknown> = {}
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      // The add never enters the observable document set because projection is
+      // still waiting on a dependency; a later delete must still retire it.
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      graph.value = readyGraph
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      expect(onMaterialized).not.toHaveBeenCalled()
+      unmount()
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {
@@ -1068,7 +1281,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1101,11 +1314,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable immediately, without waiting the resend (residual of #16637)', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1139,11 +1352,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a doc switch settles the in-flight batch for the old doc undeliverable immediately, without waiting the resend', async () => {
+  it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1179,7 +1392,7 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
@@ -1187,6 +1400,9 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: past the PM-1405 grace window, this suite is about the
+    // full-budget cadence on an already-current channel that then goes quiet.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
     vi.advanceTimersByTime(STALE_AFTER_MS - 1)
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -1202,6 +1418,9 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: clears the PM-1405 grace probe so what follows exercises
+    // the full-budget sliding window, not the shorter grace one.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
     vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
@@ -1237,6 +1456,86 @@ describe('useAgentCrdtFollower', () => {
     const reconnectResubscribes = bridge().resubscribe.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
+    unmount()
+  })
+
+  it('retries a subscribe the bridge sent but nobody acknowledged', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('unmounting before the ack timeout leaves the retry unsent', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    unmount()
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
+
+  it('a reconnect mid-budget gives the silent subscribe a fresh budget', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    unmount()
+  })
+
+  it('reports the follower disconnected once the silent-subscribe budget is spent', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(1000)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    expect(status().connected).toBe(true)
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(status().connected).toBe(false)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'failure_confirming_agent_doc_subscribe',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    bridge().reconcile.mockClear()
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(30_000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
     unmount()
   })
 

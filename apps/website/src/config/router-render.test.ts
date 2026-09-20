@@ -4,7 +4,7 @@ import type { RouterRenderOptions } from './router-render'
 import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { releaseRouterOutputs } from './workshop-response'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function router_render(
   slug: string,
@@ -23,6 +23,13 @@ const png = Uint8Array.from(
   (character) => character.charCodeAt(0)
 )
 
+function queueNotEnabled() {
+  return Response.json(
+    { detail: 'Not enabled', error_type: 'not_enabled' },
+    { status: 403, headers: { 'X-Comfy-Error-Type': 'not_enabled' } }
+  )
+}
+
 describe('shared Router rendering', () => {
   it('reuses uploaded bytes and the same request body for an explicit retry', async () => {
     const source = new Blob([png], { type: 'image/png' })
@@ -31,6 +38,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         if (String(url).endsWith('/customers/storage')) {
           grants++
           return Response.json({
@@ -74,6 +82,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         calls.push(String(url))
         const headers = new Headers(init?.headers)
         if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`) {
@@ -123,6 +132,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         calls.push(String(url))
         if (url === source) {
           expect(new Headers(init?.headers).has('Authorization')).toBe(false)
