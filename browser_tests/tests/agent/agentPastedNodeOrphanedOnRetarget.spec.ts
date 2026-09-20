@@ -36,7 +36,7 @@ async function readGraphMouse(page: Page): Promise<[number, number]> {
 // position over the live node.
 test.describe(
   'pasted node survives a doc retarget',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: SEED_CASE, humanOpsHost: 'apply' })
 

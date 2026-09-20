@@ -1,20 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-
-// Selection collapse and clipboard gating never depend on the node type, and
-// the recording holds core types only, so EmptyLatentImage stands in for the
-// reported Seedance node and the seed's SaveImage for SaveVideo.
-const CASE = 'agent-rec-three-sequential-adds'
-const AGENT_NODE_TYPE = 'EmptyLatentImage'
-const EARLIER_COPY_ID = '9'
-const EARLIER_COPY_TYPE = 'SaveImage'
+import { COPY_PASTE_SCENARIO } from '@e2e/fixtures/data/agent/agentCopyPasteScenario'
 
 test.describe(
   'Copy and paste beside the agent panel',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: CASE })
+    test.use({ conversationCase: COPY_PASTE_SCENARIO.conversation })
     test.setTimeout(120_000)
 
     test.beforeEach(async ({ agentConversation }) => {
@@ -25,7 +18,9 @@ test.describe(
       agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
 
       await test.step('select the agent-added node', () =>
         agentConversation.selectNode(source.id))
@@ -39,7 +34,7 @@ test.describe(
           .poll(() => agentConversation.graphNodes())
           .toHaveLength(before.length + 1)
         expect(await agentConversation.nodesAddedSince(before)).toEqual([
-          expect.objectContaining({ type: AGENT_NODE_TYPE })
+          expect.objectContaining({ type: COPY_PASTE_SCENARIO.agentAddedType })
         ])
       })
     })
@@ -48,7 +43,9 @@ test.describe(
       agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
 
       await test.step('select transcript text', () =>
         agentConversation.transcript.first().selectText())
@@ -70,7 +67,9 @@ test.describe(
       agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
 
       await test.step('select the agent-added node', () =>
         agentConversation.selectNode(source.id))
@@ -96,7 +95,9 @@ test.describe(
       agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
       const reply = agentConversation.transcript.first()
       const replyText = (await reply.innerText()).trim()
 
@@ -128,10 +129,12 @@ test.describe(
       page
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
 
       await test.step('select and copy the earlier node', async () => {
-        await agentConversation.selectNode(EARLIER_COPY_ID)
+        await agentConversation.selectNode(COPY_PASTE_SCENARIO.earlierNode.id)
         await agentConversation.clipboard.copy()
       })
 
@@ -151,7 +154,9 @@ test.describe(
           .poll(() => agentConversation.graphNodes())
           .toHaveLength(before.length + 1)
         expect(await agentConversation.nodesAddedSince(before)).toEqual([
-          expect.objectContaining({ type: EARLIER_COPY_TYPE })
+          expect.objectContaining({
+            type: COPY_PASTE_SCENARIO.earlierNode.type
+          })
         ])
       })
     })
@@ -161,11 +166,13 @@ test.describe(
       page
     }) => {
       const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
       const reply = agentConversation.transcript.first()
 
       await test.step('select and copy the earlier node', async () => {
-        await agentConversation.selectNode(EARLIER_COPY_ID)
+        await agentConversation.selectNode(COPY_PASTE_SCENARIO.earlierNode.id)
         await agentConversation.clipboard.copy()
       })
 
@@ -193,7 +200,7 @@ test.describe(
 
       await test.step('it is the node copied last', async () => {
         expect(await agentConversation.nodesAddedSince(before)).toEqual([
-          expect.objectContaining({ type: AGENT_NODE_TYPE })
+          expect.objectContaining({ type: COPY_PASTE_SCENARIO.agentAddedType })
         ])
       })
     })

@@ -8,6 +8,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
@@ -51,6 +52,8 @@ const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+// Only the Vue node renderer projects follower edits onto the canvas.
+const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 // Screen point a node is panned to before it is clicked; left of the panel.
 const REVEAL_AT = { x: 400, y: 400 }
@@ -118,11 +121,7 @@ async function attachJson(
   })
 }
 
-/** One live graph node as the canvas holds it. */
-interface LiveGraphNode {
-  id: string
-  type: string
-}
+type LiveGraphNode = Pick<LGraphNode, 'type'> & { id: string }
 
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
 const zProjectedLink = z
@@ -270,16 +269,15 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean): Promise<void> {
+  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
-      // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
-        'Comfy.VueNodes.Enabled': true,
+        'Comfy.VueNodes.Enabled': vueNodes,
         'Comfy.Graph.CanvasInfo': false
       },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
@@ -404,7 +402,6 @@ export class AgentConversationHarness {
     }
   }
 
-  // The nodes the live graph holds right now, whatever put them there.
   graphNodes(): Promise<LiveGraphNode[]> {
     return this.page.evaluate(() =>
       window.app!.graph.nodes.map((node) => ({
@@ -443,7 +440,6 @@ export class AgentConversationHarness {
     )
   }
 
-  // The one live node of `type`; a recording is expected to hold exactly one.
   async nodeOfType(type: string): Promise<LiveGraphNode> {
     const matches = (await this.graphNodes()).filter(
       (node) => node.type === type
@@ -455,7 +451,6 @@ export class AgentConversationHarness {
     return matches[0]
   }
 
-  // Live nodes that were not on the graph when `before` was taken.
   async nodesAddedSince(before: LiveGraphNode[]): Promise<LiveGraphNode[]> {
     const known = new Set(before.map((node) => node.id))
     return (await this.graphNodes()).filter((node) => !known.has(node.id))
@@ -1024,10 +1019,16 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   agentConversation: async (
     { page, agentFlagEnabled, conversationCase, replayTiming, humanOpsHost },
-    use
+    use,
+    testInfo
   ) => {
     if (conversationCase.length === 0)
       throw new Error('test.use({ conversationCase }) names the conversation')
+    const vueNodes = testInfo.tags.includes(VUE_NODES_TAG)
+    if (!vueNodes)
+      throw new Error(
+        `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
+      )
     const harness = new AgentConversationHarness(
       page,
       loadAgentConversation(conversationCase),
@@ -1035,7 +1036,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       conversationCase,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled)
+    await harness.boot(agentFlagEnabled, vueNodes)
     await use(harness)
   }
 })
