@@ -45,8 +45,10 @@ test.describe(
       await page.addInitScript((id) => {
         localStorage.setItem('Comfy.Agent.ThreadId', id)
       }, threadId)
-      const requests: string[] = []
-      const cookies: Array<string | null> = []
+      // Keyed by asset rather than collected in arrival order: the three
+      // fetches race, so an index-based record silently changes which request
+      // each assertion below is checking.
+      const cookieByAsset = new Map<string, string | null>()
       const downloads: string[] = []
       page.on('download', (download) =>
         downloads.push(download.suggestedFilename())
@@ -58,8 +60,15 @@ test.describe(
         /\/api\/(view|system_stats)\?filename=(trusted|untrusted|hostile)\.png/,
         async (route) => {
           if (route.request().resourceType() === 'fetch') {
-            requests.push(route.request().url())
-            cookies.push(await route.request().headerValue('cookie'))
+            const asset = new URL(route.request().url()).searchParams.get(
+              'filename'
+            )
+            if (asset) {
+              cookieByAsset.set(
+                asset,
+                await route.request().headerValue('cookie')
+              )
+            }
           }
           await route.fulfill({ body: 'asset', contentType: 'image/png' })
         }
@@ -78,13 +87,21 @@ test.describe(
       await expect(downloadButton).toBeVisible()
       await downloadButton.click()
 
+      // All three assets download; the order they settle in is a race between
+      // three concurrent fetches and is not part of the contract.
       await expect
-        .poll(() => downloads)
-        .toEqual(['trusted.png', 'untrusted.png', 'hostile.png'])
-      expect(requests).toHaveLength(3)
-      expect(cookies[0]).toContain('session=test-session')
-      expect(cookies[1]).toBeNull()
-      expect(cookies[2]).toBeNull()
+        .poll(() => [...downloads].sort())
+        .toEqual(['hostile.png', 'trusted.png', 'untrusted.png'])
+
+      expect([...cookieByAsset.keys()].sort()).toEqual([
+        'hostile.png',
+        'trusted.png',
+        'untrusted.png'
+      ])
+      // The session travels to the trusted view route and nowhere else.
+      expect(cookieByAsset.get('trusted.png')).toContain('session=test-session')
+      expect(cookieByAsset.get('untrusted.png')).toBeNull()
+      expect(cookieByAsset.get('hostile.png')).toBeNull()
     })
   }
 )
