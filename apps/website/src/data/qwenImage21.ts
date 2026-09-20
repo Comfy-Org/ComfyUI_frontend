@@ -123,6 +123,11 @@ export const qwenImage21Page: ModelLaunchPage = {
           'zh-CN':
             '五步"从咖啡果到咖啡杯"说明图，标题、编号与标签一次生成即工整清晰。'
         },
+        prompt: {
+          en: 'Clean flat vector infographic titled "FROM CHERRY TO CUP" showing five numbered steps left to right with an icon and one-word label each: 1 Harvest, 2 Process, 3 Roast, 4 Grind, 5 Brew. Earthy palette, generous white space, labels legible.',
+          'zh-CN':
+            '简洁扁平矢量信息图，标题为 "FROM CHERRY TO CUP"，从左到右展示五个带编号的步骤，每步配一个图标和一个单词标签：1 Harvest、2 Process、3 Roast、4 Grind、5 Brew。大地色调，留白充足，标签清晰可读。'
+        },
         media: media.infographic,
         href: qwenImage21Links.cloud
       },
@@ -138,6 +143,11 @@ export const qwenImage21Page: ModelLaunchPage = {
           en: 'Denim on denim, wrought iron, and warm brick: a natural portrait with true skin tones and fabric detail.',
           'zh-CN':
             '牛仔套装、铸铁栏杆与暖色砖墙：肤色真实、布料细节丰富的自然人像。'
+        },
+        prompt: {
+          en: 'Denim-on-denim street portrait on a Harlem brownstone stoop. Subject seated on the steps, elbows on knees, gold rings, golden hour sun flaring off the wrought iron, warm brick background falling soft, 85mm at f/1.8.',
+          'zh-CN':
+            '哈莱姆褐石公寓门廊上的牛仔套装街头人像。人物坐在台阶上，手肘搭在膝盖，戴金戒指，黄昏阳光在铸铁栏杆上泛起眩光，暖色砖墙背景柔和虚化，85mm f/1.8。'
         },
         media: media.stoop,
         href: qwenImage21Links.cloud
@@ -155,6 +165,11 @@ export const qwenImage21Page: ModelLaunchPage = {
           'zh-CN':
             '洋红、金黄与钴蓝彩粉在纯白背景前凝固半空，每一粒都清晰锐利。'
         },
+        prompt: {
+          en: 'Burst of holi powder caught at the moment of impact. Magenta, chrome yellow and ultramarine clouds blooming against a white sky, silhouetted arms at the frame edge, 1/8000s freeze, every grain separated.',
+          'zh-CN':
+            '洒红节彩粉在撞击瞬间迸发。洋红、铬黄与群青的粉云在白色天空前绽开，画面边缘是手臂剪影，1/8000 秒定格，每一粒粉末都清晰可辨。'
+        },
         media: media.holi,
         href: qwenImage21Links.cloud
       },
@@ -169,6 +184,11 @@ export const qwenImage21Page: ModelLaunchPage = {
         description: {
           en: 'A waterfall citadel and rope bridges in a painterly concept-art style, ready for a level brief.',
           'zh-CN': '瀑布城堡与绳桥构成的绘画风概念场景，可直接用于关卡设定。'
+        },
+        prompt: {
+          en: 'Game environment concept art: a floating temple city built into giant waterfalls, rope bridges between stone platforms, glowing moss, tiny figures for scale, atmospheric perspective, painterly matte painting.',
+          'zh-CN':
+            '游戏场景概念图：建在巨型瀑布之中的浮空神庙之城，石台之间以绳桥相连，发光的苔藓，用微小人物体现比例，大气透视，绘画感的接景画。'
         },
         media: media.game,
         href: qwenImage21Links.cloud
@@ -186,6 +206,11 @@ export const qwenImage21Page: ModelLaunchPage = {
           'zh-CN':
             '同一角色四个视角保持一致，从护目镜到靴子，呈现在干净的白底上。'
         },
+        prompt: {
+          en: 'Character turnaround sheet for an animated film: a young inventor girl with goggles on her head, patched overalls and a mechanical arm, shown in front, three-quarter, side and back views side by side on a plain background, consistent proportions and colours across all views.',
+          'zh-CN':
+            '动画电影角色三视图：头戴护目镜、身穿补丁背带裤、装有机械臂的年轻发明家女孩，在素色背景上并排展示正面、四分之三侧面、侧面与背面视角，各视角比例与配色保持一致。'
+        },
         media: media.character,
         href: qwenImage21Links.cloud
       },
@@ -201,6 +226,11 @@ export const qwenImage21Page: ModelLaunchPage = {
           en: 'A calm living room in soft daylight: oak, linen, paper lantern, and birch forest beyond the glass.',
           'zh-CN':
             '柔和日光中的静谧客厅：橡木、亚麻、纸灯笼，以及窗外的白桦林。'
+        },
+        prompt: {
+          en: 'Architectural interior photograph of a Japandi living room: low oak sofa, paper floor lamp, limewashed walls, a large window onto a bamboo garden, a side table with a ceramic vase, late morning light, two-point perspective with vertical lines kept straight.',
+          'zh-CN':
+            '日式北欧风客厅的建筑室内摄影：低矮橡木沙发、纸质落地灯、石灰涂料墙面、面向竹园的大窗、放着陶瓷花瓶的边几，上午晚些时候的光线，两点透视且垂直线保持竖直。'
         },
         media: media.interior,
         href: qwenImage21Links.cloud
