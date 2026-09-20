@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
   LGraph,
@@ -146,6 +147,7 @@ function agentOperation(
  */
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({
+    placement: inertPlacementPort,
     getScope: () => scope,
     layout: {
       createNode(scope, nodeId, { position, size }, context) {

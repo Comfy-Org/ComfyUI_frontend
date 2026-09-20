@@ -1,5 +1,7 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -10,6 +12,8 @@ const SUBSCRIBE_TIMEOUT = 15_000
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
+  private refuseReason: string | null = null
+
   private socket: WebSocketRoute | null = null
   private subscribes = 0
   private resolveSubscribed: (() => void) | null = null
@@ -75,16 +79,43 @@ export class AgentFollowerHostSocket {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
+    if (typeof data !== 'object' || data === null) return
+    const { workflow_id, state_vector_b64, ops } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
+      ops?: unknown
     }
-    if (workflow_id !== this.workflowId || typeof state_vector_b64 !== 'string')
+    if (workflow_id !== this.workflowId) return
+    if (type === 'doc_ops') this.onClientOps(ops)
+    else if (type === 'doc_subscribe') this.onClientSubscribe(state_vector_b64)
+  }
+
+  // The wire batch is already enveloped; the applier is its only judge.
+  private onClientOps(ops: unknown): void {
+    if (!Array.isArray(ops)) return
+    for (const hostFrame of this.host.applyClient(ops as Op[]))
+      this.send(hostFrame)
+  }
+
+  /**
+   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
+   * when it is overloaded, or at the per-session document cap. No catch-up
+   * follows a refusal, so the follower gets no canvas frame at all.
+   */
+  refuseSubscribes(reason = 'overloaded'): void {
+    this.refuseReason = reason
+  }
+
+  private onClientSubscribe(stateVectorB64: unknown): void {
+    if (typeof stateVectorB64 !== 'string') return
+    if (this.refuseReason) {
+      this.send(this.host.subscribeRefused(this.refuseReason))
+      this.subscribes += 1
+      this.resolveSubscribed?.()
       return
+    }
     this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
+    this.send(this.host.catchUp(stateVectorB64))
     this.subscribes += 1
     this.resolveSubscribed?.()
   }

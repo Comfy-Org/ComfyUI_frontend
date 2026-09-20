@@ -167,12 +167,6 @@
       }
     },
     {
-      "files": ["src/extensions/core/groupNode.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
@@ -207,18 +201,6 @@
       "files": ["browser_tests/tests/**/*.test.ts"],
       "rules": {
         "comfy/no-unit-test-files-in-browser-tests": "error"
-      }
-    },
-    {
-      "files": [
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {

@@ -33,10 +33,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
-function setCanvasDirty(canvas: typeof app.canvas | undefined) {
-  canvas?.setDirty(true, true)
-}
-
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
     comfyDynamic: { matchType: Record<string, Record<string, string>> }
@@ -255,14 +251,14 @@ function dynamicComboWidget(
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
-    setCanvasDirty(app.canvas)
+    node.graph.setDirtyCanvas(true, true)
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
   //keep the serialised height.
   widget.callback = useChainCallback(widget.callback, () => {
     node.size = [node.size[0], node.computeSize([...node.size])[1]]
-    setCanvasDirty(app.canvas)
+    node.graph?.setDirtyCanvas(true, true)
   })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
@@ -404,7 +400,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, idx, outputType)
       })
-      setCanvasDirty(app.canvas)
+      this.graph.setDirtyCanvas(true, true)
     }
   )
 }
@@ -512,7 +508,7 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
 }
 
 const ORDINAL_REGEX = /\d+$/
@@ -589,7 +585,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []
