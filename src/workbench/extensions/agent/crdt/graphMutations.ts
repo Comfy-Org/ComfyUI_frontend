@@ -17,6 +17,8 @@ import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
 
+import type { PlacementRect } from './batchPlacement'
+import { placementOffset } from './batchPlacement'
 import type { PlaceholderWidget, WidgetValuePayload } from './nodePayload'
 import {
   cloneWidgetValue,
@@ -64,6 +66,17 @@ interface SemanticLayoutMutationPort {
     nodeIds: readonly NodeId[],
     context: RemoteMutationContext
   ): void
+}
+
+/**
+ * Renderer-owned placement geometry. `viewportBounds` returns the visible
+ * area in canvas coordinates only while the displayed graph is the scope's
+ * owning graph, and null otherwise (background workflow, subgraph editing,
+ * no canvas mounted). See ADR-CRDT-PLACEMENT-0035.
+ */
+export interface SemanticPlacementPort {
+  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
+  viewportBounds(scope: GraphScope): PlacementRect | null
 }
 
 type LiveWidgetMutationResult =
@@ -136,6 +149,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  placement: SemanticPlacementPort
   liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
@@ -165,7 +179,11 @@ interface PreparedNode {
 }
 
 type PreparedMutation =
-  | { kind: 'addNode'; node: PreparedNode }
+  | {
+      kind: 'addNode'
+      node: PreparedNode
+      queued: 'addNode' | 'reconcileNodeFields'
+    }
   | { kind: 'reconcileNode'; node: PreparedNode }
   | { kind: 'replaceNode'; node: PreparedNode }
   | {
@@ -521,15 +539,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             return `node id ${key} is already registered`
           }
           nodes.set(key, node.state)
-          prepared.push({
-            kind:
-              mutation.kind === 'reconcileNode' &&
-              existing &&
-              existing.type !== node.state.type
-                ? 'replaceNode'
-                : mutation.kind,
-            node
-          })
+          if (mutation.kind === 'addNode') {
+            prepared.push({ kind: 'addNode', node, queued: 'addNode' })
+          } else {
+            prepared.push({
+              kind:
+                existing && existing.type !== node.state.type
+                  ? 'replaceNode'
+                  : 'reconcileNode',
+              node
+            })
+          }
           break
         }
         case 'reconcileNodeFields': {
@@ -548,10 +568,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
             nodes.set(key, node.state)
-            prepared.push({
-              kind: existing ? 'replaceNode' : 'addNode',
-              node
-            })
+            if (existing) {
+              prepared.push({ kind: 'replaceNode', node })
+            } else {
+              prepared.push({
+                kind: 'addNode',
+                node,
+                queued: 'reconcileNodeFields'
+              })
+            }
           } else {
             node.state.inputs = existing.inputs
             node.state.outputs = existing.outputs
@@ -743,6 +768,46 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       }
     }
     return prepared
+  }
+
+  function offsetInsertedBatch(
+    scope: GraphScope,
+    existingIds: readonly NodeId[],
+    prepared: readonly PreparedMutation[]
+  ): void {
+    const inserted = prepared.filter(
+      (mutation): mutation is Extract<PreparedMutation, { kind: 'addNode' }> =>
+        mutation.kind === 'addNode' && mutation.queued === 'addNode'
+    )
+    if (inserted.length === 0) return
+    const offset = placementOffset({
+      existing: existingIds
+        .map((id) => deps.placement.nodeBounds(scope, id))
+        .filter((rect): rect is PlacementRect => rect !== null),
+      viewport: deps.placement.viewportBounds(scope),
+      incoming: inserted.map(({ node }) => ({
+        x: node.layout.position.x,
+        y: node.layout.position.y,
+        width: node.layout.size.width,
+        height: node.layout.size.height
+      }))
+    })
+    if (!offset) return
+    for (const { node } of inserted) {
+      node.layout.position = {
+        x: node.layout.position.x + offset.dx,
+        y: node.layout.position.y + offset.dy
+      }
+      // The materializer configures the live node from lastSerialization, so
+      // its pos must carry the same offset or configure() re-applies the raw
+      // coordinates over the adopted layout entry.
+      if (node.state.lastSerialization) {
+        node.state.lastSerialization.pos = [
+          node.layout.position.x,
+          node.layout.position.y
+        ]
+      }
+    }
   }
 
   function detachLinkSlots(
@@ -1094,8 +1159,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           queued.push({ kind: 'clearSemanticGraph' })
         }
       })
+      const existingIds = nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map((node) => node.id)
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
+      offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context)
       return true
     },
