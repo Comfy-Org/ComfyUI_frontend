@@ -1566,6 +1566,40 @@ describe('EcsFollowerAdapter integration', () => {
       expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
     })
 
+    // The baseline is keyed by workflow id, not adapter-wide: one adapter
+    // serves every open tab, so a set shared across workflows would let one
+    // workflow's rebind delete another's group layouts.
+    it('deletes only the rebound workflow group, leaving another workflow baseline intact', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const a = bindTarget({
+        graph: groupGraph(5, 'Stage A'),
+        mutations,
+        workflowId: 'wf-a'
+      })
+      const b = bindTarget({
+        graph: groupGraph(8, 'Stage B'),
+        mutations,
+        workflowId: 'wf-b',
+        adapter: a.adapter
+      })
+
+      // Only workflow A's doc drops its group. A shared set would carry 8 into
+      // A's diff and delete a group A's doc never named.
+      applyOps(a.host, [op('clear-a', 2, { op: 'clear', removed_nodes: [] })])
+      a.rebind()
+      expect(a.deliver(['clear-a'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+
+      // B's own baseline survived A's delete, so B can still remove 8 when B's
+      // doc drops it. Reading the active workflow's set instead of keying by
+      // workflow would have consumed it above.
+      applyOps(b.host, [op('clear-b', 2, { op: 'clear', removed_nodes: [] })])
+      expect(b.deliver(['clear-b'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledTimes(2)
+      expect(deleteGroups.mock.calls[1]?.[1]).toEqual([8])
+    })
+
     // The blocker DrJKL reproduced against the real layout store: a group the
     // user created locally is absent from `meta.groups`, because
     // `layoutMintPort` mints no group op. Reconciling against "every group the
