@@ -432,11 +432,8 @@ test.describe(
         )
         await expect(checkpointValueButton).toBeVisible()
         await expect(checkpointInvalidState).toHaveCount(1)
-        await page
-          .getByRole('button', {
-            name: enMessages.agent.askComfyAgent,
-            exact: true
-          })
+        await panel
+          .getByRole('button', { name: enMessages.g.close, exact: true })
           .click()
         await expect(panel).toBeHidden()
         await page.getByTestId(TestIds.canvas.zoomControlsButton).click()
