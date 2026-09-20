@@ -13,16 +13,16 @@ const mobileRow2Providers = providers.slice(Math.ceil(providers.length / 2))
 </script>
 
 <template>
-  <section class="overflow-hidden py-8 md:py-12">
+  <section class="overflow-hidden">
     <ul
       v-if="!animated"
-      class="flex flex-wrap items-center justify-between gap-8 md:flex-nowrap"
+      class="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 md:flex-nowrap md:gap-x-24"
       role="list"
     >
       <li
         v-for="provider in providers"
         :key="provider.name"
-        class="flex h-20 min-w-24 flex-1 items-center justify-center"
+        class="flex h-20 shrink-0 items-center justify-center"
       >
         <img
           :src="provider.src"

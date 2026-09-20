@@ -2,12 +2,13 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
 import FAQSection from '../../../components/common/FAQSection.vue'
-import RouterQuoteSection from '../../../templates/platform/RouterQuoteSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
 import ModelsApiHero from '../../../templates/platform/ModelsApiHero.vue'
 import ModelsApiGallery from '../../../templates/platform/ModelsApiGallery.vue'
 import RouterCapabilitiesSection from '../../../templates/platform/RouterCapabilitiesSection.vue'
 import RouterCodeSection from '../../../templates/platform/RouterCodeSection.vue'
+import RouterVideoSection from '../../../templates/platform/RouterVideoSection.vue'
+import RouterMigrationBanner from '../../../templates/platform/RouterMigrationBanner.vue'
 import RouterProofStripSection from '../../../templates/platform/RouterProofStripSection.vue'
 import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../../config/routes'
@@ -19,11 +20,12 @@ import { t } from '../../../i18n/translations'
   description={t('platform.products.models.description', 'zh-CN')}
 >
   <ModelsApiHero locale="zh-CN" client:load />
+  <RouterMigrationBanner locale="zh-CN" client:visible />
   <RouterProofStripSection locale="zh-CN" />
   <ModelsApiGallery locale="zh-CN" client:visible />
   <RouterCodeSection locale="zh-CN" client:visible />
+  <RouterVideoSection locale="zh-CN" client:visible />
   <RouterCapabilitiesSection locale="zh-CN" />
-  <RouterQuoteSection locale="zh-CN" />
   <RouterRoadmapSection locale="zh-CN" client:visible />
   <FAQSection
     locale="zh-CN"

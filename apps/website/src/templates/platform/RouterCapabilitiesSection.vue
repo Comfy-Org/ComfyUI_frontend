@@ -27,24 +27,34 @@ const rows: FeatureRow[] = [
       src: '/images/router/choose-route.svg',
       fit: 'cover'
     }
+  },
+  {
+    id: 'queue',
+    title: t('platform.router.section3.heading', locale),
+    description: t('platform.router.section3.body', locale),
+    media: {
+      type: 'image',
+      src: '/images/router/queue-job.svg',
+      fit: 'cover'
+    }
   }
 ]
 
 const supportedProviders = [
   {
-    name: 'fal',
-    src: '/icons/router-providers/fal.svg',
-    logoClass: 'h-8 w-auto'
-  },
-  {
     name: 'Runware',
     src: '/icons/router-providers/runware.svg',
-    logoClass: 'h-5.5 w-auto'
+    logoClass: 'h-8.25 w-auto'
+  },
+  {
+    name: 'fal',
+    src: '/icons/router-providers/fal.svg',
+    logoClass: 'h-10 w-auto'
   },
   {
     name: 'WaveSpeed',
     src: '/icons/router-providers/wavespeed.svg',
-    logoClass: 'h-6 w-auto'
+    logoClass: 'h-9 w-auto'
   }
 ]
 </script>
@@ -56,7 +66,7 @@ const supportedProviders = [
     title-class="text-primary-warm-white"
   />
 
-  <section class="mx-auto max-w-4xl px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-4xl px-6 py-16 md:py-24">
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
@@ -65,18 +75,7 @@ const supportedProviders = [
     <RouterProviderLogoRow
       :animated="false"
       :providers="supportedProviders"
-      class="mt-5"
+      class="mt-6"
     />
-
-    <div
-      class="mt-10 rounded-3xl border border-white/10 bg-transparency-white-t4 p-6 lg:p-8"
-    >
-      <h3 class="text-lg font-normal text-primary-warm-white">
-        {{ t('platform.router.section2.calloutHeading', locale) }}
-      </h3>
-      <p class="mt-2 text-sm/relaxed text-primary-comfy-canvas/80">
-        {{ t('platform.router.section2.calloutBody', locale) }}
-      </p>
-    </div>
   </section>
 </template>

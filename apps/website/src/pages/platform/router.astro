@@ -2,12 +2,13 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
 import FAQSection from '../../components/common/FAQSection.vue'
-import RouterQuoteSection from '../../templates/platform/RouterQuoteSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import ModelsApiHero from '../../templates/platform/ModelsApiHero.vue'
 import ModelsApiGallery from '../../templates/platform/ModelsApiGallery.vue'
 import RouterCapabilitiesSection from '../../templates/platform/RouterCapabilitiesSection.vue'
 import RouterCodeSection from '../../templates/platform/RouterCodeSection.vue'
+import RouterVideoSection from '../../templates/platform/RouterVideoSection.vue'
+import RouterMigrationBanner from '../../templates/platform/RouterMigrationBanner.vue'
 import RouterProofStripSection from '../../templates/platform/RouterProofStripSection.vue'
 import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../config/routes'
@@ -19,11 +20,12 @@ import { t } from '../../i18n/translations'
   description={t('platform.products.models.description', 'en')}
 >
   <ModelsApiHero locale="en" client:load />
+  <RouterMigrationBanner locale="en" client:visible />
   <RouterProofStripSection locale="en" />
   <ModelsApiGallery locale="en" client:visible />
   <RouterCodeSection locale="en" client:visible />
+  <RouterVideoSection locale="en" client:visible />
   <RouterCapabilitiesSection locale="en" />
-  <RouterQuoteSection locale="en" />
   <RouterRoadmapSection locale="en" client:visible />
   <FAQSection
     locale="en"
