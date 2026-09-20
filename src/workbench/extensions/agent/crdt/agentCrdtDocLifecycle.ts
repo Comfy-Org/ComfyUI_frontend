@@ -223,8 +223,8 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  hasPendingSubscribeRetry(): boolean {
-    return this.subscribeRetryTimer !== null
+  shouldDeferSubscribe(): boolean {
+    return this.gaveUp || this.subscribeRetryTimer !== null
   }
 
   clearForRetarget(): void {
@@ -299,7 +299,7 @@ export class AgentCrdtDocLifecycle {
   }
 
   private scheduleSubscribeRetry(): void {
-    if (this.subscribeRetryTimer !== null) return
+    if (this.shouldDeferSubscribe()) return
     if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return

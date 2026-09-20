@@ -426,7 +426,7 @@ function startAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (lifecycle.hasPendingSubscribeRetry()) return
+    if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
   }
 

@@ -1306,6 +1306,18 @@ describe('useAgentCrdtFollower', () => {
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
       }
     )
+    bridge().reconcile.mockClear()
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(30_000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
     unmount()
   })
 
