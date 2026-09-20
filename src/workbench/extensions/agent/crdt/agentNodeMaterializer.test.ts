@@ -822,11 +822,13 @@ describe('reconcileAgentAdapters', () => {
       expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
 
       // Both failures are reported: the original `onAdded` throw, and the
-      // cleanup that could not complete.
+      // cleanup that could not complete. A partial adapter survived the
+      // rollback, so the add is degraded rather than recovered.
       expect(reportError).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
+          errorType: 'agent_node_materialize_add_failed',
+          tags: expect.objectContaining({ outcome: 'degraded' })
         })
       )
       expect(reportError).toHaveBeenCalledWith(
