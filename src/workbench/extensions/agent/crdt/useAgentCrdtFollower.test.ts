@@ -1024,7 +1024,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1057,11 +1057,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable immediately, without waiting the resend (residual of #16637)', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1095,11 +1095,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a doc switch settles the in-flight batch for the old doc undeliverable immediately, without waiting the resend', async () => {
+  it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1135,7 +1135,7 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
