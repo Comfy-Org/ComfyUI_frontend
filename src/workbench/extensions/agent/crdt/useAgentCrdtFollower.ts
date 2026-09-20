@@ -496,17 +496,31 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    withUndoBracket(() => {
-      projection.clearForReset(resetWorkflowId, context)
-    })
-    events.onReset?.(resetWorkflowId)
-    connected.value = false
-    updatesApplied.value = 0
-    lastFrameType.value = event.type
-    lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
-    pendingLiveNodeIds.clear()
-    recordDevEvent('doc_reset', detail)
+    // `afterChange()` runs on the way out of the bracket and can throw (undo
+    // capture serializes the graph, so one custom node is enough). The clear
+    // has already emptied the stores by then, so the bookkeeping that mirrors
+    // it must still run — otherwise the follower reports connected, keeps the
+    // stale probe, and retains node ids for a document that is gone. The
+    // capture error still propagates; only a clear that never completed skips
+    // the bookkeeping.
+    const clear = { completed: false }
+    try {
+      withUndoBracket(() => {
+        projection.clearForReset(resetWorkflowId, context)
+        clear.completed = true
+      })
+    } finally {
+      if (clear.completed) {
+        events.onReset?.(resetWorkflowId)
+        connected.value = false
+        updatesApplied.value = 0
+        lastFrameType.value = event.type
+        lifecycle.clearStaleProbe()
+        knownDocNodeIds = new Set()
+        pendingLiveNodeIds.clear()
+        recordDevEvent('doc_reset', detail)
+      }
+    }
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -523,14 +537,22 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      withUndoBracket(() => {
-        projection.clearForReset(workflowId, {
-          source: 'agent-remote',
-          actor: 'agent-lineage',
-          opId: `follower-replaced:${workflowId}`
+      // Same bracket hazard as onDocReset: a throwing undo capture must not
+      // leave the adapter observing the destroyed document. The rebind mirrors
+      // a completed clear, so it runs even when `afterChange()` throws.
+      const clear = { completed: false }
+      try {
+        withUndoBracket(() => {
+          projection.clearForReset(workflowId, {
+            source: 'agent-remote',
+            actor: 'agent-lineage',
+            opId: `follower-replaced:${workflowId}`
+          })
+          clear.completed = true
         })
-      })
-      projection.bind(workflowId, bridge.follower)
+      } finally {
+        if (clear.completed) projection.bind(workflowId, bridge.follower)
+      }
     }
   }
   const onSchemaError: EventListener = (event) => {

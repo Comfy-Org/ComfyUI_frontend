@@ -689,6 +689,111 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  describe('undo capture that throws after the reset already cleared', () => {
+    /**
+     * `ChangeTracker.afterChange()` serializes the graph, so one custom node is
+     * enough to make it throw. By then `clearForReset()` has already emptied
+     * the stores, so the bookkeeping that mirrors the clear must still run;
+     * otherwise the follower keeps reporting connected against a document that
+     * is gone.
+     */
+    function throwingCapture(): UndoBracket {
+      return {
+        beforeChange: vi.fn(),
+        afterChange: vi.fn(() => {
+          throw new Error('undo capture failed')
+        })
+      }
+    }
+
+    it('still runs doc_reset bookkeeping when afterChange throws', () => {
+      const onReset = vi.fn()
+      const tracker = throwingCapture()
+      const { unmount, status } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        { onReset },
+        () => tracker
+      )
+      dispatchFrame('doc_subscribed', { ok: true })
+      expect(status().connected).toBe(true)
+
+      // The capture error is preserved, not swallowed by the bookkeeping.
+      expect(() =>
+        dispatchFrame('doc_reset', {
+          workflowId: 'wf-1',
+          actor: 'agent:turn',
+          seq: 43
+        })
+      ).toThrow('undo capture failed')
+
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(tracker.afterChange).toHaveBeenCalledTimes(1)
+      expect(onReset).toHaveBeenCalledWith('wf-1')
+      expect(status().connected).toBe(false)
+      expect(status().lastFrameType).toBe('doc_reset')
+      unmount()
+    })
+
+    it('still rebinds the adapter on follower_replaced when afterChange throws', () => {
+      const tracker = throwingCapture()
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        {},
+        () => tracker
+      )
+      expect(adapterState.bind).toHaveBeenCalledTimes(1)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
+
+      expect(() =>
+        dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+      ).toThrow('undo capture failed')
+
+      expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+      expect(adapterState.bind).toHaveBeenCalledTimes(2)
+      expect(adapterState.bind).toHaveBeenLastCalledWith(
+        'wf-1',
+        bridge().follower
+      )
+      unmount()
+    })
+
+    it('skips the bookkeeping when the clear itself never completed', () => {
+      const onReset = vi.fn()
+      const tracker: UndoBracket = {
+        beforeChange: vi.fn(),
+        afterChange: vi.fn()
+      }
+      vi.mocked(adapterState.clearForReset).mockImplementationOnce(() => {
+        throw new Error('clear failed')
+      })
+      const { unmount, status } = mountFollower(
+        'wf-1',
+        true,
+        () => null,
+        { onReset },
+        () => tracker
+      )
+      dispatchFrame('doc_subscribed', { ok: true })
+
+      expect(() =>
+        dispatchFrame('doc_reset', {
+          workflowId: 'wf-1',
+          actor: 'agent:turn',
+          seq: 43
+        })
+      ).toThrow('clear failed')
+
+      expect(onReset).not.toHaveBeenCalled()
+      expect(status().connected).toBe(true)
+      unmount()
+    })
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
