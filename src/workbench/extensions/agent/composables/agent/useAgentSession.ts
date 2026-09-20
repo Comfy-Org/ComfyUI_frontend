@@ -97,12 +97,26 @@ const PREPARE_TIMEOUT_MS = 3000
  * with backoff; once the schedule is exhausted the socket alone is trusted.
  */
 const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
+/** Upper bound on one recovery job, including any history fetch still in flight. */
+const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
   | { kind: 'terminal'; text: string }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
+  | { kind: 'cancelled' }
   | { kind: 'error'; message: string }
+
+/**
+ * The status source reports its current state synchronously on subscribe
+ * (see agentEventSource.onStatus), so the first callback is a snapshot, not a
+ * transition. An initial `false` (still connecting) is therefore not a drop.
+ */
+type SocketConnection = 'initial' | 'live' | 'dropped'
+
+function recoveryKey(turn: LiveTurn): string {
+  return `${turn.threadId}/${turn.messageId}`
+}
 
 let sessionGeneration = 0
 
@@ -154,14 +168,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
-  // The status source reports its current state synchronously on subscribe
-  // (see agentEventSource.onStatus), so the first callback is a snapshot,
-  // not a transition. Track whether we've ever observed a live connection so
-  // an initial `false` (still connecting, not yet dropped) doesn't abort a
-  // turn that survived a remount.
-  let everLive = false
-  let socketDropped = false
-  const recoveringTurns = new Set<TurnId>()
+  let connection: SocketConnection = 'initial'
+  const recoveringTurns = new Map<string, AbortController>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -169,8 +177,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function start(): void {
     ownedGeneration = ++sessionGeneration
-    everLive = false
-    socketDropped = false
+    connection = 'initial'
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
@@ -238,6 +245,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
+    for (const recovery of recoveringTurns.values()) recovery.abort()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -624,29 +632,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (!live) {
-      // An initial `false` (socket not open yet) is not a drop. The server
-      // keeps running the turn, so it is reconciled from REST on reconnect.
-      socketDropped = everLive
+      if (connection === 'live') connection = 'dropped'
       return
     }
-    everLive = true
-    if (!socketDropped) return
-    socketDropped = false
+    const reconnected = connection === 'dropped'
+    connection = 'live'
+    if (!reconnected) return
     const turns = conversationStore
       .liveTurns()
-      .filter((turn) => !recoveringTurns.has(turn.messageId))
+      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
     for (const turn of turns) void reconcileTurn(turn)
   }
 
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
-    recoveringTurns.add(turn.messageId)
+    const key = recoveryKey(turn)
+    const recovery = new AbortController()
+    recoveringTurns.set(key, recovery)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
     const generation = ownedGeneration
     let noticed = false
     try {
       for (const ms of TURN_RECOVERY_DELAYS_MS) {
-        await delay(ms)
+        await delay(ms, { signal: recovery.signal })
         if (!isTurnLive(turn, generation)) return
-        const outcome = await fetchTurnOutcome(turn)
+        const outcome = await fetchTurnOutcome(turn, recovery.signal)
+        if (outcome.kind === 'cancelled') return
         if (!isTurnLive(turn, generation)) return
         if (settleFinishedTurn(turn, outcome)) return
         if (outcome.kind === 'error' && !noticed) {
@@ -654,8 +667,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           pushError(outcome.message)
         }
       }
+    } catch (error) {
+      if (!recovery.signal.aborted) throw error
     } finally {
-      recoveringTurns.delete(turn.messageId)
+      clearTimeout(deadline)
+      recoveringTurns.delete(key)
     }
   }
 
@@ -684,14 +700,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  async function fetchTurnOutcome(turn: LiveTurn): Promise<TurnOutcome> {
+  async function fetchTurnOutcome(
+    turn: LiveTurn,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
     try {
-      const history = await rest.getMessages(turn.threadId)
+      const history = await rest.getMessages(turn.threadId, { signal })
       const row = history.find((entry) => entry.id === turn.messageId)
       if (!row || row.status === 'streaming') return { kind: 'streaming' }
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
+      if (signal.aborted) return { kind: 'cancelled' }
       if (error instanceof AgentApiError && error.status === 404)
         return { kind: 'thread-missing' }
       return {
