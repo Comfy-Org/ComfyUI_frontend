@@ -189,10 +189,19 @@ function enqueuePendingReport(report: PendingReport): void {
   }
 }
 
+/**
+ * Cloud wants the report in both of its own sinks and never has the Desktop
+ * bridge, so `desktop` stays out of that branch — holding for a sink that
+ * cannot arrive would pend every cloud report forever.
+ *
+ * Off cloud, Datadog RUM is gated on a comfy.org hostname it never sees on
+ * Desktop, so a report the bridge accepted has to retire on that alone or the
+ * buffer stays permanently full and every later report re-drains it.
+ */
 function isPending(delivered: DeliveryState): boolean {
   return isCloud
     ? !delivered.sentry || !delivered.datadog
-    : !delivered.sentry && !delivered.datadog
+    : !delivered.sentry && !delivered.datadog && !delivered.desktop
 }
 
 /**

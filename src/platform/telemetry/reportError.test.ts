@@ -150,20 +150,34 @@ describe('reportError', () => {
     )
   })
 
-  it('delivers an early report to Desktop and later to Datadog once each', async () => {
+  it('flushes a report buffered before the Desktop bridge appeared', async () => {
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
 
-    installDesktopBridge()
     reportError(new Error('early'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).not.toHaveBeenCalled()
 
-    datadogLive(true)
+    installDesktopBridge()
     flushErrorReports()
     flushErrorReports()
 
     expect(captureDesktopException).toHaveBeenCalledOnce()
-    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('retires a report off cloud once the Desktop bridge accepted it', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(addError).not.toHaveBeenCalled()
   })
 
   it('buffers for another sink when an older Desktop bridge omits captureException', async () => {
