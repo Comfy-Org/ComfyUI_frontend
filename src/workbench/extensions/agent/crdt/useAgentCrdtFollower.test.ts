@@ -238,8 +238,6 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
-    telemetryState.reportError.mockClear()
-    adapterState.applyFrame.mockReset().mockReturnValue(true)
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
