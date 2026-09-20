@@ -10,7 +10,7 @@ function setup(streaming = false) {
   const composer = useComposer({
     onSend,
     onStop,
-    isStreaming: () => streaming
+    isRunning: () => streaming
   })
   return { composer, onSend, onStop }
 }

@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -92,7 +92,6 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
-import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -143,10 +142,7 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events =
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
-    ? createStandaloneAgentEventSource()
-    : createAgentEventSource(api)
+const events = createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')

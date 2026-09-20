@@ -17,6 +17,15 @@ export function setupInlinePromptEditorDom(): void {
         target: Document.prototype,
         key: 'elementFromPoint',
         value: () => null
+      },
+      {
+        target: globalThis,
+        key: 'ResizeObserver',
+        value: class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        }
       }
     ]
     const restore: (() => void)[] = []
