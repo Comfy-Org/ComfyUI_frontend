@@ -61,7 +61,8 @@ remain. The gap is coverage and discipline, not another reporting API.
 
 3. **Choose levels by impact.** Use `error` for `invariant`, `bad_state`,
    `caught_unexpected`, and `outcome:failed`. Use `warning` for `degraded`,
-   `outcome:recovered`, and `missing_event` unless the user lost work.
+   `outcome:recovered`, and `missing_event` unless the user lost work. When
+   multiple rules match, `error` takes precedence over `warning`.
 4. **Retain default grouping unless a slug must subdivide an issue.** Sentry's
    default grouping ignores tags, including `error_type`. When separate issues
    are needed per slug, configure an emitter fingerprint containing both
