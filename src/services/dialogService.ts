@@ -483,7 +483,35 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+    if (!isCloud) return
+
+    // A caller (e.g. the agent panel's paywall card) can fire this before the
+    // bootstrap /features fetch resolves, most likely right after a fresh
+    // load. window.__CONFIG__ is then still empty and the flag check below
+    // would silently swallow the click. Await one fresh fetch before
+    // deciding, rather than trusting a config snapshot that was never taken.
+    if (!window.__CONFIG__?.subscription_required) {
+      const { remoteConfigState } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      if (remoteConfigState.value === 'unloaded') {
+        const { refreshRemoteConfig } =
+          await import('@/platform/remoteConfig/refreshRemoteConfig')
+        await refreshRemoteConfig()
+      }
+    }
+
+    if (!window.__CONFIG__?.subscription_required) {
+      // This gate closing is never expected to be reachable from a cloud
+      // surface with subscriptions enabled. Report it instead of returning
+      // silently, so a caller's "Subscribe" button failing to do anything
+      // shows up in telemetry rather than only in a user's bug report.
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(
+        new Error(
+          'showSubscriptionRequiredDialog: subscription_required gate closed'
+        ),
+        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+      )
       return
     }
 
