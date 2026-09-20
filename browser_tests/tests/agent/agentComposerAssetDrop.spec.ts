@@ -76,7 +76,14 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
   // rather than unit-tested, so a regression in the escaping shows up as the
   // locator failing to find a chip that is plainly on screen.
   test.describe('a filename that is hostile to the selector', () => {
-    const AWKWARD_NAME = 'a "quoted" \\ name.mp4'
+    // The quote and backslash are what actually break the quoted CSS string:
+    // remove their escaping and this case fails. The \u0007 is carried too
+    // because a filename may contain one, but measured honestly it does NOT
+    // guard the escape's control-character branch - Chromium accepts a raw
+    // control character inside a quoted attribute selector, so this case still
+    // passes with that branch disabled. The branch stays for CSS-string
+    // conformance, not because a test proves it.
+    const AWKWARD_NAME = 'a "quoted" \\ name\u0007.mp4'
     const AWKWARD_ASSET = { ...AGENT_VIDEO_ASSET, name: AWKWARD_NAME }
 
     test.beforeEach(async ({ page, agentFlagEnabled }) => {
