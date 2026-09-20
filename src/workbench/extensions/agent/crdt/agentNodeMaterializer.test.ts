@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
   LGraph,
   LGraphNode,
@@ -59,10 +60,14 @@ class DummyNode extends LGraphNode {
   }
 }
 
+const configuredWidgetCallbackValues: unknown[] = []
+
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
-    this.addWidget('number', 'value', 0, () => {})
+    this.addWidget('number', 'value', 0, (value) => {
+      configuredWidgetCallbackValues.push(value)
+    })
   }
 }
 
@@ -209,6 +214,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
+  configuredWidgetCallbackValues.length = 0
   configuredWidgetValues.length = 0
   configureShouldThrow = false
 })
@@ -373,6 +379,27 @@ describe('reconcileAgentAdapters', () => {
           widgetId(scope.rootGraphId, toNodeId(1), 'value')
         )?.value
       ).toBe(7)
+    })
+
+    it('applies a widget update received before the node materializes', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: {} },
+        REMOTE
+      )
+      mutations.setWidget(toNodeId(1), 'value', 9, REMOTE)
+
+      reconcileAgentAdapters(graph)
+
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(9)
+      expect(configuredWidgetCallbackValues).toContain(9)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(9)
     })
 
     it('is idempotent once the node is live', () => {
@@ -757,6 +784,39 @@ describe('reconcileAgentAdapters', () => {
       await Promise.resolve()
       await Promise.resolve()
     }
+
+    it('restores a usable spare autogrow input omitted by reconciliation', async () => {
+      const node = LiteGraph.createNode('widget-node')
+      const upstream = LiteGraph.createNode('dummy')
+      if (!node || !upstream) throw new Error('Test node types not registered')
+      graph.add(node)
+      graph.add(upstream)
+      upstream.addOutput('image', 'IMAGE')
+      addAutogrow(node, {
+        input: { required: { image: ['IMAGE', {}] } },
+        names: ['image_1', 'image_2', 'image_3']
+      })
+      const firstLink = upstream.connect(0, node, 0)
+      if (!firstLink) throw new Error('Initial image connection failed')
+      const payload = {
+        ...node.serialize(),
+        inputs: node.serialize().inputs?.slice(0, 1)
+      }
+
+      expect(
+        remoteMutations(graphScopeOf(graph)).batch(REMOTE, (batch) =>
+          batch.reconcileNode(payload)
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      await settle()
+
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.image_1',
+        '0.image_2'
+      ])
+      expect(node.getInputLink(0)).toBe(firstLink)
+    })
 
     it('does not echo a remote add back as local operations', async () => {
       const scope = graphScopeOf(graph)
