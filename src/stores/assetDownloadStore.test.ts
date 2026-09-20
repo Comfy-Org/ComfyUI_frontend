@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
@@ -103,6 +103,57 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.finishedDownloads).toHaveLength(1)
     })
+
+    // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
+    // (download_file.go) can broadcast a terminal `failed` WS message for a
+    // retryable error before asynq decides whether to retry, then
+    // StatusMiddleware.ProcessTask quietly resets the task to pending and
+    // asynq retries it. handleAssetDownload now treats `failed` as
+    // recoverable (only `completed` is a trusted terminal state), so a later
+    // `completed` message for the same task_id still updates the store.
+    it('does not get stuck on a premature failed status once a later completed message arrives (PM-1302)', () => {
+      const store = useAssetDownloadStore()
+
+      // Backend reported a retryable error as a terminal failure...
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+      // ...then silently retried and actually succeeded.
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.finishedDownloads[0].status).toBe('completed')
+      expect(store.finishedDownloads[0].error).toBeUndefined()
+    })
+
+    // OPEN DESIGN QUESTION PM-1302 / PM-1309: `activeDownloads` is also the
+    // UI's `isInProgress` signal (see ModelImportProgressDialog.vue), and an
+    // existing, unmarked test above ("moves download to finished when
+    // failed") requires a `failed` download to leave `activeDownloads` so
+    // the dialog can show its failed state and close button. Reconciliation
+    // of a `failed`-then-actually-`completed` task is now handled
+    // separately (pollStaleDownloads() re-checks `failed` downloads too, and
+    // a later WS message is no longer dropped - see the test above), but
+    // deliberately without pulling `failed` downloads back into
+    // `activeDownloads`, which would make the dialog show them as
+    // in-progress again. Changing that UI-facing meaning of `activeDownloads`
+    // is a product decision, not a mechanical fix, so this assertion is left
+    // pinned as a known, deliberate gap for further discussion rather than
+    // flipped.
+    it.fails('excludes a failed-then-actually-completed task from activeDownloads so it is never reconciled (PM-1302)', () => {
+      const store = useAssetDownloadStore()
+
+      dispatch(createDownloadMessage({ status: 'running' }))
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+
+      // The task never actually stopped on the backend - it retried and
+      // completed - but it was dropped from activeDownloads the moment the
+      // premature `failed` message landed, so pollStaleDownloads()
+      // (which only walks activeDownloads) will never pick it back up to
+      // reconcile with the real, later `completed` message.
+      expect(store.activeDownloads).toHaveLength(1)
+    })
   })
 
   describe('trackDownload', () => {
@@ -169,6 +220,45 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledWith('task-123')
       expect(store.activeDownloads).toHaveLength(0)
       expect(store.finishedDownloads[0].status).toBe('completed')
+    })
+
+    it('reconciles a failed download through polling without another socket message', async () => {
+      const store = useAssetDownloadStore()
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      vi.mocked(taskService.getTask).mockResolvedValue(createTaskResponse())
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        progress: 100,
+        error: undefined
+      })
+      expect(store.sessionDownloadCount).toBe(1)
+      expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('does not restore a dismissed failed download when an in-flight poll finishes', async () => {
+      const store = useAssetDownloadStore()
+      let resolveResponse!: (value: TaskResponse) => void
+      const response = new Promise<TaskResponse>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(response)
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledWith('task-123')
+
+      store.clearFinishedDownloads()
+      resolveResponse(createTaskResponse({ status: 'failed' }))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.hasDownloads).toBe(false)
     })
 
     it('polls and marks failed downloads', async () => {
