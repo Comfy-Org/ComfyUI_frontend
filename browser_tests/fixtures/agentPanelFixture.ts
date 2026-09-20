@@ -41,6 +41,13 @@ interface BootAgentAppOptions {
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
+  /**
+   * Assets the Media Assets panel serves. Defaults to empty, which is what
+   * every panel spec that does not care about assets expects; specs covering
+   * asset-to-composer flows seed it instead of re-routing `/api/assets` after
+   * boot and relying on route-precedence order.
+   */
+  assets?: ListAssetsResponse
 }
 
 async function mockAgentBoot(
@@ -49,6 +56,7 @@ async function mockAgentBoot(
     agentFlag,
     settings,
     objectInfo,
+    assets,
     nodeDefs,
     turnAccepted
   }: { agentFlag: boolean } & BootAgentAppOptions
@@ -72,12 +80,17 @@ async function mockAgentBoot(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
     (route) => route.fulfill(jsonRoute(storedConsent))
   )
-  const emptyAssets: ListAssetsResponse = {
+  const listedAssets: ListAssetsResponse = assets ?? {
     assets: [],
     total: 0,
     has_more: false
   }
-  await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
+  // Scoped to the list endpoint so a spec can still route `/api/assets/<id>/content`
+  // for the file itself; `**/api/assets**` would otherwise swallow it.
+  await page.route('**/api/assets?**', (r) =>
+    r.fulfill(jsonRoute(listedAssets))
+  )
+  await page.route('**/api/assets', (r) => r.fulfill(jsonRoute(listedAssets)))
   if (nodeDefs) {
     await page.route('**/api/object_info', (r) =>
       r.fulfill(jsonRoute(nodeDefs))

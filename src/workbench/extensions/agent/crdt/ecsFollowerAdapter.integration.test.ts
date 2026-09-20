@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphMutations } from './graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -57,6 +58,7 @@ describe('EcsFollowerAdapter integration', () => {
       }
     )
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
@@ -154,6 +156,7 @@ describe('EcsFollowerAdapter integration', () => {
   it('removes local-only state from the first authoritative snapshot', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
     })
@@ -248,6 +251,7 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     let scopeAvailable = false
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => (scopeAvailable ? scope : null),
       layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
     })
@@ -312,6 +316,7 @@ describe('EcsFollowerAdapter integration', () => {
     }
     let activeScope = targetScope
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => activeScope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -349,6 +354,7 @@ describe('EcsFollowerAdapter integration', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -420,6 +426,7 @@ describe('EcsFollowerAdapter integration', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -522,6 +529,7 @@ describe('EcsFollowerAdapter integration', () => {
     const createLayout = vi.fn()
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
@@ -718,6 +726,7 @@ describe('EcsFollowerAdapter integration', () => {
       )
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
+        placement: inertPlacementPort,
         getScope: () => scope,
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
@@ -834,6 +843,7 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const createNode = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode, deleteNodes: vi.fn() }
     })
@@ -1017,6 +1027,7 @@ describe('EcsFollowerAdapter integration', () => {
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
+        placement: inertPlacementPort,
         getScope: () => scope,
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
