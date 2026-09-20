@@ -22,12 +22,8 @@ export const workflowSelectionTest = base.extend<{
 }>({
   nodeDefinitions: [undefined, { option: true }],
   workflowSelection: async ({ page, nodeDefinitions }, use) => {
-    if (nodeDefinitions)
-      await page.route('**/api/object_info', (route) =>
-        route.fulfill(jsonRoute(nodeDefinitions))
-      )
     await bootAgentApp(page, true, {
-      objectInfo: nodeDefinitions ? 'server' : undefined
+      objectInfo: nodeDefinitions
     })
     const workflows: CloudWorkflowEntry[] = []
     const savedFiles: UserDataFullInfo[] = []

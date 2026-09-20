@@ -27,8 +27,8 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
-  /** `'server'` loads real node definitions instead of the empty catalog. */
-  objectInfo?: 'server'
+  /** Node definitions to expose instead of the empty boot catalog. */
+  objectInfo?: Record<string, unknown>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
 }
@@ -49,7 +49,12 @@ async function mockAgentBoot(
       ...settings
     }
   })
-  if (objectInfo === 'server') await page.unroute('**/api/object_info')
+  if (objectInfo) {
+    await page.unroute('**/api/object_info')
+    await page.route('**/api/object_info', (route) =>
+      route.fulfill(jsonRoute(objectInfo))
+    )
+  }
   await mockBilling(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
