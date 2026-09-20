@@ -2,65 +2,73 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
 
-import type { AccountUser, SessionClient } from '@comfyorg/account-core/session'
-import { createTestIdentity } from '@comfyorg/account-core/testing'
+import type { LazyIdentity } from '@comfyorg/account-core/lazyIdentity'
 
-import {
-  captureAuthRefreshFailed,
-  captureAuthRefreshSucceeded
-} from '../scripts/posthog'
-import {
-  subscribeAuthRefreshTelemetry,
-  workshopSessionClient
-} from './workshop-account'
+import { okFetch, testUser } from './__fixtures__/workshopSessionFakes'
+import { STORAGE_KEY } from './workshop-account'
 
-vi.mock(import('../scripts/posthog'))
+const h = vi.hoisted(() => ({
+  captureSucceeded: vi.fn(),
+  captureFailed: vi.fn(),
+  firebaseEvaluated: vi.fn(),
+  deliver: undefined as ((user: User | null) => void) | undefined
+}))
 
-const STORAGE_KEY = 'comfy.workshop.session.v1'
+vi.mock<unknown>(import('../scripts/posthog'), () => ({
+  captureAuthRefreshSucceeded: h.captureSucceeded,
+  captureAuthRefreshFailed: h.captureFailed
+}))
 
-function testUser(uid = 'uid-1'): AccountUser {
-  return { uid, getIdToken: vi.fn(async () => 'id-token') }
-}
+vi.mock<unknown>(import('./workshop-firebase'), async () => {
+  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
+  h.firebaseEvaluated()
+  return {
+    workshopIdentity: createTestIdentity<User>({
+      onUserChanged: (callback) => {
+        h.deliver = callback
+        callback(null)
+        return () => {
+          h.deliver = undefined
+        }
+      }
+    })
+  }
+})
 
 function testFirebaseUser(uid = 'uid-1'): User {
   return testUser(uid) as Partial<User> as User
-}
-
-function mintBody(token: string) {
-  return {
-    token,
-    permissions: ['workspace:read'],
-    expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner'
-  }
-}
-
-function okFetch(token = 'jwt-1') {
-  return vi.fn<typeof fetch>(
-    async () => new Response(JSON.stringify(mintBody(token)), { status: 200 })
-  )
 }
 
 function statusFetch(status: number) {
   return vi.fn<typeof fetch>(async () => new Response('{}', { status }))
 }
 
+async function importFresh() {
+  vi.resetModules()
+  const mod = await import('./workshop-account')
+  return {
+    client: mod.workshopSessionClient,
+    identity: mod.workshopIdentity,
+    startTelemetry: mod.subscribeAuthRefreshTelemetry
+  }
+}
+
 beforeEach(() => {
   sessionStorage.clear()
-  workshopSessionClient.invalidate()
 })
 
 describe('workshop session storage adapter', () => {
   it('caches the minted session and serves it back without a network call', async () => {
-    const first = await workshopSessionClient.ensureFresh(testUser(), {
+    const { client } = await importFresh()
+
+    const first = await client.ensureFresh(testUser(), {
       fetchImpl: okFetch()
     })
     expect(first?.status).toBe('ok')
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull()
 
     const secondFetch = vi.fn<typeof fetch>()
-    const second = await workshopSessionClient.ensureFresh(testUser(), {
+    const second = await client.ensureFresh(testUser(), {
       fetchImpl: secondFetch
     })
     expect(second?.status).toBe('ok')
@@ -82,8 +90,9 @@ describe('workshop session storage adapter', () => {
         throw new Error('storage disabled')
       }
     })
+    const { client } = await importFresh()
 
-    const result = await workshopSessionClient.ensureFresh(testUser(), {
+    const result = await client.ensureFresh(testUser(), {
       fetchImpl: okFetch()
     })
 
@@ -94,84 +103,82 @@ describe('workshop session storage adapter', () => {
   })
 })
 
+describe('workshop identity', () => {
+  it('leaves the Firebase module unloaded until the identity is activated', async () => {
+    const { identity } = await importFresh()
+
+    expect(h.firebaseEvaluated).not.toHaveBeenCalled()
+    await identity.activate()
+    expect(h.firebaseEvaluated).toHaveBeenCalledOnce()
+  })
+})
+
 describe('auth refresh telemetry', () => {
-  function attachManualPort(client: SessionClient<User>) {
-    let deliver: ((user: User | null) => void) | undefined
-    onTestFinished(
-      client.attachIdentity(
-        createTestIdentity<User>({
-          onUserChanged: (callback) => {
-            deliver = callback
-            return () => undefined
-          }
-        })
-      )
-    )
-    return (user: User | null) => deliver?.(user)
+  async function activateIdentity(identity: LazyIdentity<User>) {
+    await identity.activate()
+    return (user: User | null) => h.deliver?.(user)
   }
 
   it('reports one succeeded outcome per minted token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    onTestFinished(subscribeAuthRefreshTelemetry())
-    const fire = attachManualPort(workshopSessionClient)
+    const { identity, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 
-    await vi.waitFor(() =>
-      expect(captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
-    )
-    expect(captureAuthRefreshFailed).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
+    expect(h.captureFailed).not.toHaveBeenCalled()
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    onTestFinished(subscribeAuthRefreshTelemetry())
-    const fire = attachManualPort(workshopSessionClient)
+    const { client, identity, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
-    await vi.waitFor(() =>
-      expect(captureAuthRefreshSucceeded).toHaveBeenCalledOnce()
-    )
+    await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
     fire(testFirebaseUser())
     await vi.waitFor(() =>
-      expect(workshopSessionClient.getSnapshot().phase).toBe('authenticated')
+      expect(client.getSnapshot().phase).toBe('authenticated')
     )
 
     expect(
-      captureAuthRefreshSucceeded,
+      h.captureSucceeded,
       'a cached read is not a new refresh outcome'
     ).toHaveBeenCalledOnce()
   })
 
   it('reports a permanent failure outcome', async () => {
     vi.stubGlobal('fetch', statusFetch(403))
-    onTestFinished(subscribeAuthRefreshTelemetry())
-    const fire = attachManualPort(workshopSessionClient)
+    const { identity, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 
     await vi.waitFor(() =>
-      expect(captureAuthRefreshFailed).toHaveBeenCalledExactlyOnceWith(
+      expect(h.captureFailed).toHaveBeenCalledExactlyOnceWith(
         'permanent_failure'
       )
     )
-    expect(captureAuthRefreshSucceeded).not.toHaveBeenCalled()
+    expect(h.captureSucceeded).not.toHaveBeenCalled()
   })
 
   it('stays silent on a transient failure', async () => {
     vi.stubGlobal('fetch', statusFetch(503))
-    onTestFinished(subscribeAuthRefreshTelemetry())
-    const fire = attachManualPort(workshopSessionClient)
+    const { client, identity, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
+    const fire = await activateIdentity(identity)
 
     fire(testFirebaseUser())
 
-    await vi.waitFor(() =>
-      expect(workshopSessionClient.getSnapshot().phase).toBe('error')
-    )
+    await vi.waitFor(() => expect(client.getSnapshot().phase).toBe('error'))
     expect(
-      captureAuthRefreshFailed,
+      h.captureFailed,
       'valid-on-read has no retry machinery, so transient outcomes are cloud-only vocabulary'
     ).not.toHaveBeenCalled()
-    expect(captureAuthRefreshSucceeded).not.toHaveBeenCalled()
+    expect(h.captureSucceeded).not.toHaveBeenCalled()
   })
 })

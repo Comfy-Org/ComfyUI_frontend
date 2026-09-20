@@ -303,27 +303,6 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/load3d.ts",
-        "src/extensions/core/load3d/AnimationManager.ts",
-        "src/extensions/core/load3d/CameraManager.ts",
-        "src/extensions/core/load3d/EventManager.ts",
-        "src/extensions/core/load3d/Load3DConfiguration.ts",
-        "src/extensions/core/load3d/Load3d.ts",
-        "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-        "src/extensions/core/load3d/RecordingManager.ts",
-        "src/extensions/core/load3d/SceneManager.ts",
-        "src/extensions/core/load3d/SceneModelManager.ts",
-        "src/extensions/core/load3d/ViewHelperManager.ts",
-        "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-        "src/extensions/core/load3dPreviewExtensions.ts",
-        "src/extensions/core/saveMesh.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"

@@ -14,9 +14,9 @@ const h = vi.hoisted(() => {
       user: null,
       session: undefined
     } as unknown,
-    firebaseEvaluated: vi.fn(),
     identifyWorkshopUser: vi.fn(),
-    attachIdentity: vi.fn(() => () => undefined),
+    activate: vi.fn(async (): Promise<void> => {}),
+    deactivate: vi.fn(),
     ensureFresh: vi.fn(),
     remint: vi.fn(),
     clearStoredCredential: vi.fn(),
@@ -35,17 +35,6 @@ vi.mock<unknown>(import('../scripts/posthog'), () => {
   }
 })
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
-  h.firebaseEvaluated()
-  return {
-    workshopIdentity: createTestIdentity({
-      onUserChanged: () => () => undefined
-    }),
-    signOutWorkshop: vi.fn()
-  }
-})
-
 vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: (listener: (snapshot: unknown) => void) => {
@@ -53,13 +42,13 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
       listener(h.snapshot)
       return () => h.listeners.delete(listener)
     },
-    attachIdentity: h.attachIdentity,
     ensureFresh: h.ensureFresh,
     remint: h.remint,
     clearStoredCredential: h.clearStoredCredential,
     getSnapshot: () => h.snapshot,
     getToken: vi.fn()
   },
+  workshopIdentity: { activate: h.activate, deactivate: h.deactivate },
   subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
@@ -86,7 +75,7 @@ async function importFresh() {
   const mod = await import('./workshop-session-state')
   const session = mod.useWorkshopSession()
   if (h.initialFlag) {
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledOnce())
   }
   return session
 }
@@ -97,21 +86,20 @@ beforeEach(() => {
   h.initialFlag = true
   h.listeners.clear()
   h.snapshot = { phase: 'signed-out', user: null, session: undefined }
-  h.firebaseEvaluated.mockClear()
-  h.attachIdentity.mockClear()
+  h.activate.mockClear()
+  h.deactivate.mockClear()
   h.ensureFresh.mockReset()
   h.clearStoredCredential.mockClear()
 })
 
 describe('useWorkshopSession', () => {
-  it('does not import Firebase until the auth flag turns on', async () => {
+  it('does not activate the identity until the auth flag turns on', async () => {
     h.initialFlag = false
     await importFresh()
 
-    expect(h.firebaseEvaluated).not.toHaveBeenCalled()
+    expect(h.activate).not.toHaveBeenCalled()
     h.flag!.value = true
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
-    expect(h.firebaseEvaluated).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledOnce())
   })
 
   it('publishes the session when a restored user mints successfully', async () => {
@@ -382,6 +370,7 @@ describe('useWorkshopSession', () => {
   it('clears the cache when the flag turns off', async () => {
     await importFresh()
     const callsBefore = h.clearStoredCredential.mock.calls.length
+    const deactivationsBefore = h.deactivate.mock.calls.length
 
     h.flag!.value = false
 
@@ -391,6 +380,10 @@ describe('useWorkshopSession', () => {
         'flag-off must drop the cached credential'
       ).toBeGreaterThan(callsBefore)
     )
+    expect(
+      h.deactivate.mock.calls.length,
+      'flag-off must release the identity'
+    ).toBeGreaterThan(deactivationsBefore)
   })
 
   it('allows remembered-workspace restoration after the flag settles off and turns on again', async () => {
@@ -399,20 +392,19 @@ describe('useWorkshopSession', () => {
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
     h.flag!.value = false
     await vi.waitFor(() => expect(h.clearStoredCredential).toHaveBeenCalled())
-    // The real identity detach resets the client snapshot; this test double does not.
-    h.snapshot = { phase: 'pending', user: null, session: undefined }
 
     h.remint.mockResolvedValue({ status: 'ok', session: okSession })
-    h.flag!.value = true
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledTimes(2))
-    h.publish({
+    // Activation resolves after delivery, so the host subscribes to the re-minted boot session.
+    h.snapshot = {
       phase: 'authenticated',
       user: { uid: 'user-1' },
       session: {
         ...okSession,
         workspace: { id: 'personal', name: 'Default', type: 'personal' }
       }
-    })
+    }
+    h.flag!.value = true
+    await vi.waitFor(() => expect(h.activate).toHaveBeenCalledTimes(2))
 
     await vi.waitFor(() =>
       expect(

@@ -12,7 +12,7 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { validateForm } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { runWorkshopRouter } from './workshop-router'
+import { runWorkshopRouter } from './workshop-router-queue'
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
@@ -149,6 +149,7 @@ export async function router_render(
     contract: prepared.contract,
     body: prepared.body,
     token,
+    freshToken: () => credential(options),
     idempotencyKey,
     signal,
     rasterizeSvg: options.rasterizeSvg,

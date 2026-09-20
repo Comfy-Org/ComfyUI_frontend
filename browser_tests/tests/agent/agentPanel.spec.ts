@@ -31,7 +31,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       agentPanel,
       postedMessages
     }) => {
@@ -163,15 +163,56 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.route('**/api/agent/threads/*/messages', (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Add credits to continue.',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        })
+      })
+    )
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+
+    const prompt = 'Build a product photo workflow'
+    await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    // The prompt survives the rejection in two places the user can act on: the
+    // sent message stays in the transcript, and the composer keeps the text so
+    // the same send can be retried once credits are added. A bare getByText is
+    // ambiguous here because the thread title button also carries the prompt.
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+    await expect(
+      panel.getByRole('textbox', { name: /^Describe ideas/ })
+    ).toHaveText(prompt)
+    const paywall = panel.getByRole('alert')
+    await expect(paywall).toContainText(enMessages.agent.paywall.title)
+    await expect(paywall).toContainText('Add credits to continue.')
+  })
+
   test.describe('diagnostic report', () => {
     test.use({
       permissions: ['clipboard-read', 'clipboard-write'],
       crdtDebugEnabled: true
     })
 
-    test('copies with privacy sources turned off', async ({
+    test('copies retained tool metadata with privacy sources turned off', async ({
       agentPanel,
-      comfyPage
+      comfyPage,
+      getWebSocket
     }) => {
       await test.step('turn off every optional privacy source', async () => {
         await agentPanel.open()
@@ -179,7 +220,23 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await agentPanel.turnOffOptionalReportSources()
       })
 
-      await test.step('copy a report that marks every source turned off', async () => {
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
         await agentPanel.copyReportButton.click()
         await expect(agentPanel.copiedButton).toBeVisible()
         await expect
@@ -188,10 +245,22 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
             return {
               serverLogs: report.includes('- Server logs: turned off'),
               settings: report.includes('- Settings: turned off'),
-              workflow: report.includes('- Workflow: turned off')
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
             }
           })
-          .toEqual({ serverLogs: true, settings: true, workflow: true })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
       })
     })
   })

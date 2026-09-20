@@ -11,7 +11,6 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
@@ -59,12 +58,7 @@ vi.mock(
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })

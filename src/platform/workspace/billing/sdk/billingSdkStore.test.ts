@@ -4,6 +4,8 @@ import { nextTick } from 'vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -39,13 +41,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -79,7 +75,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 const mockLoadStripe = vi.hoisted(() => vi.fn())
@@ -154,7 +149,7 @@ describe('useBillingSdkStore', () => {
       status: 'completed',
       amount_cents: 1000
     })
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reports a decline without touching capabilities', async () => {
@@ -166,7 +161,7 @@ describe('useBillingSdkStore', () => {
     await expect(useBillingSdkStore().createTopup(1000)).resolves.toMatchObject(
       { status: 'failed' }
     )
-    expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
   })
 
   it('rejects a refused purchase with the error code the dialog reads', async () => {
@@ -279,7 +274,7 @@ describe('useBillingSdkStore', () => {
     )
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })
@@ -455,7 +450,7 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reconciles the subscription after a resubscribe settles', async () => {
@@ -466,7 +461,7 @@ describe('useBillingSdkStore subscription commands', () => {
       value: undefined
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('stops sending to a route the backend answered 404, for every action', async () => {
@@ -517,7 +512,7 @@ describe('useBillingSdkStore subscription commands', () => {
       plan_slug: 'pro-yearly'
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
-    expect(mockCapabilitiesRefresh).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('hands back the quote without refreshing anything', async () => {
@@ -672,5 +667,162 @@ describe('useBillingSdkStore subscription commands', () => {
     await useBillingSdkStore().openPaymentPortal('https://app.example/')
 
     expect(harness.sdk.paymentMethods.invalidate).not.toHaveBeenCalled()
+  })
+})
+
+describe('useBillingSdkStore operation projections', () => {
+  const otherWorkspace = {
+    userId: 'uid-1',
+    workspaceId: 'ws-2',
+    role: 'owner'
+  } as const
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  })
+
+  it('reports a pending operation, and stops once it settles', () => {
+    const store = useBillingSdkStore()
+    expect(store.hasPendingOperations).toBe(false)
+
+    harness.publish(pendingTopup())
+    expect(store.hasPendingOperations).toBe(true)
+
+    harness.publish(settledTopup('succeeded'))
+    expect(store.hasPendingOperations).toBe(false)
+  })
+
+  it.for([
+    ['a pending subscribe is setting up', pendingSubscription(), true],
+    [
+      'one parked on a bank challenge is waiting on the customer, not setting up',
+      pendingSubscription({ authenticationState: 'requires_action' }),
+      false
+    ],
+    [
+      'one the customer must retry is not setting up either',
+      pendingSubscription({ authenticationState: 'failed_retryable' }),
+      false
+    ],
+    ['a top-up is not a subscription setup', pendingTopup(), false],
+    [
+      'another workspace’s subscribe does not set this one up',
+      pendingSubscription({ scope: otherWorkspace }),
+      false
+    ]
+  ] as const)('%s', ([, state, expected]) => {
+    const store = useBillingSdkStore()
+
+    harness.publish(state)
+
+    expect(store.isSettingUp).toBe(expected)
+  })
+
+  it('offers the subscription that is waiting on the customer here', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({ id: 'op-elsewhere', scope: otherWorkspace })
+    )
+    harness.publish(
+      pendingSubscription({
+        id: 'op-here',
+        authenticationState: 'requires_action'
+      })
+    )
+
+    expect(store.subscriptionActionOperation?.opId).toBe('op-here')
+  })
+
+  it('has no action operation while the subscribe just runs', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(pendingSubscription())
+
+    expect(store.subscriptionActionOperation).toBeUndefined()
+  })
+
+  it('looks an operation up by id, in the record shape', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(
+      pendingSubscription({
+        id: 'op-7',
+        serverPhase: 'awaiting_payment_method'
+      })
+    )
+
+    expect(store.getOperation('op-7')).toMatchObject({
+      opId: 'op-7',
+      kind: 'subscription',
+      workspaceId: 'ws-1',
+      status: 'pending',
+      phase: 'awaiting_payment_method'
+    })
+  })
+
+  it('finds an operation in another workspace, leaving the scope check to the caller', () => {
+    const store = useBillingSdkStore()
+
+    harness.publish(pendingSubscription({ id: 'op-9', scope: otherWorkspace }))
+
+    expect(store.getOperation('op-9')?.workspaceId).toBe('ws-2')
+  })
+
+  it.for([
+    ['an id it never saw', 'op-missing'],
+    ['an operation whose scope moved on', 'op-1']
+  ] as const)('has no record for %s', ([, opId]) => {
+    const store = useBillingSdkStore()
+
+    harness.publish(settledTopup('superseded'))
+
+    expect(store.getOperation(opId)).toBeUndefined()
+  })
+})
+
+describe('useBillingSdkStore billing events', () => {
+  const EVENT = {
+    createdAt: '2026-09-01T12:00:00.000Z',
+    event_id: 'evt-1',
+    event_type: 'topup_completed'
+  }
+
+  const SNAPSHOT = {
+    status: 'ok',
+    value: {
+      events: [EVENT],
+      page: 2,
+      limit: 20,
+      total: 21,
+      totalPages: 2,
+      scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+      readAt: 1_700_000_000_000
+    }
+  } as const
+
+  it('asks for the page it was given and returns it without the read metadata', async () => {
+    vi.mocked(harness.sdk.events.read).mockResolvedValue(SNAPSHOT)
+
+    const result = await useBillingSdkStore().readEvents({
+      page: 2,
+      limit: 20
+    })
+
+    expect(harness.sdk.events.read).toHaveBeenCalledWith({
+      page: 2,
+      limit: 20
+    })
+    expect(result).toEqual({
+      status: 'ok',
+      value: { events: [EVENT], page: 2, limit: 20, total: 21, totalPages: 2 }
+    })
+  })
+
+  it('passes a failed read through untouched', async () => {
+    const failure = { status: 'error', code: 'ACCESS_DENIED' } as const
+    vi.mocked(harness.sdk.events.read).mockResolvedValue(failure)
+
+    expect(await useBillingSdkStore().readEvents()).toEqual(failure)
   })
 })
