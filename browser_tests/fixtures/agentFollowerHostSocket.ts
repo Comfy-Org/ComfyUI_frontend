@@ -1,5 +1,5 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
-import type { ApplyOutcome, Op } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WireOp } from '@comfyorg/comfy-multi-player'
 
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
@@ -32,7 +32,7 @@ interface ParsedClientDocFrame {
   type: string
   workflowId: string | null
   stateVector: string | null
-  ops: Op[]
+  ops: WireOp[]
 }
 
 function docFrameEnvelope(
@@ -159,7 +159,7 @@ export class AgentFollowerHostSocket {
 
   // The applier is the only judge of a human batch; the wire ops reach it
   // structurally, exactly as the relay hands them to the host.
-  private judgeHumanOps(ops: Op[]): void {
+  private judgeHumanOps(ops: WireOp[]): void {
     const { result, update, outcomes } = this.host.applyWire(ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)

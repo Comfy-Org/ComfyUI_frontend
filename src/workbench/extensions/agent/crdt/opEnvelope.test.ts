@@ -1,5 +1,5 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
+import type { Op, WireOp } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -8,7 +8,8 @@ import {
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
   mintOpId,
-  mintWireOps
+  mintWireOps,
+  parseWireOps
 } from './opEnvelope'
 
 const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
@@ -135,5 +136,48 @@ describe('chunkWireOps', () => {
     const ops: Op[] = mintWireOps([huge], MINT)
 
     expect(chunkWireOps(ops)).toEqual([ops])
+  })
+})
+
+describe('parseWireOps', () => {
+  const resetDoc: WireOp = {
+    op: 'reset_doc',
+    op_id: mintOpId(),
+    actor: MINT.actor,
+    base_version: MINT.baseVersion,
+    stamp: [MINT.baseVersion, MINT.actor],
+    workflow: { nodes: [], links: [] }
+  }
+
+  it('rejects the whole frame when any member is not wire-shaped', () => {
+    const [addOp] = mintWireOps([addNode(1)], MINT)
+    expect(parseWireOps([addOp, { op: 'add_node' }])).toEqual([])
+  })
+
+  it('passes every declared kind through unfiltered, including a deferred one', () => {
+    const [addOp] = mintWireOps([addNode(1)], MINT)
+    expect(parseWireOps([resetDoc, addOp])).toEqual([resetDoc, addOp])
+  })
+
+  it('reaches the real applier intact: a leading reset_doc defers and aborts the batch', () => {
+    const doc = mint({ nodes: [], links: [] }, { types: {} })
+    const [addOp] = mintWireOps([addNode(1)], MINT)
+
+    const ops = parseWireOps([resetDoc, addOp])
+    const result = applyOps(doc, ops as Op[])
+
+    expect(result.outcomes).toEqual([
+      {
+        op_id: resetDoc.op_id,
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'op_deferred' })
+      },
+      {
+        op_id: addOp.op_id,
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'batch_aborted' })
+      }
+    ])
+    expect(nodesMap(doc).has('1')).toBe(false)
   })
 })

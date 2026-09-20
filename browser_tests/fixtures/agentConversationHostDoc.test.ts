@@ -44,4 +44,30 @@ describe('HostDoc.applyWire', () => {
       })
     )
   })
+
+  it('classifies a same-batch duplicate op_id as skipped, not applied twice', () => {
+    const host = new HostDoc(
+      'workflow-1',
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const operation: GraphOperation = {
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'TestNode',
+      pos: [137, 283],
+      node: { id: 1, type: 'TestNode', pos: [137, 283] }
+    }
+    const [op] = mintWireOps([operation], {
+      actor: 'human:test-user:tab-1',
+      baseVersion: 1
+    })
+
+    const { result } = host.applyWire([op, op])
+
+    expect(result.data).toMatchObject({
+      applied: [op.op_id],
+      skipped: [op.op_id]
+    })
+  })
 })

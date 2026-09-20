@@ -6,8 +6,12 @@
  * budgets. `clear` is catastrophic-by-nature and never rides inside a batch
  * (plan D4): it always ships as a batch of exactly one.
  */
-import { BATCHABLE_OPS, FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
+import {
+  BATCHABLE_OPS,
+  DEFERRED_OPS,
+  FROZEN_OPS
+} from '@comfyorg/comfy-multi-player'
+import type { Actor, Op, Stamp, WireOp } from '@comfyorg/comfy-multi-player'
 
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -96,25 +100,37 @@ export function chunkWireOps(ops: Op[]): Op[][] {
   return batches
 }
 
+const WIRE_OP_KINDS: readonly string[] = [...FROZEN_OPS, ...DEFERRED_OPS]
+
 /**
- * The envelope shape `applyOps`' `validateEnvelope` requires before dispatch
- * (comfy-multi-player's applier): an object whose `op` kind is one of
- * `FROZEN_OPS` and whose `op_id` is a non-empty string. A value read off the
- * wire stays `unknown` until it passes this, rather than being cast straight
- * to `Op`.
+ * The minimal envelope every declared wire kind carries — `op` one of
+ * `WIRE_OP_KINDS` (frozen or deferred) and a non-empty `op_id`. This is
+ * {@link WireOp}'s shape, not `Op`'s: it does not check a kind-specific
+ * payload, so it never claims more than it verified. `applyOps`'s own
+ * `validateEnvelope` remains the judge of both the payload and of a
+ * deferred kind such as `reset_doc` (rejected there with `op_deferred`).
  */
-function isWireOp(value: unknown): value is Op {
+function isWireShaped(value: unknown): value is WireOp {
   if (typeof value !== 'object' || value === null) return false
   const { op, op_id } = value as { op?: unknown; op_id?: unknown }
   return (
     typeof op === 'string' &&
-    (FROZEN_OPS as readonly string[]).includes(op) &&
+    WIRE_OP_KINDS.includes(op) &&
     typeof op_id === 'string' &&
     op_id.length > 0
   )
 }
 
-/** Keeps only wire-shaped ops from an untyped JSON value. */
-export function parseWireOps(value: unknown): Op[] {
-  return Array.isArray(value) ? value.filter(isWireOp) : []
+/**
+ * Validates an untyped JSON value as one client batch: every member must be
+ * wire-shaped or the whole frame is rejected (`[]`). A batch is never
+ * filtered member-by-member — a malformed or deferred entry (e.g.
+ * `reset_doc`) must reach `applyOps` in place so its real abort-remainder
+ * verdict runs (`op_deferred` on that op, the remainder of the batch left
+ * unapplied), rather than being dropped here and letting the rest of the
+ * batch proceed as if it had arrived alone.
+ */
+export function parseWireOps(value: unknown): WireOp[] {
+  if (!Array.isArray(value)) return []
+  return value.every(isWireShaped) ? value : []
 }
