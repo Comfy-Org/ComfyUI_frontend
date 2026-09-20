@@ -26,15 +26,32 @@
  * authoritative records is unconditional, and no state is terminal until the
  * driver has reported the outcome of that restore.
  *
- * Driver contract: run every returned effect in array order, then feed the
- * result of the last asynchronous or fallible effect back as the matching
- * event. A terminal state is only observable once its guarantee holds:
- * `settled` means the successor is attached, `restored` means the records are
- * back, `stranded` means the restore itself failed and the graph and stores
+ * Driver contract. Every transition returns `commands` and at most one
+ * `step`:
+ *
+ * - `commands` are infallible bookkeeping (`release-records`, `report`). The
+ *   driver runs them in array order, unconditionally, before the step. They
+ *   never produce an event.
+ * - `step` is the one fallible effect the machine is waiting on. Its outcome
+ *   is the next event, and only its outcome: `stepEvent()` is the whole
+ *   mapping, so a driver cannot pick a different event or skip one. A
+ *   transition into a terminal state has no step.
+ *
+ * Because reports run before the step, a failed step never suppresses the
+ * reports that describe already-known facts. This is a deliberate change
+ * from the inline `materialize()`, where a throwing `restore()` escapes
+ * before the add and cleanup failures are reported: here `removing ->
+ * restoring` reports `add_failed` (and `rollback_failed`) first, then runs
+ * `restore-records`, and a restore failure adds `restore_failed` on top.
+ * Telemetry order is therefore add, cleanup, restore, in every outcome.
+ *
+ * A terminal state is only observable once its guarantee holds: `settled`
+ * means the successor is attached, `restored` means the records are back,
+ * `stranded` means the restore itself failed and the graph and stores
  * disagree.
  *
  * An event with no meaning in the current phase returns the state unchanged
- * with no effects, so duplicate or stale delivery is harmless
+ * with no commands and no step, so duplicate or stale delivery is harmless
  * (`docs/guidance/state-and-effects.md`, section 2).
  *
  * No graph, store or reporting import: this file is pure. Wiring the driver
@@ -76,18 +93,49 @@ type ReplacementErrorType =
   | 'agent_node_materialize_restore_failed'
   | 'agent_node_materialize_configure_failed'
 
-/** Commands for the driver, to run in array order. */
-export type ReplacementEffect =
+/** Infallible bookkeeping; the driver runs these in order, before the step. */
+export type ReplacementCommand =
   | { kind: 'release-records' }
-  | { kind: 'add-successor' }
-  | { kind: 'configure-successor' }
-  | { kind: 'remove-successor' }
-  | { kind: 'restore-records' }
   | { kind: 'report'; errorType: ReplacementErrorType; cause: unknown }
+
+/** The single fallible effect a non-terminal state waits on. */
+export type ReplacementStep =
+  | 'add-successor'
+  | 'configure-successor'
+  | 'remove-successor'
+  | 'restore-records'
+
+export type StepResult = { ok: true } | { ok: false; cause: unknown }
 
 export interface ReplacementTransition {
   state: ReplacementState
-  effects: ReplacementEffect[]
+  commands: ReplacementCommand[]
+  step: ReplacementStep | null
+}
+
+const STEP_EVENTS = {
+  'add-successor': { ok: 'add-succeeded', failed: 'add-failed' },
+  'configure-successor': {
+    ok: 'configure-succeeded',
+    failed: 'configure-failed'
+  },
+  'remove-successor': { ok: 'cleanup-succeeded', failed: 'cleanup-failed' },
+  'restore-records': { ok: 'restore-succeeded', failed: 'restore-failed' }
+} as const satisfies Record<
+  ReplacementStep,
+  { ok: ReplacementEvent['type']; failed: ReplacementEvent['type'] }
+>
+
+/**
+ * The only way a step outcome becomes an event. A failure carries its cause
+ * by identity so the eventual `report` command points at the original error.
+ */
+export function stepEvent(
+  step: ReplacementStep,
+  result: StepResult
+): ReplacementEvent {
+  const { ok, failed } = STEP_EVENTS[step]
+  return result.ok ? { type: ok } : { type: failed, cause: result.cause }
 }
 
 export function initialReplacementState(): ReplacementState {
@@ -105,7 +153,7 @@ export function isTerminal(state: ReplacementState): boolean {
 function report(
   errorType: ReplacementErrorType,
   cause: unknown
-): ReplacementEffect {
+): ReplacementCommand {
   return { kind: 'report', errorType, cause }
 }
 
@@ -113,7 +161,8 @@ function fromPending(event: ReplacementEvent): ReplacementTransition | null {
   if (event.type !== 'release') return null
   return {
     state: { phase: 'released' },
-    effects: [{ kind: 'release-records' }, { kind: 'add-successor' }]
+    commands: [{ kind: 'release-records' }],
+    step: 'add-successor'
   }
 }
 
@@ -122,12 +171,14 @@ function fromReleased(event: ReplacementEvent): ReplacementTransition | null {
     case 'add-succeeded':
       return {
         state: { phase: 'committed' },
-        effects: [{ kind: 'configure-successor' }]
+        commands: [],
+        step: 'configure-successor'
       }
     case 'add-failed':
       return {
         state: { phase: 'removing', cause: event.cause },
-        effects: [{ kind: 'remove-successor' }]
+        commands: [],
+        step: 'remove-successor'
       }
     default:
       return null
@@ -137,13 +188,14 @@ function fromReleased(event: ReplacementEvent): ReplacementTransition | null {
 function fromCommitted(event: ReplacementEvent): ReplacementTransition | null {
   switch (event.type) {
     case 'configure-succeeded':
-      return { state: { phase: 'settled' }, effects: [] }
+      return { state: { phase: 'settled' }, commands: [], step: null }
     case 'configure-failed':
       return {
         state: { phase: 'settled' },
-        effects: [
+        commands: [
           report('agent_node_materialize_configure_failed', event.cause)
-        ]
+        ],
+        step: null
       }
     default:
       return null
@@ -158,19 +210,17 @@ function fromRemoving(
     case 'cleanup-succeeded':
       return {
         state: { phase: 'restoring' },
-        effects: [
-          { kind: 'restore-records' },
-          report('agent_node_materialize_add_failed', addCause)
-        ]
+        commands: [report('agent_node_materialize_add_failed', addCause)],
+        step: 'restore-records'
       }
     case 'cleanup-failed':
       return {
         state: { phase: 'restoring' },
-        effects: [
-          { kind: 'restore-records' },
+        commands: [
           report('agent_node_materialize_add_failed', addCause),
           report('agent_node_materialize_rollback_failed', event.cause)
-        ]
+        ],
+        step: 'restore-records'
       }
     default:
       return null
@@ -180,11 +230,14 @@ function fromRemoving(
 function fromRestoring(event: ReplacementEvent): ReplacementTransition | null {
   switch (event.type) {
     case 'restore-succeeded':
-      return { state: { phase: 'restored' }, effects: [] }
+      return { state: { phase: 'restored' }, commands: [], step: null }
     case 'restore-failed':
       return {
         state: { phase: 'stranded' },
-        effects: [report('agent_node_materialize_restore_failed', event.cause)]
+        commands: [
+          report('agent_node_materialize_restore_failed', event.cause)
+        ],
+        step: null
       }
     default:
       return null
@@ -217,5 +270,5 @@ export function transition(
   state: ReplacementState,
   event: ReplacementEvent
 ): ReplacementTransition {
-  return legalTransition(state, event) ?? { state, effects: [] }
+  return legalTransition(state, event) ?? { state, commands: [], step: null }
 }
