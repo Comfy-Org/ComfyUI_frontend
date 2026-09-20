@@ -13,10 +13,10 @@ import type {
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router'
+import { runWorkshopRouter } from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
@@ -67,7 +67,7 @@ vi.mock(import('../../scripts/posthog'), () => ({
   useWorkshopAuthFlag: () => computed(() => auth.enabled.value)
 }))
 
-vi.mock(import('../../config/workshop-router'), () => ({
+vi.mock(import('../../config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
@@ -591,7 +591,7 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('reuses uploaded URLs and the retry key after a failed paid request', async () => {
+  it('reuses uploaded URLs and the retry key after a request whose outcome is unknown', async () => {
     auth.session.value = credential
     const uploads = vi.fn<typeof fetch>(async (_, init) =>
       init?.method === 'POST'
@@ -603,7 +603,7 @@ describe('ModelDetail', () => {
     )
     vi.stubGlobal('fetch', uploads)
     vi.mocked(runWorkshopRouter).mockRejectedValue(
-      new WorkshopRouterError('provider')
+      new WorkshopRouterError('network')
     )
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
@@ -950,6 +950,25 @@ describe('ModelDetail', () => {
     expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
   })
 
+  it('starts a new generation, not the cancelled one, when an unchanged run follows a cancel', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(screen.getByTestId('field-prompt'), 'A teapot')
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+    await visitor.click(screen.getByTestId('run-button'))
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(2))
+    const [cancelled, next] = vi
+      .mocked(runWorkshopRouter)
+      .mock.calls.map(([options]) => options.idempotencyKey)
+    expect(next).not.toBe(cancelled)
+    pending.resolve(routerResult)
+  })
+
   it('keeps cancellation available if the balance becomes zero during a run', async () => {
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 100 }
@@ -1170,35 +1189,41 @@ describe('ModelDetail', () => {
     expect(go).toHaveBeenCalledWith(1)
   })
 
-  it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {
-    auth.session.value = credential
-    vi.mocked(runWorkshopRouter)
-      .mockRejectedValueOnce(new WorkshopRouterError('provider'))
-      .mockResolvedValue(routerResult)
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
+  it.for([
+    ['network', true],
+    ['provider', false]
+  ] as const)(
+    'after a %s failure an unchanged retry keeps its key: %s, and a run after success always gets a new key',
+    async ([reason, keepsKey]) => {
+      auth.session.value = credential
+      vi.mocked(runWorkshopRouter)
+        .mockRejectedValueOnce(new WorkshopRouterError(reason))
+        .mockResolvedValue(routerResult)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('failed')
+      )
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('succeeded')
+      )
+      const [first, retry] = vi
+        .mocked(runWorkshopRouter)
+        .mock.calls.map(([options]) => options.idempotencyKey)
+      expect(retry === first).toBe(keepsKey)
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(3))
       expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('failed')
-    )
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
-      expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('succeeded')
-    )
-    const first = vi.mocked(runWorkshopRouter).mock.calls[0][0].idempotencyKey
-    expect(vi.mocked(runWorkshopRouter).mock.calls[1][0].idempotencyKey).toBe(
-      first
-    )
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(3))
-    expect(
-      vi.mocked(runWorkshopRouter).mock.calls[2][0].idempotencyKey
-    ).not.toBe(first)
-  })
+        vi.mocked(runWorkshopRouter).mock.calls[2][0].idempotencyKey
+      ).not.toBe(retry)
+    }
+  )
 
   it('does not submit with a missing required field', async () => {
     auth.session.value = credential
