@@ -314,17 +314,17 @@ async function driveThroughDocReset(
 
   await expect.poll(() => socket !== null).toBe(true)
 
-  // Baseline: the healthy first subscribe delivers the seed's two nodes,
-  // matching the user's report that the canvas held the workflow's nodes
-  // before asking the agent to run it.
-  await expect(vueNodes.getNodeLocator('1')).toBeVisible()
-  await expect(vueNodes.getNodeLocator('2')).toBeVisible()
-
   const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
   await composer.fill('Run the workflow.')
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
 
+  // The panel doesn't bind (and so doesn't subscribe) the CRDT doc merely
+  // from selecting a workflow as the agent's target -- `boundWorkflowId`
+  // (`useAgentSession.ts`) only changes via `bindWorkflow`, which fires from
+  // this `agent_active_tab` push (`AgentPanelRoot.vue`'s `onAgentActiveTab`).
+  // The first real subscribe -- and so the seed's two nodes -- can only
+  // appear after this frame, not merely after picking the workflow tab.
   send({
     type: 'agent_active_tab',
     data: {
@@ -334,6 +334,13 @@ async function driveThroughDocReset(
       message_id: MESSAGE_ID
     }
   })
+
+  // Baseline: the healthy first subscribe delivers the seed's two nodes,
+  // matching the user's report that the canvas held the workflow's nodes
+  // before the agent started working on the run.
+  await expect(vueNodes.getNodeLocator('1')).toBeVisible()
+  await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+
   send({
     type: 'agent_tool_call',
     data: {
