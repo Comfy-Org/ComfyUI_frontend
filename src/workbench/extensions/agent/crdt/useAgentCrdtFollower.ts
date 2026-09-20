@@ -19,7 +19,11 @@ import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
+import {
+  AgentCrdtDocLifecycle,
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
@@ -33,7 +37,7 @@ import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
-export { apiTransport, STALE_AFTER_MS }
+export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's

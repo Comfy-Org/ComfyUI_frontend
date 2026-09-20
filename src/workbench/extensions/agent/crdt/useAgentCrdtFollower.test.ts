@@ -159,7 +159,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
@@ -385,11 +389,50 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', { ok: false })
     dispatchFrame('doc_subscribed', { ok: true })
-    // Below the staleness budget: anything firing here would be the retry.
-    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    // Below the retry backoff's own delay: anything firing here would be
+    // FE-1901's refused-subscribe retry, not the PM-1405 catch-up probe.
+    vi.advanceTimersByTime(499)
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('PM-1405: a confirmed subscribe with no catch-up actively resubscribes well before the stale budget', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    // No catch-up doc_update ever arrives: the missing-catch-up probe should
+    // fire, not the full STALE_AFTER_MS heartbeat.
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('PM-1405: a catch-up that lands before the probe cancels it', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
+
+    // The catch-up landed just in time: the probe is disarmed and the
+    // channel now follows the full recency budget, not the short grace one.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 2)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(2)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
 
@@ -516,6 +559,14 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: clears the PM-1405 grace probe before it can fire, same
+    // as a healthy subscribe would in production.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 0,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
     const stampedAt = persistedRecord()?.expiresAt
     expect(stampedAt).toBeTypeOf('number')
 
@@ -1244,7 +1295,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1277,11 +1328,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a refused subscription settles the in-flight batch undeliverable immediately, without waiting the resend (residual of #16637)', async () => {
+  it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1315,11 +1366,11 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
-  it('a doc switch settles the in-flight batch for the old doc undeliverable immediately, without waiting the resend', async () => {
+  it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
@@ -1355,7 +1406,7 @@ describe('useAgentCrdtFollower', () => {
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
-    expect(settledStates).toEqual(['undeliverable'])
+    expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
 
@@ -1491,7 +1542,7 @@ describe('useAgentCrdtFollower', () => {
       await nextTick()
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
-      expect(await settledStates()).toEqual(['undeliverable', 'undeliverable'])
+      expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
       unmount()
     })
 
@@ -1579,6 +1630,9 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: past the PM-1405 grace window, this suite is about the
+    // full-budget cadence on an already-current channel that then goes quiet.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
     vi.advanceTimersByTime(STALE_AFTER_MS - 1)
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -1594,6 +1648,9 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    // The catch-up: clears the PM-1405 grace probe so what follows exercises
+    // the full-budget sliding window, not the shorter grace one.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
     vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })

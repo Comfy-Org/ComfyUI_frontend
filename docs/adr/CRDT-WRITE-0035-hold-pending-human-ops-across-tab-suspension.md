@@ -10,8 +10,9 @@ Proposed
 
 The human write leg (`opSender`) mints each batch against the workflow the
 follower is subscribed to and re-reads that subscription before every send. A
-batch whose workflow is no longer the subscribed one settles `undeliverable`
-and is never re-addressed, which is what keeps one workflow's ops out of
+batch whose workflow is no longer the subscribed one settles `unconfirmed` if
+already transmitted, or `undeliverable` otherwise. It is never re-addressed,
+which is what keeps one workflow's ops out of
 another workflow's document
 ([CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md),
 `crossWorkflowPending.test.ts`).
@@ -40,7 +41,8 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   was already sent keeps its result timer, so a late result still settles it.
   `resume()` re-transmits only a parked batch; the transmit-time subscription
   check is unchanged, so a batch whose workflow is no longer subscribed still
-  settles `undeliverable`. `abortIfUnbound()` keeps its meaning as the hard
+  settles `unconfirmed` if transmitted or `undeliverable` otherwise.
+  `abortIfUnbound()` keeps its meaning as the hard
   abort for a refused subscription or a real retarget.
 - `useAgentCrdtFollower` suspends the sender only when the tab of the workflow
   it is bound to goes inactive, and remembers that workflow. A rebind to
@@ -97,6 +99,10 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
+- Terminal `unacknowledged` or `unconfirmed` deletes leave local intent. A later
+  full reconcile converges to the host document and can restore a node whose
+  delete never applied. Immediate catch-up and lost-write feedback remain
+  follow-up work; unknown outcomes are not hidden indefinitely.
 
 ## Notes
 
