@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/registry-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 
 type InstalledPacksResponse =
@@ -164,8 +164,8 @@ const MOCK_ALGOLIA_EMPTY: AlgoliaSearchResponse = {
   ]
 }
 
-test.describe('ManagerDialog', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
+const test = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
     const statsWithManager = {
       ...mockSystemStats,
       system: {
@@ -173,43 +173,34 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         argv: ['main.py', '--enable-manager']
       }
     }
-    await comfyPage.page.route('**/system_stats**', async (route) => {
+    await page.route('**/system_stats**', async (route) => {
       await route.fulfill({ json: statsWithManager })
     })
 
-    await comfyPage.page.route(
-      '**/v2/customnode/installed**',
-      async (route) => {
-        await route.fulfill({ json: MOCK_INSTALLED_PACKS })
-      }
-    )
+    await page.route('**/v2/customnode/installed**', async (route) => {
+      await route.fulfill({ json: MOCK_INSTALLED_PACKS })
+    })
 
-    await comfyPage.page.route(
-      '**/v2/manager/queue/status**',
-      async (route) => {
-        await route.fulfill({
-          json: {
-            history: {},
-            running_queue: [],
-            pending_queue: [],
-            installed_packs: {}
-          }
-        })
-      }
-    )
+    await page.route('**/v2/manager/queue/status**', async (route) => {
+      await route.fulfill({
+        json: {
+          history: {},
+          running_queue: [],
+          pending_queue: [],
+          installed_packs: {}
+        }
+      })
+    })
 
-    await comfyPage.page.route(
-      '**/v2/manager/queue/history**',
-      async (route) => {
-        await route.fulfill({ json: {} })
-      }
-    )
+    await page.route('**/v2/manager/queue/history**', async (route) => {
+      await route.fulfill({ json: {} })
+    })
 
-    await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
+    await page.route('**/*.algolia.net/**', async (route) => {
       await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
     })
 
-    await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
+    await page.route('**/*.algolianet.com/**', async (route) => {
       await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
     })
 
@@ -222,30 +213,25 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       totalPages: 1
     }
 
-    await comfyPage.page.route(
-      '**/api.comfy.org/nodes/search**',
-      async (route) => {
-        await route.fulfill({ json: registryListResponse })
-      }
-    )
+    await page.route('**/api.comfy.org/nodes/search**', async (route) => {
+      await route.fulfill({ json: registryListResponse })
+    })
 
-    await comfyPage.page.route(
+    await page.route(
       (url) => url.hostname === 'api.comfy.org' && url.pathname === '/nodes',
       async (route) => {
         await route.fulfill({ json: registryListResponse })
       }
     )
 
-    await comfyPage.page.route(
-      'https://api.comfy.org/bulk/nodes/versions',
-      (route) =>
-        route.fulfill({
-          json: {
-            node_versions: []
-          } satisfies RegistryComponents['schemas']['BulkNodeVersionsResponse']
-        })
+    await page.route('https://api.comfy.org/bulk/nodes/versions', (route) =>
+      route.fulfill({
+        json: {
+          node_versions: []
+        } satisfies RegistryComponents['schemas']['BulkNodeVersionsResponse']
+      })
     )
-    await comfyPage.page.route(
+    await page.route(
       'https://api.comfy.org/nodes/test-pack-a/versions/1.0.0/comfy-nodes**',
       (route) =>
         route.fulfill({
@@ -256,23 +242,20 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         })
     )
 
-    await comfyPage.page.route(
-      '**/v2/customnode/getmappings**',
-      async (route) => {
-        await route.fulfill({ json: {} })
-      }
-    )
+    await page.route('**/v2/customnode/getmappings**', async (route) => {
+      await route.fulfill({ json: {} })
+    })
 
-    await comfyPage.page.route(
-      '**/v2/customnode/import_fail_info**',
-      async (route) => {
-        await route.fulfill({ json: {} })
-      }
-    )
+    await page.route('**/v2/customnode/import_fail_info**', async (route) => {
+      await route.fulfill({ json: {} })
+    })
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+    await use(page)
+  }
+})
 
+test.describe('ManagerDialog', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
     // Seed manager-ready server feature flags AFTER setup so the WebSocket
     // feature_flags payload can't overwrite them. mockServerFeatures (on
     // /api/features) does not populate the serverFeatureFlags ref; direct
