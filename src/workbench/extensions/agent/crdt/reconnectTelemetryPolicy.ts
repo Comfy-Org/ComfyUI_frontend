@@ -16,11 +16,13 @@ export interface ReconnectTelemetryTransition {
   report: 'abnormal_close' | 'reconnect_storm' | null
 }
 
-export const initialReconnectTelemetryState = (): ReconnectTelemetryState => ({
-  reconnects: [],
-  stormReported: false,
-  lastAbnormalCloseReportAt: null
-})
+export function initialReconnectTelemetryState(): ReconnectTelemetryState {
+  return {
+    reconnects: [],
+    stormReported: false,
+    lastAbnormalCloseReportAt: null
+  }
+}
 
 /** Bounds lifecycle telemetry to one close per window and one report per storm. */
 export function transitionReconnectTelemetry(
