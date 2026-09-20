@@ -33,6 +33,7 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'stale_probe',
+  'catchup_probe',
   'rebind',
   'doc_gap',
   'doc_stale',

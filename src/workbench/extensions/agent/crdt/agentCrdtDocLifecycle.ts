@@ -47,6 +47,19 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
  */
 export const STALE_AFTER_MS = 30_000
 
+/**
+ * PM-1355 RCA: a confirmed subscribe (`doc_subscribed: {ok: true}`) is not
+ * itself the catch-up - the host sends the ack and the catch-up
+ * `doc_update` as two separate frames, and the second can be acked-but-never
+ * sent (an observed real anomaly, not a hypothetical). Relying on the
+ * passive {@link STALE_AFTER_MS} heartbeat alone to notice leaves the canvas
+ * with nothing to show for up to 30 real seconds. Probe again this much
+ * sooner, once, right after every confirmed subscribe: a resubscribe is a
+ * no-op on a doc that had nothing to catch up on, and the active repair on
+ * one whose catch-up went missing.
+ */
+export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
+
 // One nonce per page load (module scope = one per top-level navigation, since
 // a full reload re-evaluates the module). A tab duplicated mid-session
 // inherits sessionStorage's persisted record but gets its own module
@@ -119,7 +132,10 @@ export class AgentCrdtDocLifecycle {
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
   // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
-  // reality - and a stale channel's intent DOES equal reality).
+  // reality - and a stale channel's intent DOES equal reality). The FIRST arm
+  // after a confirmed subscribe uses SUBSCRIBE_CATCHUP_GRACE_MS instead of the
+  // full budget (see onSubscribeConfirmed); every re-arm after that - on live
+  // traffic or on the probe firing - uses the full budget.
   private staleProbeTimer: ReturnType<typeof setTimeout> | null = null
   // FEC-5: `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
@@ -142,7 +158,7 @@ export class AgentCrdtDocLifecycle {
 
   onSubscribeConfirmed(): void {
     this.clearSubscribeRetry()
-    this.armStaleProbe()
+    this.armStaleProbe(SUBSCRIBE_CATCHUP_GRACE_MS)
     const workflowId = this.workflowId()
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
@@ -195,14 +211,17 @@ export class AgentCrdtDocLifecycle {
     this.persistConfirmedDocId(workflowId)
   }
 
-  private armStaleProbe(): void {
+  private armStaleProbe(delayMs: number = STALE_AFTER_MS): void {
     this.clearStaleProbe()
+    const isCatchUpProbe = delayMs !== STALE_AFTER_MS
     this.staleProbeTimer = setTimeout(() => {
       this.staleProbeTimer = null
-      recordDevEvent('stale_probe', { workflowId: this.workflowId() })
+      recordDevEvent(isCatchUpProbe ? 'catchup_probe' : 'stale_probe', {
+        workflowId: this.workflowId()
+      })
       this.resubscribe()
       this.armStaleProbe()
-    }, STALE_AFTER_MS)
+    }, delayMs)
   }
 
   private clearSubscribeRetry(): void {
