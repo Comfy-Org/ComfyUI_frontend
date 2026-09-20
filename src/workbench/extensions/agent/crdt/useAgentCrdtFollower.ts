@@ -34,6 +34,7 @@ import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 import {
   initialReconnectTelemetryState,
+  RECONNECT_TELEMETRY_WINDOW_MS,
   transitionReconnectTelemetry
 } from './reconnectTelemetryPolicy'
 
@@ -657,7 +658,7 @@ function startAgentCrdtFollower(
       errorType: 'failure_reconnecting_crdt_websocket_repeatedly',
       tags: {
         reconnect_count: reconnectTelemetryState.reconnects.length,
-        window_ms: 60_000
+        window_ms: RECONNECT_TELEMETRY_WINDOW_MS
       },
       context: { workflow_id: subscribedWorkflowId.value }
     })

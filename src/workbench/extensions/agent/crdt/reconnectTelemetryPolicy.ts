@@ -1,4 +1,4 @@
-const WINDOW_MS = 60_000
+export const RECONNECT_TELEMETRY_WINDOW_MS = 60_000
 const STORM_THRESHOLD = 3
 
 export interface ReconnectTelemetryState {
@@ -31,7 +31,8 @@ export function transitionReconnectTelemetry(
     if (
       event.code !== 1006 ||
       (state.lastAbnormalCloseReportAt !== null &&
-        event.now - state.lastAbnormalCloseReportAt <= WINDOW_MS)
+        event.now - state.lastAbnormalCloseReportAt <=
+          RECONNECT_TELEMETRY_WINDOW_MS)
     )
       return { state, report: null }
     return {
@@ -41,7 +42,7 @@ export function transitionReconnectTelemetry(
   }
 
   const reconnects = state.reconnects.filter(
-    (at) => event.now - at <= WINDOW_MS
+    (at) => event.now - at <= RECONNECT_TELEMETRY_WINDOW_MS
   )
   const stormReported = reconnects.length === 0 ? false : state.stormReported
   reconnects.push(event.now)
