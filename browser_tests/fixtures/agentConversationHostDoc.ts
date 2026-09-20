@@ -105,7 +105,10 @@ export class HostDoc {
     const { outcomes } = applyOps(this.doc, ops, this.catalog)
     const rejected = outcomes.find((o) => o.outcome === 'rejected')
     const applied = outcomes
-      .filter((o) => o.outcome !== 'rejected')
+      .filter((o) => o.outcome === 'applied')
+      .map((o) => o.op_id)
+    const skipped = outcomes
+      .filter((o) => o.outcome === 'no-op' || o.outcome === 'lww-dropped')
       .map((o) => o.op_id)
     const result: HostFrame = {
       type: 'doc_ops_result',
@@ -114,7 +117,7 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         applied,
-        skipped: [],
+        skipped,
         ...(rejected?.outcome === 'rejected' && {
           failed: {
             index: outcomes.indexOf(rejected),

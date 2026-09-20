@@ -38,8 +38,6 @@ test.describe(
       page
     }) => {
       test.setTimeout(90_000)
-      const topbar = new Topbar(page)
-
       // The follower binds and subscribes on the first turn's ack.
       await agentConversation.runTurns()
       const before = await readNodes(page)
@@ -47,8 +45,9 @@ test.describe(
 
       const pasted =
         await test.step('copy and paste an existing seed node', async () => {
-          await agentConversation.vueNodes.selectNode(before[0].id)
+          await agentConversation.vueNodes.selectNode(before[2].id)
           await page.keyboard.press('ControlOrMeta+c')
+          await page.mouse.move(713, 347)
           await page.keyboard.press('ControlOrMeta+v')
           await expect
             .poll(async () => (await readNodes(page)).length)
@@ -62,8 +61,13 @@ test.describe(
         })
 
       expect(pasted.pos).not.toEqual([10, 10])
+      expect(pasted.pos[0]).not.toBe(pasted.pos[1])
+      await expect
+        .poll(() => agentConversation.hostNodePositions())
+        .toContainEqual(pasted.pos)
 
       await test.step('open a new tab and return, retargeting the bound doc', async () => {
+        const topbar = new Topbar(page)
         const beforeSubscribes = agentConversation.subscribeCount()
         await topbar.newWorkflowButton.click()
         await expect(
@@ -73,15 +77,27 @@ test.describe(
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBeGreaterThan(beforeSubscribes)
-      })
-
-      await test.step('the pasted node is still where it was pasted', async () => {
         await expect
           .poll(
             async () =>
               (await readNodes(page)).find((node) => node.id === pasted.id)?.pos
           )
           .toEqual(pasted.pos)
+      })
+
+      await test.step('reload without local workflow state and subscribe a fresh follower', async () => {
+        const beforeSubscribes = agentConversation.subscribeCount()
+        await agentConversation.reloadWithoutLocalWorkflow()
+        await agentConversation.sendPrompt()
+        await expect
+          .poll(() => agentConversation.subscribeCount())
+          .toBeGreaterThan(beforeSubscribes)
+      })
+
+      await test.step('the pasted node is still where it was pasted', async () => {
+        await expect
+          .poll(async () => (await readNodes(page)).map((node) => node.pos))
+          .toContainEqual(pasted.pos)
       })
     })
   }
