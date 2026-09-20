@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -27,8 +28,10 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
-  /** `'server'` loads real node definitions instead of the empty catalog. */
-  objectInfo?: 'server'
+  /** Server definitions, optionally augmented with deterministic test entries. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
+  /** Preserve existing tests by default; onboarding specs opt into the tour. */
+  onboardingCompleted?: boolean
 }
 
 async function mockAgentBoot(
@@ -91,6 +94,12 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)

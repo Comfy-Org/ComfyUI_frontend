@@ -1,4 +1,8 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { ComfyApi } from './api'
+import type { ComfyApp } from './app'
 
 import { ComfyUI } from './ui'
 
@@ -15,26 +19,26 @@ const { mockApp } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('./app', () => ({
-  ComfyApp: class {},
-  app: mockApp
+vi.mock(import('./app'), () => ({
+  ComfyApp: fromAny(class {}),
+  app: fromPartial<ComfyApp>(mockApp)
 }))
 
-vi.mock('./api', () => ({
-  api: {
+vi.mock(import('./api'), () => ({
+  api: fromPartial<ComfyApi>({
     addEventListener: vi.fn()
-  }
+  })
 }))
 
-vi.mock('./ui/dialog', () => ({
-  ComfyDialog: class {}
+vi.mock(import('./ui/dialog'), () => ({
+  ComfyDialog: fromAny(class {})
 }))
 
-vi.mock('./ui/settings', () => ({
-  ComfySettingsDialog: class {}
+vi.mock(import('./ui/settings'), () => ({
+  ComfySettingsDialog: fromAny(class {})
 }))
 
-vi.mock('./ui/toggleSwitch', () => ({
+vi.mock(import('./ui/toggleSwitch'), () => ({
   toggleSwitch: vi.fn(() => document.createElement('div'))
 }))
 

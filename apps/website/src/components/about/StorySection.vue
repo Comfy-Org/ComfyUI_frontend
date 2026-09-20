@@ -16,10 +16,10 @@ const investors = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto text-center">
       <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ t('about.story.label', locale) }}
       </span>
@@ -46,7 +46,7 @@ const investors = [
         <div class="relative z-10 flex h-9 items-center">
           <img src="/icons/node-left.svg" alt="" class="h-full w-auto" />
           <span
-            class="bg-primary-comfy-yellow flex h-full items-center px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
+            class="flex h-full items-center bg-primary-comfy-yellow px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
           >
             OUR
           </span>
@@ -60,7 +60,7 @@ const investors = [
         <!-- INVESTORS badge (taller) -->
         <div class="relative z-10 flex h-12 items-center">
           <span
-            class="bg-primary-comfy-yellow flex h-full items-center px-3 text-lg font-bold tracking-wider text-primary-comfy-ink"
+            class="flex h-full items-center bg-primary-comfy-yellow px-3 text-lg font-bold tracking-wider text-primary-comfy-ink"
           >
             INVESTORS
           </span>
@@ -89,7 +89,7 @@ const investors = [
 
     <!-- Quote card -->
     <div
-      class="bg-primary-comfy-yellow mx-auto mt-12 max-w-5xl rounded-4xl p-10 lg:p-16"
+      class="mx-auto mt-12 max-w-5xl rounded-4xl bg-primary-comfy-yellow p-10 lg:p-16"
     >
       <p class="text-xl/relaxed font-medium text-primary-comfy-ink lg:text-3xl">
         {{ t('about.quote.text', locale) }}

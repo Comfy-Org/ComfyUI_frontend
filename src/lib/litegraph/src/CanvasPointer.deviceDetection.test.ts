@@ -22,18 +22,28 @@
  *
  * Performance: This design can handle 10,000+ events without creating any timers
  * (except one for Linux detection), ensuring smooth scrolling performance.
- *
- * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+
+const HappyDomWheelEvent = WheelEvent
+
+class WheelEventWithModifiers extends HappyDomWheelEvent {
+  override readonly ctrlKey: boolean
+
+  constructor(type: string, eventInitDict: WheelEventInit = {}) {
+    super(type, eventInitDict)
+    this.ctrlKey = eventInitDict.ctrlKey ?? false
+  }
+}
 
 describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement
   let pointer: CanvasPointer
 
   beforeEach(() => {
+    vi.stubGlobal('WheelEvent', WheelEventWithModifiers)
     element = document.createElement('div')
     pointer = new CanvasPointer(element)
     // Mock performance.now() for timestamp-based testing

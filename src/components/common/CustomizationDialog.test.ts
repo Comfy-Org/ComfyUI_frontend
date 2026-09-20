@@ -56,14 +56,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: {
-    name: 'Button',
-    template: `<button @click="$emit('click')"><slot /></button>`,
-    emits: ['click']
-  }
-}))
-
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 function renderDialog(extraProps: Record<string, unknown> = {}) {
