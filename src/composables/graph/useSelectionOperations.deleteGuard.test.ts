@@ -13,9 +13,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined as unknown }
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ prompt: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 function stubCanvas(selectOnly: boolean) {
   const deleteSelected = vi.fn()

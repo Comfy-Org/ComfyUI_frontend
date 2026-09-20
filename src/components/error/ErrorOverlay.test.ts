@@ -95,12 +95,7 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
+      plugins: [createTestI18n()]
     }
   })
 }
@@ -126,6 +121,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -164,6 +160,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',

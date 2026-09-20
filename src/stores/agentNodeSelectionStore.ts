@@ -7,6 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { createPositionBounds } from '@/utils/positionBounds'
 
 const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
@@ -22,43 +23,6 @@ const SIDEBAR_PANEL_TRANSITION_MS = 200
 const NODE_SELECTION_CLASS = 'node-selection-active'
 
 const MINIMAP_SETTING = 'Comfy.Minimap.Visible'
-
-/* Graph units around the framed nodes so none sit flush with the edge. */
-const FRAME_PADDING = 40
-
-/**
- * Bounds are taken from `pos`/`size`, the geometry litegraph maintains for
- * canvas and Vue nodes alike (`boundingRect` is a renderer cache that stays
- * zeroed under Vue nodes). Structural rather than class-based so selected
- * groups frame the same way selected nodes do.
- */
-interface FramableItem {
-  pos?: ArrayLike<number>
-  size?: ArrayLike<number>
-}
-
-function frameBounds(
-  items: readonly FramableItem[]
-): [number, number, number, number] | null {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const item of items) {
-    if (!item.pos || !item.size) continue
-    minX = Math.min(minX, item.pos[0])
-    minY = Math.min(minY, item.pos[1])
-    maxX = Math.max(maxX, item.pos[0] + item.size[0])
-    maxY = Math.max(maxY, item.pos[1] + item.size[1])
-  }
-  if (minX === Infinity) return null
-  return [
-    minX - FRAME_PADDING,
-    minY - FRAME_PADDING,
-    maxX - minX + FRAME_PADDING * 2,
-    maxY - minY + FRAME_PADDING * 2
-  ]
-}
 
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
@@ -147,8 +111,9 @@ export const useAgentNodeSelectionStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
       const selected = [...canvas.selectedItems]
-      const bounds = frameBounds(
-        selected.length ? selected : (canvas.graph?.nodes ?? [])
+      const bounds = createPositionBounds(
+        selected.length ? selected : (canvas.graph?.nodes ?? []),
+        40
       )
       if (!bounds) return
       canvas.animateToBounds(bounds, {

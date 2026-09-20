@@ -1,15 +1,17 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render } from '@testing-library/vue'
+import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
+
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -22,6 +24,7 @@ import {
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
+  BillingStatusResponse,
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -31,13 +34,12 @@ import {
   findPlanSlug,
   useSubscriptionCheckout
 } from './useSubscriptionCheckout'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 function makeStandardYearly(): Plan {
@@ -203,9 +205,9 @@ const {
   mockIncompleteEmbeddedPreview,
   mockPermissions,
   mockCanReactivatePlan,
-  mockCapabilities,
   mockSubscription,
-  mockBillingStatus
+  mockBillingStatus,
+  mockSubscriptionRail
 } = vi.hoisted(() => {
   return {
     mockSubscribe: vi.fn(),
@@ -233,22 +235,49 @@ const {
       }
     },
     mockCanReactivatePlan: { value: true },
-    mockCapabilities: {
-      value: {
-        canSubscribeSelfServe: true,
-        canReactivate: true,
-        canChangeSeats: true,
-        canDowngradeToPersonal: true
-      }
-    },
     mockSubscription: {
       value: null as {
         isCancelled: boolean
       } | null
     },
-    mockBillingStatus: { value: null as BillingStatus | null }
+    mockBillingStatus: { value: null as BillingStatus | null },
+    mockSubscriptionRail: {
+      value: null as SubscriptionRailStub | null
+    }
   }
 })
+
+/** The reads the checkout takes off the rail, as the store answers them. */
+interface SubscriptionRailStub {
+  subscriptionActionUrl: string | null
+  subscriptionActionOperation?: RailOperation
+  getOperation: (opId: string) => RailOperation | undefined
+  openPaymentPortal?: (
+    returnUrl: string
+  ) => Promise<SubscriptionRailOutcome<string>>
+}
+
+/**
+ * A rail that holds nothing unless the row says otherwise. `getOperation` is
+ * never optional on the real rail, and a rail that answers `undefined` for an
+ * operation the legacy transport issued is the case the 404 fallback turns on.
+ */
+function railStub(
+  overrides: Partial<SubscriptionRailStub> = {}
+): SubscriptionRailStub {
+  return {
+    subscriptionActionUrl: null,
+    getOperation: () => undefined,
+    ...overrides
+  }
+}
+
+/**
+ * The rail hands back the production record, so the stub uses it rather than a
+ * widened copy — a fixture cannot then encode a state the real projection
+ * could never produce.
+ */
+type RailOperation = BillingOperationRecordView
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)
@@ -322,33 +351,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canSubscribeSelfServe: {
-        get value() {
-          return mockCapabilities.value.canSubscribeSelfServe
-        }
-      },
-      canReactivate: {
-        get value() {
-          return mockCapabilities.value.canReactivate
-        }
-      },
-      canChangeSeats: {
-        get value() {
-          return mockCapabilities.value.canChangeSeats
-        }
-      },
-      canDowngradeToPersonal: {
-        get value() {
-          return mockCapabilities.value.canDowngradeToPersonal
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
@@ -374,6 +377,22 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
     }
   }
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionRail'),
+  () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
+)
+
+type ReadRail = Pick<BillingReadRail, 'readPaymentMethods' | 'readStatus'>
+
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as Partial<ReadRail> | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -421,6 +440,9 @@ const i18n = createI18n({
             unavailable: 'Reactivation unavailable'
           }
         }
+      },
+      billingOperation: {
+        subscriptionSuccess: 'Subscription updated'
       },
       toastMessages: {
         failedToAccessBillingPortal: 'Billing portal unavailable',
@@ -484,6 +506,7 @@ describe('useSubscriptionCheckout', () => {
     mockFetchStatus.mockReset()
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
+    railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
     })
@@ -528,15 +551,13 @@ describe('useSubscriptionCheckout', () => {
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: true
     }
-    mockCapabilities.value = {
-      canSubscribeSelfServe: true,
-      canReactivate: true,
-      canChangeSeats: true,
-      canDowngradeToPersonal: true
-    }
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
-    vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mockClear()
+    mockSubscriptionRail.value = null
     sessionStorage.clear()
     clearCheckoutJourney()
   })
@@ -745,6 +766,28 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+    })
+
+    it('selects the default saved payment method read on the SDK rail', async () => {
+      const readPaymentMethods: Mock<BillingReadRail['readPaymentMethods']> =
+        vi.fn()
+      readPaymentMethods.mockResolvedValue({
+        status: 'ok',
+        value: [
+          { type: 'card', id: 'pm_first', is_default: false },
+          { type: 'alipay', id: 'pm_default', is_default: true }
+        ]
+      })
+      railState.rail = { readPaymentMethods }
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.selectedSavedPaymentMethodId.value).toBe('pm_default')
+      expect(mockListSavedPaymentMethods).not.toHaveBeenCalled()
     })
 
     it('collects a new method when the backend has no default', async () => {
@@ -1438,6 +1481,142 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    describe('payment recovery on the SDK rail', () => {
+      const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
+
+      /** Only `billing_status` is read, but the response requires six more. */
+      function railStatus(
+        billing_status: BillingStatus
+      ): BillingStatusResponse {
+        return {
+          billing_status,
+          has_funds: true,
+          is_active: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: null,
+          team_credit_stop: null
+        }
+      }
+
+      /** A read rail answering `readStatus` with `result`. */
+      function readStatusOnRail(
+        result: Awaited<ReturnType<ReadRail['readStatus']>>
+      ) {
+        const readStatus = vi
+          .fn<ReadRail['readStatus']>()
+          .mockResolvedValue(result)
+        railState.rail = {
+          readStatus,
+          readPaymentMethods: vi
+            .fn<ReadRail['readPaymentMethods']>()
+            .mockResolvedValue({ status: 'ok', value: [] })
+        }
+        return readStatus
+      }
+
+      function railPortal(outcome: SubscriptionRailOutcome<string>) {
+        const openPaymentPortal = vi
+          .fn<NonNullable<SubscriptionRailStub['openPaymentPortal']>>()
+          .mockResolvedValue(outcome)
+        mockSubscriptionRail.value = railStub({ openPaymentPortal })
+        return openPaymentPortal
+      }
+
+      it('reads the second TRANSITION_NOT_ALLOWED check off the rail', async () => {
+        const readStatus = readStatusOnRail({
+          status: 'ok',
+          value: railStatus('payment_failed')
+        })
+
+        await submitRejectedPreview('TRANSITION_NOT_ALLOWED')
+
+        expect(readStatus).toHaveBeenCalledOnce()
+        expect(mockGetBillingStatus).not.toHaveBeenCalled()
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+      })
+
+      // The legacy client says `payment_failed` throughout, so recovering
+      // nothing is only possible if the rail's answer is the one being read.
+      it.for([
+        [
+          'reports a healthy status',
+          { status: 'ok', value: railStatus('paid') }
+        ],
+        [
+          'has left the scope the read was for',
+          { status: 'error', code: 'SUPERSEDED' }
+        ],
+        ['cannot answer at all', { status: 'error', code: 'REQUEST_FAILED' }]
+      ] as const)('recovers nothing when the rail %s', async ([, result]) => {
+        mockGetBillingStatus.mockResolvedValue({
+          billing_status: 'payment_failed'
+        })
+        readStatusOnRail(result)
+
+        await submitRejectedPreview('TRANSITION_NOT_ALLOWED', 'Not allowed')
+
+        expect(mockGetBillingStatus).not.toHaveBeenCalled()
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockOpen).not.toHaveBeenCalled()
+      })
+
+      it('opens the portal URL the rail hands back', async () => {
+        const openPaymentPortal = railPortal({
+          status: 'ok',
+          value: RAIL_PORTAL
+        })
+
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        expect(openPaymentPortal).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockOpen).toHaveBeenCalledWith(RAIL_PORTAL, '_blank')
+      })
+
+      it('falls back to the legacy client when the route is not deployed', async () => {
+        const openPaymentPortal = railPortal({ status: 'unavailable' })
+
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        expect(openPaymentPortal).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+      })
+
+      it('reports a rail portal failure where a legacy throw lands', async () => {
+        const portalError = new Error('Portal unavailable')
+        railPortal({ status: 'error', error: portalError })
+
+        await submitRejectedPreview(
+          'SUBSCRIPTION_PAYMENT_REQUIRED',
+          'Update your payment method before changing plans'
+        )
+
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          errorType: 'billing_portal_open_failure'
+        })
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'Update your payment method before changing plans'
+          })
+        )
+      })
+    })
+
     it('shows error toast when plan slug is not found', async () => {
       const checkout = await setup()
       mockPlans.value = []
@@ -1535,12 +1714,10 @@ describe('useSubscriptionCheckout', () => {
         canManageSubscriptionLifecycle: false,
         canDowngradeToPersonal: false
       }
-      mockCapabilities.value = {
-        canSubscribeSelfServe: false,
-        canReactivate: false,
-        canChangeSeats: false,
-        canDowngradeToPersonal: false
-      }
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+      useBillingCapabilities().canReactivate = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1553,8 +1730,8 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not preview a plan when the server denies checkout to a client-side owner', async () => {
-      mockCapabilities.value.canSubscribeSelfServe = false
-      mockCapabilities.value.canChangeSeats = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1569,7 +1746,7 @@ describe('useSubscriptionCheckout', () => {
     it('does not preview a personal plan for a promoted owner on a team plan', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCapabilities.value.canDowngradeToPersonal = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1584,7 +1761,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not start the Team-to-personal downgrade when the server denies it to a client-side owner', async () => {
       mockIsTeamPlan.value = true
-      mockCapabilities.value.canDowngradeToPersonal = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1600,7 +1777,7 @@ describe('useSubscriptionCheckout', () => {
     it('allows a promoted owner to preview a legacy Team-plan change', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCapabilities.value.canDowngradeToPersonal = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade'
@@ -1679,6 +1856,59 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'monthly',
           checkout_type: 'change',
           billing_op_id: 'existing-downgrade'
+        })
+      )
+    })
+
+    it('announces a charged Team downgrade without counting it as a conversion', async () => {
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        effective_at: '2099-02-20T00:00:00Z',
+        is_immediate: false,
+        cost_today_cents: 0,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7_400,
+        new_plan: {
+          slug: 'creator-monthly',
+          tier: 'CREATOR' as const,
+          duration: 'MONTHLY' as const,
+          price_cents: 3_500,
+          credits_cents: 7_400,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 3_500,
+            total_credits_cents: 7_400
+          }
+        }
+      }
+      // The rail's own shape: the server charged for this downgrade, so the
+      // announcement the poller made is still owed, while the conversion the
+      // downgrade orchestration owns stays excluded.
+      const response = {
+        status: 'subscribed' as const,
+        billing_op_id: 'charged-downgrade',
+        requiredPayment: true
+      }
+      mockIsTeamPlan.value = true
+      mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated'
         })
       )
     })
@@ -2235,8 +2465,8 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not prepare a team checkout for a member', async () => {
       mockPermissions.value.canManageSubscription = false
-      mockCapabilities.value.canChangeSeats = false
-      mockCapabilities.value.canSubscribeSelfServe = false
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -2256,7 +2486,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not prepare a team checkout when the server denies seat changes to a client-side owner', async () => {
-      mockCapabilities.value.canChangeSeats = false
+      useBillingCapabilities().canChangeSeats = computed(() => false)
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -3087,6 +3317,140 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ confirmReactivation: true })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+  })
+
+  describe('hosted payment step on the SDK rail', () => {
+    it('re-offers the hosted page the rail opened for itself', async () => {
+      mockSubscriptionRail.value = railStub({
+        subscriptionActionUrl: 'https://pay.example/op-3'
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+    })
+
+    it('holds the rail it read at setup when the flag flips mid-checkout', async () => {
+      mockSubscriptionRail.value = railStub({
+        subscriptionActionUrl: 'https://pay.example/op-3'
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+
+      mockSubscriptionRail.value = null
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: {
+          opId: 'op-3',
+          status: 'pending',
+          workspaceId: 'workspace-1'
+        }
+      })
+
+      expect(checkout.activeCheckoutActionUrl.value).toBe(
+        'https://pay.example/op-3'
+      )
+    })
+
+    it('offers nothing while the rail is parked on no hosted page', async () => {
+      mockSubscriptionRail.value = railStub()
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.activeCheckoutActionUrl.value).toBeNull()
+    })
+  })
+
+  describe('the operation the checkout watches', () => {
+    const PARKED: RailOperation = {
+      opId: 'op-parked',
+      kind: 'subscription',
+      status: 'pending',
+      workspaceId: 'workspace-1',
+      actionUrl: null,
+      phase: 'awaiting_payment_method',
+      authenticationState: 'failed_retryable',
+      isAuthenticating: false,
+      canRetryAuthentication: false,
+      errorMessage: 'Your card was declined.'
+    }
+
+    it('reads the lifecycle on the rail, not the store the poller writes', async () => {
+      mockSubscriptionRail.value = railStub({
+        subscriptionActionOperation: PARKED
+      })
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: undefined
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(checkout.authenticationState.value).toBe('failed_retryable')
+      expect(checkout.authenticationError.value).toBe('Your card was declined.')
+    })
+
+    // The subscribe that reaches `advanceToSuccessOnOperation` came off the
+    // legacy transport whichever way the flag is set: the rail's own subscribe
+    // settles before it returns, so `needs_payment_method` is a shape only
+    // `workspaceApi.subscribe` produces — including on the 404 fallback, where
+    // the flag is on and the legacy call ran anyway. Skipping the registration
+    // on the flag would leave that operation with no poller at all.
+    it.for([
+      { rail: 'off', railValue: null },
+      { rail: 'on, route 404', railValue: railStub() }
+    ])(
+      'registers exactly one poller for a legacy-transport checkout with the rail $rail',
+      async ({ railValue }) => {
+        mockSubscriptionRail.value = railValue
+        const checkout = await setupWithApprovedPreview()
+        checkout.selectedTierKey.value = 'standard'
+        checkout.selectedBillingCycle.value = 'yearly'
+        mockSubscribe.mockResolvedValueOnce({
+          status: 'pending_payment',
+          billing_op_id: 'op-fallback'
+        })
+
+        vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+          billingOperation({
+            opId: 'op-fallback',
+            status: 'pending',
+            workspaceId: 'workspace-1',
+            phase: 'awaiting_payment_method'
+          })
+        )
+
+        await checkout.handleAddCreditCard()
+
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+          'op-fallback',
+          'subscription',
+          expect.any(Object)
+        )
+        // And the checkout watches the operation it registered: the rail holds
+        // nothing for a subscribe the legacy transport issued, so a rail-only
+        // read would leave the recovery prompt with no operation at all.
+        expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      }
+    )
+
+    it('reads the poller off the rail, not the lifecycle', async () => {
+      mockSubscriptionRail.value = null
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: PARKED
+      })
+
+      const checkout = await setupWithApprovedPreview()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(checkout.authenticationError.value).toBe('Your card was declined.')
     })
   })
 
@@ -3966,12 +4330,21 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not submit when workspace ownership is revoked', async () => {
+      const canChangeSeats = ref(true)
+      const canSubscribeSelfServe = ref(true)
+      useBillingCapabilities().canChangeSeats = computed(
+        () => canChangeSeats.value
+      )
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe.value
+      )
+
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
       mockPermissions.value.canManageSubscription = false
-      mockCapabilities.value.canChangeSeats = false
-      mockCapabilities.value.canSubscribeSelfServe = false
+      canChangeSeats.value = false
+      canSubscribeSelfServe.value = false
 
       await checkout.handleAddCreditCard()
 
@@ -3997,6 +4370,58 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
+    })
+
+    it('counts the conversion and announces a subscribe the server charged for', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: true
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).toHaveBeenCalledExactlyOnceWith({
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        billing_op_id: 'op-3'
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated'
+        })
+      )
+    })
+
+    it('counts neither for a subscribe the server activated without a payment', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3',
+        requiredPayment: false
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(
+        useTelemetry()?.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('shows error toast on failure', async () => {
@@ -4412,6 +4837,15 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not submit a previewed plan after permission is revoked', async () => {
+      const canChangeSeats = ref(true)
+      const canSubscribeSelfServe = ref(true)
+      useBillingCapabilities().canChangeSeats = computed(
+        () => canChangeSeats.value
+      )
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe.value
+      )
+
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
@@ -4423,8 +4857,8 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(checkout.checkoutStep.value).toBe('preview')
       mockPermissions.value.canManageSubscription = false
-      mockCapabilities.value.canChangeSeats = false
-      mockCapabilities.value.canSubscribeSelfServe = false
+      canChangeSeats.value = false
+      canSubscribeSelfServe.value = false
 
       await checkout.handleConfirmTransition()
 
@@ -4602,7 +5036,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('resubscribes on the legacy rail even though the server withholds can_reactivate', async () => {
-      mockCapabilities.value.canReactivate = false
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = true
       const checkout = await setup()
       mockResubscribe.mockResolvedValueOnce({
@@ -4620,7 +5054,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not resubscribe for a member', async () => {
       mockPermissions.value.canManageSubscriptionLifecycle = false
-      mockCapabilities.value.canReactivate = false
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = false
       const checkout = await setup()
 
@@ -4631,7 +5065,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
-      mockCapabilities.value.canReactivate = false
+      useBillingCapabilities().canReactivate = computed(() => false)
       mockCanReactivatePlan.value = false
       const checkout = await setup()
 
