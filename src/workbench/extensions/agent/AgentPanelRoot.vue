@@ -529,20 +529,17 @@ const {
   // root graph exists.
   () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
-// Latches the bound document's root graph id the moment the binding becomes
-// active, so a load already in flight when it flips (a workflow tab switch)
-// cannot relatch onto the graph the switch is loading. `immediate: true`
-// captures it before `attachMintPortWiring` below observes any layout change.
-const boundRootGraphId = ref<string | null>(null)
-watch(
-  isBoundWorkflowActive,
-  (active) => {
-    if (active) {
-      boundRootGraphId.value = app.isGraphReady ? app.rootGraph.id : null
-    }
-  },
-  { immediate: true }
-)
+// The bound document's serialized root graph id, independent of what is
+// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
+// workflow's `activeState` before the shared renderer graph is rewritten, so
+// this stays the bound workflow's own root id through a tab switch instead of
+// tracking whichever graph the switch is loading.
+const boundRootGraphId = computed<string | null>(() => {
+  const bound = boundWorkflowId.value
+  return bound === null
+    ? null
+    : (boundOrOpenWorkflowFor(bound)?.activeState?.id ?? null)
+})
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,

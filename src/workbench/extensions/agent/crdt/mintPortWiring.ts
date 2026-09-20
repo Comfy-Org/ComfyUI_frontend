@@ -48,10 +48,13 @@ export interface MintPortWiringDeps {
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
   /**
-   * The bound document's root graph id, latched by the composition root when
-   * the doc binding became true; null when untracked or unbound. Scopes
-   * layout mints to that graph so a load already in flight when the binding
-   * flips cannot mint the new graph's nodes into the old document.
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph, so it names the bound document's graph even while a
+   * different tab is on screen or a tab switch is loading another workflow
+   * into the shared canvas graph. Scopes layout mints to that graph so a load
+   * already in flight when the binding flips cannot mint the new graph's
+   * nodes into the old document.
    */
   boundRootGraphId(): string | null
 }

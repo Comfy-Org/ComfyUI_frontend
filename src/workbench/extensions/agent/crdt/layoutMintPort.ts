@@ -57,9 +57,13 @@ export interface LayoutMintPortDeps {
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
   /**
-   * The bound document's root graph id, or null when untracked or unbound.
-   * A root-scoped change naming a different graph belongs to a workflow load
-   * still in flight and must not mint into this document.
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph, so it names the bound document's graph even while a
+   * different tab is on screen or a tab switch is loading another workflow
+   * into the shared canvas graph. A root-scoped change naming a different
+   * graph belongs to a workflow load still in flight and must not mint into
+   * this document.
    */
   boundRootGraphId(): string | null
   source: MintSnapshotSource
