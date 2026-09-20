@@ -7,7 +7,7 @@ import { getRoutes } from '../../config/routes'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
+import Button from '../ui/button/Button.vue'
 import StaticFrame from '../workshop/StaticFrame.vue'
 
 const { locale = 'en', providers } = defineProps<{
@@ -33,7 +33,7 @@ const cardClass =
 <template>
   <WorkshopGate>
     <section
-      class="mx-auto max-w-9xl overflow-hidden py-16 lg:py-24"
+      class="overflow-hidden py-16 lg:py-24"
       data-testid="model-discovery"
     >
       <div
@@ -57,61 +57,59 @@ const cardClass =
       </div>
 
       <div
-        class="mt-12 px-6 lg:mt-16 lg:px-12"
+        class="mt-12 lg:mt-16"
         :aria-label="t('modelDiscovery.rowLabel', locale)"
         role="region"
       >
-        <div class="overflow-hidden">
-          <div class="group flex w-max gap-3">
-            <div
-              v-for="copy in 2"
-              :key="copy"
-              class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
-              style="--marquee-gap: 0.75rem"
-              :aria-hidden="copy === 2 ? 'true' : undefined"
+        <div class="group flex w-max gap-3">
+          <div
+            v-for="copy in 2"
+            :key="copy"
+            class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
+            style="--marquee-gap: 0.75rem"
+            :aria-hidden="copy === 2 ? 'true' : undefined"
+          >
+            <a
+              v-for="provider in providers"
+              :key="provider.name"
+              :href="cardHref(provider.name)"
+              :class="cardClass"
+              :tabindex="copy === 2 ? -1 : undefined"
+              data-testid="discovery-provider"
+              @pointerenter="reveal(provider.name)"
+              @focus="reveal(provider.name)"
             >
-              <a
-                v-for="provider in providers"
-                :key="provider.name"
-                :href="cardHref(provider.name)"
-                :class="cardClass"
-                :tabindex="copy === 2 ? -1 : undefined"
-                data-testid="discovery-provider"
-                @pointerenter="reveal(provider.name)"
-                @focus="reveal(provider.name)"
+              <template
+                v-if="revealed.has(provider.name) && provider.thumbnailUrl"
               >
-                <template
-                  v-if="revealed.has(provider.name) && provider.thumbnailUrl"
-                >
-                  <StaticFrame
-                    :src="provider.thumbnailUrl"
-                    class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
-                  />
-                  <span
-                    class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
-                    aria-hidden="true"
-                  />
-                </template>
+                <StaticFrame
+                  :src="provider.thumbnailUrl"
+                  class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-50 group-focus-visible/card:opacity-50"
+                />
                 <span
-                  class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
-                  :style="{ maskImage: `url(${provider.logo})` }"
+                  class="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-visible/card:opacity-100"
                   aria-hidden="true"
                 />
-                <span class="relative flex flex-col gap-0.5">
-                  <span class="text-base/tight font-medium">
-                    {{ provider.name }}
-                  </span>
+              </template>
+              <span
+                class="relative size-9 bg-current mask-contain mask-center mask-no-repeat"
+                :style="{ maskImage: `url(${provider.logo})` }"
+                aria-hidden="true"
+              />
+              <span class="relative flex flex-col gap-0.5">
+                <span class="text-base/tight font-medium">
+                  {{ provider.name }}
                 </span>
-              </a>
-            </div>
+              </span>
+            </a>
           </div>
         </div>
       </div>
 
       <div class="mt-12 flex justify-center px-6 lg:mt-16">
-        <BrandButton :href="routes.workshop" variant="outline" size="xs">
+        <Button as="a" :href="routes.workshop" variant="outline">
           {{ t('modelDiscovery.browse', locale) }}
-        </BrandButton>
+        </Button>
       </div>
     </section>
   </WorkshopGate>
