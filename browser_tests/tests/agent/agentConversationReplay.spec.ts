@@ -3,8 +3,11 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import {
+  BYTEDANCE_REFERENCE_NODE_TYPE,
+  byteDanceReferenceNodeDef
+} from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
+import {
   referenceGraphOps,
-  routeReferenceNodeDef,
   wireAndReopen
 } from '@e2e/fixtures/minimaxAutogrowReload'
 
@@ -52,40 +55,38 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
   }
 })
 
-const minimaxTest = test.extend({
-  page: async ({ page }, use) => {
-    const unroute = await routeReferenceNodeDef(page)
-    try {
-      await use(page)
-    } finally {
-      await unroute()
-    }
-  }
-})
-
-minimaxTest.describe(
+test.describe(
   'MiniMax-style autogrow reload',
   { tag: ['@agent', '@cloud'] },
   () => {
-    minimaxTest.use({ conversationCase: WIRING_CASE })
+    // The reference node is not in the recorded core subset, so its definition
+    // is served through the conversation fixture's own /object_info payload.
+    // Routing it separately is shadowed by that route and the node lands
+    // unregistered, which silently disarms this regression.
+    test.use({
+      conversationCase: WIRING_CASE,
+      extraNodeDefs: {
+        [BYTEDANCE_REFERENCE_NODE_TYPE]: byteDanceReferenceNodeDef
+      }
+    })
 
     // PM-993: the saved document addresses inputs by index, so growing the
     // next reference image on reopen used to re-target every wire below it.
-    minimaxTest(
-      'keeps widget links after a reference input grows',
-      async ({ agentConversation, page }) => {
-        await agentConversation.runTurns()
-        await agentConversation.applyGraphOps(referenceGraphOps)
+    test('keeps widget links after a reference input grows', async ({
+      agentConversation,
+      page
+    }) => {
+      await agentConversation.runTurns()
+      await agentConversation.applyGraphOps(referenceGraphOps)
 
-        const wiring = await wireAndReopen(page)
+      const wiring = await wireAndReopen(page)
 
-        expect(wiring).toEqual({
-          hasNextReference: true,
-          referenceLinked: true,
-          seedLinkBefore: expect.any(Number),
-          seedLinkAfter: wiring.seedLinkBefore
-        })
-      }
-    )
+      expect(wiring).toEqual({
+        hasNextReference: true,
+        referenceLinked: true,
+        seedLinkBefore: expect.any(Number),
+        seedLinkAfter: wiring.seedLinkBefore
+      })
+    })
   }
 )

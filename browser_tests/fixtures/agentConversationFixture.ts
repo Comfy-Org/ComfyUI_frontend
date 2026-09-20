@@ -8,7 +8,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
@@ -157,7 +157,8 @@ class AgentConversationHarness {
     private readonly page: Page,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
-    caseId: string
+    caseId: string,
+    private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {}
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -227,8 +228,10 @@ class AgentConversationHarness {
         'Comfy.VueNodes.Enabled': true,
         'Comfy.Graph.CanvasInfo': false
       },
-      // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: agentReplayNodeDefs
+      // Replayed nodes materialize from registered node types; the recordings use
+      // core nodes only, so a case needing another node supplies its definition
+      // here rather than routing /object_info a second time behind this one.
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
@@ -657,6 +660,8 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  // Node definitions this case needs beyond the recorded core subset.
+  extraNodeDefs: Record<string, ComfyNodeDef>
   agentConversation: AgentConversationHarness
 }
 
@@ -666,6 +671,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  extraNodeDefs: [{}, { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -675,7 +681,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming },
+    { page, agentFlagEnabled, conversationCase, replayTiming, extraNodeDefs },
     use
   ) => {
     if (conversationCase.length === 0)
@@ -684,7 +690,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
-      conversationCase
+      conversationCase,
+      extraNodeDefs
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)

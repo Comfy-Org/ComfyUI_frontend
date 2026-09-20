@@ -1,11 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
-import {
-  BYTEDANCE_REFERENCE_NODE_TYPE,
-  byteDanceReferenceNodeDef
-} from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
-import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import { BYTEDANCE_REFERENCE_NODE_TYPE } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
 import type { LinkId } from '@/types/linkId'
 
 /**
@@ -20,15 +16,6 @@ const REFERENCE_NODE_ID = 101
 const FIRST_REFERENCE_INPUT = 'model.reference_images.image_1'
 const NEXT_REFERENCE_INPUT = 'model.reference_images.image_2'
 const SEED_INPUT = 'seed'
-
-/** Serves the Seedance reference node's `/object_info` entry for one test. */
-export async function routeReferenceNodeDef(
-  page: Page
-): Promise<() => Promise<void>> {
-  return routeObjectInfoFromSetupApi(page, (objectInfo) => {
-    objectInfo[BYTEDANCE_REFERENCE_NODE_TYPE] = byteDanceReferenceNodeDef
-  })
-}
 
 /**
  * An image source, an int source, and the reference node the agent builds for
