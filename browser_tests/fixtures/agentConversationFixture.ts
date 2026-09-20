@@ -263,10 +263,16 @@ class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  async replayResponse(
+    turn = 0,
+    beforeFirstGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    const entries = this.conversation.turns[turn].response.entries()
-    for (const [index, entry] of entries) {
+    const response = this.conversation.turns[turn].response
+    const firstGraphOps = response.findIndex(
+      (entry) => entry.kind === 'graph_ops'
+    )
+    for (const [index, entry] of response.entries()) {
       // A timer can fire a millisecond early, so wait until the offset has really passed.
       while (
         this.replayTiming === 'recorded' &&
@@ -280,6 +286,7 @@ class AgentConversationHarness {
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
+        if (index === firstGraphOps) await beforeFirstGraphOps?.()
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
