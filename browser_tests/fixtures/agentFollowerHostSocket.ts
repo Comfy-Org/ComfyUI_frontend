@@ -12,6 +12,8 @@ const SUBSCRIBE_TIMEOUT = 15_000
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
+  private refuseReason: string | null = null
+
   private socket: WebSocketRoute | null = null
   private subscribes = 0
   private resolveSubscribed: (() => void) | null = null
@@ -95,8 +97,23 @@ export class AgentFollowerHostSocket {
       this.send(hostFrame)
   }
 
+  /**
+   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
+   * when it is overloaded, or at the per-session document cap. No catch-up
+   * follows a refusal, so the follower gets no canvas frame at all.
+   */
+  refuseSubscribes(reason = 'overloaded'): void {
+    this.refuseReason = reason
+  }
+
   private onClientSubscribe(stateVectorB64: unknown): void {
     if (typeof stateVectorB64 !== 'string') return
+    if (this.refuseReason) {
+      this.send(this.host.subscribeRefused(this.refuseReason))
+      this.subscribes += 1
+      this.resolveSubscribed?.()
+      return
+    }
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(stateVectorB64))
     this.subscribes += 1
