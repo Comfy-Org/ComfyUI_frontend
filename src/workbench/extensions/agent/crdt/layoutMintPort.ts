@@ -110,8 +110,21 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   // already-doc-known node under its original id (the node id_collision
   // replay storm in agentCrdtProjection debug reports) without falsely
   // suppressing a genuine recreate after a real (possibly remote or
-  // teardown) removal.
-  const mintedNodeIds = new Set<string>()
+  // teardown) removal. Node ids are scoped to their root graph, so this is
+  // one set per bound root graph, keyed by the accessor's current value at
+  // the time of each op: a rebind to a different root starts that root's
+  // bookkeeping fresh without touching the root it left, so a later rebind
+  // back does not re-mint the root it returns to.
+  const mintedNodeIdsByRoot = new Map<RootGraphId | null, Set<string>>()
+
+  function mintedNodeIdsForBoundRoot(): Set<string> {
+    const root = deps.boundRootGraphId()
+    const existing = mintedNodeIdsByRoot.get(root)
+    if (existing) return existing
+    const created = new Set<string>()
+    mintedNodeIdsByRoot.set(root, created)
+    return created
+  }
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -177,7 +190,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   /**
    * The bound root graph id when `operation` names a different graph, or
    * null when it targets the bound graph (or scope cannot be judged: no
-   * bound graph latched, or no graphId on the operation).
+   * stored bound root graph ID, or no graphId on the operation).
    */
   function foreignBoundRootGraphId(
     operation: LayoutChangeView['operation']
@@ -227,6 +240,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (reportOpForUnboundGraph(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const nodeIdKey = String(operation.nodeId)
+        const mintedNodeIds = mintedNodeIdsForBoundRoot()
         if (mintedNodeIds.has(nodeIdKey)) return
         const node = deps.source.serializeNode(nodeIdKey)
         if (!node) {
@@ -260,7 +274,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         // it names no id the bound document actually lost.
         if (operation.nodeId === undefined) return
         if (foreignBoundRootGraphId(operation) === null) {
-          mintedNodeIds.delete(String(operation.nodeId))
+          mintedNodeIdsForBoundRoot().delete(String(operation.nodeId))
         }
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
@@ -277,7 +291,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        mintedNodeIds.clear()
+        mintedNodeIdsByRoot.delete(deps.boundRootGraphId())
         if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
@@ -52,6 +53,7 @@ describe('attachLayoutMintPort', () => {
   let listeners: Set<(change: LayoutChangeView) => void>
   let session: MintSession
   let severed: Map<string, (string | number)[]>
+  let currentRoot: RootGraphId | null
 
   function deliver(change: LayoutChangeView): void {
     for (const listener of listeners) listener(change)
@@ -64,6 +66,7 @@ describe('attachLayoutMintPort', () => {
     listeners = new Set()
     session = createMintSession()
     severed = new Map()
+    currentRoot = toRootGraphId('root')
     graphNodes = new Map([
       ['1', { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }]
     ])
@@ -79,7 +82,7 @@ describe('attachLayoutMintPort', () => {
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      boundRootGraphId: () => toRootGraphId('root'),
+      boundRootGraphId: () => currentRoot,
       source: {
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
@@ -179,6 +182,54 @@ describe('attachLayoutMintPort', () => {
       errorType: 'agent_crdt_op_for_unbound_graph',
       context: { graphId: 'other', boundRootGraphId: 'root', nodeId: '1' }
     })
+  })
+
+  it('mints add_node for a rebound root graph reusing a node id already minted under the previous root (regression)', () => {
+    // Node ids are graph-scoped, so a create for graph B's node 1 is not a
+    // replay of graph A's node 1, even though the accessor once named A when
+    // that mint happened.
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    })
+    currentRoot = toRootGraphId('other')
+    minted.length = 0
+
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    })
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+  })
+
+  it("survives an A-to-B-and-back rebind without re-minting A's node on replay (regression)", () => {
+    // A clear-on-transition strategy would let this A -> B -> A round trip
+    // re-mint A's node 1, the exact id-collision replay the dedupe exists to
+    // prevent - so rebinding away from and back to a root must leave its
+    // dedupe entries untouched.
+    const rootACreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+
+    deliver(rootACreate)
+    currentRoot = toRootGraphId('other')
+    currentRoot = toRootGraphId('root')
+    minted.length = 0
+
+    deliver(rootACreate)
+
+    expect(minted).toEqual([])
   })
 
   it('mints add_node again for the same id after an intentional clear', () => {
@@ -411,7 +462,7 @@ describe('attachLayoutMintPort', () => {
     expect(reportError).toHaveBeenCalledTimes(2)
   })
 
-  it('mints a root createNode when no root graph is latched as bound (untracked, not restricted)', () => {
+  it('mints a root createNode when there is no stored bound root graph id (untracked, not restricted)', () => {
     port.detach()
     port = attachLayoutMintPort({
       changes: {
