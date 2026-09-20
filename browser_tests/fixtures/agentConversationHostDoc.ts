@@ -1,4 +1,4 @@
-import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import { applyOps, linksMap, mint, project } from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
@@ -12,6 +12,15 @@ import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
 const DOC_PROTOCOL_VERSION = 1
+
+type HostLinkTuple = [
+  id: number,
+  fromNode: string | number,
+  fromSlot: number,
+  toNode: string | number,
+  toSlot: number,
+  type: string
+]
 
 // The shape the fake host puts on the wire; production's parseServerDocFrame
 // validates each one at send time.
@@ -83,6 +92,24 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  replaceLink(link: HostLinkTuple): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const replacement = new Y.Array<unknown>()
+    replacement.push(link)
+    linksMap(this.doc).set(String(link[0]), replacement)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  link(id: number): unknown {
+    const link = linksMap(this.doc).get(String(id))
+    return link instanceof Y.Array ? link.toJSON() : link
   }
 
   applyClient(ops: Op[]): HostFrame[] {
