@@ -82,7 +82,8 @@ function desktopExceptionSink(): DesktopCaptureException | undefined {
   if (!isHostTelemetryEnabled()) return
 
   const telemetry = window.__comfyDesktop2?.Telemetry
-  if (!telemetry || !('captureException' in telemetry)) return
+  if (!telemetry || typeof telemetry !== 'object') return
+  if (!('captureException' in telemetry)) return
 
   const capture = telemetry.captureException
   if (typeof capture !== 'function') return
@@ -98,10 +99,10 @@ function dispatchToDesktop(
   tags: Record<string, string | number | boolean>,
   level?: ReportErrorOptions['level']
 ): boolean {
-  const capture = desktopExceptionSink()
-  if (!capture) return false
-
   try {
+    const capture = desktopExceptionSink()
+    if (!capture) return false
+
     capture(
       {
         message: error.message,

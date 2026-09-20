@@ -209,6 +209,24 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledOnce()
   })
 
+  it('keeps a buffered report deliverable when the Desktop bridge is not an object', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+
+    Object.defineProperty(window, '__comfyDesktop2', {
+      value: { Telemetry: 'invalid' },
+      configurable: true
+    })
+    expect(() => flushErrorReports()).not.toThrow()
+
+    datadogLive(true)
+    flushErrorReports()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
   it('buffers reports raised before any sink is live, then flushes them', async () => {
     sentryLive(false)
     datadogLive(false)
