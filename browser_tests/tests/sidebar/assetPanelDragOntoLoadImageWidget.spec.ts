@@ -88,7 +88,8 @@ test.describe(
       const targetPosition =
         await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
       if (!targetPosition) throw new Error('Load Image node center not found')
-      await card.dragTo(comfyPage.canvas, { targetPosition })
+      // oxlint-disable-next-line playwright/no-force-option -- the Load Image Vue node's own DOM overlays the canvas at its center, so the canvas target never passes the actionability check without force.
+      await card.dragTo(comfyPage.canvas, { targetPosition, force: true })
 
       const [loadImageNodeRef] =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
