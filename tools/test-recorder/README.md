@@ -61,9 +61,17 @@ used as an authenticated relay by another page.
 `--backend` configures the dev server through its own environment, and a
 running Vite does not report which backend it proxies to. So when `--backend`
 is used and a dev server is already listening, the recorder refuses to reuse it
-rather than silently recording against the wrong host or without the token;
-stop that server and re-run, or start a dedicated one on a free port as the
-error explains.
+rather than silently recording against the wrong host or without the token.
+Either stop that server and re-run, or leave it running and give the recorder a
+free port of its own:
+
+```bash
+COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record --backend https://nightly.engcomfy.com
+```
+
+The recorder starts and configures that one itself, pinning it to the port with
+`--port <port> --strictPort` so it cannot land somewhere the recorder is not
+watching.
 
 The distribution selector fetches and displays the currently deployed backend
 version for each cloud environment. `comfy-test check --distribution <id>`

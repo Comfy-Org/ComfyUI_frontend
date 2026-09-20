@@ -21,11 +21,26 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Vite defaults to :5173 and silently walks upwards when that port is taken, so
+ * an unpinned start under `COMFY_TEST_DEV_PORT` produces a server the recorder
+ * never probes and the run dies on the readiness timeout. Pinning is also what
+ * makes the refusal below recoverable without stopping the other server: the
+ * recorder starts its own, with the requested backend and this process's Access
+ * variables, on the port it is already watching.
+ *
+ * No bare `--` separator — Vite ignores every argument after one.
+ */
+export function devServerArgs(script: string): string[] {
+  return ['run', script, '--port', String(devServerPort()), '--strictPort']
+}
+
 function unverifiableReuseInstructions(
   port: number,
   backendUrl: string | undefined
 ): string[] {
   const backend = backendUrl ?? 'the selected backend'
+  const freePort = port === 5174 ? 5175 : 5174
   return [
     `A Vite dev server is already running on :${port}, but the recorder cannot`,
     'tell which backend it proxies to, or whether it carries a Cloudflare',
@@ -36,10 +51,10 @@ function unverifiableReuseInstructions(
     `Requested backend: ${backend}`,
     '',
     'Stop that server and run this command again so the recorder starts one',
-    'with the right configuration, or start a dedicated one on a free port:',
+    'with the right configuration, or leave it running and give the recorder a',
+    'free port of its own, which it starts and configures itself:',
     '',
-    `  DEV_SERVER_COMFYUI_URL=${backend} pnpm dev --port 5174 --strictPort`,
-    `  COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record --backend ${backend}`,
+    `  COMFY_TEST_DEV_PORT=${freePort} pnpm comfy-test record --backend ${backend}`,
     '',
     'Export DEV_SERVER_CF_ACCESS_CLIENT_ID and',
     'DEV_SERVER_CF_ACCESS_CLIENT_SECRET in that terminal if the backend is',
@@ -83,7 +98,7 @@ export async function ensureDevServer(
     )
   }
 
-  const child = spawn('pnpm', ['run', distribution.script], {
+  const child = spawn('pnpm', devServerArgs(distribution.script), {
     cwd: projectRoot,
     stdio: 'ignore',
     detached: true,
