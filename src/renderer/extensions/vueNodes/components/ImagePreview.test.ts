@@ -1,7 +1,5 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
@@ -15,9 +13,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { resolveNode } from '@/utils/litegraphUtil'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -29,8 +24,6 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 const i18n = createI18n({
   legacy: false,
@@ -237,14 +230,11 @@ describe('ImagePreview', () => {
     })
 
     it('carries the metadata the backend sent, not the url it built', async () => {
-      vi.mocked(resolveNode).mockReturnValue(fromPartial<LGraphNode>({}))
-      const nodeOutputStore = useNodeOutputStore()
-      vi.spyOn(nodeOutputStore, 'getNodeImageItems').mockReturnValue([
-        { filename: 'p.png', subfolder: 'nested/dir', type: 'temp' }
-      ])
       renderImagePreview({
         imageUrls: ['/api/view?filename=p.png'],
-        nodeId: '1'
+        imageItems: [
+          { filename: 'p.png', subfolder: 'nested/dir', type: 'temp' }
+        ]
       })
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
@@ -261,12 +251,9 @@ describe('ImagePreview', () => {
     // Live previews are not built from result items, so there is nothing
     // authoritative to report -- better absent than invented.
     it('omits the result type when no record backs the image', async () => {
-      vi.mocked(resolveNode).mockReturnValue(fromPartial<LGraphNode>({}))
-      const nodeOutputStore = useNodeOutputStore()
-      vi.spyOn(nodeOutputStore, 'getNodeImageItems').mockReturnValue(undefined)
       renderImagePreview({
         imageUrls: ['/api/view?filename=p.png'],
-        nodeId: '1'
+        imageItems: undefined
       })
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()

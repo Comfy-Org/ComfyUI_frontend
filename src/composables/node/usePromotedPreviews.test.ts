@@ -137,7 +137,8 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls
+        urls,
+        items: [{ filename: 'output.png' }]
       }
     ])
   })
@@ -300,9 +301,62 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: mockUrls
+        urls: mockUrls,
+        items: [{ filename: 'output.png' }]
       }
     ])
+  })
+
+  // The host renders the leaf's images, so the records must come from the
+  // leaf too. Joining the host's records to leaf URLs by position pairs a
+  // URL with a filename from a different node.
+  it('carries the leaf records, not the host node records', () => {
+    const innerSetup = createSetup()
+    const leafNode = addInteriorNode(innerSetup, {
+      id: 10,
+      previewMediaType: 'image'
+    })
+    const outerSetup = createSetup()
+    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
+    outerSetup.subgraph.add(innerHost)
+
+    const store = usePreviewExposureStore()
+    const innerHostLocator = getPreviewExposureHostLocator(innerHost)
+    const outerHostLocator = getPreviewExposureHostLocator(
+      outerSetup.subgraphNode
+    )
+    if (!innerHostLocator || !outerHostLocator) return
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, innerHostLocator, {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, outerHostLocator, {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+
+    const outputStore = useNodeOutputStore()
+    const leafLocator = createNodeLocatorId(innerSetup.subgraph.id, leafNode.id)
+    const hostLocator = createNodeLocatorId(
+      outerSetup.subgraph.id,
+      outerSetup.subgraphNode.id
+    )
+    outputStore.nodeOutputs[leafLocator] = {
+      images: [{ filename: 'leaf.png' }]
+    }
+    outputStore.nodeOutputs[hostLocator] = {
+      images: [{ filename: 'host.webm' }]
+    }
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation(
+      (node: LGraphNode) =>
+        node === leafNode ? ['/view?filename=leaf.png'] : []
+    )
+
+    const { promotedPreviews } = usePromotedPreviews(
+      () => outerSetup.subgraphNode
+    )
+
+    expect(promotedPreviews.value[0].items).toEqual([{ filename: 'leaf.png' }])
   })
 
   it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {

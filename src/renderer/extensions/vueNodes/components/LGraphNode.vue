@@ -711,7 +711,7 @@ const nodeMedia = computed(() => {
 
   if (type === 'video' && hasVideoEditWidget.value) return undefined
 
-  return { type, urls } as const
+  return { type, urls, items: nodeOutputs.getNodeImageItems(node) } as const
 })
 
 // Drag and drop support

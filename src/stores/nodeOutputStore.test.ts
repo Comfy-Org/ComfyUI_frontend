@@ -249,6 +249,79 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore getNodeImageItems', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('returns the records behind the built view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const images = [
+      { filename: 'a.png', subfolder: 'sub', type: 'temp' as const },
+      { filename: 'b.png', subfolder: '', type: 'output' as const }
+    ]
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs(images)
+    )
+
+    expect(store.getNodeImageItems(node)).toEqual(images)
+    expect(store.getNodeImageUrls(node)).toHaveLength(images.length)
+  })
+
+  it('preserves null entries so positions still line up with the URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      fromAny({ images: [null, { filename: 'b.png' }] })
+    )
+
+    const items = store.getNodeImageItems(node)
+    expect(items).toHaveLength(2)
+    expect(items?.[0]).toBeNull()
+    expect(store.getNodeImageUrls(node)).toHaveLength(2)
+  })
+
+  // Live preview URLs are not built from records, so reporting the node's
+  // output records against them would pair unrelated data.
+  it('returns undefined while live previews are showing', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs([{ filename: 'a.png', type: 'output' as const }])
+    )
+    store.setNodePreviewsByNodeId(node.id, ['blob:live'])
+
+    expect(store.getNodeImageUrls(node)).toEqual(['blob:live'])
+    expect(store.getNodeImageItems(node)).toBeUndefined()
+  })
+
+  it('mirrors that branch for the execution-id accessor', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'a.png', type: 'output' as const }])
+    )
+
+    expect(store.getNodeImageItemsByExecutionId(executionId)).toEqual([
+      { filename: 'a.png', type: 'output' }
+    ])
+
+    store.setNodePreviewsByExecutionId(executionId, ['blob:live'])
+
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([
+      'blob:live'
+    ])
+    expect(store.getNodeImageItemsByExecutionId(executionId)).toBeUndefined()
+  })
+})
+
 describe('nodeOutputStore legacy entry synchronization', () => {
   beforeEach(() => {
     app.nodeOutputs = {}

@@ -261,11 +261,17 @@ import { cn } from '@comfyorg/tailwind-utils'
 interface ImagePreviewProps {
   /** Array of image URLs to display */
   readonly imageUrls: readonly string[]
+  /**
+   * Records for {@link imageUrls}, supplied by whichever node produced them.
+   * A promoted subgraph preview shows an interior node's images inside a host
+   * node, so these cannot be looked up from {@link nodeId} here.
+   */
+  readonly imageItems?: readonly (ResultItem | null)[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
 }
 
-const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
+const { imageUrls, imageItems, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
@@ -434,19 +440,9 @@ function isObjectUrl(url: string): boolean {
   return url.startsWith('blob:')
 }
 
-function nodeImageItems(): (ResultItem | null)[] | undefined {
-  if (!nodeId) return undefined
-  const node = resolveNode(nodeId)
-  return node ? nodeOutputStore.getNodeImageItems(node) : undefined
-}
-
-// `sourceIndex` addresses imageUrls, which getNodeImageItems is aligned with.
-function toGalleryItem(
-  url: string,
-  sourceIndex: number,
-  items: (ResultItem | null)[] | undefined
-): AugmentedResultItem {
-  const item = items?.[sourceIndex]
+// `sourceIndex` addresses imageUrls, which imageItems is aligned with.
+function toGalleryItem(url: string, sourceIndex: number): AugmentedResultItem {
+  const item = imageItems?.[sourceIndex]
   return {
     ...item,
     filename: item?.filename ?? getImageFilenameFromUrl(url) ?? '',
@@ -464,11 +460,10 @@ function openInLightbox(index: number) {
     openHdrViewer(url)
     return
   }
-  // Live sampler previews are refcounted object URLs revoked on the next
-  // frame; the store outlives the node, so it must not hold one.
+  // The node output store owns and revokes these short-lived object URLs,
+  // and the gallery store outlives the node, so it must not retain one.
   if (isObjectUrl(url)) return
 
-  const items = nodeImageItems()
   const renderable = imageUrls
     .map((candidate, sourceIndex) => ({ candidate, sourceIndex }))
     .filter(
@@ -477,7 +472,7 @@ function openInLightbox(index: number) {
 
   galleryStore.openItems(
     renderable.map(({ candidate, sourceIndex }) =>
-      toGalleryItem(candidate, sourceIndex, items)
+      toGalleryItem(candidate, sourceIndex)
     ),
     renderable.findIndex(({ sourceIndex }) => sourceIndex === index)
   )

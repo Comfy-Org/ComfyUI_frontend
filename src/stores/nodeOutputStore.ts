@@ -162,6 +162,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return getNodeOutputs(node)?.images
   }
 
+  /** As {@link getNodeImageItems}, for {@link getNodeImageUrlsByExecutionId}. */
+  function getNodeImageItemsByExecutionId(
+    executionId: NodeExecutionId
+  ): (ResultItem | null)[] | undefined {
+    if (getNodePreviewImagesByExecutionId(executionId)?.length) return undefined
+
+    return getNodeOutputByExecutionId(executionId)?.images
+  }
+
   function getNodeOutputByExecutionId(
     executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
@@ -534,6 +543,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeOutputs,
     getNodeImageUrls,
     getNodeImageItems,
+    getNodeImageItemsByExecutionId,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,
