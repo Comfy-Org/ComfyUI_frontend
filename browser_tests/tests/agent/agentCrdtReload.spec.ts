@@ -131,15 +131,19 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
           data: { status: { exec_info: { queue_remaining: 0 } } }
         })
       )
+      // Assert the restore in stages so a red says WHERE it broke. The doc-id
+      // record and the rebound tab are the two preconditions for resubscribing;
+      // if either is wrong the subscribe assertion below is a downstream
+      // symptom, and if both hold then the gap is in the follower bind itself.
+      const record = await page.evaluate(() =>
+        JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!)
+      )
+      expect(record).toMatchObject({ docId: workflowId })
+      expect(record.nonce).not.toBe(recordBeforeReload.nonce)
+      await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
+
       await expect.poll(() => countAfterReload('doc_subscribe')).toBe(1)
     })
-
-    const recordAfterReload = await page.evaluate(() =>
-      JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!)
-    )
-    expect(recordAfterReload).toMatchObject({ docId: workflowId })
-    expect(recordAfterReload.nonce).not.toBe(recordBeforeReload.nonce)
-    await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
 
     await test.step('Opening a blank workflow suspends the restored follower', async () => {
       expect(countAfterReload('doc_unsubscribe')).toBe(0)
