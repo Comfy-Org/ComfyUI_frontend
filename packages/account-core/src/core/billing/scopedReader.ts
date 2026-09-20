@@ -5,10 +5,10 @@
  * between reads, so only those live in the readers.
  *
  * What the skeleton owns is what a reader therefore cannot get wrong on its
- * own: one shared request per scope, a caller's signal releasing only that
- * caller, the publish fence that reports a late answer as `SUPERSEDED`, and
- * the denial that drops a published snapshot unless it predates a change the
- * host reported.
+ * own: one shared request per scope and route, a caller's signal releasing
+ * only that caller, the publish fence that reports a late answer as
+ * `SUPERSEDED`, and the denial that drops a published snapshot unless it
+ * predates a change the host reported.
  */
 import type {
   BillingRequest,
@@ -44,7 +44,13 @@ export interface ScopedReaderDefinition<
   readonly transport: BillingTransport
   /** Where the core learns which user, workspace, and role it runs as. */
   readonly scopeSource: BillingScopeSource
-  readonly route: string
+  /**
+   * The route to request, as a function for a read whose query varies per
+   * call. The resolved route joins the scope in identifying an in-flight
+   * read, so two callers asking for different pages each get their own answer
+   * rather than the first one's.
+   */
+  readonly route: string | ((options: TOptions | undefined) => string)
   readonly parse: (body: unknown) => ParsedBillingBody<TData>
   /**
    * The reader's own reading of a validated response. Returning a failure is
@@ -93,6 +99,7 @@ export interface ScopedReader<TSnapshot, TOptions extends ScopedReadOptions> {
 
 interface InFlightRead<TSnapshot> {
   readonly context: BillingScopeContext
+  readonly route: string
   readonly promise: Promise<BillingResult<TSnapshot>>
   /**
    * Lives outside the attempt so the read body can consult it without
@@ -123,6 +130,9 @@ export function createScopedReader<
     publish = publishAsRead
   } = definition
 
+  const resolveRoute: (options: TOptions | undefined) => string =
+    typeof route === 'string' ? () => route : route
+
   let snapshot: TSnapshot | undefined
   let inFlight: InFlightRead<TSnapshot> | undefined
   const lifetime = { disposed: false }
@@ -133,12 +143,13 @@ export function createScopedReader<
 
   async function request(
     scope: BillingScope,
-    options: TOptions | undefined
+    options: TOptions | undefined,
+    resolvedRoute: string
   ): Promise<BillingResult<TSnapshot>> {
     const budget = timeoutMs?.(options)
     const billingRequest: BillingRequest = {
       method: 'GET',
-      route,
+      route: resolvedRoute,
       ...(budget === undefined ? {} : { timeoutMs: budget })
     }
     const response = await readValidatedBillingResponse(
@@ -163,9 +174,10 @@ export function createScopedReader<
   async function settle(
     context: BillingScopeContext,
     pending: { fenced: boolean },
-    options: TOptions | undefined
+    options: TOptions | undefined,
+    resolvedRoute: string
   ): Promise<BillingResult<TSnapshot>> {
-    const result = await request(context.scope, options)
+    const result = await request(context.scope, options, resolvedRoute)
     // The publish guard. Between issuing the request and settling it the host
     // may have changed workspace or signed out, so an answer cached now would
     // be attributed to whoever is signed in next, and a failure says nothing
@@ -198,10 +210,22 @@ export function createScopedReader<
     const served = cached?.(snapshot, context.scope, options)
     if (served !== undefined) return { status: 'ok', value: served }
 
-    // One read per scope. A caller arriving mid-flight for the same scope
-    // joins rather than issuing a second identical request; a caller for a
-    // different scope starts its own, and the older one can no longer publish.
-    if (matchesScopedRead(inFlight, context)) {
+    // Resolved once, then used both to issue the request and to identify it,
+    // so the answer a joining caller is served is the one its own route asked
+    // for.
+    const resolvedRoute = resolveRoute(options)
+
+    // A caller arriving mid-flight joins only a read of the same scope and
+    // route, rather than issuing a second identical request. A caller for a
+    // different scope starts its own, and the older one can no longer
+    // publish. A caller for a different route on the same scope also starts
+    // its own and takes the slot, so the displaced read still settles and
+    // publishes — the snapshot carries which page it is — but nobody can join
+    // it any more. One slot is enough for a feed read one page at a time.
+    if (
+      matchesScopedRead(inFlight, context) &&
+      inFlight.route === resolvedRoute
+    ) {
       return releaseOnAbort(inFlight.promise, options?.signal)
     }
 
@@ -211,7 +235,8 @@ export function createScopedReader<
     const pending = { fenced: false }
     const attempt: InFlightRead<TSnapshot> = {
       context,
-      promise: settle(context, pending, options),
+      route: resolvedRoute,
+      promise: settle(context, pending, options, resolvedRoute),
       pending
     }
 

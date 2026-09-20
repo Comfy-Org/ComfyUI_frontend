@@ -152,6 +152,7 @@ async function mockAgentBoot(
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     crdtDebugEnabled,
+    objectInfo,
     postedMessages
   }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
@@ -202,7 +203,7 @@ async function mockAgentBoot(
 
   await mockCloudBootRoutes(page, {
     features: agentFeatures(agentFlagEnabled),
-    objectInfo: agentObjectInfo,
+    objectInfo: objectInfo ?? agentObjectInfo,
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false
@@ -368,6 +369,8 @@ type AgentFixtures = {
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
   crdtDebugEnabled: boolean
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo: 'server' | undefined
   postedMessages: string[]
 }
 
@@ -387,6 +390,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
+  objectInfo: [undefined, { option: true }],
   page: async (
     {
       agentConsentAccepted,
@@ -397,6 +401,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
+      objectInfo,
       page,
       postedMessages
     },
@@ -411,6 +416,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
+      objectInfo,
       postedMessages
     })
     await use(page)
