@@ -49,7 +49,7 @@ async function dispatchAssetDownload(
 
 test.describe(
   'Model import progress toast - stuck download status',
-  { tag: ['@screenshot'] },
+  { tag: ['@screenshot', '@cloud'] },
   () => {
     test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
       comfyPage
