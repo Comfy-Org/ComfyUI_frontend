@@ -374,14 +374,13 @@ test.describe(
 
       // Visual proof, from two lenses on the same real canvas.
       //
-      // Lens 1: centered on the pre-existing node. The repositioned template
-      // sits beside it, in frame.
+      // Lens 1: the existing node and template fit left of the Agent panel.
       await page.evaluate((pos: [number, number]) => {
         const canvas = window.app!.canvas
-        canvas.ds.scale = 1
+        canvas.ds.scale = 0.5
         canvas.ds.offset = [
-          window.innerWidth / 2 - pos[0],
-          window.innerHeight / 2 - pos[1]
+          200 - pos[0],
+          window.innerHeight / 2 / canvas.ds.scale - pos[1]
         ]
         canvas.setDirty(true, true)
       }, EXISTING_NODE_POS)
