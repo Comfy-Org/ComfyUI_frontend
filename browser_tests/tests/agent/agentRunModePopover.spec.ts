@@ -127,6 +127,10 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     const page = comfyPage.page
     const savedModes: string[] = []
     let rejectNext = true
+    let rejectTheWrite: () => void = () => {}
+    const held = new Promise<void>((resolve) => {
+      rejectTheWrite = resolve
+    })
     await page.route('**/api/agent/run-mode', async (route) => {
       const request = route.request()
       if (request.method() !== 'PUT')
@@ -140,6 +144,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       savedModes.push(saved.mode)
       if (rejectNext) {
         rejectNext = false
+        await held
         return route.fulfill({ status: 500, body: 'nope' })
       }
       return route.fulfill(jsonRoute(saved))
@@ -162,13 +167,21 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     await page.keyboard.press('ArrowDown')
     await expect(autoOption).toBeFocused()
 
-    await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
+    await test.step('the in-flight write keeps focus on the picked option', async () => {
       await page.keyboard.press('Enter')
+      await expect(autoOption).toHaveAttribute('aria-disabled', 'true')
+      await expect(autoOption).toHaveAttribute('aria-busy', 'true')
+      await expect(autoOption).toBeFocused()
+      rejectTheWrite()
+    })
+
+    await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
       await expect(
         page.getByText(enMessages.agent.runModeSaveFailed)
       ).toBeVisible()
       await expect(autoOption).toBeFocused()
       await expect(autoOption).not.toBeChecked()
+      await expect(autoOption).not.toHaveAttribute('aria-disabled')
       expect(savedModes).toEqual(['auto'])
     })
 

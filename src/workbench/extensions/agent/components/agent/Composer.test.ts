@@ -456,9 +456,13 @@ describe('Composer', () => {
       expect(
         screen.queryByRole('menuitemradio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: 'Save changes' })
-      ).not.toBeInTheDocument()
+
+      const menu = screen.getByRole('menu')
+      expect(within(menu).queryAllByRole('button')).toHaveLength(0)
+      expect(menu).toHaveAccessibleDescription(
+        'Choose when the agent needs your consent'
+      )
+      expect(menu).not.toContainElement(screen.getByRole('status'))
     })
 
     it('applies the picked mode without a separate save step', async () => {
@@ -551,13 +555,14 @@ describe('Composer', () => {
       const ask = screen.getByRole('menuitemradio', {
         name: /Ask before a workflow runs/
       })
+      const auto = screen.getByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
       expect(screen.getByRole('status')).toHaveTextContent('Saving')
       expect(ask).toHaveAttribute('aria-disabled', 'true')
-      expect(
-        screen.getByRole('menuitemradio', {
-          name: /Auto-run without approval/
-        })
-      ).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-busy', 'true')
+      expect(ask).not.toHaveAttribute('aria-busy')
       expect(ask).toBeChecked()
       await userEvent.click(ask)
       expect(fetchApi).toHaveBeenCalledTimes(1)
