@@ -1,4 +1,6 @@
 import { expect } from '@playwright/test'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -14,13 +16,6 @@ test.use({
   nodeDefinitions: { ColorBalance: referenceNode }
 })
 
-/** The wire body `agentRestClient.postMessage` builds, not its camelCase input. */
-type TurnRequestBody = {
-  content: string
-  workflow_id?: string
-  selection?: { node_ids: string[]; workflow_id?: string }
-}
-
 // The first workflow saved through the target picker gets this id from
 // `agentWorkflowSelectionFixture`; here that is "Portrait study", the tab the
 // staged node comes from.
@@ -35,12 +30,12 @@ test(
   'attributes a staged node to the workflow it came from after navigating away',
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection }, testInfo) => {
-    const turns: TurnRequestBody[] = []
+    const turns: AgentPostMessageRequest[] = []
     // Registered after the fixture's broader `**/api/agent/threads**` route so
     // this one wins for the send and can answer with a real acceptance.
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
-      turns.push(route.request().postDataJSON() as TurnRequestBody)
+      turns.push(zAgentPostMessageRequest.parse(route.request().postDataJSON()))
       return route.fulfill({
         status: 202,
         contentType: 'application/json',
