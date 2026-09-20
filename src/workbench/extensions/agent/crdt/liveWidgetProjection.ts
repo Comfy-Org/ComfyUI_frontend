@@ -19,10 +19,7 @@ function isScalarValue(value: WidgetValue): boolean {
   )
 }
 
-export function owningGraph(
-  rootGraph: LGraph,
-  scope: GraphScope
-): LGraph | null {
+export function owningGraph(rootGraph: LGraph, scope: GraphScope): LGraph | null {
   if (rootGraph.id !== scope.rootGraphId) return null
   return String(scope.owningGraphId) === String(scope.rootGraphId)
     ? rootGraph
@@ -212,9 +209,7 @@ export function applyLiveWidgetValue(
       try {
         setWidgetValue(widgetStore, node, widget, value, context)
         widget.callback?.(value, canvas, node)
-        if (!Object.is(value, previousValue)) {
-          node.onWidgetChanged?.(name, value, previousValue, widget)
-        }
+        node.onWidgetChanged?.(name, value, previousValue, widget)
         setBackingProperty(node, widget, widget.value)
       } catch (error) {
         const rollbackError = restoreWidgets(
