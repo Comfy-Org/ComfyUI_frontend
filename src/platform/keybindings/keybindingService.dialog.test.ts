@@ -150,6 +150,10 @@ describe('keybindingService - dialog gate', () => {
     {
       hiddenBy: 'CSS',
       hide: (element: HTMLElement) => (element.style.display = 'none')
+    },
+    {
+      hiddenBy: 'CSS visibility',
+      hide: (element: HTMLElement) => (element.style.visibility = 'hidden')
     }
   ])(
     'executes Ctrl+S while an ARIA modal is inside an ancestor hidden by $hiddenBy',

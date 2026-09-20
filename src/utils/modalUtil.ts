@@ -1,7 +1,7 @@
 function isRendered(element: Element): boolean {
   return (
     element.closest('[hidden], [aria-hidden="true"]') === null &&
-    element.checkVisibility()
+    element.checkVisibility({ visibilityProperty: true })
   )
 }
 
