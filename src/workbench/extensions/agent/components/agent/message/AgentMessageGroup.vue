@@ -32,7 +32,7 @@ const emit = defineEmits<{
 <template>
   <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
   <template v-else-if="group.kind === 'trace'">
-    <ActivityTrace v-if="streaming" :parts="activityParts" />
+    <ActivityTrace v-if="streaming" :parts="activityParts" live />
     <WorkSummary v-else :parts="activityParts" />
   </template>
   <div

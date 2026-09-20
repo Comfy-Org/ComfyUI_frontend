@@ -12,6 +12,8 @@ import type {
   BillingOperationPhase
 } from '@/platform/workspace/api/workspaceApi'
 
+import { declineDetail } from './topupOperationView'
+
 type OperationKind = BillingOperationState['kind']
 
 type OperationStatus =
@@ -31,6 +33,8 @@ export interface BillingOperationRecordView {
   readonly authenticationState: BillingAuthenticationState | null
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
+  /** The declined-attempt line a surface shows under its own summary. */
+  readonly errorMessage: string | null
 }
 
 /**
@@ -60,7 +64,8 @@ export function projectOperationRecord(
           ? 'reconciliation_needed'
           : null,
       isAuthenticating: false,
-      canRetryAuthentication: false
+      canRetryAuthentication: false,
+      errorMessage: null
     }
   }
 
@@ -71,6 +76,10 @@ export function projectOperationRecord(
     phase: state.serverPhase ?? null,
     authenticationState: state.authenticationState ?? null,
     isAuthenticating: state.challenge?.status === 'in_progress',
-    canRetryAuthentication: state.challenge?.status === 'required'
+    canRetryAuthentication: state.challenge?.status === 'required',
+    errorMessage:
+      state.authenticationState === 'failed_retryable'
+        ? declineDetail(state.declineReason ?? 'authentication_failed')
+        : null
   }
 }
