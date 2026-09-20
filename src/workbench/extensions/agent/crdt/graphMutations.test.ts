@@ -383,16 +383,16 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
-  // PM-1189/PM-1027: the agent's connect tool wires an IMAGE output straight
-  // into a STRING prompt input (Grok Image Edit, GPT Image 2) and the mutation
-  // is accepted as if valid — only ComfyUI's execution-time prompt validator
-  // catches it later, long after the agent has told the user the graph is
+  // The agent's connect tool used to wire an IMAGE output straight into a
+  // STRING prompt input (Grok Image Edit, GPT Image 2) and have the mutation
+  // accepted as if valid — only ComfyUI's execution-time prompt validator
+  // caught it later, long after the agent had told the user the graph was
   // built. The interactive canvas never allows this: LGraphNode.connectSlots
   // gates every human-dragged link on LiteGraph.isValidConnection(output.type,
   // input.type). This remote/CRDT path is the ONLY way the agent edits the
-  // graph, and it applies a connect purely by node/slot existence — it never
-  // compares the origin output's declared type against the target input's.
-  it('rejects connecting an incompatible slot type pair (fails: no type check exists)', () => {
+  // graph, so `connect` now runs the same isValidConnection check against the
+  // origin output's declared type and the target input's before applying it.
+  it('rejects connecting an incompatible slot type pair', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = mutations()
     const applied = graph.batch(context, (batch) => {
@@ -415,8 +415,8 @@ describe('graphMutations', () => {
     })
 
     // A human dragging this exact link on canvas is refused by
-    // LiteGraph.isValidConnection; the agent's remote mutation path must
-    // refuse it too instead of silently wiring IMAGE into a STRING input.
+    // LiteGraph.isValidConnection; the agent's remote mutation path refuses
+    // it too instead of silently wiring IMAGE into a STRING input.
     expect(applied).toBe(false)
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(1))

@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -525,6 +526,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (topology.targetSlot >= targetInputs.length) {
             return `connect target slot ${topology.targetSlot} does not exist`
+          }
+          const originType = originOutputs[topology.originSlot]?.type
+          const targetType = targetInputs[topology.targetSlot]?.type
+          if (!LiteGraph.isValidConnection(originType, targetType)) {
+            return `connect origin slot ${topology.originSlot} type ${String(originType)} is not compatible with target slot ${topology.targetSlot} type ${String(targetType)}`
           }
           if (mutation.link.originOutputs) {
             nodes.set(nodeKey(topology.originNodeId), {
