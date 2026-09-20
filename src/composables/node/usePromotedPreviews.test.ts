@@ -359,6 +359,50 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value[0].items).toEqual([{ filename: 'leaf.png' }])
   })
 
+  // The URLs and the records must be resolved through the same accessor
+  // family. Pairing execution-sourced URLs with the interior node's locator
+  // records joins two different sources that need not even be the same length.
+  it('pairs execution output urls with execution records, not locator records', () => {
+    const { setup } = arrangePromotedPreview({ previewMediaType: 'image' })
+    const outputStore = useNodeOutputStore()
+    const interiorLocator = createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+    outputStore.nodeOutputs[interiorLocator] = {
+      images: [{ filename: 'locator.png' }]
+    }
+    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockReturnValue([
+      '/view?filename=execution.png'
+    ])
+    vi.mocked(outputStore.getNodeImageItemsByExecutionId).mockReturnValue([
+      { filename: 'execution.png' }
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+    expect(promotedPreviews.value[0].items).toEqual([
+      { filename: 'execution.png' }
+    ])
+  })
+
+  it('carries no records when the execution url is a live preview', () => {
+    const { setup } = arrangePromotedPreview({ previewMediaType: 'image' })
+    const outputStore = useNodeOutputStore()
+    const interiorLocator = createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+    outputStore.nodeOutputs[interiorLocator] = {
+      images: [{ filename: 'locator.png' }]
+    }
+    vi.mocked(outputStore.getNodePreviewImagesByExecutionId).mockReturnValue([
+      'blob:live'
+    ])
+    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockReturnValue([
+      'blob:live'
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+    expect(promotedPreviews.value[0].urls).toEqual(['blob:live'])
+    expect(promotedPreviews.value[0].items).toBeUndefined()
+  })
+
   it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {
     const innerSetup = createSetup()
     const leafNode = addInteriorNode(innerSetup, {

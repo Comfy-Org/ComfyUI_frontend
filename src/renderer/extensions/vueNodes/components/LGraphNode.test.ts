@@ -152,7 +152,10 @@ function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
 
-function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
+function renderLGraphNode(
+  props: ComponentProps<typeof LGraphNode>,
+  stubOverrides: Record<string, unknown> = {}
+) {
   return render(LGraphNode, {
     props,
     global: {
@@ -168,7 +171,8 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeContent: {
           template: '<div data-testid="node-content" />'
         },
-        SlotConnectionDot: true
+        SlotConnectionDot: true,
+        ...stubOverrides
       }
     }
   })
@@ -365,6 +369,36 @@ describe('LGraphNode', () => {
     })
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
+  })
+
+  it('passes the output records along with the preview urls', () => {
+    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', subfolder: 'sub', type: 'output' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/output.png'])
+    vi.mocked(nodeOutputStore.getNodeImageItems).mockReturnValue([
+      { filename: 'output.png', subfolder: 'sub', type: 'output' }
+    ])
+
+    renderLGraphNode(
+      { nodeData: mockNodeData },
+      {
+        NodeContent: {
+          props: ['media'],
+          template:
+            '<div data-testid="node-content">{{ JSON.stringify(media.items) }}</div>'
+        }
+      }
+    )
+
+    expect(screen.getByTestId('node-content')).toHaveTextContent(
+      '"filename":"output.png"'
+    )
+    expect(screen.getByTestId('node-content')).toHaveTextContent(
+      '"subfolder":"sub"'
+    )
   })
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
