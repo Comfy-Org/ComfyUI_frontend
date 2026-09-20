@@ -573,10 +573,15 @@ function startAgentCrdtFollower(
   }
   const onApplyError: EventListener = (event) => {
     // FEC-2 fail-closed: `Y.applyUpdate` rejected the bytes, so the bridge
-    // never merged or dispatched this frame — nothing was applied or
-    // projected. Report it (this is the uncaught-throw path FEC-2 closes) and
-    // surface the same way a schema failure does, since both are read-path
-    // gates that drop one frame without tearing down the subscription.
+    // dispatched no `doc_update` and nothing was projected. It does NOT mean
+    // nothing merged — a rejection is not a rollback, and Yjs may integrate
+    // decoded structs before it throws (see `FollowerDoc.applyRemoteUpdate`).
+    // What makes the drop safe is that `recoverFromApplyError` discards the
+    // partially mutated document and resubscribes the replacement, so the
+    // state those structs reached is never the state anything reads. Report it
+    // (this is the uncaught-throw path FEC-2 closes) and surface the same way a
+    // schema failure does, since both are read-path gates that drop one frame
+    // without tearing down the subscription.
     connected.value = false
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
