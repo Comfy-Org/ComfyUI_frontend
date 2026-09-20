@@ -103,8 +103,7 @@ const indicatorTag = computed(() =>
         data-testid="drop-zone-indicator"
         :class="
           cn(
-            // fallow-ignore-next-line css-token-drift
-            'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
+            'm-3 block h-25 resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
             indicatorTag === 'button' && 'cursor-pointer'
           )
         "
