@@ -3,7 +3,6 @@ import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -24,14 +23,12 @@ import {
   getAssetStoredFilename
 } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from '../utils/outputAssetUtil'
+import { getTotalAssetOutputCount } from '../utils/outputAssetCountUtil'
+import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -41,6 +38,8 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import { useAssetDownload } from './useAssetDownload'
+import type { AssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -66,7 +65,7 @@ function createAssetWidgetPath(asset: AssetItem): string {
  */
 function widgetValueVariants(
   name: string | undefined,
-  type: string,
+  type: string | undefined,
   subfolder?: string,
   hash?: string
 ): string[] {
@@ -97,6 +96,7 @@ export function useMediaAssetActions() {
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
+  const { downloadFiles } = useAssetDownload()
 
   /**
    * Download one or more assets.
@@ -126,28 +126,15 @@ export function useMediaAssetActions() {
       return
     }
 
-    try {
-      targetAssets.forEach((asset) => downloadSingleAsset(asset))
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
-        life: 2000
-      })
-    } catch (error) {
-      console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    void downloadFiles(targetAssets.map(createAssetDownload))
   }
 
-  function downloadSingleAsset(asset: AssetItem) {
-    const filename = getAssetDisplayName(asset)
-    const downloadUrl = asset.preview_url || getAssetUrl(asset)
-    downloadFile(downloadUrl, filename)
+  function createAssetDownload(asset: AssetItem): AssetDownload {
+    return {
+      mode: isCloud ? 'fetch' : 'direct',
+      url: getAssetFileUrl(asset),
+      filename: getAssetDisplayName(asset)
+    }
   }
 
   async function expandAssetForDownload(
@@ -174,34 +161,15 @@ export function useMediaAssetActions() {
   }
 
   async function downloadAssetsIndividually(assets: AssetItem[]) {
-    try {
-      const expanded = await Promise.all(assets.map(expandAssetForDownload))
-      const seenAssetIds = new Set<string>()
-      const filesToDownload = expanded.flat().filter((asset) => {
-        if (seenAssetIds.has(asset.id)) return false
-        seenAssetIds.add(asset.id)
-        return true
-      })
+    const expanded = await Promise.all(assets.map(expandAssetForDownload))
+    const seenAssetIds = new Set<string>()
+    const filesToDownload = expanded.flat().filter((asset) => {
+      if (seenAssetIds.has(asset.id)) return false
+      seenAssetIds.add(asset.id)
+      return true
+    })
 
-      filesToDownload.forEach((asset) => downloadSingleAsset(asset))
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t(
-          'mediaAsset.selection.downloadsStarted',
-          filesToDownload.length
-        ),
-        life: 2000
-      })
-    } catch (error) {
-      console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    await downloadFiles(filesToDownload.map(createAssetDownload))
   }
 
   async function downloadAssetsAsZip(assets: AssetItem[]) {
@@ -327,14 +295,6 @@ export function useMediaAssetActions() {
     }
 
     const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-    if (!nodeDef) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.nodeTypeNotFound', { nodeType })
-      })
-      return
-    }
 
     const node = withNodeAddSource('programmatic', () =>
       litegraphService.addNodeOnGraph(nodeDef, {
@@ -441,8 +401,6 @@ export function useMediaAssetActions() {
    * Creates loader nodes for each asset
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     const NODE_OFFSET = 50
     let nodeIndex = 0
     let succeeded = 0
@@ -457,10 +415,6 @@ export function useMediaAssetActions() {
       }
 
       const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
-      if (!nodeDef) {
-        failed++
-        continue
-      }
 
       const center = litegraphService.getCanvasCenter()
       const node = withNodeAddSource('programmatic', () =>
@@ -521,8 +475,6 @@ export function useMediaAssetActions() {
    * Open workflows from multiple assets in new tabs
    */
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -575,8 +527,6 @@ export function useMediaAssetActions() {
    * Export workflows from multiple assets as JSON files
    */
   const exportMultipleWorkflows = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
-
     let succeeded = 0
     let failed = 0
 
@@ -667,21 +617,12 @@ export function useMediaAssetActions() {
         })
         return uniqBy(operations, (op) => op.id)
       }
-      if (!flags.assetDeletionEnabled) {
-        toast.add({
-          detail: t('mediaAsset.deletionUnsupported'),
-          life: 5000,
-          severity: 'error',
-          summary: t('g.error')
-        })
-        return []
-      }
       return assets.flatMap((asset) => {
         const markDeletionId = asset.id
         const metadata = getOutputAssetMetadata(asset.user_metadata)
         const childAssets: AssetDeletion[] = (
           metadata?.allOutputs ?? []
-        )?.flatMap((output) => {
+        ).flatMap((output) => {
           if (!output.assetId) return []
 
           const variants = widgetValueVariants(
@@ -790,9 +731,11 @@ export function useMediaAssetActions() {
     const deleteConfirmed = await dialogService.confirm({
       title: t('mediaAsset.deleteItems'),
       type: 'delete',
-      message: plannedAssetCount
-        ? t('mediaAsset.deletePermanent')
-        : t('mediaAsset.deleteHistoryOnly'),
+      message: !plannedAssetCount
+        ? t('mediaAsset.deleteHistoryOnly')
+        : flags.assetDeletionEnabled
+          ? t('mediaAsset.deletePermanent')
+          : t('mediaAsset.deleteTombstone'),
       itemList: deletionPlan.flatMap(getNames)
     })
     if (!deleteConfirmed) return false
@@ -802,7 +745,7 @@ export function useMediaAssetActions() {
     ).flat()
 
     const rootGraph = app.rootGraph
-    if (rootGraph && deletedVariants.size) {
+    if (deletedVariants.size) {
       const nodeOutputStore = useNodeOutputStore()
       // Order matters: mark + cache-clear both look up nodes by
       // current widget.value, so they must run before
@@ -812,7 +755,7 @@ export function useMediaAssetActions() {
         nodeOutputStore.removeNodeOutputsForNode(node)
       )
       clearDeletedAssetWidgetValues(rootGraph, deletedVariants)
-      useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
 
     for (const category of invalidatedModelTags)

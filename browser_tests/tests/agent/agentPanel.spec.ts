@@ -21,8 +21,6 @@ import {
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
-
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
@@ -33,33 +31,26 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
-      comfyPage,
+    test('does not expose the Agent button', async ({
+      agentPanel,
       postedMessages
     }) => {
       expect(postedMessages).toHaveLength(0)
 
-      await expect(
-        comfyPage.page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveCount(0)
+      await expect(agentPanel.openButton).toHaveCount(0)
     })
   })
 
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
     test.setTimeout(30_000)
 
-    const page = comfyPage.page
-
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
@@ -70,9 +61,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
     await promptChip.click()
-    await expect(composer).toHaveValue(firstPrompt)
+    await expect(composer).toHaveText(firstPrompt)
     expect(
       postedMessages,
       'inserting a prompt must not POST a message'
@@ -82,19 +73,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
 
     pushEvent(ws, THINKING_EVENT)
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const firstSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 1.3 seconds'
-    })
-    await expect(firstSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    const summary = panel.getByRole('button', { name: /^Worked for / })
+    await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
-    await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toBeVisible()
 
     pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
     await expect(
@@ -102,100 +93,212 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toHaveCount(0)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
-    const secondSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 0.5 seconds'
-    })
-    await expect(secondSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
     pushEvent(ws, RESIZE_IMAGE_TOOL_EVENT)
 
-    const finalSummary = panel.getByRole('button', {
-      name: 'Ran 2 tool calls for 0.7 seconds'
-    })
-    await expect(finalSummary).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(
-      panel.getByRole('button', {
-        name: /^Ran \d+ tool calls?(?: for \d+(?:\.\d+)? seconds)?$/
-      })
-    ).toHaveCount(2)
-    await expect(firstSummary).toHaveCount(1)
-    await expect(secondSummary).toHaveCount(0)
+    await expect(summary).toHaveCount(0)
 
-    const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(2)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
+    const activityRows = panel.getByRole('listitem')
+    await expect(activityRows).toHaveCount(5)
+    await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(
-      toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
+      activityRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
     await expect(
-      toolRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
+      activityRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
     ).toBeVisible()
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
+    await expect(activityRows).toHaveCount(5)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Opened a new tab')).toBeHidden()
+    ).toHaveCount(2)
+    await expect(activityRows).toHaveCount(6)
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+    await expect(summary).toHaveCount(1)
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await expect(activityRows).toHaveCount(0)
     await expect(
-      panel.getByRole('button', { name: /ran 2 tool calls/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+      panel.locator('strong', { hasText: 'fully ready' })
+    ).toBeVisible()
+
+    await summary.click()
+    await expect(summary).toHaveAttribute('aria-expanded', 'true')
+    await expect(activityRows).toHaveCount(6)
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toHaveCount(2)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.route('**/api/agent/threads/*/messages', (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Add credits to continue.',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        })
+      })
+    )
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+
+    const prompt = 'Build a product photo workflow'
+    await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    // The prompt survives the rejection in two places the user can act on: the
+    // sent message stays in the transcript, and the composer keeps the text so
+    // the same send can be retried once credits are added. A bare getByText is
+    // ambiguous here because the thread title button also carries the prompt.
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+    await expect(
+      panel.getByRole('textbox', { name: /^Describe ideas/ })
+    ).toHaveText(prompt)
+    const paywall = panel.getByRole('alert')
+    await expect(paywall).toContainText(enMessages.agent.paywall.title)
+    await expect(paywall).toContainText('Add credits to continue.')
+  })
+
+  test.describe('diagnostic report', () => {
+    test.use({
+      permissions: ['clipboard-read', 'clipboard-write'],
+      crdtDebugEnabled: true
+    })
+
+    test('copies retained tool metadata with privacy sources turned off', async ({
+      agentPanel,
+      comfyPage,
+      getWebSocket
+    }) => {
+      await test.step('turn off every optional privacy source', async () => {
+        await agentPanel.open()
+        await expect(agentPanel.debugHeading).toBeVisible()
+        await agentPanel.turnOffOptionalReportSources()
+      })
+
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
+        await agentPanel.copyReportButton.click()
+        await expect(agentPanel.copiedButton).toBeVisible()
+        await expect
+          .poll(async () => {
+            const report = await comfyPage.clipboard.readText()
+            return {
+              serverLogs: report.includes('- Server logs: turned off'),
+              settings: report.includes('- Settings: turned off'),
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
+            }
+          })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
+      })
+    })
   })
 
   test.describe('composer sizing', () => {
-    test.use({ viewport: { width: 1920, height: 1080 } })
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+      permissions: ['clipboard-read', 'clipboard-write']
+    })
 
     test('caps long text at 400px and scrolls internally', async ({
+      agentPanel,
       comfyPage
     }) => {
-      const page = comfyPage.page
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await agentPanel.open()
 
-      const panel = page.locator('#agent-panel-root')
+      const panel = agentPanel.root
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const input = panel.getByTestId('composer-inline-input')
 
-      await composer.fill('A growing prompt line\n'.repeat(14))
+      await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) =>
+          input.evaluate((element) =>
             Math.round(element.getBoundingClientRect().height)
           )
         )
         .toBeGreaterThan(200)
 
-      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await comfyPage.clipboard.writeText(
+        'An overflowing prompt line\n'.repeat(60)
+      )
+      await composer.press('ControlOrMeta+a')
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -210,7 +313,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         .click()
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -223,13 +326,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
-    comfyPage
+    agentPanel
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const scrollContainer = page
-      .locator('#agent-panel-root div.overflow-y-auto')
+    const scrollContainer = agentPanel.root
+      .locator('div.overflow-y-auto')
       .first()
     await expect(scrollContainer).toBeVisible()
 
@@ -247,12 +349,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('sizes the add-to-prompt menu around its longest item', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
@@ -288,18 +391,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('exits node selection when the active workflow changes', async ({
+    agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
-    await page
-      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
-      .click()
+    await page.getByRole('menuitem', { name: enMessages.agent.nodes }).click()
     const selectionBanner = page.getByTestId('node-selection-mode-banner')
     await expect(selectionBanner).toBeVisible()
 
@@ -309,14 +412,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test('edits and resubmits the last prompt after stopping its turn', async ({
-    comfyPage,
+    agentPanel,
     postedMessages,
     getWebSocket
   }) => {
-    const page = comfyPage.page
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
 
-    const panel = page.locator('#agent-panel-root')
+    const panel = agentPanel.root
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'
@@ -338,7 +441,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(editButton).toHaveCount(1)
     await editButton.click()
 
-    await expect(composer).toHaveValue(originalPrompt)
+    await expect(composer).toHaveText(originalPrompt)
     await expect(composer).toBeFocused()
 
     await composer.fill(revisedPrompt)

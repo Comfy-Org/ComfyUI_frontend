@@ -10,7 +10,7 @@ import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -96,6 +96,34 @@ describe('attachLayoutMintPort', () => {
         class_type: 'TestNode',
         pos: [128, 96],
         node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
+      }
+    ])
+  })
+
+  it('mints add_node without the ghost flag of a node still being placed', () => {
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      flags: { ghost: true, pinned: true },
+      widgets_values: [7]
+    })
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: {
+          id: 1,
+          type: 'TestNode',
+          pos: [128, 96],
+          flags: { pinned: true },
+          widgets_values: [7]
+        }
       }
     ])
   })

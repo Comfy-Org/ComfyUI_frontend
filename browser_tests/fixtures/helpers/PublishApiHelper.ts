@@ -6,13 +6,12 @@ import type {
   HubLabelInfo,
   HubLabelListResponse,
   HubProfile,
+  PostAssetsFromWorkflowResponse,
   WorkflowPublishInfo
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
-
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 
 const DEFAULT_PROFILE: HubProfile = {
   username: 'testuser',
@@ -54,7 +53,7 @@ class PublishApiHelper {
   async mockProfile(profile: HubProfile | null): Promise<void> {
     await this.addRoute('**/hub/profiles/me', async (route) => {
       if (route.request().method() !== 'GET') {
-        await route.continue()
+        await route.fallback()
         return
       }
       if (profile === null) {
@@ -87,7 +86,7 @@ class PublishApiHelper {
   ): Promise<void> {
     await this.addRoute('**/userdata/*/publish', async (route) => {
       if (route.request().method() !== 'GET') {
-        await route.continue()
+        await route.fallback()
         return
       }
       if (status === 'unpublished') {
@@ -103,7 +102,7 @@ class PublishApiHelper {
   }
 
   async mockShareableAssets(assets: AssetInfo[] = []): Promise<void> {
-    const response: ShareableAssetsResponse = { assets }
+    const response: PostAssetsFromWorkflowResponse = { assets }
     await this.addRoute('**/assets/from-workflow', async (route) => {
       await route.fulfill({
         status: 200,
@@ -119,7 +118,7 @@ class PublishApiHelper {
     await this.removeRoutes('**/hub/workflows')
     await this.addRoute('**/hub/workflows', async (route) => {
       if (route.request().method() !== 'POST') {
-        await route.continue()
+        await route.fallback()
         return
       }
       await route.fulfill({
@@ -137,7 +136,7 @@ class PublishApiHelper {
     await this.removeRoutes('**/hub/workflows')
     await this.addRoute('**/hub/workflows', async (route) => {
       if (route.request().method() !== 'POST') {
-        await route.continue()
+        await route.fallback()
         return
       }
       await route.fulfill({

@@ -1,0 +1,88 @@
+[
+  {
+    "routerId": "bfl/flux-2-max",
+    "module": "nodes_bfl",
+    "nodeType": "Flux2ImageNode",
+    "model": "Flux.2 [max]"
+  },
+  {
+    "routerId": "bfl/flux-2-pro",
+    "module": "nodes_bfl",
+    "nodeType": "Flux2ImageNode",
+    "model": "Flux.2 [pro]"
+  },
+  {
+    "routerId": "bfl/flux-pro-1.0-expand",
+    "module": "nodes_bfl",
+    "nodeType": "FluxProExpandNode"
+  },
+  {
+    "routerId": "bfl/flux-pro-1.0-fill",
+    "module": "nodes_bfl",
+    "nodeType": "FluxProFillNode"
+  },
+  {
+    "routerId": "bfl/flux-pro-1.1-ultra",
+    "module": "nodes_bfl",
+    "nodeType": "FluxProUltraImageNode"
+  },
+  {
+    "routerId": "byteplus/seedream-4-0-250828",
+    "module": "nodes_bytedance",
+    "nodeType": "ByteDanceSeedreamNodeV2",
+    "model": "seedream-4-0-250828"
+  },
+  {
+    "routerId": "byteplus/seedream-4-5-251128",
+    "module": "nodes_bytedance",
+    "nodeType": "ByteDanceSeedreamNodeV2",
+    "model": "seedream-4-5-251128"
+  },
+  {
+    "routerId": "byteplus/seedream-5-0-260128",
+    "module": "nodes_bytedance",
+    "nodeType": "ByteDanceSeedreamNodeV2",
+    "model": "seedream 5.0 lite"
+  },
+  {
+    "routerId": "byteplus/seedream-5-0-pro-260628",
+    "module": "nodes_bytedance",
+    "nodeType": "ByteDanceSeedreamNodeV2",
+    "model": "seedream 5.0 pro"
+  },
+  {
+    "routerId": "xai/grok-imagine-image",
+    "module": "nodes_grok",
+    "nodeType": "GrokImageNode",
+    "model": "grok-imagine-image",
+    "useCases": ["generate-images"]
+  },
+  {
+    "routerId": "xai/grok-imagine-image-pro",
+    "module": "nodes_grok",
+    "nodeType": "GrokImageNode",
+    "model": "grok-imagine-image-pro",
+    "useCases": ["generate-images"]
+  },
+  {
+    "routerId": "xai/grok-imagine-image-quality",
+    "module": "nodes_grok",
+    "nodeType": "GrokImageNode",
+    "model": "grok-imagine-image-quality",
+    "useCases": ["generate-images"]
+  },
+  {
+    "routerId": "xai/grok-imagine-video",
+    "module": "nodes_grok",
+    "nodeType": "GrokVideoNode",
+    "model": "grok-imagine-video",
+    "useCases": ["generate-videos", "animate-images"]
+  },
+  {
+    "routerId": "xai/grok-imagine-video-1.5",
+    "module": "nodes_grok",
+    "nodeType": "GrokVideoNode",
+    "model": "grok-imagine-video-1.5",
+    "useCases": ["animate-images"]
+  }
+]

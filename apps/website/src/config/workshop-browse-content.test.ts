@@ -1,0 +1,137 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  assertNoModelSlugAliasCollisions,
+  authoredRouterModelSlugAliases,
+  authoredWorkshopModels,
+  routerModelSlugAliases,
+  routerWorkshopModelPaths,
+  workshopModels
+} from './workshop-browse-content'
+import {
+  isWorkshopModelDisabled,
+  workshopModelAvailability
+} from './workshop-model-availability'
+import {
+  getAuthoredRouterWorkshopModelDetail,
+  getRouterWorkshopModelDetail
+} from './workshop-router-content'
+
+describe('canonical model display names', () => {
+  it('does not publish editorial prices as exact Router charges', () => {
+    expect(authoredWorkshopModels.length).toBeGreaterThan(0)
+    for (const model of authoredWorkshopModels) {
+      expect(model.creditsPerRun).toBeUndefined()
+      expect(
+        getAuthoredRouterWorkshopModelDetail(model.slug)?.creditsPerRun
+      ).toBeUndefined()
+    }
+  })
+
+  it('does not expose Router slugs as catalogue or detail titles', () => {
+    for (const model of authoredWorkshopModels) {
+      expect(model.name.trim()).not.toBe('')
+      expect(model.name).not.toBe(model.routerId.split('/')[1])
+      expect(getAuthoredRouterWorkshopModelDetail(model.slug)?.name).toBe(
+        model.name
+      )
+      expect(model.href).toBe(`/models/${model.slug}/`)
+    }
+  })
+
+  it('preserves editorial names and distinguishes a native alias’s selected mode', () => {
+    expect(
+      getAuthoredRouterWorkshopModelDetail('vertexai--gemini-3-pro-image')?.name
+    ).toBe('Nano Banana Pro Text-to-Image')
+    expect(
+      getAuthoredRouterWorkshopModelDetail(
+        'byteplus--dreamina-seedance-2-0-fast-260128'
+      )?.name
+    ).toBe('Seedance 2.0 Fast Text-to-Video')
+  })
+
+  it.for([
+    {
+      slug: 'vertexai--veo-3--animate-images',
+      name: 'Veo 3 Image-to-Video'
+    },
+    {
+      slug: 'vertexai--veo-3--generate-videos',
+      name: 'Veo 3 Text-to-Video'
+    }
+  ])('keeps task-specific model names coherent for $slug', ({ slug, name }) => {
+    expect(getAuthoredRouterWorkshopModelDetail(slug)?.name).toBe(name)
+  })
+
+  it('places reference and corrected text-to-image models in their intended use cases', () => {
+    const placements = [
+      'byteplus--seedance-2-5-reference--generate-videos',
+      'openai--gpt-image-2--generate-images'
+    ].map((slug) => {
+      const model = authoredWorkshopModels.find((item) => item.slug === slug)
+      return [model?.useCases, model?.task]
+    })
+
+    expect(placements).toEqual([
+      [['animate-images'], 'image-to-video'],
+      [['generate-images'], 'text-to-image']
+    ])
+  })
+
+  it('keeps unqualified redirects on a generation role when split pages have examples', () => {
+    expect(
+      getAuthoredRouterWorkshopModelDetail('byteplus--seedream-5-0-pro-260628')
+        ?.slug
+    ).toBe('byteplus--seedream-5-pro--generate-images')
+    expect(
+      getAuthoredRouterWorkshopModelDetail('xai--grok-imagine-video')?.slug
+    ).toBe('xai--grok-imagine-video--generate-videos')
+  })
+})
+
+describe('model availability', () => {
+  it('withholds every disabled page from the catalogue, routes and redirects', () => {
+    for (const [slug, { disabled }] of workshopModelAvailability) {
+      if (!disabled) continue
+      expect(workshopModels.map((model) => model.slug)).not.toContain(slug)
+      expect(routerWorkshopModelPaths).not.toContain(slug)
+      expect(getRouterWorkshopModelDetail(slug)).toBeUndefined()
+    }
+    for (const target of routerModelSlugAliases.values())
+      expect(isWorkshopModelDisabled(target)).toBe(false)
+  })
+
+  it('keeps authored contracts testable independently of publication', () => {
+    for (const model of authoredWorkshopModels) {
+      const disabled = isWorkshopModelDisabled(model.slug)
+      expect(
+        getAuthoredRouterWorkshopModelDetail(model.slug)?.execution
+      ).toBeDefined()
+      expect(workshopModels.some(({ slug }) => slug === model.slug)).toBe(
+        !disabled
+      )
+      expect(getRouterWorkshopModelDetail(model.slug)?.slug).toBe(
+        disabled ? undefined : model.slug
+      )
+      expect(routerWorkshopModelPaths.includes(model.slug)).toBe(!disabled)
+    }
+  })
+
+  it('keeps authored aliases stable while withholding disabled redirects', () => {
+    const alias = 'wan--happyhorse-1.1-i2v'
+    const target = authoredRouterModelSlugAliases.get(alias)
+    expect(target).toBe('wan--happyhorse-image-to-video--animate-images')
+    expect(routerModelSlugAliases.get(alias)).toBe(
+      target && !isWorkshopModelDisabled(target) ? target : undefined
+    )
+  })
+
+  it('rejects a canonical page that collides with a redirect alias', () => {
+    expect(() =>
+      assertNoModelSlugAliasCollisions(
+        new Map([['duplicate', 'target']]),
+        new Set(['duplicate'])
+      )
+    ).toThrow('Content slug collides with a legacy redirect: duplicate')
+  })
+})

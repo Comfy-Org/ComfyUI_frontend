@@ -8,14 +8,13 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
-  dismissErrorOverlay,
-  enableErrorsOverlay
+  dismissErrorOverlay
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -128,8 +127,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('validation errors', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
@@ -335,8 +337,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('subgraph propagation', { tag: '@subgraph' }, () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await cleanupFakeModel(comfyPage)
     })
 

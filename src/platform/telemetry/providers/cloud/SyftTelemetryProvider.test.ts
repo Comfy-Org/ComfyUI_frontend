@@ -1,19 +1,17 @@
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockCurrentUser = vi.hoisted(() => ({
-  userEmail: { value: undefined as string | undefined },
-  useCurrentUser: vi.fn()
-}))
+import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
+
+let useCurrentUser: typeof realUseCurrentUser
 
 const mockRemoteConfig = vi.hoisted(() => ({
   value: {} as { syftdata_source_id?: string }
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: mockCurrentUser.useCurrentUser
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig
 }))
 
@@ -63,17 +61,15 @@ function failScript(
 }
 
 describe('SyftTelemetryProvider', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    useCurrentUser = (await import('@/composables/auth/useCurrentUser'))
+      .useCurrentUser
     document.head.innerHTML = ''
     window.__CONFIG__ = {}
     mockRemoteConfig.value = {}
     window.syft = undefined
     window.syftc = undefined
-    mockCurrentUser.userEmail.value = undefined
-    mockCurrentUser.useCurrentUser.mockReturnValue({
-      userEmail: mockCurrentUser.userEmail
-    })
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
@@ -144,7 +140,7 @@ describe('SyftTelemetryProvider', () => {
   it('replays at most once but still allows a later manual retry', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     const appendChild = mockScriptAppend()
-    mockCurrentUser.userEmail.value = 'restored@example.com'
+    useCurrentUser().userEmail = computed(() => 'restored@example.com')
     const SyftTelemetryProvider = await importProvider()
     const provider = new SyftTelemetryProvider()
 
@@ -262,7 +258,7 @@ describe('SyftTelemetryProvider', () => {
 
     new SyftTelemetryProvider()
 
-    expect(mockCurrentUser.useCurrentUser).not.toHaveBeenCalled()
+    expect(useCurrentUser).not.toHaveBeenCalled()
   })
 
   it('preserves an existing GTM-loaded Syft client and script', async () => {
@@ -343,12 +339,13 @@ describe('SyftTelemetryProvider', () => {
   it('identifies restored sessions from the current user store', async () => {
     mockRemoteConfig.value = { syftdata_source_id: 'src-123' }
     mockScriptAppend()
-    mockCurrentUser.userEmail.value = 'Restored@Example.com'
+    useCurrentUser().userEmail = computed(() => 'Restored@Example.com')
+    vi.mocked(useCurrentUser).mockClear()
     const SyftTelemetryProvider = await importProvider()
 
     new SyftTelemetryProvider().trackUserLoggedIn()
 
-    expect(mockCurrentUser.useCurrentUser).toHaveBeenCalled()
+    expect(useCurrentUser).toHaveBeenCalled()
     expect(syftStub().q).toContainEqual([
       'identify',
       'restored@example.com',
@@ -358,7 +355,7 @@ describe('SyftTelemetryProvider', () => {
 
   it('does not immediately re-identify the same email after auth tracking', async () => {
     const syft = installSyftSpy()
-    mockCurrentUser.userEmail.value = 'new@example.com'
+    useCurrentUser().userEmail = computed(() => 'new@example.com')
     const SyftTelemetryProvider = await importProvider()
     const provider = new SyftTelemetryProvider()
 

@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetMetadata: vi.fn(),
     uploadAssetAsync: vi.fn(),
@@ -18,23 +18,29 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
-  civitaiImportSource: {
-    name: 'Civitai',
-    hostnames: ['civitai.com', 'civitai.red'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/civitaiImportSource'),
+  () => ({
+    civitaiImportSource: {
+      name: 'Civitai',
+      hostnames: ['civitai.com', 'civitai.red'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/platform/assets/importSources/huggingfaceImportSource', () => ({
-  huggingfaceImportSource: {
-    name: 'HuggingFace',
-    hostnames: ['huggingface.co'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/huggingfaceImportSource'),
+  () => ({
+    huggingfaceImportSource: {
+      name: 'HuggingFace',
+      hostnames: ['huggingface.co'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     addEventListener: vi.fn(),
@@ -45,7 +51,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string) => key,
   te: () => false,

@@ -29,16 +29,16 @@ const feedbacks = [
     <div
       v-for="(fb, i) in feedbacks"
       :key="i"
-      class="bg-transparency-white-t4 flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl p-8 lg:w-3/4 lg:p-12"
+      class="flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl bg-transparency-white-t4 p-8 lg:w-3/4 lg:p-12"
     >
       <p class="text-2xl/relaxed font-light text-primary-comfy-canvas">
         "{{ t(fb.quote, locale) }}"
       </p>
       <div class="mt-12">
-        <p class="text-primary-comfy-yellow text-base font-medium">
+        <p class="text-base font-medium text-primary-comfy-yellow">
           {{ t(fb.name, locale) }},
         </p>
-        <p class="text-primary-comfy-yellow text-base font-medium">
+        <p class="text-base font-medium text-primary-comfy-yellow">
           {{ t(fb.role, locale) }}
         </p>
       </div>

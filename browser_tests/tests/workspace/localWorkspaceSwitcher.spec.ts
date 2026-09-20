@@ -22,7 +22,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     page.on('request', (request) => {
       if (!request.url().includes('/api/billing/')) return
       billingRequestUrls.push(request.url())
-      billingAuthorizationHeaders.push(request.headers().authorization ?? '')
+      billingAuthorizationHeaders.push(request.headers().authorization)
       if (new URL(request.url()).origin === localOrigin) {
         localBillingRequestUrls.push(request.url())
       }

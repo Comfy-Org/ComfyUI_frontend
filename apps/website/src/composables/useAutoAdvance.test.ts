@@ -5,7 +5,7 @@ import { useAutoAdvance } from './useAutoAdvance'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('./useReducedMotion', () => ({
+vi.mock(import('./useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

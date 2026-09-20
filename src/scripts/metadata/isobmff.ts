@@ -1,16 +1,14 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ASCII,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ASCII, ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-import { readFileAsArrayBuffer } from './readFile'
 
 // Set max read high, as atoms are stored near end of file
 // while search is made to be efficient.
@@ -196,23 +194,23 @@ const parseIlstBox = (
 }
 
 const findUserDataBox = (data: Uint8Array): IsobmffBoxContentRange => {
-  let userDataBox: IsobmffBoxContentRange = null
-
   // Metadata can be in 'udta' at top level or inside 'moov'
-  userDataBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.USER_DATA)
+  const topLevelBox = findIsobmffBoxByType(
+    data,
+    0,
+    data.length,
+    BOX_TYPES.USER_DATA
+  )
+  if (topLevelBox) return topLevelBox
 
-  if (!userDataBox) {
-    const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
-    if (moovBox) {
-      userDataBox = findIsobmffBoxByType(
-        data,
-        moovBox.start,
-        moovBox.end,
-        BOX_TYPES.USER_DATA
-      )
-    }
-  }
-  return userDataBox
+  const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
+  if (!moovBox) return null
+  return findIsobmffBoxByType(
+    data,
+    moovBox.start,
+    moovBox.end,
+    BOX_TYPES.USER_DATA
+  )
 }
 
 const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {

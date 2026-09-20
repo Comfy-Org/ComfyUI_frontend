@@ -61,6 +61,21 @@ export interface MintPortWiring {
 }
 
 const activeWirings = new Set<MintPortWiring>()
+const bufferedEnqueues: Array<Array<() => void>> = []
+
+export function runMintPortsBuffered<T>(fn: () => T): T {
+  const pending: Array<() => void> = []
+  bufferedEnqueues.push(pending)
+  try {
+    const result = fn()
+    bufferedEnqueues.pop()
+    for (const enqueue of pending) enqueue()
+    return result
+  } catch (error) {
+    bufferedEnqueues.pop()
+    throw error
+  }
+}
 
 export function notifyMintPortsBeforeGraphLoad(): void {
   for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
@@ -126,6 +141,11 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  const enqueue = (operations: GraphOperation[]) => {
+    const pending = bufferedEnqueues.at(-1)
+    if (pending) pending.push(() => deps.enqueue(operations))
+    else deps.enqueue(operations)
+  }
 
   type PlacedListener = Parameters<
     Parameters<typeof attachLinkMintPort>[0]['events']['onPlaced']
@@ -154,7 +174,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const layoutPort: LayoutMintPort = attachLayoutMintPort({
@@ -173,7 +193,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
         return (deps.getGraph()?._nodes ?? []).map((node) => node.id)
       }
     },
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const widgetPort = attachWidgetMintPort({
@@ -189,14 +209,14 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     rootGraphId() {
       const graph = deps.getGraph()
       if (!graph) return null
-      return String(graph.rootGraph?.id ?? graph.id)
+      return graph.rootGraph?.id ?? graph.id
     },
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
       return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
     },
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const linkStore = useLinkStore()
@@ -229,7 +249,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener({
-          graphId: String(graphId),
+          graphId,
           nodeId,
           name: widgetName,
           value,

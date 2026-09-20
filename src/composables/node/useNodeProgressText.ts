@@ -1,5 +1,9 @@
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTextPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget'
+import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
 
@@ -25,7 +29,7 @@ export function useNodeProgressText() {
   function showTextPreview(node: LGraphNode, text: string) {
     const widget = findTextPreviewWidget(node) ?? addTextPreviewWidget(node)
     widget.value = text
-    node.setDirtyCanvas?.(true)
+    node.setDirtyCanvas(true)
   }
 
   /**
@@ -42,6 +46,10 @@ export function useNodeProgressText() {
     if (widgetIdx > -1) {
       node.widgets[widgetIdx].onRemove?.()
       node.widgets.splice(widgetIdx, 1)
+      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+      useWidgetValueStore().deleteWidget(
+        widgetId(graphId, node.id, TEXT_PREVIEW_WIDGET_NAME)
+      )
     }
   }
 

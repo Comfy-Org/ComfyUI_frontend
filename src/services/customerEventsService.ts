@@ -62,7 +62,7 @@ export const useCustomerEventsService = () => {
       return routeSpecificErrors[status]
     }
     return (
-      axiosError.response?.data?.message ??
+      axiosError.response?.data.message ??
       `${context} failed with status ${status}`
     )
   }

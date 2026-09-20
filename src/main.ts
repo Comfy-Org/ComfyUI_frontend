@@ -5,27 +5,30 @@ import {
   captureMessage,
   init as sentryInit
 } from '@sentry/vue'
-import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
-import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
-import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -43,15 +46,24 @@ const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
 if (isCloud) stripPaymentReturnParams()
 
-// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
-// against the server's runtime values instead of the build-time defaults.
-const { refreshRemoteConfig } =
-  await import('@/platform/remoteConfig/refreshRemoteConfig')
-await refreshRemoteConfig({ useAuth: false })
+bootstrapTracer.armWatchdog()
+
+// Load remote config before the Firebase app resolves below, so getFirebaseConfig()
+// resolves against the server's runtime values instead of the build-time defaults.
+await bootstrapTracer.settle('startup/remote-config', async () => {
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false })
+})
+
+markStoresPending()
 
 if (isCloud) {
-  const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
-  await initTelemetry()
+  await bootstrapTracer.settle('startup/telemetry-init', async () => {
+    const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
+    await initTelemetry()
+  })
+
   const { startFeatureFlagTelemetry } =
     await import('@/composables/useFeatureFlags')
   const stopFeatureFlagTelemetry = startFeatureFlagTelemetry()
@@ -71,7 +83,13 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
-const firebaseApp = initializeApp(getFirebaseConfig())
+const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
+// Throws unless remote config has settled; the awaited remote-config phase above guarantees it has.
+try {
+  firebaseIdentity.initialize()
+} finally {
+  phaseFirebase.stop()
+}
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -86,6 +104,7 @@ const sentryDsn = isCloud
 // runs without the env var, however valid the runtime DSN turns out to be.
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
+const phaseSentry = bootstrapTracer.startPhase('startup/sentry-init')
 sentryInit({
   app,
   dsn: sentryDsn,
@@ -111,6 +130,7 @@ sentryInit({
         defaultIntegrations: false
       })
 })
+phaseSentry.stop()
 
 flushErrorReports()
 
@@ -118,12 +138,12 @@ flushErrorReports()
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
 setAssertReporter(
-  (message) => {
+  (message, context) => {
     if (isDesktop) {
-      captureMessage(message, { level: 'warning' })
+      captureMessage(message, { level: 'warning', extra: context })
     }
     if (isCloud) {
-      reportAssertFailure(message)
+      reportAssertFailure(message, context)
     }
     if (isNightly) {
       useToastStore(pinia).add({
@@ -165,10 +185,8 @@ app
   .use(ToastService)
   .use(pinia)
   .use(i18n)
-  .use(VueFire, {
-    firebaseApp,
-    modules: [VueFireAuth()]
-  })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()
@@ -187,3 +205,4 @@ const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
+bootstrapTracer.milestone('app-mounted')

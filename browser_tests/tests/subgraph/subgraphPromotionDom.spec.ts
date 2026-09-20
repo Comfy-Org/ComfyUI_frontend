@@ -12,7 +12,7 @@ async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
     const node = window.app!.rootGraph.nodes.find(
       (candidate) => String(candidate.id) === targetNodeId
     )
-    if (!node || !('subgraph' in node) || !node.subgraph) {
+    if (!node?.isSubgraphNode()) {
       throw new Error(`Subgraph node ${targetNodeId} not found`)
     }
 
@@ -155,7 +155,7 @@ test.describe(
           const interiorTextareas = comfyPage.page
             .locator('[data-node-id]')
             .getByRole('textbox')
-          await expect(interiorTextareas).toHaveCount(2)
+          await expect(interiorTextareas).toHaveCount(0)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 

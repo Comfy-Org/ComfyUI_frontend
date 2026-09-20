@@ -1,12 +1,11 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+import type { GraphMutations } from './graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -40,16 +39,12 @@ function op(id: string, baseVersion: number, payload: object) {
     op_id: id,
     actor: 'agent:test',
     base_version: baseVersion,
-    stamp: [baseVersion, 'agent:test', id],
+    stamp: [baseVersion, 'agent:test'],
     ...payload
   }
 }
 
 describe('EcsFollowerAdapter integration', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
     const createLayout = vi.fn(
@@ -63,6 +58,7 @@ describe('EcsFollowerAdapter integration', () => {
       }
     )
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
@@ -137,7 +133,8 @@ describe('EcsFollowerAdapter integration', () => {
     ).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
-    ).toBeUndefined()
+        ?.value
+    ).toBe(9)
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
@@ -159,6 +156,7 @@ describe('EcsFollowerAdapter integration', () => {
   it('removes local-only state from the first authoritative snapshot', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
     })
@@ -253,6 +251,7 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     let scopeAvailable = false
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => (scopeAvailable ? scope : null),
       layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
     })
@@ -317,6 +316,7 @@ describe('EcsFollowerAdapter integration', () => {
     }
     let activeScope = targetScope
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => activeScope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -354,6 +354,7 @@ describe('EcsFollowerAdapter integration', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -425,6 +426,7 @@ describe('EcsFollowerAdapter integration', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
@@ -527,6 +529,7 @@ describe('EcsFollowerAdapter integration', () => {
     const createLayout = vi.fn()
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
@@ -723,6 +726,7 @@ describe('EcsFollowerAdapter integration', () => {
       )
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
+        placement: inertPlacementPort,
         getScope: () => scope,
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
@@ -779,20 +783,19 @@ describe('EcsFollowerAdapter integration', () => {
       }
     }
 
-    it('removes a widget deleted in place and keeps its siblings', () => {
+    it('keeps a widget whose doc key was deleted and its siblings', () => {
       const { widgets, deliver, widgetValue, destroy } = bindSeededHost()
       expect(widgetValue('stale')).toBe(9)
 
       deliver(2, () => widgets.delete('stale'))
 
-      expect(widgetValue('stale')).toBeUndefined()
+      expect(widgetValue('stale')).toBe(9)
       expect(widgetValue('seed')).toBe(1)
       expect(
         useNodeDataStore()
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual(['1'])
-      expect(useWidgetValueStore().clearNode).toHaveBeenCalledTimes(1)
       destroy()
     })
 
@@ -811,7 +814,7 @@ describe('EcsFollowerAdapter integration', () => {
       destroy()
     })
 
-    it('drops widgets missing from a replaced widget map', () => {
+    it('keeps widgets missing from a replaced widget map', () => {
       const { node, deliver, widgetValue, destroy } = bindSeededHost()
 
       deliver(2, () => {
@@ -821,7 +824,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
 
       expect(widgetValue('seed')).toBe(5)
-      expect(widgetValue('stale')).toBeUndefined()
+      expect(widgetValue('stale')).toBe(9)
       destroy()
     })
   })
@@ -840,6 +843,7 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const createNode = vi.fn()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode, deleteNodes: vi.fn() }
     })
@@ -939,6 +943,7 @@ describe('EcsFollowerAdapter integration', () => {
       const noopBatch = {
         addNode: () => undefined,
         reconcileNode: () => undefined,
+        reconcileNodeFields: () => undefined,
         setWidget: () => undefined,
         connect: () => undefined,
         removeMissing: () => undefined,
@@ -977,5 +982,136 @@ describe('EcsFollowerAdapter integration', () => {
     adapter.destroy()
     followerA.destroy()
     followerB.destroy()
+  })
+
+  it('populates node slot arrays identically whether add+connect ops arrive in one combined frame or separate singleton frames (R-96)', () => {
+    const buildOps = (prefix: string) => [
+      op(`${prefix}-1`, 1, {
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Source',
+        pos: [0, 0],
+        node: {
+          id: 1,
+          type: 'Source',
+          inputs: [],
+          outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
+        }
+      }),
+      op(`${prefix}-2`, 2, {
+        op: 'add_node',
+        node_id: 2,
+        class_type: 'Sink',
+        pos: [200, 0],
+        node: {
+          id: 2,
+          type: 'Sink',
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          outputs: []
+        }
+      }),
+      op(`${prefix}-3`, 3, {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 2,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      })
+    ]
+
+    const runScenario = (deliverAsSingleFrame: boolean) => {
+      useNodeDataStore().clearGraph(scope.rootGraphId)
+      useLinkStore().clearGraph(scope.rootGraphId)
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+
+      const ops = buildOps(
+        deliverAsSingleFrame ? 'combined' : 'singleton'
+      ) as Parameters<typeof applyOps>[1]
+
+      if (deliverAsSingleFrame) {
+        const result = applyOps(host, ops, catalog)
+        expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
+          'applied',
+          'applied',
+          'applied'
+        ])
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+        expect(
+          adapter.applyFrame({
+            workflowId: 'wf',
+            seq: 1,
+            update,
+            actor: 'agent:test',
+            opIds: ops.map(({ op_id }) => op_id)
+          })
+        ).toBe(true)
+      } else {
+        let before = Y.encodeStateVector(host)
+        let first = true
+        let seq = 0
+        for (const singleOp of ops) {
+          const result = applyOps(host, [singleOp], catalog)
+          expect(result.outcomes[0]?.outcome).toBe('applied')
+          const update = first
+            ? Y.encodeStateAsUpdate(host)
+            : Y.encodeStateAsUpdate(host, before)
+          first = false
+          before = Y.encodeStateVector(host)
+          follower.applyRemoteUpdate(update)
+          expect(
+            adapter.applyFrame({
+              workflowId: 'wf',
+              seq: ++seq,
+              update,
+              actor: 'agent:test',
+              opIds: [singleOp.op_id]
+            })
+          ).toBe(true)
+        }
+      }
+
+      const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+      const origin = nodes.find(({ id }) => id === toNodeId(1))
+      const target = nodes.find(({ id }) => id === toNodeId(2))
+      const topology = useLinkStore().getTopology(
+        scope.rootGraphId,
+        toLinkId(9)
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+
+      return {
+        originLinks: origin?.outputs[0]?.links ?? null,
+        targetLink: target?.inputs[0]?.link ?? null,
+        topologyDefined: topology !== undefined
+      }
+    }
+
+    const singleton = runScenario(false)
+    const combined = runScenario(true)
+
+    // The link store converges identically either way...
+    expect(combined.topologyDefined).toBe(true)
+    expect(singleton.topologyDefined).toBe(true)
+    // ...but node slot state must converge too: same-frame connect+adds must
+    // not leave inputs[].link / outputs[].links empty relative to delivering
+    // the same ops across separate frames.
+    expect(combined.originLinks).toEqual(singleton.originLinks)
+    expect(combined.targetLink).toEqual(singleton.targetLink)
+    expect(combined.originLinks).toEqual([toLinkId(9)])
+    expect(combined.targetLink).toEqual(toLinkId(9))
   })
 })

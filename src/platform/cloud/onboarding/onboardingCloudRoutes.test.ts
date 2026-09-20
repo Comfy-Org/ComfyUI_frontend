@@ -1,8 +1,10 @@
+import { computed } from 'vue'
 import { mapValues } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   cloudOnboardingRoutes,
   oauthConsentRedirect
@@ -16,22 +18,11 @@ const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 
 const createSessionOrThrow = vi.fn().mockResolvedValue(undefined)
 
-vi.mock('@/platform/auth/session/useSessionCookie', () => ({
+vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
-// The `cloud-login` guard reads only `isLoggedIn.value`, so a plain box stands
-// in for the ref and keeps the factory hoistable.
-const { useCurrentUser, isLoggedIn } = vi.hoisted(() => {
-  const isLoggedIn = { value: false }
-  return { isLoggedIn, useCurrentUser: vi.fn(() => ({ isLoggedIn })) }
-})
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({ useCurrentUser }))
-
-beforeEach(() => {
-  isLoggedIn.value = false
-})
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const oauthLayout = cloudOnboardingRoutes.find((r) => r.path === '/oauth')
 const consentRoute = oauthLayout?.children?.find(
@@ -205,8 +196,8 @@ describe('cloudOnboardingRoutes', () => {
  */
 describe('legacy /login through the cloud-login guard', () => {
   beforeEach(() => {
+    vi.mocked(useCurrentUser).mockClear()
     clearOAuthRequestId()
-    useCurrentUser.mockClear()
   })
 
   it('lands a signed-out visitor on the login view', async () => {
@@ -218,7 +209,8 @@ describe('legacy /login through the cloud-login guard', () => {
   })
 
   it('forwards a signed-in visitor past the login view', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.mocked(useCurrentUser).mockClear()
 
     const to = await completeNavigation('/login')
 
@@ -227,7 +219,8 @@ describe('legacy /login through the cloud-login guard', () => {
   })
 
   it('honours switchAccount through the redirect, leaving the guard inert', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
+    vi.mocked(useCurrentUser).mockClear()
 
     const to = await completeNavigation('/login?switchAccount=true')
 
@@ -322,7 +315,6 @@ async function runGuard(
 
 describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   beforeEach(() => {
-    isLoggedIn.value = false
     clearOAuthRequestId()
     createSessionOrThrow.mockReset().mockResolvedValue(undefined)
   })
@@ -332,13 +324,13 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('redirects a signed-in visitor away from the auth page', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     expect(await runGuard(route, {})).toEqual({ name: 'cloud-user-check' })
   })
 
   it('sends a signed-in visitor straight to consent mid-OAuth', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
     captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
 
     expect(await runGuard(route, {})).toEqual({
@@ -352,7 +344,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('honours ?switchAccount for a signed-in visitor', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     expect(
       await runGuard(route, { switchAccount: '1' }),
@@ -361,7 +353,7 @@ describe.for(guardedRoutes)('%s beforeEnter', (route) => {
   })
 
   it('does not mint a session cookie when it lets the visitor through', async () => {
-    isLoggedIn.value = true
+    useCurrentUser().isLoggedIn = computed(() => true)
 
     await runGuard(route, { switchAccount: '1' })
 

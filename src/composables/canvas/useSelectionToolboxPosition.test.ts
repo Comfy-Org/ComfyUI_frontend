@@ -18,9 +18,9 @@ const mockApp = vi.hoisted(() => ({
   canvas: null
 }))
 
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-vi.mock('@/composables/useVueFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({
     shouldRenderVueNodes: { value: false }
   })

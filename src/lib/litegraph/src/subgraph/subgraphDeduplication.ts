@@ -321,7 +321,7 @@ function findNextAvailableId(
   usedIds: Set<number>,
   advance: () => number
 ): number {
-  while (true) {
+  for (;;) {
     const nextId = advance()
     if (nextId > MAX_ID) {
       throw new Error('Node ID space exhausted')
@@ -476,8 +476,8 @@ function remapRerouteIds(
   )
 }
 
-function remapNumericIds<T extends { id: number }>(
-  items: T[],
+function remapNumericIds(
+  items: { id: number }[],
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,
