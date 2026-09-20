@@ -103,6 +103,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
@@ -145,6 +148,13 @@ const tooltipContentMap = computed(() => {
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
+const readWorkspaceEvents = (params: { page: number; limit: number }) => {
+  const rail = useBillingReadRail()
+  return rail === null
+    ? workspaceApi.getBillingEvents(params)
+    : readOnRail(() => rail.readEvents(params))
+}
+
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
   loading.value = true
@@ -156,7 +166,7 @@ const loadEvents = async () => {
       limit: pagination.value.limit
     }
     const response = shouldUseWorkspaceBilling.value
-      ? await workspaceApi.getBillingEvents(params)
+      ? await readWorkspaceEvents(params)
       : await customerEventService.getMyEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
@@ -167,6 +177,16 @@ const loadEvents = async () => {
     }
 
     if (loadToken !== latestLoadToken) return
+
+    // Undefined is a SUPERSEDED rail read: the scope moved on mid-request, so
+    // what is on screen belongs to the workspace we just left. Only the billing
+    // mode is watched, and a switch between two workspaces on the same mode
+    // does not remount this table — leaving the rows up would show one
+    // workspace's billing events under another.
+    if (response === undefined) {
+      dropRenderedEvents()
+      return
+    }
 
     if (response) {
       if (response.events) {
@@ -210,14 +230,32 @@ const onPageChange = (event: { page: number }) => {
   })
 }
 
+/**
+ * Forget what is on screen. A superseded read and a workspace switch both mean
+ * the rendered rows belong to a scope this table has left, so they go before
+ * the next read rather than after it settles.
+ */
+const dropRenderedEvents = () => {
+  events.value = []
+  pagination.value = { ...pagination.value, page: 1, total: 0, totalPages: 0 }
+}
+
 const refresh = async () => {
   pagination.value.page = 1
   await loadEvents()
 }
 
+const workspaceStore = useTeamWorkspaceStore()
+
+// The active workspace is watched alongside the billing mode: a switch between
+// two workspaces on the same mode leaves this table mounted, and without this
+// nothing reloads it at all when no read happens to be in flight.
 watch(
-  shouldUseWorkspaceBilling,
-  () => {
+  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  ([, workspaceId], previous) => {
+    if (previous !== undefined && previous[1] !== workspaceId) {
+      dropRenderedEvents()
+    }
     refresh().catch((error) => {
       console.error('Error loading events:', error)
     })
