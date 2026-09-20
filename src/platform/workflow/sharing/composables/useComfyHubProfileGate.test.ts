@@ -1,15 +1,14 @@
+import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 const mockGetMyProfile = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockCreateProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockResolvedUserInfo = vi.hoisted(() => ({
-  value: { id: 'user-a' }
-}))
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -23,11 +22,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: mockResolvedUserInfo
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -60,7 +55,7 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    mockResolvedUserInfo.value = { id: 'user-a' }
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)
     mockRequestAssetUploadUrl.mockResolvedValue({
@@ -90,11 +85,14 @@ describe('useComfyHubProfileGate', () => {
     })
 
     it('reuses cached profile state per user', async () => {
+      const resolvedUserInfo = ref({ id: 'user-a' })
+      useCurrentUser().resolvedUserInfo = computed(() => resolvedUserInfo.value)
+      const gate = useComfyHubProfileGate()
       await gate.fetchProfile()
       await gate.fetchProfile()
       expect(mockGetMyProfile).toHaveBeenCalledTimes(1)
 
-      mockResolvedUserInfo.value = { id: 'user-b' }
+      resolvedUserInfo.value = { id: 'user-b' }
       await gate.fetchProfile()
 
       expect(mockGetMyProfile).toHaveBeenCalledTimes(2)

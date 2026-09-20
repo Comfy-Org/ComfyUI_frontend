@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流中保存和恢复视图位置及缩放"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "在问题选项卡中显示缺失的模型",
+    "tooltip": "禁用后，未找到的模型文件不会列在问题选项卡中，其节点也不会高亮显示。"
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "实时预览",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "持久化工作流状态并在页面（重新）加载时恢复"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "显示缺失模型警告"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "在问题选项卡中显示缺失的媒体",
+    "tooltip": "禁用后，未找到的输入图像、视频和音频不会列在问题选项卡中，其节点也不会高亮显示。"
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "在问题选项卡中显示缺失的节点",
+    "tooltip": "禁用后，缺失的节点包不会列在问题选项卡中，其节点也不会高亮显示。工作流仍无法运行，直到安装这些节点包。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"

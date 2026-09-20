@@ -19,6 +19,7 @@ export function billingOperation(
     isAuthenticating: false,
     canRetryAuthentication: false,
     authenticationRequiredSeen: false,
+    blockedOnCustomerSeen: false,
     workspaceId: 'workspace-1',
     autoHandleRequiresAction: false,
     phase: null,

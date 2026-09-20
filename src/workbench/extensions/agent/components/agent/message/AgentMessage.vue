@@ -130,7 +130,7 @@ const status = computed(() => {
     }
   if (composing.value)
     return {
-      icon: 'text-agent-fg-subtle icon-[lucide--loader-circle] animate-spin',
+      icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
     }
   return null
@@ -142,7 +142,7 @@ const status = computed(() => {
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <template v-else-if="group.kind === 'trace'">
-        <ActivityTrace v-if="message.streaming" :parts="activityParts" />
+        <ActivityTrace v-if="message.streaming" :parts="activityParts" live />
         <WorkSummary v-else :parts="activityParts" />
       </template>
       <div
@@ -178,21 +178,33 @@ const status = computed(() => {
         :role="group.part.level === 'error' ? 'alert' : 'status'"
         :class="
           cn(
-            'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',
+            'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
             group.part.level === 'error'
-              ? 'border-agent-danger/40 text-agent-danger'
-              : 'border-agent-border text-agent-fg-muted'
+              ? 'border-destructive-background/40 text-destructive-background'
+              : 'border-component-node-border text-muted-foreground'
           )
         "
       >
         <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-        <span>{{ group.part.text }}</span>
+        <span class="flex flex-col gap-0.5">
+          <span>{{ group.part.text }}</span>
+          <span
+            v-if="group.part.retryAfterSeconds !== undefined"
+            class="text-xs text-muted-foreground"
+          >
+            {{
+              t('agent.retryAfterSeconds', {
+                seconds: group.part.retryAfterSeconds
+              })
+            }}
+          </span>
+        </span>
       </div>
     </template>
 
     <div
       v-if="status"
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal"
+      class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
       <span :class="cn('size-4 shrink-0', status.icon)" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>

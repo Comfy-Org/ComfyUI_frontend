@@ -27,7 +27,7 @@ const cards = [
 
 <template>
   <section
-    class="max-w-9xl mx-auto px-6 py-10 lg:py-14"
+    class="mx-auto max-w-9xl px-6 py-10 lg:py-14"
     :aria-label="t('platform.products.models.title', locale)"
   >
     <h2

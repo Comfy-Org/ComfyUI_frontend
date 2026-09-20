@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -10,9 +11,10 @@ const { contextMenuMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, vars?: Record<string, unknown>) =>
+vi.mock(import('@/i18n'), () => ({
+  t: fromAny((key: string, vars?: unknown) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key
+  )
 }))
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })

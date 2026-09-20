@@ -154,7 +154,7 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         @touchstart.passive="scrubbing = true"
       >
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: `${progress * 100}%` }"
         />
       </div>

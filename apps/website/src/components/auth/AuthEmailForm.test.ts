@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
-} from '@comfyorg/account/turnstileScript'
+} from '@comfyorg/account-core/turnstileScript'
 
 import AuthEmailForm from './AuthEmailForm.vue'
 
@@ -23,7 +22,7 @@ const turnstileApi = vi.hoisted(
     }) satisfies TurnstileApi
 )
 
-vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: () => Promise.resolve(turnstileApi)
 }))
 
