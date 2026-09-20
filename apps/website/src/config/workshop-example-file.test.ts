@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { workshopExampleFile } from './workshop-example-file'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import type { FormValues } from './workshop-playground'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
