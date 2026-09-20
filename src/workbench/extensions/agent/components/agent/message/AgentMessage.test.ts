@@ -57,7 +57,7 @@ describe('AgentMessage paywall reply', () => {
     ).toBeInTheDocument()
   })
 
-  // FE-2519: the denial reason travels AgentMessage -> AgentMessageGroup ->
+  // FE-2313: the denial reason travels AgentMessage -> AgentMessageGroup ->
   // AgentPaywallCard. Card tests hand the text straight to the card and session
   // tests only prove it is stored, so nothing else fails if that binding is
   // dropped and the transcript silently falls back to the generic copy.
