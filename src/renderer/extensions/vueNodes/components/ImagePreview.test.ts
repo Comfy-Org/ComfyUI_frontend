@@ -372,6 +372,17 @@ describe('ImagePreview', () => {
       )
     })
 
+    it('hides the lightbox button for a live preview blob', () => {
+      renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
+
+      expect(
+        screen.queryByRole('button', { name: 'Open in lightbox' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Download image' })
+      ).toBeInTheDocument()
+    })
+
     it('does not put live preview blobs into the lightbox', async () => {
       renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
       const user = userEvent.setup()

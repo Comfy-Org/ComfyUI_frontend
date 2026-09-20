@@ -226,6 +226,10 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     'opens the lightbox when a grid image is double-clicked',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const downloads: string[] = []
+      comfyPage.page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
+      )
 
       await test.step('Add node', async () => {
         await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -239,12 +243,15 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
       const gridImages = node.imageGrid.locator('img')
 
+      // Only the third cell is a file the backend can serve, so the image the
+      // lightbox ends up showing identifies which cell the gesture selected.
       await test.step('Inject a multi-image grid', async () => {
-        const images = new Array(4).fill({
-          filename: 'example.png',
-          subfolder: '',
-          type: 'input'
-        })
+        const images = [
+          { filename: 'decoy-a.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-b.png', subfolder: '', type: 'input' },
+          { filename: 'example.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-d.png', subfolder: '', type: 'input' }
+        ]
         execution.executed('', '1', { images })
         await expect(gridImages).toHaveCount(4)
       })
@@ -254,6 +261,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         'src',
         /[?&]preview=webp(%3B|;)75/
       )
+
+      const nodeBoxBefore = await node.root.boundingBox()
 
       // The first click swaps the grid out for the gallery panel, so the
       // browser retargets the second click. jsdom cannot reproduce that,
@@ -265,12 +274,64 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
       await expect(lightbox).toBeVisible()
 
+      const lightboxImage = lightbox.locator('img').first()
+      await expect(lightboxImage).toHaveAttribute(
+        'src',
+        /[?&]filename=example\.png/
+      )
+      await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
+      await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
       await expect(lightbox.getByLabel('Previous')).toBeVisible()
       await expect(lightbox.getByLabel('Next')).toBeVisible()
-      await expect(lightbox.locator('img').first()).not.toHaveAttribute(
-        'src',
-        /[?&]preview=/
+
+      // The second click lands on the freshly revealed action bar, which must
+      // not fire, and the gesture must not disturb the node underneath.
+      expect(downloads).toEqual([])
+      await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
+      expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
+
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(lightbox).toBeHidden()
+    }
+  )
+
+  wstest(
+    'does not open the lightbox when a preview control is double-clicked',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const downloads: string[] = []
+      comfyPage.page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
       )
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+      await test.step('Inject a single output', async () => {
+        const images = [
+          { filename: 'example.png', subfolder: '', type: 'input' }
+        ]
+        execution.executed('', '1', { images })
+        await expect(node.imagePreview.locator('img')).toBeVisible()
+      })
+
+      // A double-click that begins on a control is a control interaction, so
+      // it must run that control once and leave the lightbox closed.
+      await node.imagePreview.getByRole('region').hover()
+      await node.imagePreview.getByLabel('Download image').dblclick()
+
+      await expect(
+        comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+      ).toHaveCount(0)
+      expect(downloads).toEqual(['example.png'])
     }
   )
 

@@ -134,7 +134,9 @@
 
         <!-- Open in Lightbox Button -->
         <button
-          v-if="!imageError && !currentImageIsHdr"
+          v-if="
+            !imageError && !currentImageIsHdr && !isObjectUrl(currentImageUrl)
+          "
           data-testid="open-lightbox-button"
           :class="actionButtonClass"
           :title="$t('g.openInLightbox')"
@@ -486,9 +488,10 @@ function withSingleClick(
 // the first from the second.
 function handleGestureStart(event: MouseEvent) {
   if (event.detail > 1) return
-  gestureStartedOnControl.value = Boolean(
-    (event.target as Element | null)?.closest('[data-preview-control]')
-  )
+  const { target } = event
+  gestureStartedOnControl.value =
+    target instanceof Element &&
+    target.closest('[data-preview-control]') !== null
 }
 
 function handleGalleryDoubleClick() {
