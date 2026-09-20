@@ -2,9 +2,9 @@ export const RECONNECT_TELEMETRY_WINDOW_MS = 60_000
 const STORM_THRESHOLD = 3
 
 export interface ReconnectTelemetryState {
-  reconnects: number[]
-  stormReported: boolean
-  lastAbnormalCloseReportAt: number | null
+  readonly reconnects: readonly number[]
+  readonly stormReported: boolean
+  readonly lastAbnormalCloseReportAt: number | null
 }
 
 export type ReconnectTelemetryEvent =
