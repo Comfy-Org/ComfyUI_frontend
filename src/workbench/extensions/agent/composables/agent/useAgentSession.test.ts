@@ -1,7 +1,6 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
