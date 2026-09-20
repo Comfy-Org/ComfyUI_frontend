@@ -4,7 +4,7 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -17,6 +17,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
@@ -118,7 +119,11 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function agentOperation(id: string, version: number, payload: object) {
+function agentOperation(
+  id: string,
+  version: number,
+  payload: GraphOperation
+): Op {
   return {
     op_id: id,
     actor: 'agent:test',
@@ -219,14 +224,12 @@ describe('reconcileAgentAdapters', () => {
 
     let sequence = 0
     let initialFrame = true
-    const deliver = (payload: object) => {
+    const deliver = (payload: GraphOperation) => {
       const stateVector = Y.encodeStateVector(host)
       const opId = `agent-op-${++sequence}`
       const result = applyOps(
         host,
-        [agentOperation(opId, sequence, payload)] as Parameters<
-          typeof applyOps
-        >[1],
+        [agentOperation(opId, sequence, payload)],
         CATALOG
       )
       expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
@@ -628,7 +631,17 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).toHaveBeenCalledWith(
         'LiteGraph: max number of nodes in a graph reached',
         expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
+          errorType: 'agent_node_materialize_add_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'recovered',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          }
         })
       )
     })
@@ -701,7 +714,17 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'agent_node_materialize_configure_failed'
+          errorType: 'agent_node_materialize_configure_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          }
         })
       )
     })
@@ -802,11 +825,13 @@ describe('reconcileAgentAdapters', () => {
       expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
 
       // Both failures are reported: the original `onAdded` throw, and the
-      // cleanup that could not complete.
+      // cleanup that could not complete. A partial adapter survived the
+      // rollback, so the add is degraded rather than recovered.
       expect(reportError).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
+          errorType: 'agent_node_materialize_add_failed',
+          tags: expect.objectContaining({ outcome: 'degraded' })
         })
       )
       expect(reportError).toHaveBeenCalledWith(
@@ -989,6 +1014,102 @@ describe('reconcileAgentAdapters', () => {
       expect(interior?.widgets?.[0]?.value).toBe(42)
     })
 
+    /**
+     * Regression (Linear PM-827, reporter Jo Zhang, 2026-09-04): an
+     * agent-built subgraph instance rendered correctly on load, then degraded
+     * to a widget-less node titled with its definition UUID the moment the
+     * agent wrote a promoted host widget. The op layer stores that write as
+     * the instance's positional `__widgets_opaque` array and retires the
+     * empty `widgets` map, so the follower sees a payload with no `title` and
+     * positional `widgets_values`.
+     *
+     * Two landed fixes cover it and this test pins both against regression:
+     * `nodeTitle()` resolves an untitled payload to the registered class
+     * title (the subgraph's name) before falling back to the type, and
+     * `EcsFollowerAdapter` routes a live subgraph host to
+     * `reconcileNodeFields` so its definition-backed slots and promoted
+     * widget bindings are never rebuilt from the payload.
+     */
+    it('regression: keeps a subgraph instance title and promoted widgets across a promoted host set_widget', () => {
+      const source = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const interior = new WidgetNode()
+      interior.addInput('value', 'number').widget = { name: 'value' }
+      source.add(interior)
+      source.inputNode.slots[0].connect(interior.inputs[0], interior)
+      const definition = source.asSerialisable()
+      // `registerSubgraphNodeDef` gives the registered class a static title of
+      // the subgraph's display name; `LGraphNode.configure` falls back to it
+      // when the serialised node carries no `title`, which is why the
+      // instance reads correctly on first materialization.
+      graph.events.addEventListener('subgraph-created', (event) => {
+        const registered =
+          LiteGraph.registered_node_types[event.detail.subgraph.id]
+        registered.title = event.detail.subgraph.name
+      })
+
+      const { host, follower, adapter } = seedDocument(graph, {
+        nodes: [{ ...nodePayload(1, definition.id), widgets_values: [] }],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+      reconcileAgentAdapters(graph, definitions)
+
+      const instance = graph.getNodeById(toNodeId(1))
+      if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
+      expect(instance.title).toBe(source.name)
+      const promotedWidgetId = instance.inputs[0]?.widgetId
+      if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(0)
+      instance.pos = [400, 500]
+      instance.size = [400, 300]
+
+      const stateVector = Y.encodeStateVector(host)
+      const result = applyOps(
+        host,
+        [
+          agentOperation('op-promoted', 2, {
+            op: 'set_widget',
+            node_id: 1,
+            widget: 'value',
+            value: 42,
+            promoted: { value_index: 0, host_widgets_values: [42] }
+          })
+        ],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: 'op-promoted', outcome: 'applied' }
+      ])
+      const update = Y.encodeStateAsUpdate(host, stateVector)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['op-promoted']
+        })
+      ).toBe(true)
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+
+      expect(graph.getNodeById(toNodeId(1))).toBe(instance)
+      expect(instance).toEqual(
+        expect.objectContaining({
+          title: source.name,
+          inputs: [expect.objectContaining({ widgetId: promotedWidgetId })],
+          widgets: [expect.objectContaining({ value: 42 })]
+        })
+      )
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
+      expect([...instance.pos]).toEqual([400, 500])
+      expect([...instance.size]).toEqual([400, 300])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('matches widget values to definitions by id when one definition nests another', () => {
       // createSubgraphs hoists nested definitions into its return value, so
       // the created subgraphs outnumber the definitions handed in.
@@ -1154,6 +1275,16 @@ describe('reconcileAgentAdapters', () => {
         expect.objectContaining({ message: 'interior node rejected' }),
         {
           errorType: 'agent_subgraph_definitions_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          },
           context: { graphId: graph.id, definitionId: definition.id }
         }
       )
@@ -1193,6 +1324,13 @@ describe('reconcileAgentAdapters', () => {
         expect.any(AggregateError),
         {
           errorType: 'agent_subgraph_definitions_failed',
+          tags: expect.objectContaining({
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs'
+          }),
           context: { graphId: graph.id, definitionId: definition.id }
         }
       )
@@ -1252,6 +1390,13 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',
+        tags: expect.objectContaining({
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'degraded',
+          integration_target: 'ecs'
+        }),
         context: { graphId: graph.id, definitionId: bad.id }
       })
     })
@@ -1310,6 +1455,13 @@ describe('reconcileAgentAdapters', () => {
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',
+        tags: expect.objectContaining({
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'degraded',
+          integration_target: 'ecs'
+        }),
         context: { graphId: graph.id, definitionId: 'legacy-subgraph' }
       })
     })

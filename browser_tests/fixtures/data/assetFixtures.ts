@@ -59,6 +59,22 @@ function createOutputAsset(
     ...overrides
   }
 }
+/**
+ * A video generated through the Comfy Agent / cloud path: the assets API
+ * only builds `preview_url`/`thumbnail_url` for images, so a video record
+ * carries neither and the card must fall back to the file's own content URL.
+ */
+export const AGENT_VIDEO_ASSET: Asset = createOutputAsset({
+  id: '11111111-1111-4111-a111-111111111111',
+  name: 'agent_generated_video.mp4',
+  job_id: '22222222-2222-4222-a222-222222222222',
+  mime_type: 'video/mp4',
+  size: 6_163,
+  created_at: '2026-09-18T00:00:00.000Z',
+  updated_at: '2026-09-18T00:00:00.000Z',
+  last_access_time: '2026-09-18T00:00:00.000Z'
+})
+
 export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',
