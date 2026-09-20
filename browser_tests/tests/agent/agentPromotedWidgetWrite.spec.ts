@@ -7,7 +7,6 @@ import * as Y from 'yjs'
 
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -20,7 +19,6 @@ import type { NodeId } from '@/types/nodeId'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const ASSET_PATH = path.resolve(
   import.meta.dirname,
   '../../assets/subgraphs/nested-pack-promoted-values.json'
@@ -156,6 +154,7 @@ test.describe(
     test.use({ connectWebSocketToServer: false })
 
     test('set_widget persists host promotions without changing interior defaults', async ({
+      agentPanel,
       comfyPage,
       postedMessages,
       getWebSocket
@@ -191,15 +190,14 @@ test.describe(
         await hostNode.centerOnNode()
         await page.screenshot({ path: testInfo.outputPath('before.png') })
 
-        const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-        await expect(openButton).toBeVisible()
-        await openButton.click()
-
-        const panel = page.locator('#agent-panel-root')
-        await expect(panel).toBeVisible()
-        await expect(
-          panel.getByRole('button', { name: 'Switch workflow' })
-        ).toBeVisible()
+        await agentPanel.open()
+        const panel = agentPanel.root
+        // The send is inert until the session has a workflow target: `Send` is
+        // gated on `workflowSelecting || !composer.canSend.value`, and the ack
+        // that carries `workflow_id` is what `bindWorkflow` subscribes on.
+        // Asserting the picker is merely visible leaves the panel unbound, so
+        // the click posts nothing and the CRDT leg below is never reached.
+        await agentPanel.selectWorkflow()
 
         const ws = await getWebSocket()
         const subscribeFrame = new Promise<{
