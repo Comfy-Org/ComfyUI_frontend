@@ -109,84 +109,113 @@ function report(
   return { kind: 'report', errorType, cause }
 }
 
+function fromPending(event: ReplacementEvent): ReplacementTransition | null {
+  if (event.type !== 'release') return null
+  return {
+    state: { phase: 'released' },
+    effects: [{ kind: 'release-records' }, { kind: 'add-successor' }]
+  }
+}
+
+function fromReleased(event: ReplacementEvent): ReplacementTransition | null {
+  switch (event.type) {
+    case 'add-succeeded':
+      return {
+        state: { phase: 'committed' },
+        effects: [{ kind: 'configure-successor' }]
+      }
+    case 'add-failed':
+      return {
+        state: { phase: 'removing', cause: event.cause },
+        effects: [{ kind: 'remove-successor' }]
+      }
+    default:
+      return null
+  }
+}
+
+function fromCommitted(event: ReplacementEvent): ReplacementTransition | null {
+  switch (event.type) {
+    case 'configure-succeeded':
+      return { state: { phase: 'settled' }, effects: [] }
+    case 'configure-failed':
+      return {
+        state: { phase: 'settled' },
+        effects: [
+          report('agent_node_materialize_configure_failed', event.cause)
+        ]
+      }
+    default:
+      return null
+  }
+}
+
+function fromRemoving(
+  addCause: unknown,
+  event: ReplacementEvent
+): ReplacementTransition | null {
+  switch (event.type) {
+    case 'cleanup-succeeded':
+      return {
+        state: { phase: 'restoring' },
+        effects: [
+          { kind: 'restore-records' },
+          report('agent_node_materialize_add_failed', addCause)
+        ]
+      }
+    case 'cleanup-failed':
+      return {
+        state: { phase: 'restoring' },
+        effects: [
+          { kind: 'restore-records' },
+          report('agent_node_materialize_add_failed', addCause),
+          report('agent_node_materialize_rollback_failed', event.cause)
+        ]
+      }
+    default:
+      return null
+  }
+}
+
+function fromRestoring(event: ReplacementEvent): ReplacementTransition | null {
+  switch (event.type) {
+    case 'restore-succeeded':
+      return { state: { phase: 'restored' }, effects: [] }
+    case 'restore-failed':
+      return {
+        state: { phase: 'stranded' },
+        effects: [report('agent_node_materialize_restore_failed', event.cause)]
+      }
+    default:
+      return null
+  }
+}
+
+function legalTransition(
+  state: ReplacementState,
+  event: ReplacementEvent
+): ReplacementTransition | null {
+  switch (state.phase) {
+    case 'pending':
+      return fromPending(event)
+    case 'released':
+      return fromReleased(event)
+    case 'committed':
+      return fromCommitted(event)
+    case 'removing':
+      return fromRemoving(state.cause, event)
+    case 'restoring':
+      return fromRestoring(event)
+    case 'settled':
+    case 'restored':
+    case 'stranded':
+      return null
+  }
+}
+
 export function transition(
   state: ReplacementState,
   event: ReplacementEvent
 ): ReplacementTransition {
-  switch (state.phase) {
-    case 'pending':
-      if (event.type === 'release') {
-        return {
-          state: { phase: 'released' },
-          effects: [{ kind: 'release-records' }, { kind: 'add-successor' }]
-        }
-      }
-      break
-    case 'released':
-      if (event.type === 'add-succeeded') {
-        return {
-          state: { phase: 'committed' },
-          effects: [{ kind: 'configure-successor' }]
-        }
-      }
-      if (event.type === 'add-failed') {
-        return {
-          state: { phase: 'removing', cause: event.cause },
-          effects: [{ kind: 'remove-successor' }]
-        }
-      }
-      break
-    case 'committed':
-      if (event.type === 'configure-succeeded') {
-        return { state: { phase: 'settled' }, effects: [] }
-      }
-      if (event.type === 'configure-failed') {
-        return {
-          state: { phase: 'settled' },
-          effects: [
-            report('agent_node_materialize_configure_failed', event.cause)
-          ]
-        }
-      }
-      break
-    case 'removing':
-      if (event.type === 'cleanup-succeeded') {
-        return {
-          state: { phase: 'restoring' },
-          effects: [
-            { kind: 'restore-records' },
-            report('agent_node_materialize_add_failed', state.cause)
-          ]
-        }
-      }
-      if (event.type === 'cleanup-failed') {
-        return {
-          state: { phase: 'restoring' },
-          effects: [
-            { kind: 'restore-records' },
-            report('agent_node_materialize_add_failed', state.cause),
-            report('agent_node_materialize_rollback_failed', event.cause)
-          ]
-        }
-      }
-      break
-    case 'restoring':
-      if (event.type === 'restore-succeeded') {
-        return { state: { phase: 'restored' }, effects: [] }
-      }
-      if (event.type === 'restore-failed') {
-        return {
-          state: { phase: 'stranded' },
-          effects: [
-            report('agent_node_materialize_restore_failed', event.cause)
-          ]
-        }
-      }
-      break
-    case 'settled':
-    case 'restored':
-    case 'stranded':
-      break
-  }
-  return { state, effects: [] }
+  return legalTransition(state, event) ?? { state, effects: [] }
 }
