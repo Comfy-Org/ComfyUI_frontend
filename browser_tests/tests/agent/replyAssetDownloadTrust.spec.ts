@@ -66,7 +66,10 @@ test.describe(
       )
       await page.reload()
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const downloadButton = page.getByRole('button', {
         name: enMessages.agent.downloadAssets,
