@@ -42,6 +42,13 @@ test.describe(
       await agentPanel.selectWorkflow()
       const panel = agentPanel.root
 
+      // Type before staging the chip. The composer is a rich editor holding
+      // the reference inline, and replacing its whole value afterwards drops
+      // the staged selection - that is what made the first run send an empty
+      // `selection`.
+      await panel.getByRole('textbox').click()
+      await comfyPage.page.keyboard.type('What does this node do?')
+
       await panel
         .getByRole('button', { name: enMessages.agent.addToPrompt })
         .click()
@@ -70,7 +77,6 @@ test.describe(
         })
       ).toBeVisible()
 
-      await panel.getByRole('textbox').fill('What does this node do?')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
         .click()
