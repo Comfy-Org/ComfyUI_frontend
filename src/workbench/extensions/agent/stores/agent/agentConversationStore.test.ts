@@ -542,4 +542,47 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
   })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      settled: { threadId: 'th-front', messageId: T1 },
+      stillLive: [{ threadId: 'th-back', messageId: T2 }]
+    },
+    {
+      name: 'a stashed background turn',
+      settled: { threadId: 'th-back', messageId: T2 },
+      stillLive: [{ threadId: 'th-front', messageId: T1 }]
+    }
+  ])(
+    'settling $name twice leaves one terminal message and the other turn live',
+    ({ settled, stillLive }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(delta('t2', 'background partial'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(delta('t1', 'front partial'))
+
+      store.settleTurn(settled, 'persisted final')
+      store.settleTurn(settled, 'persisted final')
+
+      expect(store.liveTurns()).toEqual(stillLive)
+      store.setThreadId(settled.threadId)
+      store.resumeBackgroundTurn()
+      const message = store.messages.find((m) => m.id === settled.messageId)
+      expect(message?.streaming).toBe(false)
+      expect(message?.parts).toEqual([
+        { type: 'text', text: 'persisted final', state: 'done' }
+      ])
+      expect(
+        store.messages.filter((m) => m.id === settled.messageId)
+      ).toHaveLength(1)
+    }
+  )
 })
