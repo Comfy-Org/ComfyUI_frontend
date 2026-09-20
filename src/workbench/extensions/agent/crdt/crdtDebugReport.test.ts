@@ -2,7 +2,10 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { toTurnId } from '../schemas/agentApiSchema'
-import type { MessagePart, ToolPart } from '../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  ToolPart
+} from '../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
@@ -450,7 +453,7 @@ describe('collectCrdtDebugReport', () => {
                 text: 'private text after the newest tool call',
                 state: 'done'
               }
-            ] satisfies MessagePart[]
+            ] satisfies AssistantMessage['parts']
           }
         ]
       })
