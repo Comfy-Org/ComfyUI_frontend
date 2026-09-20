@@ -7,7 +7,7 @@ import { api } from '@/scripts/api'
 
 import { createLoggedTransport } from './agentCrdtTransport'
 import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
-import { clearDevEvents, devEvents } from './devPanelLog'
+import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
 const mutableApi = api as unknown as {
@@ -95,5 +95,34 @@ describe('createLoggedTransport.send', () => {
     expect(JSON.stringify(debug.mock.calls)).not.toContain('secret-url')
     expect(JSON.stringify(devEvents.value)).not.toContain('secret-prompt')
     debug.mockRestore()
+  })
+
+  /**
+   * A frame that is not a JSON object has no keys, so the recognized-key
+   * sanitizer cannot help: the only thing that keeps its text out of a copied
+   * report is `createLoggedTransport` replacing it with a length. The
+   * composable suite covers the same path against a mocked `recordDevEvent`,
+   * which observes the detail that was passed rather than the detail that was
+   * retained — so this case is asserted here, through the real ring buffer and
+   * the copy-out string a tester actually pastes.
+   */
+  it('keeps an unparsed outbound frame out of the buffer and the copied report', () => {
+    setCrdtDebugEnabled(true)
+    const transport = createLoggedTransport()
+
+    expect(transport.send('not json')).toBe(true)
+    expect(transport.send('[1,2]')).toBe(true)
+    expect(transport.send('null')).toBe(true)
+    expect(transport.send('Bearer sk-live-secret')).toBe(true)
+
+    expect(devEvents.value.map((event) => event.detail)).toEqual([
+      { delivered: true, frame: null, unparsed_chars: 8 },
+      { delivered: true, frame: null, unparsed_chars: 5 },
+      { delivered: true, frame: null, unparsed_chars: 4 },
+      { delivered: true, frame: null, unparsed_chars: 21 }
+    ])
+    const copied = stringifyDevEvents(devEvents.value)
+    expect(copied).not.toContain('not json')
+    expect(copied).not.toContain('sk-live-secret')
   })
 })
