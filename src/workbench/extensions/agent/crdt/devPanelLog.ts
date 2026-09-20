@@ -73,10 +73,57 @@ const CONTENT_KEYS = new Set([
   'workflow'
 ])
 
-// Key-based redaction only works when the producer used a recognized name, and
-// the server-controlled `message`/`code`/`description` fields on `doc_subscribed`
-// and `doc_ops_result` do not. These run over every retained string so a
-// credential embedded in one is redacted whatever key it arrived under.
+// Strings are the only place free-form producer or user content can reach the
+// buffer, so string retention is an ALLOW-LIST, not a deny-list: a string
+// survives verbatim only under a key this module knows to be structural, and
+// only when it also has a structural shape. Everything else is summarized by
+// length. Enumerating sensitive content cannot work — a `description` holding
+// user prose and an unlisted credential format are both retained verbatim by a
+// deny-list, whatever shapes it knows about.
+const STRUCTURAL_STRING_KEYS = new Set([
+  'actor',
+  'added',
+  'class_type',
+  'code',
+  'context',
+  'doc_id',
+  'failed',
+  'frame_type',
+  'id',
+  'kind',
+  'level',
+  'name',
+  'node_id',
+  'op',
+  'op_id',
+  'op_ids',
+  'outcome',
+  'phase',
+  'prompt_id',
+  'removed',
+  'scope',
+  'seq',
+  'session_id',
+  'skipped',
+  'source',
+  'state',
+  'status',
+  'tab',
+  'tab_id',
+  'target',
+  'type',
+  'v',
+  'workflow_id'
+])
+
+// An identifier, enum member or opaque id: bounded, and with no whitespace it
+// cannot carry a sentence. A value that fails this is summarized even under an
+// allow-listed key, so a producer that starts putting prose in `code` does not
+// silently reopen the leak.
+const STRUCTURAL_VALUE = /^[A-Za-z0-9_.:@+/-]{0,64}$/
+
+// Defense in depth for the strings the allow-list does retain: a short opaque
+// id can still be a credential or a presigned URL.
 const URL_LIKE = /\b(?:https?|wss?):\/\/[^\s"'<>]+/gi
 const AUTH_SCHEME_TOKEN = /\b(?:Bearer|Basic|Token)\s+[\w.~+/=-]{8,}/gi
 const PREFIXED_SECRET =
@@ -112,6 +159,28 @@ function sanitizeString(value: string): string {
     .replace(PREFIXED_SECRET, REDACTED)
 }
 
+/**
+ * What a free-form string degrades to. Length is the one property a reader can
+ * use (empty vs. truncated vs. a whole prompt) that the string's content cannot
+ * leak, and it reads like the other summaries the buffer already emits
+ * (`Uint8Array(3)`, `Map(1)`).
+ */
+function summarizeString(value: string): string {
+  return `String(${value.length})`
+}
+
+/**
+ * `key` is the nearest enclosing object key, which an array passes down to its
+ * items so `skipped: ['op-1']` is judged as `skipped`. A string with no
+ * enclosing key — a bare `detail` — is never structural.
+ */
+function sanitizeStringValue(value: string, key: string | undefined): string {
+  if (key !== undefined && STRUCTURAL_STRING_KEYS.has(key)) {
+    if (STRUCTURAL_VALUE.test(value)) return sanitizeString(value)
+  }
+  return summarizeString(value)
+}
+
 function normalizeKey(key: string): string {
   return key
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
@@ -122,14 +191,23 @@ function normalizeKey(key: string): string {
 function sanitizeObject(
   value: object,
   depth: number,
-  ancestors: readonly object[]
+  ancestors: readonly object[],
+  key: string | undefined
 ): unknown {
   const nextAncestors = [...ancestors, value]
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
+    return value.map((item) =>
+      sanitizeDetail(item, depth + 1, nextAncestors, key)
+    )
   }
-  if (value instanceof Error)
-    return { name: value.name, message: sanitizeString(value.message) }
+  if (value instanceof Error) {
+    // `name` is the structural half of an Error; `message` is producer prose
+    // and gets the same treatment as any other free-form string.
+    return {
+      name: sanitizeStringValue(value.name, 'name'),
+      message: summarizeString(value.message)
+    }
+  }
   if (value instanceof Map) return `Map(${value.size})`
   if (value instanceof Set) return `Set(${value.size})`
   if (value instanceof Date) {
@@ -137,15 +215,18 @@ function sanitizeObject(
   }
 
   return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => {
-      const normalizedKey = normalizeKey(key)
+    Object.entries(value).map(([entryKey, item]) => {
+      const normalizedKey = normalizeKey(entryKey)
       if (
         SENSITIVE_KEY.test(normalizedKey) ||
         CONTENT_KEYS.has(normalizedKey)
       ) {
-        return [key, REDACTED]
+        return [entryKey, REDACTED]
       }
-      return [key, sanitizeDetail(item, depth + 1, nextAncestors)]
+      return [
+        entryKey,
+        sanitizeDetail(item, depth + 1, nextAncestors, normalizedKey)
+      ]
     })
   )
 }
@@ -153,7 +234,8 @@ function sanitizeObject(
 function sanitizeDetail(
   value: unknown,
   depth = 0,
-  ancestors: readonly object[] = []
+  ancestors: readonly object[] = [],
+  key: string | undefined = undefined
 ): unknown {
   if (depth > MAX_SANITIZE_DEPTH) return REDACTED
   if (ArrayBuffer.isView(value)) {
@@ -162,11 +244,11 @@ function sanitizeDetail(
   if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
     return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
   }
-  if (typeof value === 'string') return sanitizeString(value)
+  if (typeof value === 'string') return sanitizeStringValue(value, key)
   if (value === null || typeof value !== 'object') return value
   if (ancestors.includes(value)) return '[Circular]'
 
-  return sanitizeObject(value, depth, ancestors)
+  return sanitizeObject(value, depth, ancestors, key)
 }
 
 /**

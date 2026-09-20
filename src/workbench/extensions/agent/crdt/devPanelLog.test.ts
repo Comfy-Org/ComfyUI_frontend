@@ -196,8 +196,8 @@ describe('devPanelLog', () => {
     })
   })
 
-  it('keeps server error messages on failed frames', () => {
-    const detail = {
+  it('keeps the structural diagnosis on failed frames', () => {
+    recordDevEvent('doc_ops_result', {
       workflowId: 'wf-1',
       ok: false,
       applied: [],
@@ -205,10 +205,17 @@ describe('devPanelLog', () => {
       code: 'op_failed',
       message: 'unknown node 7',
       failed: { op_id: 'op-1', code: 'unknown_node', message: 'unknown node 7' }
-    }
-    recordDevEvent('doc_ops_result', detail)
+    })
 
-    expect(devEvents.value[0]?.detail).toEqual(detail)
+    expect(devEvents.value[0]?.detail).toEqual({
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: ['op-1'],
+      code: 'op_failed',
+      message: 'String(14)',
+      failed: { op_id: 'op-1', code: 'unknown_node', message: 'String(14)' }
+    })
   })
 
   it('redacts credentials carried by strings under unrecognized keys', () => {
@@ -232,11 +239,56 @@ describe('devPanelLog', () => {
       workflowId: 'wf-1',
       ok: false,
       code: 'upload_failed',
-      message: 'PUT https://assets.example.com/a.png?[REDACTED] failed',
-      url: 'https://assets.example.com/a.png?[REDACTED]',
-      description: 'retry with [REDACTED]',
+      message: 'String(118)',
+      url: 'String(77)',
+      description: 'String(42)',
       failed: { op_id: 'op-1', code: 'unknown_node' }
     })
+  })
+
+  it('sanitizes a credential that reaches a structural key', () => {
+    recordDevEvent('doc_subscribed', {
+      workflowId: 'wf-1',
+      target: 'sk-live-0123456789abcdef'
+    })
+
+    expect(devEvents.value[0]?.detail).toEqual({
+      workflowId: 'wf-1',
+      target: '[REDACTED]'
+    })
+  })
+
+  it('summarizes free-form producer prose instead of retaining it', () => {
+    recordDevEvent('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'op_failed',
+      description: 'customer requested analysis of a private medical scan',
+      message: 'unknown node 7',
+      failed: { op_id: 'op-1', code: 'unknown_node' }
+    })
+
+    const copied = stringifyDevEvents(devEvents.value)
+    expect(copied).not.toContain('private medical scan')
+    expect(devEvents.value[0]?.detail).toEqual({
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'op_failed',
+      description: 'String(53)',
+      message: 'String(14)',
+      failed: { op_id: 'op-1', code: 'unknown_node' }
+    })
+  })
+
+  it('summarizes an unlisted credential format under an unlisted key', () => {
+    recordDevEvent('doc_subscribed', {
+      workflowId: 'wf-1',
+      note: 'authenticate with corp-cred-9d41f0b27ac3e5'
+    })
+
+    expect(stringifyDevEvents(devEvents.value)).not.toContain(
+      'corp-cred-9d41f0b27ac3e5'
+    )
   })
 
   it('preserves bounded descriptions of non-plain objects', () => {
@@ -248,7 +300,7 @@ describe('devPanelLog', () => {
     })
 
     expect(devEvents.value[0]?.detail).toEqual({
-      error: { name: 'TypeError', message: 'invalid update' },
+      error: { name: 'TypeError', message: 'String(14)' },
       map: 'Map(1)',
       set: 'Set(1)',
       date: '2026-09-04T06:00:00.000Z'
