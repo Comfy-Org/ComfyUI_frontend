@@ -67,29 +67,41 @@ test.describe(
     test('does not reject the next message after the socket reconnects', async ({
       turnLock
     }) => {
-      const reconnected = await turnLock.dropSocket()
+      const reconnected =
+        await test.step('drop the socket while the turn is live', async () => {
+          const ws = await turnLock.dropSocket()
 
-      await expect(turnLock.composer).toBeVisible()
-      await expect(turnLock.userBubbles).toHaveText([PROMPT])
-      await expect(turnLock.stopButton).toBeVisible()
+          await expect(turnLock.composer).toBeVisible()
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.stopButton).toBeVisible()
+          return ws
+        })
 
-      turnLock.finishTurn(reconnected)
+      await test.step('finish the turn on the new socket', async () => {
+        turnLock.finishTurn(reconnected)
 
-      await expect(turnLock.workSummary).toBeVisible()
-      await expect(turnLock.sendButton).toBeVisible()
+        await expect(turnLock.workSummary).toBeVisible()
+        await expect(turnLock.sendButton).toBeVisible()
+      })
 
-      await turnLock.composer.fill('are you still there?')
-      await turnLock.sendButton.click()
-      // Inequality, so a future client-side retry cannot fail this line in
-      // place of the alert assertion below.
-      await expect.poll(() => turnLock.postAttempts()).toBeGreaterThanOrEqual(2)
+      await test.step('send the next message', async () => {
+        await turnLock.composer.fill('are you still there?')
+        await turnLock.sendButton.click()
+        // Inequality, so a future client-side retry cannot fail this line in
+        // place of the alert assertion below.
+        await expect
+          .poll(() => turnLock.postAttempts())
+          .toBeGreaterThanOrEqual(2)
+      })
 
-      await expect(
-        turnLock.panel
-          .getByRole('alert')
-          .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
-      ).toHaveCount(0)
-      expect(turnLock.rejectedPosts()).toBe(0)
+      await test.step('the server did not answer 409', async () => {
+        await expect(
+          turnLock.panel
+            .getByRole('alert')
+            .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+        ).toHaveCount(0)
+        expect(turnLock.rejectedPosts()).toBe(0)
+      })
     })
 
     // Keeps the `workSummary` locator honest. Every other use of it above is a
