@@ -571,6 +571,10 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(ingest).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: 'agent_ask_resolved' })
     )
+    // Suppressing the resolution must not also strand the ask: cleanup runs
+    // across stop()/start(), so the approval is answerable again rather than
+    // left permanently disabled.
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
   })
 
   it('reports a stale non-409 answer failure without mutating the new thread', async () => {
