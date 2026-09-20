@@ -235,11 +235,6 @@ describe('applyLiveWidgetValue', () => {
   })
 
   it('invokes a custom setter even when its getter already mirrors the store write', () => {
-    // Regression for a DynamicCombo-style widget (dynamicWidgets.ts): its
-    // `value` getter reads straight from the widget value store, so right
-    // after `widgetStore.setValue()` runs, `widget.value` already equals the
-    // new value, and a check comparing the getter's *post-write* result was
-    // always skipping the setter that carries the widget's real side effect.
     const { graph, widget } = graphWithWidget()
     const id = widget.widgetId!
     const setter = vi.fn()
