@@ -55,7 +55,7 @@ test.describe(
           await agentConversation.vueNodes.selectNode(before[2].id)
           await page.keyboard.press('ControlOrMeta+c')
           await page.locator('#graph-canvas').hover({
-            position: { x: 713, y: 347 }
+            position: { x: 413, y: 547 }
           })
           await expect.poll(() => readGraphMouse(page)).not.toEqual([0, 0])
           const pastePosition = await readGraphMouse(page)
