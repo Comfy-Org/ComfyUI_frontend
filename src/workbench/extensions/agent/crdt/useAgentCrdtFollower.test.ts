@@ -384,10 +384,18 @@ describe('useAgentCrdtFollower', () => {
       message: 'secret server detail'
     }
 
-    for (let attempt = 0; attempt < 6; attempt++) {
-      dispatchFrame('doc_subscribed', initialRefusal)
-      vi.advanceTimersByTime(500 * 2 ** attempt)
-    }
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(1_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(2_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(4_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(8_000)
+    dispatchFrame('doc_subscribed', initialRefusal)
+    vi.advanceTimersByTime(16_000)
     dispatchFrame('doc_subscribed', {
       ok: false,
       code: 'Permission denied for private document',
@@ -414,13 +422,19 @@ describe('useAgentCrdtFollower', () => {
     )
 
     dispatchFrame('doc_subscribed', { ok: true })
-    for (let attempt = 0; attempt < 6; attempt++) {
-      dispatchFrame('doc_subscribed', {
-        ok: false,
-        code: 'rate_limited'
-      })
-      vi.advanceTimersByTime(500 * 2 ** attempt)
-    }
+    const rateLimited = { ok: false, code: 'rate_limited' }
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(1_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(2_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(4_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(8_000)
+    dispatchFrame('doc_subscribed', rateLimited)
+    vi.advanceTimersByTime(16_000)
     dispatchFrame('doc_subscribed', {
       ok: false,
       code: 'schema_mismatch'
