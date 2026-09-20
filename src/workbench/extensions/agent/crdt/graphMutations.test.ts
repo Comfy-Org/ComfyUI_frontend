@@ -131,8 +131,7 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn(),
-        removeMissingGroups: vi.fn()
+        deleteGroups: vi.fn()
       },
       placement,
       liveWidgets: { setValue: setLiveWidgetValue }
@@ -634,8 +633,7 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn(),
-        removeMissingGroups: vi.fn()
+        deleteGroups: vi.fn()
       },
       placement
     })
@@ -669,8 +667,7 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn(),
-        removeMissingGroups: vi.fn()
+        deleteGroups: vi.fn()
       },
       placement
     })
@@ -1290,8 +1287,7 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn(),
-        removeMissingGroups: vi.fn()
+        deleteGroups: vi.fn()
       },
       placement
     }).addNode(

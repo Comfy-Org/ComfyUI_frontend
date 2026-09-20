@@ -51,8 +51,7 @@ const CATALOG: WidgetCatalog = {
 const layout = {
   createNode: vi.fn(),
   deleteNodes: vi.fn(),
-  deleteGroups: vi.fn(),
-  removeMissingGroups: vi.fn()
+  deleteGroups: vi.fn()
 }
 
 function remoteMutations(scope: GraphScope) {

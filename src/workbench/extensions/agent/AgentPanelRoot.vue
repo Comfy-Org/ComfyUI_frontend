@@ -44,9 +44,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { GroupId } from '@/types/groupId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -276,25 +273,6 @@ const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
 >()
-function deleteGroupLayouts(
-  scope: GraphScope,
-  groupIds: readonly GroupId[],
-  context: RemoteMutationContext
-) {
-  if (groupIds.length === 0) return
-  const timestamp = Date.now()
-  layoutStore.applyOperations(
-    groupIds.map((groupId) => ({
-      type: 'deleteGroup',
-      graphId: scope.rootGraphId,
-      groupId,
-      source: LayoutSource.AgentRemote,
-      actor: context.actor,
-      opId: context.opId,
-      timestamp
-    }))
-  )
-}
 const liveWidgets = createLiveWidgetProjection({
   getRootGraph: () => app.rootGraphOrUndefined,
   getCanvas: () => app.canvas,
@@ -351,17 +329,18 @@ const graphMutations = (workflowId: string) => {
         )
       },
       deleteGroups(scope, groupIds, context) {
-        deleteGroupLayouts(scope, groupIds, context)
-      },
-      removeMissingGroups(scope, retainedGroupIds, context) {
-        const retained = new Set(retainedGroupIds)
-        const held = [
-          ...layoutStore.getAllGroups(scope.rootGraphId).value.keys()
-        ]
-        deleteGroupLayouts(
-          scope,
-          held.filter((groupId) => !retained.has(groupId)),
-          context
+        if (groupIds.length === 0) return
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          groupIds.map((groupId) => ({
+            type: 'deleteGroup',
+            graphId: scope.rootGraphId,
+            groupId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
         )
       }
     },

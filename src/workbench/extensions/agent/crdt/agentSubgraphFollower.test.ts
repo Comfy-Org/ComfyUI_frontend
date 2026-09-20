@@ -177,8 +177,7 @@ function startFollower(options: FixtureOptions = {}) {
       layout: {
         createNode: () => {},
         deleteNodes: () => {},
-        deleteGroups: () => {},
-        removeMissingGroups: () => {}
+        deleteGroups: () => {}
       }
     })
   )

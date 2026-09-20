@@ -371,8 +371,6 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
-  /** `meta.groups` ids as of the last committed frame; see readGroupIds. */
-  lastGroupIds: ReadonlySet<GroupId>
 }
 
 /**
@@ -383,6 +381,17 @@ interface TargetSession {
  */
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
+  /**
+   * Group ids this follower has actually seen in a bound doc's `meta.groups`,
+   * per workflow — the only groups it may delete. Local groups never reach the
+   * doc (`layoutMintPort` mints no group op), so a set built from what the
+   * layout owner currently holds would delete them; this set is built from the
+   * doc instead. It deliberately outlives `unbind`/`bind`, because a session
+   * rebound when its tab goes active again starts empty, and a group the doc
+   * lost while the tab was inactive would otherwise survive every later frame
+   * and be written back by the next save.
+   */
+  private readonly remoteGroupIds = new Map<string, ReadonlySet<GroupId>>()
 
   constructor(private readonly mutations: MutationsForTarget) {}
 
@@ -429,6 +438,10 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
+    // A lineage break makes the old doc's group ids meaningless: the next
+    // lineage may reuse the same numeric id for a different group, and this
+    // set is only ever used to authorise a delete.
+    this.remoteGroupIds.delete(workflowId)
     return session.mutations.clearSemanticGraph(context)
   }
 
@@ -439,6 +452,7 @@ export class EcsFollowerAdapter {
 
   destroy(): void {
     for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    this.remoteGroupIds.clear()
   }
 
   private createSession(
@@ -464,7 +478,6 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
-      lastGroupIds: new Set(),
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -529,23 +542,12 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
       link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
-    // meta.groups carries no per-frame delta (bbc #319: the applier blanks
-    // it wholesale) — diff snapshots the same way removeMissing already
-    // diffs authoritative reconcile snapshots, so a duplicate frame (same
-    // groups before/after) yields an empty diff and no redundant delete.
     const currentGroupIds = readGroupIds(session.follower.doc)
-    const removedGroupIds = [...session.lastGroupIds].filter(
-      (id) => !currentGroupIds.has(id)
-    )
+    const removedGroupIds = [
+      ...(this.remoteGroupIds.get(session.workflowId) ?? [])
+    ].filter((id) => !currentGroupIds.has(id))
     const committed = session.mutations.batch(frameContext(update), (batch) => {
-      // A reconcile frame is authoritative, so it carries the doc's whole
-      // group set and the layout owner drops whatever it still holds beyond
-      // it. The `lastGroupIds` diff cannot cover this case: a session rebound
-      // when its tab went active again starts with an empty baseline, so a
-      // group the doc lost while the tab was inactive would otherwise survive
-      // every later frame and get written back by the next save.
-      if (reconcile) batch.removeMissingGroups([...currentGroupIds])
-      else if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
+      if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
@@ -692,7 +694,7 @@ export class EcsFollowerAdapter {
     // Same reasoning, for the group baseline: a rejected batch must not
     // advance it, or the retried frame would diff against a snapshot it never
     // committed against and miss the group deletion entirely.
-    if (committed) session.lastGroupIds = currentGroupIds
+    if (committed) this.remoteGroupIds.set(session.workflowId, currentGroupIds)
     return committed
   }
 

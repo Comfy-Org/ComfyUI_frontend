@@ -67,7 +67,11 @@ describe('ghost placement flag across a follower reconcile', () => {
   function mutations() {
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement
     })
   }

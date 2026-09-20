@@ -70,27 +70,14 @@ interface SemanticLayoutMutationPort {
     context: RemoteMutationContext
   ): void
   /**
-   * Delete groups the follower observed disappear from the bound doc's
-   * `meta.groups` snapshot (bbc #319). Groups carry no semantic-node
-   * identity — this is a pure passthrough to the renderer's layout owner,
-   * independent of any node delta (a group-only clear has none).
+   * Delete the named groups. Groups carry no semantic-node identity, so this
+   * is a pure passthrough to the renderer's layout owner, independent of any
+   * node delta (a group-only clear has none). The caller names the ids; this
+   * port never derives them from what the owner currently holds.
    */
   deleteGroups(
     scope: GraphScope,
     groupIds: readonly GroupId[],
-    context: RemoteMutationContext
-  ): void
-  /**
-   * Delete every group the layout owner holds for `scope.rootGraphId` that is
-   * absent from `retainedGroupIds`. The `deleteGroups` diff above needs a
-   * baseline the follower observed, which a freshly bound session does not
-   * have; an authoritative reconcile frame carries the doc's whole group set
-   * instead, so the owner can drop what the doc no longer has — the same
-   * shape `removeMissing` already uses for nodes and links.
-   */
-  removeMissingGroups(
-    scope: GraphScope,
-    retainedGroupIds: readonly GroupId[],
     context: RemoteMutationContext
   ): void
 }
@@ -152,11 +139,6 @@ interface GraphMutationBatch {
   clearSemanticGraph(): void
   /** Not a wire op: derived from a diff of the bound doc's `meta.groups`. */
   deleteGroups(groupIds: readonly GroupId[]): void
-  /**
-   * Group half of `removeMissing`: the authoritative `meta.groups` set for a
-   * reconcile frame. Not a wire op.
-   */
-  removeMissingGroups(retainedGroupIds: readonly GroupId[]): void
 }
 
 export interface GraphMutations {
@@ -178,10 +160,6 @@ export interface GraphMutations {
     context: RemoteMutationContext
   ): boolean
   clearSemanticGraph(context: RemoteMutationContext): boolean
-  deleteGroups(
-    groupIds: readonly GroupId[],
-    context: RemoteMutationContext
-  ): boolean
 }
 
 export interface GraphMutationsDeps {
@@ -210,7 +188,6 @@ type QueuedMutation =
     }
   | { kind: 'clearSemanticGraph' }
   | { kind: 'deleteGroups'; groupIds: readonly GroupId[] }
-  | { kind: 'removeMissingGroups'; retainedGroupIds: readonly GroupId[] }
 
 interface PreparedNode {
   state: NodeState
@@ -251,7 +228,6 @@ type PreparedMutation =
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
   | { kind: 'deleteGroups'; groupIds: readonly GroupId[] }
-  | { kind: 'removeMissingGroups'; retainedGroupIds: readonly GroupId[] }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -868,14 +844,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           // state — pure passthrough to the layout owner.
           prepared.push({ kind: mutation.kind, groupIds: mutation.groupIds })
           break
-        case 'removeMissingGroups':
-          // Same passthrough: only the layout owner knows which groups it
-          // currently holds, so it performs the diff.
-          prepared.push({
-            kind: mutation.kind,
-            retainedGroupIds: mutation.retainedGroupIds
-          })
-          break
       }
     }
     return prepared
@@ -1250,13 +1218,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         case 'deleteGroups':
           deps.layout.deleteGroups(scope, mutation.groupIds, context)
           break
-        case 'removeMissingGroups':
-          deps.layout.removeMissingGroups(
-            scope,
-            mutation.retainedGroupIds,
-            context
-          )
-          break
       }
     }
   }
@@ -1300,9 +1261,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         },
         deleteGroups(groupIds) {
           queued.push({ kind: 'deleteGroups', groupIds })
-        },
-        removeMissingGroups(retainedGroupIds) {
-          queued.push({ kind: 'removeMissingGroups', retainedGroupIds })
         }
       })
       const existingIds = nodeStore
@@ -1333,11 +1291,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     clearSemanticGraph(context) {
       return graphMutations.batch(context, (batch) =>
         batch.clearSemanticGraph()
-      )
-    },
-    deleteGroups(groupIds, context) {
-      return graphMutations.batch(context, (batch) =>
-        batch.deleteGroups(groupIds)
       )
     }
   }
