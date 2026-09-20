@@ -418,9 +418,11 @@ describe('missingModelPipeline', () => {
       })
       await vi.dynamicImportSettled()
 
-      expect(mockHandles.missingModelStore.setFolderPaths).toHaveBeenCalledWith({
-        checkpoints: ['/models/checkpoints']
-      })
+      expect(mockHandles.missingModelStore.setFolderPaths).toHaveBeenCalledWith(
+        {
+          checkpoints: ['/models/checkpoints']
+        }
+      )
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
       ).toHaveBeenCalledTimes(1)
@@ -434,7 +436,9 @@ describe('missingModelPipeline', () => {
           remoteCandidate.url,
           2048
         )
-        expect(mockHandles.missingModelStore.setGatedRepoUrl).toHaveBeenCalledWith(
+        expect(
+          mockHandles.missingModelStore.setGatedRepoUrl
+        ).toHaveBeenCalledWith(
           remoteCandidate.url,
           'https://example.com/gated-repo'
         )
