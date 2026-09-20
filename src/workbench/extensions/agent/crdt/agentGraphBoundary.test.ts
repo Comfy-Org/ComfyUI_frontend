@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest'
  * store to another name is the remaining gap, deferred to an ESLint rule.
  *
  * @see https://linear.app/comfyorg/issue/PM-1293
+ * @see https://linear.app/comfyorg/issue/FE-2504
  */
 
 /** `receiver.member`, `receiver?.member`, `receiver['member']`, `receiver?.['member']`. */
