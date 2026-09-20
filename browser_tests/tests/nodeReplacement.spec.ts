@@ -24,6 +24,33 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
     initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
   })
 
+  test.describe('API workflow replacement', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/node_replacement_api'
+      )
+    })
+
+    test('SaveImage filename substitutions survive replacing an API placeholder', async ({
+      comfyPage
+    }) => {
+      const swapGroup = getSwapNodesGroup(comfyPage.page)
+      await swapGroup.getByRole('button', { name: /replace node/i }).click()
+      await expect(swapGroup).toBeHidden()
+
+      await expect
+        .poll(async () => {
+          const prompt = await comfyPage.workflow.getExportedWorkflow({
+            api: true
+          })
+          return prompt['2'].inputs.filename_prefix
+        })
+        .toBe('replacement-7')
+    })
+  })
+
   for (const mode of renderModes) {
     test.describe(
       `(${mode.name})`,

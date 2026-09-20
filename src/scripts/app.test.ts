@@ -6,7 +6,15 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -1595,12 +1603,55 @@ describe('ComfyApp', () => {
     )
 
     it.for([
-      ['non-string', {}, [], {}],
-      ['empty', '', '', ''],
-      ['invalid format', 'owner/repo', 'not a version', 'missing-slash']
+      {
+        name: 'non-string fields',
+        metadata: { cnr_id: {}, aux_id: {}, ver: [] },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'empty fields',
+        metadata: { cnr_id: '', aux_id: '', ver: '' },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid formats',
+        metadata: {
+          cnr_id: 'owner/repo',
+          aux_id: 'missing-slash',
+          ver: 'not a version'
+        },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid cnr_id with valid siblings',
+        metadata: { cnr_id: {}, aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      },
+      {
+        name: 'invalid aux_id with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: {}, ver: '1.0.0' },
+        expectedProperties: { cnr_id: 'some-pack', ver: '1.0.0' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'invalid ver with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: 'owner/repo', ver: [] },
+        expectedProperties: { cnr_id: 'some-pack', aux_id: 'owner/repo' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'empty cnr_id with valid aux_id fallback',
+        metadata: { cnr_id: '', aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      }
     ])(
-      'ignores %s _meta pack identity for API JSON placeholders',
-      async ([, cnrId, packVersion, auxId]) => {
+      'validates API placeholder pack metadata: $name',
+      async ({ metadata, expectedProperties, expectedCnrId }) => {
         const graph = new LGraph()
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
@@ -1614,28 +1665,23 @@ describe('ComfyApp', () => {
             inputs: {},
             _meta: {
               title: 'Uninstalled',
-              cnr_id: cnrId,
-              aux_id: auxId,
-              ver: packVersion
+              ...metadata
             }
           }
         }
-        if (!app.isApiJson(apiData)) throw new Error('Expected valid API JSON')
+        assert(app.isApiJson(apiData), 'Expected valid API JSON')
 
         try {
           await app.loadApiJson(apiData, '')
 
           const [placeholder] = graph.nodes
-          expect(placeholder?.properties).not.toHaveProperty('cnr_id')
-          expect(placeholder?.properties).not.toHaveProperty('ver')
-          expect(placeholder?.properties).not.toHaveProperty('aux_id')
-          const [missingNodeType] =
-            missingNodesStore.missingNodesError?.nodeTypes ?? []
-          expect(
-            typeof missingNodeType === 'string'
-              ? undefined
-              : missingNodeType?.cnrId
-          ).toBeUndefined()
+          expect(placeholder?.properties).toEqual(expectedProperties)
+          expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: expectedCnrId
+            })
+          ])
         } finally {
           cleanupErrorHooks()
         }
