@@ -75,6 +75,29 @@ interface SemanticLayoutMutationPort {
   getLayout?(scope: GraphScope, nodeId: NodeId): SemanticNodeLayout | null
 }
 
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+/**
+ * Renderer-owned live widget port. A value patch for a widget that is already
+ * mounted on the canvas is replayed through the live widget so its callback,
+ * backing property, and rendered state move in the same frame; the port
+ * reports the value the live widget settled on, or `skipped` when the node or
+ * widget is not live.
+ */
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): LiveWidgetMutationResult
+  rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   /**
@@ -122,6 +145,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -895,18 +919,50 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
+  /**
+   * Replays the value through the live widget first so its callback and
+   * backing property run in the same frame the semantic state is written, and
+   * reports the value the live widget settled on. A node or widget that is not
+   * live is `skipped` and keeps the incoming value.
+   */
+  function projectLiveWidgetValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): WidgetValue {
+    const projected = deps.liveWidgets?.setValue(
+      scope,
+      nodeId,
+      name,
+      value,
+      context
+    )
+    return projected && projected.status !== 'skipped'
+      ? projected.resolvedValue
+      : value
+  }
+
   function registerPlaceholder(
     scope: GraphScope,
     nodeId: NodeId,
     widget: PlaceholderWidget,
     context: RemoteMutationContext
   ): void {
+    const value = projectLiveWidgetValue(
+      scope,
+      nodeId,
+      widget.name,
+      widget.value,
+      context
+    )
     widgetStore.registerWidget(
       widgetId(scope.rootGraphId, nodeId, widget.name),
       {
         name: widget.name,
         type: widget.type,
-        value: widget.value,
+        value,
         options: {},
         label: widget.name
       },
@@ -914,6 +970,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       undefined,
       context
     )
+    // The registered state is a new identity, so a live widget that was
+    // already mounted has to adopt it instead of keeping its own shim.
+    deps.liveWidgets?.rebind?.(scope, nodeId, widget.name)
   }
 
   function setWidgetValue(
@@ -925,7 +984,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   ): void {
     const id = widgetId(scope.rootGraphId, nodeId, name)
     if (widgetStore.getWidget(id)) {
-      widgetStore.setValue(id, value, context)
+      widgetStore.setValue(
+        id,
+        projectLiveWidgetValue(scope, nodeId, name, value, context),
+        context
+      )
     } else {
       registerPlaceholder(
         scope,
@@ -963,8 +1026,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           .filter((widget) => widget.serialize !== false)
           .slice(0, widgets.values.length)
         for (const [index, widget] of serialized.entries()) {
-          widgetStore.setValue(
-            widgetId(scope.rootGraphId, nodeId, widget.name),
+          setWidgetValue(
+            scope,
+            nodeId,
+            widget.name,
             widgets.values[index],
             context
           )
