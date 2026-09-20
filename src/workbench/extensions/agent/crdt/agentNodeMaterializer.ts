@@ -1,7 +1,11 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+import {
+  deduplicateSubgraphNodeIds,
+  patchSubgraphProxyWidgetIds,
+  topologicalSortSubgraphs
+} from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode
@@ -13,10 +17,12 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
+import { toRaw } from 'vue'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
@@ -58,8 +64,11 @@ export function reconcileAgentAdapters(
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
-    const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
-    return reconcile(graph, pending)
+    const { pending, rootNodes } = registerSubgraphDefinitions(
+      graph,
+      subgraphDefinitions
+    )
+    return reconcile(graph, pending, rootNodes)
   })
 }
 
@@ -68,6 +77,25 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+
+/**
+ * Maps document interior IDs to local projection IDs. Source `proxyWidgets`
+ * must retain document IDs and never serialize these local remints back.
+ */
+const registeredDefinitionNodeIdRemaps = new WeakMap<
+  LGraph,
+  Map<string, Map<NodeId, SerializedNodeId>>
+>()
+
+type DefinitionRegistration = {
+  pending: Set<string>
+  rootNodes: ReadonlyMap<NodeId, ISerialisedNode>
+}
+
+type RootNodeNormalization = {
+  serialisedRootNodes: ISerialisedNode[]
+  normalized: ReturnType<typeof deduplicateSubgraphNodeIds> | undefined
+}
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -87,13 +115,13 @@ const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
  * untouched: edits address interior nodes through normal node operations, not
  * by replacing an existing definition.
  *
- * @returns ids of definitions from the document that are still not registered
- * on the root graph.
+ * @returns ids still awaiting registration plus root serializations patched to
+ * follow any interior node remints performed before registration.
  */
 function registerSubgraphDefinitions(
   graph: MaterializableGraph,
   definitions: ExportedSubgraph[]
-): Set<string> {
+): DefinitionRegistration {
   const rootGraph = graph.rootGraph
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
@@ -102,27 +130,107 @@ function registerSubgraphDefinitions(
     .map((definition) => ({ ...definition, definitions: undefined }))
     .filter((definition) => !rootGraph.subgraphs.has(definition.id))
   const pending = new Set(missing.map((definition) => definition.id))
-  if (missing.length === 0) return pending
+  const registeredRemaps =
+    registeredDefinitionNodeIdRemaps.get(rootGraph) ??
+    registeredDefinitionNodeIdRemaps.set(rootGraph, new Map()).get(rootGraph)!
+  if (missing.length === 0 && registeredRemaps.size === 0) {
+    return { pending, rootNodes: new Map() }
+  }
+
+  const { serialisedRootNodes, normalized } = normalizeDefinitionNodeIds(
+    graph,
+    missing
+  )
 
   const reported =
     reportedDefinitionFailures.get(rootGraph) ??
     reportedDefinitionFailures.set(rootGraph, new Set()).get(rootGraph)!
 
-  for (const definition of topologicalSortSubgraphs(missing)) {
-    const failure = tryCreateSubgraph(rootGraph, definition)
-    if (failure === undefined) {
-      pending.delete(definition.id)
-      reported.delete(definition.id)
-      continue
-    }
-    if (reported.has(definition.id)) continue
-    reported.add(definition.id)
-    reportError(failure, {
-      errorType: 'agent_subgraph_definitions_failed',
-      context: { graphId: graph.id, definitionId: definition.id }
+  for (const definition of topologicalSortSubgraphs(
+    normalized?.subgraphs ?? []
+  )) {
+    registerDefinition({
+      graph,
+      definition,
+      remappedIds: normalized?.nodeIdRemaps.get(definition.id),
+      pending,
+      registeredRemaps,
+      reported
     })
   }
-  return pending
+  // Patch root proxyWidgets once, from the remaps that actually registered.
+  // Letting deduplicateSubgraphNodeIds patch them too would re-apply a chained
+  // remint (7->8, 8->9) and point the proxy at the wrong interior node.
+  const rootNodes = serialisedRootNodes.map((node) =>
+    registeredRemaps.has(node.type) ? structuredClone(node) : node
+  )
+  patchSubgraphProxyWidgetIds(rootNodes, registeredRemaps)
+  return {
+    pending,
+    rootNodes: new Map(rootNodes.map((node) => [toNodeId(node.id), node]))
+  }
+}
+
+function normalizeDefinitionNodeIds(
+  graph: MaterializableGraph,
+  missing: ExportedSubgraph[]
+): RootNodeNormalization {
+  // Root records reach the canonical stores before their live adapters. Give
+  // their IDs priority while definitions are normalized so an interior
+  // collision is reminted before Subgraph.configure() binds links and widget
+  // references to it. Waiting for LGraph.add() to discover the store collision
+  // remints only the node, leaving those references on the root record's ID.
+  const rootGraph = graph.rootGraph
+  const scope = graphScopeOf(graph)
+  const records = useNodeDataStore().getGraphNodesFor(
+    scope.rootGraphId,
+    scope.owningGraphId
+  )
+  const serialisedRootNodes = records.flatMap(({ lastSerialization }) =>
+    lastSerialization ? [toRaw(lastSerialization)] : []
+  )
+  const reservedNodeIds = new Set<SerializedNodeId>([
+    ...[rootGraph, ...rootGraph.subgraphs.values()].flatMap(({ nodes }) =>
+      nodes.map(({ id }) => id)
+    ),
+    ...records.map(({ id }) => id)
+  ])
+  const normalized =
+    missing.length > 0
+      ? deduplicateSubgraphNodeIds(missing, reservedNodeIds, rootGraph.state)
+      : undefined
+  return { serialisedRootNodes, normalized }
+}
+
+function registerDefinition({
+  graph,
+  definition,
+  remappedIds,
+  pending,
+  registeredRemaps,
+  reported
+}: {
+  graph: MaterializableGraph
+  definition: ExportedSubgraph
+  remappedIds: Map<NodeId, SerializedNodeId> | undefined
+  pending: Set<string>
+  registeredRemaps: Map<string, Map<NodeId, SerializedNodeId>>
+  reported: Set<string>
+}) {
+  const failure = tryCreateSubgraph(graph.rootGraph, definition)
+  if (failure === undefined) {
+    pending.delete(definition.id)
+    reported.delete(definition.id)
+    if (remappedIds) registeredRemaps.set(definition.id, remappedIds)
+    else registeredRemaps.delete(definition.id)
+    return
+  }
+  if (reported.has(definition.id)) return
+  reported.add(definition.id)
+  reportError(failure, {
+    errorType: 'agent_subgraph_definitions_failed',
+    context: { graphId: graph.id, definitionId: definition.id }
+  })
 }
 
 /**
@@ -198,7 +306,8 @@ function withNamedValuesRestore<T>(fn: () => T): T {
  */
 function reconcile(
   graph: MaterializableGraph,
-  pendingDefinitions: Set<string>
+  pendingDefinitions: Set<string>,
+  normalizedRootNodes: ReadonlyMap<NodeId, ISerialisedNode>
 ): NodeId[] {
   const scope = graphScopeOf(graph)
   // Remote connect registers canonical topology without importing LiteGraph.
@@ -218,19 +327,15 @@ function reconcile(
   )
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
 
-  const materialized: NodeId[] = []
-  for (const state of records) {
-    const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
-    const serialised = state.lastSerialization
-    if (!serialised) continue
-    if (pendingDefinitions.has(state.type)) continue
-    if (
-      materialize(graph, scope, state, serialised, orphansById.get(state.id))
-    ) {
-      materialized.push(state.id)
-    }
-  }
+  const materialized = materializeRecords({
+    graph,
+    scope,
+    records,
+    nodeStore,
+    pendingDefinitions,
+    normalizedRootNodes,
+    orphansById
+  })
 
   const recordIds = new Set(records.map((state) => state.id))
   const detached = orphans.filter(
@@ -239,6 +344,39 @@ function reconcile(
   )
   for (const orphan of detached) {
     graph.remove(orphan, { preserveCanonicalState: true })
+  }
+  return materialized
+}
+
+function materializeRecords({
+  graph,
+  scope,
+  records,
+  nodeStore,
+  pendingDefinitions,
+  normalizedRootNodes,
+  orphansById
+}: {
+  graph: MaterializableGraph
+  scope: GraphScope
+  records: ReturnType<ReturnType<typeof useNodeDataStore>['getGraphNodesFor']>
+  nodeStore: ReturnType<typeof useNodeDataStore>
+  pendingDefinitions: Set<string>
+  normalizedRootNodes: ReadonlyMap<NodeId, ISerialisedNode>
+  orphansById: ReadonlyMap<NodeId, LGraphNode>
+}): NodeId[] {
+  const materialized: NodeId[] = []
+  for (const state of records) {
+    const live = graph._nodes_by_id[state.id]
+    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    const serialised =
+      normalizedRootNodes.get(state.id) ?? state.lastSerialization
+    if (!serialised || pendingDefinitions.has(state.type)) continue
+    if (
+      materialize(graph, scope, state, serialised, orphansById.get(state.id))
+    ) {
+      materialized.push(state.id)
+    }
   }
   return materialized
 }
