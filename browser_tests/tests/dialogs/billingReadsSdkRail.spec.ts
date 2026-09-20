@@ -410,7 +410,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page)
+    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
     await enableReadRail(page)
     await bootApp(page)
 
