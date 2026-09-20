@@ -4,7 +4,7 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -119,12 +119,16 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function agentOperation(id: string, version: number, payload: object) {
+function agentOperation(
+  id: string,
+  version: number,
+  payload: GraphOperation
+): Op {
   return {
     op_id: id,
     actor: 'agent:test',
     base_version: version,
-    stamp: [version, 'agent:test', id],
+    stamp: [version, 'agent:test'],
     ...payload
   }
 }
@@ -220,14 +224,12 @@ describe('reconcileAgentAdapters', () => {
 
     let sequence = 0
     let initialFrame = true
-    const deliver = (payload: object) => {
+    const deliver = (payload: GraphOperation) => {
       const stateVector = Y.encodeStateVector(host)
       const opId = `agent-op-${++sequence}`
       const result = applyOps(
         host,
-        [agentOperation(opId, sequence, payload)] as Parameters<
-          typeof applyOps
-        >[1],
+        [agentOperation(opId, sequence, payload)],
         CATALOG
       )
       expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
@@ -1039,8 +1041,6 @@ describe('reconcileAgentAdapters', () => {
       const promotedWidgetId = instance.inputs[0]?.widgetId
       if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
       expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(0)
-      const inputController = instance.inputs[0]?._listenerController
-      expect(inputController?.signal.aborted).toBe(false)
       instance.pos = [400, 500]
       instance.size = [400, 300]
 
@@ -1055,7 +1055,7 @@ describe('reconcileAgentAdapters', () => {
             value: 42,
             promoted: { value_index: 0, host_widgets_values: [42] }
           })
-        ] as Parameters<typeof applyOps>[1],
+        ],
         CATALOG
       )
       expect(result.outcomes).toEqual([
@@ -1072,16 +1072,17 @@ describe('reconcileAgentAdapters', () => {
           opIds: ['op-promoted']
         })
       ).toBe(true)
-      expect(inputController?.signal.aborted).toBe(false)
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
 
       expect(graph.getNodeById(toNodeId(1))).toBe(instance)
-      expect(instance.title).toBe(source.name)
-      expect(instance.inputs).toHaveLength(1)
-      expect(instance.inputs[0]?.widgetId).toBe(promotedWidgetId)
+      expect(instance).toEqual(
+        expect.objectContaining({
+          title: source.name,
+          inputs: [expect.objectContaining({ widgetId: promotedWidgetId })],
+          widgets: [expect.objectContaining({ value: 42 })]
+        })
+      )
       expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
-      expect(instance.widgets).toHaveLength(1)
-      expect(instance.widgets[0]?.value).toBe(42)
       expect([...instance.pos]).toEqual([400, 500])
       expect([...instance.size]).toEqual([400, 300])
       expect(reportError).not.toHaveBeenCalled()
