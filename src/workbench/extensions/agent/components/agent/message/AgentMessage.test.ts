@@ -23,11 +23,11 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
   }
 }
 
-function paywallMessage(): AssistantMessage {
+function paywallMessage(message?: string): AssistantMessage {
   return {
     id: 'msg-paywall' as TurnId,
     role: 'assistant',
-    parts: [{ type: 'paywall' }],
+    parts: [{ type: 'paywall', message }],
     streaming: false,
     thinking: false
   }
@@ -55,6 +55,30 @@ describe('AgentMessage paywall reply', () => {
     expect(
       screen.getByRole('button', { name: 'Upgrade plan' })
     ).toBeInTheDocument()
+  })
+
+  // FE-2519: the denial reason travels AgentMessage -> AgentMessageGroup ->
+  // AgentPaywallCard. Card tests hand the text straight to the card and session
+  // tests only prove it is stored, so nothing else fails if that binding is
+  // dropped and the transcript silently falls back to the generic copy.
+  it('renders the server denial reason from the part through to the card', () => {
+    const serverMessage =
+      'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+    render(AgentMessage, {
+      props: {
+        message: paywallMessage(serverMessage),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const card = screen.getByRole('alert')
+    expect(within(card).getByText(serverMessage)).toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).not.toBeInTheDocument()
   })
 
   it('exposes distinct actions for adding credits and upgrading', async () => {

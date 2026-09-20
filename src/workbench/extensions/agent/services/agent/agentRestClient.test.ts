@@ -7,7 +7,11 @@ const fetchApi = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
-import { AgentApiError, createAgentRestClient } from './agentRestClient'
+import {
+  AgentApiError,
+  createAgentRestClient,
+  parseRetryAfter
+} from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
 function jsonResponse(
@@ -451,5 +455,66 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+})
+
+// FE-2461: the helper declares `number | undefined`, so every input class has to
+// leave it as a whole non-negative number of seconds or as `undefined`. A caller
+// repairing a `NaN` afterwards is the contract leaking, not a fix.
+describe('parseRetryAfter contract', () => {
+  it.for([
+    { label: 'absent header', header: null, expected: undefined },
+    { label: 'integer delta-seconds', header: '5', expected: 5 },
+    { label: 'zero delta-seconds', header: '0', expected: 0 },
+    { label: 'malformed HTTP-date', header: 'not-a-date', expected: undefined },
+    {
+      label: 'HTTP-date shaped but unparseable',
+      header: 'Wed, 99 Foo 2026 07:28:00 GMT',
+      expected: undefined
+    },
+    { label: 'empty header', header: '', expected: undefined },
+    { label: 'fractional delta-seconds', header: '1.5', expected: undefined },
+    { label: 'negative delta-seconds', header: '-1', expected: undefined },
+    {
+      label: 'unsafe-integer delta-seconds',
+      header: '9007199254740993',
+      expected: undefined
+    },
+    {
+      label: 'overflowing delta-seconds',
+      header: '9'.repeat(400),
+      expected: undefined
+    }
+  ])('returns $expected for a $label', ({ header, expected }) => {
+    expect(parseRetryAfter(header)).toBe(expected)
+  })
+
+  it.for([
+    { header: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: 30 },
+    { header: 'Wed, 21 Oct 2026 07:27:00 GMT', expected: 0 }
+  ])('reads the HTTP-date $header as a delay', ({ header, expected }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter(header)).toBe(expected)
+  })
+
+  it('never returns NaN, so the caller needs no safe-integer repair', () => {
+    const headers = [
+      null,
+      '',
+      '5',
+      'not-a-date',
+      '1.5',
+      '-1',
+      '9007199254740993',
+      'Wed, 21 Oct 2026 07:28:00 GMT'
+    ]
+
+    for (const header of headers) {
+      const parsed = parseRetryAfter(header)
+      expect(
+        parsed === undefined || (Number.isSafeInteger(parsed) && parsed >= 0)
+      ).toBe(true)
+    }
   })
 })

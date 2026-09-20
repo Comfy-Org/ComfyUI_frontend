@@ -100,11 +100,28 @@ function getErrorMessage(body: unknown, fallback: string): string {
   return isIngestErrorBody(body) ? body.error.message : fallback
 }
 
-function parseRetryAfter(header: string | null): number | undefined {
+/**
+ * A `Retry-After` delay in whole seconds, or `undefined` when the header is
+ * absent or cannot be read as one. Every return honours that contract, so a
+ * caller never has to repair the result: a malformed HTTP-date leaves here as
+ * `undefined` rather than as the `NaN` a bare `Date.parse` would produce.
+ *
+ * Exported for the contract tests; production code reaches it through
+ * `toApiError`.
+ */
+export function parseRetryAfter(header: string | null): number | undefined {
   if (header === null) return undefined
-  if (/^\d+$/.test(header)) return Number(header)
+  if (/^\d+$/.test(header)) return asDelaySeconds(Number(header))
+  // A finite non-integer number (fractional, negative, exponent form) is a
+  // malformed delta-seconds, not a date, so it never reaches Date.parse.
   if (Number.isFinite(Number(header))) return undefined
-  return Math.max(0, Math.ceil((Date.parse(header) - Date.now()) / 1000))
+  const deadline = Date.parse(header)
+  if (Number.isNaN(deadline)) return undefined
+  return asDelaySeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+}
+
+function asDelaySeconds(seconds: number): number | undefined {
+  return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
 export function createAgentRestClient() {
@@ -114,12 +131,7 @@ export function createAgentRestClient() {
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )
-    return new AgentApiError(
-      message,
-      response.status,
-      body,
-      Number.isSafeInteger(retryAfterSeconds) ? retryAfterSeconds : undefined
-    )
+    return new AgentApiError(message, response.status, body, retryAfterSeconds)
   }
 
   async function request<T>(
