@@ -489,6 +489,18 @@ test.describe(
           body: await page.screenshot(),
           contentType: 'image/png'
         })
+
+        // Closing the panel unmounts AgentPanelRoot and deliberately detaches
+        // the CRDT follower and its mint ports. Reopen it before exercising a
+        // local edit, and prove the replacement follower has rebound this doc.
+        subscribedTo = null
+        await page
+          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .click()
+        await expect(panel).toBeVisible()
+        await expect
+          .poll(() => subscribedTo, { timeout: 20_000 })
+          .toBe(WORKFLOW_ID)
       })
 
       await test.step('a pasted node keeps its position through another tab retarget', async () => {
