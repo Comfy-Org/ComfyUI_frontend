@@ -14,7 +14,7 @@ test.describe(
   'Agent workflow tab switch run submission',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test.use({ conversationCase: EDITED_CASE })
+    test.use({ conversationCase: EDITED_CASE, replayTiming: 'recorded' })
 
     test('graphToPrompt submits the agent-edited values after switching away and back', async ({
       agentConversation,
@@ -37,18 +37,19 @@ test.describe(
         return output[KSAMPLER_NODE_ID].inputs
       }
 
-      await test.step('agent edits the KSampler steps and cfg', async () => {
-        await agentConversation.runTurns()
-        await agentConversation.expectCanvasReplayed(lastTurn)
-        const inputs = await ksamplerInputs()
-        expect(inputs.steps).toBe(30)
-        expect(inputs.cfg).toBe(5)
-      })
+      await agentConversation.sendPrompt()
+      const response = agentConversation.replayResponse()
 
-      await test.step('user opens a new blank workflow', async () => {
+      await test.step('user switches workflows while the edit is in progress', async () => {
         await expect(tabs).toHaveCount(1)
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
+        await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+      })
+
+      await test.step('agent finishes editing the background workflow', async () => {
+        await response
+        await agentConversation.waitForTurnComplete()
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
       })
 
