@@ -95,6 +95,7 @@ test.describe(
       })
 
       await test.step('the server did not answer 409', async () => {
+        await expect(turnLock.stopButton).toBeVisible()
         await expect(
           turnLock.panel
             .getByRole('alert')
