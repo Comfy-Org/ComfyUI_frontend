@@ -190,6 +190,24 @@ describe('applyLiveWidgetValue', () => {
     )
   })
 
+  it('does not emit a node change when replaying the current value', () => {
+    const { graph, node, widget, callback } = graphWithWidget()
+    node.onWidgetChanged = vi.fn()
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        widget.value,
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'before' })
+    expect(callback).toHaveBeenCalledWith('before', undefined, node)
+    expect(node.onWidgetChanged).not.toHaveBeenCalled()
+  })
+
   it('syncs the backing property for property-linked widgets', () => {
     const { graph, node, widget } = graphWithWidget()
     widget.options = { ...widget.options, property: 'mode' }
