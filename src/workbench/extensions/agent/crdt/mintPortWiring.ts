@@ -134,6 +134,7 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  delete serialized.__incarnation
   const named = serialized.widgets_values_named
   if (named != null && typeof named === 'object') {
     const filtered: Record<string, unknown> = {}

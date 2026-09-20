@@ -278,6 +278,7 @@ describe('attachMintPortWiring', () => {
       serialize: () => ({
         id: 5,
         type: 'LoadImage',
+        __incarnation: 'source-node-incarnation',
         widgets_values: ['positional'],
         widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
       }),

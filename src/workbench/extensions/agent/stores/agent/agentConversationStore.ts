@@ -10,16 +10,12 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
-type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+export type { UserAttachment }
 
-export interface UserAttachment {
-  name: string
-  previewUrl?: string
-  /** Uploaded input filename; resolves the sent file for grid previews. */
-  ref?: string
-}
+type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
 interface UserEntry {
   id: TurnId
@@ -282,6 +278,7 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
+      userAttachments.value = transcript.userAttachments
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
