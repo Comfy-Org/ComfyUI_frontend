@@ -19,7 +19,7 @@ const mediaBase = 'https://media.comfy.org/website/qwen-image-2.1'
 const media = {
   hero: {
     kind: 'video',
-    src: `${mediaBase}/hero.mp4`,
+    src: `${mediaBase}/hero-sizzle.mp4`,
     posterSrc: `${mediaBase}/hero-poster.webp`
   },
   infographic: { kind: 'image', src: `${mediaBase}/infographic.webp` },
@@ -86,7 +86,7 @@ export const qwenImage21Page: ModelLaunchPage = {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
     mobileFallbackImageSrc: media.hero.posterSrc,
-    mobileVideoSrc: `${mediaBase}/hero-mobile.mp4`,
+    mobileVideoSrc: `${mediaBase}/hero-sizzle-mobile.mp4`,
     logoSrc: '/icons/ai-models/qwen.svg',
     titleKey: 'qwenImage21.hero.title',
     descriptionKey: 'qwenImage21.hero.description',
@@ -113,8 +113,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'infographic',
         name: {
-          en: 'Coffee infographic generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的咖啡信息图'
+          en: 'Coffee infographic generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的咖啡信息图'
         },
         tier: 'free',
         note: freeNote,
@@ -134,8 +134,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'harlem-stoop',
         name: {
-          en: 'Editorial portrait on a Harlem stoop generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的哈莱姆门廊人像'
+          en: 'Editorial portrait on a Harlem stoop generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的哈莱姆门廊人像'
         },
         tier: 'free',
         note: freeNote,
@@ -155,8 +155,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'holi-powder',
         name: {
-          en: 'Holi colour powder burst generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的洒红节彩粉'
+          en: 'Holi colour powder burst generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的洒红节彩粉'
         },
         tier: 'free',
         note: freeNote,
@@ -176,8 +176,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'game-environment',
         name: {
-          en: 'Floating island game environment generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的浮空岛游戏场景'
+          en: 'Floating island game environment generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的浮空岛游戏场景'
         },
         tier: 'free',
         note: freeNote,
@@ -196,8 +196,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'character-sheet',
         name: {
-          en: 'Character turnaround sheet generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的角色三视图'
+          en: 'Character turnaround sheet generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的角色三视图'
         },
         tier: 'free',
         note: freeNote,
@@ -217,8 +217,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'interior-archviz',
         name: {
-          en: 'Interior architectural visualization generated with Qwen Image 2.1',
-          'zh-CN': '使用 Qwen Image 2.1 生成的室内建筑可视化'
+          en: 'Interior architectural visualization generated with Qwen-Image 2.1',
+          'zh-CN': '使用 Qwen-Image 2.1 生成的室内建筑可视化'
         },
         tier: 'free',
         note: freeNote,
@@ -255,20 +255,20 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'what-is-qwen-image-2-1',
         question: {
-          en: 'What is Qwen Image 2.1?',
-          'zh-CN': 'Qwen Image 2.1 是什么？'
+          en: 'What is Qwen-Image 2.1?',
+          'zh-CN': 'Qwen-Image 2.1 是什么？'
         },
         answer: {
-          en: 'Qwen Image 2.1 is the latest image model from the Qwen team at Alibaba. One model handles both text-to-image generation and instruction-based editing, with a focus on accurate text rendering and native high-resolution output. It runs natively in ComfyUI.',
+          en: 'Qwen-Image 2.1 is the latest image model from the Qwen team at Alibaba. One model handles both text-to-image generation and instruction-based editing, with a focus on accurate text rendering and native high-resolution output. It runs natively in ComfyUI.',
           'zh-CN':
-            'Qwen Image 2.1 是阿里巴巴 Qwen 团队推出的最新图像模型。同一模型同时支持文生图与基于指令的图像编辑，专注于精准的文字渲染和原生高分辨率输出。它可在 ComfyUI 中原生运行。'
+            'Qwen-Image 2.1 是阿里巴巴 Qwen 团队推出的最新图像模型。同一模型同时支持文生图与基于指令的图像编辑，专注于精准的文字渲染和原生高分辨率输出。它可在 ComfyUI 中原生运行。'
         }
       },
       {
         id: 'how-to-run',
         question: {
-          en: 'How do I run Qwen Image 2.1 in ComfyUI?',
-          'zh-CN': '如何在 ComfyUI 中运行 Qwen Image 2.1？'
+          en: 'How do I run Qwen-Image 2.1 in ComfyUI?',
+          'zh-CN': '如何在 ComfyUI 中运行 Qwen-Image 2.1？'
         },
         answer: {
           en: `Open the [text-to-image](${qwenImage21Links.cloud}) or [image-edit](${qwenImage21Links.cloudEdit}) template on Comfy Cloud and press run, or download the weights and load the same workflow in ComfyUI on your own GPU. The [guide](${qwenImage21Links.docs}) lists the model files and where they go.`,
@@ -278,8 +278,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'text-rendering',
         question: {
-          en: 'How well does Qwen Image 2.1 render text?',
-          'zh-CN': 'Qwen Image 2.1 的文字渲染效果如何？'
+          en: 'How well does Qwen-Image 2.1 render text?',
+          'zh-CN': 'Qwen-Image 2.1 的文字渲染效果如何？'
         },
         answer: {
           en: "Text rendering is the model's signature strength. Posters, infographics, slides, comics, and signage come out with legible copy in both English and Chinese, so you can put the exact words you need into the prompt rather than compositing them afterwards.",
@@ -290,8 +290,8 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'image-editing',
         question: {
-          en: 'Can Qwen Image 2.1 edit an existing image?',
-          'zh-CN': 'Qwen Image 2.1 可以编辑现有图像吗？'
+          en: 'Can Qwen-Image 2.1 edit an existing image?',
+          'zh-CN': 'Qwen-Image 2.1 可以编辑现有图像吗？'
         },
         answer: {
           en: `Yes. Open the [image-edit template](${qwenImage21Links.cloudEdit}), feed in an image and describe the change: swap objects, restyle a scene, relight it, or revise the text it contains. Generation and editing live in the same model, so no second checkpoint is needed.`,
@@ -301,20 +301,20 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'license',
         question: {
-          en: 'Can I use Qwen Image 2.1 commercially?',
-          'zh-CN': 'Qwen Image 2.1 可以商用吗？'
+          en: 'Can I use Qwen-Image 2.1 commercially?',
+          'zh-CN': 'Qwen-Image 2.1 可以商用吗？'
         },
         answer: {
-          en: 'Qwen Image 2.1 ships as open weights under the Apache 2.0 license, so you can run it locally, fine-tune it, and use the output in commercial work. On Comfy Cloud it is included in your plan with no per-image fee.',
+          en: 'Qwen-Image 2.1 ships as open weights under the Apache 2.0 license, so you can run it locally, fine-tune it, and use the output in commercial work. On Comfy Cloud it is included in your plan with no per-image fee.',
           'zh-CN':
-            'Qwen Image 2.1 以 Apache 2.0 许可开源权重发布，你可以本地运行、微调，并将输出用于商业项目。在 Comfy Cloud 上它包含在套餐内，无需按张付费。'
+            'Qwen-Image 2.1 以 Apache 2.0 许可开源权重发布，你可以本地运行、微调，并将输出用于商业项目。在 Comfy Cloud 上它包含在套餐内，无需按张付费。'
         }
       },
       {
         id: 'comfy-workflows',
         question: {
-          en: 'Why use Qwen Image 2.1 in a ComfyUI workflow?',
-          'zh-CN': '为什么要在 ComfyUI 工作流中使用 Qwen Image 2.1？'
+          en: 'Why use Qwen-Image 2.1 in a ComfyUI workflow?',
+          'zh-CN': '为什么要在 ComfyUI 工作流中使用 Qwen-Image 2.1？'
         },
         answer: {
           en: 'The generated image becomes one step in a larger, repeatable pipeline. Add ControlNet or LoRAs, route the result into upscaling, animation, or another model, and keep every step visible and adjustable.',
