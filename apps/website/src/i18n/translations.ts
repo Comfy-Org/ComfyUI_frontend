@@ -7892,7 +7892,7 @@ Enterprise`
     'zh-CN': '图像编辑'
   },
   'qwenImage21.hero.primaryCta': {
-    en: 'RUN QWEN IMAGE 2.1',
+    en: 'RUN QWEN-IMAGE 2.1',
     'zh-CN': '运行 Qwen-Image 2.1'
   },
   'qwenImage21.hero.secondaryCta': {
