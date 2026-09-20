@@ -232,6 +232,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         ).toBeVisible()
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
+        // `pushEvent` does not wait for the page to apply the frame, and the
+        // tool chip attaches to the turn the thinking event opens. Pushing both
+        // frames back to back races that, and the tool call is dropped when the
+        // turn is not there yet — hosted CI happens to win the race, a local
+        // rig does not. Settle the thinking state first, as the streaming test
+        // above already does. That test waits on `THINKING_TEXT`, the thinking
+        // CONTENT; this one cannot, because it turned the optional privacy
+        // sources off and the content is deliberately not rendered. The
+        // "Thinking..." label is the observable the panel does expose here.
+        await expect(
+          agentPanel.root.getByText(enMessages.agent.thinking)
+        ).toBeVisible()
+
         pushEvent(ws, TOOL_CALL_EVENT)
         await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
       })
