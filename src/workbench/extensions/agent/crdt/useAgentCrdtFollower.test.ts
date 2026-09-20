@@ -9,14 +9,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
@@ -180,7 +183,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -199,7 +203,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       exposedAcknowledgedWorkflowId = () => acknowledgedWorkflowId.value
@@ -234,11 +239,105 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('does not construct a follower when the product gate is disabled', () => {
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null,
+      updatesApplied: 0
+    })
+    expect(bridgeState.current).toBeNull()
+    expect(adapterState.bind).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('starts on flag delivery and stops synchronously on revocation', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    const { status, workflowId, unmount } = mountFollower('wf-1')
+    expect(bridgeState.current).toBeNull()
+
+    store.enabled = true
+    const first = bridge()
+    expect(first.subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    first.dispatchEvent(
+      new CustomEvent('doc_subscribed', { detail: { ok: true } })
+    )
+    expect(status().connected).toBe(true)
+
+    store.enabled = false
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(clientState.destroy).toHaveBeenCalledOnce()
+    expect(adapterState.destroy).toHaveBeenCalledOnce()
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null
+    })
+
+    const applies = adapterState.applyFrame.mock.calls.length
+    first.dispatchEvent(
+      new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
+    )
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(first.subscribe).toHaveBeenCalledTimes(1)
+    expect(first.resubscribe).not.toHaveBeenCalled()
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(applies)
+
+    store.enabled = true
+    expect(bridge()).not.toBe(first)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-2')
+    unmount()
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(bridge().destroy).toHaveBeenCalledOnce()
+  })
+
+  it('cannot enable transport through diagnostic, legacy URL, storage or build controls', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
+    window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
+    localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
+    expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
+
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(false)
+    expect(bridgeState.current).toBeNull()
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
+  })
+
+  it('keeps product transport enabled when diagnostics and legacy controls are off', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
+    window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
+    expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
+
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(true)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -877,6 +976,36 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports a pending live arrival when graph readiness materializes it', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const onMaterialized = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => ({ '3': {} }) })
+      }
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
     it('does not reconcile for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
@@ -973,6 +1102,133 @@ describe('useAgentCrdtFollower', () => {
           { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
         ]
       ])
+      unmount()
+    })
+
+    it('reports only live agent materializations, not reconnect catch-up', () => {
+      const onMaterialized = vi.fn()
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+        onMaterialized
+      })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: true
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turn',
+        nodeIds: [toNodeId(1)]
+      })
+      unmount()
+    })
+
+    it('retains a live add until a dependency makes the node visible', () => {
+      const onMaterialized = vi.fn()
+      const graph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+      let nodes: Record<string, unknown> = {}
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 5,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 4,
+        actor: 'host:catch-up',
+        catchUp: true,
+        update: new Uint8Array()
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
+    it('does not attribute a human recreation after a pending node was deleted', () => {
+      const onMaterialized = vi.fn()
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const readyGraph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      let nodes: Record<string, unknown> = {}
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      // The add never enters the observable document set because projection is
+      // still waiting on a dependency; a later delete must still retire it.
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      graph.value = readyGraph
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      expect(onMaterialized).not.toHaveBeenCalled()
       unmount()
     })
   })

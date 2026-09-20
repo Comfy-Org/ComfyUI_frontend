@@ -20,6 +20,16 @@ export function countDocFrames(
   }).length
 }
 
+/**
+ * The `/ws` connections the page opens, in order. A reconnect routes a second
+ * time, so a test that drops the socket needs the route the client opened
+ * *after* the drop, not the dead one it already holds.
+ */
+interface WebSocketTracker {
+  current: () => WebSocketRoute | undefined
+  waitForNext: () => Promise<WebSocketRoute>
+}
+
 function createWebSocketRouteHandler(
   connectWebSocketToServer: boolean,
   onRouted: (ws: WebSocketRoute, server: WebSocketRoute | null) => void
@@ -40,7 +50,9 @@ function createWebSocketRouteHandler(
 
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
-  getWebSocket: (after?: WebSocketRoute) => Promise<WebSocketRoute>
+  getWebSocket: () => Promise<WebSocketRoute>
+  nextWebSocket: () => Promise<WebSocketRoute>
+  webSocketTracker: WebSocketTracker
   webSocketMessages: Map<WebSocketRoute, string[]>
 }>({
   connectWebSocketToServer: [true, { option: true }],
@@ -48,10 +60,10 @@ export const webSocketFixture = base.extend<{
   webSocketMessages: async ({}, use) => {
     await use(new Map())
   },
-  getWebSocket: [
+  webSocketTracker: [
     async ({ context, connectWebSocketToServer, webSocketMessages }, use) => {
-      let latest: WebSocketRoute | undefined
-      let resolve: ((ws: WebSocketRoute) => void) | undefined
+      let current: WebSocketRoute | undefined
+      const waiters = new Set<(ws: WebSocketRoute) => void>()
 
       await context.routeWebSocket(
         /\/ws/,
@@ -66,18 +78,32 @@ export const webSocketFixture = base.extend<{
             if (typeof message === 'string') messages.push(message)
             server?.send(message)
           })
-          latest = ws
-          resolve?.(ws)
+          current = ws
+          const pending = [...waiters]
+          waiters.clear()
+          for (const resolve of pending) resolve(ws)
         })
       )
 
-      await use((after) => {
-        if (latest && latest !== after) return Promise.resolve(latest)
-        return new Promise<WebSocketRoute>((r) => {
-          resolve = r
-        })
+      await use({
+        current: () => current,
+        waitForNext: () =>
+          new Promise<WebSocketRoute>((resolve) => waiters.add(resolve))
       })
     },
     { auto: true }
-  ]
+  ],
+  getWebSocket: async ({ webSocketTracker }, use) => {
+    await use(() => {
+      const open = webSocketTracker.current()
+      return open ? Promise.resolve(open) : webSocketTracker.waitForNext()
+    })
+  },
+  /**
+   * Resolves with the NEXT socket the page opens. Call it before closing the
+   * current one so the waiter is armed before the client reconnects.
+   */
+  nextWebSocket: async ({ webSocketTracker }, use) => {
+    await use(() => webSocketTracker.waitForNext())
+  }
 })

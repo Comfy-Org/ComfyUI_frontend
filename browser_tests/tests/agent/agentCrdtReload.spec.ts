@@ -14,7 +14,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
@@ -23,6 +23,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     page,
     agentFlagEnabled,
     getWebSocket,
+    nextWebSocket,
     webSocketMessages
   }) => {
     test.setTimeout(90_000)
@@ -99,10 +100,15 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
     const reloadedWs =
       await test.step('Reload and restore the workflow subscription', async () => {
+        // Arm the waiter BEFORE the reload. The replacement socket is routed
+        // and starts recording as soon as the reloaded page connects, so a
+        // waiter registered afterwards can miss it and leave the assertion
+        // below polling a socket that never receives the resubscribe.
+        const pendingWs = nextWebSocket()
         await page.reload()
         await waitForCloudApp(page)
         await expect(page.locator('#agent-panel-root')).toBeVisible()
-        const reloadedWs = await getWebSocket(ws)
+        const reloadedWs = await pendingWs
         reloadedWs.send(
           JSON.stringify({
             type: 'status',

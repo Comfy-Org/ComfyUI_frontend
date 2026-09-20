@@ -1,44 +1,57 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration, {
   parseAnnotatedFilename
 } from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import type {
   CameraConfig,
   GizmoConfig,
   LightConfig,
   ModelConfig,
-  SceneConfig
+  SceneConfig,
+  StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { Settings } from '@/platform/settings/types'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     apiURL: (p: string) => p,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchCustomEvent: vi.fn(),
     fetchApi: vi.fn(),
     getSystemStats: vi.fn()
-  }
+  })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: { extra: {} } })
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({ default: class {} }))
+vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+  default: fromAny(class {})
+}))
 
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
 type WithPrivate = {
@@ -53,8 +66,16 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
   return new Load3DConfiguration(load3d, properties) as unknown as WithPrivate
 }
 
-function stubSettings(values: Record<string, unknown>) {
+function stubSettings(values: Partial<Settings>) {
   vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
+}
+
+function reactiveWidget(value: IBaseWidget['value']): IBaseWidget {
+  return reactive(fromPartial<IBaseWidget>({ value }))
+}
+
+function reactiveNumericWidget(value: number): INumericWidget {
+  return reactive(fromPartial<INumericWidget>({ type: 'number', value }))
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -126,13 +147,13 @@ describe('Load3DConfiguration.loadModelConfig', () => {
   })
 
   it('backfills scale on legacy gizmo config missing the scale field', () => {
-    const legacyGizmo = {
+    const legacyGizmo: Partial<GizmoConfig> = {
       enabled: true,
       mode: 'rotate',
       position: { x: 1, y: 2, z: 3 },
       rotation: { x: 0.1, y: 0.2, z: 0.3 }
-    } as unknown as GizmoConfig
-    const stored: ModelConfig = {
+    }
+    const stored: StoredModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
       showSkeleton: false,
@@ -178,12 +199,13 @@ describe('Load3DConfiguration.loadModelConfig', () => {
 })
 
 describe('Load3DConfiguration.silentOnNotFound propagation', () => {
-  let loadModelSpy: ReturnType<typeof vi.fn>
+  let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
     return {
       loadModel: loadModelSpy,
+      clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -198,12 +220,14 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
-      emitModelReady: vi.fn()
+      emitModelReady: vi.fn(),
+      setConfigurationCleanup: vi.fn()
     } as unknown as Load3d
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -302,6 +326,60 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     config.configureForSaveMesh('output', 'model.glb')
     await flush()
     expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not publish effects for a load superseded by clear', async () => {
+    let resolveLoad!: (accepted: boolean) => void
+    const load3d = makeLoad3dMock()
+    vi.mocked(load3d.loadModel).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveLoad = resolve
+        })
+    )
+    const modelWidget = reactiveWidget('a.glb')
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure({ modelWidget, loadFolder: 'output' })
+    modelWidget.value = ''
+    resolveLoad(false)
+    await flush()
+
+    expect(load3d.setUpDirection).not.toHaveBeenCalled()
+    expect(load3d.setMaterialMode).not.toHaveBeenCalled()
+    expect(load3d.emitModelReady).not.toHaveBeenCalled()
+  })
+
+  it('publishes effects only for the replacement after clear', async () => {
+    let resolveFirst!: (accepted: boolean) => void
+    let resolveSecond!: (accepted: boolean) => void
+    const load3d = makeLoad3dMock()
+    vi.mocked(load3d.loadModel)
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveSecond = resolve
+          })
+      )
+    const modelWidget = reactiveWidget('a.glb')
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure({ modelWidget, loadFolder: 'output' })
+    modelWidget.value = ''
+    modelWidget.value = 'b.glb'
+    resolveFirst(false)
+    resolveSecond(true)
+    await flush()
+
+    expect(load3d.setUpDirection).toHaveBeenCalledTimes(1)
+    expect(load3d.setMaterialMode).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -467,8 +545,8 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   let load3d: Load3d
 
   function makeLoad3dMock(): Load3d {
-    return {
-      loadModel: vi.fn().mockResolvedValue(undefined),
+    return fromPartial<Load3d>({
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -483,12 +561,14 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
-      emitModelReady: vi.fn()
-    } as unknown as Load3d
+      emitModelReady: vi.fn(),
+      setConfigurationCleanup: vi.fn()
+    })
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -553,13 +633,14 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
 describe('Load3DConfiguration "none" model handling', () => {
   let load3d: Load3d
-  let loadModelSpy: ReturnType<typeof vi.fn>
+  let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
   let clearModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    let cleanup: (() => void) | undefined
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
     clearModelSpy = vi.fn()
-    return {
+    return fromPartial<Load3d>({
       loadModel: loadModelSpy,
       clearModel: clearModelSpy,
       setUpDirection: vi.fn(),
@@ -576,12 +657,17 @@ describe('Load3DConfiguration "none" model handling', () => {
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
-      emitModelReady: vi.fn()
-    } as unknown as Load3d
+      emitModelReady: vi.fn(),
+      setConfigurationCleanup: vi.fn((nextCleanup: () => void) => {
+        cleanup?.()
+        cleanup = nextCleanup
+      })
+    })
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -604,7 +690,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {
     const config = new Load3DConfiguration(load3d)
-    const widget = { value: 'model.glb' } as unknown as IBaseWidget
+    const widget = reactiveWidget('model.glb')
     config.configure({ modelWidget: widget, loadFolder: 'input' })
     await flush()
 
@@ -620,7 +706,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   it('loads a model when the widget value transitions from "none" to a real path', async () => {
     const config = new Load3DConfiguration(load3d)
-    const widget = { value: 'none' } as unknown as IBaseWidget
+    const widget = reactiveWidget('none')
     config.configure({ modelWidget: widget, loadFolder: 'input' })
     await flush()
 
@@ -633,12 +719,98 @@ describe('Load3DConfiguration "none" model handling', () => {
       silentOnNotFound: false
     })
   })
+
+  it('stops reacting as soon as the viewer lifecycle is removed', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    const cleanup = vi
+      .mocked(load3d.setConfigurationCleanup)
+      .mock.calls.at(-1)?.[0]
+    if (!cleanup) throw new Error('Expected reactive configuration cleanup')
+    graph.remove(node)
+    expect(modelWidget.widgetId).toBeUndefined()
+    cleanup()
+    loadModelSpy.mockClear()
+
+    modelWidget.value = 'ignored.glb'
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('reloads the model when the CRDT follower writes model_file through widgetValueStore', async () => {
+    const onSceneInvalidated = vi.fn()
+    const graph = new LGraph()
+    const node = new LGraphNode('Load3D')
+    graph.add(node)
+    const modelWidget = node.addWidget(
+      'string',
+      'model_file',
+      'none',
+      () => undefined
+    )
+    const widgetId = modelWidget.widgetId
+    if (!widgetId) throw new Error('Expected a store-backed widget id')
+
+    new Load3DConfiguration(load3d).configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+    loadModelSpy.mockClear()
+    onSceneInvalidated.mockClear()
+
+    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
+      source: 'agent-remote',
+      actor: 'agent:e2e',
+      opId: 'op-1'
+    })
+
+    expect(applied).toBe(true)
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'agent.glb', {
+      silentOnNotFound: false
+    })
+    expect(modelWidget.value).toBe('agent.glb')
+  })
+
+  it('stops reacting to the previous widget once configure runs with a replacement', async () => {
+    const oldWidget = reactiveWidget('none')
+    const replacementWidget = reactiveWidget('none')
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget: oldWidget, loadFolder: 'input' })
+    config.configure({ modelWidget: replacementWidget, loadFolder: 'input' })
+    await flush()
+    loadModelSpy.mockClear()
+
+    oldWidget.value = 'stale.glb'
+    replacementWidget.value = 'restored.glb'
+    await flush()
+
+    expect(loadModelSpy).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      'restored.glb',
+      { silentOnNotFound: false }
+    )
+  })
 })
 
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
@@ -654,12 +826,14 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
       setHDRIIntensity: vi.fn(),
       setHDRIAsBackground: vi.fn(),
       setHDRIEnabled: vi.fn(),
-      emitModelReady: vi.fn()
+      emitModelReady: vi.fn(),
+      setConfigurationCleanup: vi.fn()
     } as unknown as Load3d
   }
 
   async function flush() {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    await nextTick()
+    await Promise.resolve()
   }
 
   beforeEach(() => {
@@ -669,8 +843,8 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
 
   it('width.callback invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -682,15 +856,15 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    width.callback!(2048)
+    width.value = 2048
 
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
   })
 
   it('height.callback invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -702,14 +876,14 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    height.callback!(2048)
+    height.value = 2048
 
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
   })
 
   it('model_file widget callback invokes onSceneInvalidated after the model loads', async () => {
     const onSceneInvalidated = vi.fn()
-    const modelWidget = { value: 'none' } as unknown as IBaseWidget
+    const modelWidget = reactiveWidget('none')
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -728,10 +902,11 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
   it('preserves any pre-existing model widget callback alongside the invalidation hook', async () => {
     const onSceneInvalidated = vi.fn()
     const original = vi.fn()
-    const modelWidget = {
+    const modelWidget = reactiveWidget('none')
+    Object.assign(modelWidget, {
       value: 'none',
       callback: original
-    } as unknown as IBaseWidget
+    })
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -742,6 +917,7 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     await flush()
 
     modelWidget.value = 'model.glb'
+    modelWidget.callback?.('model.glb')
     await flush()
 
     expect(original).toHaveBeenCalledWith('model.glb')
@@ -749,9 +925,9 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
   })
 
   it('callbacks remain safe when onSceneInvalidated is omitted', async () => {
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
-    const modelWidget = { value: 'none' } as unknown as IBaseWidget
+    const width = reactiveNumericWidget(1024)
+    const height = reactiveNumericWidget(1024)
+    const modelWidget = reactiveWidget('none')
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
@@ -762,8 +938,12 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    expect(() => width.callback!(2048)).not.toThrow()
-    expect(() => height.callback!(2048)).not.toThrow()
+    expect(() => {
+      width.value = 2048
+    }).not.toThrow()
+    expect(() => {
+      height.value = 2048
+    }).not.toThrow()
     expect(() => {
       modelWidget.value = 'model.glb'
     }).not.toThrow()

@@ -57,6 +57,24 @@ describe('persistedDocId', () => {
       expect(rawRecord()).toBeNull()
     })
 
+    it('drops a record whose expiry is not finite, even on a reload', () => {
+      // Written as raw JSON on purpose: `JSON.stringify(Infinity)` emits
+      // `null`, so the only way to reproduce what a hostile or corrupted
+      // record actually looks like on the wire is the out-of-range literal
+      // that `JSON.parse` turns back into `Infinity`.
+      sessionStorage.setItem(
+        DOC_ID_SESSION_KEY,
+        '{"docId":"wf-1","nonce":"a-different-page-load","expiresAt":1e400}'
+      )
+      // Reload is the permissive path: it is the one navigation type allowed
+      // to adopt a foreign nonce, so it is where a never-expiring record would
+      // be handed back instead of rejected.
+      asReloadNavigation()
+
+      expect(reconcilePersistedDocId()).toBeNull()
+      expect(rawRecord()).toBeNull()
+    })
+
     it('drops a pre-FEC-5 bare doc id, which is not valid JSON', () => {
       sessionStorage.setItem(DOC_ID_SESSION_KEY, 'wf-legacy')
 

@@ -72,26 +72,29 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(leading.first()).toBeVisible()
     const rowCount = await leading.count()
-    expect(rowCount).toBeGreaterThanOrEqual(3)
+    expect(rowCount).toBeGreaterThanOrEqual(6)
     const recommended = await leading.evaluateAll((cards) =>
-      cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+      cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
     )
     expect(recommended).toEqual([
       '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/byteplus--seedream-4--generate-images/'
+      '/models/openai--gpt-image-2--generate-images/',
+      '/models/byteplus--seedream-4--generate-images/',
+      '/models/xai--grok-imagine-image-2.0--generate-images/',
+      '/models/vertexai--gemini-nano-banana-2--generate-images/',
+      '/models/bfl--flux-2-pro--generate-images/'
     ])
-    expect(await recommendedIn('generate-videos', 7)).toEqual([
-      '/models/byteplus--seedance-2-5-reference--generate-videos/',
+    expect(await recommendedIn('generate-videos', 5)).toEqual([
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
       '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
       '/models/xai--grok-imagine-video-1.5--generate-videos/',
-      '/models/xai--grok-imagine-video--generate-videos/',
-      '/models/byteplus--seedance-2-fast-reference--generate-videos/',
+      '/models/wan--text-to-video-3.0--generate-videos/',
       '/models/gemini--omni-1.1-flash--generate-videos/'
     ])
-    expect(await recommendedIn('animate-images', 4)).toEqual([
+    expect(await recommendedIn('animate-images', 6)).toEqual([
+      '/models/byteplus--seedance-2-5-reference--generate-videos/',
       '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
+      '/models/byteplus--seedance-2-image-to-video--animate-images/',
       '/models/xai--grok-imagine-video--animate-images/',
       '/models/wan--image-to-video-3.0--animate-images/',
       '/models/wan--reference-to-video-3.0--animate-images/'
@@ -99,9 +102,20 @@ test.describe('Models catalog', () => {
     expect(await recommendedIn('other-formats', 1)).toEqual([
       '/models/byteplus--seed-audio-1.0--audio/'
     ])
-    expect(await recommendedIn('edit-videos', 2)).toEqual([
+    expect(await recommendedIn('edit-videos', 6)).toEqual([
+      '/models/byteplus--seedance-2-5-edit-video--edit-videos/',
+      '/models/kling--omni-pro-edit-video--edit-videos/',
       '/models/gemini--omni-1.1-flash--edit-videos/',
-      '/models/runway--aleph2-video-to-video--edit-videos/'
+      '/models/runway--aleph2-video-to-video--edit-videos/',
+      '/models/gemini--omni-flash-preview--edit-videos/',
+      '/models/wan--video-edit-2.7--edit-videos/'
+    ])
+    expect(await recommendedIn('edit-images', 5)).toEqual([
+      '/models/vertexai--gemini-nano-banana-2--edit-images/',
+      '/models/vertexai--gemini-3-pro-image--edit-images/',
+      '/models/byteplus--seedream-5-pro--edit-images/',
+      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
+      '/models/byteplus--seedream-4-5--edit-images/'
     ])
 
     await sort.click()
@@ -127,8 +141,12 @@ test.describe('Models catalog', () => {
     await expect(sort).toContainText('Most popular')
     await expect
       .poll(() =>
-        leading.evaluateAll((cards) =>
-          cards.slice(0, 3).map((card) => card.getAttribute('href') ?? '')
+        leading.evaluateAll(
+          (cards, limit) =>
+            cards
+              .slice(0, limit)
+              .map((card) => card.getAttribute('href') ?? ''),
+          recommended.length
         )
       )
       .toEqual(recommended)
@@ -166,11 +184,13 @@ test.describe('Models catalog', () => {
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const videos = page.getByTestId('section-generate-videos')
-    const rowHeading = await videos
-      .getByRole('heading', { level: 2 })
+    const rowLabel = (
+      await videos.getByRole('heading', { level: 2 }).innerText()
+    ).trim()
+    const seeAll = await videos
+      .getByTestId('section-generate-videos-see-all')
       .innerText()
-    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
-    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
+    const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
@@ -261,6 +281,41 @@ test.describe('Models catalog', () => {
       .toBeCloseTo(searching.y, 0)
   })
 
+  test('the category heading stays clear of the nav while searching', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('Generate videos')
+
+    // Typing scrolls the heading's row into view, which is what used to bury
+    // the heading and the result count it carries under the sticky nav.
+    await page.getByTestId('workshop-search').fill('kling')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toContainText('Kling')
+
+    // Both measured after the scroll settles: the nav only reaches its docked
+    // height once the banner above it has scrolled away.
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const clearanceBelowNav = async () => {
+      const [headingBox, navBox] = await Promise.all([
+        heading.boundingBox(),
+        nav.boundingBox()
+      ])
+      if (!headingBox || !navBox) return null
+      return headingBox.y - (navBox.y + navBox.height)
+    }
+
+    await expect.poll(clearanceBelowNav).toBeGreaterThanOrEqual(0)
+    // Without an upper bound, dropping the scroll altogether would also pass.
+    await expect.poll(clearanceBelowNav).toBeLessThan(40)
+  })
+
   test('cards open canonical model pages with related models', async ({
     page
   }) => {
@@ -293,7 +348,7 @@ test.describe('Models catalog', () => {
       /\/models\/bfl--flux-2-max--generate-images\/$/
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'FLUX 2 Max'
+      'FLUX 2 Max Text-to-Image'
     )
   })
 
@@ -319,8 +374,8 @@ test.describe('Models catalog', () => {
         '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
       )
     ).toHaveCount(0)
-    await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
-      '1'
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
     )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
@@ -370,6 +425,45 @@ test.describe('Models catalog', () => {
       '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
     )
   })
+
+  test('the row arrow sits level with the middle of a card', async ({
+    page
+  }) => {
+    for (const width of [1440, 820, 420]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.goto('/models/')
+      const row = page.getByTestId('section-generate-images')
+      const card = row.getByTestId('workshop-model-card').first()
+      await expect(card).toBeVisible()
+      await card.hover()
+      const cardBox = await card.boundingBox()
+      const arrowBox = await row.getByTestId('card-row-next').boundingBox()
+      if (!cardBox || !arrowBox) throw new Error('the row did not lay out')
+      const middleOf = (box: { y: number; height: number }) =>
+        box.y + box.height / 2
+      expect(Math.abs(middleOf(arrowBox) - middleOf(cardBox))).toBeLessThan(1)
+    }
+  })
+
+  test('the fade reaches both ends of the scrolling row', async ({ page }) => {
+    await page.goto('/models/')
+    const row = page.getByTestId('section-generate-images')
+    await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
+    await row.hover()
+    const edges = await row.evaluate((section) => {
+      const span = (selector: string) => {
+        const element = section.querySelector(selector)
+        if (!element) return undefined
+        const { x, width } = element.getBoundingClientRect()
+        return { left: x, right: x + width }
+      }
+      return {
+        scroller: span('ul'),
+        fades: span('[data-testid="card-row-arrows"]')
+      }
+    })
+    expect(edges.fades).toEqual(edges.scroller)
+  })
 })
 
 test.describe('Model playground', () => {
@@ -417,17 +511,18 @@ test.describe('Model playground', () => {
       .getByRole('navigation', { name: 'Main navigation', exact: true })
       .getByRole('link', { name: 'Models', exact: true })
       .click()
-    await page
-      .getByTestId('section-generate-images')
-      .getByRole('link', { name: /Seedream 4\.5/ })
-      .click()
+    await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
+    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Seedream 4.5'
+      'Seedream 4.5 Image Edit'
     )
     await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText('Choose images or drop them here', { exact: true }).click()
+      page
+        .getByRole('button', { name: /^Replace / })
+        .first()
+        .click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await expect(
@@ -473,7 +568,7 @@ test.describe('Model playground', () => {
     await page.goto('/models/byteplus--seedream-4-5--edit-images/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText('Choose images or drop them here', { exact: true }).click()
+      page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await page.getByRole('tab', { name: 'API', exact: true }).click()
@@ -512,10 +607,30 @@ test.describe('Model playground', () => {
       .toBeLessThan(320)
     await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('')
     await example.click()
+
+    // Clearing the field is a deliberate edit, so the example asks before it
+    // writes over it.
+    await page.getByTestId('example-replace-confirm').click()
+
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+  })
+
+  test('an example leaves a cleared prompt alone when asked to', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true })
+    await expect(prompt).not.toHaveValue('')
+    await prompt.fill('')
+
+    await page.getByTestId('example-card').first().click()
+    await page.getByTestId('example-replace-keep').click()
+
+    await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)
+    await expect(prompt).toHaveValue('')
   })
 
   test('three examples fill the available desktop row', async ({ page }) => {
@@ -538,6 +653,65 @@ test.describe('Model playground', () => {
             listBox.x + listBox.width - (lastCardBox.x + lastCardBox.width)
           ) < 2
         )
+      })
+      .toBe(true)
+  })
+
+  test('a phone sample is big enough to judge @mobile', async ({ page }) => {
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    // A sample exists to be judged. Below this it is a thumbnail of a
+    // thumbnail, which is what it was.
+    await expect
+      .poll(async () => (await cards.first().boundingBox())?.width ?? 0)
+      .toBeGreaterThan(260)
+
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
+      .toBe(true)
+  })
+
+  // 320px is the narrowest phone the site supports, and it is where a fixed
+  // card width ran the next sample off the screen: a strip that scrolls with
+  // nothing showing past its edge reads as a single card.
+  test('the next sample shows past the edge at 320px @mobile', async ({
+    page
+  }) => {
+    const width = 320
+    await page.setViewportSize({ width, height: 720 })
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const box = await cards.nth(1).boundingBox()
+        if (!box) return false
+        // Far enough in to be seen, and still running off the edge: a card
+        // that fitted whole would say the strip ends there.
+        return box.x < width - 24 && box.x + box.width > width
+      })
+      .toBe(true)
+  })
+
+  test('a lone sample takes the phone row @mobile', async ({ page }) => {
+    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(1)
+
+    // The strip runs edge to edge behind a gutter of 24px on each side.
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(async () => {
+        const [listBox, cardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox()
+        ])
+        if (!listBox || !cardBox) return false
+        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
       })
       .toBe(true)
   })

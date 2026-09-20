@@ -7,10 +7,12 @@ import { computed } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
 
+import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
+import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
 const {
   headingTag = 'h1',
@@ -43,13 +45,71 @@ const showMobileVideo = computed(
 // 'overlay' is the announcement treatment: media, scrim and content stacked in
 // one grid cell. The launch layouts instead reorder the same three blocks.
 const isOverlay = hero.layout === 'overlay'
+const isLogoMask = isOverlay && !hero.videoSrc && Boolean(hero.logoMaskImageSrc)
 const OVERLAY_CELL = 'col-start-1 row-start-1'
 const isContentFirst = hero.layout === 'content-first'
 </script>
 
 <template>
   <section
-    v-if="isOverlay"
+    v-if="isLogoMask && hero.logoMaskImageSrc"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 py-12 text-center lg:px-20 lg:py-16"
+  >
+    <ModelLaunchHeroLogoMask
+      :image-src="hero.logoMaskImageSrc"
+      :fallback-image-src="hero.placeholderImageSrc"
+      class="mb-2 w-full max-w-4xl"
+    />
+
+    <ProductHeroBadge
+      v-if="hero.eyebrowKey"
+      :text="t(hero.eyebrowKey, locale).toUpperCase()"
+      :show-logo="false"
+      compact
+      class="mb-6"
+    />
+
+    <component
+      :is="headingTag"
+      class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+    >
+      {{ t(hero.titleKey, locale)
+      }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
+        t(hero.titleRestKey, locale)
+      }}</span>
+    </component>
+
+    <p
+      v-if="hero.descriptionKey"
+      class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
+    >
+      {{ t(hero.descriptionKey, locale) }}
+    </p>
+
+    <ModelLaunchHeroCtaButtons
+      :primary-cta="hero.primaryCta"
+      primary-variant="solid"
+      :secondary-cta="hero.secondaryCta"
+      :locale
+    />
+
+    <div
+      v-if="hero.badgeKeys?.length"
+      class="mt-6 flex flex-wrap items-center justify-center gap-3"
+    >
+      <Badge
+        v-for="badgeKey in hero.badgeKeys"
+        :key="badgeKey"
+        data-testid="model-launch-hero-badge"
+        variant="subtle"
+      >
+        {{ t(badgeKey, locale) }}
+      </Badge>
+    </div>
+  </section>
+
+  <section
+    v-else-if="isOverlay"
     class="mx-auto max-w-9xl px-6 py-12 lg:px-20 lg:py-16"
   >
     <div class="grid overflow-hidden rounded-4.5xl">

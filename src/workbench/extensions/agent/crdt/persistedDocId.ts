@@ -67,10 +67,16 @@ export function reconcilePersistedDocId(): string | null {
     // duplicated tab that inherits a lapsed or pre-FEC-5 record would keep
     // re-reading and re-rejecting it on every reconcile instead of consuming it
     // once.
+    // `Number.isFinite`, not `typeof === 'number'`: `JSON.parse` turns an
+    // out-of-range literal such as `1e400` into `Infinity`, which is a number
+    // and is never `<= Date.now()`, so a `typeof` check alone hands back a
+    // record that can never expire. Do not relax this to a `typeof` test; it
+    // has been lost to a rebase twice already.
     if (
       typeof record.docId !== 'string' ||
       typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number'
+      typeof record.expiresAt !== 'number' ||
+      !Number.isFinite(record.expiresAt)
     ) {
       clearPersistedDocId()
       return null

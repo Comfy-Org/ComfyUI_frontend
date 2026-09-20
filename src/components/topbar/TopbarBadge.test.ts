@@ -138,7 +138,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('ERROR')).toHaveClass('bg-danger-100')
       expect(screen.getByText('Error Message')).toHaveClass('text-danger-100')
     })
 
@@ -151,7 +150,6 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('WARN')).toHaveClass('bg-gold-600')
       expect(screen.getByText('Warning Message')).toHaveClass(
         'text-warning-background'
       )
@@ -181,6 +179,31 @@ describe('TopbarBadge', () => {
       expect(screen.getByTestId('badge-icon')).toHaveClass(
         'icon-[lucide--triangle-alert]'
       )
+    })
+  })
+
+  describe('a label the text already carries', () => {
+    it.for([
+      ['WARN', 'Warning Message'],
+      ['PREVIEW', 'Preview Environment'],
+      ['PREVIEW', '(PREVIEW) Environment']
+    ])('drops %s beside its own text', ([label, text]) => {
+      renderTopbarBadge({ text, label }, 'full')
+
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+      expect(screen.getByText(text)).toBeInTheDocument()
+    })
+
+    it('keeps a label that adds something the text does not say', () => {
+      renderTopbarBadge({ text: 'Comfy Cloud', label: 'BETA' }, 'full')
+
+      expect(screen.getByText('BETA')).toBeInTheDocument()
+    })
+
+    it('keeps the label in compact mode, where it stands in for the text', () => {
+      renderTopbarBadge({ text: 'Warning Message', label: 'WARN' }, 'compact')
+
+      expect(screen.getByText('WARN')).toBeInTheDocument()
     })
   })
 
