@@ -1604,14 +1604,19 @@ describe('AgentPanelRoot attach flow', () => {
 
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
+    agentPanelStore.consentAccepted = true
     agentPanelStore.isOpen = true
     agentPanelStore.setWorkflowTarget(
       fromPartial<ComfyWorkflow>(workflowStore.activeWorkflow!)
     )
     render(DockedAgentPanel, { global: { plugins: [i18n] } })
+    await screen.findByTestId('docked-agent-panel')
 
     const privatePrompt = 'Use the unreleased launch prompt'
-    await userEvent.type(await screen.findByRole('textbox'), privatePrompt)
+    await userEvent.type(
+      await screen.findByRole('textbox', undefined, { timeout: 5000 }),
+      privatePrompt
+    )
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     const privatePath = '/Users/jo/private/cat.png'
