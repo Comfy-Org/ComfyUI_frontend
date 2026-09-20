@@ -53,10 +53,14 @@ interface SourceManifest {
   // translations violated token validation when the manifest was recorded.
   // The check exempts them; a successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
-  // Transitional baseline: leaf path keys per entry file that were already
-  // untranslated or already stray when the manifest was recorded. The check
-  // exempts them so pre-existing lag does not fail every unrelated PR; any key
-  // outside this list fails. A successful locale run heals and drops them.
+  // Transitional baseline: leaf path keys that were already untranslated or
+  // already stray when the manifest was recorded, keyed by `<locale>/<entry
+  // file>`. The check exempts them so pre-existing lag does not fail every
+  // unrelated PR; any key outside this list fails. Unlike `knownViolations`
+  // this is scoped per locale, because a key can be pending in one locale and
+  // translated in another, and a filename-only baseline would let a new gap in
+  // one locale hide behind another locale's recorded lag. A successful locale
+  // run heals and drops the entries for that entry file.
   knownPending?: Record<string, string[]>
   version: 1
 }
@@ -69,7 +73,6 @@ interface SourcePlan {
   previousLeafCount: number
   degraded: boolean
   knownViolationKeys: ReadonlySet<string>
-  knownPendingKeys: ReadonlySet<string>
 }
 
 export interface LocaleFileState {
@@ -79,6 +82,8 @@ export interface LocaleFileState {
   existing: LocaleObject
   pendingLeaves: LocaleLeafEntry[]
   strayPaths: string[][]
+  /** Baseline for THIS locale and entry file, from the source manifest. */
+  knownPendingKeys: ReadonlySet<string>
 }
 
 interface ItemRef {
@@ -276,6 +281,23 @@ export function preservedBaseline(
   )
 }
 
+/**
+ * Carry the per-locale pending baseline forward. Keys are `<locale>/<entry
+ * file>`, so completion is matched on the entry-file half: a completed file has
+ * every pending key translated and every stray key pruned in every locale.
+ */
+export function preservedPendingBaseline(
+  completedFilenames: ReadonlySet<string>,
+  baseline: Readonly<Record<string, string[]>> | undefined
+): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(baseline ?? {}).filter(([key, keys]) => {
+      const filename = key.slice(key.indexOf('/') + 1)
+      return keys.length > 0 && !completedFilenames.has(filename)
+    })
+  )
+}
+
 function writeManifest(
   repoRoot: string,
   entryDir: string,
@@ -339,10 +361,23 @@ function orphanedOutputFiles(
   })
 }
 
+/**
+ * Key for a per-locale manifest baseline entry. Matches the `<locale>/<entry
+ * file>` label the check already prints, so a manifest row reads the same way
+ * as the output line it exempts.
+ */
+export function pendingBaselineKey(
+  localeCode: string,
+  filename: string
+): string {
+  return `${localeCode}/${filename}`
+}
+
 function loadLocaleFileStates(
   config: TranslationPipelineConfig,
   outputDir: string,
-  plans: readonly SourcePlan[]
+  plans: readonly SourcePlan[],
+  knownPending: Readonly<Record<string, string[]>> | undefined
 ): LocaleFileState[] {
   return config.outputLocales.flatMap((locale) =>
     plans.map((plan) => {
@@ -363,7 +398,10 @@ function loadLocaleFileStates(
           plan.invalidated,
           leafTokensDiffer
         ),
-        strayPaths
+        strayPaths,
+        knownPendingKeys: new Set(
+          knownPending?.[pendingBaselineKey(locale.code, plan.filename)] ?? []
+        )
       }
     })
   )
@@ -463,13 +501,13 @@ function inspectLocaleFile(state: LocaleFileState): LocaleCheckFindings {
       ...unbaselinedDrift(
         label,
         pendingLeaves.map((leaf) => leaf.path),
-        state.plan.knownPendingKeys,
+        state.knownPendingKeys,
         'are missing a translation'
       ),
       ...unbaselinedDrift(
         label,
         strayPaths,
-        state.plan.knownPendingKeys,
+        state.knownPendingKeys,
         'no longer exist in the English source'
       )
     ]
@@ -545,8 +583,7 @@ async function run(argv: readonly string[]): Promise<void> {
       ),
       previousLeafCount: collectLeaves(previous).size,
       degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? []),
-      knownPendingKeys: new Set(manifest.knownPending?.[filename] ?? [])
+      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
 
@@ -559,7 +596,12 @@ async function run(argv: readonly string[]): Promise<void> {
     if (summary) print(summary)
   }
 
-  const states = loadLocaleFileStates(config, outputDir, plans)
+  const states = loadLocaleFileStates(
+    config,
+    outputDir,
+    plans,
+    manifest.knownPending
+  )
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
   const translationPlans = new Map(
@@ -742,7 +784,7 @@ async function run(argv: readonly string[]): Promise<void> {
     preservedBaseline(filenames, completedFilenames, manifest.knownViolations),
     // Likewise: a completed file has every pending key translated and every
     // stray key pruned, so its pending baseline is healed and dropped
-    preservedBaseline(filenames, completedFilenames, manifest.knownPending)
+    preservedPendingBaseline(completedFilenames, manifest.knownPending)
   )
 
   if (failuresByFile.size > 0) {

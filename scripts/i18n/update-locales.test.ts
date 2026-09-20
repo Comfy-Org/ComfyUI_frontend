@@ -31,6 +31,7 @@ import {
   formatPruneSummary,
   formatUsageSummary,
   preservedBaseline,
+  preservedPendingBaseline,
   reportCheck
 } from './update-locales'
 
@@ -521,13 +522,15 @@ describe('reportCheck', () => {
 
   function state(
     overrides: {
+      localeCode?: string
       pendingPaths?: string[][]
       strayPaths?: string[][]
       knownPendingKeys?: ReadonlySet<string>
     } = {}
   ): LocaleFileState {
+    const code = overrides.localeCode ?? locale.code
     return {
-      locale,
+      locale: { ...locale, code },
       plan: {
         filename: 'main.json',
         source,
@@ -537,16 +540,16 @@ describe('reportCheck', () => {
         // The audit is not under test here; a degraded plan skips it so these
         // cases assert drift handling alone.
         degraded: true,
-        knownViolationKeys: new Set<string>(),
-        knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>()
+        knownViolationKeys: new Set<string>()
       },
-      outputFile: 'src/locales/xx/main.json',
+      outputFile: `src/locales/${code}/main.json`,
       existing: {},
       pendingLeaves: (overrides.pendingPaths ?? []).map((path) => ({
         path,
         value: getLeaf(source, path) ?? ''
       })),
-      strayPaths: overrides.strayPaths ?? []
+      strayPaths: overrides.strayPaths ?? [],
+      knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>()
     }
   }
 
@@ -579,6 +582,26 @@ describe('reportCheck', () => {
         })
       ])
     ).toBe(0)
+  })
+
+  it('does not let one locale baseline exempt the same key in another', () => {
+    // `knownPending` is scoped per locale for exactly this case: `de` has the
+    // key recorded as pre-existing lag, `ja` does not, so `ja` must still fail.
+    const baselined = new Set([pathKey(['agent', 'entryButton'])])
+    expect(
+      reportCheck([
+        state({
+          localeCode: 'de',
+          pendingPaths: [['agent', 'entryButton']],
+          knownPendingKeys: baselined
+        }),
+        state({
+          localeCode: 'ja',
+          pendingPaths: [['agent', 'entryButton']],
+          knownPendingKeys: new Set<string>()
+        })
+      ])
+    ).toBe(1)
   })
 
   it('still fails on new drift once a baseline exists', () => {
@@ -620,6 +643,28 @@ describe('preservedBaseline', () => {
 
   it('records nothing when there is no baseline to carry', () => {
     expect(preservedBaseline(['main.json'], new Set(), undefined)).toEqual({})
+  })
+})
+
+describe('preservedPendingBaseline', () => {
+  const baseline = {
+    'de/main.json': [pathKey(['agent', 'entryButton'])],
+    'ja/main.json': [pathKey(['agent', 'entryButton'])],
+    'de/settings.json': [pathKey(['setting', 'label'])]
+  }
+
+  it('drops every locale entry for a completed entry file', () => {
+    expect(preservedPendingBaseline(new Set(['main.json']), baseline)).toEqual({
+      'de/settings.json': [pathKey(['setting', 'label'])]
+    })
+  })
+
+  it('keeps every locale entry when no entry file completed', () => {
+    expect(preservedPendingBaseline(new Set(), baseline)).toEqual(baseline)
+  })
+
+  it('records nothing when there is no baseline to carry', () => {
+    expect(preservedPendingBaseline(new Set(), undefined)).toEqual({})
   })
 })
 
