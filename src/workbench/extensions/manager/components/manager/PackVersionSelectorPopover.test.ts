@@ -411,6 +411,35 @@ describe('PackVersionSelectorPopover', () => {
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
+    it('hands the latest version its status so a flagged one can be caught', async () => {
+      // The missing link in an otherwise covered chain. This file proves
+      // "a conflict renders a warning triangle" but mocks the thing that
+      // decides there is a conflict; useConflictDetection.test.ts proves
+      // "a flagged status derives a flagged conflict" in isolation. Neither
+      // fails if the popover stops passing `status` through -- which is
+      // precisely the break that had flagged versions rendering the green
+      // verified checkmark, telling users that code nobody had reviewed had
+      // passed review.
+      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+
+      renderComponent({
+        props: {
+          nodePack: {
+            ...mockNodePack,
+            latest_version: {
+              ...mockNodePack.latest_version,
+              status: 'NodeVersionStatusFlagged'
+            }
+          }
+        }
+      })
+      await waitForPromises()
+
+      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'NodeVersionStatusFlagged' })
+      )
+    })
+
     it('shows verified icon for compatible versions', async () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 

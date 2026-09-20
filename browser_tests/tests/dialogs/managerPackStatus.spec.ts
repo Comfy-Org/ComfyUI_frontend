@@ -22,8 +22,14 @@ type RegistryNodeVersion = RegistryComponents['schemas']['NodeVersion']
  *
  * The unit and component tests pin the label/severity mapping. What only a
  * browser can answer is whether that mapping survives the trip through the
- * info panel and the version popover to something a user can actually see, so
- * these assert on rendered text and on which icon is present.
+ * real info panel to something a user can see, which is what this asserts.
+ *
+ * The version dropdown's flagged icon is deliberately NOT tested here. It
+ * lives in a PrimeVue Popover that no other browser test drives, and it is
+ * already covered where it holds better: PackVersionSelectorPopover.test.ts
+ * covers conflict -> warning triangle and no-conflict -> verified icon,
+ * useConflictDetection.test.ts covers flagged status -> flagged conflict, and
+ * "hands the latest version its status" in the former joins the two.
  *
  * Separate file rather than added to managerDialog.spec.ts: that file is being
  * edited concurrently by ComfyUI_frontend#18083 on the same feature.
@@ -224,41 +230,11 @@ test.describe('Manager pack status', { tag: '@ui' }, () => {
     const statusBadge = panel.getByRole('alert')
     await expect(statusBadge).toHaveText(/Banned/)
     await expect(statusBadge).not.toHaveText(/Conflicting/)
-  })
 
-  test('a flagged version is not shown as verified in the version list', async ({
-    comfyPage
-  }) => {
-    const panel = await openInfoPanel(comfyPage, 'Flagged Pack')
-
-    await panel.getByRole('button').filter({ hasText: '1.0.0' }).click()
-
-    // Located by option rather than through a listbox handle: the manager
-    // dialog has other listboxes, and a role=listbox lookup goes ambiguous the
-    // moment one of them is open. Options only exist while this popover is.
-    //
-    // The flagged version appears as "Latest (1.1.0)" and not as a standalone
-    // row -- the option list excludes the latest version number, so this row is
-    // the only place a user meets it.
-    const flaggedOption = comfyPage.page
-      .getByRole('option')
-      .filter({ hasText: '1.1.0' })
-    await expect(flaggedOption).toBeVisible()
-
-    // The green verified checkmark on a flagged version asserts the opposite of
-    // what is true: it says a human cleared this, when a scanner raised
-    // findings and nobody has looked. Assert the absence of the check as well
-    // as the presence of the warning -- rendering both would still mislead.
-    await expect(
-      flaggedOption.locator('i[class*="triangle-alert"]')
-    ).toBeVisible()
-    await expect(flaggedOption.locator('svg')).toHaveCount(0)
-
-    // The active version is the control. Without it, the assertion above would
-    // also pass if the verified icon had disappeared from every row.
-    const activeOption = comfyPage.page
-      .getByRole('option')
-      .filter({ hasText: '1.0.0' })
-    await expect(activeOption.locator('svg')).toHaveCount(1)
+    // Severity, not just wording: banned is an adjudicated rejection and has
+    // to read as an error rather than the warning flagged gets. This is the
+    // half a text assertion cannot see, and the half that made the two states
+    // indistinguishable on screen.
+    await expect(statusBadge).toHaveClass(/p-message-error/)
   })
 })
