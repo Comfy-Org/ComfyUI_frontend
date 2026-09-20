@@ -82,6 +82,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -94,7 +95,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
+import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
@@ -124,6 +125,7 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
+const workflowStore = useWorkflowStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
@@ -294,6 +296,13 @@ onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
   galleryStore.close()
 })
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    galleryStore.close()
+  }
+)
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 

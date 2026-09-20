@@ -230,7 +230,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
+import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -421,9 +421,6 @@ function handleGridClick(index: number) {
   void openImageInGallery(index)
 }
 
-// Live previews are inline or object URLs the node output store owns; neither
-// survives being handed to a gallery that outlives the node, and
-// toFullResolutionUrl only round-trips http(s) URLs intact.
 function isTransientUrl(url: string): boolean {
   return url.startsWith('blob:') || url.startsWith('data:')
 }

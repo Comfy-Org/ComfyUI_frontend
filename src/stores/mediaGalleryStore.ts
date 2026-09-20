@@ -7,14 +7,14 @@ export const useMediaGalleryStore = defineStore('mediaGallery', () => {
   const activeIndex = ref(-1)
   const items = shallowRef<AugmentedResultItem[]>([])
 
-  const close = () => {
+  function close() {
     activeIndex.value = -1
   }
 
-  const openItems = (
+  function openItems(
     galleryItems: readonly AugmentedResultItem[],
     selectedItem: AugmentedResultItem
-  ) => {
+  ) {
     const selectedIndex = galleryItems.indexOf(selectedItem)
     if (selectedIndex === -1) return
     items.value = [...galleryItems]

@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
+import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import type { NodeId } from '@/types/nodeId'
@@ -365,47 +365,37 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(-1)
     })
 
-    it('hides the lightbox button for a live preview blob', () => {
-      renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
+    const transientUrlCases = [
+      ['live preview blob', 'blob:http://localhost:5173/abc-123'],
+      ['webcam data url', 'data:image/png;base64,iVBORw0KGgo=']
+    ] as const
 
-      expect(
-        screen.queryByRole('button', { name: 'Open in lightbox' })
-      ).not.toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: 'Download image' })
-      ).toBeInTheDocument()
-    })
+    it.for(transientUrlCases)(
+      'hides the lightbox button for a %s',
+      ([_label, imageUrl]) => {
+        renderImagePreview({ imageUrls: [imageUrl] })
 
-    it('hides the lightbox button for a webcam data url', () => {
-      renderImagePreview({ imageUrls: ['data:image/png;base64,iVBORw0KGgo='] })
+        expect(
+          screen.queryByRole('button', { name: 'Open in lightbox' })
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'Download image' })
+        ).toBeInTheDocument()
+      }
+    )
 
-      expect(
-        screen.queryByRole('button', { name: 'Open in lightbox' })
-      ).not.toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: 'Download image' })
-      ).toBeInTheDocument()
-    })
+    it.for(transientUrlCases)(
+      'does not put a %s into the lightbox',
+      async ([_label, imageUrl]) => {
+        renderImagePreview({ imageUrls: [imageUrl] })
+        const user = userEvent.setup()
+        const galleryStore = useMediaGalleryStore()
 
-    it('does not put live preview blobs into the lightbox', async () => {
-      renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
-      const user = userEvent.setup()
-      const galleryStore = useMediaGalleryStore()
+        await user.dblClick(screen.getByRole('region'))
 
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(galleryStore.activeIndex).toBe(-1)
-    })
-
-    it('does not put webcam data urls into the lightbox', async () => {
-      renderImagePreview({ imageUrls: ['data:image/png;base64,iVBORw0KGgo='] })
-      const user = userEvent.setup()
-      const galleryStore = useMediaGalleryStore()
-
-      await user.dblClick(screen.getByRole('region'))
-
-      expect(galleryStore.activeIndex).toBe(-1)
-    })
+        expect(galleryStore.activeIndex).toBe(-1)
+      }
+    )
 
     it('opens the lightbox from the named action button', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })

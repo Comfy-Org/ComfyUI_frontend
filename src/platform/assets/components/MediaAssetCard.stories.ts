@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
-import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
+import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
