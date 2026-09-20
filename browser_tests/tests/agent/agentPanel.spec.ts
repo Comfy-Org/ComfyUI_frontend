@@ -178,6 +178,46 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.route('**/api/agent/threads/*/messages', (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Add credits to continue.',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        })
+      })
+    )
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+
+    const prompt = 'Build a product photo workflow'
+    await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    // The prompt survives the rejection in two places the user can act on: the
+    // sent message stays in the transcript, and the composer keeps the text so
+    // the same send can be retried once credits are added. A bare getByText is
+    // ambiguous here because the thread title button also carries the prompt.
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+    await expect(
+      panel.getByRole('textbox', { name: /^Describe ideas/ })
+    ).toHaveText(prompt)
+    const paywall = panel.getByRole('alert')
+    await expect(paywall).toContainText(enMessages.agent.paywall.title)
+    await expect(paywall).toContainText('Add credits to continue.')
+  })
+
   test.describe('composer sizing', () => {
     test.use({
       viewport: { width: 1920, height: 1080 },

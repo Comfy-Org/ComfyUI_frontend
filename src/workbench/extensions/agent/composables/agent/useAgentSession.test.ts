@@ -554,7 +554,13 @@ describe('useAgentSession (v1 composition root)', () => {
       {
         role: 'assistant',
         streaming: false,
-        parts: [{ type: 'paywall' }]
+        parts: [
+          {
+            type: 'paywall',
+            message:
+              "You're out of credits. Add credits to keep running the agent."
+          }
+        ]
       }
     ])
     expect(session.threadId.value).toBeNull()
@@ -643,6 +649,37 @@ describe('useAgentSession (v1 composition root)', () => {
       parts: [{ type: 'notice', level: 'error', text: message }]
     })
   })
+
+  it.for([
+    { reason: 'no_funds' as const, status: 500 },
+    { reason: 'funds_unavailable' as const, status: 402 }
+  ])(
+    'rejects a mismatched admission status for $reason',
+    async ({ reason, status }) => {
+      const valid = admissionError(reason, 'Server denial')
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: vi
+            .fn()
+            .mockRejectedValue(
+              new AgentApiError(valid.message, status, valid.body)
+            )
+        }),
+        events: fakeEvents().source
+      })
+      session.start()
+      expect(await session.sendMessage('try again')).toBe(false)
+      expect(session.entries.value.at(-1)).toMatchObject({
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: Server denial'
+          }
+        ]
+      })
+    }
+  )
 
   it('carries retryAfterSeconds through on a funds_unavailable denial so the UI can honour Retry-After', async () => {
     const message = 'Billing status is temporarily unavailable; please retry.'

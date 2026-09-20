@@ -89,28 +89,39 @@ function isIngestErrorBody(body: unknown): body is IngestErrorBody {
   )
 }
 
+function parseErrorBody(text: string): unknown {
+  if (text.length === 0) return undefined
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function getErrorMessage(body: unknown, fallback: string): string {
+  const plain = zAgentError.safeParse(body)
+  if (plain.success) {
+    return typeof plain.data.error === 'string'
+      ? plain.data.error
+      : plain.data.error.message
+  }
+  return isIngestErrorBody(body) ? body.error.message : fallback
+}
+
+function parseRetryAfter(header: string | null): number | undefined {
+  if (header === null) return undefined
+  if (/^\d+$/.test(header)) return Number(header)
+  if (Number.isFinite(Number(header))) return undefined
+  return Math.max(0, Math.ceil((Date.parse(header) - Date.now()) / 1000))
+}
+
 export function createAgentRestClient() {
   async function toApiError(response: Response): Promise<AgentApiError> {
-    const text = await response.text()
-    let body: unknown
-    try {
-      body = text.length > 0 ? JSON.parse(text) : undefined
-    } catch {
-      body = undefined
-    }
-    const plain = zAgentError.safeParse(body)
-    const message = plain.success
-      ? typeof plain.data.error === 'string'
-        ? plain.data.error
-        : plain.data.error.message
-      : isIngestErrorBody(body)
-        ? body.error.message
-        : response.statusText
-    const retryAfterHeader = response.headers.get('Retry-After')
-    const retryAfterSeconds =
-      retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
-        ? Number(retryAfterHeader)
-        : undefined
+    const body = parseErrorBody(await response.text())
+    const message = getErrorMessage(body, response.statusText)
+    const retryAfterSeconds = parseRetryAfter(
+      response.headers.get('Retry-After')
+    )
     return new AgentApiError(
       message,
       response.status,
