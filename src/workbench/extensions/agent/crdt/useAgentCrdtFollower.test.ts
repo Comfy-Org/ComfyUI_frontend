@@ -54,6 +54,8 @@ const adapterState = vi.hoisted(() => ({
   applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
+  hasPending: vi.fn(() => false),
+  retryPending: vi.fn(() => false),
   destroy: vi.fn()
 }))
 
@@ -118,6 +120,8 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
+    hasPending = adapterState.hasPending
+    retryPending = adapterState.retryPending
     destroy = adapterState.destroy
   }
 }))
@@ -144,7 +148,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import { recordDevEvent } from './devPanelLog'
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -624,6 +631,24 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reconciles the live graph after a status-frame retry commits', () => {
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+    adapterState.hasPending.mockReturnValueOnce(true)
+    adapterState.retryPending.mockReturnValueOnce(true)
+    const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+      fakeGraph,
+      definitionsState.fakeDefinitions
+    )
+    unmount()
+  })
+
   it('does not bypass refused-subscribe backoff on status frames', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
@@ -726,6 +751,21 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('counts errored on an apply_error and does not touch applied/received', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('apply_error', {
+        workflowId: 'wf-1',
+        seq: 7,
+        error: new Error('malformed update')
+      })
+
+      expect(status().outcomes.errored).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
@@ -809,6 +849,94 @@ describe('useAgentCrdtFollower', () => {
       })
       unmount()
     })
+  })
+
+  it('records a dropped doc_update without resubscribing', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    const update = { workflowId: 'wf-1', seq: 7 }
+    dispatchFrame('doc_update', update)
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ projected: false })
+    )
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 7
+    })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_frame_dropped',
+        level: 'warning',
+        context: { workflowId: 'wf-1', seq: 7 }
+      })
+    )
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(adapterState.bind).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('reports one drop per failed-projection episode', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+
+    for (let seq = 1; seq <= 4; seq++)
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq })
+
+    const dropped = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([kind]) => kind === 'doc_update_dropped')
+    expect(dropped).toEqual([
+      ['doc_update_dropped', { workflowId: 'wf-1', seq: 1 }],
+      ['doc_update_dropped', { workflowId: 'wf-1', seq: 4 }]
+    ])
+    expect(reportError).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('reports a throwing applyFrame once and still records the drop', () => {
+    const { unmount } = mountFollower('wf-1')
+    const failure = new Error('boom')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw failure
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 8 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 8
+    })
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_crdt_apply_frame_failure'
+    })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('records an applied doc_update without a drop event', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ projected: true })
+    )
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'doc_update_dropped',
+      expect.anything()
+    )
+    unmount()
   })
 
   describe('live-graph reconcile', () => {
@@ -1194,6 +1322,111 @@ describe('useAgentCrdtFollower', () => {
     const catchUp = { workflowId: 'wf-a', seq: 8 }
     dispatchFrame('doc_update', catchUp)
     expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
+    unmount()
+  })
+
+  it('retains pending projection state while its target is inactive', async () => {
+    const { unmount, isTargetActive } = mountFollower('wf-a')
+    adapterState.unbind.mockClear()
+    adapterState.retryPending.mockClear()
+
+    isTargetActive.value = false
+    await nextTick()
+    expect(adapterState.unbind).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(adapterState.retryPending).toHaveBeenCalledWith('wf-a')
+    unmount()
+  })
+
+  it('reports the live arrival the retained projection owed after an activity-only round trip', async () => {
+    // The interleaving between the two halves of that retention: the binding
+    // survives the deactivation, so the retry really does materialize the
+    // node, but the ids recording WHICH live agent arrival it owed were
+    // dropped on the same edge, leaving nothing to attribute the arrival to.
+    const onMaterialized = vi.fn()
+    const graph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn(),
+      _nodes_by_id: {}
+    })
+    const { unmount, isTargetActive } = mountFollower(
+      'wf-a',
+      true,
+      () => graph,
+      {
+        onMaterialized
+      }
+    )
+    bridge().follower.doc = {
+      getMap: () => ({ toJSON: () => ({ '3': {} }) })
+    }
+
+    // A live agent add that projection cannot place yet, so it stays pending.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-a',
+      seq: 9,
+      actor: 'agent:thread:turn',
+      catchUp: false
+    })
+    expect(onMaterialized).not.toHaveBeenCalled()
+
+    isTargetActive.value = false
+    await nextTick()
+
+    adapterState.retryPending.mockReturnValueOnce(true)
+    materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+      workflowId: 'wf-a',
+      actor: undefined,
+      nodeIds: [toNodeId(3)]
+    })
+    unmount()
+  })
+
+  it('does not carry a pending live arrival across a retarget to another workflow', async () => {
+    // The other half of moving that clear off the watcher edge: losing the
+    // binding is what makes the ids meaningless, so a real switch must still
+    // drop them -- otherwise the next workflow's first materialization is
+    // reported as the previous workflow's agent arrival.
+    const onMaterialized = vi.fn()
+    const graph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn(),
+      _nodes_by_id: {}
+    })
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => graph, {
+      onMaterialized
+    })
+    bridge().follower.doc = {
+      getMap: () => ({ toJSON: () => ({ '3': {} }) })
+    }
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-a',
+      seq: 9,
+      actor: 'agent:thread:turn',
+      catchUp: false
+    })
+    expect(onMaterialized).not.toHaveBeenCalled()
+
+    workflowId.value = 'wf-b'
+    await nextTick()
+    expect(adapterState.unbind).toHaveBeenCalledWith('wf-a')
+
+    materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-b',
+      seq: 1,
+      actor: 'human:user:tab',
+      catchUp: false
+    })
+
+    expect(onMaterialized).not.toHaveBeenCalled()
     unmount()
   })
 

@@ -25,6 +25,7 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
+import type { DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
@@ -324,6 +325,7 @@ function startAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
+  let projectionDropActive = false
   const pendingLiveNodeIds = new Set<NodeId>()
   const currentDocNodeIds = (): Set<string> => {
     try {
@@ -365,10 +367,17 @@ function startAgentCrdtFollower(
     knownDocNodeIds = ids
     return added
   }
-  const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
-    const applied = projection.applyFrame(update)
-    incrementOutcome(applied ? 'applied' : 'skipped')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+  const applyAndReconcile = (
+    update: ClassifiedDocUpdate
+  ): { materialized: NodeId[]; projected: boolean; error?: unknown } => {
+    const { projected, error } = projectFrame(update)
+    incrementOutcome(projected ? 'applied' : 'skipped')
+    if (!projected) return { materialized: [], projected, error }
+    projectionDropActive = false
+    return {
+      materialized: projection.reconcileLiveGraph(update.workflowId),
+      projected
+    }
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -399,13 +408,18 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const { materialized, projected, error } = applyAndReconcile(update)
+    // `projected` is the whole point of FEB-6: a frame can merge into the
+    // follower doc and still never reach the graph, and the dev panel used to
+    // record that as a normal doc_update.
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
-      bytes: update.update instanceof Uint8Array ? update.update.length : null
+      bytes: update.update instanceof Uint8Array ? update.update.length : null,
+      projected
     })
+    recordProjectionDrop(update, projected, error)
     const added = trackNodeChanges()
     if (!update.actor?.startsWith('agent:')) {
       const liveDocIds = currentDocNodeIds()
@@ -421,6 +435,42 @@ function startAgentCrdtFollower(
       pendingLiveNodeIds,
       events
     )
+  }
+
+  /**
+   * Reports the first frame of a drop run. Latched on `projectionDropActive` so
+   * a scope that stays unbound reports once rather than per frame; the latch
+   * clears as soon as a frame projects again.
+   */
+  function recordProjectionDrop(
+    update: DocUpdate,
+    projected: boolean,
+    error: unknown
+  ): void {
+    if (projected || projectionDropActive) return
+    projectionDropActive = true
+    recordDevEvent('doc_update_dropped', {
+      workflowId: update.workflowId,
+      seq: update.seq
+    })
+    if (error !== undefined) return
+    reportError(new Error('agent CRDT frame dropped'), {
+      errorType: 'agent_crdt_frame_dropped',
+      level: 'warning',
+      context: { workflowId: update.workflowId, seq: update.seq }
+    })
+  }
+
+  function projectFrame(update: DocUpdate): {
+    projected: boolean
+    error?: unknown
+  } {
+    try {
+      return { projected: projection.applyFrame(update) }
+    } catch (error) {
+      reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
+      return { projected: false, error }
+    }
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -453,6 +503,7 @@ function startAgentCrdtFollower(
     projection.clearForReset(detail.workflowId, context)
     events.onReset?.(detail.workflowId)
     connected.value = false
+    projectionDropActive = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -477,6 +528,7 @@ function startAgentCrdtFollower(
       typeof workflowId === 'string' &&
       workflowId === subscribedWorkflowId.value
     ) {
+      projectionDropActive = false
       updatesApplied.value = 0
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
@@ -519,6 +571,39 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onApplyError: EventListener = (event) => {
+    // FEC-2 fail-closed: `Y.applyUpdate` rejected the bytes, so the bridge
+    // dispatched no `doc_update` and nothing was projected. It does NOT mean
+    // nothing merged — a rejection is not a rollback, and Yjs may integrate
+    // decoded structs before it throws (see `FollowerDoc.applyRemoteUpdate`).
+    // What makes the drop safe is that `recoverFromApplyError` discards the
+    // partially mutated document and resubscribes the replacement, so the
+    // state those structs reached is never the state anything reads. Report it
+    // (this is the uncaught-throw path FEC-2 closes) and surface the same way a
+    // schema failure does, since both are read-path gates that drop one frame
+    // without tearing down the subscription.
+    connected.value = false
+    lastFrameType.value = event.type
+    lifecycle.clearStaleProbe()
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as {
+            workflowId?: string
+            seq?: number
+            error?: unknown
+          } | null)
+        : null
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    reportError(detail?.error ?? new Error('agent CRDT apply_error'), {
+      errorType: 'agent_crdt_apply_update_failure',
+      context: { workflowId: detail?.workflowId, seq: detail?.seq }
+    })
+    recordDevEvent('apply_error', {
+      workflowId: detail?.workflowId,
+      seq: detail?.seq
+    })
+  }
+
   const onSubscribeSent: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
@@ -548,6 +633,28 @@ function startAgentCrdtFollower(
   const onSocketActivity: EventListener = () => {
     if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
+    // KA-10 (scope-hydration recovery): also probe here so a tab that stays
+    // active the whole time (scope hydrates asynchronously after subscribe,
+    // with no later doc_update) still gets drained — not just on activation.
+    // Guarded on `hasPending` so a healthy idle channel doesn't emit a dev
+    // event on every heartbeat.
+    const target = subscribedWorkflowId.value
+    if (
+      isTargetActive.value &&
+      target !== null &&
+      projection.hasPending(target)
+    )
+      retryPendingProjection(target)
+  }
+
+  function retryPendingProjection(workflowId: string): boolean {
+    const projected = projection.retryPending(workflowId)
+    recordDevEvent('scope_retry', { workflowId, projected })
+    if (projected) {
+      projectionDropActive = false
+      reconcileAndReportPending(workflowId)
+    }
+    return projected
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -558,6 +665,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  bridge.addEventListener('apply_error', onApplyError)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
@@ -590,12 +698,26 @@ function startAgentCrdtFollower(
 
   const deactivateTarget = (next: string | null): void => {
     if (next !== null) initialBind = false
-    if (boundWorkflowId !== null) {
-      projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
-    }
+    // Deliberately stays bound. Unbinding here would discard the retained
+    // pending projection, which is the state a returning scope retries from;
+    // `activateTarget`/`restorePersistedTarget` still unbind on a real switch.
     subscribedWorkflowId.value = null
     retarget(null)
+  }
+
+  // `pendingLiveNodeIds` belongs to the binding, not to a watcher edge. The
+  // binding surviving an activity-only flip is the whole point of
+  // `deactivateTarget`, and the ids record WHICH live agent arrival the
+  // retained projection still owes: drop them on that edge and
+  // `retryPendingProjection` materializes the node on return with an empty
+  // attribution set, so `onMaterialized` never fires. Losing the binding is
+  // what makes them meaningless, so they are cleared there instead.
+  const rebindProjection = (next: string | null): void => {
+    if (boundWorkflowId === next) return
+    if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+    if (next !== null) projection.bind(next, bridge.follower)
+    boundWorkflowId = next
+    pendingLiveNodeIds.clear()
   }
 
   const restorePersistedTarget = (justActivated: boolean): void => {
@@ -603,33 +725,28 @@ function startAgentCrdtFollower(
     initialBind = false
     if (persisted === null) {
       lifecycle.clearPersistedDocId()
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
+      rebindProjection(null)
       subscribedWorkflowId.value = null
       retarget(null)
       return
     }
     recordDevEvent('rebind', { workflowId: persisted })
-    if (boundWorkflowId !== persisted) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(persisted, bridge.follower)
-      boundWorkflowId = persisted
-    }
+    rebindProjection(persisted)
     subscribedWorkflowId.value = persisted
     retarget(persisted)
-    if (justActivated) reconcileAndReportPending(persisted)
+    // A pending projection drop already reconciles inside the retry, so only
+    // reconcile again when there was nothing pending to retry.
+    const retried = retryPendingProjection(persisted)
+    if (justActivated && !retried) reconcileAndReportPending(persisted)
   }
 
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
-    if (boundWorkflowId !== next) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(next, bridge.follower)
-      boundWorkflowId = next
-    }
+    rebindProjection(next)
     subscribedWorkflowId.value = next
     retarget(next)
-    if (justActivated) reconcileAndReportPending(next)
+    const retried = retryPendingProjection(next)
+    if (justActivated && !retried) reconcileAndReportPending(next)
   }
 
   watch(
@@ -645,7 +762,7 @@ function startAgentCrdtFollower(
       lifecycle.clearForRetarget()
       connected.value = false
       knownDocNodeIds = new Set()
-      pendingLiveNodeIds.clear()
+      projectionDropActive = false
       if (!active) {
         deactivateTarget(next)
         return
@@ -674,6 +791,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('schema_error', onSchemaError),
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
+      () => bridge.removeEventListener('apply_error', onApplyError),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
       () => projection.destroy(),

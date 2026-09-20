@@ -25,11 +25,13 @@ export const DEV_EVENT_KINDS = [
   'ws_out',
   'doc_subscribed',
   'doc_update',
+  'doc_update_dropped',
   'doc_ops_result',
   'human_ops_settled',
   'doc_reset',
   'doc_nodes_changed',
   'schema_error',
+  'apply_error',
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
@@ -37,6 +39,7 @@ export const DEV_EVENT_KINDS = [
   'rebind',
   'doc_gap',
   'doc_stale',
+  'scope_retry',
   'frame_send_failed',
   'agent_node_adapters_materialized'
 ] as const

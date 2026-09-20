@@ -43,6 +43,12 @@ function op(id: string, baseVersion: number, payload: object) {
   }
 }
 
+function hostDocDelta(doc: Y.Doc, mutate: () => void): Uint8Array {
+  const before = Y.encodeStateVector(doc)
+  mutate()
+  return Y.encodeStateAsUpdate(doc, before)
+}
+
 describe('EcsFollowerAdapter integration', () => {
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
@@ -277,6 +283,8 @@ describe('EcsFollowerAdapter integration', () => {
 
     // First frame: the batch is rejected (no scope available), so the
     // reconciliation must not be consumed — local-only node 99 survives.
+    // `applyFrame` propagates the rejection (fe#16372) rather than
+    // reporting a drop as `applied:true`.
     scopeAvailable = false
     deleteLayouts.mockClear()
     expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(false)
@@ -818,6 +826,412 @@ describe('EcsFollowerAdapter integration', () => {
       expect(widgetValue('stale')).toBe(9)
       destroy()
     })
+  })
+
+  it('retries a dropped add with the next unrelated update', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = null
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    let seq = 0
+    let first = true
+
+    const deliver = (operationId: string, operation: object) => {
+      const before = Y.encodeStateVector(host)
+      seq += 1
+      const result = applyOps(
+        host,
+        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: operationId, outcome: 'applied' }
+      ])
+      const update = first
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, before)
+      first = false
+      follower.applyRemoteUpdate(update)
+      return adapter.applyFrame({
+        workflowId: 'wf',
+        seq,
+        update,
+        actor: 'agent:test',
+        opIds: [operationId]
+      })
+    }
+
+    expect(
+      deliver('dropped-add', {
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Source',
+        pos: [0, 0],
+        node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+      })
+    ).toBe(false)
+
+    activeScope = scope
+    expect(
+      deliver('unrelated-add', {
+        op: 'add_node',
+        node_id: 2,
+        class_type: 'Sink',
+        pos: [100, 0],
+        node: { id: 2, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1', '2'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  // KA-10: the scope can hydrate with NO later doc_update to trigger the
+  // retry inside applyFrame — retryPending must drain the same retained
+  // mutations from a scope-ready signal alone, with no new frame delivered.
+  it('drains a dropped add via retryPending when the scope hydrates with no later frame', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = null
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const result = applyOps(
+      host,
+      [
+        op('dropped-add', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [0, 0],
+          node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([
+      { op_id: 'dropped-add', outcome: 'applied' }
+    ])
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['dropped-add']
+      })
+    ).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    // No later frame arrives — only the scope becomes available.
+    expect(adapter.retryPending('unbound-target')).toBe(false)
+    activeScope = null
+    expect(adapter.retryPending('wf')).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    activeScope = scope
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(adapter.hasPending('wf')).toBe(false)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1'])
+
+    // Idempotent once drained: nothing left to retry.
+    expect(adapter.retryPending('wf')).toBe(false)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('preserves pending frame provenance when a later frame commits it', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    let scopeAvailable = false
+    const committedContexts: Parameters<GraphMutations['batch']>[0][] = []
+    const mutations: GraphMutations = {
+      batch: (context, define) => {
+        if (!scopeAvailable) return false
+        committedContexts.push(context)
+        define({
+          addNode: () => undefined,
+          reconcileNode: () => undefined,
+          reconcileNodeFields: () => undefined,
+          setWidget: () => undefined,
+          connect: () => undefined,
+          removeMissing: () => undefined,
+          removeLinks: () => undefined,
+          deleteNode: () => undefined,
+          clearSemanticGraph: () => undefined
+        })
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const first = hostDocDelta(host, () => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'Source')
+      nodesMap(host).set('1', node)
+    })
+    follower.applyRemoteUpdate(first)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: first,
+        actor: 'agent:first',
+        opIds: ['first']
+      })
+    ).toBe(false)
+
+    scopeAvailable = true
+    const second = hostDocDelta(host, () => {
+      const node = new Y.Map<unknown>()
+      node.set('type', 'Sink')
+      nodesMap(host).set('2', node)
+    })
+    follower.applyRemoteUpdate(second)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update: second,
+        actor: 'agent:second',
+        opIds: ['second']
+      })
+    ).toBe(true)
+
+    expect(committedContexts).toEqual([
+      {
+        source: 'agent-remote',
+        actor: 'agent:first',
+        opId: 'first',
+        opIds: ['first', 'second']
+      }
+    ])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('retains a throwing frame for retry with its original provenance', () => {
+    const follower = new FollowerDoc()
+    const contexts: Parameters<GraphMutations['batch']>[0][] = []
+    const failure = new Error('transient projection failure')
+    const mutations: GraphMutations = {
+      batch: (context) => {
+        contexts.push(context)
+        if (contexts.length === 1) throw failure
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const update = new Uint8Array()
+
+    expect(() =>
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:original',
+        opIds: ['original']
+      })
+    ).toThrow(failure)
+    expect(adapter.hasPending('wf')).toBe(true)
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(contexts).toEqual([
+      {
+        source: 'agent-remote',
+        actor: 'agent:original',
+        opId: 'original',
+        opIds: ['original']
+      },
+      {
+        source: 'agent-remote',
+        actor: 'agent:original',
+        opId: 'original',
+        opIds: ['original']
+      }
+    ])
+
+    adapter.destroy()
+    follower.destroy()
+  })
+
+  // Replacing a node's whole widgets map is recorded in replacedWidgetMaps
+  // alone, so a pending-work predicate that omits it strands the frame.
+  it('drains a retained whole-widget-map replacement via retryPending', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [0, 0],
+            inputs: [],
+            outputs: [],
+            widgets_values: { seed: 1 }
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = scope
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const seeded = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(seeded)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: seeded })
+    ).toBe(true)
+    const seedWidget = widgetId('root', toNodeId(1), 'seed')
+    expect(useWidgetValueStore().getWidget(seedWidget)?.value).toBe(1)
+
+    activeScope = null
+    const beforeReplace = Y.encodeStateVector(host)
+    const replacement = new Y.Map<unknown>()
+    replacement.set('seed', 42)
+    nodesMap(host).get('1')?.set('widgets', replacement)
+    const replaced = Y.encodeStateAsUpdate(host, beforeReplace)
+    follower.applyRemoteUpdate(replaced)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: replaced })
+    ).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    // No later frame arrives — only the scope comes back.
+    activeScope = scope
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(useWidgetValueStore().getWidget(seedWidget)?.value).toBe(42)
+    expect(adapter.hasPending('wf')).toBe(false)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  // A prepare() rejection is deterministic: retaining it would re-include the
+  // rejected action in every later batch and no frame for this target would
+  // project again. Only a missing scope earns a retry.
+  it('discards a deterministically rejected frame instead of poisoning later ones', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
+    const context = {
+      source: 'agent-remote',
+      actor: 'test',
+      opId: 'seed'
+    } as const
+    // Node 1 already lives in a different owning graph of the same root, so
+    // add_node 1 into root/root is rejected with "belongs to graph sub".
+    expect(
+      createGraphMutations({
+        getScope: () => ({
+          rootGraphId: toRootGraphId('root'),
+          owningGraphId: toOwningGraphId('sub')
+        }),
+        layout
+      }).addNode({ id: 1, type: 'Source', inputs: [], outputs: [] }, context)
+    ).toBe(true)
+    const mutations = createGraphMutations({ getScope: () => scope, layout })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    let seq = 0
+    let first = true
+
+    const deliver = (operationId: string, operation: object) => {
+      const before = Y.encodeStateVector(host)
+      seq += 1
+      const result = applyOps(
+        host,
+        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: operationId, outcome: 'applied' }
+      ])
+      const update = first
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, before)
+      first = false
+      follower.applyRemoteUpdate(update)
+      return adapter.applyFrame({
+        workflowId: 'wf',
+        seq,
+        update,
+        actor: 'agent:test',
+        opIds: [operationId]
+      })
+    }
+
+    expect(
+      deliver('rejected-add', {
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Source',
+        pos: [0, 0],
+        node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+      })
+    ).toBe(false)
+    expect(
+      deliver('unrelated-add', {
+        op: 'add_node',
+        node_id: 2,
+        class_type: 'Sink',
+        pos: [100, 0],
+        node: { id: 2, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['2'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
   })
 
   it('materializes an agent add_node into the ECS store and layout port only', () => {
