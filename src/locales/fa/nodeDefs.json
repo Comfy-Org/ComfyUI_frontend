@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "ویدیوی نهفته Cosmos خالی",
+    "display_name": "ویدیوی latent خالی Cosmos",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "تصویر نهفته Hunyuan خالی",
+    "display_name": "latent تصویر خالی Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "ویدیوی نهفته Hunyuan ۱.۰ خالی",
+    "display_name": "latent ویدیوی خالی Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "ویدیوی نهفته Hunyuan ۱.۵ خالی",
+    "display_name": "latent ویدیوی خالی Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "ویدیوی نهفته خالی LTXV",
+    "display_name": "ویدیوی latent خالی LTXV",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "نهفته Hunyuan 3D v2 خالی",
+    "display_name": "latent خالی Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "ساختار latent خالی Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "بزرگ‌نمایی Latent ویدیو ۱۵ با مدل",
+    "display_name": "بزرگ‌نمایی latent با مدل برای Hunyuan Video 1.5",
     "inputs": {
       "crop": {
         "name": "برش"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "صدای latent خالی LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "فقط MoGe-3: گذرهای پالایش حجمی پراکنده روی عمق پیش‌بینی‌شده. گذرهای بیشتر جزئیات ظریف و لبه‌ها را با هزینه‌ای تقریباً خطی واضح‌تر می‌کنند. ۰ پالایش را غیرفعال می‌کند. توسط MoGe-1 / MoGe-2 نادیده گرفته می‌شود."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "۰ = سریع‌ترین، ۹ = بیشترین جزئیات."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "فقط MoGe-3: گذرهای پالایش حجمی پراکنده روی عمق پیش‌بینی‌شده. گذرهای بیشتر جزئیات ظریف و لبه‌ها را با هزینه‌ای تقریباً خطی واضح‌تر می‌کنند. ۰ پالایش را غیرفعال می‌کند. توسط MoGe-1 / MoGe-2 نادیده گرفته می‌شود."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "شرطی‌سازی Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "امکان تنظیم دستگاه کش KV و کوانتیزه‌سازی را فراهم می‌کند؛ مدل به‌طور پیش‌فرض از گزینه auto استفاده می‌کند. کوانتیزه‌سازی در صورت کمبود حافظه، احتمالاً workflowهای ویرایش را سریع‌تر می‌کند.",
+    "display_name": "کش Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto ابتدا از VRAM آزاد و سپس از RAM استفاده می‌کند. cpu (RAM) هم‌زمان با محاسبه از پیش واکشی می‌شود و تأثیر اندکی بر سرعت دارد. off پیشوند را در هر گام دوباره محاسبه می‌کند که کندتر است، اما تنها راه حذف کش از محاسبه است."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "دقت ذخیره‌سازی. default بدون افت است. int8 حجم کش را با دقتی نزدیک به bf16 نصف می‌کند؛ int4 آن را به یک‌چهارم کاهش می‌دهد، اما تقریباً خطای هر گام را دوبرابر می‌کند."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "تصویر latent خالی Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "اندازه بچ"
@@ -22794,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "کدگذاری VAE مرحله C Stable Cascade",
     "inputs": {
       "compression": {
         "name": "فشرده‌سازی"
@@ -23756,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "کدگذاری متن Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع که توسط رمزگذار متن دیده می‌شوند و به‌صورت latentهای VAE در دنباله درج می‌شوند."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "اندازه تصاویر مرجع با حفظ نسبت ابعاد، به حدود resolution × resolution پیکسل و مضرب‌های ۳۲ تغییر داده می‌شود. ۰ هر مرجع را در اندازه خودش نگه می‌دارد و آن را به مضربی از ۳۲ گرد می‌کند."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازه نخستین تصویر مرجع، برای تطابق با نمونه‌گیری؛ زیرا هر تغییر اندازه دیگری ویرایش را جابه‌جا می‌کند."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "کدگذاری ویرایش متن Qwen Image",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "کدگذاری ویرایش متن Qwen Image Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23924,10 @@
       "max_length": {
         "name": "حداکثر طول"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی حدسی با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق پیش‌نویس را تطبیق می‌دهد؛ 2-5 آن را ثابت می‌کند. خروجی نمونه‌گیری‌شده توزیع صحیحی حفظ می‌کند، اما برای seed یکسان با خروجی غیر-MTP متفاوت است."
+      },
       "prompt": {
         "name": "پرامپت"
       },
@@ -23916,6 +23989,10 @@
       },
       "max_length": {
         "name": "حداکثر طول"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی گمانه‌زن با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. حالت خودکار عمق پیش‌نویس را تطبیق می‌دهد؛ ۲-۵ آن را ثابت می‌کند. خروجی نمونه‌برداری‌شده توزیع صحیح خود را حفظ می‌کند، اما برای seed یکسان با خروجی غیر-MTP متفاوت است."
       },
       "prompt": {
         "name": "پرامپت"
@@ -24432,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "شرطی‌سازی Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "مرحله شکل Trellis2",
     "inputs": {
       "negative": {
         "name": "منفی"
@@ -24482,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "مرحله بافت Trellis2",
     "inputs": {
       "negative": {
         "name": "منفی"
@@ -26162,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "رمزگشایی Hunyuan 3D VAE",
     "inputs": {
       "num_chunks": {
         "name": "تعداد بخش‌ها"
@@ -26470,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "رمزگشایی شکل Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
@@ -26491,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "رمزگشایی ساختار Trellis2 VAE",
     "inputs": {
       "resolution": {
         "name": "وضوح"
@@ -26511,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "رمزگشایی بافت Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
@@ -29466,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "مولد ABC را متصل کنید یا یک پارتیتور ویرایش‌شده ارائه دهید. برای استفاده خودکار از حالت خاموش، آن را خالی بگذارید."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "راهنمایی خودبازگشتی برای سبک و متن ترانه. ۱.۰، CFG را غیرفعال می‌کند و با workflow ‏ABC مطابقت دارد. برای تطبیق با راهنمایی حالت خاموش اصلی، از ۱.۰۱ استفاده کنید."
       },
       "clip": {
         "name": "clip"
