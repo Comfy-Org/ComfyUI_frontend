@@ -1,3 +1,4 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,12 +16,23 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
 import { parseWidgetValues, serialisedWidgetSlots } from './nodePayload'
+
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -121,6 +133,7 @@ function registerSubgraphDefinitions(
     reported.add(definition.id)
     reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
@@ -223,7 +236,10 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconcileAutogrowInputs(live)
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -302,11 +318,16 @@ function materialize(
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
+      tags: {
+        ...AGENT_ECS_TAGS,
+        outcome: cleanupFailed ? 'degraded' : 'recovered'
+      },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
       reportError(cleanupCause, {
         errorType: 'agent_node_materialize_rollback_failed',
+        tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, nodeId: String(state.id) }
       })
     }
@@ -331,16 +352,59 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    node.configure(withNamedWidgetValues(serialised, widgets))
+    replayUpdatedWidgetCallbacks(node, serialised, widgets)
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
     reportError(cause, {
       errorType: 'agent_node_materialize_configure_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
   return true
+}
+
+function replayUpdatedWidgetCallbacks(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): void {
+  const values = namedWidgetValues(serialised)
+  if (!values) return
+  for (const [name, value] of canonicalWidgetValues(widgets)) {
+    const previousValue = values.get(name)
+    if (values.has(name) && Object.is(previousValue, value)) continue
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (!widget) continue
+    widget.value = value
+    widget.callback?.(value)
+    node.onWidgetChanged?.(name, value, previousValue, widget)
+  }
+}
+
+/**
+ * The name-keyed widget values a payload carries, read through the codec:
+ * `widgets_values_named` when present, else a record-shaped
+ * `widgets_values`. Positional and omitted payloads have none.
+ */
+function namedWidgetValues(
+  serialised: ISerialisedNode
+): ReadonlyMap<string, WidgetValue> | undefined {
+  const widgets = parseWidgetValues(
+    serialised.widgets_values_named ?? serialised.widgets_values
+  )
+  return widgets.kind === 'named' ? widgets.values : undefined
+}
+
+/** Canonical widget-store values keyed by name; unnamed records are skipped. */
+function canonicalWidgetValues(
+  widgets: readonly WidgetStateInit[]
+): ReadonlyMap<string, WidgetValue> {
+  return new Map(
+    widgets.flatMap((state) => (state.name ? [[state.name, state.value]] : []))
+  )
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
@@ -358,23 +422,33 @@ function missingNode(state: NodeState): LGraphNode {
  * `widgets_values`; route them through the one shape boundary so restoration
  * reads `widgets_values_named` while extension hooks retain the wire shape.
  *
- * A payload that already carries `widgets_values_named` is passed through
- * unchanged: restoration reads that slot directly, and hooks keep seeing
- * exactly the wire payload (no `widgets_values` is synthesised for them).
+ * Canonical widget-store values written before the node materialized (a
+ * `set_widget` that raced the add) overlay the payload's named values, so the
+ * live widget is configured with the latest value rather than the one the
+ * add carried. Positional and omitted payloads are handed over as detached
+ * copies without an overlay: their slots are not addressable by name.
+ *
+ * A payload that already carries `widgets_values_named` keeps that slot as
+ * the base of the overlay and gets no synthesised `widgets_values`, so hooks
+ * keep seeing the wire payload.
  */
-function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  if (serialised.widgets_values_named !== undefined) return serialised
-  const { widgets_values, ...rest } = serialised
-  const widgets = parseWidgetValues(widgets_values)
-  if (widgets.kind === 'named') {
+function withNamedWidgetValues(
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): ISerialisedNode {
+  const named = namedWidgetValues(serialised)
+  if (!named) {
+    const { widgets_values, ...rest } = serialised
     return {
       ...rest,
-      widgets_values,
-      ...serialisedWidgetSlots(widgets)
+      ...serialisedWidgetSlots(parseWidgetValues(widgets_values))
     }
   }
   return {
-    ...rest,
-    ...serialisedWidgetSlots(widgets)
+    ...serialised,
+    widgets_values_named: Object.fromEntries([
+      ...named,
+      ...canonicalWidgetValues(widgets)
+    ])
   }
 }
