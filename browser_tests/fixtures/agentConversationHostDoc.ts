@@ -1,8 +1,10 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
 const DOC_PROTOCOL_VERSION = 1
@@ -30,7 +32,7 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -50,6 +52,29 @@ export class HostDoc {
   catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
+  }
+
+  apply(operations: GraphOperation[]): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const ops = mintWireOps(operations, {
+      actor: HOST_ACTOR,
+      baseVersion: this.seq
+    })
+    const result = applyOps(this.doc, ops, this.catalog)
+    const rejected = result.outcomes.filter(
+      (outcome) => outcome.outcome !== 'applied'
+    )
+    if (rejected.length > 0) {
+      throw new Error(
+        `graph operations did not apply: ${JSON.stringify(rejected)}`
+      )
+    }
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      ops.map((op) => op.op_id)
+    )
   }
 
   private updateFrame(

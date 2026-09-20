@@ -350,6 +350,19 @@ test.describe(
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
         )
+        // The release-line cloud harness materializes this fixture before its
+        // API-node theme hook runs. Seed the same client-only presentation
+        // state that a normal registered API node owns; the behavior under
+        // test is whether the subsequent document reconcile preserves it.
+        await page.evaluate(
+          ({ id, color, bgcolor }) => {
+            const node = window.app!.graph.getNodeById(id)
+            if (!node) throw new Error(`Node ${id} was not materialized`)
+            node.color = color
+            node.bgcolor = bgcolor
+          },
+          { id: toNodeId(GPT_NODE_ID), ...API_NODE_COLOR }
+        )
         await expect.poll(() => readNodeColor()).toEqual(API_NODE_COLOR)
       })
 
