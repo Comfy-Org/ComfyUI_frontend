@@ -342,6 +342,7 @@ describe('EcsFollowerAdapter integration', () => {
     )
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
