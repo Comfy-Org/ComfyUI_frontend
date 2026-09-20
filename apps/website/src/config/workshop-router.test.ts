@@ -6,7 +6,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContractSchema } from './workshop-contract'
 import { z } from 'astro/zod'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,

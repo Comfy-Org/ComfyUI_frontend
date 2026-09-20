@@ -32,7 +32,9 @@ Rules:
 - Tests use **Vitest** (not Jest) — run with `pnpm test:unit`
 - Test files are **colocated**: `MyComponent.test.ts` next to `MyComponent.vue`
 - Use `@testing-library/vue` with `@testing-library/user-event` for new
-  component tests, and `@pinia/testing` (`createTestingPinia`) for store tests
+  component tests. For store tests, rely on the global testing Pinia installed
+  by `vitest.setup.ts` — importing `createPinia`/`createTestingPinia` in a test
+  file is a `comfy/use-global-pinia` lint error
 - Browser/E2E tests use **Playwright** in `browser_tests/` — run with `pnpm test:browser:local`
 - Mock composables using the singleton factory pattern inside `vi.mock()` — see `docs/testing/unit-testing.md` for the pattern
 - Never use `any` in test code either — proper typing applies to tests too

@@ -239,6 +239,11 @@ export function createFakeBillingClient(
       invalidate: invalidatePaymentMethods,
       dispose: () => {}
     },
+    events: {
+      read: unusedByHostedSurfaces('events.read'),
+      getSnapshot: () => undefined,
+      dispose: () => {}
+    },
     topup: {
       createTopupCheckout: unusedByHostedSurfaces('topup.createTopupCheckout'),
       createHostedTopupCheckout: unusedByHostedSurfaces(

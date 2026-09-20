@@ -118,6 +118,7 @@ export type { BillingStatusResponse }
 export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }
+export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }

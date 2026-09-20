@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -35,11 +36,13 @@ import type {
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -211,6 +214,40 @@ export class AgentConversationHarness {
     this.topbar = new Topbar(page)
   }
 
+  addedNodeIds(): string[] {
+    return this.conversation.turns
+      .flatMap((turn) => turn.response)
+      .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+      .filter((op) => op.op === 'add_node')
+      .map((op) => String(op.node_id))
+  }
+
+  async nodesOutsideVisibleCanvas(ids: readonly string[]): Promise<string[]> {
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('this assertion needs a sized page')
+    const panelBox = await this.panel.boundingBox()
+    const visible = {
+      right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
+      bottom: viewport.height
+    }
+    const seen = await Promise.all(
+      ids.map(async (id) => {
+        const box = await this.vueNodes.getNodeLocator(id).boundingBox()
+        const inside =
+          box !== null &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= visible.right &&
+          box.y + box.height <= visible.bottom
+        return { id, inside }
+      })
+    )
+    return seen
+      .filter((node) => !node.inside)
+      .map((node) => node.id)
+      .sort()
+  }
+
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
@@ -224,7 +261,7 @@ export class AgentConversationHarness {
         'Comfy.Graph.CanvasInfo': false
       },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: 'server'
+      objectInfo: agentReplayNodeDefs
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
@@ -299,23 +336,36 @@ export class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  private async waitForRecordedOffset(
+    startedAt: number,
+    offset: number | undefined
+  ): Promise<void> {
+    if (this.replayTiming !== 'recorded' || offset === undefined) return
+
+    let remaining = offset - (Date.now() - startedAt)
+    // A timer can fire a millisecond early, so wait until the offset has really passed.
+    while (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining))
+      remaining = offset - (Date.now() - startedAt)
+    }
+  }
+
+  async replayResponse(
+    turn = 0,
+    beforeFirstGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    const entries = this.conversation.turns[turn].response.entries()
-    for (const [index, entry] of entries) {
-      // A timer can fire a millisecond early, so wait until the offset has really passed.
-      while (
-        this.replayTiming === 'recorded' &&
-        entry.at_ms !== undefined &&
-        Date.now() - startedAt < entry.at_ms
-      )
-        await new Promise((resolve) =>
-          setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
-        )
+    const response = this.conversation.turns[turn].response
+    const firstGraphOps = response.findIndex(
+      (entry) => entry.kind === 'graph_ops'
+    )
+    for (const [index, entry] of response.entries()) {
+      await this.waitForRecordedOffset(startedAt, entry.at_ms)
       if (entry.kind === 'event')
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
+        if (index === firstGraphOps) await beforeFirstGraphOps?.()
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
@@ -327,11 +377,11 @@ export class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(): Promise<void> {
+  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn)
+      await this.replayResponse(turn, beforeFirstGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -396,17 +446,6 @@ export class AgentConversationHarness {
       }
     }
     return [...latest.values()]
-  }
-
-  private displayName(type: string): string {
-    const name = this.displayNames.get(type)
-    if (name === undefined)
-      throw new Error(`the server registers no node type ${type}`)
-    return name
-  }
-
-  private expectedTitle(node: { type: string; title?: string }): string {
-    return node.title || this.displayName(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -505,9 +544,18 @@ export class AgentConversationHarness {
       const id = String(node.id)
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
-      await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(node)
+      const materialized = await this.page.evaluate((nodeId) => {
+        const liveNode = window.app?.graph.getNodeById(nodeId)
+        return liveNode
+          ? { type: liveNode.type, hasErrors: liveNode.has_errors === true }
+          : null
+      }, toNodeId(id))
+      const expectedTitle = assertAgentReplayNodeContract(
+        node,
+        this.displayNames.get(node.type),
+        materialized
       )
+      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
@@ -814,6 +862,29 @@ export class AgentConversationHarness {
       widget,
       'tab return catch-up landed'
     )
+  }
+
+  hostNodePositions(): (number[] | undefined)[] {
+    return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  async reloadWithoutLocalWorkflow(): Promise<void> {
+    await this.page.evaluate(() => {
+      for (const storage of [localStorage, sessionStorage]) {
+        const workflowKeys = Object.keys(storage).filter((key) =>
+          key.startsWith('Comfy.Workflow.')
+        )
+        for (const key of workflowKeys) storage.removeItem(key)
+      }
+    })
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.page.waitForFunction(() => window.app?.extensionManager)
+    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
+      state: 'hidden',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectWorkflowTarget()
   }
 }
 

@@ -14,6 +14,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
 
@@ -46,7 +47,11 @@ const CATALOG: WidgetCatalog = {
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
 
 function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({ getScope: () => scope, layout })
+  return createGraphMutations({
+    getScope: () => scope,
+    layout,
+    placement: inertPlacementPort
+  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
