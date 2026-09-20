@@ -9,6 +9,7 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import {
+  AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_EDITED_TEXT,
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_TEXT,
@@ -148,7 +149,7 @@ test.describe(
       await expect
         .poll(() =>
           page.evaluate(
-            ({ hostId, linkId }) => {
+            ({ hostId, linkId, nestedId }) => {
               const graph = window.app!.graph
               const host = graph.nodes.find(
                 ({ id }) => String(id) === String(hostId)
@@ -162,6 +163,7 @@ test.describe(
                 definitionRegistered:
                   typeof host?.type === 'string' &&
                   graph.subgraphs.has(host.type),
+                nestedDefinitionRegistered: graph.subgraphs.has(nestedId),
                 inputs: host?.inputs.map(({ name, link }) => ({ name, link })),
                 widgets: host?.widgets?.map(({ name, value }) => ({
                   name,
@@ -176,12 +178,17 @@ test.describe(
                 sourceLinks: source?.outputs[0]?.links
               }
             },
-            { hostId: AGENT_SUBGRAPH_HOST_ID, linkId: AGENT_SUBGRAPH_LINK_ID }
+            {
+              hostId: AGENT_SUBGRAPH_HOST_ID,
+              linkId: AGENT_SUBGRAPH_LINK_ID,
+              nestedId: AGENT_NESTED_SUBGRAPH_ID
+            }
           )
         )
         .toEqual({
           hostType: '422723e8-4bf6-438c-823f-881ca81acead',
           definitionRegistered: true,
+          nestedDefinitionRegistered: true,
           inputs: [
             { name: 'text', link: null },
             { name: 'clip', link: AGENT_SUBGRAPH_LINK_ID },

@@ -11,6 +11,7 @@ export const AGENT_SUBGRAPH_HOST_ID = 11
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = ''
 export const AGENT_SUBGRAPH_EDITED_TEXT = 'edited prompt'
+export const AGENT_NESTED_SUBGRAPH_ID = '52e51d98-aaac-44d3-bab1-61eae17b9869'
 
 export const agentSubgraphNodeDefs: Record<string, ComfyNodeDef> = {
   AgentClipSource: {
@@ -157,9 +158,7 @@ export function agentSubgraphUpdates(): {
         subgraphs: subgraphWorkflow.definitions.subgraphs.map((definition) => ({
           ...definition,
           definitions: {
-            subgraphs: [
-              { ...definition, id: '52e51d98-aaac-44d3-bab1-61eae17b9869' }
-            ]
+            subgraphs: [{ ...definition, id: AGENT_NESTED_SUBGRAPH_ID }]
           }
         }))
       }
