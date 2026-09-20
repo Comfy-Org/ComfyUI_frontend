@@ -104,7 +104,6 @@ type TurnOutcome =
   | { kind: 'terminal'; text: string }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
-  | { kind: 'cancelled' }
   | { kind: 'error'; message: string }
 
 /**
@@ -115,14 +114,10 @@ type TurnOutcome =
 type SocketConnection = 'initial' | 'live' | 'dropped'
 
 function recoveryKey(turn: LiveTurn): string {
-  return `${turn.threadId}/${turn.messageId}`
+  return JSON.stringify([turn.threadId, turn.messageId])
 }
 
-function turnOutcomeFromError(
-  error: unknown,
-  signal: AbortSignal
-): TurnOutcome {
-  if (signal.aborted) return { kind: 'cancelled' }
+function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
   return {
@@ -685,7 +680,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (outcome.kind === 'cancelled') return
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
       if (outcome.kind === 'error' && !noticed) {
@@ -715,8 +709,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       case 'thread-missing':
         forgetDeletedThread(turn)
         return true
-      default:
+      case 'streaming':
+      case 'error':
         return false
+      default: {
+        const unhandled: never = outcome
+        return unhandled
+      }
     }
   }
 
@@ -731,7 +730,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
-      return turnOutcomeFromError(error, signal)
+      if (signal.aborted) throw error
+      return turnOutcomeFromError(error)
     }
   }
 

@@ -1419,12 +1419,15 @@ describe('useAgentSession (v1 composition root)', () => {
       session.stop()
 
       expect(signal.aborted).toBe(true)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(session.notices.value).toEqual([])
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('(g20) finishing one recovery does not unmark a sibling thread whose turn shares the message id', async () => {
+  it('(g20) finishing one recovery does not unmark a sibling turn whose ids concatenate identically', async () => {
     vi.useFakeTimers()
     try {
       const postMessage = vi
@@ -1434,8 +1437,8 @@ describe('useAgentSession (v1 composition root)', () => {
             req: PostMessageInput
           ) => Promise<AgentTurnAccepted>
         >()
-        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-        .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-1' })
+        .mockResolvedValueOnce({ thread_id: 'th/1', message_id: 'msg-1' })
+        .mockResolvedValueOnce({ thread_id: 'th', message_id: '1/msg-1' })
       const pendingHistory = new Map<string, (rows: AgentMessages) => void>()
       const getMessages = vi.fn(
         (threadId: string) =>
@@ -1450,10 +1453,10 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
 
       await session.sendMessage('first')
-      emit(deltaIn('th-1', 'msg-1', 'one'))
+      emit(deltaIn('th/1', 'msg-1', 'one'))
       session.newChat()
       await session.sendMessage('second')
-      emit(deltaIn('th-2', 'msg-1', 'two'))
+      emit(deltaIn('th', '1/msg-1', 'two'))
       session.newChat()
       getMessages.mockClear()
 
@@ -1461,15 +1464,15 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       expect(getMessages.mock.calls.map(([id]) => id).toSorted()).toEqual([
-        'th-1',
-        'th-2'
+        'th',
+        'th/1'
       ])
 
-      pendingHistory.get('th-1')?.([
-        { ...historyRow(1, 'user', 'msg-1', 'first'), thread_id: 'th-1' },
+      pendingHistory.get('th/1')?.([
+        { ...historyRow(1, 'user', 'msg-1', 'first'), thread_id: 'th/1' },
         {
           ...historyRow(2, 'assistant', 'msg-1', 'one done', 'msg-1'),
-          thread_id: 'th-1'
+          thread_id: 'th/1'
         }
       ])
       await vi.advanceTimersByTimeAsync(0)
