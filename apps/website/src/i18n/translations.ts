@@ -7855,34 +7855,37 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
-  // Qwen Image 2.1 model page (/qwen-image-2.1)
+  // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
-    en: 'Qwen Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
-    'zh-CN': 'Comfy 上的 Qwen Image 2.1：开源权重图像生成与编辑'
+    en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑'
   },
   'qwenImage21.meta.description': {
-    en: 'Run Qwen Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
+    en: 'Run Qwen-Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
     'zh-CN':
-      '在 ComfyUI 中运行 Qwen Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
+      '在 ComfyUI 中运行 Qwen-Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
   },
   'qwenImage21.breadcrumb.model': {
-    en: 'Qwen Image 2.1',
-    'zh-CN': 'Qwen Image 2.1'
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
   },
   'qwenImage21.breadcrumb.updated': {
     en: 'Updated September 2026',
     'zh-CN': '更新于 2026 年 9 月'
   },
   'qwenImage21.hero.title': {
-    en: 'Qwen Image 2.1\nis here',
-    'zh-CN': 'Qwen Image 2.1 已上线'
+    en: 'Qwen-Image 2.1\nis here',
+    'zh-CN': 'Qwen-Image 2.1 已上线'
   },
   'qwenImage21.hero.description': {
-    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
+    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen-Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
     'zh-CN':
-      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
+      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
   },
-  'qwenImage21.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'qwenImage21.hero.tagOpenWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开源权重'
+  },
   'qwenImage21.hero.tagTextToImage': {
     en: 'Text to Image',
     'zh-CN': '文生图'
@@ -7892,16 +7895,16 @@ Enterprise`
     'zh-CN': '图像编辑'
   },
   'qwenImage21.hero.primaryCta': {
-    en: 'RUN QWEN IMAGE 2.1',
-    'zh-CN': '运行 Qwen Image 2.1'
+    en: 'RUN QWEN-IMAGE 2.1',
+    'zh-CN': '运行 Qwen-Image 2.1'
   },
   'qwenImage21.hero.secondaryCta': {
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
   'qwenImage21.gallery.heading': {
-    en: 'Made with Qwen Image 2.1',
-    'zh-CN': '由 Qwen Image 2.1 创作'
+    en: 'Made with Qwen-Image 2.1',
+    'zh-CN': '由 Qwen-Image 2.1 创作'
   },
   'qwenImage21.pricing.banner.title': {
     en: "Start Comfy Cloud for free. Upgrade when you're ready.",
@@ -7947,13 +7950,13 @@ Enterprise`
     'zh-CN': '开始使用'
   },
   'qwenImage21.announcement.meta.title': {
-    en: 'Qwen Image 2.1 on Comfy: Coming Soon',
-    'zh-CN': 'Comfy 上的 Qwen Image 2.1：即将上线'
+    en: 'Qwen-Image 2.1 on Comfy: Coming Soon',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：即将上线'
   },
   'qwenImage21.announcement.meta.description': {
-    en: 'Qwen Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
+    en: 'Qwen-Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
     'zh-CN':
-      'Qwen Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
+      'Qwen-Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
   },
   'qwenImage21.announcement.breadcrumb.updated': {
     en: 'Announced September 2026',
@@ -7964,17 +7967,17 @@ Enterprise`
     'zh-CN': '即将上线'
   },
   'qwenImage21.announcement.hero.description': {
-    en: 'Introducing Qwen Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
+    en: 'Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
     'zh-CN':
-      '隆重推出 Qwen Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
+      '隆重推出 Qwen-Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
   },
   'qwenImage21.announcement.hero.primaryCta': {
     en: 'GET NOTIFIED',
     'zh-CN': '获取通知'
   },
   'footer.qwenImage21': {
-    en: 'Qwen Image 2.1',
-    'zh-CN': 'Qwen Image 2.1'
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
   },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',

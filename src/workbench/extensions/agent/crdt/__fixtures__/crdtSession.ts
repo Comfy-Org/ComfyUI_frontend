@@ -1,3 +1,4 @@
+import { inertPlacementPort } from './inertPlacementPort'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { expect, test as baseTest } from 'vitest'
@@ -51,7 +52,8 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       const adapter = new EcsFollowerAdapter(
         createGraphMutations({
           getScope: () => graphScopeOf(graph),
-          layout: { createNode: () => {}, deleteNodes: () => {} }
+          layout: { createNode: () => {}, deleteNodes: () => {} },
+          placement: inertPlacementPort
         })
       )
       adapter.bind(workflowId, follower)

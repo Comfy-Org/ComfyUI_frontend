@@ -1,3 +1,4 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
@@ -7,6 +8,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -16,11 +18,22 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -120,6 +133,7 @@ function registerSubgraphDefinitions(
     reported.add(definition.id)
     reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
@@ -222,7 +236,10 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconcileAutogrowInputs(live)
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -301,11 +318,16 @@ function materialize(
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
+      tags: {
+        ...AGENT_ECS_TAGS,
+        outcome: cleanupFailed ? 'degraded' : 'recovered'
+      },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
       reportError(cleanupCause, {
         errorType: 'agent_node_materialize_rollback_failed',
+        tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, nodeId: String(state.id) }
       })
     }
@@ -331,7 +353,10 @@ function materialize(
 
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
-    node.configure(withNamedWidgetValues(serialised))
+    node.configure(withNamedWidgetValues(serialised, widgets))
+    replayUpdatedWidgetCallbacks(node, serialised, widgets)
+    // After configure and any widget-driven restructuring, re-point the saved
+    // links at their named inputs (CRDT-INPUTS-0030).
     realignInputLinkSlots(graph.rootGraph, [
       [node.id, { id: node.id, inputs: savedInputs }]
     ])
@@ -340,10 +365,45 @@ function materialize(
     // would also drop the layout entry it adopted. Keep it and report.
     reportError(cause, {
       errorType: 'agent_node_materialize_configure_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
   return true
+}
+
+function replayUpdatedWidgetCallbacks(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): void {
+  const values = namedWidgetValues(serialised)
+  if (!values) return
+  const canonicalByName = new Map(
+    widgets.flatMap((state) => (state.name ? [[state.name, state]] : []))
+  )
+  for (const [name, state] of canonicalByName) {
+    const previousValue = values[name]
+    if (Object.hasOwn(values, name) && Object.is(previousValue, state.value)) {
+      continue
+    }
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (!widget) continue
+    widget.value = state.value
+    widget.callback?.(state.value)
+    node.onWidgetChanged?.(name, state.value, previousValue, widget)
+  }
+}
+
+function namedWidgetValues(
+  serialised: ISerialisedNode
+): Record<string, WidgetValue> | undefined {
+  const values = serialised.widgets_values_named ?? serialised.widgets_values
+  if (!values || Array.isArray(values) || typeof values !== 'object') return
+  const entries = Object.entries(values)
+  return entries.every(([, value]) => isWidgetValue(value))
+    ? Object.fromEntries(entries)
+    : undefined
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
@@ -360,14 +420,19 @@ function missingNode(state: NodeState): LGraphNode {
  * Op-layer serialisations carry widget values keyed by name; `configure()`
  * only reads name-keyed values from `widgets_values_named`.
  */
-function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  const values = serialised.widgets_values
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    serialised.widgets_values_named !== undefined
-  ) {
-    return serialised
+function withNamedWidgetValues(
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): ISerialisedNode {
+  const namedValues = namedWidgetValues(serialised)
+  if (!namedValues) return serialised
+  return {
+    ...serialised,
+    widgets_values_named: {
+      ...namedValues,
+      ...Object.fromEntries(
+        widgets.map((widget) => [widget.name ?? '', widget.value])
+      )
+    }
   }
-  return { ...serialised, widgets_values_named: values }
 }
