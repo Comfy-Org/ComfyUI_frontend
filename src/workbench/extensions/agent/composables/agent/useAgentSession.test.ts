@@ -1,5 +1,5 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -555,7 +555,13 @@ describe('useAgentSession (v1 composition root)', () => {
       {
         role: 'assistant',
         streaming: false,
-        parts: [{ type: 'paywall' }]
+        parts: [
+          {
+            type: 'paywall',
+            message:
+              "You're out of credits. Add credits to keep running the agent."
+          }
+        ]
       }
     ])
     expect(session.threadId.value).toBeNull()
@@ -644,6 +650,37 @@ describe('useAgentSession (v1 composition root)', () => {
       parts: [{ type: 'notice', level: 'error', text: message }]
     })
   })
+
+  it.for([
+    { reason: 'no_funds' as const, status: 500 },
+    { reason: 'funds_unavailable' as const, status: 402 }
+  ])(
+    'rejects a mismatched admission status for $reason',
+    async ({ reason, status }) => {
+      const valid = admissionError(reason, 'Server denial')
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: vi
+            .fn()
+            .mockRejectedValue(
+              new AgentApiError(valid.message, status, valid.body)
+            )
+        }),
+        events: fakeEvents().source
+      })
+      session.start()
+      expect(await session.sendMessage('try again')).toBe(false)
+      expect(session.entries.value.at(-1)).toMatchObject({
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: Server denial'
+          }
+        ]
+      })
+    }
+  )
 
   it('carries retryAfterSeconds through on a funds_unavailable denial so the UI can honour Retry-After', async () => {
     const message = 'Billing status is temporarily unavailable; please retry.'
@@ -870,6 +907,92 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     expect(session.isStreaming.value).toBe(true)
+  })
+
+  // PM-1199 / PM-1200. (g) above pins today's behaviour: a live->down->live
+  // socket blip settles the turn and the session does nothing on the way back
+  // up. The server never learned the socket went away, so it keeps running the
+  // turn and keeps broadcasting the same message_id. These two say what the
+  // user needs instead, and are the lowest level that proves it — the browser
+  // spec `agentTurnSurvivesSocketDrop.spec.ts` covers the same defect through
+  // the real socket and the rendered panel.
+  //
+  // `it.fails` accepts a throw from anywhere in the body, so the arrange these
+  // two share cannot guard itself. (g) and (g2) directly above are unmarked and
+  // drive exactly that arrange — start, sendMessage, emit, the isStreaming
+  // precondition — so a fixture or setup regression reddens there instead of
+  // being absorbed here. Keep them unmarked for as long as these two exist.
+  // Backend invariant (cloud `newAssistantMessage` + the complete/fail writes):
+  // an assistant row carries content only once it goes terminal, so a live turn
+  // has nothing to re-hydrate from. Keep this row contentless — giving it text
+  // would let a repair that re-hydrates mid-turn satisfy these pins, when that
+  // repair blanks the reply on screen.
+  const streamingTurnRest = () =>
+    fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+
+  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
+    const rest = streamingTurnRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(session.isStreaming.value).toBe(true)
+
+    status(false)
+    status(true)
+
+    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
+    // runs out its budget THROWS, and a throw is what marks the case green — so
+    // a tight budget here would quietly disarm the tripwire against any repair
+    // that debounces recovery after the socket flaps.
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
+      timeout: 2000
+    })
+  })
+
+  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
+    const rest = streamingTurnRest()
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+
+    status(false)
+    status(true)
+    emit(delta('msg-1', ' and the rest'))
+
+    // Retried, because a re-hydrate repair reaches the reply through an async
+    // getMessages. Joined rather than part-by-part: a re-attach that opens a
+    // fresh text part on reconnect still shows the user the whole reply, and
+    // must count as fixed.
+    await vi.waitFor(
+      () => {
+        const assistant = session.entries.value.at(-1)
+        assert(assistant !== undefined && 'parts' in assistant)
+        const replyText = assistant.parts
+          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+          .join('')
+        expect(replyText).toBe('partial and the rest')
+      },
+      { timeout: 2000 }
+    )
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {

@@ -1,5 +1,6 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
-import { computed, createApp, defineComponent } from 'vue'
+import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +9,6 @@ import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspac
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
-  canCancel: false,
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -42,18 +42,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: {
-        get value() {
-          return state.canCancel
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -116,7 +105,7 @@ afterEach(() => {
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
-    state.canCancel = false
+
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -131,7 +120,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
@@ -157,7 +146,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for a free plan the capability still allows', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isFreeTier = true
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -168,7 +157,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('defers to the capability for subscription state it already encodes', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isSubscriptionCancelled = true
     state.canAccessSubscriptionFeatures = false
     state.planSlug = null
@@ -297,13 +286,15 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
-    state.canCancel = true
+    const canCancel = ref(true)
+    useBillingCapabilities().canCancel = computed(() => canCancel.value)
+
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
       (item) => item.label === 'subscription.cancelPlan'
     )
 
-    state.canCancel = false
+    canCancel.value = false
     cancelItem?.command?.({
       originalEvent: new Event('click'),
       item: cancelItem

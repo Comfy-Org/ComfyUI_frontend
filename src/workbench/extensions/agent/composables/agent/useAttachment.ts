@@ -12,6 +12,30 @@ const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
 const MAX_CONCURRENT_UPLOADS = 3
 
+const ATTACHMENT_FAILURE_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'save',
+  outcome: 'failed',
+  integration_target: 'assets',
+  feature_flag: 'agent_panel',
+  feature_flag_state: 'enabled',
+  project_context: 'agent_composer'
+}
+
+const ATTACHMENT_FAILURES = {
+  upload: {
+    errorType: 'agent_attachment_upload_failed',
+    message: 'Agent attachment upload failed'
+  },
+  fetch: {
+    errorType: 'agent_attachment_fetch_failed',
+    message: 'Agent attachment fetch failed'
+  }
+} as const
+
+type AttachmentFailure = keyof typeof ATTACHMENT_FAILURES
+
 interface UploadResult {
   ref: string
   url?: string
@@ -105,13 +129,18 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  function failAttachment(id: string, name: string, errorType: string) {
-    return (cause: unknown): undefined => {
-      reportError(cause, { errorType })
-      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
-      options.remove(id)
-      return undefined
-    }
+  function failAttachment(
+    id: string,
+    name: string,
+    failure: AttachmentFailure
+  ): void {
+    const { errorType, message } = ATTACHMENT_FAILURES[failure]
+    reportError(new Error(message), {
+      errorType,
+      tags: ATTACHMENT_FAILURE_TAGS
+    })
+    options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+    options.remove(id)
   }
 
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
@@ -133,9 +162,8 @@ export function useAttachment(options: UseAttachmentOptions) {
       )
       options.update(id, { ref: result.ref, uploading: false })
       return true
-    } catch (cause) {
-      if (!cancelled.has(id))
-        failAttachment(id, file.name, 'agent_attachment_upload_failed')(cause)
+    } catch {
+      if (!cancelled.has(id)) failAttachment(id, file.name, 'upload')
       return false
     } finally {
       settle(id)
@@ -175,9 +203,9 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()
       return 'uploaded'
-    } catch (cause) {
+    } catch {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')(cause)
+      failAttachment(id, name, 'fetch')
       return 'failed'
     } finally {
       settle(id)

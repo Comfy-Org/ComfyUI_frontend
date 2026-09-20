@@ -1,3 +1,5 @@
+import { effectScope, watch } from 'vue'
+
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -6,12 +8,17 @@ import type {
   CameraState,
   HDRIConfig,
   LightConfig,
+  GizmoConfig,
   ModelConfig,
-  SceneConfig
+  SceneConfig,
+  StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  INumericWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
@@ -19,13 +26,13 @@ type Load3DConfigurationSettings = {
   loadFolder: string
   modelWidget: IBaseWidget
   cameraState?: CameraState
-  width?: IBaseWidget
-  height?: IBaseWidget
+  width?: INumericWidget
+  height?: INumericWidget
   bgImagePath?: string
   silentOnNotFound?: boolean
   /**
-   * Called when a user-driven change to one of the wired widgets
-   * (model_file, width, height) makes the previously captured scene stale.
+   * Called when any change to one of the wired widgets (model_file, width,
+   * height), local or remote, makes the previously captured scene stale.
    * Backend caching covers these inputs by themselves; this hook lets the
    * caller invalidate any frontend-side capture cache so the next serialize
    * re-renders at the new state.
@@ -45,6 +52,14 @@ export function parseAnnotatedFilename(
     filename: rawValue.slice(0, match.index),
     folder: match[1]
   }
+}
+
+const DEFAULT_GIZMO: GizmoConfig = {
+  enabled: false,
+  mode: 'translate',
+  position: { x: 0, y: 0, z: 0 },
+  rotation: { x: 0, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 }
 }
 
 class Load3DConfiguration {
@@ -67,38 +82,50 @@ class Load3DConfiguration {
   }
 
   configure(setting: Load3DConfigurationSettings) {
-    this.setupModelHandling(
+    const onModelWidgetUpdate = this.setupModelHandling(
       setting.modelWidget,
       setting.loadFolder,
       setting.cameraState,
-      setting.silentOnNotFound ?? false,
-      setting.onSceneInvalidated
+      setting.silentOnNotFound ?? false
     )
-    this.setupTargetSize(
-      setting.width,
-      setting.height,
-      setting.onSceneInvalidated
-    )
+    this.setupTargetSize(setting.width, setting.height)
+    this.setupReactiveHandling(setting, onModelWidgetUpdate)
     this.setupDefaultProperties(setting.bgImagePath)
   }
 
-  private setupTargetSize(
-    width?: IBaseWidget,
-    height?: IBaseWidget,
-    onSceneInvalidated?: () => void
-  ) {
+  private setupReactiveHandling(
+    setting: Load3DConfigurationSettings,
+    onModelWidgetUpdate: (value: IBaseWidget['value']) => Promise<void>
+  ): void {
+    const scope = effectScope()
+    scope.run(() => {
+      watch(
+        () => setting.modelWidget.value,
+        (value) => {
+          void onModelWidgetUpdate(value)
+          setting.onSceneInvalidated?.()
+        },
+        { flush: 'sync' }
+      )
+
+      const { width, height } = setting
+      if (width && height) {
+        watch(
+          [() => width.value, () => height.value],
+          ([nextWidth, nextHeight]) => {
+            this.load3d.setTargetSize(nextWidth, nextHeight)
+            setting.onSceneInvalidated?.()
+          },
+          { flush: 'sync' }
+        )
+      }
+    })
+    this.load3d.setConfigurationCleanup(() => scope.stop())
+  }
+
+  private setupTargetSize(width?: INumericWidget, height?: INumericWidget) {
     if (width && height) {
-      this.load3d.setTargetSize(width.value as number, height.value as number)
-
-      width.callback = (value: number) => {
-        this.load3d.setTargetSize(value, height.value as number)
-        onSceneInvalidated?.()
-      }
-
-      height.callback = (value: number) => {
-        this.load3d.setTargetSize(width.value as number, value)
-        onSceneInvalidated?.()
-      }
+      this.load3d.setTargetSize(width.value, height.value)
     }
   }
 
@@ -122,8 +149,7 @@ class Load3DConfiguration {
     modelWidget: IBaseWidget,
     loadFolder: string,
     cameraState?: CameraState,
-    silentOnNotFound: boolean = false,
-    onSceneInvalidated?: () => void
+    silentOnNotFound: boolean = false
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
@@ -134,32 +160,7 @@ class Load3DConfiguration {
       void onModelWidgetUpdate(modelWidget.value)
     }
 
-    const originalCallback = modelWidget.callback
-
-    let currentValue = modelWidget.value
-    Object.defineProperty(modelWidget, 'value', {
-      get() {
-        return currentValue
-      },
-      set(newValue) {
-        currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
-          modelWidget.callback(newValue)
-        }
-      },
-      enumerable: true,
-      configurable: true
-    })
-
-    modelWidget.callback = (value: string | number | boolean | object) => {
-      void onModelWidgetUpdate(value)
-
-      if (originalCallback) {
-        originalCallback(value)
-      }
-
-      onSceneInvalidated?.()
-    }
+    return onModelWidgetUpdate
   }
 
   private setupDefaultProperties(bgImagePath?: string) {
@@ -223,34 +224,18 @@ class Load3DConfiguration {
   }
 
   private loadModelConfig(): ModelConfig {
-    if (this.properties && 'Model Config' in this.properties) {
-      const config = this.properties['Model Config'] as ModelConfig
-      if (!config.gizmo) {
-        config.gizmo = {
-          enabled: false,
-          mode: 'translate',
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 }
-        }
-      } else if (!config.gizmo.scale) {
-        config.gizmo.scale = { x: 1, y: 1, z: 1 }
-      }
-      return config
-    }
-
-    return {
+    const stored = this.properties?.['Model Config'] as
+      | StoredModelConfig
+      | undefined
+    const config: ModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
       showSkeleton: false,
-      gizmo: {
-        enabled: false,
-        mode: 'translate',
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1, z: 1 }
-      }
+      ...stored,
+      gizmo: { ...DEFAULT_GIZMO, ...stored?.gizmo }
     }
+    if (stored) stored.gizmo = config.gizmo
+    return config
   }
 
   private applySceneConfig(config: SceneConfig, bgImagePath?: string) {
@@ -302,7 +287,7 @@ class Load3DConfiguration {
     silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: string | number | boolean | object) => {
+    return async (value: IBaseWidget['value']) => {
       if (!value || value === LOAD3D_NONE_MODEL) {
         this.load3d.clearModel()
         return
@@ -322,7 +307,10 @@ class Load3DConfiguration {
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename, { silentOnNotFound })
+      const accepted = await this.load3d.loadModel(modelUrl, filename, {
+        silentOnNotFound
+      })
+      if (!accepted) return
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
