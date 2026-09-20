@@ -611,6 +611,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             topology.targetSlot = targetInputs.findIndex(
               (input) => input.name === name
             )
+            // findIndex reports -1, which the `>= length` range check below
+            // accepts; reject here so a name the merge could not place never
+            // reaches the link store as slot -1.
+            if (topology.targetSlot < 0) {
+              return `connect target input ${name} does not exist`
+            }
           }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`

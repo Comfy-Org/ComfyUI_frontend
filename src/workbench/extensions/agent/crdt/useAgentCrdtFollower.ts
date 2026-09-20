@@ -30,7 +30,6 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import { mapLocalInputSlots } from './mapLocalInputSlots'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -692,13 +691,7 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations(operations: GraphOperation[]) {
-      const graph = getGraph()
-      sender.enqueue(
-        graph
-          ? mapLocalInputSlots(bridge.follower.doc, graph, operations)
-          : operations
-      )
-    }
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      sender.enqueue(operations)
   }
 }

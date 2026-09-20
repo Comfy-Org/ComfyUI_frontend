@@ -174,39 +174,3 @@ crdtTest(
     expect(minted).toEqual([])
   }
 )
-
-crdtTest(
-  'mints the document index after growth moves width and preserves the reconnect on echo',
-  async ({ createCrdtSession }) => {
-    const { graph, minted, deliver, apply } = await setup(
-      createCrdtSession,
-      singleImageNode
-    )
-    deliver()
-    const { from, to } = growImages(graph)
-    apply(minted)
-    minted.length = 0
-    deliver()
-    const documentSlot = singleImageNode.inputs.findIndex(
-      ({ name }) => name === 'width'
-    )
-    expect(to.findInputSlot('width')).not.toBe(documentSlot)
-    expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
-
-    const link = from.connect(1, to, to.findInputSlot('width'))
-    expect(link).toBeTruthy()
-    expect(minted).toEqual([
-      expect.objectContaining({ op: 'connect', to_slot: documentSlot })
-    ])
-    apply(minted)
-    minted.length = 0
-    deliver()
-    expect(to.getInputLink(to.findInputSlot('width'))?.id).toBe(link?.id)
-    const saved = graph.serialize().nodes.find(({ id }) => String(id) === '2')!
-    expect(saved.inputs?.find(({ name }) => name === 'width')?.link).toBe(
-      link?.id
-    )
-    expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
-    expect(minted).toEqual([])
-  }
-)

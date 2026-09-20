@@ -12,7 +12,6 @@ import { reconcileAgentAdapters } from '../agentNodeMaterializer'
 import { EcsFollowerAdapter } from '../ecsFollowerAdapter'
 import { FollowerDoc } from '../followerDoc'
 import type { GraphOperation } from '../graphOperations'
-import { mapLocalInputSlots } from '../mapLocalInputSlots'
 import { attachMintPortWiring } from '../mintPortWiring'
 
 interface SessionOptions {
@@ -61,8 +60,7 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       const wiring = attachMintPortWiring({
         isEnabled: () => true,
         isDocBound: () => true,
-        enqueue: (operations) =>
-          minted.push(...mapLocalInputSlots(follower.doc, graph, operations)),
+        enqueue: (operations) => minted.push(...operations),
         layoutChanges: () => () => {},
         localActorPrefix: 'user-',
         getGraph: () => graph
