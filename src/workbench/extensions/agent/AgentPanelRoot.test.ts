@@ -1810,7 +1810,7 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('keeps a dismissed preview available for Undo until the editor unmounts', async () => {
+  it('keeps a dismissed durable preview available for Undo until the editor unmounts', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -1839,17 +1839,28 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
-      )
-    ).toBeInTheDocument()
+    const assetSection = await screen.findByTestId('composer-asset-section')
+    expect(within(assetSection).getByText('cat.png')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        within(assetSection).getByRole('img', { name: 'cat.png' })
+      ).toHaveAttribute('src', '/api/view?filename=uploaded_cat.png&type=input')
+    )
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
-    expect(revoke).not.toHaveBeenCalled()
+    screen.getByRole('textbox').focus()
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'img',
+        { name: 'cat.png' }
+      )
+    ).toHaveAttribute('src', '/api/view?filename=uploaded_cat.png&type=input')
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
@@ -3159,7 +3170,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
-  it('retains an explicitly chosen target across panel reopen and New Chat', async () => {
+  it('retains an explicitly chosen target across a plain panel reopen', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -3173,16 +3184,97 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     unmount()
-    workflowStore.activeWorkflow = addTab('workflows/other.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-    )
     expect(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('current')
+  })
+
+  // PM-1321/PM-1322: onNewChat() used to leave the previous chat's target in
+  // place, so "in this workflow" silently kept acting on a tab that was no
+  // longer on screen. A new chat now targets whatever tab is active when it
+  // starts, matching onSelectHistory()'s reset-then-restore pattern.
+  it('retargets New Chat to the tab now on screen instead of the old chat target', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'current' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('other')
+  })
+
+  it('clears the New Chat target when no tab is open', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
+
+    await workflowService.closeWorkflow(workflowStore.activeWorkflow!)
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+  })
+
+  // PM-1415: the same fix must cover a brand new, still-unsaved tab, not just
+  // switching to an already-open one - activeWorkflow tracks whichever tab is
+  // on screen regardless of isTemporary.
+  it('retargets New Chat to a freshly created, unsaved tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'current' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    workflowStore.activeWorkflow = addTab('workflows/new-tab.json', {
+      isTemporary: true
+    })
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent('new-tab')
   })
 
   it('keeps the selected Agent target when the visible graph tab changes', async () => {
@@ -4933,7 +5025,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(bodies[0]).toMatchObject({
-        content: '@[Node: KSampler #12]  Keep this draft',
+        content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
         selection: { node_ids: ['12'] },
         workflow_references: []
@@ -5694,12 +5786,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       } else {
         expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft'
-            ? 'New input'
-            : nextAction === 'removed-reference' ||
-                nextAction === 'removed-attachment'
-              ? ' '
-              : ''
+          nextAction === 'new-draft' ? 'New input' : ''
         )
         expect(composer.attachments).toEqual([])
         expect(
