@@ -147,6 +147,7 @@ test.describe(
           await workflowsTab.switchToWorkflow('annotated-widget-output')
           await comfyPage.workflow.waitForWorkflowIdle()
           await expectPreviewLoaded()
+          await workflowsTab.close()
           await loadImageNode.root.screenshot({
             path: testInfo.outputPath('02-restored-preview.png')
           })
