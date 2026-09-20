@@ -236,6 +236,24 @@ function repairPromotedBindings(
 }
 
 /**
+ * An instance this scope already owns is kept, never rebuilt. Autogrow inputs
+ * are resynced either way; the promoted-binding repair needs the serialization
+ * it replays, so it is skipped when there is none.
+ */
+function resyncOwnedNode(
+  graph: MaterializableGraph,
+  live: LGraphNode,
+  serialised: ISerialisedNode | undefined
+): void {
+  reconcileAutogrowInputs(live)
+  // Reconciliation can retain the instance but replace its inputs with
+  // serialized slots, losing the bindings that create promoted widgets. Repair
+  // only broken bindings: replaying an intact host's serialization would
+  // overwrite later set_widget values. Layout remains FE-owned.
+  if (serialised) repairPromotedBindings(graph, live, serialised)
+}
+
+/**
  * @param pendingDefinitions definition ids the document seeds but the root
  * graph could not register. Nodes typed by one stay unmaterialized rather
  * than degrading to a placeholder: a `subgraph-created` handler may already
@@ -269,15 +287,7 @@ function reconcile(
     const live = graph._nodes_by_id[state.id]
     const serialised = state.lastSerialization
     if (live && nodeStore.ownsNode(scope, live._state)) {
-      reconcileAutogrowInputs(live)
-      // Reconciliation can retain the instance but replace its inputs with
-      // serialized slots, losing the bindings that create promoted widgets.
-      // Repair only broken bindings: replaying an intact host's serialization
-      // would overwrite later set_widget values. Layout remains FE-owned.
-      // Guarded on `serialised` because the repair replays it; main's autogrow
-      // reconcile above runs either way, as it did before this branch moved
-      // the ownership check below the serialization guard.
-      if (serialised) repairPromotedBindings(graph, live, serialised)
+      resyncOwnedNode(graph, live, serialised)
       continue
     }
     if (!serialised) continue
