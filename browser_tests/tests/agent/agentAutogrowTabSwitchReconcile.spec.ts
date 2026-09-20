@@ -442,6 +442,9 @@ test.describe(
         await expect(vueNodes.getNodeLocator(gptNodeId)).toBeInViewport({
           ratio: 1
         })
+        await expect(
+          vueNodes.getNodeLocator(String(CHECKPOINT_NODE_ID))
+        ).toBeInViewport({ ratio: 1 })
         await test.info().attach('reconciled-node', {
           body: await page.screenshot(),
           contentType: 'image/png'
