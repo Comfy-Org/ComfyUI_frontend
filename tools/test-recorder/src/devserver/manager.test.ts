@@ -6,6 +6,13 @@ import { probeDevServer } from '../checks/devServer'
 import { customDistribution, resolveDistribution } from './distributions'
 import { ensureDevServer } from './manager'
 
+function thrownError(caught: unknown): Error {
+  if (!(caught instanceof Error)) {
+    throw new Error(`Expected a thrown Error, got ${String(caught)}`)
+  }
+  return caught
+}
+
 describe('ensureDevServer reuse of an already running dev server', () => {
   beforeEach(() => {
     vi.mocked(probeDevServer).mockResolvedValue({ status: 'ready' })
@@ -27,8 +34,7 @@ describe('ensureDevServer reuse of an already running dev server', () => {
       (caught: unknown) => caught
     )
 
-    expect(thrown).toBeInstanceOf(Error)
-    const { message } = thrown as Error
+    const { message } = thrownError(thrown)
     expect(message).toContain('https://nightly.example.com/')
     expect(message).toContain('DEV_SERVER_CF_ACCESS_CLIENT_ID')
     expect(message).toContain('COMFY_TEST_DEV_PORT=5174')
