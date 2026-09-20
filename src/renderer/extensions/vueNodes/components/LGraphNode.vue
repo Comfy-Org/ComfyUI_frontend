@@ -282,6 +282,7 @@ import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -329,8 +330,7 @@ import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-
-const IMAGE_PREVIEW_MIN_HEIGHT = 232
+import { IMAGE_PREVIEW_HEIGHT_RESERVE } from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState
@@ -414,7 +414,7 @@ const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
 const imagePreviewGrowth = computed(() =>
   nodeMedia.value?.type === 'image' && hasExpandingWidget.value
-    ? IMAGE_PREVIEW_MIN_HEIGHT
+    ? IMAGE_PREVIEW_HEIGHT_RESERVE
     : 0
 )
 
@@ -674,11 +674,14 @@ const renderedWidgetIds = computed(() => {
 })
 
 const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
+const { processedWidgets } = useProcessedWidgets(
+  () => nodeData,
+  () => renderedWidgetIds.value
+)
 const hasExpandingWidget = computed(() =>
-  renderedWidgetIds.value.some((id) => {
-    const type = widgetValueStore.getWidget(id)?.type
-    return type !== undefined && shouldExpand(type)
-  })
+  processedWidgets.value.some(
+    (widget) => widget.visible && shouldExpand(widget.simplified.type)
+  )
 )
 
 const showAdvancedInputsButton = computed(() => {

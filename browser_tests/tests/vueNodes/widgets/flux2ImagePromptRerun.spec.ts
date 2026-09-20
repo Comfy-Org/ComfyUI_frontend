@@ -10,11 +10,8 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 /**
- * PM-1303 / PM-1310: on a Flux2ImageNode the prompt text box is reported to
- * vanish after a SECOND generation. The root cause was undecided, so each
- * test here pins one hypothesis. A test that passes rules its hypothesis out
- * on this (localhost, non-CRDT) path; a `test.fail()` test reproduces a real
- * regression the investigation surfaced.
+ * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
+ * repeated generations, including transient progress and output previews.
  *
  * Execution is simulated the way the backend drives it: a real
  * `Comfy.QueuePrompt` through the UI, then the WS frames an API node emits
