@@ -93,4 +93,23 @@ export class AgentFollowerHostSocket {
   subscribeCount(): number {
     return this.subscribes
   }
+
+  /**
+   * Resolves once the follower has subscribed at least `count` times.
+   *
+   * `waitForSubscribe` latches on the first subscribe, so it cannot observe a
+   * later one. A reload re-opens `/ws` and subscribes again on the same routed
+   * host, so waiting on the count is what proves the restored page rebound to
+   * the document rather than merely finishing navigation.
+   */
+  async waitForSubscribeCount(count: number): Promise<void> {
+    const deadline = Date.now() + SUBSCRIBE_TIMEOUT
+    while (this.subscribes < count) {
+      if (Date.now() > deadline)
+        throw new Error(
+          `the follower subscribed ${this.subscribes} time(s) to workflow ${this.workflowId}, expected ${count}`
+        )
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+  }
 }

@@ -41,6 +41,9 @@ const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
+// How long a restored page may take to reopen the panel on its own before the
+// fixture opens it explicitly.
+const PANEL_RESTORE_WAIT = 5_000
 const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -151,6 +154,9 @@ class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
+  // Set by the userdata route when the app saves the workflow; the workflow
+  // list route replays it, including to a reloaded page.
+  private savedWorkflowName: string | undefined
 
   constructor(
     private readonly page: Page,
@@ -241,7 +247,16 @@ class AgentConversationHarness {
   }
 
   private async selectWorkflowTarget(): Promise<void> {
-    let savedName: string | undefined
+    await this.installWorkflowRoutes()
+    await this.pickWorkflowTarget()
+  }
+
+  /**
+   * Registered once per page, not per selection: the routes close over
+   * `savedWorkflowName`, so re-registering them would forget the saved
+   * workflow and serve an empty list to a reloaded page.
+   */
+  private async installWorkflowRoutes(): Promise<void> {
     await this.page.route('**/api/userdata/*', (route) => {
       const request = route.request()
       const path = decodeURIComponent(
@@ -249,7 +264,7 @@ class AgentConversationHarness {
       )
       if (request.method() !== 'POST' || !path.startsWith('workflows/'))
         return route.fallback()
-      savedName = path.slice('workflows/'.length, -'.json'.length)
+      this.savedWorkflowName = path.slice('workflows/'.length, -'.json'.length)
       const saved: UserDataFullInfo = {
         path,
         modified: Date.now(),
@@ -260,12 +275,12 @@ class AgentConversationHarness {
     await this.page.route('**/api/workflows?*', (route) => {
       const workflows: WorkflowListResponse = {
         data:
-          savedName === undefined
+          this.savedWorkflowName === undefined
             ? []
             : [
                 {
                   id: this.conversation.workflow.id,
-                  name: savedName,
+                  name: this.savedWorkflowName,
                   created_at: '2026-09-01T00:00:00Z',
                   updated_at: '2026-09-01T00:00:00Z',
                   created_by: 'test-user-e2e',
@@ -276,19 +291,26 @@ class AgentConversationHarness {
           has_more: false,
           limit: 100,
           offset: 0,
-          total: savedName === undefined ? 0 : 1
+          total: this.savedWorkflowName === undefined ? 0 : 1
         }
       }
       return route.fulfill(jsonRoute(workflows))
     })
+  }
+
+  /** Point the panel at the recorded workflow; safe to repeat after a reload. */
+  private async pickWorkflowTarget(): Promise<void> {
+    // Before the first save the only entry is the blank workflow; afterwards
+    // the list (including on a reloaded page) serves it under its saved name.
+    const target = this.savedWorkflowName ?? 'Unsaved Workflow'
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
     await picker.click()
     await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+      .getByRole('menuitemradio', { name: target, exact: true })
       .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
+    await expect(picker).toHaveText(target)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -634,6 +656,52 @@ class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  /**
+   * Reload the page and wait for the follower to bind to the same document
+   * again.
+   *
+   * The routed `/ws` host and the mocked agent API are registered on the page,
+   * not on a navigation, so they survive the reload and the restored app talks
+   * to the same host doc it was already editing. That is what makes the
+   * restore path browser-observable: `agentChatRefreshPersistence` reloads with
+   * `connectWebSocketToServer: false`, so no document is ever subscribed there
+   * and a follower rebind cannot be asserted.
+   *
+   * Resolves only after a *fresh* subscribe, so callers can assert on the
+   * restored binding rather than on a page that merely finished navigating.
+   */
+  async reload(): Promise<void> {
+    const before = this.subscribeCount()
+    await this.page.reload()
+    // The entry button only settles once the restored page has resolved the
+    // agent gate; clicking before that races the gate and mounts nothing.
+    await expect(
+      this.page.getByTestId('integrated-tab-bar-actions')
+    ).toHaveAttribute('data-agent-gate-settled', 'true', {
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    // A restored session may reopen the panel on its own. Give it a moment
+    // before clicking, because an immediate visibility probe races the mount
+    // and a click on an already-opening panel toggles it shut again.
+    try {
+      await this.panel.waitFor({
+        state: 'visible',
+        timeout: PANEL_RESTORE_WAIT
+      })
+    } catch {
+      await this.page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
+    }
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    // The restored page comes up on a blank graph, so the panel has no target
+    // until the recorded workflow is picked again. The workflow routes survive
+    // the reload and still serve the saved workflow, so this re-targets the
+    // SAME document the pre-reload turns edited.
+    await this.pickWorkflowTarget()
+    await this.hostSocket.waitForSubscribeCount(before + 1)
   }
 }
 
