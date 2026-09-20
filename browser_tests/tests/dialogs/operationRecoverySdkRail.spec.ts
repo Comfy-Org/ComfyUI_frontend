@@ -143,6 +143,8 @@ async function mockGraphBootExtras(page: Page) {
 interface RecoveryRoutes {
   /** Every poll of the pending operation, in order, with its transport. */
   readonly pollRequests: Request[]
+  /** Every hosted-action URL the rail offered, in order. */
+  readonly hostedOpens: () => Promise<string[]>
 }
 
 interface RecoveryOptions {
@@ -162,6 +164,20 @@ async function setupRecovery(
 ): Promise<RecoveryRoutes> {
   const ws = workspace('personal', 'owner')
   const pollRequests: Request[] = []
+
+  // `billingSdkStore.openHostedAction` offers a pending operation's hosted step
+  // by opening it, off the lifecycle rather than a click. Recording the call
+  // instead of letting it through keeps the popup out of network isolation and
+  // makes the offer assertable; the truthy return keeps the popup-blocked
+  // toast path unentered, which is a different behaviour than the one here.
+  await page.addInitScript(() => {
+    const opened: string[] = []
+    Object.defineProperty(window, '__hostedOpens', { get: () => opened })
+    window.open = (url?: string | URL) => {
+      opened.push(String(url))
+      return window
+    }
+  })
 
   await mockCloudBoot(page, {
     features: railOnFeatures
@@ -190,7 +206,17 @@ async function setupRecovery(
   })
 
   await bootCloud(page)
-  return { pollRequests }
+  return {
+    pollRequests,
+    hostedOpens: () =>
+      page.evaluate(() => [
+        ...(
+          window as unknown as {
+            __hostedOpens: string[]
+          }
+        ).__hostedOpens
+      ])
+  }
 }
 
 /** Which transport polled, and so which rail adopted the operation. */
@@ -253,6 +279,12 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
       .poll(() => routes.pollRequests.length)
       .toBeGreaterThan(0)
     expect(transports(routes.pollRequests)).not.toContain('fetch')
+
+    // The legacy rail leaves the parked hosted step on its pointer for a
+    // surface to put behind a button; it opens nothing on its own. Pinned
+    // because the SDK row above does the opposite, and the difference is
+    // customer-visible.
+    expect(await routes.hostedOpens()).toEqual([])
   })
 
   /**
@@ -300,6 +332,13 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     // sound because the flag now arrives on a channel boot awaits.
     expect(new Set(transports(routes.pollRequests)).size).toBe(1)
     expect(transports(routes.pollRequests)).not.toContain('xhr')
+
+    // Adopting on this rail also *offers* the parked hosted step, unprompted,
+    // at boot — the legacy row below records that the legacy rail does not.
+    // Once per operation, not once per poll.
+    await expect
+      .poll(() => routes.hostedOpens())
+      .toEqual([PENDING_OPERATION.action_url])
   })
 
   test('still restores the tier and cycle from the host pointer when recovery fails', async ({
