@@ -12,6 +12,7 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import type { SocketClosedEventPayload } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -622,21 +623,13 @@ function startAgentCrdtFollower(
   const resetReconnectTelemetry = (): void => {
     reconnectTelemetryState = initialReconnectTelemetryState()
   }
-  const onSocketClosed: EventListener = (event) => {
-    if (!(event instanceof CustomEvent)) return
-    const detail: unknown = event.detail
-    if (
-      typeof detail !== 'object' ||
-      detail === null ||
-      !('code' in detail) ||
-      typeof detail.code !== 'number' ||
-      !isTargetActive.value ||
-      subscribedWorkflowId.value === null
-    )
-      return
+  const onSocketClosed = (
+    event: CustomEvent<SocketClosedEventPayload>
+  ): void => {
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
     const transition = transitionReconnectTelemetry(reconnectTelemetryState, {
       type: 'closed',
-      code: detail.code,
+      code: event.detail.code,
       now: Date.now()
     })
     reconnectTelemetryState = transition.state

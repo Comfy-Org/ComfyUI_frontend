@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { SocketClosedEventPayload } from '@/scripts/api'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -226,6 +227,10 @@ function reportedTeardownErrors(): unknown[] {
 
 function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
+}
+
+function dispatchSocketClosed(detail: SocketClosedEventPayload): void {
+  apiState.target.dispatchEvent(new CustomEvent('socketClosed', { detail }))
 }
 
 describe('useAgentCrdtFollower', () => {
@@ -483,12 +488,8 @@ describe('useAgentCrdtFollower', () => {
     vi.setSystemTime(1_000)
     const { unmount, isTargetActive } = mountFollower('wf-1')
 
-    apiState.target.dispatchEvent(
-      new CustomEvent('socketClosed', { detail: { code: 1006 } })
-    )
-    apiState.target.dispatchEvent(
-      new CustomEvent('socketClosed', { detail: { code: 1006 } })
-    )
+    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
+    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
     apiState.target.dispatchEvent(new Event('reconnecting'))
     apiState.target.dispatchEvent(new Event('reconnecting'))
     apiState.target.dispatchEvent(new Event('reconnecting'))
@@ -503,9 +504,7 @@ describe('useAgentCrdtFollower', () => {
     ])
 
     isTargetActive.value = false
-    apiState.target.dispatchEvent(
-      new CustomEvent('socketClosed', { detail: { code: 1006 } })
-    )
+    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
     apiState.target.dispatchEvent(new Event('reconnecting'))
     expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
     unmount()

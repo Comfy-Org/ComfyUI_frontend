@@ -230,6 +230,7 @@ interface FrontendApiCalls {
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
 export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+export type SocketClosedEventPayload = FrontendApiCalls['socketClosed']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
