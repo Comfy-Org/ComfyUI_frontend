@@ -47,9 +47,9 @@ async function mockAgentBoot(
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings
-    },
-    objectInfo
+    }
   })
+  if (objectInfo === 'server') await page.unroute('**/api/object_info')
   await mockBilling(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,

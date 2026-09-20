@@ -1,4 +1,5 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import type {
@@ -20,7 +21,7 @@ import type {
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
-import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
+import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -192,7 +193,7 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
-  await mockCloudBootRoutes(page, {
+  await mockCloudBoot(page, {
     features: agentFeatures(agentFlagEnabled),
     settings: {
       'Comfy.TutorialCompleted': true,
@@ -347,6 +348,17 @@ async function mockAgentBoot(
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route: Route) =>
     route.fulfill(jsonRoute(CANCEL_ACCEPTED))
   )
+}
+
+export async function selectAgentWorkflow(page: Page): Promise<void> {
+  const picker = page
+    .locator('#agent-panel-root')
+    .getByRole('button', { name: 'Switch workflow' })
+  await picker.click()
+  await page
+    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+    .click()
+  await expect(picker).toHaveText('Unsaved Workflow')
 }
 
 type AgentFixtures = {
