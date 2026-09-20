@@ -28,6 +28,46 @@ function addNode(opId: string, nodeId: number): Op {
   }
 }
 
+function deleteNode(opId: string, nodeId: number): Op {
+  return {
+    ...envelope(opId),
+    op: 'delete_node',
+    node_id: nodeId,
+    removed_links: []
+  }
+}
+
+function connect(opId: string, linkId: number): Op {
+  return {
+    ...envelope(opId),
+    op: 'connect',
+    link_id: linkId,
+    from_node: 1,
+    from_slot: 0,
+    to_node: 2,
+    to_slot: 0,
+    link_type: 'IMAGE'
+  }
+}
+
+function setWidget(opId: string, nodeId: number): Op {
+  return {
+    ...envelope(opId),
+    op: 'set_widget',
+    node_id: nodeId,
+    widget: 'seed',
+    value: 42
+  }
+}
+
+function clearOp(opId: string): Op {
+  return { ...envelope(opId), op: 'clear', removed_nodes: [] }
+}
+
+function unacknowledged(ops: Op[]): BatchOutcome {
+  return { state: 'unacknowledged', ops }
+}
+
 function acknowledged(
   ops: Op[],
   result: Extract<BatchOutcome, { state: 'acknowledged' }>['result']
@@ -380,6 +420,200 @@ describe('createPendingOpTracker', () => {
         ops: [ops[2]]
       }
     ])
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (a): every host rejection is reported', () => {
+    it('reports a host-rejected op via reportError, once per failed batch', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: false,
+          applied: ['op-1'],
+          skipped: [],
+          failure: { op_id: 'op-2' }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_human_op_rejected',
+        context: {
+          opKind: 'add_node',
+          nodeId: '2',
+          failure: { op_id: 'op-2' }
+        }
+      })
+    })
+
+    it('does not report a batch the host never rejected', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: true,
+          applied: ops.map((op) => op.op_id),
+          skipped: []
+        })
+      )
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (a): delivery-unknown parking and catch-up resolution', () => {
+    it('parks a non-clear op as delivery_unknown, distinct from inflight', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
+    })
+
+    it('never parks a clear op: it stays inflight, exactly as before', () => {
+      const op = clearOp('op-1')
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'inflight', shadow: op }
+      ])
+
+      tracker.resolveDeliveryUnknown(() => {
+        throw new Error('must not be consulted for a clear op')
+      })
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'inflight', shadow: op }
+      ])
+    })
+
+    it('clears a parked add_node whose node id reached the doc', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => true)
+
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+    })
+
+    it('reverts a parked add_node whose node id never reached the doc', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => false)
+
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({
+        type: 'reverted',
+        reason: 'diverged',
+        opIds: ['op-1'],
+        ops: [op]
+      })
+    })
+
+    it('reverts a parked delete_node the doc still shows (the effect never happened)', () => {
+      // The caller's `effectPresent` already negates its own doc lookup for
+      // `delete_node` (present === "the node is gone"), so `false` here
+      // means the delete never took.
+      const op = deleteNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => false)
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({
+        type: 'reverted',
+        reason: 'diverged',
+        opIds: ['op-1'],
+        ops: [op]
+      })
+    })
+
+    it('clears a parked delete_node once the doc shows it gone', () => {
+      const op = deleteNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => true)
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+    })
+
+    it('clears a parked connect whose link id reached the doc', () => {
+      const op = connect('op-1', 41)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => true)
+      expect(tracker.entries()).toEqual([])
+    })
+
+    it('always clears a parked set_widget once a catch-up runs, without consulting the check', () => {
+      const op = setWidget('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => false)
+
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+    })
+
+    it('leaves an unresolvable check (null) parked for the next catch-up', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => null)
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
+    })
+
+    it('a late doc_ops_result still reconciles a parked entry normally', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.onBatchSettled(
+        acknowledged([op], { ok: true, applied: ['op-1'], skipped: [] })
+      )
+
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'applied', shadow: op }
+      ])
+
+      // Resolution must not fight the real result: nothing left to park.
+      tracker.resolveDeliveryUnknown(() => false)
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'applied', shadow: op }
+      ])
+    })
   })
 
   it('isolates event listener failures', () => {

@@ -10,6 +10,9 @@ import {
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import { st } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -293,11 +296,6 @@ function startAgentCrdtFollower(
 
   const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc
-  )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
@@ -307,6 +305,13 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   let lastProjectedSequence: number | null = null
+  // ADR-CRDT-RECONCILE-0035 (a): which workflow the pending-op ledger's
+  // contents belong to. Distinct from `boundWorkflowId` below, which the
+  // `!active` watch branch nulls on every tab deactivation — the ledger must
+  // NOT reset there, only on a lineage break (doc_reset, follower_replaced,
+  // or a bind to a workflow other than this one), so it needs its own memory
+  // of "what lineage is this" that a deactivation does not touch.
+  let pendingOpsLineageId: string | null = null
   const removeRevertedNode = createPendingRevertRemoveNode({
     getGraph,
     withLayoutActor
@@ -342,6 +347,25 @@ function startAgentCrdtFollower(
       recordDevEvent('pending_ops', event)
     }
   })
+  // ADR-CRDT-RECONCILE-0035 (c): an incoming `add` for a node id already
+  // registered locally is the page's own accepted-add echo, never a fresh
+  // add, exactly when the ledger still holds an `add_node` for that id (in
+  // ANY state — the ledger survives deactivation, so this always covers the
+  // echo case). Otherwise it is an id collision the adapter must report.
+  const hasPendingAddNode = (nodeId: string): boolean =>
+    pendingOps
+      .entries()
+      .some(
+        (entry) =>
+          entry.shadow.op === 'add_node' &&
+          String(entry.shadow.node_id) === nodeId
+      )
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc,
+    hasPendingAddNode
+  )
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -518,6 +542,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     resetPendingCorrelation()
+    pendingOpsLineageId = detail.workflowId
     pendingLiveNodeIds.clear()
     recordDevEvent(
       'doc_reset',
@@ -546,6 +571,7 @@ function startAgentCrdtFollower(
       })
       projection.bind(workflowId, bridge.follower)
       resetPendingCorrelation()
+      pendingOpsLineageId = workflowId
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -627,11 +653,31 @@ function startAgentCrdtFollower(
     pendingOps.reset()
   }
 
+  /**
+   * A same-lineage catch-up: whatever the doc holds right now is the best
+   * evidence available for a `delivery_unknown` (parked) entry whose result
+   * never arrived (ADR-CRDT-RECONCILE-0035 (a)).
+   */
+  function docEffectPresent(op: Op): boolean | null {
+    const doc = bridge.follower.doc
+    switch (op.op) {
+      case 'add_node':
+        return nodesMap(doc).has(String(op.node_id))
+      case 'delete_node':
+        return !nodesMap(doc).has(String(op.node_id))
+      case 'connect':
+        return linksMap(doc).has(String(op.link_id))
+      default:
+        return null
+    }
+  }
+
   /** Watermark and settlement only - callers own the live-graph reconcile. */
   function onProjected(update: DocUpdate): void {
     lastProjectedSequence = update.seq
     if (update.opIds) pendingOps.onDocEffect(update.opIds)
     pendingOps.onAuthoritativeState(update.seq)
+    pendingOps.resolveDeliveryUnknown(docEffectPresent)
   }
 
   function retryPendingProjection(workflowId: string): boolean {
@@ -683,10 +729,14 @@ function startAgentCrdtFollower(
 
   const deactivateTarget = (next: string | null): void => {
     if (next !== null) initialBind = false
+    // Target deactivation (e.g. a tab switch away) unbinds the live
+    // projection, but it is NOT a lineage break: the pending-op ledger
+    // survives it untouched (ADR-CRDT-RECONCILE-0035 (a)), so a
+    // same-workflow reactivation below finds `pendingOpsLineageId`
+    // unchanged and does not reset it.
     if (boundWorkflowId !== null) {
       projection.unbind(boundWorkflowId)
       boundWorkflowId = null
-      resetPendingCorrelation()
     }
     subscribedWorkflowId.value = null
     retarget(null)
@@ -699,9 +749,12 @@ function startAgentCrdtFollower(
       lifecycle.clearPersistedDocId()
       if (boundWorkflowId !== null) {
         projection.unbind(boundWorkflowId)
-        resetPendingCorrelation()
       }
       boundWorkflowId = null
+      // A real detach (no persisted id to rebind to): nothing is bound any
+      // more, so the ledger's lineage ends too.
+      resetPendingCorrelation()
+      pendingOpsLineageId = null
       subscribedWorkflowId.value = null
       retarget(null)
       return
@@ -710,10 +763,13 @@ function startAgentCrdtFollower(
     if (boundWorkflowId !== persisted) {
       if (boundWorkflowId !== null) {
         projection.unbind(boundWorkflowId)
-        resetPendingCorrelation()
       }
       projection.bind(persisted, bridge.follower)
       boundWorkflowId = persisted
+    }
+    if (pendingOpsLineageId !== persisted) {
+      resetPendingCorrelation()
+      pendingOpsLineageId = persisted
     }
     subscribedWorkflowId.value = persisted
     retarget(persisted)
@@ -725,10 +781,13 @@ function startAgentCrdtFollower(
     if (boundWorkflowId !== next) {
       if (boundWorkflowId !== null) {
         projection.unbind(boundWorkflowId)
-        resetPendingCorrelation()
       }
       projection.bind(next, bridge.follower)
       boundWorkflowId = next
+    }
+    if (pendingOpsLineageId !== next) {
+      resetPendingCorrelation()
+      pendingOpsLineageId = next
     }
     subscribedWorkflowId.value = next
     retarget(next)

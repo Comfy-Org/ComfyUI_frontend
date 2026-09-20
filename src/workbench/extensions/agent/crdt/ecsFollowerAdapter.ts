@@ -356,7 +356,12 @@ interface TargetSession {
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
 
-  constructor(private readonly mutations: MutationsForTarget) {}
+  constructor(
+    private readonly mutations: MutationsForTarget,
+    /** ADR-CRDT-RECONCILE-0035 (c); see {@link AgentCrdtProjection}. */
+    private readonly hasPendingAddNode: (nodeId: string) => boolean = () =>
+      false
+  ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
@@ -590,7 +595,37 @@ export class EcsFollowerAdapter {
       }
       for (const [id, payload] of payloads) {
         if (!payload) continue
-        upsertNode(payload, nodeActions.get(id) === 'add' ? 'add' : 'reconcile')
+        if (nodeActions.get(id) !== 'add') {
+          upsertNode(payload, 'reconcile')
+          continue
+        }
+        // ADR-CRDT-RECONCILE-0035 (c): a node id already registered locally
+        // is never a fresh add. It is either the echo of this page's own
+        // accepted add (the ledger still holds an `add_node` for it, in any
+        // state — the ledger survives deactivation) or a collision between a
+        // retained local-only node and a document node minted under the same
+        // graph-local integer. Either way the document wins via `reconcile`
+        // (auto-upgraded to a `replaceNode` by `prepare()` when the types
+        // differ); only the collision case is reported.
+        const localType = session.mutations.getNodeType(toNodeId(id))
+        if (localType === undefined) {
+          upsertNode(payload, 'add')
+          continue
+        }
+        if (!this.hasPendingAddNode(id)) {
+          reportOnce(
+            session.reportedErrors,
+            `collision:${id}`,
+            new Error(
+              `Node id ${id} is already registered locally as ${localType}, but an unrelated add_node for it arrived from the document as ${payload.type}`
+            ),
+            {
+              errorType: 'agent_crdt_node_id_collision',
+              context: { nodeId: id, localType, docType: payload.type }
+            }
+          )
+        }
+        upsertNode(payload, 'reconcile')
       }
       // A node whose widget storage was replaced wholesale, either the named
       // `widgets` map or the positional `__widgets_opaque` array (cmp writes

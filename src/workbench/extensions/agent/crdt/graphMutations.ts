@@ -146,6 +146,12 @@ export interface GraphMutations {
     context: RemoteMutationContext
   ): boolean
   clearSemanticGraph(context: RemoteMutationContext): boolean
+  /**
+   * The type of a node id already registered in this scope's root graph, or
+   * undefined when no such node is registered. A query, not a mutation — it
+   * never queues anything and needs no `batch`.
+   */
+  getNodeType(nodeId: NodeId): string | undefined
 }
 
 export interface GraphMutationsDeps {
@@ -1265,6 +1271,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       return graphMutations.batch(context, (batch) =>
         batch.clearSemanticGraph()
       )
+    },
+    getNodeType(nodeId) {
+      const scope = deps.getScope()
+      if (!scope) return undefined
+      return nodeStore.getNode(scope.rootGraphId, nodeId)?.type
     }
   }
 

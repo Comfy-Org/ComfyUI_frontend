@@ -11,6 +11,7 @@ import * as Y from 'yjs'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphMutations } from './graphMutations'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -23,6 +24,10 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const catalog: WidgetCatalog = {
   types: {
@@ -1218,7 +1223,8 @@ describe('EcsFollowerAdapter integration', () => {
         setWidget: () => true,
         connect: () => true,
         deleteNode: () => true,
-        clearSemanticGraph: () => true
+        clearSemanticGraph: () => true,
+        getNodeType: () => undefined
       }
     }
     const adapter = new EcsFollowerAdapter(createTargetMutations)
@@ -1368,5 +1374,111 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.targetLink).toEqual(singleton.targetLink)
     expect(combined.originLinks).toEqual([toLinkId(9)])
     expect(combined.targetLink).toEqual(toLinkId(9))
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (c): an already-registered add is never a fresh add', () => {
+    function makeAdapter(hasPendingAddNode: (nodeId: string) => boolean) {
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+        placement: inertPlacementPort
+      })
+      const adapter = new EcsFollowerAdapter(mutations, hasPendingAddNode)
+      adapter.bind('wf', follower)
+      let seq = 0
+      let first = true
+      const deliver = (operation: object): boolean => {
+        const before = Y.encodeStateVector(host)
+        const operationId = `op-${++seq}`
+        applyOps(
+          host,
+          [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
+          catalog
+        )
+        const update = first
+          ? Y.encodeStateAsUpdate(host)
+          : Y.encodeStateAsUpdate(host, before)
+        first = false
+        follower.applyRemoteUpdate(update)
+        return adapter.applyFrame({ workflowId: 'wf', seq, update })
+      }
+      return { host, follower, mutations, adapter, deliver }
+    }
+
+    const seedNode99 = {
+      op: 'add_node',
+      node_id: 99,
+      class_type: 'Sink',
+      pos: [0, 0],
+      node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
+    }
+    const echoNode1 = {
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'Source',
+      pos: [5, 5],
+      node: { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] }
+    }
+
+    it("reconciles the echo of the page's own accepted add, without arming a full reconcile", () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => true
+      )
+      // An unrelated first frame flips `reconcileNextFrame` false so the
+      // second frame below takes the incremental path this delta changes.
+      expect(deliver(seedNode99)).toBe(true)
+
+      // The page's own optimistic add is already live locally under id 1.
+      mutations.addNode(
+        { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      // Before this delta, `addNode` on an already-registered id failed the
+      // whole batch (`committed: false`), arming a full reconcile.
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+          .sort()
+      ).toEqual([toNodeId(1), toNodeId(99)].sort())
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('reports and lets the document win on a genuine node id collision', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => false
+      )
+      expect(deliver(seedNode99)).toBe(true)
+
+      // A retained local-only node under id 1 that the document never saw;
+      // the document now hands the same graph-local integer to a fresh node.
+      mutations.addNode(
+        { id: 1, type: 'LocalOnlyType', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
+      })
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .find(({ id }) => id === toNodeId(1))?.type
+      ).toBe('Source')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
   })
 })

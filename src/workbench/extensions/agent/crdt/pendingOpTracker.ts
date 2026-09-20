@@ -12,6 +12,11 @@ type PendingOpRevertReason =
   | 'unattributed'
   | 'unconfirmed'
   | 'undeliverable'
+  /**
+   * A `delivery_unknown` entry's per-kind effect check found no trace of it
+   * in the doc at the next same-lineage catch-up (ADR-CRDT-RECONCILE-0035).
+   */
+  | 'diverged'
 
 export type PendingOpTrackerEvent =
   | {
@@ -61,6 +66,17 @@ export interface PendingOpTracker {
    * one.
    */
   onAuthoritativeState(seq: number | null): void
+  /**
+   * Resolves every `delivery_unknown` (parked) entry against the doc state a
+   * same-lineage catch-up just projected. `effectPresent` answers, per op,
+   * whether ITS effect is visible now (`add_node`: node id present;
+   * `delete_node`: absent; `connect`: link id present), or `null` when the
+   * kind cannot be checked this way (`set_widget`, which always resolves
+   * present — LWW makes a value comparison meaningless — and `clear`, which
+   * is never parked). Present clears the entry; absent reverts it
+   * (`reason: 'diverged'`) through the same path a host rejection uses.
+   */
+  resolveDeliveryUnknown(effectPresent: (op: Op) => boolean | null): void
   /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */
   reset(): void
   entries(): PendingOpEntry<Op>[]
@@ -94,7 +110,10 @@ export function createPendingOpTracker(
     return ledger.take(opId)
   }
 
-  function revert(opIds: readonly string[], reason: PendingOpRevertReason) {
+  function revert(
+    opIds: readonly string[],
+    reason: PendingOpRevertReason
+  ): PendingOpEntry<Op>[] {
     const reverted: PendingOpEntry<Op>[] = []
     for (const opId of opIds) {
       const entry = drop(opId)
@@ -107,6 +126,7 @@ export function createPendingOpTracker(
         opIds: reverted.map((entry) => entry.opId),
         ops: reverted.map((entry) => entry.shadow)
       })
+    return reverted
   }
 
   /**
@@ -147,7 +167,8 @@ export function createPendingOpTracker(
         batch.map((id) => [id, attempts.get(id) ?? 0])
       )
     })
-    revert(summary.failed, 'failed')
+    for (const entry of revert(summary.failed, 'failed'))
+      reportHumanOpRejected(entry)
     revert(summary.unprocessed, 'unprocessed')
     parkOrClearSkipped(summary.skipped, result.seq ?? null)
     if (result.ok) return
@@ -157,6 +178,30 @@ export function createPendingOpTracker(
       (id) => ledger.get(id)?.state === 'inflight'
     )
     revert(unattributed, 'unattributed')
+  }
+
+  /** Shared by `onDocEffect` and a resolved `delivery_unknown` entry. */
+  function applyEffect(opIds: readonly string[]): void {
+    if (opIds.length === 0) return
+    const cleared = ledger.clearOnEffect(opIds)
+    for (const entry of cleared) {
+      attempts.delete(entry.opId)
+      awaitingSkipped.delete(entry.opId)
+    }
+    if (cleared.length > 0)
+      emit({ type: 'cleared', opIds: cleared.map((entry) => entry.opId) })
+  }
+
+  function reportHumanOpRejected(entry: PendingOpEntry<Op>): void {
+    const op = entry.shadow
+    reportError(new Error('Agent host rejected a human operation'), {
+      errorType: 'agent_crdt_human_op_rejected',
+      context: {
+        opKind: op.op,
+        nodeId: 'node_id' in op ? String(op.node_id) : undefined,
+        failure: entry.failure
+      }
+    })
   }
 
   return {
@@ -176,8 +221,15 @@ export function createPendingOpTracker(
         // A doc_update effect may already have retired part of the batch;
         // only what the ledger still tracks is genuinely delivery-unknown.
         const stillPending = batch.filter((opId) => ledger.get(opId))
-        if (stillPending.length > 0)
-          emit({ type: 'delivery_unknown', opIds: stillPending })
+        if (stillPending.length === 0) return
+        // A `clear` is never parked: its delivery stays unknown, but nothing
+        // here can verify it later (no per-node/link effect to check), so it
+        // is left exactly as #16309 left it — inflight, unresolved.
+        const parkable = outcome.ops
+          .filter((op) => op.op !== 'clear' && stillPending.includes(op.op_id))
+          .map((op) => op.op_id)
+        if (parkable.length > 0) ledger.markDeliveryUnknown(parkable)
+        emit({ type: 'delivery_unknown', opIds: stillPending })
         return
       }
       if (outcome.state !== 'acknowledged') {
@@ -187,14 +239,24 @@ export function createPendingOpTracker(
       reconcileAcknowledged(batch, outcome.result)
     },
     onDocEffect(opIds) {
-      if (opIds.length === 0) return
-      const cleared = ledger.clearOnEffect(opIds)
-      for (const entry of cleared) {
-        attempts.delete(entry.opId)
-        awaitingSkipped.delete(entry.opId)
+      applyEffect(opIds)
+    },
+    resolveDeliveryUnknown(effectPresent) {
+      const parked = ledger.entries('delivery_unknown')
+      if (parked.length === 0) return
+      const toClear: string[] = []
+      const toRevert: string[] = []
+      for (const entry of parked) {
+        const op = entry.shadow
+        // `set_widget` has no meaningful presence check (LWW), so a parked
+        // one always resolves present once a catch-up runs at all.
+        const present = op.op === 'set_widget' ? true : effectPresent(op)
+        if (present === null) continue
+        if (present) toClear.push(entry.opId)
+        else toRevert.push(entry.opId)
       }
-      if (cleared.length > 0)
-        emit({ type: 'cleared', opIds: cleared.map((entry) => entry.opId) })
+      applyEffect(toClear)
+      if (toRevert.length > 0) revert(toRevert, 'diverged')
     },
     onAuthoritativeState(seq) {
       if (awaitingSkipped.size === 0) return

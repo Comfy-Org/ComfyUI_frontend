@@ -1378,6 +1378,62 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('ADR-CRDT-RECONCILE-0035 (a): pending ops survive tab deactivation and reactivation of the same workflow', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    const isTargetActive = ref(true)
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+
+    // Tab switch away, then back to the SAME workflow: not a lineage break.
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+
+    const resetEvents = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(
+        ([event, detail]) =>
+          event === 'pending_ops' &&
+          (detail as { type?: string }).type === 'reset'
+      )
+    expect(resetEvents).toEqual([])
+
+    // Still tracked: the authoritative effect for this exact op id clears it
+    // normally, which could not happen had deactivation dropped it.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 2,
+      update: new Uint8Array(),
+      opIds: [opId]
+    })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
