@@ -258,7 +258,7 @@ import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
-vi.mock<unknown>(import('./crdt/mintPortWiring'), () => ({
+vi.mock(import('./crdt/mintPortWiring'), () => ({
   attachMintPortWiring: (deps: MintPortWiringDeps) => {
     mintPortWiringDeps.current = deps
     return fromPartial<MintPortWiring>({ detach: vi.fn() })
@@ -6344,25 +6344,49 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it("latches the bound workflow's root graph id once its tab becomes active", async () => {
-    appMock.isGraphReady = true
-    Object.assign(appMock.rootGraph, { id: 'graph-abc' })
+  it("reports the bound workflow's own stored root graph id once bound", async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('graph-abc')
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-42')
     )
   })
 
   it('leaves the bound root graph id null while no workflow is bound and active', () => {
-    appMock.isGraphReady = true
-    Object.assign(appMock.rootGraph, { id: 'graph-abc' })
-
     renderWithSelectedTarget()
 
     expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+  })
+
+  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+    makeTab('wf-a')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+    mockMessagesEndpoint('wf-a')
+
+    await renderAndSend('start on A')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-a')
+    )
+
+    // A stays bound but leaves the screen; a write-once latch would also
+    // still report wf-a here, so this alone would not catch a regression.
+    workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+    await nextTick()
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-a')
+
+    // The agent moves the session onto B's own tab.
+    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
+    )
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-b')
   })
 })

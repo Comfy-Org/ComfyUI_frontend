@@ -6,13 +6,18 @@
  * to the delivery primitive fails here, by name, instead of silently
  * emptying `delete_node.removed_links` or leaking clear captures.
  *
+ * Also covers the tab-switch root-scope race: `LGraph.add()` queues its
+ * layout `createNode` change on the store's own microtask, so it can still
+ * be pending when a workflow switch reuses the same `LGraph` instance for
+ * the next workflow (see the second describe block below).
+ *
  * Lives in renderer (not workbench) because it imports the real layout store;
  * workbench must not import renderer, so the wiring takes the store's seams
  * injected - exactly as the composition root will inject them.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -21,6 +26,7 @@ import type {
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
@@ -241,5 +247,80 @@ describe('mint ports against the real layout store delivery', () => {
 
     expect(consoleError).toHaveBeenCalledOnce()
     consoleError.mockRestore()
+  })
+})
+
+describe('attachMintPortWiring: root graph scope across a tab switch', () => {
+  let minted: GraphOperation[]
+  let wiring: MintPortWiring
+  let liveGraph: LGraph
+  let graphNodes: Map<string, LGraphNode>
+  let boundRootGraphId: string
+
+  beforeEach(() => {
+    minted = []
+    graphNodes = new Map()
+    liveGraph = new LGraph()
+    liveGraph.id = createUuidv4()
+    // The workflow bound before the switch below starts; `boundRootGraphId`
+    // (AgentPanelRoot.vue) reads it off the bound workflow's own serialized
+    // state, which does not change until the binding itself changes.
+    boundRootGraphId = liveGraph.id
+
+    const graphAdapter: MintableGraph = {
+      get id() {
+        return liveGraph.id
+      },
+      get rootGraph() {
+        return { id: liveGraph.rootGraph.id }
+      },
+      getNodeById: (id) => graphNodes.get(String(id)) ?? null,
+      get _nodes() {
+        return [...graphNodes.values()]
+      }
+    }
+
+    wiring = attachMintPortWiring({
+      isEnabled: () => true,
+      // The bound document never becomes unbound during this race: the
+      // follower flips `isBoundWorkflowActive` only once `activeWorkflow`
+      // itself changes, which happens strictly after this bracket closes.
+      isDocBound: () => true,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: (listener) => layoutStore.onChange(listener),
+      localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+      getGraph: () => graphAdapter,
+      boundRootGraphId: () => boundRootGraphId
+    })
+  })
+
+  afterEach(() => wiring.detach())
+
+  it("does not mint add_node for a newly configured workflow's nodes while the previous workflow is still the bound document", async () => {
+    // Switch-away: `beforeLoadNewGraph` -> `beforeLoadGraph` fires first.
+    wiring.onBeforeGraphLoad()
+
+    // `rootGraph.configure(B)` reuses the SAME LGraph instance but rewrites
+    // its `id` from B's stored workflow JSON (`_configureBase`), then adds
+    // B's nodes to it. Each `LGraph.add()` queues a layout `createNode`
+    // change for the NEW graph id on a microtask.
+    liveGraph.id = createUuidv4()
+    const nodeFromOtherWorkflow = new LGraphNode('TestNode')
+    nodeFromOtherWorkflow.id = toNodeId(101)
+    liveGraph.add(nodeFromOtherWorkflow)
+    graphNodes.set('101', nodeFromOtherWorkflow)
+
+    // `afterConfigureGraph` -> `endGraphTeardown()` runs synchronously right
+    // after `configure()`, with no `await` in between on the happy path.
+    wiring.onAfterGraphConfigure()
+
+    // The queued layout change flushes only now, once the synchronous
+    // portion of the switch has finished, and lands while `isDocBound()`
+    // still (wrongly) reports the previous workflow's document as bound.
+    await realDelivery()
+
+    expect(minted.filter((operation) => operation.op === 'add_node')).toEqual(
+      []
+    )
   })
 })
