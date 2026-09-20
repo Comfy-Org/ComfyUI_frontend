@@ -1,6 +1,25 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/workshopVisibility'
+
+function settleAnimations(root: Locator) {
+  return root.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished))
+  )
+}
+
+async function badgePlacement(row: Locator, label: string) {
+  const labelBox = await row.getByText(label, { exact: true }).boundingBox()
+  const badgeBox = await row.getByText('NEW', { exact: true }).boundingBox()
+  if (!labelBox || !badgeBox)
+    throw new Error(`"${label}" row is missing its label or NEW badge`)
+  return {
+    gap: badgeBox.x - (labelBox.x + labelBox.width),
+    centerOffset:
+      badgeBox.y + badgeBox.height / 2 - (labelBox.y + labelBox.height / 2)
+  }
+}
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
@@ -192,6 +211,28 @@ test.describe('Mobile menu @mobile', () => {
 
     await menu.getByRole('button', { name: /BACK/i }).click()
     await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
+  })
+
+  test('NEW badge sits beside the label the same way on top-level and drill-down rows', async ({
+    page
+  }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+    await settleAnimations(menu)
+    const products = menu.getByRole('button', { name: 'Products' })
+    const topLevel = await badgePlacement(products, 'Products')
+
+    await products.click()
+    const agent = menu.getByRole('link', { name: 'Comfy Agent' })
+    await expect(agent).toBeVisible()
+    await settleAnimations(menu)
+    const drillDown = await badgePlacement(agent, 'Comfy Agent')
+
+    expect(Math.abs(topLevel.gap - drillDown.gap)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(topLevel.centerOffset - drillDown.centerOffset)
+    ).toBeLessThanOrEqual(1)
   })
 })
 
