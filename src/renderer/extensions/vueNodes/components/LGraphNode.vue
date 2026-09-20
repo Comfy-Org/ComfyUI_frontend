@@ -159,7 +159,15 @@
             :widget-ids="renderedWidgetIds"
           />
 
-          <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
+          <div
+            v-if="hasCustomContent"
+            :class="
+              cn(
+                'flex min-h-0 flex-col',
+                nodeMedia?.type === 'image' ? 'shrink-0' : 'flex-1'
+              )
+            "
+          >
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
               v-for="preview in promotedPreviews"
@@ -319,6 +327,8 @@ import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 
+const EXECUTED_IMAGE_PREVIEW_HEIGHT = 232
+
 const { nodeData } = defineProps<{
   nodeData: NodeState
 }>()
@@ -399,12 +409,16 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
+const imagePreviewHeight = computed(() =>
+  nodeMedia.value?.type === 'image' ? EXECUTED_IMAGE_PREVIEW_HEIGHT : 0
+)
+
 const nodeSizeStyle = computed(() =>
   isCollapsed.value
     ? {}
     : {
         '--node-width': `${size.value.width}px`,
-        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT + imagePreviewHeight.value}px`
       }
 )
 
@@ -455,7 +469,8 @@ const { startResize } = useNodeResize((result) => {
     node,
     {
       width: Math.max(result.size.width, MIN_NODE_WIDTH),
-      height: removeNodeTitleHeight(result.size.height)
+      height:
+        removeNodeTitleHeight(result.size.height) - imagePreviewHeight.value
     },
     {
       position: result.position,

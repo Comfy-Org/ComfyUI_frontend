@@ -175,6 +175,7 @@ test.describe(
       'prompt text box is still visible after two generations',
       { tag: '@screenshot' },
       async ({ comfyPage, getWebSocket }) => {
+        await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
         const ws = await getWebSocket()
         const exec = new ExecutionHelper(comfyPage, ws)
         const { nodeId } = await readPromptWidget(comfyPage)
@@ -198,17 +199,6 @@ test.describe(
       comfyPage,
       getWebSocket
     }) => {
-      test.fail(
-        true,
-        'PM-1303/PM-1310 hypothesis D still reproduces after the follow-up fixes ' +
-          '(1ef64a4, f81f88f): removeTextPreview now unregisters the stale ' +
-          '$$node-text-preview widget from both node.widgets and widgetValueStore ' +
-          '(confirmed by the after-run-1 screenshot shrinking ~57px once the row ' +
-          'is gone), but the prompt textarea itself never reclaims that freed ' +
-          'height and stays collapsed at ~58px. The remaining bug is in how the ' +
-          'freed grid row is (not) redistributed back to the surviving expanding ' +
-          'widget, not in leftover widget-registration state.'
-      )
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
