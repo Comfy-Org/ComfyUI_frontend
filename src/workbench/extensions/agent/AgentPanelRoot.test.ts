@@ -279,7 +279,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 })
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -727,7 +727,7 @@ describe('AgentPanelRoot paywall actions', () => {
   it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -752,7 +752,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -793,7 +793,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -817,7 +817,7 @@ describe('AgentPanelRoot paywall actions', () => {
       paywallBilling.tier = tier
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
+        id: toTurnId('msg-paywall'),
         role: 'assistant',
         parts: [{ type: 'paywall' }],
         streaming: false,
@@ -837,7 +837,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -856,7 +856,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -876,7 +876,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -906,7 +906,7 @@ describe('AgentPanelRoot paywall actions', () => {
       if (state === 'unresolved-role') paywallWorkspace.role = undefined
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
+        id: toTurnId('msg-paywall'),
         role: 'assistant',
         parts: [{ type: 'paywall' }],
         streaming: false,

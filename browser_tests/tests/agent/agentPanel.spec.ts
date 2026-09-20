@@ -205,10 +205,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
     await panel.getByRole('button', { name: 'Send' }).click()
 
-    // The prompt survives the rejection in two places the user can act on: the
-    // sent message stays in the transcript, and the composer keeps the text so
-    // the same send can be retried once credits are added. A bare getByText is
-    // ambiguous here because the thread title button also carries the prompt.
     await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
     await expect(
       panel.getByRole('textbox', { name: /^Describe ideas/ })
