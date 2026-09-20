@@ -660,10 +660,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function reconcileLiveTurns(delaysMs: RecoverySchedule): void {
-    const turns = conversationStore
-      .liveTurns()
-      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn, delaysMs)
+    for (const turn of conversationStore.liveTurns()) {
+      void reconcileTurn(turn, delaysMs)
+    }
   }
 
   async function reconcileTurn(
@@ -671,6 +670,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     delaysMs: RecoverySchedule
   ): Promise<void> {
     const key = recoveryKey(turn)
+    if (recoveringTurns.has(key)) return
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
     try {
@@ -683,7 +683,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!recovery.signal.aborted)
         reportError(error, { errorType: 'agent_turn_recovery_failed' })
     } finally {
-      recoveringTurns.delete(key)
+      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }
   }
 

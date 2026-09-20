@@ -1718,6 +1718,52 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g23) a remount that rehydrates the stashed streaming turn runs one recovery that stop() aborts', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<AgentRestClient['getMessages']>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
+        .mockImplementation(hangingGetMessages)
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      const successorEvents = fakeEvents()
+      const successor = useAgentSession({
+        rest,
+        events: successorEvents.source
+      })
+      session.stop()
+      successor.start()
+      successorEvents.status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1000)
+
+      const recoverySignals = () =>
+        getMessages.mock.calls
+          .slice(1)
+          .map(([, options]) => options?.signal?.aborted)
+      expect(recoverySignals()).toEqual([false])
+
+      successor.stop()
+      expect(recoverySignals()).toEqual([true])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
