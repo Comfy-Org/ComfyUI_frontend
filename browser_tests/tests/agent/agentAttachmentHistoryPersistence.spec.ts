@@ -32,7 +32,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'keeps a user message asset preview after a browser refresh',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory, workflowSelection }, testInfo) => {
     const droppedFilename = 'ComfyUI_00002_.png'
 
     await page.route(
@@ -139,6 +139,8 @@ test(
 
     const image = panel.getByTestId('reply-image-preview')
     await expect(image).toBeVisible()
+    await expect(image).toHaveJSProperty('naturalWidth', 64)
+    await panel.screenshot({ path: testInfo.outputPath('before-reload.png') })
 
     // Settle the (WS-less) turn so the reload below is not racing a
     // permanently-streaming assistant message.
@@ -155,6 +157,12 @@ test(
 
     await expect(reopenedPanel.getByTestId('reply-image-preview')).toBeVisible({
       timeout: 10_000
+    })
+    await expect(
+      reopenedPanel.getByTestId('reply-image-preview')
+    ).toHaveJSProperty('naturalWidth', 64)
+    await reopenedPanel.screenshot({
+      path: testInfo.outputPath('after-reload.png')
     })
   }
 )

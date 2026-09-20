@@ -164,6 +164,45 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.userAttachments.has(toTurnId('turn-a'))).toBe(false)
   })
 
+  it.for([
+    {
+      content: { attachments: [null, 17, 'first.png', 'second.mp4'] },
+      expected: [
+        { name: 'first.png', ref: 'first.png' },
+        { name: 'second.mp4', ref: 'second.mp4' }
+      ]
+    },
+    {
+      content: {
+        attachments: null,
+        attachment_refs: [
+          null,
+          false,
+          {},
+          { name: 17 },
+          { name: 'fallback.jpg' }
+        ]
+      },
+      expected: [{ name: 'fallback.jpg', ref: 'fallback.jpg' }]
+    },
+    {
+      content: { attachment_refs: { name: 'not-an-array.png' } },
+      expected: undefined
+    }
+  ])(
+    'ignores malformed attachment metadata: $content',
+    ({ content, expected }) => {
+      const message = row(1, 'user', 'turn-a', '', 'row-1')
+      message.content = content
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual(
+        expected
+      )
+    }
+  )
+
   it('restores available and unavailable references without changing the latest workflow target', () => {
     const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
     first.workflow_id = 'wf-target-a'
