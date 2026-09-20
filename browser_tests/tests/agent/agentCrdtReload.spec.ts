@@ -98,35 +98,41 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       await page.evaluate(() => localStorage.getItem('Comfy.Agent.ThreadId'))
     ).toBeNull()
 
-    const reloadedWs =
-      await test.step('Reload and restore the workflow subscription', async () => {
-        // Arm the waiter BEFORE the reload. The replacement socket is routed
-        // and starts recording as soon as the reloaded page connects, so a
-        // waiter registered afterwards can miss it and leave the assertion
-        // below polling a socket that never receives the resubscribe.
-        const pendingWs = nextWebSocket()
-        await page.reload()
-        await waitForCloudApp(page)
-        await expect(page.locator('#agent-panel-root')).toBeVisible()
-        const reloadedWs = await pendingWs
-        reloadedWs.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-        await expect
-          .poll(() =>
-            countDocFrames(
-              webSocketMessages,
-              reloadedWs,
-              'doc_subscribe',
-              workflowId
-            )
-          )
-          .toBe(1)
-        return reloadedWs
-      })
+    // Count across every socket EXCEPT the pre-reload one. The claim under test
+    // is "the reloaded app resubscribed", not "one particular WebSocketRoute
+    // saw it", and a reload can route more than one replacement socket. Binding
+    // the assertion to a single captured route turns a product failure and a
+    // test-plumbing failure into the same red, which is what made the earlier
+    // run ambiguous.
+    const countAfterReload = (
+      type: 'doc_subscribe' | 'doc_unsubscribe'
+    ): number => {
+      let total = 0
+      for (const socket of webSocketMessages.keys()) {
+        if (socket === ws) continue
+        total += countDocFrames(webSocketMessages, socket, type, workflowId)
+      }
+      return total
+    }
+
+    await test.step('Reload and restore the workflow subscription', async () => {
+      // Arm the waiter BEFORE the reload. The replacement socket is routed
+      // and starts recording as soon as the reloaded page connects, so a
+      // waiter registered afterwards can miss it and leave the assertion
+      // below polling a socket that never receives the resubscribe.
+      const pendingWs = nextWebSocket()
+      await page.reload()
+      await waitForCloudApp(page)
+      await expect(page.locator('#agent-panel-root')).toBeVisible()
+      const reloadedWs = await pendingWs
+      reloadedWs.send(
+        JSON.stringify({
+          type: 'status',
+          data: { status: { exec_info: { queue_remaining: 0 } } }
+        })
+      )
+      await expect.poll(() => countAfterReload('doc_subscribe')).toBe(1)
+    })
 
     const recordAfterReload = await page.evaluate(() =>
       JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!)
@@ -136,27 +142,11 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
 
     await test.step('Opening a blank workflow suspends the restored follower', async () => {
-      expect(
-        countDocFrames(
-          webSocketMessages,
-          reloadedWs,
-          'doc_unsubscribe',
-          workflowId
-        )
-      ).toBe(0)
+      expect(countAfterReload('doc_unsubscribe')).toBe(0)
       await page.evaluate(() =>
         window.app!.extensionManager.command.execute('Comfy.NewBlankWorkflow')
       )
-      await expect
-        .poll(() =>
-          countDocFrames(
-            webSocketMessages,
-            reloadedWs,
-            'doc_unsubscribe',
-            workflowId
-          )
-        )
-        .toBe(1)
+      await expect.poll(() => countAfterReload('doc_unsubscribe')).toBe(1)
     })
   })
 })
