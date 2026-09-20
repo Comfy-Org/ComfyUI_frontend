@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -11,8 +11,9 @@ import { unflattenOutputAssets } from '@/platform/assets/composables/media/asset
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
+const { downloadAssets, featureFlags } = vi.hoisted(() => ({
+  downloadAssets: vi.fn(),
+  featureFlags: { assetsEnabled: false }
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
@@ -23,19 +24,8 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'))
-
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
-  })
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({ flags: featureFlags })
 }))
 
 const asset: AssetItem = fromPartial({
