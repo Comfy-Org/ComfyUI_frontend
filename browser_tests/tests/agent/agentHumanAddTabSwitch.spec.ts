@@ -97,15 +97,15 @@ test.describe(
           await agentConversation.installTabSwitchObserver()
         })
 
-        let nodeId = ''
-
-        await test.step('add the node and wait for the host to judge it', async () => {
-          nodeId = await add(agentConversation)
-          const node = agentConversation.vueNodes.getNodeLocator(nodeId)
-          await expect(node).toBeVisible()
-          const outcomes = await agentConversation.waitForHumanOps(1)
-          expectApplied(outcomes, 1)
-        })
+        const nodeId =
+          await test.step('add the node and wait for the host to judge it', async () => {
+            const addedNodeId = await add(agentConversation)
+            const node = agentConversation.vueNodes.getNodeLocator(addedNodeId)
+            await expect(node).toBeVisible()
+            const outcomes = await agentConversation.waitForHumanOps(1)
+            expectApplied(outcomes, 1)
+            return addedNodeId
+          })
 
         const before = await test.step('capture before-switch evidence', () =>
           agentConversation.attachEvidence(testInfo, 'before-switch'))
@@ -146,27 +146,27 @@ test.describe(
         await agentConversation.installTabSwitchObserver()
       })
 
-      let noteId = ''
-      let samplerId = ''
-      let encoderId = ''
-
-      const outcomes =
+      const { noteId, samplerId, encoderId, outcomes } =
         await test.step('add the frontend-only node, then two catalogued nodes', async () => {
-          noteId = await agentConversation.addNodeOfType('Note', ADD_POSITION)
+          const noteId = await agentConversation.addNodeOfType(
+            'Note',
+            ADD_POSITION
+          )
           const note = agentConversation.vueNodes.getNodeLocator(noteId)
           await expect(note).toBeVisible()
           await agentConversation.waitForHumanOps(1)
 
-          samplerId = await agentConversation.addNodeOfType(
+          const samplerId = await agentConversation.addNodeOfType(
             'KSampler',
             ADD_POSITION
           )
           await agentConversation.waitForHumanOps(2)
-          encoderId = await agentConversation.addNodeOfType(
+          const encoderId = await agentConversation.addNodeOfType(
             'CLIPTextEncode',
             ADD_POSITION
           )
-          return agentConversation.waitForHumanOps(3)
+          const outcomes = await agentConversation.waitForHumanOps(3)
+          return { noteId, samplerId, encoderId, outcomes }
         })
 
       await test.step('reconciliation runs on the next frame; check the node survived it', async () => {
