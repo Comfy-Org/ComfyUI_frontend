@@ -284,11 +284,64 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(lightbox.getByLabel('Previous')).toBeVisible()
       await expect(lightbox.getByLabel('Next')).toBeVisible()
 
-      // The second click lands on the freshly revealed action bar, which must
-      // not fire, and the gesture must not disturb the node underneath.
       expect(downloads).toEqual([])
       await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
       expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
+
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(lightbox).toBeHidden()
+    }
+  )
+
+  wstest(
+    'opens the lightbox when the top-right grid image is double-clicked',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const downloads: string[] = []
+      comfyPage.page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
+      )
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const gridImages = node.imageGrid.locator('img')
+
+      // Cell 2 is top-right, where the gallery panel reveals its action bar
+      // under the stationary cursor between the two clicks.
+      await test.step('Inject a multi-image grid', async () => {
+        const images = [
+          { filename: 'decoy-a.png', subfolder: '', type: 'input' },
+          { filename: 'example.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-c.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-d.png', subfolder: '', type: 'input' }
+        ]
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(4)
+      })
+
+      await node.imageGrid
+        .getByRole('button', { name: 'View image 2 of 4' })
+        .dblclick()
+
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+      await expect(lightbox).toBeVisible()
+
+      const lightboxImage = lightbox.locator('img').first()
+      await expect(lightboxImage).toHaveAttribute(
+        'src',
+        /[?&]filename=example\.png/
+      )
+
+      expect(downloads).toEqual([])
+      await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(lightbox).toBeHidden()

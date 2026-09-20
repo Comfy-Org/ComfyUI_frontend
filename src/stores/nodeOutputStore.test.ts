@@ -151,7 +151,8 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(store.nodeOutputs[String(node.id)]).toEqual(output)
     expect(app.nodeOutputs[String(node.id)]).toEqual(output)
 
-    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    const [{ url } = { url: '' }] =
+      store.getNodeImagesByExecutionId(executionId, node) ?? []
     const previewUrl = new URL(url, window.location.origin)
     expect(previewUrl.pathname).toBe('/api/view')
     expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')

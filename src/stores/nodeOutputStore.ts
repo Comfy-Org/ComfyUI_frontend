@@ -172,13 +172,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return nodePreviewImages.value[locatorId]
   }
 
-  function getNodeImageUrlsByExecutionId(
-    executionId: NodeExecutionId,
-    node: LGraphNode
-  ): string[] | undefined {
-    return getNodeImagesByExecutionId(executionId, node)?.map(({ url }) => url)
-  }
-
   function getNodeImagesByExecutionId(
     executionId: NodeExecutionId,
     node: LGraphNode
@@ -538,7 +531,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeImages,
     getNodeImagesByExecutionId,
     getNodeImageUrls,
-    getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,
     getNodePreviews,
