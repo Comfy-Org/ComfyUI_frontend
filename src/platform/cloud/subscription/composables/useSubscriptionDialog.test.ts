@@ -3,7 +3,13 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -20,21 +26,13 @@ import { useSubscriptionDialog } from './useSubscriptionDialog'
 const mockCloseDialog = vi.fn()
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
-const mockTrackSubscription = vi.hoisted(() => vi.fn())
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
-const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
-const mockShouldUseUnifiedPricing = vi.hoisted(() => ({
-  value: null as boolean | null
-}))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
-const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
-const mockEmbeddedCheckoutEnabled = vi.hoisted(() => ({ value: false }))
-
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockFetchPlans = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
@@ -58,32 +56,10 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    get shouldUseWorkspaceBilling() {
-      return mockShouldUseWorkspaceBilling
-    },
-    get shouldUseUnifiedPricing() {
-      return {
-        value:
-          mockShouldUseUnifiedPricing.value ??
-          mockShouldUseWorkspaceBilling.value
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get embeddedCheckoutEnabled() {
-        return mockEmbeddedCheckoutEnabled.value
-      }
-    }
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -105,22 +81,9 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return { canManageSubscription: mockCanManageSubscription.value }
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
@@ -149,13 +112,9 @@ describe('useSubscriptionDialog', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsFreeTier.value = false
     mockTier.value = 'FREE'
-    mockShouldUseWorkspaceBilling.value = false
-    mockShouldUseUnifiedPricing.value = null
     mockIsLegacyTeamPlan.value = false
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
-    mockCanManageSubscription.value = true
-    mockEmbeddedCheckoutEnabled.value = false
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
@@ -188,7 +147,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('does not wire onChooseTeam on the unified table (personal subscribes directly)', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -200,7 +161,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -211,7 +174,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -222,7 +187,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('opens the team tab when planMode is forced from a personal workspace', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       mockCurrentPlanSlug.value = 'creator-monthly'
       const { showPricingTable } = useSubscriptionDialog()
@@ -234,7 +201,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('passes a deep-linked checkout selection to the unified dialog', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       const { showPricingTable } = useSubscriptionDialog()
       const initialCheckout = {
         planMode: 'personal',
@@ -249,7 +218,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('routes a personal deep link through the legacy Team downgrade flow', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockIsLegacyTeamPlan.value = true
       const { showPricingTable } = useSubscriptionDialog()
@@ -266,7 +237,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('keeps a Team stop deep link table-only for a legacy Team plan', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockIsLegacyTeamPlan.value = true
       const { showPricingTable } = useSubscriptionDialog()
@@ -290,7 +263,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('defaults to the team tab for a Team plan in a personal workspace', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       mockIsTeamPlan.value = true
       mockCurrentPlanSlug.value = 'team_per_credit_monthly'
@@ -303,7 +278,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('defaults to the personal tab for a personal plan in a team workspace', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockCurrentPlanSlug.value = 'creator-monthly'
       const { showPricingTable } = useSubscriptionDialog()
@@ -315,7 +292,6 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('keeps personal checkout deep links table-only on the legacy billing flow', () => {
-      mockShouldUseWorkspaceBilling.value = false
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -333,15 +309,14 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
       expectRekaPricingDialogProps(dialogComponentProps)
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
       )
     })
 
     it('uses the unified table when pricing is unified but billing remains legacy', () => {
-      mockShouldUseWorkspaceBilling.value = false
-      mockShouldUseUnifiedPricing.value = true
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
 
@@ -354,8 +329,10 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('enables embedded checkout only for the exact server flag', () => {
-      mockShouldUseWorkspaceBilling.value = true
-      mockEmbeddedCheckoutEnabled.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
+      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()
@@ -366,7 +343,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockIsLegacyTeamPlan.value = true
       const { showPricingTable } = useSubscriptionDialog()
@@ -384,7 +363,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('sizes the legacy workspace pricing dialog via Reka contentClass', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockIsLegacyTeamPlan.value = true
       const { showPricingTable } = useSubscriptionDialog()
@@ -399,7 +380,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('defaults an unsubscribed team workspace to the team tab', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
       mockIsLegacyTeamPlan.value = false
       const { showPricingTable } = useSubscriptionDialog()
@@ -411,9 +394,11 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('shows the read-only member dialog in a personal workspace', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-      mockCanManageSubscription.value = false
+      useWorkspaceUI().permissions.value.canManageSubscription = false
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'subscribe_to_run' })
@@ -431,40 +416,49 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'upgrade_to_add_credits' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledWith('modal_opened', {
-        current_tier: 'standard',
-        reason: 'upgrade_to_add_credits'
-      })
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        {
+          current_tier: 'standard',
+          reason: 'upgrade_to_add_credits'
+        }
+      )
     })
 
     it('tracks modal_opened on the workspace (unified) path too', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'subscribe_to_run' })
       )
     })
 
     it('does not track modal_opened for the inactive member dialog', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      mockCanManageSubscription.value = false
+      useWorkspaceUI().permissions.value.canManageSubscription = false
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      mockCanManageSubscription.value = false
+      useWorkspaceUI().permissions.value.canManageSubscription = false
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ reason: 'out_of_credits' })
@@ -482,7 +476,7 @@ describe('useSubscriptionDialog', () => {
 
       showPricingTable({ reason: 'subscribe_to_run' })
 
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
   })
 
@@ -500,10 +494,12 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('checks workspace member permission before the personal free-tier path', () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockIsFreeTier.value = true
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-      mockCanManageSubscription.value = false
+      useWorkspaceUI().permissions.value.canManageSubscription = false
       const { show } = useSubscriptionDialog()
 
       show()
@@ -511,7 +507,7 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
       )
-      expect(mockTrackSubscription).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
     it('falls back to the pricing table for a non-free-tier user', () => {
@@ -544,8 +540,8 @@ describe('useSubscriptionDialog', () => {
 
       show({ reason: 'out_of_credits' })
 
-      expect(mockTrackSubscription).toHaveBeenCalledTimes(1)
-      expect(mockTrackSubscription).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'out_of_credits' })
       )
@@ -613,7 +609,9 @@ describe('useSubscriptionDialog', () => {
     it('shows pricing table and clears intent when in team workspace', () => {
       sessionStorage.setItem('comfy:resume-team-pricing', '1')
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockCurrentPlanSlug.value = 'creator-monthly'
 
       const { resumePendingPricingFlow } = useSubscriptionDialog()
@@ -652,7 +650,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('reconciles a failed redirect and reopens the attempted checkout', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
       savePendingSubscriptionCheckout({
         operationId: 'op-alipay',
@@ -696,7 +696,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('completes a succeeded redirect silently', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       savePendingSubscriptionCheckout({
         operationId: 'op-succeeded',
         workspaceId: 'workspace-1',
@@ -720,7 +722,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('does not reopen checkout when reconciliation times out', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'timeout' })
       savePendingSubscriptionCheckout({
         operationId: 'op-timeout',
@@ -744,7 +748,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('keeps the pointer for an unfinished operation across repeated resumes', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValue({ status: 'timeout' })
       savePendingSubscriptionCheckout({
         operationId: 'op-parked',
@@ -815,7 +821,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('restores a Team plan change from fresh catalog and subscription state', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
       mockFetchPlans.mockImplementationOnce(async () => {
         mockTeamCreditStops.value = {
@@ -880,7 +888,9 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('falls back to Team pricing when the stop catalog is unavailable', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
       savePendingSubscriptionCheckout({
         operationId: 'op-team-catalog-failure',

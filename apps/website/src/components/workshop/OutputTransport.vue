@@ -53,7 +53,7 @@ const buttonClass =
       step="0.01"
       :disabled="!seconds"
       :aria-label="t('player.seek', locale)"
-      class="accent-primary-comfy-yellow min-w-0 flex-1"
+      class="min-w-0 flex-1 accent-primary-comfy-yellow"
     />
     <span
       class="shrink-0 text-sm text-primary-warm-white tabular-nums sm:text-xs"

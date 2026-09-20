@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
+      'astro:env/client': fileURLToPath(
+        new URL('./src/test/astroEnv.ts', import.meta.url)
+      ),
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
@@ -15,7 +18,16 @@ export default defineConfig({
     unstubEnvs: true,
     unstubGlobals: true,
     fakeTimers: { shouldAdvanceTime: true },
-    environment: 'node',
+    environment: 'happy-dom',
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
     include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],

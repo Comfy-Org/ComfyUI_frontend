@@ -1,15 +1,19 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -18,14 +22,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     fetchApi
   }
 }))
-
-// Mock the download sink the way ReplyAudioCard.test.ts in this folder does.
-// The real one appends an <a href="blob:..."> and clicks it, which this DOM
-// treats as a navigation: window.location.origin becomes "null", so the next
-// `new URL(path, origin)` throws Invalid URL. That is why the second of two
-// downloads failed while the first succeeded.
-const downloadBlob = vi.hoisted(() => vi.fn())
-vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
@@ -64,7 +60,6 @@ describe('MessageFeedback', () => {
     )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
-    downloadBlob.mockClear()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -144,15 +139,16 @@ describe('MessageFeedback', () => {
     ).not.toBeInTheDocument()
   })
 
+  // The reply assets the backend serves live on the API's own view route, and
+  // only those reach the authenticated client. Anything else is fetched
+  // credentialless by `resolveReplyAssetDownload`, so driving these download
+  // tests with foreign URLs would be asserting a credential leak.
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      blob: () => Promise.resolve(new Blob(['x']))
-    })
-    // Reply assets the backend serves live on the API's own view route.
-    // Only those go through the authenticated client; downloadReplyAsset
-    // sends anything else through a plain fetch, so asserting foreign URLs
-    // here would be asserting a credential leak.
+    fetchApi.mockImplementation(async () => new Response(new Blob(['x'])))
+    const createObjectURL = vi.fn(() => 'blob:mock')
+    const revokeObjectURL = vi.fn()
+    URL.createObjectURL = createObjectURL
+    URL.revokeObjectURL = revokeObjectURL
     const origin = window.location.origin
     const { user } = renderFeedback([
       {
@@ -167,30 +163,58 @@ describe('MessageFeedback', () => {
       }
     ])
 
-    const download = screen.getByRole('button', { name: 'Download assets' })
-    await user.click(download)
+    await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
-    // The button is disabled for the whole sequential loop and re-enabled in
-    // its `finally`, so waiting on that is the end-of-run signal. Polling the
-    // call count instead races the second download and reports 1 of 2 on a
-    // slow runner.
-    await waitFor(() => expect(download).toBeEnabled())
-
-    // Belt and braces: if the disabled state is ever dropped, the wait above
-    // becomes a no-op, so the count keeps its own bounded retry rather than
-    // silently going back to racing the second download. Kept well inside the
-    // test budget below — a retry as long as the budget just turns a slow run
-    // into a timeout instead of a wait.
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2), {
-      timeout: 2000
-    })
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
     expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
-    expect(downloadBlob).toHaveBeenCalledWith('a.png', expect.any(Blob))
-    expect(downloadBlob).toHaveBeenCalledWith('mesh.glb', expect.any(Blob))
-    // Two sequential downloads through the component, under coverage
-    // instrumentation on a shared runner, do not reliably fit the 5s default.
-  }, 20_000)
+    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
+  })
+
+  it('reports failed files without blocking successful downloads or retry', async () => {
+    fetchApi
+      .mockResolvedValueOnce(new Response(new Blob(['x'])))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockImplementation(async () => new Response(new Blob(['retry'])))
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock')
+    const revokeObjectURL = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
+    const origin = window.location.origin
+    const { user } = renderFeedback([
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=b.png`,
+        filename: 'b.png',
+        kind: 'image'
+      }
+    ])
+    const download = screen.getByRole('button', { name: 'Download assets' })
+
+    await user.click(download)
+
+    await waitFor(() =>
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: '1 download failed'
+        })
+      )
+    )
+    await waitFor(() => expect(download).toBeEnabled())
+
+    await user.click(download)
+
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
+    expect(revokeObjectURL).toHaveBeenCalledTimes(3)
+  })
 
   it('Escape closes the markdown menu without copying', async () => {
     const { user } = renderFeedback()

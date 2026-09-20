@@ -1,16 +1,6 @@
-// @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
@@ -46,7 +36,10 @@ function paywallMessage(): AssistantMessage {
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       global: { plugins: [i18n] }
     })
 
@@ -68,7 +61,10 @@ describe('AgentMessage paywall reply', () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       attrs: { onPaywallAction },
       global: { plugins: [i18n] }
     })
@@ -467,6 +463,55 @@ describe('AgentMessage fallback content', () => {
     ).toHaveLength(2)
     expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
     expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('renders a retry-after hint on an error notice that carries retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Billing status is temporarily unavailable; please retry.',
+          retryAfterSeconds: 30
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Billing status is temporarily unavailable; please retry.'
+    )
+    expect(alert).toHaveTextContent('You can try again in 30s.')
+  })
+
+  it('omits the retry-after hint when the notice has no retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workspace is blocked. Contact support to restore access.'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText(/try again in/i)).not.toBeInTheDocument()
   })
 
   it('hides completed thinking when the response did not use tools', () => {

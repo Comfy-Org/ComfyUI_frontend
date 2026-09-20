@@ -15,7 +15,6 @@
   "agent": {
     "addFromAssets": "Arrastra un recurso desde el panel de recursos",
     "addNodesFromGraph": "Menciona nodos del grafo",
-    "addPromptToSend": "Añadir un prompt para enviar",
     "addToPrompt": "Añadir al prompt",
     "alpha": "ALFA",
     "askComfyAgent": "Preguntar a Comfy Agent",
@@ -30,6 +29,15 @@
     "chooseWorkflow": "Elige un flujo de trabajo",
     "chooseWorkflowForChat": "Elige un flujo de trabajo para este chat",
     "close": "Cerrar",
+    "coachBody": "Describe tus ideas y pídele que cree y ejecute flujos de trabajo. Puede ver tu lienzo y tus archivos.",
+    "coachGraphBody": "Puedes seguir editando el grafo o cambiar de pestaña mientras el agente trabaja.",
+    "coachGraphTitle": "Deja que el agente se ejecute mientras editas",
+    "coachHistoryBody": "Los chats anteriores se guardan aquí. Abre uno para revisarlo o seguir trabajando con el agente.",
+    "coachHistoryTitle": "Retoma donde lo dejaste",
+    "coachProgress": "{current} de {total}",
+    "coachTitle": "Conoce a tu agente de Comfy",
+    "coachWorkflowBody": "El agente solo edita el flujo de trabajo que elijas. También puedes cargar archivos de referencia o mencionar otros flujos de trabajo.",
+    "coachWorkflowTitle": "Selecciona un flujo de trabajo para que lo edite tu agente",
     "consent": {
       "accept": "Empezar a usar Comfy Agent",
       "body1": "Comfy Agent te ayuda a planificar, crear, ejecutar e iterar flujos de trabajo. Describe lo que quieres crear y Comfy Agent trabajará como tu potente compañero de equipo.",
@@ -49,6 +57,13 @@
     "credits": "créditos",
     "currentTab": "Pestaña actual",
     "delete": "Eliminar",
+    "diagnosticReport": {
+      "clipboardFailed": "No se pudo acceder al portapapeles. Selecciona y copia el informe a continuación o vuelve a intentarlo.",
+      "collectionFailed": "No se pudo recopilar el informe. Vuelve a intentarlo o desactiva las fuentes opcionales y vuelve a intentarlo.",
+      "includedSources": "Incluir en el informe (activado de forma predeterminada)",
+      "manualCopy": "Informe para copiar",
+      "retry": "Reintentar copiar el informe"
+    },
     "dismiss": "Descartar",
     "downloadAssets": "Descargar recursos",
     "dragAndDropAssets": "Arrastra y suelta recursos aquí",
@@ -144,6 +159,7 @@
     "showMore": "Mostrar más",
     "skip": "Omitir",
     "stop": "Detener",
+    "stopShortcut": "Esc",
     "suggestedPrompts": [
       "Genera un pato amarillo con una máscara de hockey",
       "Enumera mis flujos de trabajo guardados",
@@ -403,9 +419,9 @@
       "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Ya existe una cuenta con esta dirección de correo electrónico, pero utiliza un método de inicio de sesión diferente. Inicia sesión como lo hiciste originalmente.",
+      "auth/account-exists-with-different-credential": "No pudimos iniciar tu sesión con este método. Prueba otra opción de inicio de sesión o restablece tu contraseña para continuar.",
       "auth/cancelled-popup-request": "Ya había otra ventana de inicio de sesión abierta, por lo que esta se canceló. Inténtalo de nuevo.",
-      "auth/email-already-in-use": "Ya existe una cuenta con este correo electrónico. Intenta iniciar sesión en su lugar.",
+      "auth/email-already-in-use": "No pudimos crear una cuenta con este correo electrónico. Intenta iniciar sesión o restablecer tu contraseña.",
       "auth/invalid-credential": "Credenciales de inicio de sesión inválidas. Por favor, verifica tu correo electrónico y contraseña.",
       "auth/invalid-email": "Por favor, ingresa una dirección de correo electrónico válida.",
       "auth/network-request-failed": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
@@ -414,9 +430,7 @@
       "auth/popup-closed-by-user": "La ventana de inicio de sesión se cerró antes de finalizar el inicio de sesión. Inténtalo de nuevo.",
       "auth/too-many-requests": "Demasiados intentos de inicio de sesión. Por favor, espera un momento e inténtalo de nuevo.",
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
-      "auth/user-not-found": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "Credenciales de inicio de sesión no válidas. Comprueba tu correo electrónico y contraseña.",
       "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.",
       "signupBlocked": "No pudimos crear tu cuenta en este momento. Por favor, inténtalo de nuevo más tarde. Si el problema persiste, escribe a support@comfy.org."
     },
@@ -3163,6 +3177,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
+    "Pruna": "Pruna",
     "Quiver": "Quiver",
     "Qwen": "Qwen",
     "Recraft": "Recraft",
@@ -3231,6 +3246,7 @@
     "latent": "latent",
     "loaders": "cargadores",
     "logic": "lógica",
+    "looping": "bucle",
     "lotus": "lotus",
     "ltxv": "ltxv",
     "lumina": "lumina",
@@ -3263,6 +3279,7 @@
     "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
+    "sd": "sd",
     "sensenova": "sensenova",
     "shader": "shader",
     "sigmas": "sigmas",
@@ -4500,6 +4517,7 @@
       "applyQuoteBeforeContinuing": "Aplica el código promocional para actualizar tu cotización antes de continuar.",
       "backToAllPlans": "Volver a todos los planes",
       "billedEachMonth": "{amount} facturado cada mes. Cancela en cualquier momento.",
+      "billingAddress": "Dirección de facturación",
       "changePaymentMethod": "Cambiar",
       "commitment": "compromiso",
       "completePayment": "Complete su pago",
@@ -5143,6 +5161,13 @@
     },
     "invite": "Invitar",
     "inviteLimitReached": "Has alcanzado el máximo de {count} miembros",
+    "inviteLinks": {
+      "copied": "¡Copiado!",
+      "copyAll": "Copiar enlace de invitación | Copiar todos los enlaces ({count})",
+      "copyLink": "Copiar enlace de invitación",
+      "sentLead": "Cada invitación tiene un enlace personal que puedes compartir directamente:",
+      "sentTitle": "{count} invitación enviada | {count} invitaciones enviadas"
+    },
     "inviteMember": "Invitar miembro",
     "inviteMemberDialog": {
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
@@ -5170,6 +5195,7 @@
       "actions": {
         "cancelInvite": "Cancelar invitación",
         "changeRole": "Cambiar rol",
+        "copyInviteLink": "Copiar enlace de invitación",
         "removeMember": "Eliminar miembro",
         "resendInvite": "Reenviar invitación",
         "setCreditLimit": "Establecer límite de crédito"

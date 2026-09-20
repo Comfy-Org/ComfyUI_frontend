@@ -33,6 +33,14 @@ pnpm comfy-test agent-replay
   case id is the JSON file name without `.json`); `--video` records it under
   `test-results/`; `--url <origin>` points at a dev server other than
   `http://localhost:5173`; `--help` prints usage and runs nothing.
+- Another spec: `pnpm comfy-test agent-replay --spec <path> --case <case id>`
+  replays the same recordings through a spec that asserts something else
+  about them, so a new agent spec does not need a hand-written Playwright
+  invocation. `--case` reaches it when the spec titles its cases
+  `recorded <case id>`, as
+  `browser_tests/tests/agent/agentConversationReplay.spec.ts` does; without
+  that title the whole spec runs. A `--spec` path that is not on disk is
+  refused rather than passed to Playwright, which would match nothing.
 - Set `TEST_COMFYUI_DIR` to the ComfyUI install behind 8188 (or put it in
   `.env`) so the suite backs up and restores its user data.
 - The command is a thin front for the raw invocation, which still works when
