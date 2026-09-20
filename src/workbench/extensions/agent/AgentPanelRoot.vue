@@ -55,16 +55,18 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
   scopedOnboardingKey
 } from './composables/agent/useOnboarding'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -99,13 +101,15 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  resolveAgentPaywallPresentation
+} from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
@@ -125,25 +129,20 @@ const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const { tier: subscriptionTier } = useBillingContext()
-const {
-  canTopUp,
-  canSubscribeSelfServe,
-  isReady: billingCapabilitiesReady
-} = useBillingCapabilities()
-const paywallPresentation = computed(() =>
-  resolveAgentPaywallPresentation({
+const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
+  useBillingCapabilities()
+const paywallPresentation = computed(() => {
+  if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
+    return DEFAULT_AGENT_PAYWALL_PRESENTATION
+  }
+  return resolveAgentPaywallPresentation({
+    distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
     tier: subscriptionTier.value,
-    // The initial false/false pair is not an authoritative sales-managed
-    // result while the shared capability source initializes in the background.
-    canTopUp: billingCapabilitiesReady.value
-      ? canTopUp.value
-      : workspaceRole.value === 'owner',
-    canSubscribeSelfServe: billingCapabilitiesReady.value
-      ? canSubscribeSelfServe.value
-      : workspaceRole.value === 'owner'
+    canTopUp: canTopUp.value,
+    canSubscribeSelfServe: canSubscribeSelfServe.value
   })
-)
+})
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
