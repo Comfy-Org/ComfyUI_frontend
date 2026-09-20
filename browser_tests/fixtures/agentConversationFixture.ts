@@ -658,6 +658,10 @@ class AgentConversationHarness {
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
+
+  async disconnectFollowerAbnormally(): Promise<void> {
+    await this.hostSocket.disconnectAbnormally()
+  }
 }
 
 export type ReplayTiming = 'immediate' | 'recorded'

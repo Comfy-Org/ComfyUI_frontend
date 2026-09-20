@@ -112,6 +112,26 @@ describe('ComfyApi realtime socket reset', () => {
     expect(FakeWebSocket.instances).toHaveLength(2)
   })
 
+  it('emits bounded close details when the initial handshake fails', async () => {
+    const onClosed = vi.fn()
+    api.addEventListener('socketClosed', onClosed)
+    await api.resetSocket()
+
+    FakeWebSocket.instances[0].handlers['close']?.({
+      code: 1006,
+      reason: 'handshake failed',
+      wasClean: false
+    })
+
+    expect(onClosed).toHaveBeenCalledOnce()
+    expect(onClosed.mock.calls[0][0].detail).toEqual({
+      code: 1006,
+      reason: 'handshake failed',
+      wasClean: false
+    })
+    api.removeEventListener('socketClosed', onClosed)
+  })
+
   it('supersedes an in-flight reset so the socket cannot settle on a stale identity', async () => {
     await api.resetSocket()
     expect(FakeWebSocket.instances).toHaveLength(1)

@@ -107,4 +107,12 @@ export class AgentFollowerHostSocket {
   subscribeCount(): number {
     return this.subscribes
   }
+
+  async disconnectAbnormally(): Promise<void> {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    await this.socket.close({
+      code: 1011,
+      reason: 'test transport interruption'
+    })
+  }
 }

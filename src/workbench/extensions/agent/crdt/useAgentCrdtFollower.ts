@@ -32,6 +32,10 @@ import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import {
+  initialReconnectTelemetryState,
+  transitionReconnectTelemetry
+} from './reconnectTelemetryPolicy'
 
 export { apiTransport, STALE_AFTER_MS }
 
@@ -184,6 +188,33 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+const REFUSAL_CODES = new Set([
+  'auth_reject',
+  'not_found',
+  'schema_mismatch',
+  'catalog_mismatch',
+  'rate_limited'
+])
+const AUTH_REFUSAL_TOKENS = new Set([
+  'forbidden',
+  'unauthorized',
+  'unauthenticated',
+  'permission'
+])
+
+function refusalCode(detail: unknown): string {
+  if (typeof detail !== 'object' || detail === null || !('code' in detail))
+    return 'unknown'
+  if (typeof detail.code !== 'string') return 'unknown'
+  if (REFUSAL_CODES.has(detail.code)) return detail.code
+  return detail.code
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .some((token) => AUTH_REFUSAL_TOKENS.has(token))
+    ? 'auth_reject'
+    : 'unknown'
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -289,6 +320,17 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe(),
     () => {
       connected.value = false
+    },
+    (detail, attempts) => {
+      const code = refusalCode(detail)
+      reportError(new Error('CRDT document subscription was refused'), {
+        errorType:
+          code === 'auth_reject'
+            ? 'failure_authenticating_crdt_subscription'
+            : 'failure_subscribing_crdt_document',
+        tags: { code, attempts },
+        context: { workflow_id: subscribedWorkflowId.value }
+      })
     }
   )
   const tabId = createUuidv4()
@@ -325,6 +367,31 @@ function startAgentCrdtFollower(
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
+  // Schema and projection failures repeat on every inbound frame until the
+  // document becomes healthy. Report each reason once per incident, then
+  // re-arm after a successful apply, confirmed subscribe, or retarget.
+  const divergenceReported = new Set<
+    'missing_projection_target' | 'schema_mismatch'
+  >()
+  const reportDocDivergence = (
+    reason: 'missing_projection_target' | 'schema_mismatch',
+    context: { workflow_id: string | undefined; seq?: number }
+  ): void => {
+    if (divergenceReported.has(reason)) return
+    divergenceReported.add(reason)
+    reportError(
+      new Error(
+        reason === 'schema_mismatch'
+          ? 'CRDT document schema is unreadable'
+          : 'CRDT update has no bound projection target'
+      ),
+      {
+        errorType: 'error_reading_crdt_document',
+        tags: { reason },
+        context
+      }
+    )
+  }
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -366,7 +433,22 @@ function startAgentCrdtFollower(
     return added
   }
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
-    const applied = projection.applyFrame(update)
+    let applied: boolean
+    try {
+      applied = projection.applyFrame(update)
+      if (applied) divergenceReported.clear()
+      else
+        reportDocDivergence('missing_projection_target', {
+          workflow_id: update.workflowId,
+          seq: update.seq
+        })
+    } catch (error) {
+      reportError(new Error('CRDT update could not be applied'), {
+        errorType: 'error_applying_crdt_update',
+        context: { workflow_id: update.workflowId, seq: update.seq }
+      })
+      throw error
+    }
     incrementOutcome(applied ? 'applied' : 'skipped')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
@@ -379,9 +461,10 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      divergenceReported.clear()
       lifecycle.onSubscribeConfirmed()
     } else {
-      lifecycle.onSubscribeRefused()
+      lifecycle.onSubscribeRefused(event.detail)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -500,6 +583,9 @@ function startAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    reportDocDivergence('schema_mismatch', {
+      workflow_id: detail?.workflowId
+    })
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -531,6 +617,51 @@ function startAgentCrdtFollower(
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
+  let reconnectTelemetryState = initialReconnectTelemetryState()
+  const resetReconnectTelemetry = (): void => {
+    reconnectTelemetryState = initialReconnectTelemetryState()
+  }
+  const onSocketClosed: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail: unknown = event.detail
+    if (
+      typeof detail !== 'object' ||
+      detail === null ||
+      !('code' in detail) ||
+      typeof detail.code !== 'number' ||
+      !isTargetActive.value ||
+      subscribedWorkflowId.value === null
+    )
+      return
+    const transition = transitionReconnectTelemetry(reconnectTelemetryState, {
+      type: 'closed',
+      code: detail.code,
+      now: Date.now()
+    })
+    reconnectTelemetryState = transition.state
+    if (transition.report !== 'abnormal_close') return
+    reportError(new Error('CRDT WebSocket closed abnormally'), {
+      errorType: 'failure_closing_crdt_websocket_abnormal',
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
+  const onReconnecting: EventListener = () => {
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
+    const transition = transitionReconnectTelemetry(reconnectTelemetryState, {
+      type: 'reconnecting',
+      now: Date.now()
+    })
+    reconnectTelemetryState = transition.state
+    if (transition.report !== 'reconnect_storm') return
+    reportError(new Error('CRDT WebSocket is reconnecting repeatedly'), {
+      errorType: 'failure_reconnecting_crdt_websocket_repeatedly',
+      tags: {
+        reconnect_count: reconnectTelemetryState.reconnects.length,
+        window_ms: 60_000
+      },
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
    *
@@ -559,6 +690,8 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  api.addEventListener('socketClosed', onSocketClosed)
+  api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -643,6 +776,8 @@ function startAgentCrdtFollower(
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
+      divergenceReported.clear()
+      resetReconnectTelemetry()
       connected.value = false
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
@@ -664,6 +799,8 @@ function startAgentCrdtFollower(
     // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
+      () => api.removeEventListener('socketClosed', onSocketClosed),
+      () => api.removeEventListener('reconnecting', onReconnecting),
       () => api.removeEventListener('reconnected', onReconnected),
       () => api.removeEventListener('status', onSocketActivity),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),
