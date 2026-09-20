@@ -70,4 +70,30 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       await expect(agentPanel.attachmentChips).toHaveCount(1)
     })
   }
+
+  // A filename is user data and may contain a quote or a backslash, which would
+  // break the attribute selector the chip is matched by. Exercised end to end
+  // rather than unit-tested, so a regression in the escaping shows up as the
+  // locator failing to find a chip that is plainly on screen.
+  test.describe('a filename that is hostile to the selector', () => {
+    const AWKWARD_NAME = 'a "quoted" \\ name.mp4'
+    const AWKWARD_ASSET = { ...AGENT_VIDEO_ASSET, name: AWKWARD_NAME }
+
+    test.beforeEach(async ({ page, agentFlagEnabled }) => {
+      await bootAgentApp(page, agentFlagEnabled, {
+        assets: { assets: [AWKWARD_ASSET], total: 1, has_more: false }
+      })
+    })
+
+    test('is still matched by the chip locator', async ({ page }) => {
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+
+      const assets = new AssetsSidebarTab(page)
+      await assets.open()
+      await assets.assetCards.first().dragTo(agentPanel.root)
+
+      await expect(agentPanel.attachmentChip(AWKWARD_NAME)).toBeVisible()
+    })
+  })
 })

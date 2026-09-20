@@ -46,10 +46,23 @@ export class AgentPanel {
   /**
    * The composer attachment carrying `name`. Matches on the chip's own
    * attribute rather than its text, which truncates at `max-w-32`.
+   *
+   * `name` is a filename and may legitimately contain a quote or backslash, so
+   * it is escaped for the double-quoted CSS string rather than interpolated
+   * raw: unescaped, such a name yields an invalid selector or matches the
+   * wrong chip. `CSS.escape` is a DOM API and is not available here.
    */
   attachmentChip(name: string): Locator {
+    // `/./gsu` visits every code point without putting a control character
+    // literal in the pattern, which keeps both no-control-regex and
+    // no-misused-spread satisfied.
+    const escaped = name.replace(/./gsu, (char) => {
+      if (char === '"' || char === '\\') return `\\${char}`
+      const code = char.codePointAt(0)!
+      return code < 0x20 || code === 0x7f ? `\\${code.toString(16)} ` : char
+    })
     return this.attachmentChips.and(
-      this.page.locator(`[data-attachment-name="${name}"]`)
+      this.page.locator(`[data-attachment-name="${escaped}"]`)
     )
   }
 
