@@ -10,6 +10,7 @@ type PendingOpRevertReason =
   | 'failed'
   | 'unprocessed'
   | 'unattributed'
+  | 'unconfirmed'
   | 'undeliverable'
 
 export type PendingOpTrackerEvent =
