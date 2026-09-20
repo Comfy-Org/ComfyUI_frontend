@@ -8,6 +8,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 const {
   mockGetAuthHeader,
@@ -135,6 +136,16 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingStatus: mockGetBillingStatus
+  },
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      public readonly status?: number,
+      public readonly code?: string
+    ) {
+      super(message)
+      this.name = 'WorkspaceApiError'
+    }
   }
 }))
 
@@ -319,6 +330,19 @@ describe('useSubscription', () => {
       await expect(fetchStatus()).rejects.toThrow(
         'Failed to fetch subscription status: Subscription not found'
       )
+    })
+
+    it('preserves the HTTP status of a rejected billing status request', async () => {
+      mockGetBillingStatus.mockRejectedValue(
+        new WorkspaceApiError('Forbidden', 403)
+      )
+
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      await expect(fetchStatus()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        status: 403
+      })
     })
 
     it('updates the active workspace billing rail from status', async () => {
