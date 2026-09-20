@@ -348,6 +348,39 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(-1)
     })
 
+    // The action bar is hover-revealed and lands under a cursor that has not
+    // moved, so on the grid->gallery switch it would otherwise receive the
+    // second click and download a file instead of opening the lightbox.
+    it('stops the action bar receiving the second click of a double-click', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 1 of 2' })
+      )
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: 'Download image' }).parentElement
+      ).toHaveClass('pointer-events-none')
+    })
+
+    it('restores the action bar once the pointer moves', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 1 of 2' })
+      )
+      await nextTick()
+      await fireEvent.pointerMove(screen.getByRole('region'))
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: 'Download image' }).parentElement
+      ).not.toHaveClass('pointer-events-none')
+    })
+
     it('does not open the lightbox from the action buttons', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()

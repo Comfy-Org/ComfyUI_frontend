@@ -4,6 +4,7 @@
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
     @dblclick.stop="handleGalleryDoubleClick"
+    @pointermove="actionsArmed = true"
   >
     <!-- Grid View -->
     <div
@@ -107,8 +108,12 @@
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
-        class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
-        @dblclick.stop
+        :class="
+          cn(
+            'actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible',
+            !actionsArmed && 'pointer-events-none'
+          )
+        "
       >
         <!-- Mask/Edit Button -->
         <button
@@ -117,6 +122,7 @@
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
+          @dblclick.stop
         >
           <i-comfy:mask class="size-4" />
         </button>
@@ -128,6 +134,7 @@
           :title="$t('g.openLayerEditor')"
           :aria-label="$t('g.openLayerEditor')"
           @click="handleOpenLayerEditor"
+          @dblclick.stop
         >
           <i class="icon-[lucide--layers] size-4" />
         </button>
@@ -139,6 +146,7 @@
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
+          @dblclick.stop
         >
           <i class="icon-[lucide--download] size-4" />
         </button>
@@ -150,6 +158,7 @@
           :title="$t('g.viewGrid')"
           :aria-label="$t('g.viewGrid')"
           @click="viewMode = 'grid'"
+          @dblclick.stop
         >
           <i class="icon-[lucide--layout-grid] size-4" />
         </button>
@@ -271,6 +280,7 @@ const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
+const actionsArmed = ref(true)
 const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -395,6 +405,9 @@ function setCurrentIndex(index: number) {
 async function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
+  // The panel mounts under a cursor that has not moved, so the hover-revealed
+  // action bar would otherwise swallow the second click of a double-click.
+  actionsArmed.value = false
   await nextTick()
   galleryPanelEl.value?.focus()
 }
