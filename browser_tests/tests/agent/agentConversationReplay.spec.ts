@@ -61,10 +61,6 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
       await agentConversation.replayResponse(1)
       await agentConversation.waitForTurnComplete()
 
-      test.fail(
-        true,
-        'an unrelated agent reconcile resets a manually renamed node back to its default title'
-      )
       await expect(sampler.title).toHaveText(CUSTOM_TITLE)
     })
   })
