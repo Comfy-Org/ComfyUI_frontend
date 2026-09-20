@@ -38,7 +38,7 @@ const EARLIER_REQUEST = 'Earlier request'
 // thread hydrates and names that workflow. The binding store must refuse to
 // hand that workflow to the brand-new default-path tab (its document id is not
 // the abandoned one), so the next turn is not posted as that workflow and the
-// CRDT follower never pulls its real content onto the empty canvas.
+// CRDT follower never pulls its real content onto the fresh canvas.
 //
 // See agentWorkflowTabBindingStore.test.ts and AgentPanelRoot.test.ts ("does
 // not restore an abandoned tab binding onto a brand-new default-path tab") for
@@ -218,6 +218,10 @@ test.describe(
       const topbar = new Topbar(page)
       const tabs = topbar.workflowTabs.locator('.p-togglebutton')
       await expect(tabs).toHaveCount(1)
+      await expect(page.getByTestId('node-title').first()).toBeVisible()
+      const initialNodeTitles = await page
+        .getByTestId('node-title')
+        .allTextContents()
 
       // A brand-new page on the surviving thread: nobody has sent anything.
       await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
@@ -242,15 +246,12 @@ test.describe(
         .getByRole('button', { name: enMessages.agent.send, exact: true })
         .click()
       await expect.poll(() => posted.length).toBe(1)
-
-      // Give a leaking follower a chance to subscribe and materialize the
-      // abandoned workflow's nodes before judging the canvas; a correct one
-      // never does, and the catch lets the final assertions run.
-      await page
-        .getByTestId('node-title')
-        .first()
-        .waitFor({ state: 'visible', timeout: 5_000 })
-        .catch(() => undefined)
+      expect(posted[0]).toMatchObject({
+        workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+      })
+      await expect(
+        page.getByText(enMessages.agent.targetNavigationUnavailable)
+      ).toBeVisible()
 
       await testInfo.attach('stale-workflow-canvas', {
         body: await page.screenshot({
@@ -259,11 +260,9 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // The fresh tab is the only tab and still the active one; its canvas
-      // must stay empty.
       await expect(tabs).toHaveCount(1)
       await expect(topbar.getActiveTab()).toContainText(DEFAULT_TAB_NAME)
-      await expect(page.getByTestId('node-title')).toHaveCount(0)
+      await expect(page.getByTestId('node-title')).toHaveText(initialNodeTitles)
     })
   }
 )
