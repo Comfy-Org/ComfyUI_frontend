@@ -7,7 +7,7 @@ import SignInContent from '@/components/dialog/content/SignInContent.vue'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/utils/hostWhitelist'), () => ({
@@ -39,7 +39,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

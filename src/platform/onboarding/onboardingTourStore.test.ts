@@ -3,15 +3,15 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import type { Ref } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
 } from '@/platform/telemetry/types'
-
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 
@@ -31,29 +31,6 @@ assert.exists(dispatcher)
 const trackOnboardingTour = vi.mocked<
   (stage: OnboardingTourStepStage, metadata: OnboardingTourStepMetadata) => void
 >(dispatcher.trackOnboardingTour)
-
-const appModeMock = vi.hoisted((): { mode: Ref<AppMode> | null } => ({
-  mode: null
-}))
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref: r, computed } = await import('vue')
-  appModeMock.mode = r<AppMode>('graph')
-  return {
-    useAppMode: () => ({
-      mode: appModeMock.mode,
-      isAppMode: computed(() => appModeMock.mode?.value === 'app'),
-      isBuilderMode: computed(() =>
-        appModeMock.mode?.value.startsWith('builder:')
-      ),
-      isSelectMode: computed(
-        () =>
-          appModeMock.mode?.value === 'builder:inputs' ||
-          appModeMock.mode?.value === 'builder:outputs'
-      ),
-      setMode: vi.fn()
-    })
-  }
-})
 
 const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
@@ -95,7 +72,10 @@ function shownCount(coachId?: CoachId) {
   ).length
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  useWorkflowStore().activeWorkflow = await useWorkflowStore()
+    .createTemporary('test.json')
+    .load()
   useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
   vi.mocked(useSettingStore().set).mockImplementation(
     (key: string, value: unknown) => {
@@ -121,7 +101,6 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    if (appModeMock.mode) appModeMock.mode.value = 'graph'
     trackOnboardingTour.mockClear()
   })
 
@@ -142,9 +121,7 @@ describe('onboardingTourStore', () => {
   }
 
   function enterApp(mode: AppMode, hasOutputs: boolean) {
-    const modeRef = appModeMock.mode
-    if (!modeRef) throw new Error('app mode mock not initialised')
-    modeRef.value = mode
+    useAppMode().setMode(mode)
     Object.assign(useAppModeStore(), { hasOutputs })
   }
 

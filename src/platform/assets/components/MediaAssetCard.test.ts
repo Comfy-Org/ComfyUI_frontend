@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -17,6 +18,8 @@ const { downloadAssets } = vi.hoisted(() => ({
 vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(
   import('@/platform/assets/schemas/assetMetadataSchema'),
@@ -402,4 +405,40 @@ describe('MediaAssetCard', () => {
 
     expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      kind: 'video',
+      name: 'agent_generated_video.mp4',
+      testId: 'media-asset-video'
+    },
+    {
+      kind: 'audio',
+      name: 'agent_generated_audio.mp3',
+      testId: 'wave-audio-media'
+    }
+  ])(
+    'plays a $kind asset with no server preview from its inline content url',
+    async ({ name, testId }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          id: 'agent-media',
+          name,
+          preview_url: undefined,
+          thumbnail_url: undefined
+        }
+      })
+
+      const media = await screen.findByTestId(testId)
+
+      expect(media).toHaveAttribute(
+        'src',
+        '/api/assets/agent-media/content?disposition=inline'
+      )
+    }
+  )
 })

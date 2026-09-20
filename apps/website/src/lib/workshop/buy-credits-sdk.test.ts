@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   HostedTopupCheckoutResult,
   TopupCommand
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import { TopUpCheckoutError } from './buy-credits'
 import { createWorkshopTopUpCheckout } from './buy-credits-sdk'

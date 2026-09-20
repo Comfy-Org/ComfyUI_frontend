@@ -13,11 +13,14 @@ export class AgentPanel {
   public readonly copyReportButton: Locator
   public readonly copiedButton: Locator
   public readonly workflowPicker: Locator
+  public readonly fileInput: Locator
+  public readonly composerAssetSection: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
     this.openButton = page.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton,
+      exact: true
     })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.serverLogsSwitch = this.root.getByRole('switch', {
@@ -34,6 +37,8 @@ export class AgentPanel {
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
+    this.fileInput = this.root.getByTestId('agent-file-input')
+    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
   }
 
   async open(): Promise<void> {

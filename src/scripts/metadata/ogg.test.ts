@@ -278,9 +278,7 @@ describe('OGG/Opus metadata', () => {
     const file = new File([new Uint8Array(1)], 'huge.opus', {
       type: 'audio/ogg'
     })
-    vi.spyOn(file, 'slice').mockReturnValue(
-      new Blob([truncated]) as unknown as ReturnType<File['slice']>
-    )
+    vi.spyOn(file, 'slice').mockReturnValue(new Blob([truncated]))
     const warnSpy = vi.spyOn(console, 'warn')
 
     const result = await getOggMetadata(file)
