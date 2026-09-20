@@ -4,7 +4,7 @@
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
     @dblclick.stop="handleGalleryDoubleClick"
-    @pointermove="actionsArmed = true"
+    @pointermove="controlsArmed = true"
   >
     <!-- Grid View -->
     <div
@@ -25,7 +25,7 @@
             total: imageUrls.length
           })
         "
-        @click="handleGridClick(index)"
+        @click="handleGridClick(index, $event)"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -111,7 +111,7 @@
         :class="
           cn(
             'actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible',
-            !actionsArmed && 'pointer-events-none'
+            transientControlClass
           )
         "
       >
@@ -188,7 +188,12 @@
     <!-- Multiple Images Navigation (gallery mode only) -->
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
-      class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      :class="
+        cn(
+          'flex flex-wrap items-center justify-center gap-1 pt-4',
+          transientControlClass
+        )
+      "
     >
       <!-- Back to Grid button -->
       <button
@@ -280,7 +285,10 @@ const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-const actionsArmed = ref(true)
+const controlsArmed = ref(true)
+const transientControlClass = computed(() =>
+  controlsArmed.value ? undefined : 'pointer-events-none'
+)
 const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -402,23 +410,29 @@ function setCurrentIndex(index: number) {
   }
 }
 
-async function openImageInGallery(index: number) {
+async function openImageInGallery(index: number, disarmControls = false) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
-  // The panel mounts under a cursor that has not moved, so the hover-revealed
-  // action bar would otherwise swallow the second click of a double-click.
-  actionsArmed.value = false
+  // Gallery controls mount under a cursor that has not moved, so they would
+  // otherwise swallow the second click of a double-click. Only a pointer that
+  // can hover gets disarmed: a tap emits no pointermove to re-arm them.
+  if (disarmControls) controlsArmed.value = false
   await nextTick()
   galleryPanelEl.value?.focus()
 }
 
-function handleGridClick(index: number) {
+function handleGridClick(index: number, event: MouseEvent) {
   const url = imageUrls[index]
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
   }
-  void openImageInGallery(index)
+  const isTouch = 'pointerType' in event && event.pointerType === 'touch'
+  void openImageInGallery(index, !isTouch)
+}
+
+function isObjectUrl(url: string): boolean {
+  return url.startsWith('blob:')
 }
 
 function searchParamsOf(url: string): URLSearchParams | undefined {
@@ -449,7 +463,11 @@ function openInLightbox(index: number) {
     openHdrViewer(url)
     return
   }
-  const isRenderable = (candidate: string) => !isHdrImageUrl(candidate)
+  // Live sampler previews are refcounted object URLs revoked on the next
+  // frame; the store outlives the node, so it must not hold one.
+  if (isObjectUrl(url)) return
+  const isRenderable = (candidate: string) =>
+    !isHdrImageUrl(candidate) && !isObjectUrl(candidate)
   const lightboxUrls = imageUrls.filter(isRenderable)
   const activeIndex = imageUrls.slice(0, index).filter(isRenderable).length
   galleryStore.openItems(lightboxUrls.map(toGalleryItem), activeIndex)
