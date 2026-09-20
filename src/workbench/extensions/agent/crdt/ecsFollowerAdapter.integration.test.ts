@@ -29,6 +29,7 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -46,17 +47,18 @@ interface TestLayout {
 }
 
 /**
- * Builds one stamped op. Typed as `Op` so a malformed fixture fails at
- * construction rather than at the `applyOps` call site.
+ * Builds one stamped op. `payload` is the package's distributive operation
+ * type, so a malformed fixture fails at this call site rather than inside
+ * `applyOps`.
  */
-function op(id: string, baseVersion: number, payload: object): Op {
+function op(id: string, baseVersion: number, payload: GraphOperation): Op {
   return {
     op_id: id,
     actor: 'agent:test',
     base_version: baseVersion,
     stamp: [baseVersion, 'agent:test'],
     ...payload
-  } as Op
+  }
 }
 
 describe('EcsFollowerAdapter integration', () => {
@@ -666,7 +668,10 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object, expectedOutcome = 'applied') => {
+    const deliver = (
+      operation: GraphOperation,
+      expectedOutcome = 'applied'
+    ) => {
       const before = Y.encodeStateVector(host)
       const operationId = `disconnect-${++seq}`
       const result = applyOps(host, [op(operationId, seq, operation)], catalog)
@@ -769,7 +774,7 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object) => {
+    const deliver = (operation: GraphOperation) => {
       const before = Y.encodeStateVector(host)
       const operationId = `op-${++seq}`
       const result = applyOps(host, [op(operationId, seq, operation)], catalog)
