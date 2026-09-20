@@ -75,21 +75,25 @@ describe('resolveReplyAssetDownload', () => {
   // suffix or substring match on the view path would silently authenticate
   // every route below, so each one is pinned rather than left to the single
   // `/api/system_stats` case.
-  it.each([
+  const lookalikeRoutes = [
     ['a descendant of the view route', '/api/view/extra'],
     ['a route whose name starts with the view route', '/api/viewevil'],
     ['a route that only ends with the view route', '/evil/api/view'],
     ['a route that only contains the view route', '/x/api/view/y']
-  ])('omits credentials for %s', async (_description, pathname) => {
-    const lookalikeUrl = `${window.location.origin}${pathname}?filename=a.png`
+  ] as const
 
-    const resolved = await resolveReplyAssetDownload(asset(lookalikeUrl))
+  for (const [description, pathname] of lookalikeRoutes) {
+    it(`omits credentials for ${description}`, async () => {
+      const lookalikeUrl = `${window.location.origin}${pathname}?filename=a.png`
 
-    expect(resolved.url).toBe(lookalikeUrl)
-    await resolved.fetch?.(resolved.url)
-    expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledWith(lookalikeUrl, { credentials: 'omit' })
-  })
+      const resolved = await resolveReplyAssetDownload(asset(lookalikeUrl))
+
+      expect(resolved.url).toBe(lookalikeUrl)
+      await resolved.fetch?.(resolved.url)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(fetch).toHaveBeenCalledWith(lookalikeUrl, { credentials: 'omit' })
+    })
+  }
 
   it('rejects a malformed URL before resolving a request', async () => {
     await expect(resolveReplyAssetDownload(asset('http://['))).rejects.toThrow()
