@@ -100,7 +100,12 @@ const PREPARE_TIMEOUT_MS = 3000
  * client's response-header timeout and remains abortable when the session
  * stops. The job ends when the row reports a terminal state or a missing
  * thread, when the turn leaves the conversation store's live set, or when the
- * session that started it stops or is superseded.
+ * session that started it stops or is superseded. It is open-ended only while
+ * the server keeps answering with a streaming row: after
+ * TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES checks in a row that fail or find no
+ * row for the turn it gives up. A missing row settles the turn with the text
+ * it already has, since the server has nothing more to deliver; a failing
+ * fetch leaves the turn live for the socket and the next reconnect.
  * Switching threads stashes the turn rather than ending it, so its recovery
  * keeps running in the background.
  */
@@ -112,10 +117,12 @@ const TURN_RECOVERY_DELAYS_MS: RecoverySchedule = [
   0,
   ...TURN_RECOVERY_DELAYS_AFTER_FETCH_MS
 ]
+const TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES = TURN_RECOVERY_DELAYS_MS.length
 
 type TurnOutcome =
   | { kind: 'terminal'; text: string }
   | { kind: 'thread-missing' }
+  | { kind: 'message-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
 
@@ -698,12 +705,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<void> {
     let noticed = false
+    let consecutiveFailures = 0
     for (let attempt = 0; ; attempt++) {
       await delay(delaysMs[Math.min(attempt, delaysMs.length - 1)], { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
+      consecutiveFailures =
+        outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
+      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) {
+        if (outcome.kind === 'message-missing')
+          conversationStore.settleTurn(turn, undefined)
+        return
+      }
       if (outcome.kind === 'error' && !noticed) {
         noticed = true
         pushError(outcome.message)
@@ -731,6 +746,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       case 'thread-missing':
         forgetDeletedThread(turn)
         return true
+      case 'message-missing':
       case 'streaming':
       case 'error':
         return false
@@ -748,7 +764,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(turn.threadId, { signal })
       const row = history.find((entry) => entry.id === turn.messageId)
-      if (!row || row.status === 'streaming') return { kind: 'streaming' }
+      if (!row) return { kind: 'message-missing' }
+      if (row.status === 'streaming') return { kind: 'streaming' }
       const text = typeof row.content?.text === 'string' ? row.content.text : ''
       return { kind: 'terminal', text }
     } catch (error) {
