@@ -77,6 +77,18 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     await expect(thumbnailImg).toBeHidden()
   })
 
+  test('Ctrl/Cmd+S saves while a tab thumbnail is visible', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    const popover = await getTabPopover(comfyPage, 0)
+    await expect(popover).toHaveAttribute('aria-modal', 'false')
+
+    await comfyPage.page.keyboard.press('ControlOrMeta+s')
+
+    await expect(comfyPage.menu.topbar.getSaveDialog()).toBeVisible()
+  })
+
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {
     const canvasArea = await comfyPage.canvas.boundingBox()
 

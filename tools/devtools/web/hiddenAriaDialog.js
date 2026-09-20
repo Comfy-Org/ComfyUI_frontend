@@ -30,10 +30,20 @@ app.registerExtension({
       hiddenAncestor.appendChild(ancestorHiddenDialog)
       document.body.appendChild(hiddenAncestor)
 
+      const cssHiddenAncestor = document.createElement('div')
+      cssHiddenAncestor.style.display = 'none'
+      const cssHiddenDialog = document.createElement('section')
+      cssHiddenDialog.setAttribute('role', 'dialog')
+      cssHiddenDialog.setAttribute('aria-modal', 'true')
+      cssHiddenDialog.dataset.devtoolsCssHiddenAriaDialog = ''
+      cssHiddenAncestor.appendChild(cssHiddenDialog)
+      document.body.appendChild(cssHiddenAncestor)
+
       const onRemoved = this.onRemoved
       this.onRemoved = function (...removeArgs) {
         dialog.remove()
         hiddenAncestor.remove()
+        cssHiddenAncestor.remove()
         onRemoved?.apply(this, removeArgs)
       }
     }

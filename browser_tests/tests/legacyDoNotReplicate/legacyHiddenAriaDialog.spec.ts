@@ -24,6 +24,13 @@ test(
     await expect(ancestorHiddenDialog).toHaveAttribute('role', 'dialog')
     await expect(ancestorHiddenDialog).toHaveAttribute('aria-modal', 'true')
 
+    const cssHiddenDialog = comfyPage.page.locator(
+      '[data-devtools-css-hidden-aria-dialog]'
+    )
+    await expect(cssHiddenDialog).toHaveAttribute('role', 'dialog')
+    await expect(cssHiddenDialog).toHaveAttribute('aria-modal', 'true')
+    await expect(cssHiddenDialog).toBeHidden()
+
     await comfyPage.canvas.click()
     await comfyPage.page.keyboard.press('ControlOrMeta+s')
 
