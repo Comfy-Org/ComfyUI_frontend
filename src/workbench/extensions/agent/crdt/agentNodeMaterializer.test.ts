@@ -8,7 +8,6 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { inertWidgetEffectPort } from './__fixtures__/widgetEffectPorts'
 import { createGraphMutations } from './graphMutations'
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
@@ -61,10 +60,14 @@ class DummyNode extends LGraphNode {
   }
 }
 
+const configuredWidgetCallbackValues: unknown[] = []
+
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
-    this.addWidget('number', 'value', 0, () => {})
+    this.addWidget('number', 'value', 0, (value) => {
+      configuredWidgetCallbackValues.push(value)
+    })
   }
 }
 
@@ -180,8 +183,7 @@ function remoteMutations(scope: GraphScope) {
           }))
         )
       }
-    },
-    widgets: inertWidgetEffectPort
+    }
   })
 }
 
@@ -212,6 +214,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
+  configuredWidgetCallbackValues.length = 0
   configuredWidgetValues.length = 0
   configureShouldThrow = false
 })
@@ -376,6 +379,27 @@ describe('reconcileAgentAdapters', () => {
           widgetId(scope.rootGraphId, toNodeId(1), 'value')
         )?.value
       ).toBe(7)
+    })
+
+    it('applies a widget update received before the node materializes', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: {} },
+        REMOTE
+      )
+      mutations.setWidget(toNodeId(1), 'value', 9, REMOTE)
+
+      reconcileAgentAdapters(graph)
+
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(9)
+      expect(configuredWidgetCallbackValues).toContain(9)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(9)
     })
 
     it('is idempotent once the node is live', () => {

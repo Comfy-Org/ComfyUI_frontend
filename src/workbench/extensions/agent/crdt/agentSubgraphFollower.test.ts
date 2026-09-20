@@ -31,7 +31,6 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { inertWidgetEffectPort } from './__fixtures__/widgetEffectPorts'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -173,8 +172,7 @@ function startFollower(options: FixtureOptions = {}) {
   const adapter = new EcsFollowerAdapter(
     createGraphMutations({
       getScope: () => (options.scope?.blocked ? null : graphScopeOf(graph)),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      widgets: inertWidgetEffectPort
+      layout: { createNode: () => {}, deleteNodes: () => {} }
     })
   )
   adapter.bind('workflow', follower)

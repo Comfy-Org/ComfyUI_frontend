@@ -1,11 +1,8 @@
-import { isEqual } from 'es-toolkit'
-
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -70,6 +67,29 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+/**
+ * Renderer-owned live widget port. A value patch for a widget that is already
+ * mounted on the canvas is replayed through the live widget so its callback,
+ * backing property, and rendered state move in the same frame; the port
+ * reports the value the live widget settled on, or `skipped` when the node or
+ * widget is not live.
+ */
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): LiveWidgetMutationResult
+  rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   /**
@@ -114,26 +134,10 @@ export interface GraphMutations {
   clearSemanticGraph(context: RemoteMutationContext): boolean
 }
 
-/**
- * Renderer-owned live-widget effect port. Semantic state reports a widget
- * value the store now holds; the port runs the live widget's `callback` and
- * `onWidgetChanged` the way a human edit does.
- */
-export interface SemanticWidgetEffectPort {
-  valueApplied(
-    scope: GraphScope,
-    nodeId: NodeId,
-    name: string,
-    value: WidgetValue,
-    previous: WidgetValue,
-    context: RemoteMutationContext
-  ): void
-}
-
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
-  widgets: SemanticWidgetEffectPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -159,21 +163,6 @@ interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
   widgets: WidgetValuePayload
-}
-
-interface WidgetEffect {
-  nodeId: NodeId
-  name: string
-  value: WidgetValue
-  previous: WidgetValue
-}
-
-/**
- * Object values arrive as fresh clones on every frame, so identity cannot
- * tell an echo from an edit; content can.
- */
-function sameWidgetValue(a: WidgetValue, b: WidgetValue): boolean {
-  return Object.is(a, b) || (typeof a === 'object' && isEqual(a, b))
 }
 
 type PreparedMutation =
@@ -806,18 +795,50 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
+  /**
+   * Replays the value through the live widget first so its callback and
+   * backing property run in the same frame the semantic state is written, and
+   * reports the value the live widget settled on. A node or widget that is not
+   * live is `skipped` and keeps the incoming value.
+   */
+  function projectLiveWidgetValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): WidgetValue {
+    const projected = deps.liveWidgets?.setValue(
+      scope,
+      nodeId,
+      name,
+      value,
+      context
+    )
+    return projected && projected.status !== 'skipped'
+      ? projected.resolvedValue
+      : value
+  }
+
   function registerPlaceholder(
     scope: GraphScope,
     nodeId: NodeId,
     widget: PlaceholderWidget,
     context: RemoteMutationContext
   ): void {
+    const value = projectLiveWidgetValue(
+      scope,
+      nodeId,
+      widget.name,
+      widget.value,
+      context
+    )
     widgetStore.registerWidget(
       widgetId(scope.rootGraphId, nodeId, widget.name),
       {
         name: widget.name,
         type: widget.type,
-        value: widget.value,
+        value,
         options: {},
         label: widget.name
       },
@@ -825,51 +846,33 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       undefined,
       context
     )
+    // The registered state is a new identity, so a live widget that was
+    // already mounted has to adopt it instead of keeping its own shim.
+    deps.liveWidgets?.rebind?.(scope, nodeId, widget.name)
   }
 
-  function applyWidgetWrite(
+  function setWidgetValue(
     scope: GraphScope,
     nodeId: NodeId,
     name: string,
     value: WidgetValue,
     context: RemoteMutationContext
-  ): { applied: boolean; previous: WidgetValue } {
+  ): void {
     const id = widgetId(scope.rootGraphId, nodeId, name)
-    const state = widgetStore.getWidget(id)
-    if (!state) {
+    if (widgetStore.getWidget(id)) {
+      widgetStore.setValue(
+        id,
+        projectLiveWidgetValue(scope, nodeId, name, value, context),
+        context
+      )
+    } else {
       registerPlaceholder(
         scope,
         nodeId,
         { name, value, type: widgetType(value) },
         context
       )
-      return { applied: true, previous: undefined }
     }
-    const previous = state.value
-    return { applied: widgetStore.setValue(id, value, context), previous }
-  }
-
-  function writeWidget(
-    scope: GraphScope,
-    nodeId: NodeId,
-    name: string,
-    value: WidgetValue,
-    context: RemoteMutationContext,
-    effects: WidgetEffect[]
-  ): void {
-    const { applied, previous } = applyWidgetWrite(
-      scope,
-      nodeId,
-      name,
-      value,
-      context
-    )
-    if (!applied) return
-    const current = widgetStore.getWidget(
-      widgetId(scope.rootGraphId, nodeId, name)
-    )?.value
-    if (sameWidgetValue(previous, current)) return
-    effects.push({ nodeId, name, value: current, previous })
   }
 
   /**
@@ -883,15 +886,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     scope: GraphScope,
     nodeId: NodeId,
     widgets: WidgetValuePayload,
-    context: RemoteMutationContext,
-    effects: WidgetEffect[]
+    context: RemoteMutationContext
   ): void {
     switch (widgets.kind) {
       case 'omitted':
         return
       case 'named':
         for (const [name, value] of widgets.values) {
-          writeWidget(scope, nodeId, name, value, context, effects)
+          setWidgetValue(scope, nodeId, name, value, context)
         }
         return
       case 'positional': {
@@ -900,13 +902,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           .filter((widget) => widget.serialize !== false)
           .slice(0, widgets.values.length)
         for (const [index, widget] of serialized.entries()) {
-          writeWidget(
+          setWidgetValue(
             scope,
             nodeId,
             widget.name,
             widgets.values[index],
-            context,
-            effects
+            context
           )
         }
         return
@@ -921,8 +922,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
-    context: RemoteMutationContext,
-    effects: WidgetEffect[]
+    context: RemoteMutationContext
   ): void {
     for (const mutation of prepared) {
       switch (mutation.kind) {
@@ -948,8 +948,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               scope,
               mutation.node.state.id,
               mutation.node.widgets,
-              context,
-              effects
+              context
             )
             break
           }
@@ -972,23 +971,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.state,
             context
           )
-          applyWidgetValues(
-            scope,
-            mutation.state.id,
-            mutation.widgets,
-            context,
-            effects
-          )
+          applyWidgetValues(scope, mutation.state.id, mutation.widgets, context)
           break
         }
         case 'setWidget': {
-          writeWidget(
+          setWidgetValue(
             scope,
             mutation.nodeId,
             mutation.name,
             mutation.value,
-            context,
-            effects
+            context
           )
           break
         }
@@ -1125,25 +1117,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       })
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
-      const effects: WidgetEffect[] = []
-      commit(scope, prepared, context, effects)
-      for (const { nodeId, name, value, previous } of effects) {
-        try {
-          deps.widgets.valueApplied(
-            scope,
-            nodeId,
-            name,
-            value,
-            previous,
-            context
-          )
-        } catch (error) {
-          reportError(error, {
-            errorType: 'error_applying_agent_widget_effects',
-            context: { nodeId: String(nodeId), widget: name }
-          })
-        }
-      }
+      commit(scope, prepared, context)
       return true
     },
     addNode(payload, context) {
