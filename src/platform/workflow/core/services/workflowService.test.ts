@@ -2045,11 +2045,12 @@ describe('useWorkflowService', () => {
      * The tracker itself is present in these cases — a missing tracker would
      * throw reading `reset`, not `id`.
      *
-     * These drive the workflow-object branch. The same-path reuse branch makes
-     * the identical read, but is not reachable with a null active state from
-     * here: that branch decides reuse from `existingWorkflow?.activeState?.id`,
-     * so a null active state routes the load to `createNewTemporary` instead.
-     * It is covered by sharing `activeStateFallbackId`, not by a red test.
+     * Both call sites are covered: the workflow-object branch and the
+     * same-path reuse branch, which make the identical read. A null active
+     * state does NOT route the same-path load away from reuse —
+     * `areWorkflowIdsEquivalent(undefined, ...)` falls through to
+     * `!existingId || !incomingId`, which is true whenever `existingId` is
+     * undefined, so reuse is chosen and the read is reached.
      */
     describe('when the change tracker has no active state (SEN-5)', () => {
       beforeEach(() => {
@@ -2059,6 +2060,19 @@ describe('useWorkflowService', () => {
           activeState: ComfyWorkflowJSON | null
         }
         tracker.activeState = null
+      })
+
+      it('activates a same-path reload instead of throwing on a null active state', async () => {
+        // Drives the reuse branch's read, which the object-branch cases below
+        // do not reach. Both sites must be fixed for this to pass.
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: expect.any(String) })
+        )
       })
 
       it('activates a workflow object reload instead of throwing on a null active state', async () => {
