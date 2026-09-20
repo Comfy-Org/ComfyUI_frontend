@@ -10,6 +10,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 import {
   LGraph,
@@ -147,6 +148,7 @@ function agentOperation(
  */
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({
+    placement: inertPlacementPort,
     getScope: () => scope,
     layout: {
       createNode(scope, nodeId, { position, size }, context) {

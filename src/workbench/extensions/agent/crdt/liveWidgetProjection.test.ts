@@ -11,6 +11,7 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphOperation } from './graphOperations'
 import {
   applyLiveWidgetValue,
@@ -76,6 +77,7 @@ describe('applyLiveWidgetValue', () => {
     const mutations = createGraphMutations({
       getScope: () => rootScope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      placement: inertPlacementPort,
       liveWidgets: {
         rebind: (scope, nodeId, name) =>
           rebindLiveWidgetState(graph, scope, nodeId, name),
