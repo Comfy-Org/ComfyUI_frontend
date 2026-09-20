@@ -194,23 +194,23 @@ const parseIlstBox = (
 }
 
 const findUserDataBox = (data: Uint8Array): IsobmffBoxContentRange => {
-  let userDataBox: IsobmffBoxContentRange = null
-
   // Metadata can be in 'udta' at top level or inside 'moov'
-  userDataBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.USER_DATA)
+  const topLevelBox = findIsobmffBoxByType(
+    data,
+    0,
+    data.length,
+    BOX_TYPES.USER_DATA
+  )
+  if (topLevelBox) return topLevelBox
 
-  if (!userDataBox) {
-    const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
-    if (moovBox) {
-      userDataBox = findIsobmffBoxByType(
-        data,
-        moovBox.start,
-        moovBox.end,
-        BOX_TYPES.USER_DATA
-      )
-    }
-  }
-  return userDataBox
+  const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
+  if (!moovBox) return null
+  return findIsobmffBoxByType(
+    data,
+    moovBox.start,
+    moovBox.end,
+    BOX_TYPES.USER_DATA
+  )
 }
 
 const parseIsobmffMetadata = (data: Uint8Array): ComfyMetadata => {

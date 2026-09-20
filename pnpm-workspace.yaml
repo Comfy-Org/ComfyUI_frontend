@@ -99,7 +99,7 @@ catalog:
   glob: ^13.0.6
   globals: ^17.7.0
   gsap: ^3.14.2
-  happy-dom: 20.9.0
+  happy-dom: 20.14.5
   husky: ^9.1.7
   jsdom: ^29.1.1
   jsonata: ^2.1.0
@@ -124,6 +124,8 @@ catalog:
   pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
+  prettier: 3.9.5
+  prettier-plugin-astro: ^1.0.0
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5
@@ -159,7 +161,6 @@ catalog:
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
   vue-tsc: ^3.3.11
-  vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
   yjs: ^13.6.27
@@ -185,6 +186,7 @@ allowBuilds:
 overrides:
   vite: 'catalog:'
   '@tiptap/pm': 3.31.0
+  prettier: 3.9.5
   # Security overrides
   lodash: ^4.18.0
   yaml: 'catalog:'

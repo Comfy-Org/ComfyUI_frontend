@@ -15,7 +15,7 @@ vi.mock(
 )
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
-vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 

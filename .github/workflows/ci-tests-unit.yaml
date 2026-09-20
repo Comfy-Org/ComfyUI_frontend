@@ -42,7 +42,7 @@ jobs:
       - name: Run package unit tests with coverage
         run: |
           rc=0
-          for pkg in account account-ui object-info-parser shared-frontend-utils design-system; do
+          for pkg in account-core account-ui billing-contract object-info-parser shared-frontend-utils design-system; do
             pnpm --filter "@comfyorg/$pkg" exec vitest run --coverage || rc=1
           done
           exit $rc
@@ -60,7 +60,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: coverage/lcov.info,packages/account/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,7 +59,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
 
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
-const mockCanCancel = vi.hoisted(() => ({ value: true }))
+
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
@@ -78,14 +80,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: mockCanCancel
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -127,13 +122,7 @@ function renderComponent(
   return render(CancelSubscriptionDialogContent, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          template: '<button :disabled="disabled"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'loading']
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -142,7 +131,7 @@ describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
-    mockCanCancel.value = true
+    useBillingCapabilities().canCancel = computed(() => true)
     mockCanManageSubscriptionLifecycle.value = true
     mockDistributionTypes.isCloud = true
   })
@@ -323,12 +312,14 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('does not cancel after the workspace role loses permission', async () => {
+      const canCancel = ref(true)
+      useBillingCapabilities().canCancel = computed(() => canCancel.value)
+
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
-      mockCanCancel.value = true
 
       renderComponent()
-      mockCanCancel.value = false
+      canCancel.value = false
       await userEvent.click(
         screen.getByRole('button', { name: /^cancel subscription$/i })
       )
@@ -345,7 +336,7 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      mockCanCancel.value = false
+      useBillingCapabilities().canCancel = computed(() => false)
       mockCanManageSubscriptionLifecycle.value = true
       mockCancelSubscription.mockResolvedValueOnce(undefined)
 
@@ -361,7 +352,6 @@ describe('CancelSubscriptionDialogContent', () => {
       mockSubscription.value = null
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
-      mockCanCancel.value = true
       mockCanManageSubscriptionLifecycle.value = false
 
       renderComponent()
