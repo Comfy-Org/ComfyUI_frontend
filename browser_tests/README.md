@@ -741,6 +741,23 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
 
 Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
 
+The dev server above is fine for the replay cases, but it cannot run the two
+agent cases that assert the panel stays **hidden** while the product flag is off
+(`agentPanel.spec.ts` "does not expose the Ask Comfy Agent button" and
+`agentPanelLifecycle.spec.ts` "preserves the stored preference while the flag is
+off"). `setupFlagGate()` in `src/extensions/core/agentPanel.ts` force-enables the
+panel whenever `import.meta.env.MODE === 'development'`, so against `pnpm dev`
+both cases see the button and fail no matter what the flag mock says. CI does not
+hit this because it serves a built `frontend-dist-cloud` artifact. To run them
+locally, serve a production build instead:
+
+```bash
+DISTRIBUTION=cloud pnpm build:cloud
+# serve dist/ (e.g. ComfyUI --front-end-root <repo>/dist) and point the run at it
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
+```
+
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
