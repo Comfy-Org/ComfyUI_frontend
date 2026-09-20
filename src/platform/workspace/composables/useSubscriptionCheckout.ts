@@ -192,13 +192,26 @@ export function useSubscriptionCheckout(
   const reactivationRequired = ref(false)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
+  // The operation this checkout is watching, from whichever rail is driving it.
+  // On the subscription rail the lifecycle owns it, so reading only the legacy
+  // store left the parked-recovery prompt, the authentication state and the
+  // busy state all answering off a store nothing was writing.
+  //
+  // Both are consulted, rail first, because the rail owning the flag does not
+  // mean it owns every operation: a subscribe that fell back to the legacy
+  // transport on a 404 registers its poller in the legacy store while the flag
+  // is still on, and reading only the rail would lose that one entirely.
   const activeCheckoutOperation = computed(() => {
-    if (!activeCheckoutOperationId.value) {
-      return billingOperationStore.subscriptionActionOperation
+    const operationId = activeCheckoutOperationId.value
+    if (!operationId) {
+      return (
+        subscriptionRail?.subscriptionActionOperation ??
+        billingOperationStore.subscriptionActionOperation
+      )
     }
-    const operation = billingOperationStore.getOperation(
-      activeCheckoutOperationId.value
-    )
+    const operation =
+      subscriptionRail?.getOperation(operationId) ??
+      billingOperationStore.getOperation(operationId)
     return operation?.workspaceId === workspaceStore.activeWorkspaceId
       ? operation
       : undefined
