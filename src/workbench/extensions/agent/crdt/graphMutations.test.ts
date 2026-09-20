@@ -322,11 +322,12 @@ describe('graphMutations', () => {
     ).toBe('Node 1')
   })
 
-  // Node color is presentation-only and the CRDT doc never carries it, so
-  // `prepareNode` only conditionally spreads `color`/`bgcolor` when the
-  // payload has one; `assignNodeFields` (nodeDataStore.ts) leaves both
-  // untouched when the replacement doesn't own the key, preserving a
-  // locally set node color across a reconcile.
+  // `assignNodeFields` (nodeDataStore.ts) unconditionally resets `color`/
+  // `bgcolor` to `undefined` before applying the replacement's own fields.
+  // Preservation instead comes from `prepareNode` (graphMutations.ts): for a
+  // same-type incumbent, `resolveNodeColors` copies the incumbent's color
+  // onto the replacement object before it ever reaches `assignNodeFields`,
+  // so the "reset" sees a replacement that already carries the live color.
   it('keeps a locally set node color through a reconcile whose payload carries none', () => {
     const graph = mutations()
     graph.addNode(node(1), context)

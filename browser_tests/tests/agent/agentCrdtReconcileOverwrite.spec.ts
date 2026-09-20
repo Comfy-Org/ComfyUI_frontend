@@ -60,17 +60,21 @@ const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 /**
  * Opens a second, blank workflow tab and returns to the first one, forcing
  * the agent CRDT follower to unbind and rebind against the original workflow
- * (see agentTabSwitchCatchUp.spec.ts for the mechanism this mirrors), then
- * waits for the follower's replay boundary — the tab control switching back
- * only proves the click landed, not that the reload, follower rebind, and
- * reconcile it triggers have finished.
+ * (see agentTabSwitchCatchUp.spec.ts for the mechanism this mirrors). The tab
+ * control switching back only proves the click landed, not that the new
+ * follower subscription and its reconcile have happened, so — mirroring
+ * agentTabSwitchCatchUp.spec.ts's `returnToTabA` — this captures
+ * `subscribeCount()` before switching and polls for it to rise by one before
+ * asserting anything about the canvas.
  */
 async function reconcileByReturningToTab(
   topbar: Topbar,
   agentConversation: AgentConversationHarness,
   throughTurn: number
 ): Promise<void> {
+  const before = agentConversation.subscribeCount()
   await topbar.openBlankTabAndReturn()
+  await expect.poll(() => agentConversation.subscribeCount()).toBe(before + 1)
   await agentConversation.expectCanvasReplayed(throughTurn)
 }
 
