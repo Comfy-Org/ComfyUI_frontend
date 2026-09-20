@@ -223,6 +223,58 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   )
 
   wstest(
+    'opens the lightbox when a grid image is double-clicked',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const gridImages = node.imageGrid.locator('img')
+
+      await test.step('Inject a multi-image grid', async () => {
+        const images = new Array(4).fill({
+          filename: 'example.png',
+          subfolder: '',
+          type: 'input'
+        })
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(4)
+      })
+
+      // Grid cells request re-encoded thumbnails; the lightbox must not.
+      await expect(gridImages.first()).toHaveAttribute(
+        'src',
+        /[?&]preview=webp(%3B|;)75/
+      )
+
+      // The first click swaps the grid out for the gallery panel, so the
+      // browser retargets the second click. jsdom cannot reproduce that,
+      // which is why this gesture is only coverable here.
+      await node.imageGrid
+        .getByRole('button', { name: 'View image 3 of 4' })
+        .dblclick()
+
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+      await expect(lightbox).toBeVisible()
+
+      await expect(lightbox.getByLabel('Previous')).toBeVisible()
+      await expect(lightbox.getByLabel('Next')).toBeVisible()
+      await expect(lightbox.locator('img').first()).not.toHaveAttribute(
+        'src',
+        /[?&]preview=/
+      )
+    }
+  )
+
+  wstest(
     'requests lightweight thumbnail URLs for grid cells',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())

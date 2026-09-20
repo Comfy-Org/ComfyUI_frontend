@@ -3,6 +3,7 @@
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
+    @mousedown="handleGestureStart"
     @dblclick.stop="handleGalleryDoubleClick"
   >
     <!-- Grid View -->
@@ -54,7 +55,6 @@
       :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
-      aria-keyshortcuts="Enter"
     >
       <!-- Error State -->
       <div
@@ -82,6 +82,7 @@
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
+        data-preview-control
         @click="withSingleClick($event, () => openHdrViewer(currentImageUrl))"
       >
         <i class="icon-[lucide--sun] size-12" />
@@ -107,6 +108,7 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
+        data-preview-control
       >
         <!-- Mask/Edit Button -->
         <button
@@ -130,6 +132,18 @@
           <i class="icon-[lucide--layers] size-4" />
         </button>
 
+        <!-- Open in Lightbox Button -->
+        <button
+          v-if="!imageError && !currentImageIsHdr"
+          data-testid="open-lightbox-button"
+          :class="actionButtonClass"
+          :title="$t('g.openInLightbox')"
+          :aria-label="$t('g.openInLightbox')"
+          @click="withSingleClick($event, openCurrentInLightbox)"
+        >
+          <i class="icon-[lucide--expand] size-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           v-if="!imageError"
@@ -147,7 +161,11 @@
           :class="actionButtonClass"
           :title="$t('g.viewGrid')"
           :aria-label="$t('g.viewGrid')"
-          @click="withSingleClick($event, () => (viewMode = 'grid'))"
+          @click="
+            withSingleClick($event, () => {
+              viewMode = 'grid'
+            })
+          "
         >
           <i class="icon-[lucide--layout-grid] size-4" />
         </button>
@@ -178,13 +196,18 @@
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
       class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      data-preview-control
     >
       <!-- Back to Grid button -->
       <button
         class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
-        @click="withSingleClick($event, () => (viewMode = 'grid'))"
+        @click="
+          withSingleClick($event, () => {
+            viewMode = 'grid'
+          })
+        "
       >
         <i class="icon-[lucide--layout-grid] size-3.5" />
       </button>
@@ -267,6 +290,7 @@ const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
+const gestureStartedOnControl = ref(false)
 const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -448,14 +472,31 @@ function openInLightbox(index: number) {
 
 // Gallery controls are revealed under the cursor mid-double-click, so the
 // second click can land on one of them. The browser still counts it as the
-// second click, which is how they tell it apart from a deliberate press and
-// let it through to the root handler.
-function withSingleClick(event: MouseEvent, action: () => void) {
+// second click, which is how a control tells it apart from a deliberate press.
+function withSingleClick(
+  event: MouseEvent,
+  action: () => void | Promise<void>
+): void | Promise<void> {
   if (event.detail > 1) return
-  action()
+  return action()
+}
+
+// `detail` counts the press within a click sequence, so 1 is the opening
+// press of a gesture. pointerdown reports 0 for every press and cannot tell
+// the first from the second.
+function handleGestureStart(event: MouseEvent) {
+  if (event.detail > 1) return
+  gestureStartedOnControl.value = Boolean(
+    (event.target as Element | null)?.closest('[data-preview-control]')
+  )
 }
 
 function handleGalleryDoubleClick() {
+  if (gestureStartedOnControl.value) return
+  openCurrentInLightbox()
+}
+
+function openCurrentInLightbox() {
   if (viewMode.value !== 'gallery' || imageError.value) return
   openInLightbox(currentIndex.value)
 }
@@ -477,16 +518,6 @@ function handleKeyDown(event: KeyboardEvent) {
   ) {
     event.preventDefault()
     viewMode.value = 'grid'
-    return
-  }
-
-  if (
-    event.key === 'Enter' &&
-    viewMode.value === 'gallery' &&
-    event.target === galleryPanelEl.value
-  ) {
-    event.preventDefault()
-    handleGalleryDoubleClick()
     return
   }
 

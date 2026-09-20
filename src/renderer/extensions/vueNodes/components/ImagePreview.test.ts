@@ -33,6 +33,7 @@ const i18n = createI18n({
       g: {
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
+        openInLightbox: 'Open in lightbox',
         removeImage: 'Remove image',
         viewImageOfTotal: 'View image {index} of {total}',
         imagePreview:
@@ -191,24 +192,11 @@ describe('ImagePreview', () => {
   })
 
   describe('opening the lightbox from the node preview', () => {
-    // Guards the unmount that makes the grid double-click work: a browser
-    // retargets the second click onto the gallery panel, so only the panel
-    // needs a dblclick handler. Switching the grid to v-show would break that.
-    it('replaces the grid with the gallery panel on the first click', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-
-      expect(screen.getByTestId('image-grid')).toBeInTheDocument()
-      await user.click(
-        screen.getByRole('button', { name: 'View image 1 of 2' })
-      )
-      await nextTick()
-
-      expect(screen.queryByTestId('image-grid')).not.toBeInTheDocument()
-      expect(screen.getByRole('region')).toBeInTheDocument()
-    })
-
-    it('opens the lightbox on the grid thumbnail that was double-clicked', async () => {
+    // The real grid gesture is covered end-to-end in
+    // browser_tests/tests/vueNodes/interactions/node/imagePreview.spec.ts:
+    // jsdom cannot retarget the second click, so this only pins the outcome
+    // once the gallery panel is showing.
+    it('opens the lightbox on the image the grid switched to', async () => {
       renderImagePreview()
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
@@ -279,7 +267,7 @@ describe('ImagePreview', () => {
 
       await user.dblClick(screen.getByTestId('hdr-open-button'))
 
-      expect(openHdrViewer).toHaveBeenCalledWith(hdrUrl)
+      expect(openHdrViewer).toHaveBeenCalledExactlyOnceWith(hdrUrl)
       expect(galleryStore.activeIndex).toBe(-1)
     })
 
@@ -394,27 +382,48 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(-1)
     })
 
-    it('opens the lightbox with Enter on the focused gallery panel', async () => {
+    it('opens the lightbox from the named action button', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
 
-      screen.getByRole('region').focus()
+      await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
+
+      expect(galleryStore.activeIndex).toBe(0)
+    })
+
+    it('opens the lightbox with the keyboard via that button', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      screen.getByRole('button', { name: 'Open in lightbox' }).focus()
       await user.keyboard('{Enter}')
 
       expect(galleryStore.activeIndex).toBe(0)
     })
 
-    it('does not open the lightbox with Enter on an action button', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
-      const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+    // A double-click that starts on a control is a control interaction, not
+    // the image gesture, so it must not also open the lightbox.
+    it.for([
+      { name: 'download button', control: 'Download image' },
+      { name: 'grid button', control: 'Grid view' }
+    ])(
+      'does not open the lightbox when double-clicking the $name',
+      async ({ control }) => {
+        renderImagePreview()
+        const user = userEvent.setup()
+        const galleryStore = useMediaAssetGalleryStore()
 
-      screen.getByRole('button', { name: 'Download image' }).focus()
-      await user.keyboard('{Enter}')
+        await user.click(
+          screen.getByRole('button', { name: 'View image 1 of 2' })
+        )
+        await nextTick()
+        await user.dblClick(screen.getAllByRole('button', { name: control })[0])
 
-      expect(galleryStore.activeIndex).toBe(-1)
-    })
+        expect(galleryStore.activeIndex).toBe(-1)
+      }
+    )
 
     it('does not open the lightbox for an image that failed to load', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
