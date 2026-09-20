@@ -11,7 +11,7 @@ import {
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
@@ -28,9 +28,10 @@ export class AgentCrdtProjection {
      * the page's own accepted add (reconcile, no report) from a genuine id
      * collision (reconcile, but reported).
      */
-    hasPendingAddNode: (nodeId: string) => boolean = () => false
+    hasPendingAddNode: (nodeId: string) => boolean = () => false,
+    intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, hasPendingAddNode)
+    this.adapter = new EcsFollowerAdapter(mutations, hasPendingAddNode, intent)
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
