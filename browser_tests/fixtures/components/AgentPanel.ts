@@ -13,6 +13,8 @@ export class AgentPanel {
   public readonly copyReportButton: Locator
   public readonly copiedButton: Locator
   public readonly workflowPicker: Locator
+  public readonly fileInput: Locator
+  public readonly composerAssetSection: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -35,6 +37,8 @@ export class AgentPanel {
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
+    this.fileInput = this.root.getByTestId('agent-file-input')
+    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
   }
 
   async open(): Promise<void> {
