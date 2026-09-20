@@ -9,11 +9,16 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import { listWorkspaces } from '../../lib/workshop/workspaces'
+import {
+  cancelWorkshopRun,
+  workshopRunInFlight
+} from '../../config/workshop-run-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
+import RunLeaveDialog from './RunLeaveDialog.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -157,15 +162,61 @@ async function restorePreviousWorkspace(
   }
 }
 
-async function switchWorkspace(workspaceId: string) {
-  if (switching.value) return
-  const previous = session.value
-  if (!previous) return
-  const previousWorkspaceId = previous.workspace.id
-  if (workspaceId === previousWorkspaceId) {
-    menuOpen.value = false
-    return
+// A run belongs to the workspace that is paying for it, so switching ends it.
+// The playground guards every way off the page; this is the way off the
+// workspace, and it has to ask the same question before it takes the credits.
+type PendingWorkspaceSwitch = {
+  targetWorkspaceId: string
+  sourceUid: string
+  sourceWorkspaceId: string
+}
+
+const switchPending = ref<PendingWorkspaceSwitch>()
+
+function pendingSwitchStillOwnsSession(
+  pending: PendingWorkspaceSwitch
+): boolean {
+  const current = session.value
+  return (
+    current?.uid === pending.sourceUid &&
+    current.workspace.id === pending.sourceWorkspaceId
+  )
+}
+
+function confirmSwitch() {
+  const pending = switchPending.value
+  switchPending.value = undefined
+  if (!pending || !pendingSwitchStillOwnsSession(pending)) return
+  cancelWorkshopRun()
+  void switchWorkspace(pending.targetWorkspaceId, {
+    runAlreadyCancelled: true
+  })
+}
+
+// The question only exists because a run would be thrown away. A run that ends
+// on its own answers it: there is nothing left to cancel, so the switch the
+// reader already asked for goes through and the dialog closes with it.
+watch(
+  [
+    workshopRunInFlight,
+    () => session.value?.uid,
+    () => session.value?.workspace.id
+  ],
+  ([inFlight]) => {
+    const pending = switchPending.value
+    if (!pending) return
+    if (inFlight && pendingSwitchStillOwnsSession(pending)) return
+
+    const shouldContinue = pendingSwitchStillOwnsSession(pending)
+    switchPending.value = undefined
+    if (shouldContinue) void switchWorkspace(pending.targetWorkspaceId)
   }
+)
+
+async function applySwitch(
+  workspaceId: string,
+  previous: ActiveWorkshopSession
+) {
   workspaceSwitchError.value = false
   switching.value = workspaceId
   try {
@@ -188,6 +239,28 @@ async function switchWorkspace(workspaceId: string) {
   } finally {
     switching.value = undefined
   }
+}
+
+async function switchWorkspace(
+  workspaceId: string,
+  options?: { runAlreadyCancelled?: boolean }
+) {
+  if (switching.value) return
+  const previous = session.value
+  if (!previous) return
+  if (workspaceId === previous.workspace.id) {
+    menuOpen.value = false
+    return
+  }
+  if (workshopRunInFlight.value && !options?.runAlreadyCancelled) {
+    switchPending.value = {
+      targetWorkspaceId: workspaceId,
+      sourceUid: previous.uid,
+      sourceWorkspaceId: previous.workspace.id
+    }
+    return
+  }
+  await applySwitch(workspaceId, previous)
 }
 
 const hasCredits = computed(
@@ -239,7 +312,7 @@ async function signOutFromMenu() {
     <a
       v-if="!user"
       :href="signInHref"
-      class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 flex h-10 items-center rounded-2xl px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 md:text-sm"
+      class="flex h-10 items-center rounded-2xl bg-transparency-white-t4 px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:text-sm"
       @pointerdown="prepareSignInHref"
       @focus="prepareSignInHref"
       @click="goToSignIn"
@@ -287,12 +360,22 @@ async function signOutFromMenu() {
       :balance-error="balance.status === 'error'"
       :can-top-up="canTopUp"
       :account-label="accountLabel"
+      :account-name="user.displayName || user.email || user.uid"
+      :account-photo-url="user.photoURL"
       :account-identity="user.email ?? user.displayName"
       :locale
       @retry="retryWorkspaceList"
       @switch-workspace="switchWorkspace"
       @buy-credits="requestWorkshopBuyCredits"
       @sign-out="signOutFromMenu"
+    />
+
+    <RunLeaveDialog
+      :open="switchPending !== undefined"
+      action="switchWorkspace"
+      :locale
+      @update:open="(value: boolean) => !value && (switchPending = undefined)"
+      @leave="confirmSwitch"
     />
   </div>
 </template>

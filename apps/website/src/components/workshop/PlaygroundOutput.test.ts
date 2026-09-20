@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { nextTick } from 'vue'
@@ -81,6 +80,21 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('status').textContent).toBe(
       'This output has expired.'
     )
+  })
+
+  it('asks users to review their inputs after a content-policy rejection', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedance 2.5',
+        state: { status: 'failed', reason: 'policy', fieldErrors: {} },
+        now: 0
+      }
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The model provider blocked the input or generated output under its content policy. Review your prompt and reference files before running again.'
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
   it.for([
@@ -207,6 +221,74 @@ describe('PlaygroundOutput', () => {
     expect(
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('latest')
+  })
+
+  it('switches between the files of one run from the output header', async () => {
+    const user = userEvent.setup()
+    const response: RunOutput = {
+      kind: 'text',
+      url: 'https://example.com/response.json',
+      fileName: 'response.json'
+    }
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        attachments: [response],
+        now: 2_000
+      }
+    })
+
+    const header = within(screen.getByRole('group', { name: 'Output files' }))
+    expect(
+      header.getByRole('button', { name: 'Image', pressed: true })
+    ).toBeTruthy()
+
+    await user.click(header.getByRole('button', { name: 'Raw response' }))
+    expect(
+      screen.getByTestId('output-download').getAttribute('href')
+    ).toContain('response')
+    expect(
+      header.getByRole('button', { name: 'Raw response', pressed: true })
+    ).toBeTruthy()
+  })
+
+  it('gives every file of a wide run its own button', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest')),
+        attachments: Array.from({ length: 10 }, (_, index) => ({
+          kind: 'image' as const,
+          url: `https://example.com/extra-${index}.webp`,
+          fileName: `extra-${index}.webp`
+        })),
+        now: 2_000
+      }
+    })
+    expect(
+      within(screen.getByRole('group', { name: 'Output files' })).getAllByRole(
+        'button'
+      )
+    ).toHaveLength(11)
+  })
+
+  it('withholds the file switch while the result is blurred', () => {
+    render(PlaygroundOutput, {
+      props: {
+        modelName: 'Seedream 4.5',
+        state: succeeded(output('latest'), true),
+        attachments: [
+          {
+            kind: 'text',
+            url: 'https://example.com/response.json',
+            fileName: 'response.json'
+          }
+        ],
+        now: 2_000
+      }
+    })
+    expect(screen.queryByRole('button', { name: 'Raw response' })).toBeNull()
   })
 
   it('lines the session up in the order it was generated, newest last', async () => {

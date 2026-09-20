@@ -57,8 +57,7 @@ function renderCard(asset: AssetDisplayItem) {
         AssetBadgeGroup: true,
         IconGroup: true,
         MoreButton: true,
-        StatusBadge: true,
-        Button: { template: '<button><slot /></button>' }
+        StatusBadge: true
       },
       directives: {
         tooltip: {}

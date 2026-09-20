@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {

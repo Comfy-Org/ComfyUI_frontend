@@ -44,14 +44,18 @@ vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'cloud',
-  get isCloud() {
-    return mockIsCloud.value
-  },
-  isDesktop: false,
-  isNightly: false
-}))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'cloud',
+      get isCloud() {
+        return mockIsCloud.value
+      },
+      isDesktop: false,
+      isNightly: false
+    }) as const
+)
 
 import MissingModelCard from './MissingModelCard.vue'
 

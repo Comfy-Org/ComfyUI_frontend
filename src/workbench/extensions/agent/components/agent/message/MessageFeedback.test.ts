@@ -4,11 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -45,6 +50,14 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
   })
@@ -127,10 +140,7 @@ describe('MessageFeedback', () => {
   })
 
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      blob: () => Promise.resolve(new Blob(['x']))
-    })
+    fetchApi.mockImplementation(async () => new Response(new Blob(['x'])))
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
@@ -146,6 +156,42 @@ describe('MessageFeedback', () => {
     expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
     expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
+  })
+
+  it('reports failed files without blocking successful downloads or retry', async () => {
+    fetchApi
+      .mockResolvedValueOnce(new Response(new Blob(['x'])))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockImplementation(async () => new Response(new Blob(['retry'])))
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock')
+    const revokeObjectURL = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
+    const { user } = renderFeedback([
+      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
+      { url: 'https://x/b.png', filename: 'b.png', kind: 'image' }
+    ])
+    const download = screen.getByRole('button', { name: 'Download assets' })
+
+    await user.click(download)
+
+    await waitFor(() =>
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: '1 download failed'
+        })
+      )
+    )
+    await waitFor(() => expect(download).toBeEnabled())
+
+    await user.click(download)
+
+    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
+    expect(revokeObjectURL).toHaveBeenCalledTimes(3)
   })
 
   it('Escape closes the markdown menu without copying', async () => {
