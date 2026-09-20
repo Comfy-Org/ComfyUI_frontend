@@ -16,21 +16,16 @@ const definitionsState = vi.hoisted(() => ({
   readSubgraphDefinitions: vi.fn()
 }))
 
-vi.mock(import('./agentNodeMaterializer'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
 }))
 
-vi.mock(import('./agentSubgraphDefinitions'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('./agentSubgraphDefinitions'), () => ({
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
-vi.mock(import('./devPanelLog'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  recordDevEvent: vi.fn()
-}))
+vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
 
 const { AgentCrdtProjection } = await import('./agentCrdtProjection')
 
