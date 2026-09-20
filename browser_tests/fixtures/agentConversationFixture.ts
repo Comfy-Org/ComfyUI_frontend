@@ -20,6 +20,7 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type { SubscribeBehavior } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -621,6 +622,20 @@ class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  // Every doc_subscribe the follower sent, refused ones included. Under a
+  // standing refusal subscribeCount stays 0 while this climbs with each retry,
+  // which is what separates "still retrying" from "gave up".
+  subscribeAttemptCount(): number {
+    return this.hostSocket.subscribeAttemptCount()
+  }
+
+  // Make the host refuse (or resume accepting) doc_subscribe. The refusal
+  // codes are ingest's own: `overloaded` when it cannot queue the subscribe,
+  // `unsupported` when the document surface is absent.
+  setSubscribeBehavior(behavior: SubscribeBehavior): void {
+    this.hostSocket.setSubscribeBehavior(behavior)
   }
 }
 
