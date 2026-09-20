@@ -26,15 +26,16 @@
           :aria-hidden="isActionBarsHidden"
           :class="
             cn(
-              'flex max-h-24 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
-              isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
+              'flex max-h-24 items-start gap-2 transition-all duration-300 ease-in-out',
+              isActionBarsHidden &&
+                'max-h-0 translate-x-8 overflow-hidden opacity-0'
             )
           "
         >
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-base-background p-1 shadow-interface"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-base-background p-1 shadow-xl shadow-black/40"
           >
             <div
               :class="
