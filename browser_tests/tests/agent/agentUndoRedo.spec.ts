@@ -18,8 +18,7 @@ test.describe('Agent edit undo/redo', { tag: '@cloud' }, () => {
   test.use({ conversationCase: THREE_ADDS_CASE })
 
   // A user who undoes an agent-authored graph edit and then presses redo
-  // (shortcut or the alternative Ctrl+Y-style binding) does not get the
-  // edit back — the graph stays at the undone state.
+  // (shortcut or the alternative Ctrl+Y-style binding) gets the edit back.
   test('redo restores an agent edit that was just undone', async ({
     agentConversation,
     page
@@ -30,17 +29,16 @@ test.describe('Agent edit undo/redo', { tag: '@cloud' }, () => {
     const afterAgentEdit = await graphNodeCount(page)
     expect(afterAgentEdit).toBeGreaterThan(0)
 
-    // Undo one of the agent's three add-node ops. This half is NOT the
-    // reported defect and is asserted first, structurally, while a failure
-    // here is still unexpected — it establishes that the agent's edit really
-    // is on the undo stack before redo is exercised.
+    // Undo one of the agent's three add-node ops. This half is not the
+    // reported defect and is asserted first, structurally — it establishes
+    // that the agent's edit really is on the undo stack before redo is
+    // exercised.
     await page.locator('#graph-canvas').click()
     await page.keyboard.press('ControlOrMeta+z')
     await expect.poll(() => graphNodeCount(page)).toBe(afterAgentEdit - 1)
 
-    // Below is the known defect: redo (the standard shortcut) should restore
-    // the node the undo above just removed, and does not.
-    test.fail()
+    // Redo (the standard shortcut) restores the node the undo above just
+    // removed.
     await page.keyboard.press('ControlOrMeta+Shift+z')
     await expect.poll(() => graphNodeCount(page)).toBe(afterAgentEdit)
   })

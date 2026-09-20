@@ -1241,6 +1241,10 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
 
+      // updateState() re-serializes the canvas after loadGraphData() settles
+      // (rather than trusting the loaded JSON as-is), so the mock must
+      // reflect what the canvas holds once each load resolves.
+      mockCanvasState(initial)
       await tracker.undo()
 
       expect(app.loadGraphData).toHaveBeenCalled()
@@ -1251,6 +1255,7 @@ describe('ChangeTracker', () => {
       )
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
+      mockCanvasState(changed)
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
@@ -1267,16 +1272,46 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
 
+      mockCanvasState(initial)
       await tracker.undo()
 
       expect(tracker.activeState).toEqual(initial)
       expectAutoQueueGraphChangedNotDispatched()
 
       vi.mocked(api.dispatchCustomEvent).mockClear()
+      mockCanvasState(changed)
       await tracker.redo()
 
       expect(tracker.activeState).toEqual(changed)
       expectAutoQueueGraphChangedNotDispatched()
+    })
+
+    it('does not let a capture right after undo/redo see the loaded JSON as changed, even if the canvas still needs a tick to hydrate it', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+
+      // Real widget hydration can add fields to the canvas's own copy of a
+      // node that were absent from the raw JSON handed to loadGraphData.
+      // Mimic that here: the canvas settles into `hydrated`, not `initial`.
+      const hydrated = structuredClone(initial)
+      hydrated.nodes[0].properties = { hydrated: true }
+      mockCanvasState(hydrated)
+
+      await tracker.undo()
+
+      // activeState must reflect what the canvas actually settled to, or a
+      // subsequent captureCanvasState() (e.g. from the mouseup/keyup of the
+      // user's own undo keypress) would see `hydrated` as a fresh edit and
+      // clear the redoQueue undo() just populated.
+      expect(tracker.activeState).toEqual(hydrated)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker.undoQueue).toEqual([])
     })
   })
 

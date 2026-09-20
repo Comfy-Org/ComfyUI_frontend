@@ -1,5 +1,6 @@
 import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
+import { nextTick } from 'vue'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
@@ -479,7 +480,13 @@ export class ChangeTracker {
           checkForRerouteMigration: false,
           silentAssetErrors: true
         })
-        this.activeState = prevState
+        // Widget/node hydration can still mutate the graph for a tick after
+        // loadGraphData() resolves, so activeState must wait for that
+        // settling before it is set — otherwise the next captureCanvasState()
+        // call sees a false diff against the raw JSON and clears the queue
+        // it just populated.
+        await nextTick()
+        this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
         this.updateModified(previousState)
       } finally {
         this._restoringState = false
