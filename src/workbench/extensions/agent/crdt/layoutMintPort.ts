@@ -71,6 +71,18 @@ export interface LayoutMintPort {
   detach(): void
 }
 
+/**
+ * A node minted mid-placement still carries `flags.ghost`, because `LGraph.add`
+ * sets it before the layout change that mints `add_node`. The document must not
+ * record it: the placement click clears the flag locally and mints no op, so the
+ * document's copy would outlive the placement it describes.
+ */
+function withoutGhostFlag(node: WorkflowNode): WorkflowNode {
+  if (node.flags?.ghost === undefined) return node
+  const { ghost: _ghost, ...flags } = node.flags
+  return { ...node, flags }
+}
+
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
   const reportedInteriorChanges = new Set<string>()
@@ -172,7 +184,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
             node_id: operation.nodeId,
             class_type: node.type,
             pos: [operation.layout.position.x, operation.layout.position.y],
-            node
+            node: withoutGhostFlag(node)
           }
         ])
         mintedNodeIds.add(nodeIdKey)
