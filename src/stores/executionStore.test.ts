@@ -19,11 +19,14 @@ import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
-const { mockShowTextPreview } = await vi.hoisted(async () => {
-  return {
-    mockShowTextPreview: vi.fn()
+const { mockRemoveTextPreview, mockShowTextPreview } = await vi.hoisted(
+  async () => {
+    return {
+      mockRemoveTextPreview: vi.fn(),
+      mockShowTextPreview: vi.fn()
+    }
   }
-})
+)
 
 const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
@@ -47,6 +50,7 @@ declare global {
 
 vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
+    removeTextPreview: mockRemoveTextPreview,
     showTextPreview: mockShowTextPreview
   })
 }))
@@ -2421,6 +2425,54 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBeNull()
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
+  })
+
+  it.for([
+    {
+      event: 'execution_success',
+      detail: { prompt_id: 'job-1', timestamp: 0 }
+    },
+    {
+      event: 'execution_interrupted',
+      detail: {
+        prompt_id: 'job-1',
+        node_id: '1',
+        node_type: 't',
+        executed: [],
+        timestamp: 0
+      }
+    },
+    {
+      event: 'execution_error',
+      detail: {
+        prompt_id: 'job-1',
+        node_id: '1',
+        node_type: 't',
+        exception_type: 'RuntimeError',
+        exception_message: 'failed',
+        traceback: []
+      }
+    }
+  ])('removes progress text after $event', async ({ event, detail }) => {
+    const node = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => node) }
+    } as unknown as LGraphCanvas
+    const workflow = createQueuedWorkflow()
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'Node') },
+      workflow,
+      mode: 'graph'
+    })
+    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+    fire(event, detail)
+
+    expect(mockRemoveTextPreview).toHaveBeenCalledWith(node)
   })
 
   describe('executed', () => {

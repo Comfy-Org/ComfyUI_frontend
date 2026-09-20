@@ -91,6 +91,7 @@ function readPromptWidget(comfyPage: ComfyPage) {
     }
     const graphId = window.app!.rootGraph.id
     const promptId = `${graphId}:${node.id}:prompt`
+    const progressTextId = `${graphId}:${node.id}:$$node-text-preview`
     return {
       nodeId: String(node.id),
       liteWidgetNames: (node.widgets ?? []).map((w) => w.name),
@@ -100,6 +101,7 @@ function readPromptWidget(comfyPage: ComfyPage) {
         .includes(promptId),
       storeType: store.getWidget(promptId)?.type,
       storeValue: store.getWidget(promptId)?.value,
+      storeHasProgressText: store.getWidget(progressTextId) !== undefined,
       autogrowInputs: node.inputs
         .map((input) => input.name)
         .filter((name) => name.startsWith('model.images.'))
@@ -151,6 +153,22 @@ test.describe(
       expect(after.liteWidgetNames).toContain('prompt')
       expect(after.storeOrderHasPrompt).toBe(true)
       expect(after.autogrowInputs).toEqual(before.autogrowInputs)
+    })
+
+    test('completed generations remove progress text from the node and widget store', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const { nodeId } = await readPromptWidget(comfyPage)
+
+      await runGeneration(comfyPage, exec, ws, nodeId)
+
+      expect(await readPromptWidget(comfyPage)).toMatchObject({
+        liteWidgetNames: expect.not.arrayContaining(['$$node-text-preview']),
+        storeHasProgressText: false
+      })
     })
 
     test(
