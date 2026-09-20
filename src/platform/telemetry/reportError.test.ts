@@ -121,7 +121,9 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledOnce()
   })
 
-  it('sends only sanctioned fields through the Desktop error bridge', async () => {
+  // The bridge gets the same message and stack Sentry does; what it never gets
+  // is the free-form `context`, or a tag that is not a defined primitive.
+  it('keeps context and non-primitive tags out of the Desktop payload', async () => {
     sentryLive(false)
     datadogLive(false)
     installDesktopBridge()
