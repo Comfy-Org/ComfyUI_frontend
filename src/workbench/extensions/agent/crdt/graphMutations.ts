@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -17,6 +18,17 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
+
+import type { PlacementRect } from './batchPlacement'
+import { placementOffset } from './batchPlacement'
+import type { PlaceholderWidget, WidgetValuePayload } from './nodePayload'
+import {
+  cloneWidgetValue,
+  nodeTitle,
+  parseWidgetValues,
+  placeholderWidgets,
+  widgetType
+} from './nodePayload'
 
 export interface SemanticNodePayload extends Record<string, unknown> {
   id: string | number
@@ -58,14 +70,49 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+/**
+ * Renderer-owned placement geometry. `viewportBounds` returns the visible
+ * area in canvas coordinates only while the displayed graph is the scope's
+ * owning graph, and null otherwise (background workflow, subgraph editing,
+ * no canvas mounted). See ADR-CRDT-PLACEMENT-0035.
+ */
+export interface SemanticPlacementPort {
+  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
+  viewportBounds(scope: GraphScope): PlacementRect | null
+}
+
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+/**
+ * Renderer-owned live widget port. A value patch for a widget that is already
+ * mounted on the canvas is replayed through the live widget so its callback,
+ * backing property, and rendered state move in the same frame; the port
+ * reports the value the live widget settled on, or `skipped` when the node or
+ * widget is not live.
+ */
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): LiveWidgetMutationResult
+  rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
-  reconcileNode(payload: SemanticNodePayload): void
   /**
-   * For a node of the same type, resyncs scalar fields while preserving slots,
-   * widgets, and layout. A missing node or type mismatch is added or replaced
-   * from the full payload.
+   * For a node of the same type, resyncs fields and slots and patches widget
+   * values onto the registered widgets. A missing node or type mismatch is
+   * added or replaced from the full payload.
    */
+  reconcileNode(payload: SemanticNodePayload): void
+  /** Like `reconcileNode`, but the live node keeps its slot list. */
   reconcileNodeFields(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
   connect(link: SemanticLinkPayload): void
@@ -104,6 +151,8 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  placement: SemanticPlacementPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -128,14 +177,22 @@ type QueuedMutation =
 interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
-  widgets: Array<{ name: string; value: WidgetValue; type: string }>
+  widgets: WidgetValuePayload
 }
 
 type PreparedMutation =
-  | { kind: 'addNode'; node: PreparedNode }
+  | {
+      kind: 'addNode'
+      node: PreparedNode
+      queued: 'addNode' | 'reconcileNodeFields'
+    }
   | { kind: 'reconcileNode'; node: PreparedNode }
   | { kind: 'replaceNode'; node: PreparedNode }
-  | { kind: 'reconcileNodeFields'; state: NodeState }
+  | {
+      kind: 'reconcileNodeFields'
+      state: NodeState
+      widgets: WidgetValuePayload
+    }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
   | {
       kind: 'connect'
@@ -165,25 +222,72 @@ function cloneRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
+ * `ghost` marks a node still following the cursor during search-box placement.
+ * The placement click clears it locally and mints no op, so a document that
+ * recorded the flag would resurrect it here and leave an already-placed node
+ * translucent and unclickable.
+ */
+function cloneNodeFlags(value: unknown): Record<string, unknown> {
+  const { ghost: _ghost, ...flags } = cloneRecord(value)
+  return flags
+}
+
+/**
  * A supplied input slot whose record has no `link` key carries no link
  * information (as opposed to `link: null`, which means unlinked). Such slots
  * keep the link of the `existing` slot at the same index, or `null` when the
  * node has no slot there yet.
  */
+function applySlotLink(
+  slot: Record<string, unknown>,
+  index: number,
+  existing?: NodeState['inputs']
+): void {
+  if (typeof slot.link === 'number') {
+    slot.link = toLinkId(slot.link)
+    return
+  }
+  if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
+}
+
+/**
+ * The CRDT payload never carries the autogrow-computed display name, so a
+ * prior slot at the same index and name (i.e. this is a reconcile of a slot
+ * the live node already has, not a genuinely new one) keeps its display
+ * metadata instead of losing it to the thin payload.
+ */
+function preserveSlotDisplayMetadata(
+  slot: Record<string, unknown>,
+  priorSlot?: NodeState['inputs'][number]
+): void {
+  if (!priorSlot || priorSlot.name !== slot.name) return
+  if (slot.localized_name === undefined)
+    slot.localized_name = priorSlot.localized_name
+  if (slot.label === undefined) slot.label = priorSlot.label
+}
+
+function prepareInputSlot(
+  raw: Record<string, unknown>,
+  index: number,
+  existing?: NodeState['inputs']
+): NodeState['inputs'][number] {
+  const slot = structuredClone(raw)
+  applySlotLink(slot, index, existing)
+  preserveSlotDisplayMetadata(slot, existing?.[index])
+  return {
+    ...slot,
+    boundingRect: [0, 0, 0, 0]
+  } as unknown as NodeState['inputs'][number]
+}
+
 function prepareInputSlots(
   value: unknown,
   existing?: NodeState['inputs']
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw, index) => {
-    const slot = structuredClone(raw)
-    if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
-    if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
-    return {
-      ...slot,
-      boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['inputs'][number]
-  })
+  return value
+    .filter(isRecord)
+    .map((raw, index) => prepareInputSlot(raw, index, existing))
 }
 
 function prepareOutputSlots(value: unknown): NodeState['outputs'] {
@@ -212,62 +316,40 @@ function readPair(
     : fallback
 }
 
-function widgetType(value: unknown): string {
-  switch (typeof value) {
-    case 'boolean':
-      return 'boolean'
-    case 'number':
-      return 'number'
-    case 'string':
-      return 'string'
-    default:
-      return 'legacy'
-  }
+type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
+
+function resolveColorField(
+  value: unknown,
+  existing?: string
+): string | undefined {
+  return typeof value === 'string' ? value : existing
 }
 
-function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
-  const values = payload.widgets_values
-  if (Array.isArray(values)) {
-    return values.map((value, index) => ({
-      name: String(index),
-      value: structuredClone(value) as WidgetValue,
-      type: widgetType(value)
-    }))
-  }
-  if (!isRecord(values)) return []
-  return Object.entries(values).map(([name, value]) => ({
-    name,
-    value: structuredClone(value) as WidgetValue,
-    type: widgetType(value)
-  }))
-}
-
-function prepareNode(
+/**
+ * Node color is a client-only presentation property the CRDT document never
+ * carries (see ComfyNode's constructor), so a payload without it keeps the
+ * live node's color instead of losing it to a reconcile.
+ */
+function resolveNodeColors(
   payload: SemanticNodePayload,
-  scope: GraphScope,
   existing?: NodeState
-): PreparedNode {
-  const id = toNodeId(payload.id)
-  const [x, y] = readPair(payload.pos, [0, 0])
-  const [width, height] = readPair(payload.size, [270, 100])
-  const mode = Number(payload.mode)
-  const state: NodeState = {
-    id,
-    graphId: scope.owningGraphId,
-    type: payload.type,
-    title:
-      typeof payload.title === 'string' && payload.title.length > 0
-        ? payload.title
-        : payload.type,
-    flags: cloneRecord(payload.flags),
-    inputs: prepareInputSlots(payload.inputs, existing?.inputs),
-    outputs: prepareOutputSlots(payload.outputs),
-    mode: Number.isInteger(mode) ? mode : 0,
-    properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
-    ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
-    ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
-    ...(typeof payload.color === 'string' && { color: payload.color }),
+): Partial<NodeColors> {
+  const bgcolor = resolveColorField(payload.bgcolor, existing?.bgcolor)
+  const boxcolor = resolveColorField(payload.boxcolor, existing?.boxcolor)
+  const color = resolveColorField(payload.color, existing?.color)
+  return {
+    ...(bgcolor !== undefined && { bgcolor }),
+    ...(boxcolor !== undefined && { boxcolor }),
+    ...(color !== undefined && { color })
+  }
+}
+
+type NodeDisplayFlags = Pick<NodeState, 'resizable' | 'shape' | 'showAdvanced'>
+
+function resolveNodeDisplayFlags(
+  payload: SemanticNodePayload
+): Partial<NodeDisplayFlags> {
+  return {
     ...(typeof payload.resizable === 'boolean' && {
       resizable: payload.resizable
     }),
@@ -278,9 +360,39 @@ function prepareNode(
       showAdvanced: payload.showAdvanced
     })
   }
+}
+
+function prepareNode(
+  payload: SemanticNodePayload,
+  scope: GraphScope,
+  existing?: NodeState
+): PreparedNode {
+  const incumbent = existing?.type === payload.type ? existing : undefined
+  const id = toNodeId(payload.id)
+  const [x, y] = readPair(payload.pos, [0, 0])
+  const [width, height] = readPair(payload.size, [270, 100])
+  const mode = Number(payload.mode)
+  const flags = cloneNodeFlags(payload.flags)
+  const state: NodeState = {
+    id,
+    graphId: scope.owningGraphId,
+    type: payload.type,
+    title: nodeTitle(payload.title, payload.type),
+    flags,
+    inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
+    outputs: prepareOutputSlots(payload.outputs),
+    mode: Number.isInteger(mode) ? mode : 0,
+    properties: cloneRecord(payload.properties) as NodeState['properties'],
+    lastSerialization: structuredClone({
+      ...payload,
+      flags
+    }) as unknown as ISerialisedNode,
+    ...resolveNodeColors(payload, incumbent),
+    ...resolveNodeDisplayFlags(payload)
+  }
   return {
     state,
-    widgets: widgetEntries(payload),
+    widgets: parseWidgetValues(payload.widgets_values),
     layout: {
       position: { x, y },
       size: { width, height }
@@ -305,6 +417,34 @@ function prepareTopology(
 
 function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
+}
+
+/**
+ * Whether a link's declared origin output type and target input type are
+ * both resolvable and definitively incompatible, using the exact rule
+ * `connect` enforces before applying a link (`LiteGraph.isValidConnection`).
+ * An unresolvable slot (missing slot list, or an index past its end) reports
+ * `false` rather than `true`: `connect`'s own "does not exist" checks give
+ * that case a more specific rejection reason, and this predicate exists only
+ * to let a caller pre-exclude a link it already knows would be refused for
+ * an origin/target TYPE mismatch, not to duplicate every reason `connect`
+ * can refuse a link.
+ *
+ * Exposed so `EcsFollowerAdapter` can keep an already-invalid retained link
+ * out of what it projects into the local canvas mirror during
+ * reconciliation, without duplicating `LiteGraph`'s compatibility rules or
+ * risking them drifting from what `connect` actually enforces.
+ */
+export function isIncompatibleLinkType(link: {
+  originSlot: number
+  targetSlot: number
+  originOutputs?: readonly ISerialisableNodeOutput[]
+  targetInputs?: readonly ISerialisableNodeInput[]
+}): boolean {
+  const originType = link.originOutputs?.[link.originSlot]?.type
+  const targetType = link.targetInputs?.[link.targetSlot]?.type
+  if (originType === undefined || targetType === undefined) return false
+  return !LiteGraph.isValidConnection(originType, targetType)
 }
 
 function detachedLinkSlots(
@@ -400,18 +540,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    const widgets = new Map<string, Set<string>>()
-    for (const node of nodes.values()) {
-      widgets.set(
-        nodeKey(node.id),
-        new Set(
-          widgetStore
-            .getNodeWidgets(scope.rootGraphId, node.id)
-            .map((widget) => widget.name)
-        )
-      )
-    }
-
     const validateNodeUpsert = (
       node: PreparedNode,
       key: string
@@ -421,8 +549,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         return `node id ${key} belongs to graph ${incumbent.graphId}`
       }
       if (
-        node.widgets.some(
-          ({ name }) =>
+        node.widgets.kind === 'named' &&
+        [...node.widgets.values.keys()].some(
+          (name) =>
             !isWidgetId(widgetId(scope.rootGraphId, node.state.id, name))
         )
       ) {
@@ -456,16 +585,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             return `node id ${key} is already registered`
           }
           nodes.set(key, node.state)
-          widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
-          prepared.push({
-            kind:
-              mutation.kind === 'reconcileNode' &&
-              existing &&
-              existing.type !== node.state.type
-                ? 'replaceNode'
-                : mutation.kind,
-            node
-          })
+          if (mutation.kind === 'addNode') {
+            prepared.push({ kind: 'addNode', node, queued: 'addNode' })
+          } else {
+            prepared.push({
+              kind:
+                existing && existing.type !== node.state.type
+                  ? 'replaceNode'
+                  : 'reconcileNode',
+              node
+            })
+          }
           break
         }
         case 'reconcileNodeFields': {
@@ -484,16 +614,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
             nodes.set(key, node.state)
-            widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
-            prepared.push({
-              kind: existing ? 'replaceNode' : 'addNode',
-              node
-            })
+            if (existing) {
+              prepared.push({ kind: 'replaceNode', node })
+            } else {
+              prepared.push({
+                kind: 'addNode',
+                node,
+                queued: 'reconcileNodeFields'
+              })
+            }
           } else {
             node.state.inputs = existing.inputs
             node.state.outputs = existing.outputs
             nodes.set(key, node.state)
-            prepared.push({ kind: mutation.kind, state: node.state })
+            prepared.push({
+              kind: mutation.kind,
+              state: node.state,
+              widgets: node.widgets
+            })
           }
           break
         }
@@ -507,12 +645,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return `node ${key} has an invalid widget name`
           }
-          widgets.get(key)?.add(mutation.name)
           prepared.push({
             kind: mutation.kind,
             nodeId: mutation.nodeId,
             name: mutation.name,
-            value: structuredClone(mutation.value) as WidgetValue
+            value: cloneWidgetValue(mutation.value)
           })
           break
         }
@@ -554,6 +691,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (topology.targetSlot >= targetInputs.length) {
             return `connect target slot ${topology.targetSlot} does not exist`
+          }
+          const originType = originOutputs[topology.originSlot]?.type
+          const targetType = targetInputs[topology.targetSlot]?.type
+          if (
+            isIncompatibleLinkType({
+              originSlot: topology.originSlot,
+              targetSlot: topology.targetSlot,
+              originOutputs,
+              targetInputs
+            })
+          ) {
+            return `connect origin slot ${topology.originSlot} type ${String(originType)} is not compatible with target slot ${topology.targetSlot} type ${String(targetType)}`
           }
           if (mutation.link.originOutputs) {
             nodes.set(nodeKey(topology.originNodeId), {
@@ -606,7 +755,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             .filter((id) => !retainedNodeIds.has(nodeKey(id)))
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
-            widgets.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
           }
           const linkIds = [...links.keys()].filter(
@@ -657,7 +805,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             removedLinkIds.push(id)
           }
           nodes.delete(nodeKey(mutation.nodeId))
-          widgets.delete(nodeKey(mutation.nodeId))
           removeIncidentLinks(nodes, links, mutation.nodeId)
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
@@ -672,7 +819,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         case 'clearSemanticGraph': {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
           nodes.clear()
-          widgets.clear()
           links.clear()
           prepared.push({ kind: mutation.kind, nodeIds })
           break
@@ -680,6 +826,46 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       }
     }
     return prepared
+  }
+
+  function offsetInsertedBatch(
+    scope: GraphScope,
+    existingIds: readonly NodeId[],
+    prepared: readonly PreparedMutation[]
+  ): void {
+    const inserted = prepared.filter(
+      (mutation): mutation is Extract<PreparedMutation, { kind: 'addNode' }> =>
+        mutation.kind === 'addNode' && mutation.queued === 'addNode'
+    )
+    if (inserted.length === 0) return
+    const offset = placementOffset({
+      existing: existingIds
+        .map((id) => deps.placement.nodeBounds(scope, id))
+        .filter((rect): rect is PlacementRect => rect !== null),
+      viewport: deps.placement.viewportBounds(scope),
+      incoming: inserted.map(({ node }) => ({
+        x: node.layout.position.x,
+        y: node.layout.position.y,
+        width: node.layout.size.width,
+        height: node.layout.size.height
+      }))
+    })
+    if (!offset) return
+    for (const { node } of inserted) {
+      node.layout.position = {
+        x: node.layout.position.x + offset.dx,
+        y: node.layout.position.y + offset.dy
+      }
+      // The materializer configures the live node from lastSerialization, so
+      // its pos must carry the same offset or configure() re-applies the raw
+      // coordinates over the adopted layout entry.
+      if (node.state.lastSerialization) {
+        node.state.lastSerialization.pos = [
+          node.layout.position.x,
+          node.layout.position.y
+        ]
+      }
+    }
   }
 
   function detachLinkSlots(
@@ -730,6 +916,130 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
+  /**
+   * Replays the value through the live widget first so its callback and
+   * backing property run in the same frame the semantic state is written, and
+   * reports the value the live widget settled on. A node or widget that is not
+   * live is `skipped` and keeps the incoming value.
+   */
+  function projectLiveWidgetValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): WidgetValue {
+    const projected = deps.liveWidgets?.setValue(
+      scope,
+      nodeId,
+      name,
+      value,
+      context
+    )
+    return projected && projected.status !== 'skipped'
+      ? projected.resolvedValue
+      : value
+  }
+
+  function registerPlaceholder(
+    scope: GraphScope,
+    nodeId: NodeId,
+    widget: PlaceholderWidget,
+    context: RemoteMutationContext
+  ): void {
+    const value = projectLiveWidgetValue(
+      scope,
+      nodeId,
+      widget.name,
+      widget.value,
+      context
+    )
+    widgetStore.registerWidget(
+      widgetId(scope.rootGraphId, nodeId, widget.name),
+      {
+        name: widget.name,
+        type: widget.type,
+        value,
+        options: {},
+        label: widget.name
+      },
+      {},
+      undefined,
+      context
+    )
+    // The registered state is a new identity, so a live widget that was
+    // already mounted has to adopt it instead of keeping its own shim.
+    deps.liveWidgets?.rebind?.(scope, nodeId, widget.name)
+  }
+
+  function setWidgetValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): void {
+    const id = widgetId(scope.rootGraphId, nodeId, name)
+    if (widgetStore.getWidget(id)) {
+      widgetStore.setValue(
+        id,
+        projectLiveWidgetValue(scope, nodeId, name, value, context),
+        context
+      )
+    } else {
+      registerPlaceholder(
+        scope,
+        nodeId,
+        { name, value, type: widgetType(value) },
+        context
+      )
+    }
+  }
+
+  /**
+   * A doc entry for a node that is already live is a value patch: the live
+   * widgets keep their registered type, options, and state identity, and a
+   * value the payload omits keeps its current value. Positional values bind
+   * to the serialized widgets in order, the same order `LGraphNode.serialize`
+   * wrote them in.
+   */
+  function applyWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    widgets: WidgetValuePayload,
+    context: RemoteMutationContext
+  ): void {
+    switch (widgets.kind) {
+      case 'omitted':
+        return
+      case 'named':
+        for (const [name, value] of widgets.values) {
+          setWidgetValue(scope, nodeId, name, value, context)
+        }
+        return
+      case 'positional': {
+        const serialized = widgetStore
+          .getNodeWidgets(scope.rootGraphId, nodeId)
+          .filter((widget) => widget.serialize !== false)
+          .slice(0, widgets.values.length)
+        for (const [index, widget] of serialized.entries()) {
+          setWidgetValue(
+            scope,
+            nodeId,
+            widget.name,
+            widgets.values[index],
+            context
+          )
+        }
+        return
+      }
+      default: {
+        const unhandled: never = widgets
+        return unhandled
+      }
+    }
+  }
+
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
@@ -755,37 +1065,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
-          } else {
-            nodeStore.registerNode(scope, mutation.node.state, context)
-          }
-          for (const widget of mutation.node.widgets) {
-            widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
-              {
-                name: widget.name,
-                type: widget.type,
-                value: widget.value,
-                options: {},
-                label: widget.name
-              },
-              {},
-              undefined,
-              context
-            )
-          }
-          if (!existing) {
-            deps.layout.createNode(
+            applyWidgetValues(
               scope,
               mutation.node.state.id,
-              mutation.node.layout,
+              mutation.node.widgets,
               context
             )
+            break
           }
+          nodeStore.registerNode(scope, mutation.node.state, context)
+          for (const widget of placeholderWidgets(mutation.node.widgets)) {
+            registerPlaceholder(scope, mutation.node.state.id, widget, context)
+          }
+          deps.layout.createNode(
+            scope,
+            mutation.node.state.id,
+            mutation.node.layout,
+            context
+          )
           break
         }
         case 'reconcileNodeFields': {
@@ -795,27 +1092,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.state,
             context
           )
+          applyWidgetValues(scope, mutation.state.id, mutation.widgets, context)
           break
         }
         case 'setWidget': {
-          const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-          if (!widgetStore.getWidget(id)) {
-            widgetStore.registerWidget(
-              id,
-              {
-                name: mutation.name,
-                type: widgetType(mutation.value),
-                value: mutation.value,
-                options: {},
-                label: mutation.name
-              },
-              {},
-              undefined,
-              context
-            )
-          } else {
-            widgetStore.setValue(id, mutation.value, context)
-          }
+          setWidgetValue(
+            scope,
+            mutation.nodeId,
+            mutation.name,
+            mutation.value,
+            context
+          )
           break
         }
         case 'connect': {
@@ -949,8 +1236,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           queued.push({ kind: 'clearSemanticGraph' })
         }
       })
+      const existingIds = nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map((node) => node.id)
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
+      offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context)
       return true
     },

@@ -1,11 +1,13 @@
 import {
   applyOps,
+  linksMap,
   mint,
   project,
   readGraph
 } from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
+  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -19,6 +21,15 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
+
+type HostLinkTuple = [
+  id: number,
+  fromNode: string | number,
+  fromSlot: number,
+  toNode: string | number,
+  toSlot: number,
+  type: string
+]
 
 // The shape the fake host puts on the wire; production's parseServerDocFrame
 // validates each one at send time.
@@ -95,6 +106,66 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  replaceLink(link: HostLinkTuple): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const replacement = new Y.Array<unknown>()
+    replacement.push(link)
+    linksMap(this.doc).set(String(link[0]), replacement)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  link(id: number): unknown {
+    const link = linksMap(this.doc).get(String(id))
+    return link instanceof Y.Array ? link.toJSON() : link
+  }
+
+  // A human tab's batch arrives already enveloped. It is applied as sent and
+  // answered the way the relay answers, then broadcast like any host write.
+  applyClient(ops: Op[]): HostFrame[] {
+    const before = Y.encodeStateVector(this.doc)
+    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const rejected = outcomes.find((o) => o.outcome === 'rejected')
+    const applied = outcomes
+      .filter((o) => o.outcome === 'applied')
+      .map((o) => o.op_id)
+    const skipped = outcomes
+      .filter((o) => o.outcome === 'no-op' || o.outcome === 'lww-dropped')
+      .map((o) => o.op_id)
+    const result: HostFrame = {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: rejected === undefined,
+        applied,
+        skipped,
+        ...(rejected?.outcome === 'rejected' && {
+          failed: {
+            index: outcomes.indexOf(rejected),
+            op_id: rejected.op_id,
+            code: rejected.reason.code,
+            message: rejected.reason.message
+          }
+        })
+      }
+    }
+    if (applied.length === 0) return [result]
+    this.seq += 1
+    return [
+      result,
+      this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        ops[0].actor,
+        applied
+      )
+    ]
   }
 
   private updateFrame(

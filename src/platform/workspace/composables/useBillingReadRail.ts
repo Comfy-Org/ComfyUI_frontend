@@ -1,10 +1,17 @@
-import type { BillingResult } from '@comfyorg/account-core/billing'
+import type {
+  BillingEventsReadOptions,
+  BillingResult,
+  CapabilitiesReadOptions
+} from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingEventsResponse,
   BillingPlansResponse,
-  BillingStatusResponse
+  BillingStatusResponse,
+  SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 
@@ -13,10 +20,19 @@ export interface BillingReadRail {
   readStatus: () => Promise<BillingResult<BillingStatusResponse>>
   readBalance: () => Promise<BillingResult<BillingBalanceResponse>>
   readPlans: () => Promise<BillingResult<BillingPlansResponse>>
+  readCapabilities: (
+    options: CapabilitiesReadOptions
+  ) => Promise<BillingResult<BillingCapabilitiesResponse>>
+  readPaymentMethods: () => Promise<BillingResult<SavedPaymentMethod[]>>
+  /** The only read whose request varies per call: it asks for one page. */
+  readEvents: (
+    options?: BillingEventsReadOptions
+  ) => Promise<BillingResult<BillingEventsResponse>>
 }
 
 /**
- * Which rail the billing status and balance are read on. Null is the legacy
+ * Which rail the billing reads — status, balance, plans, capabilities, saved
+ * payment methods and the history feed — are served on. Null is the legacy
  * client. Either write rail turns the reads on: a status the SDK's lifecycle
  * recovers from, or a balance its top-up refreshes, should come from the same
  * readers those commands already refreshed, or the panels read one thing and

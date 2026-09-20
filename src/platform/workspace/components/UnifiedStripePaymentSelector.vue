@@ -1,72 +1,46 @@
 <template>
-  <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h3 class="m-0 text-base font-semibold text-base-foreground">
-          {{ $t('subscription.preview.paymentMethod') }}
-        </h3>
-        <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
-          {{ $t('subscription.preview.stripeMethodChoice') }}
-        </p>
-      </div>
-    </div>
-    <div
-      v-if="configurationError"
-      class="border-danger-background bg-danger-background/10 text-danger rounded-lg border px-3 py-2 text-sm"
-    >
-      {{ configurationError }}
-    </div>
-    <!-- Only the form region scrolls; the header above and the pay action
-         below hold their positions regardless of which method is expanded. -->
-    <div
-      class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
-    >
-      <div ref="paymentElementTarget" />
-      <div class="flex flex-col gap-3">
-        <h4 class="m-0 text-sm font-medium text-base-foreground">
-          {{ $t('subscription.preview.billingAddress') }}
-        </h4>
-        <div ref="addressElementTarget" />
-      </div>
-      <div
-        v-if="selectedMethodType === 'alipay'"
-        class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+  <StripePaymentForm
+    :publishable-key="publishableKey"
+    :amount-cents
+    :currency
+    :copy
+    :payment-method-configuration-id="paymentMethodConfigurationId"
+    :is-loading
+    :verification-pending
+    :can-submit
+    @confirm="emit('confirm', $event)"
+    @submitting-change="emit('submittingChange', $event)"
+    @phase="emitPaymentJourneyPhase"
+  >
+    <template #submit="{ disabled, loading, verificationPending: pending }">
+      <Button
+        type="submit"
+        :variant="pending ? 'tertiary' : 'inverted'"
+        size="lg"
+        class="w-full rounded-lg"
+        :disabled="disabled"
+        :loading="loading"
       >
-        <i
-          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
-        />
-        <p class="m-0">
-          {{ $t('subscription.preview.alipayRenewalNote') }}
-        </p>
-      </div>
-    </div>
-    <Button
-      type="submit"
-      :variant="verificationPending ? 'tertiary' : 'inverted'"
-      size="lg"
-      class="w-full rounded-lg"
-      :disabled="!stripeElements || !canSubmit || verificationPending"
-      :loading="isLoading || isSubmitting"
-    >
-      {{ $t('subscription.preview.payAndSubscribe') }}
-    </Button>
-  </form>
+        {{ t('subscription.preview.payAndSubscribe') }}
+      </Button>
+    </template>
+  </StripePaymentForm>
 </template>
 
 <script setup lang="ts">
-import type {
-  Stripe,
-  StripeAddressElement,
-  StripeElements,
-  StripePaymentElement
-} from '@stripe/stripe-js'
-import { loadStripe } from '@stripe/stripe-js/pure'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+/**
+ * The cloud app's binding of the shared payment form: its publishable key, its
+ * translations, its button, and its checkout-journey telemetry. The provider
+ * work lives in `@comfyorg/account-ui/billing/stripe` so `apps/billing-web`
+ * renders the same form (ADR-PACKAGES-ACCOUNT-UI-0034).
+ */
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
+import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
-import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import {
   getActiveCheckoutJourney,
   toCheckoutJourneyContext
@@ -99,285 +73,26 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const telemetry = useTelemetry()
-let isUnmounted = false
 
-function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
-  // A callback or awaited continuation can fire after unmount; the active
-  // journey may then belong to a later checkout, so never emit for it.
-  if (isUnmounted) return
+const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? ''
+
+const copy = computed(() => ({
+  paymentMethod: t('subscription.preview.paymentMethod'),
+  methodChoice: t('subscription.preview.stripeMethodChoice'),
+  billingAddress: t('subscription.preview.billingAddress'),
+  alipayRenewalNote: t('subscription.preview.alipayRenewalNote'),
+  unavailable: t('subscription.preview.stripeUnavailable'),
+  genericError: t('g.error')
+}))
+
+function emitPaymentJourneyPhase(phase: StripePaymentPhase): void {
+  // The form stops reporting once unmounted; what it cannot know is whether
+  // the active journey is still the one this checkout started.
   const journey = getActiveCheckoutJourney()
   if (!journey) return
   telemetry?.trackCheckoutJourneyEvent({
     ...toCheckoutJourneyContext(journey),
     ...phase
   })
-}
-
-const paymentElementTarget = ref<HTMLDivElement>()
-const addressElementTarget = ref<HTMLDivElement>()
-const stripeElements = ref<StripeElements>()
-const configurationError = ref('')
-const isSubmitting = ref(false)
-const selectedMethodType = ref('')
-let stripe: Stripe | null = null
-let paymentElement: StripePaymentElement | undefined
-let addressElement: StripeAddressElement | undefined
-
-function failElementInit(): void {
-  configurationError.value = t('subscription.preview.stripeUnavailable')
-  if (isUnmounted) return
-  emitPaymentJourneyPhase({
-    phase: 'payment_element_failed',
-    element: 'payment',
-    element_phase: 'init'
-  })
-}
-
-function mountPaymentElement(
-  elements: StripeElements,
-  target: HTMLDivElement
-): void {
-  paymentElement = elements.create('payment', {
-    layout: {
-      type: 'accordion',
-      defaultCollapsed: false,
-      radios: 'always',
-      spacedAccordionItems: true
-    },
-    // The Address Element below is the single source of billing address.
-    // Left at the default, card would also render its own country/postal
-    // inputs, and a customer who filled the two differently would send the
-    // issuer an address that contradicts the one we collected for AVS.
-    fields: { billingDetails: { address: 'never' } },
-    // Our terms note carries the recurring-charge authorization; Stripe's
-    // card mandate text would say it twice.
-    terms: { card: 'never' }
-  })
-  paymentElement.mount(target)
-  paymentElement.on('ready', () => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_ready',
-      element: 'payment'
-    })
-  })
-  paymentElement.on('loaderror', (event) => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'payment',
-      element_phase: 'mount',
-      ...(event.error?.code && { error_code: event.error.code })
-    })
-  })
-  // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
-  // whichever payment method the user has selected inside the element.
-  paymentElement.on('change', (event) => {
-    selectedMethodType.value = event.value?.type ?? ''
-  })
-}
-
-/**
- * A full billing address feeds AVS to the issuer and Radar. In billing mode
- * every field is required, and because the address shares the Payment
- * Element's group, createConfirmationToken folds it into the token's
- * billing_details.
- */
-function mountAddressElement(
-  elements: StripeElements,
-  target: HTMLDivElement
-): void {
-  addressElement = elements.create('address', { mode: 'billing' })
-  addressElement.mount(target)
-  addressElement.on('ready', () => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_ready',
-      element: 'address'
-    })
-  })
-  addressElement.on('loaderror', (event) => {
-    if (isUnmounted) return
-    emitPaymentJourneyPhase({
-      phase: 'payment_element_failed',
-      element: 'address',
-      element_phase: 'mount',
-      ...(event.error?.code && { error_code: event.error.code })
-    })
-  })
-}
-
-onMounted(async () => {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  if (!publishableKey || !paymentMethodConfigurationId) {
-    failElementInit()
-    return
-  }
-  // A non-positive amount means the caller mounted this before its quote
-  // resolved. Stay silent rather than latching an error the caller cannot
-  // clear: callers gate on a ready quote, and a wrong error here reads to the
-  // customer as "payment is broken" when the amount is merely still loading.
-  if (amountCents <= 0) return
-
-  try {
-    stripe = await loadStripe(publishableKey)
-  } catch {
-    failElementInit()
-    return
-  }
-  if (!stripe || !paymentElementTarget.value || isUnmounted) {
-    failElementInit()
-    return
-  }
-
-  stripeElements.value = stripe.elements({
-    mode: 'subscription',
-    amount: amountCents,
-    currency: currency.toLowerCase(),
-    // Intent-wide by policy: every method offered here must be chargeable
-    // off-session at renewal, so Stripe's dynamic filtering is the gate —
-    // a configuration-enabled method without off-session support (or without
-    // this account's permission for it) simply never renders.
-    setupFutureUsage: 'off_session',
-    paymentMethodConfiguration: paymentMethodConfigurationId,
-    appearance: {
-      variables: {
-        // Selection (radio, selected label, accordion highlight) uses the
-        // theme-aware foreground rather than brand blue.
-        colorPrimary: resolveThemeColor('--base-foreground'),
-        colorBackground: resolveThemeColor('--base-background'),
-        colorText: resolveThemeColor('--base-foreground'),
-        colorTextSecondary: resolveThemeColor('--muted-foreground'),
-        colorDanger: resolveThemeColor('--destructive-background'),
-        // Same token as the pricing table's "Save 20%" pill, so all
-        // deal/discount badges share one accent.
-        colorSuccess: resolveThemeColor('--primary-background'),
-        fontFamily: getComputedStyle(document.body).fontFamily,
-        borderRadius: '10px',
-        spacingUnit: '5px'
-      },
-      rules: {
-        '.AccordionItem': {
-          backgroundColor: resolveThemeColor('--base-background'),
-          // Transparent (not none) so rows keep their size when the
-          // selected item paints its outline.
-          border: '1px solid transparent',
-          boxShadow: 'none'
-        },
-        '.AccordionItem--selected': {
-          borderColor: resolveThemeColor('--base-foreground')
-        },
-        '.Input': {
-          backgroundColor: resolveThemeColor('--input-surface'),
-          borderColor: resolveThemeColor('--border-default'),
-          boxShadow: 'none'
-        },
-        '.Input:focus': {
-          borderColor: resolveThemeColor('--primary-background'),
-          boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
-        },
-        '.Label': {
-          fontWeight: '500'
-        }
-      }
-    }
-  })
-  mountPaymentElement(stripeElements.value, paymentElementTarget.value)
-  if (addressElementTarget.value) {
-    mountAddressElement(stripeElements.value, addressElementTarget.value)
-  }
-})
-
-watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
-  if (!stripeElements.value || amount <= 0) return
-
-  stripeElements.value
-    .update({ amount, currency: nextCurrency.toLowerCase() })
-    .catch(() => {
-      if (isUnmounted) return
-      configurationError.value = t('g.error')
-      emitPaymentJourneyPhase({
-        phase: 'payment_element_failed',
-        element: 'payment',
-        element_phase: 'update'
-      })
-    })
-})
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  paymentElement?.destroy()
-  addressElement?.destroy()
-})
-
-async function submit() {
-  if (
-    isSubmitting.value ||
-    isLoading ||
-    verificationPending ||
-    !canSubmit ||
-    !stripeElements.value ||
-    !stripe
-  )
-    return
-  isSubmitting.value = true
-  emit('submittingChange', true)
-  configurationError.value = ''
-  emitPaymentJourneyPhase({ phase: 'payment_submit_attempted' })
-  try {
-    // Validation boundary: submit() normally resolves with an error field, but
-    // an unexpected rejection here is still a pre-token validation failure.
-    let submitResult
-    try {
-      submitResult = await stripeElements.value.submit()
-    } catch {
-      configurationError.value = t('g.error')
-      emitPaymentJourneyPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'validation'
-      })
-      return
-    }
-    if (submitResult.error) {
-      configurationError.value = submitResult.error.message ?? t('g.error')
-      emitPaymentJourneyPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'validation',
-        ...(submitResult.error.code && { error_code: submitResult.error.code })
-      })
-      return
-    }
-    const result = await stripe.createConfirmationToken({
-      elements: stripeElements.value
-    })
-    if (result.error) {
-      configurationError.value = result.error.message ?? t('g.error')
-      emitPaymentJourneyPhase({
-        phase: 'payment_submit_failed',
-        submit_phase: 'token_creation',
-        ...(result.error.code && { error_code: result.error.code })
-      })
-      return
-    }
-    emit('confirm', result.confirmationToken.id)
-  } catch {
-    configurationError.value = t('g.error')
-    emitPaymentJourneyPhase({
-      phase: 'payment_submit_failed',
-      submit_phase: 'token_creation'
-    })
-  } finally {
-    isSubmitting.value = false
-    emit('submittingChange', false)
-  }
-}
-
-function resolveThemeColor(variable: string) {
-  const probe = document.createElement('span')
-  probe.style.color = `var(${variable})`
-  document.body.append(probe)
-  const color = getComputedStyle(probe).color
-  probe.remove()
-  return color
 }
 </script>

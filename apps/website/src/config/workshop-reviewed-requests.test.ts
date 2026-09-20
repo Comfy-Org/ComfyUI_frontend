@@ -7,7 +7,7 @@ import {
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
 import { validateWorkshopInput } from './workshop-json-schema'
