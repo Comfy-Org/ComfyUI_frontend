@@ -1,5 +1,9 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -35,6 +39,10 @@ export class HostDoc {
     private readonly catalog: WidgetCatalog
   ) {
     this.doc = mint(seed, catalog)
+  }
+
+  projection(): WorkflowJSON {
+    return project(this.doc, this.catalog)
   }
 
   subscribed(): HostFrame {
@@ -75,6 +83,49 @@ export class HostDoc {
       HOST_ACTOR,
       ops.map((op) => op.op_id)
     )
+  }
+
+  applyClient(ops: Op[]): HostFrame[] {
+    const before = Y.encodeStateVector(this.doc)
+    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const rejected = outcomes.find((outcome) => outcome.outcome === 'rejected')
+    const applied = outcomes
+      .filter((outcome) => outcome.outcome === 'applied')
+      .map((outcome) => outcome.op_id)
+    const skipped = outcomes
+      .filter(
+        (outcome) =>
+          outcome.outcome === 'no-op' || outcome.outcome === 'lww-dropped'
+      )
+      .map((outcome) => outcome.op_id)
+    const result: HostFrame = {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: rejected === undefined,
+        applied,
+        skipped,
+        ...(rejected?.outcome === 'rejected' && {
+          failed: {
+            index: outcomes.indexOf(rejected),
+            op_id: rejected.op_id,
+            code: rejected.reason.code,
+            message: rejected.reason.message
+          }
+        })
+      }
+    }
+    if (applied.length === 0) return [result]
+    this.seq += 1
+    return [
+      result,
+      this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        ops[0].actor,
+        applied
+      )
+    ]
   }
 
   private updateFrame(

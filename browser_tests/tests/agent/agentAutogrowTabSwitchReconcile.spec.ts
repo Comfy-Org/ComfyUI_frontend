@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 
@@ -217,20 +221,19 @@ test.describe(
           const frame: unknown = JSON.parse(raw.toString())
           if (typeof frame !== 'object' || frame === null) return
           const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
+          if (typeof data !== 'object' || data === null) return
+          const { workflow_id, state_vector_b64, ops } = data as {
             workflow_id?: unknown
             state_vector_b64?: unknown
+            ops?: unknown
           }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
+          if (workflow_id !== WORKFLOW_ID) return
+          if (type === 'doc_ops' && Array.isArray(ops)) {
+            for (const hostFrame of host.applyClient(ops as Op[]))
+              socketSend!(hostFrame)
+            return
+          }
+          if (type !== 'doc_subscribe' || typeof state_vector_b64 !== 'string')
             return
           subscribedTo = workflow_id
           socketSend!(host.subscribed())
@@ -449,6 +452,72 @@ test.describe(
           body: await page.screenshot(),
           contentType: 'image/png'
         })
+      })
+
+      await test.step('a pasted node keeps its position through another tab retarget', async () => {
+        const before = await page.evaluate(() =>
+          window.app!.graph.nodes.map((node) => ({
+            id: String(node.id),
+            pos: [node.pos[0], node.pos[1]] as [number, number]
+          }))
+        )
+        await vueNodes.selectNode(gptNodeId)
+        await page.keyboard.press('ControlOrMeta+c')
+        await page.locator('#graph-canvas').hover({
+          position: { x: 413, y: 547 }
+        })
+        const pastePosition = await page.evaluate(
+          () =>
+            [
+              window.app!.canvas.graph_mouse[0],
+              window.app!.canvas.graph_mouse[1]
+            ] as [number, number]
+        )
+        expect(pastePosition).not.toEqual([0, 0])
+        await page.keyboard.press('ControlOrMeta+v')
+        await expect
+          .poll(async () => page.evaluate(() => window.app!.graph.nodes.length))
+          .toBe(before.length + 1)
+        const beforeIds = new Set(before.map((node) => node.id))
+        const pasted = await page.evaluate(
+          (knownIds) => {
+            const node = window.app!.graph.nodes.find(
+              (candidate) => !knownIds.includes(String(candidate.id))
+            )
+            return node
+              ? {
+                  id: String(node.id),
+                  pos: [node.pos[0], node.pos[1]] as [number, number]
+                }
+              : null
+          },
+          [...beforeIds]
+        )
+        if (!pasted) throw new Error('paste did not add a node')
+        expect(pasted.pos).toEqual(pastePosition)
+        await expect
+          .poll(() =>
+            host
+              .projection()
+              .nodes.flatMap((node) =>
+                node.pos ? [[node.pos[0], node.pos[1]]] : []
+              )
+          )
+          .toContainEqual(pasted.pos)
+
+        await topbar.getTab(1).click()
+        await topbar.getTab(0).click()
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (id) => {
+                const node = window.app!.graph.getNodeById(id)
+                return node ? [node.pos[0], node.pos[1]] : null
+              },
+              toNodeId(Number(pasted.id))
+            )
+          )
+          .toEqual(pasted.pos)
       })
     })
   }
