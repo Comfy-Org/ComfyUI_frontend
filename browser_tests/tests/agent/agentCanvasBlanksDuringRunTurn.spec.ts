@@ -1,4 +1,4 @@
-import type { WebSocketRoute } from '@playwright/test'
+import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { createI18n } from 'vue-i18n'
@@ -66,6 +66,12 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * 15386ms) -- which is sufficient on its own to produce the reported
  * timeline: blank the instant the agent starts working, blank for the whole
  * run, all nodes back at once, unrelated to whether the run itself finished.
+ *
+ * Two tests share the drive-to-blank-canvas arrange step below: the first
+ * pins the known defect (`test.fail()`, still blank the instant the run
+ * reports done), the second pins that the passive stale-probe genuinely
+ * recovers once given the chance -- the "all nodes came back" half of the
+ * report is real, intended behavior, not part of the bug.
  */
 
 const WORKFLOW_ID = 'b7e2f1a4-9c3d-4e5f-8a6b-1d2c3e4f5a6b'
@@ -116,281 +122,308 @@ const COMPOSER_LABEL = createI18n({
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
 
+/**
+ * Drives a plain "run the workflow" turn through a mid-turn `doc_reset` whose
+ * resubscribe's catch-up is silently dropped (the bug report's own debug-log
+ * anomaly), up through the agent reporting the turn done -- the point where
+ * the canvas has nothing to show and only the passive 30s stale-probe can
+ * force a real resubscribe. Installs and advances `page.clock` by the run's
+ * own duration (15386ms, from the bug report's tool-call trace) so both
+ * callers can pick up the clock exactly where the run left it.
+ */
+async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
+  vueNodes: VueNodeHelpers
+  setDropCatchUp: (value: boolean) => void
+}> {
+  const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
+  const vueNodes = new VueNodeHelpers(page)
+
+  let socket: WebSocketRoute | null = null
+  // Toggled to simulate the exact anomaly in the bug report's own debug log:
+  // a `doc_subscribed:ok` that is not followed by its catch-up `doc_update`.
+  // Callers flip this back to false to let the passive stale-probe's
+  // resubscribe actually deliver content.
+  let dropCatchUp = false
+
+  const send = (frame: AgentWsEvent | HostFrame): void => {
+    if (
+      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
+      parseServerDocFrame(frame) === null
+    )
+      throw new Error(`frame ${frame.type} is not a valid doc frame`)
+    if (!socket) throw new Error('the app has not opened /ws yet')
+    socket.send(JSON.stringify(frame))
+  }
+
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(jsonRoute({ threads: [] }))
+  )
+  await page.route('**/api/agent/threads/*/messages', (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          thread_id: THREAD_ID,
+          message_id: MESSAGE_ID,
+          workflow_id: WORKFLOW_ID
+        })
+      })
+    }
+    return route.fulfill(jsonRoute([]))
+  })
+  await page.route('**/api/agent/threads/*/asks/*/answer', (route) =>
+    route.fulfill(jsonRoute({ ok: true }))
+  )
+  await page.routeWebSocket(/\/ws/, (ws) => {
+    socket = ws
+    ws.send(
+      JSON.stringify({
+        type: 'status',
+        data: {
+          status: { exec_info: { queue_remaining: 0 } },
+          sid: SOCKET_SID
+        }
+      })
+    )
+    ws.onMessage((raw) => {
+      const frame: unknown = JSON.parse(raw.toString())
+      if (typeof frame !== 'object' || frame === null) return
+      const { type, data } = frame as { type?: unknown; data?: unknown }
+      if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
+        return
+      const { workflow_id, state_vector_b64 } = data as {
+        workflow_id?: unknown
+        state_vector_b64?: unknown
+      }
+      if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
+        return
+      send(host.subscribed())
+      if (!dropCatchUp) send(host.catchUp(state_vector_b64))
+    })
+  })
+
+  await bootAgentApp(page, true, {
+    settings: {
+      'Comfy.VueNodes.Enabled': true,
+      'Comfy.Graph.CanvasInfo': false
+    }
+  })
+
+  const panel = page.locator('#agent-panel-root')
+  await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+  await expect(panel).toBeVisible({ timeout: 30_000 })
+
+  let savedName: string | undefined
+  await page.route('**/api/userdata/*', (route) => {
+    const request = route.request()
+    const path = decodeURIComponent(
+      new URL(request.url()).pathname.split('/userdata/')[1]
+    )
+    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+      return route.fallback()
+    savedName = path.slice('workflows/'.length, -'.json'.length)
+    const saved: UserDataFullInfo = {
+      path,
+      modified: Date.now(),
+      size: request.postDataBuffer()?.length ?? 0
+    }
+    return route.fulfill(jsonRoute(saved))
+  })
+  await page.route('**/api/workflows?*', (route) => {
+    const workflows: WorkflowListResponse = {
+      data:
+        savedName === undefined
+          ? []
+          : [
+              {
+                id: WORKFLOW_ID,
+                name: savedName,
+                created_at: '2026-09-01T00:00:00Z',
+                updated_at: '2026-09-01T00:00:00Z',
+                created_by: 'test-user-e2e',
+                latest_version: 1
+              }
+            ],
+      pagination: {
+        has_more: false,
+        limit: 100,
+        offset: 0,
+        total: savedName === undefined ? 0 : 1
+      }
+    }
+    return route.fulfill(jsonRoute(workflows))
+  })
+
+  const picker = panel.getByRole('button', {
+    name: enMessages.agent.switchWorkflow
+  })
+  await picker.click()
+  await page
+    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+    .click()
+  await expect(picker).toHaveText('Unsaved Workflow')
+
+  await expect.poll(() => socket !== null).toBe(true)
+
+  // Baseline: the healthy first subscribe delivers the seed's two nodes,
+  // matching the user's report that the canvas held the workflow's nodes
+  // before asking the agent to run it.
+  await expect(vueNodes.getNodeLocator('1')).toBeVisible()
+  await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+
+  const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+  await composer.fill('Run the workflow.')
+  await panel.getByRole('button', { name: SEND_LABEL }).click()
+  await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
+
+  send({
+    type: 'agent_active_tab',
+    data: {
+      workflow_id: WORKFLOW_ID,
+      name: 'Unsaved Workflow',
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+  send({
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: 'call-print',
+      tool_name: 'print_workflow',
+      status: 'success',
+      duration_ms: 40,
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+  send({
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: 'call-validate',
+      tool_name: 'validate',
+      status: 'success',
+      duration_ms: 220,
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+
+  // "The moment the agent started working": a lineage break for the active
+  // document right as the run-only turn gets going. This is the one frame
+  // able to actively sweep already-rendered nodes off the canvas
+  // (`AgentCrdtProjection.clearForReset` / `useAgentCrdtFollower`'s
+  // `onDocReset`); which backend path emits it for an edit-free run turn is
+  // the open half of this RCA (see the file-level comment). From here on the
+  // resubscribe's catch-up is silently dropped, reproducing the bug report's
+  // own debug-log anomaly.
+  dropCatchUp = true
+  send({
+    type: 'doc_reset',
+    data: {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq: 2,
+      actor: 'system:mint'
+    }
+  })
+
+  await expect(vueNodes.getNodeLocator('1')).toHaveCount(0)
+  await expect(vueNodes.getNodeLocator('2')).toHaveCount(0)
+
+  send({
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: 'call-run',
+      tool_name: 'run',
+      status: 'success',
+      duration_ms: 180,
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+
+  // The run itself is healthy throughout -- wait_for_job takes the 15386ms
+  // the bug report's own tool-call trace recorded -- but the canvas has
+  // nothing to show: the resubscribe's ack carried no content, and only the
+  // passive 30s heartbeat can force a real one.
+  await page.clock.install()
+  await page.clock.fastForward(15_386)
+  send({
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: 'call-wait',
+      tool_name: 'wait_for_job',
+      status: 'success',
+      duration_ms: 15_386,
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+  send({
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: 'call-output',
+      tool_name: 'get_output',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: THREAD_ID,
+      message_id: MESSAGE_ID
+    }
+  })
+  send({
+    type: 'agent_message_delta',
+    data: { delta: 'Done.', thread_id: THREAD_ID, message_id: MESSAGE_ID }
+  })
+  send({
+    type: 'agent_message_done',
+    data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
+  })
+
+  // The known defect, held right at run completion: the agent reports the
+  // run finished, but the canvas the user is looking at still has zero
+  // nodes, because nothing beyond the run's own duration has forced a
+  // working resubscribe yet.
+  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+
+  return {
+    vueNodes,
+    setDropCatchUp: (value: boolean) => {
+      dropCatchUp = value
+    }
+  }
+}
+
 test.describe(
   'Agent canvas blanks for the length of a run after a mid-turn doc reset',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('the two-node canvas empties at run start and only recovers once the passive stale-probe forces a real resubscribe', async ({
+    test.describe.configure({ timeout: 60_000 })
+
+    test('the two-node canvas is still blank the instant the run reports done', async ({
       page
     }) => {
-      test.setTimeout(60_000)
-      const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
-      const vueNodes = new VueNodeHelpers(page)
+      const { vueNodes } = await driveRunTurnUntilCanvasIsBlank(page)
 
-      let socket: WebSocketRoute | null = null
-      // Toggled to simulate the exact anomaly in the bug report's own debug
-      // log: a `doc_subscribed:ok` that is not followed by its catch-up
-      // `doc_update`. Flip to false once the passive stale-probe forces the
-      // recovering resubscribe.
-      let dropCatchUp = false
-
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
-        socket.send(JSON.stringify(frame))
-      }
-
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
-      )
-      await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() === 'POST') {
-          return route.fulfill({
-            status: 202,
-            contentType: 'application/json',
-            body: JSON.stringify({
-              thread_id: THREAD_ID,
-              message_id: MESSAGE_ID,
-              workflow_id: WORKFLOW_ID
-            })
-          })
-        }
-        return route.fulfill(jsonRoute([]))
-      })
-      await page.route('**/api/agent/threads/*/asks/*/answer', (route) =>
-        route.fulfill(jsonRoute({ ok: true }))
-      )
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: {
-              status: { exec_info: { queue_remaining: 0 } },
-              sid: SOCKET_SID
-            }
-          })
-        )
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          send(host.subscribed())
-          if (!dropCatchUp) send(host.catchUp(state_vector_b64))
-        })
-      })
-
-      await bootAgentApp(page, true, {
-        settings: {
-          'Comfy.VueNodes.Enabled': true,
-          'Comfy.Graph.CanvasInfo': false
-        }
-      })
-
-      const panel = page.locator('#agent-panel-root')
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-      await expect(panel).toBeVisible({ timeout: 30_000 })
-
-      let savedName: string | undefined
-      await page.route('**/api/userdata/*', (route) => {
-        const request = route.request()
-        const path = decodeURIComponent(
-          new URL(request.url()).pathname.split('/userdata/')[1]
-        )
-        if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-          return route.fallback()
-        savedName = path.slice('workflows/'.length, -'.json'.length)
-        const saved: UserDataFullInfo = {
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        }
-        return route.fulfill(jsonRoute(saved))
-      })
-      await page.route('**/api/workflows?*', (route) => {
-        const workflows: WorkflowListResponse = {
-          data:
-            savedName === undefined
-              ? []
-              : [
-                  {
-                    id: WORKFLOW_ID,
-                    name: savedName,
-                    created_at: '2026-09-01T00:00:00Z',
-                    updated_at: '2026-09-01T00:00:00Z',
-                    created_by: 'test-user-e2e',
-                    latest_version: 1
-                  }
-                ],
-          pagination: {
-            has_more: false,
-            limit: 100,
-            offset: 0,
-            total: savedName === undefined ? 0 : 1
-          }
-        }
-        return route.fulfill(jsonRoute(workflows))
-      })
-
-      const picker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await picker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect(picker).toHaveText('Unsaved Workflow')
-
-      await expect.poll(() => socket !== null).toBe(true)
-
-      // Baseline: the healthy first subscribe delivers the seed's two nodes,
-      // matching the user's report that the canvas held the workflow's nodes
-      // before asking the agent to run it.
-      await expect(vueNodes.getNodeLocator('1')).toBeVisible()
-      await expect(vueNodes.getNodeLocator('2')).toBeVisible()
-
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
-      await composer.fill('Run the workflow.')
-      await panel.getByRole('button', { name: SEND_LABEL }).click()
-      await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
-
-      send({
-        type: 'agent_active_tab',
-        data: {
-          workflow_id: WORKFLOW_ID,
-          name: 'Unsaved Workflow',
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-      send({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-print',
-          tool_name: 'print_workflow',
-          status: 'success',
-          duration_ms: 40,
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-      send({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-validate',
-          tool_name: 'validate',
-          status: 'success',
-          duration_ms: 220,
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-
-      // "The moment the agent started working": a lineage break for the
-      // active document right as the run-only turn gets going. This is the
-      // one frame able to actively sweep already-rendered nodes off the
-      // canvas (`AgentCrdtProjection.clearForReset` /
-      // `useAgentCrdtFollower`'s `onDocReset`); which backend path emits it
-      // for an edit-free run turn is the open half of this RCA (see the
-      // file-level comment). From here on the resubscribe's catch-up is
-      // silently dropped, reproducing the bug report's own debug-log anomaly.
-      dropCatchUp = true
-      send({
-        type: 'doc_reset',
-        data: {
-          v: 1,
-          workflow_id: WORKFLOW_ID,
-          seq: 2,
-          actor: 'system:mint'
-        }
-      })
-
-      await expect(vueNodes.getNodeLocator('1')).toHaveCount(0)
-      await expect(vueNodes.getNodeLocator('2')).toHaveCount(0)
-
-      send({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-run',
-          tool_name: 'run',
-          status: 'success',
-          duration_ms: 180,
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-
-      // The run itself is healthy throughout -- wait_for_job takes the
-      // 15386ms the bug report's own tool-call trace recorded -- but the
-      // canvas has nothing to show: the resubscribe's ack carried no content,
-      // and only the passive 30s heartbeat can force a real one.
-      await page.clock.install()
-      await page.clock.fastForward(15_386)
-      send({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-wait',
-          tool_name: 'wait_for_job',
-          status: 'success',
-          duration_ms: 15_386,
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-      send({
-        type: 'agent_tool_call',
-        data: {
-          tool_call_id: 'call-output',
-          tool_name: 'get_output',
-          status: 'success',
-          duration_ms: 90,
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID
-        }
-      })
-      send({
-        type: 'agent_message_delta',
-        data: { delta: 'Done.', thread_id: THREAD_ID, message_id: MESSAGE_ID }
-      })
-      send({
-        type: 'agent_message_done',
-        data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
-      })
-
-      // The known defect, held right at run completion: the agent reports
-      // the run finished, but the canvas the user is looking at still has
-      // zero nodes, because nothing beyond the run's own duration has forced
-      // a working resubscribe yet.
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      // The known defect: the agent says the run finished, but the
+      // resubscribe's ack carried no content, so the canvas the user is
+      // looking at still has zero nodes.
       test.fail()
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+    })
 
-      // Past this point (documentation, not part of the expected-failure
-      // assertion above): fast-forwarding the remaining budget up to
-      // STALE_AFTER_MS lets the passive stale-probe fire its own resubscribe,
-      // this time with catch-up content restored, and the nodes return --
-      // the "all nodes came back to the canvas" half of the report.
-      dropCatchUp = false
+    test('recovers once the passive stale-probe forces a real resubscribe', async ({
+      page
+    }) => {
+      const { vueNodes, setDropCatchUp } =
+        await driveRunTurnUntilCanvasIsBlank(page)
+
+      // Fast-forwarding the remaining budget up to STALE_AFTER_MS lets the
+      // passive stale-probe fire its own resubscribe, this time with
+      // catch-up content restored, and the nodes return -- the "all nodes
+      // came back to the canvas" half of the report.
+      setDropCatchUp(false)
       await page.clock.fastForward(STALE_AFTER_MS - 15_386 + 1_000)
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
