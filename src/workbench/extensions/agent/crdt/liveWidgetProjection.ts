@@ -114,8 +114,9 @@ function setWidgetValue(
   context: RemoteMutationContext
 ): void {
   const id = widget.widgetId
+  const previousValue = widget.value
   const updatedStore = id ? widgetStore.setValue(id, value, context) : false
-  if (!updatedStore || !Object.is(widget.value, value)) {
+  if (!updatedStore || !Object.is(previousValue, value)) {
     widget.value = value
   }
   setBackingProperty(node, widget, value)
