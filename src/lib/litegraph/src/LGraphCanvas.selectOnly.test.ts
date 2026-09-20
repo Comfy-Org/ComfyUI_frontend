@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -8,6 +9,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
@@ -24,7 +26,8 @@ vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
     allocateZIndex: vi.fn(() => 0),
     readNodeRect: vi.fn(() => false),
     contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn()
+    getGroupLayout: vi.fn(),
+    getRerouteLayout: vi.fn()
   }
 }))
 
@@ -59,6 +62,20 @@ function createHarness() {
   canvas.visible_nodes = [firstNode, secondNode]
 
   return { canvas, graph, firstNode, secondNode }
+}
+
+function createRenderedLink(harness: ReturnType<typeof createHarness>) {
+  const { canvas, firstNode, secondNode } = harness
+  firstNode.addOutput('out', 'number')
+  secondNode.addInput('in', 'number')
+  const link = firstNode.connect(0, secondNode, 0)
+  if (!link) throw new Error('link was not created')
+  canvas.renderedPaths.add(link)
+  vi.mocked(layoutStore.queryLinkSegmentAtPoint).mockReturnValue({
+    linkId: link.id,
+    rerouteId: null
+  })
+  return link
 }
 
 describe('LGraphCanvas selectOnly', () => {
@@ -267,4 +284,133 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.selectedItems.size).toBe(0)
     expect(firstNode.selected).toBe(false)
   })
+
+  it.for([
+    { selectOnly: false, searchBoxes: 1 },
+    { selectOnly: true, searchBoxes: 0 }
+  ])(
+    'double-clicking empty canvas with selectOnly=$selectOnly opens the node search $searchBoxes times',
+    ({ selectOnly, searchBoxes }) => {
+      const { canvas } = createHarness()
+      const showSearchBox = vi
+        .spyOn(canvas, 'showSearchBox')
+        .mockReturnValue(document.createElement('div'))
+      const event = fromPartial<CanvasPointerEvent>({
+        canvasX: 700,
+        canvasY: 500,
+        preventDefault: vi.fn()
+      })
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](event, undefined)
+      canvas.pointer.onDoubleClick?.(event)
+
+      expect(showSearchBox).toHaveBeenCalledTimes(searchBoxes)
+      expect(canvas.pointer.onClick).toBeDefined()
+    }
+  )
+
+  it.for([
+    { selectOnly: false, events: 1 },
+    { selectOnly: true, events: 0 }
+  ])(
+    'double-clicking a group body with selectOnly=$selectOnly emits group-double-click $events times',
+    ({ selectOnly, events }) => {
+      const { canvas, graph } = createHarness()
+      const group = new LGraphGroup('Group')
+      group._bounding.set([300, 300, 100, 100])
+      graph.add(group)
+      const emitEvent = vi.spyOn(canvas, 'emitEvent')
+      const event = fromPartial<CanvasPointerEvent>({
+        canvasX: 350,
+        canvasY: 360
+      })
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](event, undefined)
+      canvas.pointer.onDoubleClick?.(event)
+
+      expect(emitEvent).toHaveBeenCalledTimes(events)
+    }
+  )
+
+  it.for([
+    {
+      selectOnly: false,
+      modifiers: { shiftKey: true, altKey: false },
+      linkDrags: 1,
+      reroutes: 0
+    },
+    {
+      selectOnly: true,
+      modifiers: { shiftKey: true, altKey: false },
+      linkDrags: 0,
+      reroutes: 0
+    },
+    {
+      selectOnly: false,
+      modifiers: { shiftKey: false, altKey: true },
+      linkDrags: 0,
+      reroutes: 1
+    },
+    {
+      selectOnly: true,
+      modifiers: { shiftKey: false, altKey: true },
+      linkDrags: 0,
+      reroutes: 0
+    }
+  ])(
+    'clicking a link with $modifiers and selectOnly=$selectOnly starts $linkDrags link drags and creates $reroutes reroutes',
+    ({ selectOnly, modifiers, linkDrags, reroutes }) => {
+      const harness = createHarness()
+      const { canvas, graph } = harness
+      createRenderedLink(harness)
+      const dragFromLinkSegment = vi
+        .spyOn(canvas.linkConnector, 'dragFromLinkSegment')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 300,
+          canvasY: 140,
+          ...modifiers
+        }),
+        undefined
+      )
+
+      expect(dragFromLinkSegment).toHaveBeenCalledTimes(linkDrags)
+      expect(graph.reroutes.size).toBe(reroutes)
+    }
+  )
+
+  it.for([
+    { selectOnly: false, linkDrags: 1 },
+    { selectOnly: true, linkDrags: 0 }
+  ])(
+    'shift-clicking a reroute with selectOnly=$selectOnly starts $linkDrags link drags',
+    ({ selectOnly, linkDrags }) => {
+      const harness = createHarness()
+      const { canvas, graph } = harness
+      const link = createRenderedLink(harness)
+      const reroute = graph.createReroute([300, 300], link)
+      if (!reroute) throw new Error('reroute was not created')
+      canvas._visibleReroutes.add(reroute)
+      const dragFromReroute = vi
+        .spyOn(canvas.linkConnector, 'dragFromReroute')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 300,
+          canvasY: 300,
+          shiftKey: true
+        }),
+        undefined
+      )
+
+      expect(dragFromReroute).toHaveBeenCalledTimes(linkDrags)
+    }
+  )
 })

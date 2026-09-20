@@ -2505,105 +2505,107 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return
       }
 
-      // Subgraph IO nodes
-      if (subgraph) {
-        const { inputNode, outputNode } = subgraph
+      if (!this.selectOnly) {
+        // Subgraph IO nodes
+        if (subgraph) {
+          const { inputNode, outputNode } = subgraph
 
-        if (processSubgraphIONode(this, inputNode)) return
-        if (processSubgraphIONode(this, outputNode)) return
+          if (processSubgraphIONode(this, inputNode)) return
+          if (processSubgraphIONode(this, outputNode)) return
 
-        function processSubgraphIONode(
-          canvas: LGraphCanvas,
-          ioNode: SubgraphInputNode | SubgraphOutputNode
-        ) {
-          if (!ioNode.containsPoint([x, y])) return false
+          function processSubgraphIONode(
+            canvas: LGraphCanvas,
+            ioNode: SubgraphInputNode | SubgraphOutputNode
+          ) {
+            if (!ioNode.containsPoint([x, y])) return false
 
-          ioNode.onPointerDown(e, pointer, linkConnector)
-          pointer.onClick ??= () => canvas.processSelect(ioNode, e)
-          pointer.onDragStart ??= () =>
-            canvas._startDraggingItems(ioNode, pointer, true)
-          pointer.onDragEnd ??= (eUp) => canvas._processDraggedItems(eUp)
-          return true
-        }
-      }
-
-      // Reroutes
-      if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        // Try layout store first for hit detection
-        const rerouteLayout = layoutStore.queryRerouteAtPoint(
-          graph.rootGraph.id,
-          { x, y }
-        )
-        let foundReroute: Reroute | undefined
-
-        if (rerouteLayout) {
-          foundReroute = graph.getReroute(rerouteLayout.id)
+            ioNode.onPointerDown(e, pointer, linkConnector)
+            pointer.onClick ??= () => canvas.processSelect(ioNode, e)
+            pointer.onDragStart ??= () =>
+              canvas._startDraggingItems(ioNode, pointer, true)
+            pointer.onDragEnd ??= (eUp) => canvas._processDraggedItems(eUp)
+            return true
+          }
         }
 
-        // Fallback to checking visible reroutes directly
-        for (const reroute of this._visibleReroutes) {
-          const overReroute =
-            foundReroute === reroute || reroute.containsPoint([x, y])
-          if (!reroute.isSlotHovered && !overReroute) continue
+        // Reroutes
+        if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+          // Try layout store first for hit detection
+          const rerouteLayout = layoutStore.queryRerouteAtPoint(
+            graph.rootGraph.id,
+            { x, y }
+          )
+          let foundReroute: Reroute | undefined
 
-          if (overReroute) {
-            pointer.onClick = () => this.processSelect(reroute, e)
-            if (!e.shiftKey) {
-              pointer.onDragStart = (pointer) =>
-                this._startDraggingItems(reroute, pointer, true)
-              pointer.onDragEnd = (e) => this._processDraggedItems(e)
+          if (rerouteLayout) {
+            foundReroute = graph.getReroute(rerouteLayout.id)
+          }
+
+          // Fallback to checking visible reroutes directly
+          for (const reroute of this._visibleReroutes) {
+            const overReroute =
+              foundReroute === reroute || reroute.containsPoint([x, y])
+            if (!reroute.isSlotHovered && !overReroute) continue
+
+            if (overReroute) {
+              pointer.onClick = () => this.processSelect(reroute, e)
+              if (!e.shiftKey) {
+                pointer.onDragStart = (pointer) =>
+                  this._startDraggingItems(reroute, pointer, true)
+                pointer.onDragEnd = (e) => this._processDraggedItems(e)
+              }
             }
-          }
 
-          if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
-            linkConnector.dragFromReroute(graph, reroute)
-            this._linkConnectorDrop()
-          }
+            if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
+              linkConnector.dragFromReroute(graph, reroute)
+              this._linkConnectorDrop()
+            }
 
-          if (reroute.isInputHovered) {
-            linkConnector.dragFromRerouteToOutput(graph, reroute)
-            this._linkConnectorDrop()
-          }
+            if (reroute.isInputHovered) {
+              linkConnector.dragFromRerouteToOutput(graph, reroute)
+              this._linkConnectorDrop()
+            }
 
-          reroute.hideSlots()
-          this.dirty_bgcanvas = true
-          return
+            reroute.hideSlots()
+            this.dirty_bgcanvas = true
+            return
+          }
         }
-      }
 
-      const hitSegments = queryRenderedLinkSegmentsAtPoint(this, x, y)
+        const hitSegments = queryRenderedLinkSegmentsAtPoint(this, x, y)
 
-      for (const linkSegment of this.renderedPaths) {
-        const centre = linkSegment._pos
-        const isLinkHit = hitSegments.has(linkSegment)
+        for (const linkSegment of this.renderedPaths) {
+          const centre = linkSegment._pos
+          const isLinkHit = hitSegments.has(linkSegment)
 
-        // If we shift click on a link then start a link from that input
-        if ((e.shiftKey || e.altKey) && isLinkHit) {
-          if (e.shiftKey && !e.altKey) {
-            linkConnector.dragFromLinkSegment(graph, linkSegment)
-            this._linkConnectorDrop()
+          // If we shift click on a link then start a link from that input
+          if ((e.shiftKey || e.altKey) && isLinkHit) {
+            if (e.shiftKey && !e.altKey) {
+              linkConnector.dragFromLinkSegment(graph, linkSegment)
+              this._linkConnectorDrop()
 
-            return
-          } else if (e.altKey && !e.shiftKey) {
-            const newReroute = graph.createReroute([x, y], linkSegment)
-            if (!newReroute) return
+              return
+            } else if (e.altKey && !e.shiftKey) {
+              const newReroute = graph.createReroute([x, y], linkSegment)
+              if (!newReroute) return
 
-            pointer.onDragStart = (pointer) =>
-              this._startDraggingItems(newReroute, pointer)
-            pointer.onDragEnd = (e) => this._processDraggedItems(e)
+              pointer.onDragStart = (pointer) =>
+                this._startDraggingItems(newReroute, pointer)
+              pointer.onDragEnd = (e) => this._processDraggedItems(e)
+              return
+            }
+          } else if (
+            this.linkMarkerShape !== LinkMarkerShape.None &&
+            isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
+          ) {
+            pointer.onClick = () => this.showLinkMenu(linkSegment, e)
+            pointer.onDragStart = () => (this.dragging_canvas = true)
+            pointer.finally = () => (this.dragging_canvas = false)
+
+            // clear tooltip
+            this.over_link_center = undefined
             return
           }
-        } else if (
-          this.linkMarkerShape !== LinkMarkerShape.None &&
-          isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
-        ) {
-          pointer.onClick = () => this.showLinkMenu(linkSegment, e)
-          pointer.onDragStart = () => (this.dragging_canvas = true)
-          pointer.finally = () => (this.dragging_canvas = false)
-
-          // clear tooltip
-          this.over_link_center = undefined
-          return
         }
       }
 
@@ -2655,14 +2657,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        pointer.onDoubleClick = () => {
-          this.emitEvent({
-            subType: 'group-double-click',
-            originalEvent: e,
-            group
-          })
+        if (!this.selectOnly) {
+          pointer.onDoubleClick = () => {
+            this.emitEvent({
+              subType: 'group-double-click',
+              originalEvent: e,
+              group
+            })
+          }
         }
-      } else {
+      } else if (!this.selectOnly) {
         pointer.onDoubleClick = () => {
           // Double click within group should not trigger the searchbox.
           if (this.allow_searchbox) {
