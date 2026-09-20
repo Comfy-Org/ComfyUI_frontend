@@ -47,12 +47,15 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const GPT_IMAGE_NODE_TYPE = 'OpenAIGPTImageNodeV2'
 const IMAGE_SOURCE_NODE_TYPE = 'TestImageSource'
+const CHECKPOINT_NODE_TYPE = 'CheckpointLoaderSimple'
 const IMAGES_GROUP = 'model.images'
 const IMAGE_1_NAME = `${IMAGES_GROUP}.image_1`
 const IMAGE_1_FRIENDLY_LABEL = 'image_1'
+const MISSING_CHECKPOINT = 'missing-checkpoint.safetensors'
 
 const SOURCE_NODE_ID = 1
 const GPT_NODE_ID = 2
+const CHECKPOINT_NODE_ID = 3
 const LINK_ID = 9001
 
 const WORKFLOW_ID = '2f1a9b4e-3c7d-4e9a-9a1e-1c2d3e4f5a6b'
@@ -110,10 +113,29 @@ const gptImageNodeDef: ComfyNodeDef = {
   input_order: { required: [IMAGES_GROUP] }
 }
 
+const checkpointNodeDef: ComfyNodeDef = {
+  name: CHECKPOINT_NODE_TYPE,
+  display_name: 'Load Checkpoint',
+  description: '',
+  category: 'loaders',
+  python_module: 'nodes',
+  output_node: false,
+  output: ['MODEL', 'CLIP', 'VAE'],
+  output_is_list: [false, false, false],
+  output_name: ['MODEL', 'CLIP', 'VAE'],
+  input: {
+    required: {
+      ckpt_name: [['available-checkpoint.safetensors'], {}]
+    }
+  },
+  input_order: { required: ['ckpt_name'] }
+}
+
 const catalog: WidgetCatalog = {
   types: {
     [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [] },
-    [GPT_IMAGE_NODE_TYPE]: { widget_order: [] }
+    [GPT_IMAGE_NODE_TYPE]: { widget_order: [] },
+    [CHECKPOINT_NODE_TYPE]: { widget_order: ['ckpt_name'] }
   }
 }
 
@@ -151,6 +173,23 @@ const seed: WorkflowJSON = {
       outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }],
       properties: {},
       widgets_values: []
+    },
+    {
+      id: CHECKPOINT_NODE_ID,
+      type: CHECKPOINT_NODE_TYPE,
+      pos: [800, 0],
+      size: [315, 98],
+      flags: {},
+      order: 2,
+      mode: 0,
+      inputs: [],
+      outputs: [
+        { name: 'MODEL', type: 'MODEL', links: null },
+        { name: 'CLIP', type: 'CLIP', links: null },
+        { name: 'VAE', type: 'VAE', links: null }
+      ],
+      properties: {},
+      widgets_values: [MISSING_CHECKPOINT]
     }
   ],
   links: [[LINK_ID, SOURCE_NODE_ID, 0, GPT_NODE_ID, 0, 'IMAGE']],
@@ -164,7 +203,7 @@ test.describe(
   'Agent CRDT autogrow node survives a tab switch',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('keeps the API node color and the autogrow input label after switching tabs away and back', async ({
+    test('keeps node presentation and a missing-checkpoint warning after switching tabs away and back', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -177,7 +216,8 @@ test.describe(
         route.fulfill(
           jsonRoute({
             [IMAGE_SOURCE_NODE_TYPE]: imageSourceNodeDef,
-            [GPT_IMAGE_NODE_TYPE]: gptImageNodeDef
+            [GPT_IMAGE_NODE_TYPE]: gptImageNodeDef,
+            [CHECKPOINT_NODE_TYPE]: checkpointNodeDef
           })
         )
       )
@@ -244,7 +284,8 @@ test.describe(
         // canvas as DOM nodes this test can query.
         settings: {
           'Comfy.VueNodes.Enabled': true,
-          'Comfy.Graph.CanvasInfo': false
+          'Comfy.Graph.CanvasInfo': false,
+          'Comfy.RightSidePanel.ShowErrorsTab': true
         }
       })
 
@@ -302,6 +343,9 @@ test.describe(
       const topbar = new Topbar(page)
       const vueNodes = new VueNodeHelpers(page)
       const gptNodeId = String(GPT_NODE_ID)
+      const checkpointCombo = vueNodes
+        .getNodeLocator(String(CHECKPOINT_NODE_ID))
+        .getByRole('combobox', { name: 'ckpt_name', exact: true })
 
       const panel = page.locator('#agent-panel-root')
 
@@ -345,7 +389,7 @@ test.describe(
           return { color: node?.color, bgcolor: node?.bgcolor }
         }, toNodeId(GPT_NODE_ID))
 
-      await test.step('the wired node renders correctly beforehand', async () => {
+      await test.step('the nodes render correctly beforehand', async () => {
         await expect(vueNodes.getNodeLocator(gptNodeId)).toBeVisible()
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
@@ -364,6 +408,8 @@ test.describe(
           { id: toNodeId(GPT_NODE_ID), ...API_NODE_COLOR }
         )
         await expect.poll(() => readNodeColor()).toEqual(API_NODE_COLOR)
+        await expect(checkpointCombo).toHaveValue(MISSING_CHECKPOINT)
+        await expect(checkpointCombo).toHaveAttribute('aria-invalid', 'true')
       })
 
       await test.step('user switches to a new tab and back', async () => {
@@ -378,7 +424,7 @@ test.describe(
         await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
       })
 
-      await test.step('the node still shows its API-node color and friendly label', async () => {
+      await test.step('node presentation and the missing-checkpoint warning remain', async () => {
         await expect.poll(() => readNodeColor()).toEqual(API_NODE_COLOR)
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).not.toContainText(
           IMAGE_1_NAME
@@ -386,6 +432,8 @@ test.describe(
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
         )
+        await expect(checkpointCombo).toHaveValue(MISSING_CHECKPOINT)
+        await expect(checkpointCombo).toHaveAttribute('aria-invalid', 'true')
         await page
           .getByRole('button', {
             name: enMessages.agent.askComfyAgent,
