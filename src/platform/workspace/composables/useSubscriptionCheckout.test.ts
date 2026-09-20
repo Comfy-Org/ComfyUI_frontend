@@ -34,6 +34,7 @@ function billingOperation(
     opId: 'op-test',
     type: 'subscription',
     status: 'pending',
+    phase: null,
     errorMessage: null,
     startedAt: 0,
     operationStartedAt: 0,
