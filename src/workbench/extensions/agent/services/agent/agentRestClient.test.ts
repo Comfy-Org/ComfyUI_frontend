@@ -260,7 +260,7 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
-  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+  it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: "what's on my canvas",
@@ -273,17 +273,12 @@ describe('postMessage wire body', () => {
     })
   })
 
-  it('forwards draft.version when the client has previously seen one', async () => {
-    respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
-      content: 'edit it',
-      draft: { content: { nodes: [], links: [] }, version: 4 }
-    })
-
-    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
-      draft: { version: 4 }
-    })
-  })
+  // 'forwards draft.version when the client has previously seen one' is
+  // deliberately deleted rather than inverted. The draft request object is
+  // content-only now, so the type already stops a caller supplying a version,
+  // and the exact-match assertion in the test above is what proves none reaches
+  // the wire. Asserting runtime stripping instead would have meant adding
+  // defensive code for a case the compiler already closes.
 })
 
 describe('uploadImage multipart', () => {

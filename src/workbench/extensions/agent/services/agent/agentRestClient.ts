@@ -51,10 +51,17 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
-/** An omitted `version` makes this content authoritative for the backend CAS. */
+/**
+ * The client's live canvas, sent so the agent works on what the user sees.
+ *
+ * Content-only, and deliberately asymmetric with the `GET /api/agent/draft`
+ * snapshot, which still returns a version: `workflow_draft.version` is a
+ * projection-cache snapshot counter, not a concurrency token, so there is
+ * nothing on the request side for a version to reconcile against. The turn
+ * endpoint's schema has no such field.
+ */
 export interface DraftSnapshot {
   content: Record<string, unknown>
-  version?: number
 }
 
 export interface PostMessageInput {
