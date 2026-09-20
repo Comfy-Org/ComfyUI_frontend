@@ -29,6 +29,10 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await targetPicker.hover()
+      await expect(page.locator('.z-1700')).toContainText(
+        'Change the workflow that the agent can edit'
+      )
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,

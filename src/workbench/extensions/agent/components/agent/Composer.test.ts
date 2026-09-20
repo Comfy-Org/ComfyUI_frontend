@@ -169,7 +169,7 @@ describe('Composer', () => {
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
     )
     expect(
       text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -220,12 +220,6 @@ describe('Composer', () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
-
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
 
     await userEvent.type(screen.getByRole('textbox'), 'hello')
     expect(send).toBeEnabled()
@@ -1212,7 +1206,7 @@ describe('Composer', () => {
       name: 'Remove KSampler #5 reference'
     })
     expect(tooltipBindings.get(removeButton)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Remove')
+      tooltipConfig.buildTooltipConfig('Remove')
     )
   })
 

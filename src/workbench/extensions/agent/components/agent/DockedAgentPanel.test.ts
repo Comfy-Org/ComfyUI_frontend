@@ -21,7 +21,9 @@ vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock('@/scripts/api', () => ({
+  api: Object.assign(new EventTarget(), { fetchApi })
+}))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
