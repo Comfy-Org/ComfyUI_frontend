@@ -97,8 +97,11 @@ const PREPARE_TIMEOUT_MS = 3000
  * hydration, or the row was orphaned and only a server sweep will end it).
  * Poll the persisted row with backoff, then keep checking at the last delay
  * for as long as the turn is still live here. Each check is bounded by the
- * REST client's own timeout; the job ends when the turn settles, the thread
- * changes, or the session stops.
+ * REST client's own timeout; the job ends when the row reports a terminal
+ * state or a missing thread, when the turn leaves the conversation store's
+ * live set, or when the session that started it stops or is superseded.
+ * Switching threads stashes the turn rather than ending it, so its recovery
+ * keeps running in the background.
  */
 type RecoverySchedule = readonly [number, ...number[]]
 const TURN_RECOVERY_DELAYS_AFTER_FETCH_MS: RecoverySchedule = [
