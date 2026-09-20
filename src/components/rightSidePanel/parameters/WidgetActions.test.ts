@@ -6,6 +6,8 @@ import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -18,25 +20,13 @@ import { widgetId } from '@/types/widgetId'
 
 import WidgetActions from './WidgetActions.vue'
 
-const { mockTrackWidgetFavoriteToggled } = vi.hoisted(() => ({
-  mockTrackWidgetFavoriteToggled: vi.fn()
-}))
-
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
@@ -228,7 +218,9 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Favorite/ }))
 
-    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',
       widget_type: 'number',
@@ -250,7 +242,9 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
 
-    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
       node_type: 'TestNode',
       widget_name: 'test_widget',
       widget_type: 'number',

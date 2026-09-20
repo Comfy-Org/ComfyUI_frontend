@@ -9,7 +9,8 @@
 import { zJobEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { resultItemType, zTaskOutput } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import { zTaskOutput } from '@/platform/remote/comfyui/execution/types'
 
 const zJobStatus = z.enum([
   'pending',

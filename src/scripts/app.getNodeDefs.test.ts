@@ -1,18 +1,20 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+import type { ComfyApi } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     getNodeDefs: vi.fn(),
     apiURL: vi.fn((path: string) => path),
     addEventListener: vi.fn(),
     getUserData: vi.fn(),
     storeUserData: vi.fn()
-  }
+  })
 }))
 
 function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
@@ -26,7 +28,7 @@ function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
     output_node: false,
     python_module: 'test.module',
     ...overrides
-  } as ComfyNodeDefV1
+  }
 }
 
 function mockDefs(...defs: ComfyNodeDefV1[]) {
@@ -118,7 +120,7 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('resolves a def without a category to an empty category', async () => {
-    mockDefs(nodeDef({ category: undefined as unknown as string }))
+    mockDefs(nodeDef({ category: undefined }))
 
     const result = await comfyApp.getNodeDefs()
 

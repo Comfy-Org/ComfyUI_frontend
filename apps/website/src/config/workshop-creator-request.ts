@@ -8,7 +8,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { MAX_REQUEST_BYTES } from './workshop-limits'
+import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 
 export interface EncodedWorkshopFile {
   readonly data: string
@@ -58,7 +58,7 @@ export async function prepareWorkshopCreatorRequest(
   }
   let bytes = new TextEncoder().encode(JSON.stringify(plain)).byteLength
   function reserve(file: { size: number; type: string }, name: string) {
-    bytes += 4 * Math.ceil(file.size / 3) + file.type.length + 256
+    bytes += encodedWorkshopFileBytes(file)
     if (bytes > MAX_REQUEST_BYTES)
       throw new WorkshopRouterError('validation', null, {
         [name]: 'requestTooLarge'
@@ -104,9 +104,15 @@ export async function prepareWorkshopCreatorRequest(
           : await loadWorkshopExampleFile(value, signal)
     } catch {
       signal.throwIfAborted()
-      throw new WorkshopRouterError('validation', null, {
-        [name]: 'uploadFailed'
-      })
+      throw new WorkshopRouterError(
+        'upload',
+        null,
+        {
+          [name]: 'uploadFailed'
+        },
+        undefined,
+        'example_download'
+      )
     }
     if (accept.length && !accept.includes(file.type))
       throw new WorkshopRouterError('validation', null, { [name]: 'badType' })
