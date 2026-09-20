@@ -6,6 +6,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 type CapturedImageUploadOptions = {
   onUploadComplete: (paths: (string | ResultItem)[]) => void
