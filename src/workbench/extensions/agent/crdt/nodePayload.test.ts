@@ -58,10 +58,10 @@ describe('serialisedWidgetSlots', () => {
   it('moves named values to widgets_values_named and leaves widgets_values unset', () => {
     const slots = serialisedWidgetSlots({
       kind: 'named',
-      values: new Map<string, unknown>([
+      values: new Map<string, number | string>([
         ['steps', 21],
         ['prompt', 'a cat']
-      ]) as never
+      ])
     })
     expect(slots).toEqual({
       widgets_values_named: { steps: 21, prompt: 'a cat' }

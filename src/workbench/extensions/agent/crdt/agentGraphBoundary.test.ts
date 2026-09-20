@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, sep } from 'path'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -50,13 +50,16 @@ function countOccurrences(source: string, token: string): number {
   return count
 }
 
+/** Every `.ts` source under `crdt/`, nested directories included, relative to it. */
 function sourceFiles(): readonly string[] {
-  return readdirSync(__dirname).filter(
-    (name) =>
-      name.endsWith('.ts') &&
-      !name.endsWith('.test.ts') &&
-      !name.endsWith('.d.ts')
-  )
+  return readdirSync(__dirname, { recursive: true, encoding: 'utf-8' })
+    .map((name) => name.split(sep).join('/'))
+    .filter(
+      (name) =>
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        !name.endsWith('.d.ts')
+    )
 }
 
 describe('agent follower stays on the public graph API', () => {
@@ -69,15 +72,13 @@ describe('agent follower stays on the public graph API', () => {
 
   it.for(files)('%s uses no forbidden token beyond its ratchet', (file) => {
     const source = readFileSync(resolve(__dirname, file), 'utf-8')
-    const observed = Object.fromEntries(
-      FORBIDDEN_TOKENS.map((token) => [token, countOccurrences(source, token)])
-    ) as Record<ForbiddenToken, number>
     const allowed = RATCHET[file] ?? {}
 
     for (const token of FORBIDDEN_TOKENS) {
+      const observed = countOccurrences(source, token)
       expect(
-        observed[token],
-        `${file} uses "${token}" ${observed[token]}x; allowed ${allowed[token] ?? 0}`
+        observed,
+        `${file} uses "${token}" ${observed}x; allowed ${allowed[token] ?? 0}`
       ).toBeLessThanOrEqual(allowed[token] ?? 0)
     }
   })
