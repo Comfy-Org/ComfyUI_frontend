@@ -1,5 +1,6 @@
 import {
   applyOps,
+  hasAppliedOp,
   mint,
   project,
   readGraph
@@ -116,14 +117,27 @@ export class HostDoc {
   // A batch the client minted itself (envelope included), answered the way
   // the relay answers a human write: one `doc_ops_result`, then the delta as
   // a `doc_update` when anything landed. The applier stays the only judge.
+  //
+  // Per `ApplyOutcome`'s contract (comfy-multi-player `dist/types.d.ts`
+  // ~L456-461): `applied` counts every op that consumed its `op_id` THIS
+  // call, including LWW-dropped writes and delete-wins no-ops (protocol-level
+  // applies); `skipped` is idempotency only — an `op_id` the document had
+  // already applied before this call. `hasAppliedOp` (the ADR-004 read
+  // surface, `dist/read.d.ts` L133) is checked per op before the batch runs
+  // so this fixture derives the same split without the package's deprecated
+  // `result.applied`/`result.skipped` accessors (`dist/applier.js` L183-199,
+  // marked "Remove in 0.3").
   applyWire(ops: Op[]): WireApplyResult {
     const before = Y.encodeStateVector(this.doc)
+    const alreadyApplied = new Set(
+      ops.filter((op) => hasAppliedOp(this.doc, op.op_id)).map((o) => o.op_id)
+    )
     const { outcomes } = applyOps(this.doc, ops, this.catalog)
     const applied = outcomes
-      .filter((o) => o.outcome === 'applied')
+      .filter((o) => o.outcome !== 'rejected' && !alreadyApplied.has(o.op_id))
       .map((o) => o.op_id)
     const skipped = outcomes
-      .filter((o) => o.outcome === 'no-op' || o.outcome === 'lww-dropped')
+      .filter((o) => alreadyApplied.has(o.op_id))
       .map((o) => o.op_id)
     const rejected = outcomes.find(isRejected)
     if (applied.length > 0) this.seq += 1

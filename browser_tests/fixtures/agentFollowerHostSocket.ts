@@ -2,6 +2,7 @@ import type { Page, WebSocketRoute } from '@playwright/test'
 import type { ApplyOutcome, Op } from '@comfyorg/comfy-multi-player'
 
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { parseWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -59,7 +60,7 @@ function parseClientDocFrame(
     type: envelope.type,
     workflowId: stringOrNull(workflow_id),
     stateVector: stringOrNull(state_vector_b64),
-    ops: Array.isArray(ops) ? (ops as Op[]) : []
+    ops: parseWireOps(ops)
   }
 }
 

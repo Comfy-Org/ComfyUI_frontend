@@ -6,7 +6,7 @@
  * budgets. `clear` is catastrophic-by-nature and never rides inside a batch
  * (plan D4): it always ships as a batch of exactly one.
  */
-import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
+import { BATCHABLE_OPS, FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
 import { createUuidv4 } from '@/utils/uuid'
@@ -94,4 +94,27 @@ export function chunkWireOps(ops: Op[]): Op[][] {
   }
   flush()
   return batches
+}
+
+/**
+ * The envelope shape `applyOps`' `validateEnvelope` requires before dispatch
+ * (comfy-multi-player's applier): an object whose `op` kind is one of
+ * `FROZEN_OPS` and whose `op_id` is a non-empty string. A value read off the
+ * wire stays `unknown` until it passes this, rather than being cast straight
+ * to `Op`.
+ */
+export function isWireOp(value: unknown): value is Op {
+  if (typeof value !== 'object' || value === null) return false
+  const { op, op_id } = value as { op?: unknown; op_id?: unknown }
+  return (
+    typeof op === 'string' &&
+    (FROZEN_OPS as readonly string[]).includes(op) &&
+    typeof op_id === 'string' &&
+    op_id.length > 0
+  )
+}
+
+/** Keeps only wire-shaped ops from an untyped JSON value. */
+export function parseWireOps(value: unknown): Op[] {
+  return Array.isArray(value) ? value.filter(isWireOp) : []
 }

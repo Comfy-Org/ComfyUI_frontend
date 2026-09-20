@@ -8,7 +8,27 @@ import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { GraphMutations } from './graphMutations'
+import { parseWireOps } from './opEnvelope'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
+
+// The frame the sender actually put on the wire, narrowed the same way a
+// real host would (`parseWireOps`) instead of casting `JSON.parse`'s
+// `unknown` straight to a shape this test just asserts is there.
+function sentOp(raw: string): { type: unknown; op_id: string } {
+  const frame: unknown = JSON.parse(raw)
+  const { type, data } =
+    typeof frame === 'object' && frame !== null
+      ? (frame as { type?: unknown; data?: unknown })
+      : {}
+  const ops =
+    typeof data === 'object' && data !== null
+      ? parseWireOps((data as { ops?: unknown }).ops)
+      : []
+  if (ops.length === 0)
+    throw new Error('the sent frame carried no wire-shaped op')
+  const [op] = ops
+  return { type, op_id: op.op_id }
+}
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -66,12 +86,8 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
       }
     }
   ])
-  const sent = JSON.parse(send.mock.calls[1][0]) as {
-    type: string
-    data: { ops: { op_id: string }[] }
-  }
-  expect(sent.type).toBe('doc_ops')
-  const [{ op_id }] = sent.data.ops
+  const { type, op_id } = sentOp(send.mock.calls[1][0])
+  expect(type).toBe('doc_ops')
 
   // The transport listens on `api`; a frame from the socket is a CustomEvent there.
   EventTarget.prototype.dispatchEvent.call(
