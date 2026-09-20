@@ -382,10 +382,10 @@ function startAgentCrdtFollower(
   const divergenceReported = new Set<
     'apply_error' | 'missing_projection_target' | 'schema_mismatch'
   >()
-  const reportDocDivergence = (
+  function reportDocDivergence(
     reason: 'missing_projection_target' | 'schema_mismatch',
     context: { workflow_id: string | undefined; seq?: number }
-  ): void => {
+  ): void {
     if (divergenceReported.has(reason)) return
     divergenceReported.add(reason)
     reportError(

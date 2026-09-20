@@ -40,7 +40,7 @@ describe('reconnectTelemetryPolicy', () => {
 
   it('reports once per three-reconnect storm and re-arms after a quiet window', () => {
     let state = initialReconnectTelemetryState()
-    const reconnect = (now: number) => {
+    function reconnect(now: number) {
       const transition = transitionReconnectTelemetry(state, {
         type: 'reconnecting',
         now
