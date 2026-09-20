@@ -306,7 +306,6 @@ test.describe(
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)
 
-      test.fail()
       await expect(wrapper).toHaveCSS('background-color', background)
     })
   }
