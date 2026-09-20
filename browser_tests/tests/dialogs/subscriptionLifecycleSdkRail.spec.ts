@@ -350,6 +350,7 @@ test.describe(
 
         await expect.poll(() => routes.portalRequests.length).toBe(1)
         expect(transport(routes.portalRequests[0])).toBe('xhr')
+        expect(idempotencyKey(routes.portalRequests[0])).toBeUndefined()
         await expect.poll(() => openedUrls(page)).toContain(PROVIDER_PORTAL_URL)
       })
 
@@ -414,6 +415,14 @@ test.describe(
         await expect.poll(() => routes.portalRequests.length).toBe(2)
         expect(transport(routes.portalRequests[0])).toBe('fetch')
         expect(transport(routes.portalRequests[1])).toBe('xhr')
+        await expect
+          .poll(
+            async () =>
+              (await openedUrls(page)).filter(
+                (destination) => destination === PROVIDER_PORTAL_URL
+              ).length
+          )
+          .toBe(2)
       })
     })
   }
