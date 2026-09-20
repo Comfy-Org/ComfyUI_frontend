@@ -315,7 +315,7 @@ describe('agentPanelStore width', () => {
       reserved: SIDEBAR_CLOSED,
       expected: 844
     },
-    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 420 }
+    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
   ] as const)(
     'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
     ({ requested, windowWidth, reserved, expected }) => {
@@ -377,13 +377,24 @@ describe('agentPanelStore width', () => {
     expect(store.width).toBe(832)
   })
 
-  it('keeps the panel at its minimum width in a window too narrow to fit it', () => {
+  it('follows a window too narrow for the panel minimum instead of leaving it', () => {
     const store = useAgentPanelStore()
     store.toggleMaximize()
 
     resizeWindowTo(600)
 
-    expect(store.width).toBe(420)
+    expect(store.width).toBe(232)
+  })
+
+  it('restores the dragged width once the window has room for it again', () => {
+    const store = useAgentPanelStore()
+    resizeWindowTo(1000)
+
+    store.setWidth(900)
+    expect(store.width).toBe(632)
+
+    resizeWindowTo(1400)
+    expect(store.width).toBe(900)
   })
 
   it('drops the maximized state when the user drags the panel', () => {

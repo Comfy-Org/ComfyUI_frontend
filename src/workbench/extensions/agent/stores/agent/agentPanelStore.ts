@@ -99,12 +99,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   const { width: windowWidth } = useWindowSize()
 
+  /**
+   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
+   * A panel narrower than its minimum still beats one that leaves the window.
+   */
   const maxWidth = computed(() =>
-    clamp(
-      windowWidth.value - reservedWorkspaceWidth.value,
-      PANEL_MIN_WIDTH,
-      PANEL_MAX_WIDTH
-    )
+    clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
   )
 
   /**
@@ -157,7 +157,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function setWidth(px: number): void {
     maximized.value = false
-    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, maxWidth.value)
+    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {

@@ -11,12 +11,13 @@
 
     <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang
          its left edge and cover the sidebar. Spanning the canvas and pushing
-         with an auto margin pins the toolbar there instead. -->
+         with an auto margin pins the toolbar there instead, and the width cap
+         keeps the overflow inside the canvas as a scroll. -->
     <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
       <ButtonGroup
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
-        class="pointer-events-auto ml-auto flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
+        class="pointer-events-auto ml-auto max-w-full min-w-0 flex-row gap-1 overflow-x-auto border border-interface-stroke bg-comfy-menu-bg p-2"
         :style="{
           ...stringifiedMinimapStyles.buttonGroupStyles
         }"
