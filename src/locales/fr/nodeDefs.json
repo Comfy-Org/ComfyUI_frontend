@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "VidéoLatenteCosmosVide",
+    "display_name": "Vidéo latente Cosmos vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Image latente Hunyuan vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "Vidéo latente Hunyuan 1.0 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "HunyuanVideo 1.5 latent vide",
+    "display_name": "Vidéo latente Hunyuan 1.5 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_lot"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Vidéo latente LTXV vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Espace latent Hunyuan 3D v2 vide",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Structure latente Trellis2 vide",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Fin de boucle",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Renvoyer output_value de chaque itération lorsque accumulate est activé ; sinon, renvoyer uniquement l’itération finale."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Valeur envoyée de Fin de boucle à Début de boucle pour l’itération suivante."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Valeur renvoyée par Fin de boucle. Renvoie l’itération finale ou toutes les itérations selon accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Connectez les sorties qui doivent s’exécuter à chaque itération. Leurs valeurs ne sont pas renvoyées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sorties",
+        "tooltip": "La valeur output_value de l’itération finale, ou les valeurs accumulées sur les itérations lorsque accumulate est activé."
       }
     }
   },
@@ -7052,6 +7079,22 @@
       }
     }
   },
+  "GetItemFromList": {
+    "display_name": "Obtenir un élément de la liste",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GetMeshInfo": {
     "display_name": "Obtenir les informations du maillage",
     "inputs": {
@@ -8029,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Mise à l’échelle du latent Hunyuan Video 1.5 avec modèle",
     "inputs": {
       "crop": {
         "name": "rogner"
@@ -10471,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "Audio latent vide LTXV",
+    "display_name": "Audio latent LTXV vide",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11659,6 +11702,73 @@
       "1": {
         "name": "textes",
         "tooltip": "Liste des légendes textuelles."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -14089,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 uniquement : passes d’affinage volumétrique éparses sur la profondeur prédite. Davantage de passes améliorent les détails fins et les bords, pour un coût approximativement linéaire. 0 désactive l’affinage. Ignoré par MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = plus rapide, 9 = plus de détails."
@@ -14119,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 uniquement : passes d’affinage volumétrique éparses sur la profondeur prédite. Davantage de passes améliorent les détails fins et les bords, pour un coût approximativement linéaire. 0 désactive l’affinage. Ignoré par MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17312,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Conditionnement Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18094,6 +18212,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Anime une image en vidéo à l’aide des modèles vidéo Pruna, avec une dernière image facultative, un son généré ou une piste audio.",
+    "display_name": "Pruna P-Video-2 Image vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_draft": {
+        "name": "brouillon"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "améliorer l’invite"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "générer l’audio"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Génère une vidéo à partir d’une invite textuelle à l’aide des modèles vidéo Pruna, avec un son généré facultatif ou une piste audio pour la piloter.",
+    "display_name": "Pruna P-Video-2 Texte vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_draft": {
+        "name": "brouillon"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "améliorer l’invite"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "générer l’audio"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[Recettes]\n\nhidream : long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -18194,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Permet de définir le périphérique et la quantification du cache KV ; par défaut, le modèle utilise l’option auto. La quantification peut accélérer les flux de travail de retouche lorsque la mémoire est insuffisante.",
+    "display_name": "Cache Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "périphérique",
+        "tooltip": "auto utilise la VRAM disponible, puis la RAM. cpu (RAM) est préchargé en arrière-plan pendant le calcul et a peu d’impact sur la vitesse. off recalcule le préfixe à chaque étape ; c’est plus lent, mais c’est le seul moyen d’exclure le cache."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Précision de stockage. default est sans perte. int8 réduit le cache de moitié, avec une précision proche de bf16 ; int4 le réduit au quart, mais double approximativement l’erreur par étape."
+      },
+      "model": {
+        "name": "modèle"
       }
     },
     "outputs": {
@@ -22554,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Image latente vide Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
@@ -22597,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Encodage VAE de l’étape C de Stable Cascade",
     "inputs": {
       "compression": {
         "name": "compression"
@@ -22734,6 +22961,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Démarrer la boucle",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Réutilise les résultats d’itérations inchangés issus des exécutions précédentes. Désactivez cette option pour exécuter de nouveau chaque itération."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Valeur exposée en tant que current_iteration_value lors de la première itération."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Le mode d’itération de la boucle."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Connectez iteration_index d’un Start Loop externe pour imbriquer cette boucle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Index de l’itération actuelle de la boucle."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Vrai lors de la première itération de la boucle."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Vrai lors de la dernière itération de la boucle."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Élément actuel de la liste lors de l’utilisation du mode List. None dans les modes Simple et For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Valeur transmise par la boucle pour l’itération actuelle : initial_iteration_value lors de la première itération, puis next_iteration_value depuis End Loop à chaque itération suivante."
       }
     }
   },
@@ -23513,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Encodage de texte Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence, visibles par l’encodeur de texte et insérées dans la séquence sous forme de latents VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Les images de référence sont redimensionnées à environ resolution x resolution pixels, par multiples de 32, tout en préservant les proportions. 0 conserve chaque référence à sa propre taille, arrondie à un multiple de 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent vide à la taille de la première image de référence, afin de correspondre à l’échantillonnage, car tout autre changement de taille décalerait la modification."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Encodage de texte Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23536,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Encodage de texte Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23612,6 +23924,10 @@
       "max_length": {
         "name": "longueur_max"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Décodage spéculatif avec la tête de prédiction de jetons multiples du checkpoint. Aucun effet sans poids MTP. auto adapte la profondeur du brouillon ; 2-5 la fixe. La sortie échantillonnée conserve une distribution correcte, mais diffère de la sortie sans MTP pour la même seed."
+      },
       "prompt": {
         "name": "invite"
       },
@@ -23673,6 +23989,10 @@
       },
       "max_length": {
         "name": "longueur_maximale"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Décodage spéculatif avec la tête de prédiction de jetons multiples du checkpoint. Aucun effet sans poids MTP. auto adapte la profondeur du brouillon ; 2-5 la fixe. La sortie échantillonnée conserve une distribution correcte, mais diffère de la sortie sans MTP pour la même seed."
       },
       "prompt": {
         "name": "invite"
@@ -24189,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Conditionnement Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24211,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Étape de forme Trellis2",
     "inputs": {
       "negative": {
         "name": "négatif"
@@ -24239,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Étape de texture Trellis2",
     "inputs": {
       "negative": {
         "name": "négatif"
@@ -24932,6 +25252,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Génère un modèle 3D low-poly à topologie propre à partir d’une image, sous forme de maillage triangulaire (GLB) ou de maillage à dominante de quadrilatères (FBX).",
+    "display_name": "Tripo P2 : Image vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle de la série P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID de tâche du modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vide lorsque quad est activé."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Renseigné uniquement lorsque quad est activé."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Génère un modèle 3D low-poly à topologie propre à partir d’une vue de face ainsi que d’une à trois vues parmi les vues gauche, arrière et droite, sous forme de maillage triangulaire (GLB) ou de maillage à dominante de quadrilatères (FBX).",
+    "display_name": "Tripo P2 : vues multiples vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle de la série P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID de tâche du modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vide lorsque quad est activé."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Uniquement renseigné lorsque quad est activé."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Génère un modèle 3D low-poly à la topologie propre à partir d’une invite textuelle, sous forme de maillage triangulaire (GLB) ou de maillage majoritairement composé de quadrilatères (FBX).",
+    "display_name": "Tripo P2 : Texte vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle de la série P de Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id du modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vide lorsque quad est activé."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Uniquement renseigné lorsque quad est activé."
       }
     }
   },
@@ -25733,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Décodage VAE Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "nombre_de_morceaux"
@@ -26041,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Décodage VAE de forme Trellis2",
     "inputs": {
       "samples": {
         "name": "échantillons"
@@ -26062,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Décodage VAE de structure Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26082,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Décodage VAE de texture Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29037,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Connectez le générateur ABC ou fournissez une partition modifiée. Laissez vide pour utiliser automatiquement le mode off."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Guidage autorégressif pour le style et les paroles. 1.0 désactive CFG, conformément au flux de travail ABC. Utilisez 1.01 pour correspondre au guidage du mode désactivé d’origine."
       },
       "clip": {
         "name": "clip"

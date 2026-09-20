@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "סרטון latent של Cosmos ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "latent תמונה של Hunyuan ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Empty HunyuanVideo 1.0 Latent",
+    "display_name": "latent של Hunyuan Video 1.0 ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "latent של Hunyuan Video 1.5 ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "סרטון latent של LTXV ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "latent של Hunyuan 3D v2 ריק",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "מבנה latent של Trellis2 ריק",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "סיום לולאה",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "מחזיר output_value מכל איטרציה כאשר האפשרות מופעלת; אחרת מחזיר רק את האיטרציה הסופית."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "ערך הנשלח מסיום לולאה בחזרה להתחלת לולאה עבור האיטרציה הבאה."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "הערך המוחזר על ידי סיום לולאה. מוחזרת האיטרציה הסופית או כל האיטרציות בהתאם ל-accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "חברו פלטים שחייבים להתבצע בכל איטרציה. הערכים שלהם אינם מוחזרים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "ה-output_value של האיטרציה הסופית, או ערכים שנצברו לאורך האיטרציות כאשר accumulate מופעל."
       }
     }
   },
@@ -7052,6 +7079,22 @@
       }
     }
   },
+  "GetItemFromList": {
+    "display_name": "קבלת פריט מרשימה",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GetMeshInfo": {
     "display_name": "קבלת מידע על רשת",
     "inputs": {
@@ -8029,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "הגדלת latent של Hunyuan Video 1.5 באמצעות מודל",
     "inputs": {
       "crop": {
         "name": "חיתוך"
@@ -10471,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "שמע latent של LTXV ריק",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11659,6 +11702,73 @@
       "1": {
         "name": "טקסטים",
         "tooltip": "רשימת כתוביות טקסט."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -14089,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על פני העומק החזוי. מעברים נוספים מחדדים פרטים עדינים וקצוות בעלות ליניארית בקירוב. 0 משבית את החידוד. האפשרות אינה חלה על MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = הכי מהיר, 9 = הכי מפורט."
@@ -14119,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על פני העומק החזוי. מעברים נוספים מחדדים פרטים עדינים וקצוות בעלות ליניארית בקירוב. 0 משבית את החידוד. האפשרות אינה חלה על MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17312,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "התניית Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18094,6 +18212,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "מנפיש תמונה לסרטון באמצעות מודלי וידאו של Pruna, עם אפשרות לפריים אחרון, צליל שנוצר או רצועת שמע.",
+    "display_name": "Pruna P-Video-2 מתמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "יוצר סרטון מהנחיית טקסט באמצעות מודלי וידאו של Pruna, עם אפשרות לצליל שנוצר או לרצועת שמע שתניע אותו.",
+    "display_name": "Pruna P-Video-2 מטקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "מתכונים:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "טעינת CLIP (מרובע)",
@@ -18194,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "מאפשר להגדיר את התקן מטמון ה-KV ואת הקוונטיזציה; כברירת מחדל, המודל משתמש באפשרות auto. קוונטיזציה עשויה להאיץ תהליכי עבודה של עריכה כאשר הזיכרון מוגבל.",
+    "display_name": "מטמון Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto משתמש ב-VRAM פנוי ולאחר מכן ב-RAM. ‏cpu ‏(RAM) נטען מראש במקביל לחישוב ופוגע מעט במהירות. ‏off מחשב מחדש את הקידומת בכל שלב, ולכן הוא איטי יותר אך זו הדרך היחידה להוציא את המטמון מהמשוואה."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "דיוק האחסון. ברירת המחדל היא ללא אובדן. ‏int8 מקטין את המטמון בחצי בדיוק של כ-bf16, ‏int4 מקטין אותו לרבע אך בקירוב מכפיל את השגיאה בכל שלב."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22554,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "תמונת latent ריקה של stable cascade",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -22597,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "קידוד VAE של שלב C ב-stable cascade",
     "inputs": {
       "compression": {
         "name": "דחיסה"
@@ -22734,6 +22961,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "התחלת לולאה",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "שימוש חוזר בתוצאות איטרציה שלא השתנו מהפעלות קודמות. השבתה תבצע מחדש כל איטרציה."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "ערך הנחשף כ-current_iteration_value באיטרציה הראשונה."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "מצב האיטרציה של הלולאה."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "חברו iteration_index מ-Start Loop חיצוני כדי לקנן לולאה זו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "האינדקס של איטרציית הלולאה הנוכחית."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "נכון במהלך האיטרציה הראשונה של הלולאה."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "נכון במהלך האיטרציה האחרונה של הלולאה."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "הפריט הנוכחי מהרשימה בעת שימוש במצב List. ללא ערך במצבים Simple ו-For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "ערך המועבר לאורך הלולאה עבור האיטרציה הנוכחית: initial_iteration_value באיטרציה הראשונה, ולאחר מכן next_iteration_value מ-End Loop בכל איטרציה עוקבת."
       }
     }
   },
@@ -23513,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "קידוד טקסט Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות ייחוס הנצפות על ידי מקודד הטקסט ומשולבות ברצף כלטנטים של VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "גודלן של תמונות ייחוס משתנה לכ־resolution x resolution פיקסלים, בכפולות של 32, תוך שמירה על יחס הממדים. הערך 0 שומר כל תמונת ייחוס בגודלה המקורי, מעוגל לכפולה של 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "לטנט ריק בגודל תמונת הייחוס הראשונה, כדי להתאים לדגימה, שכן כל שינוי גודל אחר מסיט את העריכה."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "קידוד טקסט Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23536,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "קידוד טקסט Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23612,6 +23924,10 @@
       "max_length": {
         "name": "אורך_מקסימלי"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי רב-אסימוני של נקודת הביקורת. ללא השפעה ללא משקלי MTP. הערך auto מתאים את עומק הטיוטה; הערכים 2–5 מקבעים אותו. הפלט שנדגם נשאר בהתפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו seed."
+      },
       "prompt": {
         "name": "פרומפט"
       },
@@ -23673,6 +23989,10 @@
       },
       "max_length": {
         "name": "אורך מרבי"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש חיזוי רב-אסימוני של נקודת הביקורת. ללא השפעה ללא משקלי MTP. הערך auto מתאים את עומק הטיוטה; הערכים 2–5 מקבעים אותו. הפלט שנדגם נשאר בהתפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו seed."
       },
       "prompt": {
         "name": "פרומפט"
@@ -24189,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "התניה של Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24211,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "שלב הצורה של Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24239,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "שלב המרקם של Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24932,6 +25252,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "יוצר מודל תלת־ממד דל־פוליגונים בעל טופולוגיה נקייה מתמונה, כרשת משולשים (GLB) או כרשת שבה מרבית הפאות מרובעות (FBX).",
+    "display_name": "Tripo P2: תמונה למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל Tripo מסדרת P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "יוצר מודל תלת־ממד דל־פוליגונים בעל טופולוגיה נקייה מתצוגה קדמית ומאחת עד שלוש מהתצוגות השמאלית, האחורית והימנית, כרשת משולשים (GLB) או כרשת שבה מרבית הפאות מרובעות (FBX).",
+    "display_name": "Tripo P2: מריבוי תצוגות למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל Tripo מסדרת P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "יוצר מודל תלת־ממדי בעל מספר מצולעים נמוך וטופולוגיה נקייה מתוך הנחיית טקסט, כרשת משולשים (GLB) או כרשת שבה רוב הפאות מרובעות (FBX).",
+    "display_name": "Tripo P2: טקסט למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "גודל_אוטומטי"
+      },
+      "model_compress_geometry": {
+        "name": "דחיסת_גאומטריה"
+      },
+      "model_export_uv": {
+        "name": "ייצוא_UV"
+      },
+      "model_face_limit": {
+        "name": "מגבלת_פאות"
+      },
+      "model_image_seed": {
+        "name": "זרע_תמונה"
+      },
+      "model_model_seed": {
+        "name": "זרע_מודל"
+      },
+      "model_negative_prompt": {
+        "name": "הנחיה_שלילית"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_seed": {
+        "name": "זרע_מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -25733,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "פענוח VAE של Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26041,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "פענוח צורה באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26062,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "פענוח מבנה באמצעות VAE של Trellis2",
     "inputs": {
       "resolution": {
         "name": "רזולוציה"
@@ -26082,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "פענוח מרקם באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "דגימות"
@@ -29037,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "חברו את מחולל ה-ABC או ספקו תווים ערוכים. השאירו ריק כדי להשתמש במצב off באופן אוטומטי."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "הכוונה אוטורגרסיבית לסגנון ולמילים. הערך 1.0 משבית את CFG, בהתאם לתהליך העבודה של ABC. השתמשו ב־1.01 כדי להתאים להכוונה המקורית במצב כבוי."
       },
       "clip": {
         "name": "clip"

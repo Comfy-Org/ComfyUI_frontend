@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "BoşCosmosGizliVideo",
+    "display_name": "Boş Cosmos Latent Video",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "Boş Hunyuan Görüntü Gizli",
+    "display_name": "Boş Hunyuan Görüntü Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_işlem_boyutu"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "BoşHunyuanGizliVideo",
+    "display_name": "Boş Hunyuan Video 1.0 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Boş HunyuanVideo 1.5 Latent",
+    "display_name": "Boş Hunyuan Video 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "BoşLTXVGizliVideo",
+    "display_name": "Boş LTXV Latent Video",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "BoşGizliHunyuan3Dv2",
+    "display_name": "Boş Hunyuan 3D v2 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Boş Trellis2 Latent Yapı",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Döngüyü Sonlandır",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Etkinleştirildiğinde her yinelemedeki output_value değerini döndürür; aksi halde yalnızca son yinelemeyi döndürür."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Bir sonraki yineleme için End Loop'tan Start Loop'a geri gönderilen değer."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Döngüyü Sonlandır tarafından döndürülen değer. accumulate ayarına göre son yinelemeyi veya tüm yinelemeleri döndürür."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Her yinelemede çalışması gereken çıkışları bağlayın. Değerleri döndürülmez."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "Son yinelemenin output_value değeri veya accumulate etkinleştirildiğinde yinelemeler boyunca biriktirilen değerler."
       }
     }
   },
@@ -7052,6 +7079,22 @@
       }
     }
   },
+  "GetItemFromList": {
+    "display_name": "Listeden Öğe Al",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GetMeshInfo": {
     "display_name": "Mesh Bilgisini Al",
     "inputs": {
@@ -8029,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Hunyuan Video 1.5 Latent'i Model ile Büyüt",
     "inputs": {
       "crop": {
         "name": "kırp"
@@ -10471,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Boş Latent Ses",
+    "display_name": "Boş LTXV Latent Ses",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11659,6 +11702,73 @@
       "1": {
         "name": "texts",
         "tooltip": "Metin başlıklarının listesi."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -14089,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Yalnızca MoGe-3: tahmin edilen derinlik üzerinde seyrek hacimsel iyileştirme geçişleri. Daha fazla geçiş, yaklaşık doğrusal bir maliyetle ince ayrıntıları ve kenarları keskinleştirir. 0, iyileştirmeyi devre dışı bırakır. MoGe-1 / MoGe-2 tarafından yok sayılır."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = en hızlı, 9 = en detaylı."
@@ -14119,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Yalnızca MoGe-3: tahmin edilen derinlik üzerinde seyrek hacimsel iyileştirme geçişleri. Daha fazla geçiş, yaklaşık doğrusal bir maliyetle ince ayrıntıları ve kenarları keskinleştirir. 0, iyileştirmeyi devre dışı bırakır. MoGe-1 / MoGe-2 tarafından yok sayılır."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17312,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D Koşullandırma",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18094,6 +18212,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "İsteğe bağlı son kare, oluşturulmuş ses veya ses parçasıyla, Pruna video modellerini kullanarak bir görüntüyü videoya dönüştürür.",
+    "display_name": "Pruna P-Video-2 Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_draft": {
+        "name": "Taslak"
+      },
+      "model_duration": {
+        "name": "Süre"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "İstem"
+      },
+      "model_resolution": {
+        "name": "Çözünürlük"
+      },
+      "model_seed": {
+        "name": "Tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "İsteğe bağlı oluşturulmuş ses veya videoyu yönlendirecek bir ses parçasıyla, Pruna video modellerini kullanarak bir metin isteminden video oluşturur.",
+    "display_name": "Pruna P-Video-2 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "En-boy oranı"
+      },
+      "model_draft": {
+        "name": "Taslak"
+      },
+      "model_duration": {
+        "name": "Süre"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "İstem"
+      },
+      "model_resolution": {
+        "name": "Çözünürlük"
+      },
+      "model_seed": {
+        "name": "Tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[Tarifler]\n\nhidream: uzun clip-l, uzun clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "DörtlüCLIPYükleyici",
@@ -18194,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV önbellek aygıtının ve nicelemesinin ayarlanmasına olanak tanır; varsayılan olarak model auto seçeneğini kullanır. Niceleme, bellek yetersiz olduğunda düzenleme iş akışlarını potansiyel olarak hızlandırır.",
+    "display_name": "Qwen Image 2.1 Önbelleği",
+    "inputs": {
+      "device": {
+        "name": "Aygıt",
+        "tooltip": "auto önce boş VRAM'i, ardından RAM'i kullanır. cpu (RAM), hesaplamanın arkasında önceden getirilir ve hızı çok az etkiler. off, öneki her adımda yeniden hesaplar; bu daha yavaştır ancak önbelleği ihtimal dışı bırakmanın tek yoludur."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Depolama hassasiyeti. default kayıpsızdır. int8, yaklaşık bf16 doğruluğunda önbelleği yarıya indirir; int4 ise onu dörtte bire düşürür ancak adım başına hatayı yaklaşık iki katına çıkarır."
+      },
+      "model": {
+        "name": "Model"
       }
     },
     "outputs": {
@@ -22554,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StabilKaskad_BoşGizliGörüntü",
+    "display_name": "Boş Stable Cascade Latent Görüntü",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -22597,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StabilKaskad_AşamaC_VAEKodlama",
+    "display_name": "Stable Cascade Aşama C VAE Kodlama",
     "inputs": {
       "compression": {
         "name": "sıkıştırma"
@@ -22734,6 +22961,52 @@
       "2": {
         "name": "gizli",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Döngüyü Başlat",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Önceki çalıştırmalardaki değişmemiş yineleme sonuçlarını yeniden kullanır. Her yinelemeyi yeniden çalıştırmak için devre dışı bırakın."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "İlk yinelemede current_iteration_value olarak sunulan değer."
+      },
+      "mode": {
+        "name": "Mod",
+        "tooltip": "Döngü yineleme modu."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Bu döngüyü iç içe geçirmek için dıştaki bir Start Loop düğümünden iteration_index bağlayın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Geçerli döngü yinelemesinin indeksi."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Döngünün ilk yinelemesi sırasında True olur."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Döngünün son yinelemesi sırasında True olur."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "List modu kullanılırken listedeki geçerli öğe. Simple ve For modlarında None."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Geçerli yineleme için döngüde taşınan değer: ilk yinelemede initial_iteration_value, sonraki her yinelemede ise End Loop'tan gelen next_iteration_value."
       }
     }
   },
@@ -23513,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Qwen Image 2.1 Metin Kodlama",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Metin kodlayıcının gördüğü ve VAE latent'leri olarak dizinin içine eklenen referans görüntüler."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Referans görüntüler, en-boy oranı korunarak 32'nin katlarında, yaklaşık resolution x resolution piksele yeniden boyutlandırılır. 0, her referansı kendi boyutunda tutar ve boyutu 32'nin katına yuvarlar."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Düzenlemeyi başka herhangi bir boyut değişikliği kaydırdığından, örneklemeyle eşleşmesi için ilk referans görüntüsünün boyutunda boş latent."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Qwen Image Edit Metin Kodlama",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23536,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Qwen Image Edit Plus Metin Kodlama",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23612,6 +23924,10 @@
       "max_length": {
         "name": "maks_uzunluk"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmini başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini uyarlar; 2-5 ise sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktından farklıdır."
+      },
       "prompt": {
         "name": "istem"
       },
@@ -23673,6 +23989,10 @@
       },
       "max_length": {
         "name": "maksimum_uzunluk"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmini başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto, taslak derinliğini uyarlar; 2-5 ise sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktından farklıdır."
       },
       "prompt": {
         "name": "istem"
@@ -24189,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 Koşullandırma",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24211,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 Şekil Aşaması",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24239,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 Doku Aşaması",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24932,6 +25252,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Bir görüntüden, üçgen ağ (GLB) veya dörtgen ağırlıklı ağ (FBX) olarak temiz topolojiye sahip düşük poligonlu bir 3B model oluşturur.",
+    "display_name": "Tripo P2: Görüntüden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P serisi modeli."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boş olur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Ön görünüm ile sol, arka ve sağ görünümlerden bir ila üçü kullanılarak, üçgen ağ (GLB) veya dörtgen ağırlıklı ağ (FBX) olarak temiz topolojiye sahip düşük poligonlu bir 3B model oluşturur.",
+    "display_name": "Tripo P2: Çoklu Görünümden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P serisi modeli."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boş olur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Bir metin isteminden, üçgen ağ (GLB) veya quad ağırlıklı ağ (FBX) olarak temiz topolojiye sahip düşük poligonlu bir 3D model oluşturur.",
+    "display_name": "Tripo P2: Metinden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo P serisi model."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
       }
     }
   },
@@ -25733,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEKodÇözmeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE Kod Çözme",
     "inputs": {
       "num_chunks": {
         "name": "parça_sayısı"
@@ -26041,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE Şekil Kod Çözme",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26062,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE Yapı Kod Çözme",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26082,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE Doku Kod Çözme",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29037,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "ABC oluşturucuyu bağlayın veya düzenlenmiş bir nota sağlayın. off modunu otomatik kullanmak için boş bırakın."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Stil ve şarkı sözleri için otoregresif yönlendirme. 1.0, CFG'yi devre dışı bırakır ve ABC iş akışıyla eşleşir. Özgün kapalı mod yönlendirmesiyle eşleşmesi için 1.01 kullanın."
       },
       "clip": {
         "name": "clip"

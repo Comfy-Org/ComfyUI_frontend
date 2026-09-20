@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "فيديو كوزموس كامن فارغ",
+    "display_name": "فيديو Cosmos كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "صورة Hunyuan كامنة فارغة",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدفعة"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "فيديو هونييوان كامن فارغ",
+    "display_name": "فيديو Hunyuan 1.0 كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "هونييوان 3D كامن فارغ نسخة 2",
+    "display_name": "Hunyuan 3D v2 كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "بنية Trellis2 كامنة فارغة",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "إنهاء الحلقة",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "أعد output_value من كل تكرار عند التمكين؛ وإلا فأعد التكرار الأخير فقط."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "القيمة المرسلة من إنهاء الحلقة إلى بدء الحلقة للتكرار التالي."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "القيمة التي يعيدها إنهاء الحلقة. يعيد التكرار الأخير أو كل التكرارات وفقًا لـ accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "صِل المخرجات التي يجب تنفيذها في كل تكرار. لا تُعاد قيمها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "المخرجات",
+        "tooltip": "output_value للتكرار الأخير، أو القيم المتراكمة عبر التكرارات عند تمكين accumulate."
       }
     }
   },
@@ -7052,6 +7079,22 @@
       }
     }
   },
+  "GetItemFromList": {
+    "display_name": "الحصول على عنصر من القائمة",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GetMeshInfo": {
     "display_name": "الحصول على معلومات الشبكة",
     "inputs": {
@@ -8029,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 تكبير latent بالنموذج",
+    "display_name": "ترقية Hunyuan Video 1.5 الكامنة باستخدام نموذج",
     "inputs": {
       "crop": {
         "name": "اقتصاص"
@@ -10471,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "صوت LTXV كامن فارغ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11659,6 +11702,73 @@
       "1": {
         "name": "نصوص",
         "tooltip": "قائمة بالنصوص التوضيحية."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "تكرار الحلقة",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "تقدم الحلقة",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "نتيجة الحلقة",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -14089,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقع. تؤدي التمريرات الإضافية إلى زيادة حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. يعطّل 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "٠ = الأسرع، ٩ = أعلى تفاصيل."
@@ -14119,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقع. تؤدي التمريرات الإضافية إلى زيادة حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. يعطّل 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17312,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "تكييف Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18094,6 +18212,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "يحوّل صورة إلى فيديو متحرك باستخدام نماذج فيديو Pruna، مع إطار أخير اختياري أو صوت مولّد أو مسار صوتي.",
+    "display_name": "Pruna P-Video-2 تحويل صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "يولّد فيديو من مطالبة نصية باستخدام نماذج فيديو Pruna، مع صوت مولّد اختياري أو مسار صوتي للتحكم به.",
+    "display_name": "Pruna P-Video-2 تحويل نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "draft"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[وصفات]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "محمل CLIP رباعي",
@@ -18194,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "يتيح ضبط جهاز ذاكرة التخزين المؤقت KV والتكميم؛ يستخدم النموذج خيار auto افتراضيًا. قد يسرّع التكميم مهام التحرير عند نقص الذاكرة.",
+    "display_name": "ذاكرة التخزين المؤقت لـ Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "يستخدم auto ذاكرة VRAM الاحتياطية، ثم RAM. يُحضّر cpu ‏(RAM) مسبقًا بالتوازي مع المعالجة ويؤثر قليلًا في السرعة. يعيد off حساب البادئة في كل خطوة، وهو أبطأ لكنه الطريقة الوحيدة لاستبعاد الذاكرة المؤقتة."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "دقة التخزين. الإعداد default بلا فقد. يقلل int8 حجم الذاكرة المؤقتة إلى النصف بدقة تقارب bf16، بينما يخفضه int4 إلى الربع لكنه يضاعف تقريبًا الخطأ في كل خطوة."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22554,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "صورة كامنة فارغة من StableCascade",
+    "display_name": "صورة كامنة فارغة لـ Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "حجم الدفعة"
@@ -22597,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "ترميز VAE للمرحلة ج من StableCascade",
+    "display_name": "ترميز VAE للمرحلة C من Stable Cascade",
     "inputs": {
       "compression": {
         "name": "ضغط"
@@ -22734,6 +22961,52 @@
       "2": {
         "name": "كامِن",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "بدء الحلقة",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "أعِد استخدام نتائج التكرارات غير المتغيرة من عمليات التنفيذ السابقة. عطّله لتنفيذ كل تكرار مجددًا."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "القيمة المعروضة باسم current_iteration_value في التكرار الأول."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "وضع تكرار الحلقة."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "صِل iteration_index من Start Loop خارجي لتضمين هذه الحلقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "فهرس تكرار الحلقة الحالي."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "صحيح أثناء التكرار الأول من الحلقة."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "صحيح أثناء التكرار الأخير من الحلقة."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "العنصر الحالي من القائمة عند استخدام وضع القائمة. None في وضعي البسيط وFor."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "قيمة تُنقل عبر الحلقة للتكرار الحالي: initial_iteration_value في التكرار الأول، ثم next_iteration_value من End Loop في كل تكرار لاحق."
       }
     }
   },
@@ -23513,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "ترميز النص Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صور مرجعية يراها مُرمِّز النص وتُدرج في التسلسل كقيم latent لـ vae."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "يُعاد تحجيم الصور المرجعية إلى نحو resolution × resolution بكسل، بمضاعفات 32، مع الحفاظ على نسبة العرض إلى الارتفاع. تحافظ القيمة 0 على حجم كل مرجع كما هو، مع التقريب إلى مضاعف 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent فارغ بحجم أول صورة مرجعية، لمطابقته مع أخذ العينات، إذ إن أي تغيير آخر في الحجم يزيح التعديل."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "ترميز النص لتحرير Qwen Image",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23536,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "ترميز النص لتحرير Qwen Image Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23612,6 +23924,10 @@
       "max_length": {
         "name": "الحد الأقصى للطول"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز لنقطة التحقق. لا تأثير له دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يبقى ناتج أخذ العينات موزعًا بشكل صحيح، لكنه يختلف عن الناتج دون MTP عند استخدام البذرة نفسها."
+      },
       "prompt": {
         "name": "الموجه"
       },
@@ -23673,6 +23989,10 @@
       },
       "max_length": {
         "name": "الحد الأقصى للطول"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز لنقطة التحقق. لا تأثير له دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يبقى ناتج أخذ العينات موزعًا بشكل صحيح، لكنه يختلف عن الناتج دون MTP عند استخدام البذرة نفسها."
       },
       "prompt": {
         "name": "المطالبة"
@@ -24189,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "تكييف Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24211,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "مرحلة الشكل Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -24239,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "مرحلة النسيج Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -24932,6 +25252,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعيات بطوبولوجيا نظيفة من صورة، كشبكة مثلثية (GLB) أو شبكة يغلب عليها الرباعي (FBX).",
+    "display_name": "Tripo P2: من صورة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تفعيل quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يتم ملؤه فقط عند تفعيل quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعيات بطوبولوجيا نظيفة من عرض أمامي بالإضافة إلى عرض واحد إلى ثلاثة من العروض اليسرى والخلفية واليمنى، كشبكة مثلثية (GLB) أو شبكة يغلب عليها الرباعي (FBX).",
+    "display_name": "Tripo P2: من عروض متعددة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تفعيل quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "ينشئ نموذجًا ثلاثي الأبعاد منخفض المضلعات بطوبولوجيا نظيفة من موجّه نصي، كشبكة مثلثات (GLB) أو شبكة يغلب عليها الرباعيات (FBX).",
+    "display_name": "Tripo P2: نص إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Tripo من سلسلة P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
       }
     }
   },
@@ -25733,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "فك ترميز VAE Hunyuan3D",
+    "display_name": "Hunyuan 3D VAE فك الترميز",
     "inputs": {
       "num_chunks": {
         "name": "عدد القطع"
@@ -26041,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE فك ترميز الشكل",
     "inputs": {
       "samples": {
         "name": "العينات"
@@ -26062,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE فك ترميز البنية",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26082,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE فك ترميز النسيج",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29037,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "صِل مولّد ABC أو وفّر نوتة موسيقية معدّلة. اتركه فارغًا لاستخدام وضع off تلقائيًا."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "توجيه انحداري ذاتي للنمط وكلمات الأغاني. تعطل القيمة 1.0 ‏CFG، بما يطابق سير عمل ABC. استخدم 1.01 لمطابقة توجيه الوضع غير المفعّل الأصلي."
       },
       "clip": {
         "name": "clip"
