@@ -22,6 +22,13 @@ async function readNodes(page: Page): Promise<RenderedGraphNode[]> {
   )
 }
 
+async function readGraphMouse(page: Page): Promise<[number, number]> {
+  return page.evaluate(() => [
+    window.app!.canvas.graph_mouse[0],
+    window.app!.canvas.graph_mouse[1]
+  ])
+}
+
 // A canvas paste used to call `graph.add(node)` before the pasted
 // position was set, so the `add_node` the follower minted into the doc carried
 // the constructor default `[10, 10]`. The paste looked right locally, but the
@@ -47,7 +54,12 @@ test.describe(
         await test.step('copy and paste an existing seed node', async () => {
           await agentConversation.vueNodes.selectNode(before[2].id)
           await page.keyboard.press('ControlOrMeta+c')
-          await page.mouse.move(713, 347)
+          await page.locator('#graph-canvas').hover({
+            position: { x: 713, y: 347 }
+          })
+          await expect.poll(() => readGraphMouse(page)).not.toEqual([0, 0])
+          const pastePosition = await readGraphMouse(page)
+          expect(pastePosition[0]).not.toBe(pastePosition[1])
           await page.keyboard.press('ControlOrMeta+v')
           await expect
             .poll(async () => (await readNodes(page)).length)
@@ -57,11 +69,11 @@ test.describe(
             (candidate) => !beforeIds.has(candidate.id)
           )
           if (!node) throw new Error('paste did not add a new node')
+          expect(node.pos).toEqual(pastePosition)
           return node
         })
 
       expect(pasted.pos).not.toEqual([10, 10])
-      expect(pasted.pos[0]).not.toBe(pasted.pos[1])
       await expect
         .poll(() => agentConversation.hostNodePositions())
         .toContainEqual(pasted.pos)
