@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Пустое латентное видео Cosmos",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Пустое латентное изображение Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Пустой HunyuanLatentVideo",
+    "display_name": "Пустое латентное видео Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Пустой HunyuanVideo 1.5 latent",
+    "display_name": "Пустое латентное видео Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "Пустой LTXVLatentVideo",
+    "display_name": "Пустое латентное видео LTXV",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Пустой латент Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Пустая латентная структура Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Масштабирование латента Hunyuan Video 1.5 с моделью",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Пустое латентное аудио",
+    "display_name": "Пустое латентное аудио LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: проходы разреженного объёмного уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и границ при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = быстрее всего, 9 = максимальная детализация."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: проходы разреженного объёмного уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и границ при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Кондиционирование Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -22751,7 +22759,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_Пустое латентное изображение",
+    "display_name": "Пустое латентное изображение Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -22794,7 +22802,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_Этап C_VAE Кодирование",
+    "display_name": "Кодирование VAE Stable Cascade, этап C",
     "inputs": {
       "compression": {
         "name": "сжатие"
@@ -23757,7 +23765,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Кодирование текста Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23787,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Кодирование текста Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23863,10 @@
       "max_length": {
         "name": "максимальная длина"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с использованием головы multi-token-prediction чекпойнта. Не действует без весов MTP. auto адаптирует глубину черновой генерации; 2-5 фиксирует её. Сэмплированный вывод сохраняет корректное распределение, но отличается от вывода без MTP при том же seed."
+      },
       "prompt": {
         "name": "запрос"
       },
@@ -23916,6 +23928,10 @@
       },
       "max_length": {
         "name": "максимальная длина"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с использованием головы multi-token-prediction чекпойнта. Не действует без весов MTP. auto адаптирует глубину черновой генерации; 2-5 фиксирует её. Сэмплированный вывод сохраняет корректное распределение, но отличается от вывода без MTP при том же seed."
       },
       "prompt": {
         "name": "подсказка"
@@ -24432,7 +24448,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Кондиционирование Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24470,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Этап формы Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24498,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Этап текстуры Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26178,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Декодирование VAE Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "количество_частей"
@@ -26470,7 +26486,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Декодирование формы VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26507,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Декодирование структуры VAE Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26527,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Декодирование текстуры VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
