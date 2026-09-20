@@ -80,7 +80,15 @@ test.describe(
       const loadImageNode = comfyPage.vueNodes.getNodeByTitle('Load Image')
       await expect(loadImageNode).toBeVisible()
 
-      await card.dragTo(loadImageNode)
+      // Drop onto the canvas at the node's center, matching the working
+      // asset-card-drag convention used elsewhere (see assets.spec.ts's
+      // "Dragging outputs from assets skips upload"): the drop handler
+      // lives on the canvas, not on the Vue node's own DOM element, so
+      // dragging directly onto `loadImageNode` never resolves the drop.
+      const targetPosition =
+        await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
+      if (!targetPosition) throw new Error('Load Image node center not found')
+      await card.dragTo(comfyPage.canvas, { targetPosition })
 
       const [loadImageNodeRef] =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
