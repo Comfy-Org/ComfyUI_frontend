@@ -152,7 +152,10 @@ class TemplatePlacementHarness {
     })
 
     await this.page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .getByRole('button', {
+        name: enMessages.agent.askComfyAgent,
+        exact: true
+      })
       .click()
     const panel = this.page.locator('#agent-panel-root')
     await expect(panel).toBeVisible({ timeout: 30_000 })
