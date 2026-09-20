@@ -1,5 +1,7 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -75,16 +77,28 @@ export class AgentFollowerHostSocket {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
+    if (typeof data !== 'object' || data === null) return
+    const { workflow_id, state_vector_b64, ops } = data as {
       workflow_id?: unknown
       state_vector_b64?: unknown
+      ops?: unknown
     }
-    if (workflow_id !== this.workflowId || typeof state_vector_b64 !== 'string')
-      return
+    if (workflow_id !== this.workflowId) return
+    if (type === 'doc_ops') this.onClientOps(ops)
+    else if (type === 'doc_subscribe') this.onClientSubscribe(state_vector_b64)
+  }
+
+  // The wire batch is already enveloped; the applier is its only judge.
+  private onClientOps(ops: unknown): void {
+    if (!Array.isArray(ops)) return
+    for (const hostFrame of this.host.applyClient(ops as Op[]))
+      this.send(hostFrame)
+  }
+
+  private onClientSubscribe(stateVectorB64: unknown): void {
+    if (typeof stateVectorB64 !== 'string') return
     this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
+    this.send(this.host.catchUp(stateVectorB64))
     this.subscribes += 1
     this.resolveSubscribed?.()
   }

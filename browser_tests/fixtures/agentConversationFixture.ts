@@ -643,6 +643,29 @@ class AgentConversationHarness {
     }
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
+
+  hostNodePositions(): (number[] | undefined)[] {
+    return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  async reloadWithoutLocalWorkflow(): Promise<void> {
+    await this.page.evaluate(() => {
+      for (const storage of [localStorage, sessionStorage]) {
+        const workflowKeys = Object.keys(storage).filter((key) =>
+          key.startsWith('Comfy.Workflow.')
+        )
+        for (const key of workflowKeys) storage.removeItem(key)
+      }
+    })
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.page.waitForFunction(() => window.app?.extensionManager)
+    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
+      state: 'hidden',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectWorkflowTarget()
+  }
 }
 
 export type ReplayTiming = 'immediate' | 'recorded'
