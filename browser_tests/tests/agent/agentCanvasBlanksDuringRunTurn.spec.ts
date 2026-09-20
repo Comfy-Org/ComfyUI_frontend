@@ -10,7 +10,10 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 
 import {
   agentTest as test,
@@ -67,11 +70,14 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * timeline: blank the instant the agent starts working, blank for the whole
  * run, all nodes back at once, unrelated to whether the run itself finished.
  *
- * Two tests share the drive-to-blank-canvas arrange step below: the first
+ * Three tests share the drive-to-doc-reset arrange step below: the first
  * pins the known defect (`test.fail()`, still blank the instant the run
- * reports done), the second pins that the passive stale-probe genuinely
- * recovers once given the chance -- the "all nodes came back" half of the
- * report is real, intended behavior, not part of the bug.
+ * reports done under a PERMANENTLY dropped catch-up), the second pins that
+ * the passive stale-probe genuinely recovers once given the chance -- the
+ * "all nodes came back" half of the report is real, intended behavior, not
+ * part of the bug -- and the third proves the PM-1355 fix itself: a
+ * TRANSIENT (one-off) dropped catch-up now recovers via the active probe
+ * well inside the run's own duration, not just eventually.
  */
 
 const WORKFLOW_ID = 'b7e2f1a4-9c3d-4e5f-8a6b-1d2c3e4f5a6b'
@@ -123,27 +129,34 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 
 /**
- * Drives a plain "run the workflow" turn through a mid-turn `doc_reset` whose
- * resubscribe's catch-up is silently dropped (the bug report's own debug-log
- * anomaly), up through the agent reporting the turn done -- the point where
- * the canvas has nothing to show and only the passive 30s stale-probe can
- * force a real resubscribe. Installs and advances `page.clock` by the run's
- * own duration (15386ms, from the bug report's tool-call trace) so both
- * callers can pick up the clock exactly where the run left it.
+ * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
+ * whose first post-reset resubscribe has its catch-up withheld, per
+ * `dropCatchUpAfterReset`, and asserts the canvas goes blank the moment the
+ * reset lands. Shared by both the permanent-drop repro
+ * (`driveRunTurnUntilCanvasIsBlank`) and the transient one-off-drop recovery
+ * proof (`driveRunTurnThroughTransientCatchUpDrop`) below -- they differ only
+ * in how many of the resubscribes that follow the reset get their catch-up
+ * withheld.
+ *
+ * `dropCatchUpAfterReset` is asked, for each `doc_subscribe` the mock
+ * receives AFTER the reset, whether that resubscribe (1-indexed, in receipt
+ * order) should have its catch-up withheld. The resubscribe(s) sent before
+ * the reset (the initial workflow-picker subscribe) always get their
+ * catch-up -- matching the baseline "two nodes visible" assertion below.
  */
-async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
+async function driveThroughDocReset(
+  page: Page,
+  dropCatchUpAfterReset: (resubscribeCountAfterReset: number) => boolean
+): Promise<{
   vueNodes: VueNodeHelpers
-  setDropCatchUp: (value: boolean) => void
+  send: (frame: AgentWsEvent | HostFrame) => void
 }> {
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   const vueNodes = new VueNodeHelpers(page)
 
   let socket: WebSocketRoute | null = null
-  // Toggled to simulate the exact anomaly in the bug report's own debug log:
-  // a `doc_subscribed:ok` that is not followed by its catch-up `doc_update`.
-  // Callers flip this back to false to let the passive stale-probe's
-  // resubscribe actually deliver content.
-  let dropCatchUp = false
+  let resetSent = false
+  let resubscribeCountAfterReset = 0
 
   const send = (frame: AgentWsEvent | HostFrame): void => {
     if (
@@ -199,7 +212,13 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
       if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
         return
       send(host.subscribed())
-      if (!dropCatchUp) send(host.catchUp(state_vector_b64))
+      if (!resetSent) {
+        send(host.catchUp(state_vector_b64))
+        return
+      }
+      resubscribeCountAfterReset += 1
+      if (!dropCatchUpAfterReset(resubscribeCountAfterReset))
+        send(host.catchUp(state_vector_b64))
     })
   })
 
@@ -315,9 +334,8 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
   // (`AgentCrdtProjection.clearForReset` / `useAgentCrdtFollower`'s
   // `onDocReset`); which backend path emits it for an edit-free run turn is
   // the open half of this RCA (see the file-level comment). From here on the
-  // resubscribe's catch-up is silently dropped, reproducing the bug report's
-  // own debug-log anomaly.
-  dropCatchUp = true
+  // resubscribe's catch-up is governed by `dropCatchUpAfterReset`.
+  resetSent = true
   send({
     type: 'doc_reset',
     data: {
@@ -330,6 +348,30 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
 
   await expect(vueNodes.getNodeLocator('1')).toHaveCount(0)
   await expect(vueNodes.getNodeLocator('2')).toHaveCount(0)
+
+  return { vueNodes, send }
+}
+
+/**
+ * Drives a plain "run the workflow" turn through a mid-turn `doc_reset` whose
+ * resubscribe's catch-up is silently dropped (the bug report's own debug-log
+ * anomaly) FOR EVERY resubscribe that follows, up through the agent
+ * reporting the turn done -- the point where the canvas has nothing to show
+ * and only the passive 30s stale-probe can force a real resubscribe.
+ * Installs and advances `page.clock` by the run's own duration (15386ms,
+ * from the bug report's tool-call trace) so both callers can pick up the
+ * clock exactly where the run left it.
+ */
+async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
+  vueNodes: VueNodeHelpers
+  setDropCatchUp: (value: boolean) => void
+}> {
+  // Toggled to simulate the exact anomaly in the bug report's own debug log:
+  // a `doc_subscribed:ok` that is not followed by its catch-up `doc_update`.
+  // Callers flip this back to false to let the passive stale-probe's
+  // resubscribe actually deliver content.
+  let dropCatchUp = true
+  const { vueNodes, send } = await driveThroughDocReset(page, () => dropCatchUp)
 
   send({
     type: 'agent_tool_call',
@@ -384,6 +426,7 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
   // run finished, but the canvas the user is looking at still has zero
   // nodes, because nothing beyond the run's own duration has forced a
   // working resubscribe yet.
+  const panel = page.locator('#agent-panel-root')
   await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
   return {
@@ -392,6 +435,28 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
       dropCatchUp = value
     }
   }
+}
+
+/**
+ * PM-1355 flip proof: drives the same run turn through the same mid-turn
+ * `doc_reset`, but the anomaly this time is TRANSIENT -- only the very first
+ * resubscribe that follows the reset has its catch-up withheld, exactly as a
+ * real backend that would satisfy the next retry attempt. Under the old
+ * passive-only recovery this would still cost the full `STALE_AFTER_MS`
+ * heartbeat, because nothing but that heartbeat ever issues a second
+ * resubscribe. Under the fix, `onSubscribeConfirmed` arms the
+ * `SUBSCRIBE_CATCHUP_GRACE_MS` probe right after the first (catch-up-less)
+ * confirm, fires a second resubscribe well inside the run's own duration, and
+ * that second attempt is the one this mock actually delivers content for.
+ */
+async function driveRunTurnThroughTransientCatchUpDrop(page: Page): Promise<{
+  vueNodes: VueNodeHelpers
+}> {
+  const { vueNodes } = await driveThroughDocReset(
+    page,
+    (resubscribeCountAfterReset) => resubscribeCountAfterReset === 1
+  )
+  return { vueNodes }
 }
 
 test.describe(
@@ -425,6 +490,26 @@ test.describe(
       // came back to the canvas" half of the report.
       setDropCatchUp(false)
       await page.clock.fastForward(STALE_AFTER_MS - 15_386 + 1_000)
+      await expect(vueNodes.getNodeLocator('1')).toBeVisible()
+      await expect(vueNodes.getNodeLocator('2')).toBeVisible()
+    })
+
+    test('PM-1355 fix: a one-off dropped catch-up recovers via the active probe, well before the run completes', async ({
+      page
+    }) => {
+      const { vueNodes } = await driveRunTurnThroughTransientCatchUpDrop(page)
+
+      await page.clock.install()
+      // Only SUBSCRIBE_CATCHUP_GRACE_MS (2s) needs to elapse: the confirmed
+      // subscribe from the dropped-catch-up resubscribe arms the active
+      // probe at this short grace delay instead of the full STALE_AFTER_MS
+      // (30s) budget, and this transient anomaly's very next resubscribe is
+      // the one the mock actually delivers content for. Pre-fix,
+      // `onSubscribeConfirmed` armed only the full 30s heartbeat, so this
+      // same one-off drop would still be blank at this point and would stay
+      // blank for another ~28s -- well past the run's own 15,386ms duration.
+      await page.clock.fastForward(SUBSCRIBE_CATCHUP_GRACE_MS + 1_000)
+
       await expect(vueNodes.getNodeLocator('1')).toBeVisible()
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
     })
