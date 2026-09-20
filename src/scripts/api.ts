@@ -309,7 +309,8 @@ type ApiEventTypes = ApiToEventType
 
 const CLIENT_LIFECYCLE_EVENTS: ReadonlySet<keyof ApiCalls> = new Set([
   'socketClosed',
-  'reconnecting'
+  'reconnecting',
+  'reconnected'
 ] satisfies readonly (keyof FrontendApiCalls)[])
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
