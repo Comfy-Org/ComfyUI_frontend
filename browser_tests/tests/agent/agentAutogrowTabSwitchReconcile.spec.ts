@@ -439,9 +439,14 @@ test.describe(
           .getByRole('button', { name: enMessages.g.close, exact: true })
           .click()
         await expect(panel).toBeHidden()
-        await page.getByTestId(TestIds.canvas.zoomControlsButton).click()
-        await page.getByTestId(TestIds.canvas.zoomToFitAction).click()
-        await page.keyboard.press('Escape')
+        const zoomControlsButton = page.getByTestId(
+          TestIds.canvas.zoomControlsButton
+        )
+        const zoomToFitAction = page.getByTestId(TestIds.canvas.zoomToFitAction)
+        await zoomControlsButton.click()
+        await zoomToFitAction.click()
+        await zoomControlsButton.click()
+        await expect(zoomToFitAction).toBeHidden()
         await expect(vueNodes.getNodeLocator(gptNodeId)).toBeInViewport({
           ratio: 1
         })
