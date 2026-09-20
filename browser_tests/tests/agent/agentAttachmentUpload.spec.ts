@@ -21,7 +21,8 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
 
     try {
       const openButton = page.getByRole('button', {
-        name: enMessages.agent.entryButton
+        name: enMessages.agent.entryButton,
+        exact: true
       })
       await openButton.click()
       await agentPanel.selectWorkflow()
