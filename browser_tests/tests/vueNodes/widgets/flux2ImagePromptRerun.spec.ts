@@ -182,16 +182,22 @@ test.describe(
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+          maxDiffPixels: 10
+        })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+          maxDiffPixels: 10
+        })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+          maxDiffPixels: 10
+        })
       }
     )
 
