@@ -191,8 +191,23 @@ describe('ImagePreview', () => {
   })
 
   describe('opening the lightbox from the node preview', () => {
-    // Driven as click-then-dblclick because the first click unmounts the grid,
-    // so a browser retargets the second click onto the gallery panel.
+    // Guards the unmount that makes the grid double-click work: a browser
+    // retargets the second click onto the gallery panel, so only the panel
+    // needs a dblclick handler. Switching the grid to v-show would break that.
+    it('replaces the grid with the gallery panel on the first click', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+
+      expect(screen.getByTestId('image-grid')).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', { name: 'View image 1 of 2' })
+      )
+      await nextTick()
+
+      expect(screen.queryByTestId('image-grid')).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toBeInTheDocument()
+    })
+
     it('opens the lightbox on the grid thumbnail that was double-clicked', async () => {
       renderImagePreview()
       const user = userEvent.setup()
@@ -223,6 +238,22 @@ describe('ImagePreview', () => {
         filename: 'test1.png',
         mediaType: 'images',
         url: defaultProps.imageUrls[0]
+      })
+    })
+
+    it('carries the result type and subfolder from the image url', async () => {
+      renderImagePreview({
+        imageUrls: ['/api/view?filename=p.png&type=temp&subfolder=nested/dir']
+      })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(galleryStore.items[0]).toMatchObject({
+        filename: 'p.png',
+        type: 'temp',
+        subfolder: 'nested/dir'
       })
     })
 

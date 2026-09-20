@@ -169,12 +169,14 @@ describe('useMediaAssetGalleryStore', () => {
       expect(store.activeIndex).toBe(expected)
     })
 
-    it('should stay closed when given no items', () => {
+    it('should leave an open gallery untouched when given no items', () => {
       const store = useMediaAssetGalleryStore()
+      store.openItems(galleryItems, 2)
 
       store.openItems([], 0)
 
-      expect(store.activeIndex).toBe(-1)
+      expect(store.activeIndex).toBe(2)
+      expect(store.items).toHaveLength(3)
     })
 
     it('should not keep a live reference to the caller array', () => {

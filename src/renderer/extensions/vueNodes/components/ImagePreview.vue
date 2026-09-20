@@ -53,6 +53,7 @@
       :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
+      aria-keyshortcuts="Enter"
       @dblclick.stop="handleGalleryDoubleClick"
     >
       <!-- Error State -->
@@ -220,6 +221,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
@@ -404,13 +406,23 @@ function handleGridClick(index: number) {
   void openImageInGallery(index)
 }
 
+function searchParamsOf(url: string): URLSearchParams | undefined {
+  try {
+    return new URL(url, window.location.origin).searchParams
+  } catch {
+    return undefined
+  }
+}
+
 function toGalleryItem(url: string): AugmentedResultItem {
+  const params = searchParamsOf(url)
+  const parsedType = resultItemType.safeParse(params?.get('type'))
   return {
     filename: getImageFilenameFromUrl(url) ?? '',
     mediaType: 'images',
     nodeId: nodeId ?? '',
-    subfolder: '',
-    type: 'output',
+    subfolder: params?.get('subfolder') ?? '',
+    type: parsedType.success ? parsedType.data : 'output',
     url: toFullResolutionUrl(url)
   }
 }
