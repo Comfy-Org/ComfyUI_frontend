@@ -29,7 +29,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 vi.mock(import('firebase/auth'))
 
 const mockData = vi.hoisted(() => ({
-  setShowConflictRedDot: (_value: boolean) => {}
+  setShowConflictRedDot: (_value: boolean) => {},
+  setShowManagerButtons: (_value: boolean) => {}
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -59,12 +60,19 @@ vi.mock<unknown>(
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useManagerState'),
 
-  () => ({
-    useManagerState: () => ({
-      shouldShowManagerButtons: computed(() => true),
-      openManager: vi.fn()
-    })
-  })
+  () => {
+    const shouldShowManagerButtons = ref(true)
+    mockData.setShowManagerButtons = (value: boolean) => {
+      shouldShowManagerButtons.value = value
+    }
+
+    return {
+      useManagerState: () => ({
+        shouldShowManagerButtons,
+        openManager: vi.fn()
+      })
+    }
+  }
 )
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -184,6 +192,7 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 describe('TopMenuSection', () => {
   beforeEach(() => {
     mockData.setShowConflictRedDot(false)
+    mockData.setShowManagerButtons(true)
   })
 
   describe('authentication state', () => {
@@ -546,8 +555,32 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('span.bg-red-500')).not.toBeNull()
   })
 
+  it('keeps the floating actionbar container open for the extensions button', async () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.UseNewMenu') return 'Top'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.RightSidePanel.IsOpen') return true
+      return undefined
+    })
+
+    const { container } = createWrapper({ pinia })
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: 'menu.manageExtensions' })
+    ).toBeInTheDocument()
+    expect(
+      container.querySelector('.actionbar-container')!.classList
+    ).not.toContain('w-0')
+  })
+
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+    mockData.setShowManagerButtons(false)
 
     const rafCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

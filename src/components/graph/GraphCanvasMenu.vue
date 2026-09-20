@@ -12,7 +12,7 @@
     <ButtonGroup
       role="toolbar"
       :aria-label="t('graphCanvasMenu.canvasToolbar')"
-      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 bg-comfy-menu-bg p-1"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"

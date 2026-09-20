@@ -32,38 +32,16 @@
           "
         >
           <div
-            v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-          >
-            <Button
-              v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
-              :aria-label="t('menu.manageExtensions')"
-              class="relative"
-              @click="openCustomNodeManager"
-            >
-              <i class="icon-[comfy--extensions-blocks] size-4" />
-              <span class="not-md:hidden">
-                {{ t('menu.manageExtensions') }}
-              </span>
-              <span
-                v-if="shouldShowRedDot"
-                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-              />
-            </Button>
-          </div>
-
-          <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-base-background p-1"
           >
             <div
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                    '-ml-1 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-1 has-[.border-dashed]:shadow-interface'
                 )
               "
             >
@@ -86,17 +64,29 @@
               />
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
+                v-if="isExtensionsButtonVisible"
+                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('menu.manageExtensions')"
+                @click="openCustomNodeManager"
+              >
+                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <span
+                  v-if="shouldShowRedDot"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                />
+              </Button>
+              <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
+                size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
                 <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -245,6 +235,7 @@ const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
+  if (isExtensionsButtonVisible.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false
@@ -281,6 +272,9 @@ const inlineProgressSummaryTarget = computed(() => {
 })
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
+)
+const isExtensionsButtonVisible = computed(
+  () => managerState.shouldShowManagerButtons.value || isCloud
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))
