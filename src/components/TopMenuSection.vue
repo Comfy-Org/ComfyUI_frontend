@@ -34,7 +34,7 @@
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-base-background p-1"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-base-background p-1 shadow-interface"
           >
             <div
               :class="
