@@ -41,17 +41,33 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         page.evaluate((nodeId) => {
           const node = window.app!.graph.getNodeById(nodeId)
           const steps = node?.widgets?.find((widget) => widget.name === 'steps')
-          const sampler = node?.widgets?.find(
-            (widget) => widget.name === 'sampler_name'
-          )
-          if (!steps || !sampler) throw new Error('KSampler widgets not found')
-          const callback = steps.callback
-          steps.callback = (value, canvas, owner, pos, event) => {
-            callback?.(value, canvas, owner, pos, event)
+          if (!steps) throw new Error('KSampler steps widget not found')
+          steps.callback = () => {
+            const current = window.app!.graph.getNodeById(nodeId)
+            const sampler = current?.widgets?.find(
+              (widget) => widget.name === 'sampler_name'
+            )
+            if (!sampler) throw new Error('KSampler sampler widget not found')
             sampler.options.values = ['euler', 'heun']
+            document.documentElement.dataset.agentWidgetCallback = 'called'
           }
         }, toNodeId(3))
       )
+
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-agent-widget-callback',
+        'called'
+      )
+      await expect
+        .poll(() =>
+          page.evaluate((nodeId) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            return node?.widgets?.find(
+              (widget) => widget.name === 'sampler_name'
+            )?.options.values
+          }, toNodeId(3))
+        )
+        .toEqual(['euler', 'heun'])
 
       const sampler = agentConversation.vueNodes
         .getNodeLocator('3')

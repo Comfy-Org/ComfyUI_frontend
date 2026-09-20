@@ -137,6 +137,22 @@ describe('createLiveWidgetEffectPort', () => {
     expect(second.callback).not.toHaveBeenCalled()
   })
 
+  it('lets an earlier callback read a later widget value committed in the same batch', () => {
+    const { graph, callback, mutations } = liveGraph()
+    const second = samplerNode(2)
+    graph.add(second.node)
+    callback.mockImplementation(() => second.node.widgets?.[0]?.value)
+
+    expect(
+      mutations.batch(context, (batch) => {
+        batch.setWidget(toNodeId(1), 'steps', 21)
+        batch.setWidget(toNodeId(2), 'steps', 22)
+      })
+    ).toBe(true)
+
+    expect(callback).toHaveReturnedWith(22)
+  })
+
   it('clears a required_input_missing error for the written widget', () => {
     const { graph, mutations } = liveGraph()
     installErrorClearingHooks(graph)
