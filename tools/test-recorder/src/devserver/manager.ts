@@ -40,7 +40,8 @@ function unverifiableReuseInstructions(
   backendUrl: string | undefined
 ): string[] {
   const backend = backendUrl ?? 'the selected backend'
-  const freePort = port === 5174 ? 5175 : 5174
+  // Only guaranteed to differ from the port already serving; nothing probes it.
+  const alternatePort = port === 5174 ? 5175 : 5174
   return [
     `A Vite dev server is already running on :${port}, but the recorder cannot`,
     'tell which backend it proxies to, or whether it carries a Cloudflare',
@@ -51,10 +52,12 @@ function unverifiableReuseInstructions(
     `Requested backend: ${backend}`,
     '',
     'Stop that server and run this command again so the recorder starts one',
-    'with the right configuration, or leave it running and give the recorder a',
-    'free port of its own, which it starts and configures itself:',
+    'with the right configuration, or leave it running and give the recorder an',
+    'alternate port of its own, which it starts and configures itself. Nothing',
+    'here probes that port, so pick one you know is unused; under --strictPort',
+    'a taken port fails the start immediately rather than moving elsewhere:',
     '',
-    `  COMFY_TEST_DEV_PORT=${freePort} pnpm comfy-test record --backend ${backend}`,
+    `  COMFY_TEST_DEV_PORT=${alternatePort} pnpm comfy-test record --backend ${backend}`,
     '',
     'Export DEV_SERVER_CF_ACCESS_CLIENT_ID and',
     'DEV_SERVER_CF_ACCESS_CLIENT_SECRET in that terminal if the backend is',

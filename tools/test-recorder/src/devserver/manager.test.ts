@@ -57,6 +57,23 @@ describe('ensureDevServer reuse of an already running dev server', () => {
     expect(message).not.toContain('COMFY_TEST_DEV_PORT=5174 pnpm comfy-test')
   })
 
+  // Nothing probes the offered port, so the copy must not call it free: under
+  // --strictPort an occupied one fails the start, and an operator who was told
+  // it was free reads that failure as a recorder bug rather than a taken port.
+  it('offers the alternate port without claiming it is free', async () => {
+    const distribution = customDistribution('https://nightly.example.com/')
+
+    const thrown = await ensureDevServer(distribution, '/checkout').then(
+      () => undefined,
+      (caught: unknown) => caught
+    )
+
+    const { message } = thrownError(thrown)
+    expect(message).not.toMatch(/free port/)
+    expect(message).toContain('alternate port')
+    expect(message).toContain('pick one you know is unused')
+  })
+
   it('still reuses a running server for a named distribution', async () => {
     const distribution = resolveDistribution('cloud')
     if (!distribution) throw new Error('cloud distribution is missing')
