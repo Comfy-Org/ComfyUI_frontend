@@ -497,7 +497,7 @@ export class EcsFollowerAdapter {
       ])
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link ? [] : [Number(id)]
+      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from

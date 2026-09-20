@@ -49,6 +49,71 @@ function op(id: string, baseVersion: number, payload: object) {
 }
 
 describe('EcsFollowerAdapter integration', () => {
+  it('retires a previously valid link when its replacement targets an incompatible slot', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'image', type: 'IMAGE', link: 9 }]
+          },
+          {
+            id: 3,
+            type: 'Sink',
+            inputs: [{ name: 'prompt', type: 'STRING', link: null }]
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+    adapter.bind('wf', follower)
+    try {
+      const initial = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(initial)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: initial })
+      ).toBe(true)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toMatchObject({ targetNodeId: '2' })
+
+      const before = Y.encodeStateVector(host)
+      const replacement = new Y.Array<unknown>()
+      replacement.push([9, 1, 0, 3, 0, 'STRING'])
+      linksMap(host).set('9', replacement)
+      const update = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        true
+      )
+      const retainedLink = linksMap(follower.doc).get('9')
+      expect(retainedLink).toBeInstanceOf(Y.Array)
+      if (!(retainedLink instanceof Y.Array)) throw new Error('link is missing')
+      expect(retainedLink.toJSON()).toEqual([9, 1, 0, 3, 0, 'STRING'])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
+    } finally {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    }
+  })
+
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
     const createLayout = vi.fn(
