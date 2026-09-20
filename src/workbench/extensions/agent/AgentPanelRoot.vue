@@ -976,7 +976,12 @@ const attachment = useAttachment({
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
     void assetsStore.inputAssets.loadNew()
-    return { ref: uploaded.name }
+    return {
+      ref: uploaded.name,
+      url: api.apiURL(
+        `/view?filename=${encodeURIComponent(uploaded.name)}&type=input`
+      )
+    }
   },
   maxBytes: (file) => {
     const serverLimit = api.getServerFeature(
