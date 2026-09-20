@@ -15,6 +15,7 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
+  public readonly attachmentChips: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -39,6 +40,17 @@ export class AgentPanel {
     })
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+  }
+
+  /**
+   * The composer attachment carrying `name`. Matches on the chip's own
+   * attribute rather than its text, which truncates at `max-w-32`.
+   */
+  attachmentChip(name: string): Locator {
+    return this.attachmentChips.and(
+      this.page.locator(`[data-attachment-name="${name}"]`)
+    )
   }
 
   async open(): Promise<void> {
