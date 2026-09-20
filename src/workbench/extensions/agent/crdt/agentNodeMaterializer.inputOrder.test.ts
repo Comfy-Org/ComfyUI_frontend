@@ -18,13 +18,15 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const catalog = { types: {} }
+// Origin slots come from this array's order; target slots are resolved by
+// name against the seed's saved inputs.
 const connections = [
-  { id: 276, name: 'width', slot: 4, type: 'INT' },
-  { id: 277, name: 'height', slot: 5, type: 'INT' },
-  { id: 275, name: 'length', slot: 6, type: 'INT' },
-  { id: 279, name: 'prompt', slot: 3, type: 'STRING' },
-  { id: 278, name: 'ref_images.ref_image_0', slot: 0, type: 'IMAGE' },
-  { id: 282, name: 'ref_images.ref_image_1', slot: 1, type: 'IMAGE' }
+  { id: 276, name: 'width', type: 'INT' },
+  { id: 277, name: 'height', type: 'INT' },
+  { id: 275, name: 'length', type: 'INT' },
+  { id: 279, name: 'prompt', type: 'STRING' },
+  { id: 278, name: 'ref_images.ref_image_0', type: 'IMAGE' },
+  { id: 282, name: 'ref_images.ref_image_1', type: 'IMAGE' }
 ]
 
 const source = {
