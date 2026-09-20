@@ -167,6 +167,14 @@ test.describe('Manager pack status', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/bulk/nodes/versions**', (route) =>
       route.fulfill({ json: { node_versions: [] } })
     )
+    // Opening the info panel fetches the node list for the displayed version.
+    // The suite fails any unmocked external request, so this has to cover both
+    // packs rather than just the one a given test opens.
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/*/versions/*/comfy-nodes**',
+      (route) =>
+        route.fulfill({ json: { comfy_nodes: [], totalNumberOfPages: 0 } })
+    )
 
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- mirrors managerDialog.spec.ts, tracked by evfail-23
     await comfyPage.setup()
@@ -185,58 +193,72 @@ test.describe('Manager pack status', { tag: '@ui' }, () => {
     })
   })
 
+  /**
+   * Returns the info panel, not the whole dialog. The pack grid stays mounted
+   * behind the panel and renders its own status badges and version buttons, so
+   * a dialog-scoped locator matches the grid as well and either goes ambiguous
+   * or asserts against the wrong pack.
+   */
   async function openInfoPanel(comfyPage: ComfyPage, packName: string) {
     await comfyPage.command.executeCommand('Comfy.OpenManagerDialog')
     const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
     await dialog.getByText(packName).first().click()
-    return dialog
+
+    const panel = comfyPage.page.getByRole('complementary')
+    await expect(panel).toBeVisible()
+    return panel
   }
 
   test('a banned pack says "Banned", not "Conflicting"', async ({
     comfyPage
   }) => {
-    const dialog = await openInfoPanel(comfyPage, 'Banned Pack')
+    const panel = await openInfoPanel(comfyPage, 'Banned Pack')
 
-    // The bug: a banned pack showed the generic compatibility label and never
-    // rendered the word "Banned" anywhere, so the one state that IS an
-    // adjudicated decision was the one the user could not read.
-    await expect(dialog.getByText('Banned', { exact: true })).toBeVisible()
-    await expect(dialog.getByText('Conflicting', { exact: true })).toHaveCount(
-      0
-    )
+    // The status badge renders as a PrimeVue Message, which carries role=alert.
+    // Targeting the badge itself rather than the panel's text matters: a banned
+    // pack also trips compatibility detection, so the word "Conflicting" does
+    // legitimately appear elsewhere in the panel. The claim under test is
+    // narrower -- that the STATUS field reports the adjudicated decision, which
+    // it previously never did, rendering the generic label instead.
+    const statusBadge = panel.getByRole('alert')
+    await expect(statusBadge).toHaveText(/Banned/)
+    await expect(statusBadge).not.toHaveText(/Conflicting/)
   })
 
   test('a flagged version is not shown as verified in the version list', async ({
     comfyPage
   }) => {
-    const dialog = await openInfoPanel(comfyPage, 'Flagged Pack')
+    const panel = await openInfoPanel(comfyPage, 'Flagged Pack')
 
-    await dialog.getByRole('button').filter({ hasText: '1.0.0' }).click()
+    await panel.getByRole('button').filter({ hasText: '1.0.0' }).click()
 
-    const popover = comfyPage.page.getByRole('listbox')
-    await expect(popover).toBeVisible()
-
-    const flaggedOption = popover.getByRole('option').filter({
-      hasText: '1.1.0'
-    })
+    // Located by option rather than through a listbox handle: the manager
+    // dialog has other listboxes, and a role=listbox lookup goes ambiguous the
+    // moment one of them is open. Options only exist while this popover is.
+    //
+    // The flagged version appears as "Latest (1.1.0)" and not as a standalone
+    // row -- the option list excludes the latest version number, so this row is
+    // the only place a user meets it.
+    const flaggedOption = comfyPage.page
+      .getByRole('option')
+      .filter({ hasText: '1.1.0' })
     await expect(flaggedOption).toBeVisible()
 
-    // The green verified checkmark on a flagged version asserts the opposite
-    // of what is true: it says a human cleared this, when what happened is
-    // that a scanner raised findings and nobody has looked. Assert the absence
-    // of the check as well as the presence of the warning -- rendering both
-    // would still mislead.
+    // The green verified checkmark on a flagged version asserts the opposite of
+    // what is true: it says a human cleared this, when a scanner raised
+    // findings and nobody has looked. Assert the absence of the check as well
+    // as the presence of the warning -- rendering both would still mislead.
     await expect(
-      flaggedOption.locator('.icon-\\[lucide--triangle-alert\\]')
+      flaggedOption.locator('i[class*="triangle-alert"]')
     ).toBeVisible()
     await expect(flaggedOption.locator('svg')).toHaveCount(0)
 
-    // The active version is the control: if the verified icon disappeared for
-    // every version, the assertion above would pass while saying nothing.
-    const activeOption = popover.getByRole('option').filter({
-      hasText: '1.0.0'
-    })
+    // The active version is the control. Without it, the assertion above would
+    // also pass if the verified icon had disappeared from every row.
+    const activeOption = comfyPage.page
+      .getByRole('option')
+      .filter({ hasText: '1.0.0' })
     await expect(activeOption.locator('svg')).toHaveCount(1)
   })
 })
