@@ -131,6 +131,10 @@ export type RemoteConfig = {
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
+  // Wire key carries the server's own spelling; see ServerFeatureFlag.
+  embedded_checked_enabled?: boolean
+  billing_sdk_topup_enabled?: boolean
+  billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean

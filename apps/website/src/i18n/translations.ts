@@ -9966,10 +9966,6 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
-  'workshop.field.selectOrDropReplacement': {
-    en: 'Select or drop to replace',
-    'zh-CN': '选择或拖入以替换'
-  },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
     en: 'Replace {name}',
@@ -10031,6 +10027,10 @@ Enterprise`
   'workshop.field.defaultValue': {
     en: 'Default: {value}',
     'zh-CN': '默认值：{value}'
+  },
+  'workshop.field.exactValue': {
+    en: '{label} value',
+    'zh-CN': '{label}数值'
   },
   'workshop.field.off': { en: 'Off', 'zh-CN': '关闭' },
   'workshop.form.required': {
