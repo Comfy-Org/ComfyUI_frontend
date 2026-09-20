@@ -531,8 +531,16 @@ describe('useAgentCrdtFollower', () => {
     vi.setSystemTime(1_000)
     const { unmount, isTargetActive } = mountFollower('wf-1')
 
-    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
-    dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
+    dispatchSocketClosed({
+      code: 1006,
+      reason: 'sensitive server close detail',
+      wasClean: false
+    })
+    dispatchSocketClosed({
+      code: 1006,
+      reason: 'sensitive server close detail',
+      wasClean: false
+    })
     apiState.target.dispatchEvent(new Event('reconnecting'))
     apiState.target.dispatchEvent(new Event('reconnecting'))
     apiState.target.dispatchEvent(new Event('reconnecting'))
@@ -545,6 +553,9 @@ describe('useAgentCrdtFollower', () => {
       'failure_closing_crdt_websocket_abnormal',
       'failure_reconnecting_crdt_websocket_repeatedly'
     ])
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'sensitive server close detail'
+    )
 
     isTargetActive.value = false
     dispatchSocketClosed({ code: 1006, reason: 'abnormal', wasClean: false })
