@@ -54,7 +54,16 @@ pnpm comfy-test record --backend https://nightly.engcomfy.com
 
 Ask the team that owns the environment for a service token; never commit one.
 Both variables must be set together, and the token is only forwarded to an
-`https` backend (or a loopback address).
+`https` backend (or a loopback address). The proxy also rejects cross-origin
+WebSocket upgrades while a token is configured, so the dev server cannot be
+used as an authenticated relay by another page.
+
+`--backend` configures the dev server through its own environment, and a
+running Vite does not report which backend it proxies to. So when `--backend`
+is used and a dev server is already listening, the recorder refuses to reuse it
+rather than silently recording against the wrong host or without the token;
+stop that server and re-run, or start a dedicated one on a free port as the
+error explains.
 
 The distribution selector fetches and displays the currently deployed backend
 version for each cloud environment. `comfy-test check --distribution <id>`

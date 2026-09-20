@@ -21,6 +21,47 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * A `--backend <url>` run configures the dev server entirely through the
+ * environment of the process that starts it: `DEV_SERVER_COMFYUI_URL` picks the
+ * backend and `DEV_SERVER_CF_ACCESS_CLIENT_ID`/`_SECRET` decide whether the
+ * proxy forwards a Cloudflare Access service token. None of that is reported
+ * back over the wire, so a Vite we did not start cannot be shown to match the
+ * requested backend. Reusing it would silently record against whatever host
+ * that server proxies to, or land on the Access login page with no token.
+ */
+function reuseNeedsThisProcessToConfigureIt(
+  distribution: Distribution
+): boolean {
+  return distribution.id === 'custom'
+}
+
+function unverifiableReuseInstructions(
+  port: number,
+  backendUrl: string | undefined
+): string[] {
+  const backend = backendUrl ?? 'the selected backend'
+  return [
+    `A Vite dev server is already running on :${port}, but the recorder cannot`,
+    'tell which backend it proxies to, or whether it carries a Cloudflare',
+    'Access service token. Both come from the environment of whoever started',
+    'it, so reusing it could record against the wrong backend or leave the app',
+    'on the Access login page.',
+    '',
+    `Requested backend: ${backend}`,
+    '',
+    'Stop that server and run this command again so the recorder starts one',
+    'with the right configuration, or start a dedicated one on a free port:',
+    '',
+    `  DEV_SERVER_COMFYUI_URL=${backend} pnpm dev --port 5174 --strictPort`,
+    `  COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record --backend ${backend}`,
+    '',
+    'Export DEV_SERVER_CF_ACCESS_CLIENT_ID and',
+    'DEV_SERVER_CF_ACCESS_CLIENT_SECRET in that terminal if the backend is',
+    'behind Cloudflare Access.'
+  ]
+}
+
 export async function ensureDevServer(
   distribution: Distribution,
   projectRoot: string
@@ -28,6 +69,14 @@ export async function ensureDevServer(
   const url = devServerUrl()
   const initial = await probeDevServer(url, projectRoot)
   if (initial.status === 'ready') {
+    if (reuseNeedsThisProcessToConfigureIt(distribution)) {
+      throw new Error(
+        unverifiableReuseInstructions(
+          devServerPort(),
+          distribution.backendUrl
+        ).join('\n')
+      )
+    }
     return { url, ownedByUs: false, reused: true, stop: () => {} }
   }
   if (initial.status === 'different-checkout') {
