@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from './graphMutations'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'

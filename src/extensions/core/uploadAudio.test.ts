@@ -119,9 +119,7 @@ async function getCustomWidget(extensionName: string, widgetName: string) {
     throw new Error(`${extensionName} does not register custom widgets`)
   }
   const widgets = await extension.getCustomWidgets(fromAny({}))
-  const widget = widgets[widgetName]
-  if (!widget) throw new Error(`${widgetName} widget was not registered`)
-  return widget
+  return widgets[widgetName]
 }
 
 function createFile(name = 'clip.mp3'): File {

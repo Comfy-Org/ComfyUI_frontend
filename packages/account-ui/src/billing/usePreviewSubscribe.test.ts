@@ -1,4 +1,4 @@
-import { PREVIEW_SUBSCRIBE_ROUTE } from '@comfyorg/account/billing'
+import { PREVIEW_SUBSCRIBE_ROUTE } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -54,7 +54,7 @@ describe('usePreviewSubscribe', () => {
     await quoting
 
     expect(preview.preview.value).toMatchObject({
-      cost_today_cents: 1500n,
+      cost_today_cents: 1500,
       new_plan: { slug: 'pro_monthly' }
     })
     expect(preview.loading.value).toBe(false)

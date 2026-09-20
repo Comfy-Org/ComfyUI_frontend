@@ -13,9 +13,9 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
@@ -24,6 +24,7 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -40,6 +41,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -57,6 +59,10 @@ const socketSend = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
 }))
 
 const ws = vi.hoisted(() => {
@@ -189,13 +195,9 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: { value: true },
-    userDisplayName: { value: 'Jo Rivera' },
-    resolvedUserInfo: { value: { id: 'account-a' } }
-  })
-}))
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -253,13 +255,20 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
+import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
 beforeEach(() => {
+  useCurrentUser().isLoggedIn = computed(() => true)
+  useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'account-a'
+  }))
   Object.assign(useAgentConsentStore(), { accepted: true })
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(
@@ -284,15 +293,13 @@ beforeEach(() => {
       tier: computed(() => paywallBilling.tier)
     })
   )
-  vi.mocked(useBillingCapabilities).mockReturnValue(
-    fromPartial({
-      canTopUp: computed(() => paywallCapabilities.canTopUp),
-      canSubscribeSelfServe: computed(
-        () => paywallCapabilities.canSubscribeSelfServe
-      ),
-      isReady: computed(() => paywallCapabilities.isReady)
-    })
+  useBillingCapabilities().canTopUp = computed(
+    () => paywallCapabilities.canTopUp
   )
+  useBillingCapabilities().canSubscribeSelfServe = computed(
+    () => paywallCapabilities.canSubscribeSelfServe
+  )
+  useBillingCapabilities().isReady = computed(() => paywallCapabilities.isReady)
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
@@ -321,6 +328,7 @@ beforeEach(() => {
   vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
   focusNodeInstance.mockReset()
   socketSend.mockReset()
+  vi.mocked(reportError).mockClear()
   paywallWorkspace.role = 'owner'
   paywallCapabilities.canTopUp = true
   paywallCapabilities.canSubscribeSelfServe = true
@@ -451,26 +459,34 @@ describe('AgentPanelRoot first-use experience', () => {
 })
 
 describe('AgentPanelRoot onboarding', () => {
-  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+  const SCOPED_KEY = 'Comfy.AgentPanel.onboarded.account-a.workspace-a'
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(SCOPED_KEY)
+  })
+
+  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
     expect(canvasStore.linearMode).toBe(true)
 
     canvasStore.linearMode = false
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
-    localStorage.removeItem('Comfy.AgentPanel.onboarded')
     render(
       defineComponent({
         setup: () => () =>
@@ -519,10 +535,26 @@ describe('AgentPanelRoot onboarding', () => {
     }
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
     const composer = screen.getByRole('textbox')
     await userEvent.click(composer)
     expect(composer).toHaveFocus()
+  })
+
+  it('preserves legacy tour completion when the panel mounts again', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 
@@ -1627,13 +1659,28 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeTruthy()
   })
 
-  it('removes the chip, revokes its preview, and raises the error modal when the upload fails', async () => {
+  it('attributes an upload failure, then visibly recovers when the flag turns off without leaking prompt or path', async () => {
     executionErrors.showErrorOverlay.mockClear()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     let failUpload: () => void = () => {}
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/run-mode')) {
+          return new Response('{"error":"not found"}', {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+        if (url.includes('/api/workflows')) {
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        if (url.includes('/api/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
+        }
         if (url.endsWith('/api/upload/image')) {
           await new Promise<void>((resolve) => {
             failUpload = resolve
@@ -1650,9 +1697,25 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    renderWithSelectedTarget()
+    const agentPanelStore = useAgentPanelStore()
+    agentPanelStore.enabled = true
+    agentPanelStore.consentAccepted = true
+    agentPanelStore.isOpen = true
+    agentPanelStore.setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(workflowStore.activeWorkflow!)
+    )
+    render(DockedAgentPanel, { global: { plugins: [i18n] } })
+    await screen.findByTestId('docked-agent-panel')
+
+    const privatePrompt = 'Use the unreleased launch prompt'
+    await userEvent.type(
+      await screen.findByRole('textbox', undefined, { timeout: 5000 }),
+      privatePrompt
+    )
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
+    const privatePath = '/Users/jo/private/cat.png'
+    Object.defineProperty(file, 'webkitRelativePath', { value: privatePath })
     await userEvent.upload(
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
@@ -1678,6 +1741,30 @@ describe('AgentPanelRoot attach flow', () => {
         detail: 'cat.png could not be uploaded'
       })
     )
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'agent_attachment_upload_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'save',
+        outcome: 'failed',
+        integration_target: 'assets',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'enabled',
+        project_context: 'agent_composer'
+      }
+    })
+    const serializedReport = JSON.stringify(vi.mocked(reportError).mock.calls)
+    expect(serializedReport).not.toContain('cat.png')
+    expect(serializedReport).not.toContain(privatePrompt)
+    expect(serializedReport).not.toContain(privatePath)
+
+    agentPanelStore.enabled = false
+    await nextTick()
+
+    expect(screen.queryByTestId('docked-agent-panel')).not.toBeInTheDocument()
+    expect(screen.queryByText(privatePrompt)).not.toBeInTheDocument()
+    expect(agentPanelStore.isOpen).toBe(true)
     revoke.mockRestore()
   })
 
@@ -2409,6 +2496,74 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
+
+  it('preserves active-turn graph activity across remount and delayed hydration', async () => {
+    makeTab('wf-42')
+    let resolveHistory!: (response: Response) => void
+    const delayedHistory = new Promise<Response>((resolve) => {
+      resolveHistory = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST')
+          return json(202, ack('wf-42'))
+        if (url.includes('/messages')) return delayedHistory
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    const first = renderWithSelectedTarget()
+    await sendFromComposer('build two nodes')
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301), toNodeId(302)]
+    )
+
+    first.unmount()
+    renderWithSelectedTarget()
+    expect(activity.state).toMatchObject({
+      phase: 'settling',
+      nodeIds: ['301', '302']
+    })
+
+    resolveHistory(json(200, []))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['301', '302']
+    })
+  })
+
+  it('starts a fresh activity report when the session starts its next turn', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    const activity = useAgentGraphActivityStore()
+
+    await sendFromComposer('first turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(401)]
+    )
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await sendFromComposer('second turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(402)]
+    )
+
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['402']
+    })
+  })
 
   it('requires explicit selection on first entry even with an unsaved canvas', async () => {
     Object.assign(makeTab(), { isTemporary: true })

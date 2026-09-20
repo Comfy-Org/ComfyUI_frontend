@@ -23,6 +23,16 @@ import type { WidgetStateInit } from '@/types/widgetState'
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
 
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
+
 export type MaterializableGraph = Pick<
   LGraph,
   | 'id'
@@ -121,6 +131,7 @@ function registerSubgraphDefinitions(
     reported.add(definition.id)
     reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
@@ -302,11 +313,16 @@ function materialize(
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
+      tags: {
+        ...AGENT_ECS_TAGS,
+        outcome: cleanupFailed ? 'degraded' : 'recovered'
+      },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
       reportError(cleanupCause, {
         errorType: 'agent_node_materialize_rollback_failed',
+        tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, nodeId: String(state.id) }
       })
     }
@@ -338,6 +354,7 @@ function materialize(
     // would also drop the layout entry it adopted. Keep it and report.
     reportError(cause, {
       errorType: 'agent_node_materialize_configure_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }

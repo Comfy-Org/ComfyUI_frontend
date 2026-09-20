@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient } from '@comfyorg/account/session'
+import type { SessionClient } from '@comfyorg/account-core/session'
 
 import { createBillingSdkTopupReader } from './workshop-features'
 

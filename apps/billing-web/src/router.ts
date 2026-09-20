@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import type { SessionSnapshot } from '@comfyorg/account/session'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type { BillingIntent } from '@comfyorg/billing-contract'
 import {
   BILLING_INTENTS,
@@ -13,13 +13,15 @@ import {
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { billingWebSessionPhase } from '@/session/billingWebSession'
 import BillingHomeView from '@/views/BillingHomeView.vue'
-import ComingSoonView from '@/views/ComingSoonView.vue'
+import CheckoutView from '@/views/CheckoutView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
+import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
+import ResultView from '@/views/ResultView.vue'
 import SignInView from '@/views/SignInView.vue'
 import SubscriptionView from '@/views/SubscriptionView.vue'
 
-/** The scaffold's static checkout page, which predates the entry contract. */
+/** The app's own front door, outside the entry contract: it names no product. */
 const APP_ENTRY_PATH = '/'
 
 const SIGN_IN_PATH = '/sign-in'
@@ -27,10 +29,10 @@ const SIGN_IN_PATH = '/sign-in'
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: SubscriptionView,
   subscription: SubscriptionView,
-  checkout: BillingHomeView,
+  checkout: CheckoutView,
   'payment-methods': PaymentMethodsView,
-  invoices: ComingSoonView,
-  result: ComingSoonView
+  invoices: InvoicesView,
+  result: ResultView
 }
 
 const routes: RouteRecordRaw[] = [

@@ -46,7 +46,6 @@ function mockProvider(
 }
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
     mockGetNodeProvider
   )
