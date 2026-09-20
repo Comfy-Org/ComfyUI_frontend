@@ -100,14 +100,37 @@ interface LifecycleRoutes {
   refusePortal: () => void
 }
 
-async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
+interface BootOptions {
+  /**
+   * Serves `billing_sdk_subscription_enabled: true` on `/api/features`, the
+   * channel the staged rollout publishes on.
+   *
+   * #18141 made `/api/features` the primary channel and demoted the websocket
+   * handshake to fallback (`resolveFlag`: `remoteConfigValue ??
+   * api.getServerFeature(...)`). Seeding only the handshake leaves
+   * `remoteConfigValue` undefined, so the rows below would still pass — but on
+   * the fallback channel rather than the one production prefers. Both are
+   * served here so neither alone is what the assertions rest on.
+   */
+  railOnFeatures?: boolean
+}
+
+async function mockCloudBoot(
+  page: Page,
+  { railOnFeatures = false }: BootOptions = {}
+): Promise<LifecycleRoutes> {
   const resubscribeRequests: Request[] = []
   const portalRequests: Request[] = []
   let resubscribeNotFound = false
   let portalNotFound = false
 
   await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute({ unified_cloud_auth: true }))
+    r.fulfill(
+      jsonRoute({
+        unified_cloud_auth: true,
+        ...(railOnFeatures ? { billing_sdk_subscription_enabled: true } : {})
+      })
+    )
   )
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
@@ -305,6 +328,11 @@ function transport(request: Request): string {
   return request.resourceType()
 }
 
+/**
+ * Seeds the websocket handshake, the fallback channel since #18141. Paired with
+ * `railOnFeatures` so both channels agree; these rows act on a click rather
+ * than at boot, so the flag lands before the request either way.
+ */
 async function enableSdkRail(page: Page) {
   await new FeatureFlagHelper(page).setServerFlagsPersistent({
     billing_sdk_subscription_enabled: true
@@ -335,7 +363,7 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
+        const routes = await mockCloudBoot(page, { railOnFeatures: true })
         await bootApp(page)
         await enableSdkRail(page)
 
@@ -355,7 +383,7 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
+        const routes = await mockCloudBoot(page, { railOnFeatures: true })
         await bootApp(page)
         await enableSdkRail(page)
         routes.refuseResubscribe()
@@ -391,7 +419,7 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
+        const routes = await mockCloudBoot(page, { railOnFeatures: true })
         await bootApp(page)
         await enableSdkRail(page)
 
@@ -411,7 +439,7 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
+        const routes = await mockCloudBoot(page, { railOnFeatures: true })
         await bootApp(page)
         await enableSdkRail(page)
         routes.refusePortal()
@@ -437,7 +465,7 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
+        const routes = await mockCloudBoot(page, { railOnFeatures: true })
         await bootApp(page, { blockPopups: true })
         await enableSdkRail(page)
 
