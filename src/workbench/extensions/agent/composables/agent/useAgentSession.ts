@@ -714,16 +714,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (settleFinishedTurn(turn, outcome)) return
       consecutiveFailures =
         outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
-      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES) {
-        if (outcome.kind === 'message-missing')
-          conversationStore.settleTurn(turn, undefined)
-        return
-      }
+      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES)
+        return abandonTurnRecovery(turn, outcome)
       if (outcome.kind === 'error' && !noticed) {
         noticed = true
         pushError(outcome.message)
       }
     }
+  }
+
+  function abandonTurnRecovery(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'message-missing')
+      conversationStore.settleTurn(turn, undefined)
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
