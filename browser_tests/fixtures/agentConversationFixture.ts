@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
@@ -24,6 +24,7 @@ import type {
   ClientDocFrame,
   HumanOpsHost
 } from '@e2e/fixtures/agentFollowerHostSocket'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -33,8 +34,10 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -85,6 +88,27 @@ interface RenderedWidgetRow {
 interface PanelCounts {
   streams: number
   summaries: number
+}
+
+// Three views of "which nodes does this tab hold" (the litegraph adapters,
+// what serialize() emits, the tracker's captured state) plus the in-page
+// observer's record of the rebuilt canvas and every removal since.
+export interface NodeLens {
+  live: string[]
+  serialized: string[]
+  activeState: string[]
+  observer: TabSwitchLens | null
+}
+
+async function attachJson(
+  testInfo: TestInfo,
+  name: string,
+  value: unknown
+): Promise<void> {
+  await testInfo.attach(name, {
+    body: JSON.stringify(value, null, 2),
+    contentType: 'application/json'
+  })
 }
 
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
@@ -142,6 +166,7 @@ async function withTimeout(
 export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
+  readonly topbar: Topbar
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -183,6 +208,7 @@ export class AgentConversationHarness {
     this.streams = this.panel.getByTestId('markdown-stream')
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
+    this.topbar = new Topbar(page)
   }
 
   async boot(agentFlag: boolean): Promise<void> {
@@ -617,6 +643,177 @@ export class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  private graphNodeIds(): Promise<string[]> {
+    return this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
+    )
+  }
+
+  // The ordinary add path: the same createNode + graph.add every node type
+  // takes, whether the search box, the sidebar or a paste drives it.
+  addNodeOfType(type: string, position: [number, number]): Promise<string> {
+    return this.page.evaluate(
+      ([nodeType, pos]) => {
+        const node = window.LiteGraph!.createNode(nodeType)
+        if (!node) throw new Error(`${nodeType} is not a registered node type`)
+        node.pos = [pos[0], pos[1]]
+        window.app!.graph.add(node)
+        return String(node.id)
+      },
+      [type, position] as const
+    )
+  }
+
+  // The blueprint add path (`addNodeOnGraph` for a `SubgraphBlueprint.*` def):
+  // the blueprint's nodes and definitions pasted through `_deserializeItems`.
+  addBlueprint(
+    promoteText: boolean,
+    position: [number, number]
+  ): Promise<string> {
+    return this.page.evaluate(
+      ([bp, pos]) => {
+        const items: object = {
+          nodes: bp.nodes,
+          subgraphs: bp.definitions?.subgraphs
+        }
+        const results = window.app!.canvas._deserializeItems(items, {
+          position: [pos[0], pos[1]]
+        })
+        const node = results?.nodes.values().next().value
+        if (!node) throw new Error('the blueprint paste produced no node')
+        return String(node.id)
+      },
+      [agentHumanAddBlueprint(promoteText), position] as const
+    )
+  }
+
+  // A frontend-only node added the way a person actually adds one: the node
+  // search box, double-clicked open, typed into, Enter — not a direct
+  // LiteGraph.createNode call. The non-Agent baseline
+  // (workflowTabSwitchKeepsAddedNodes.spec.ts) covers this path too.
+  async addNoteThroughSearchBox(position: {
+    x: number
+    y: number
+  }): Promise<string> {
+    const before = new Set(await this.graphNodeIds())
+    await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
+    const dialog = this.page.getByRole('search')
+    const input = dialog.getByRole('combobox')
+    await input.waitFor({ state: 'visible' })
+    await input.fill('Note')
+    const results = dialog.getByTestId(TestIds.searchBoxV2.resultItem)
+    await expect(results.first()).toContainText('Note')
+    await this.page.keyboard.press('Enter')
+    await expect(dialog).toBeHidden()
+    await this.page.mouse.click(position.x, position.y)
+    const after = await this.graphNodeIds()
+    const [added] = after.filter((id) => !before.has(id))
+    if (!added) throw new Error('the search box add produced no node')
+    return added
+  }
+
+  // Records the live node set the moment a tab's canvas finishes rebuilding,
+  // and every node the live graph drops afterwards, so a node present after
+  // configure() and gone later is distinguishable from one never rebuilt.
+  installTabSwitchObserver(): Promise<void> {
+    return this.page.evaluate(() => {
+      const lens: TabSwitchLens = { afterConfigure: [], removed: [] }
+      window.__tabSwitchLens = lens
+      const app = window.app!
+      app.registerExtension({
+        name: 'TabSwitchLens',
+        afterConfigureGraph() {
+          lens.afterConfigure.push(
+            app.graph.nodes.map((node) => String(node.id))
+          )
+        }
+      })
+      app.rootGraph.events.addEventListener('node:removed', (event) => {
+        lens.removed.push(String(event.detail.node.id))
+      })
+    })
+  }
+
+  readNodeLens(): Promise<NodeLens> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const store = app.extensionManager as WorkspaceStore
+      return {
+        live: app.graph.nodes.map((node) => String(node.id)),
+        serialized: app.graph.serialize().nodes.map((node) => String(node.id)),
+        activeState:
+          store.workflow.activeWorkflow?.changeTracker.activeState.nodes.map(
+            (node) => String(node.id)
+          ) ?? [],
+        observer: window.__tabSwitchLens ?? null
+      }
+    })
+  }
+
+  // A snapshot of every lens this suite judges a tab switch by, attached to
+  // the test report under `phase` so a failure's evidence is easy to find.
+  async attachEvidence(testInfo: TestInfo, phase: string): Promise<NodeLens> {
+    const lens = await this.readNodeLens()
+    await attachJson(testInfo, `${phase}-node-lens`, lens)
+    await attachJson(testInfo, `${phase}-host-node-ids`, this.hostNodeIds())
+    await attachJson(
+      testInfo,
+      `${phase}-client-doc-frames`,
+      this.clientDocFrames()
+    )
+    await attachJson(
+      testInfo,
+      `${phase}-human-op-outcomes`,
+      this.humanOpOutcomes()
+    )
+    await testInfo.attach(`${phase}.png`, {
+      body: await this.page.screenshot(),
+      contentType: 'image/png'
+    })
+    return lens
+  }
+
+  // The page has minted `count` human batches and the host has judged each.
+  async waitForHumanOps(count: number): Promise<ApplyOutcome[]> {
+    await expect
+      .poll(() => this.humanOpOutcomes().length)
+      .toBeGreaterThanOrEqual(count)
+    return this.humanOpOutcomes()
+  }
+
+  // A host edit pushed after everything under test; once it renders, every
+  // frame queued ahead of it (a tab-return catch-up, an op echo) has applied.
+  async waitForPendingFrames(
+    nodeId: string,
+    widget: string,
+    marker: string
+  ): Promise<void> {
+    this.pushHostOps([
+      { op: 'set_widget', node_id: Number(nodeId), widget, value: marker }
+    ])
+    await expect(
+      this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
+    ).toHaveValue(marker)
+  }
+
+  async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
+    const tabs = this.topbar.workflowTabs.locator('.p-togglebutton')
+    await expect(tabs).toHaveCount(1)
+    await this.topbar.newWorkflowButton.click()
+    await expect(tabs).toHaveCount(2)
+    await expect(this.vueNodes.nodes).toHaveCount(0)
+
+    const subscribes = this.subscribeCount()
+    await this.topbar.getTab(0).click()
+    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    await this.waitForPendingFrames(
+      nodeId,
+      widget,
+      'tab return catch-up landed'
+    )
   }
 }
 

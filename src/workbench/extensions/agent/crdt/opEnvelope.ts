@@ -103,7 +103,7 @@ export function chunkWireOps(ops: Op[]): Op[][] {
  * wire stays `unknown` until it passes this, rather than being cast straight
  * to `Op`.
  */
-export function isWireOp(value: unknown): value is Op {
+function isWireOp(value: unknown): value is Op {
   if (typeof value !== 'object' || value === null) return false
   const { op, op_id } = value as { op?: unknown; op_id?: unknown }
   return (
