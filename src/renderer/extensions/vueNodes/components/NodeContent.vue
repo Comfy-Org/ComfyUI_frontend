@@ -21,6 +21,7 @@
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
+        ref="imagePreviewRef"
         :image-urls="media.urls"
         :node-id="nodeId"
         class="mt-2 flex-auto"
@@ -62,5 +63,12 @@ onErrorCaptured((error) => {
   renderError.value = error.message
   toastErrorHandler(error)
   return false
+})
+
+const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>()
+
+defineExpose({
+  handleKeyDown: (event: KeyboardEvent) =>
+    imagePreviewRef.value?.handleKeyDown(event)
 })
 </script>
