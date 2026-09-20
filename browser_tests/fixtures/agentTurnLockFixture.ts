@@ -172,8 +172,7 @@ export class AgentTurnLockHarness {
   public readonly composer: Locator
   public readonly sendButton: Locator
   public readonly stopButton: Locator
-  public readonly workSummary: Locator
-  public readonly workingRow: Locator
+  public readonly activityRow: Locator
   public readonly userBubbles: Locator
   private readonly agentPanel: AgentPanel
 
@@ -196,18 +195,8 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.stop,
       exact: true
     })
-    // WorkSummary.vue renders three labels off the elapsed total: `worked`
-    // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
-    // shared `worked` stem matches all three, so the negative assertions on
-    // this locator cannot go vacuous when a turn is shorter or longer than the
-    // fixture's tool duration, or when the copy is reworded.
-    this.workSummary = this.panel.getByRole('button', {
-      name: new RegExp(
-        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
-      )
-    })
-    this.workingRow = this.panel.getByText(enMessages.agent.working, {
-      exact: true
+    this.activityRow = this.panel.getByRole('button', {
+      name: /^Ran 1 tool call/
     })
     this.userBubbles = this.panel.getByTestId('user-message-bubble')
   }
@@ -260,7 +249,7 @@ export class AgentTurnLockHarness {
     this.push(live, TURN_THINKING_EVENT)
     await expect(this.panel.getByText(TURN_THINKING_TEXT)).toBeVisible()
     this.push(live, TURN_TOOL_EVENT)
-    await expect(this.workingRow).toBeVisible()
+    await expect(this.activityRow).toBeVisible()
   }
 
   push(ws: WebSocketRoute, event: AgentWsEvent): void {

@@ -28,7 +28,7 @@ interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
   /** Node definitions to expose instead of the empty boot catalog. */
-  objectInfo?: Record<string, unknown>
+  objectInfo?: 'server' | Record<string, unknown>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
 }
@@ -49,7 +49,7 @@ async function mockAgentBoot(
       ...settings
     }
   })
-  if (objectInfo) {
+  if (objectInfo && objectInfo !== 'server') {
     await page.unroute('**/api/object_info')
     await page.route('**/api/object_info', (route) =>
       route.fulfill(jsonRoute(objectInfo))
