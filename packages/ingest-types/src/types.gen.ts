@@ -4421,6 +4421,13 @@ export type AgentPostMessageRequest = {
    * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
    */
   workflow_id?: string
+  /**
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context.
+   */
+  workflow_references?: Array<{
+    workflow_id: string
+    name?: string
+  }>
 }
 
 /**
