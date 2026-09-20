@@ -25,6 +25,9 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
+
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())
@@ -421,6 +424,13 @@ describe('useCoreCommands', () => {
       },
       {
         id: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
+        selectOnly: false,
+        readOnly: false,
+        reads: 'mode',
+        expected: LGraphEventMode.BYPASS
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
         selectOnly: true,
         readOnly: false,
         reads: 'mode',
@@ -456,6 +466,13 @@ describe('useCoreCommands', () => {
       },
       {
         id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
+        selectOnly: false,
+        readOnly: false,
+        reads: 'collapsed',
+        expected: true
+      },
+      {
+        id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
         selectOnly: true,
         readOnly: false,
         reads: 'collapsed',
@@ -488,6 +505,13 @@ describe('useCoreCommands', () => {
         readOnly: false,
         reads: 'pos',
         expected: [0, 0]
+      },
+      {
+        id: 'Comfy.Canvas.MoveSelectedNodes.Right',
+        selectOnly: false,
+        readOnly: false,
+        reads: 'pos',
+        expected: [10, 0]
       }
     ] as const)(
       '$id with selectOnly=$selectOnly readOnly=$readOnly leaves node $reads at $expected',
@@ -551,14 +575,29 @@ describe('useCoreCommands', () => {
       { id: 'Comfy.Undo', selectOnly: true, spy: 'undo', calls: 0 },
       { id: 'Comfy.Undo', selectOnly: false, spy: 'undo', calls: 1 },
       { id: 'Comfy.Redo', selectOnly: true, spy: 'redo', calls: 0 },
-      { id: 'Comfy.ClearWorkflow', selectOnly: true, spy: 'clean', calls: 0 }
+      { id: 'Comfy.Redo', selectOnly: false, spy: 'redo', calls: 1 },
+      { id: 'Comfy.ClearWorkflow', selectOnly: true, spy: 'clean', calls: 0 },
+      {
+        id: 'Comfy.Graph.ToggleWidgetPromotion',
+        selectOnly: true,
+        spy: 'togglePromotion',
+        calls: 0
+      },
+      {
+        id: 'Comfy.Graph.ToggleWidgetPromotion',
+        selectOnly: false,
+        spy: 'togglePromotion',
+        calls: 1
+      }
     ] as const)(
       '$id with selectOnly=$selectOnly calls $spy $calls times',
       async ({ id, selectOnly, spy, calls }) => {
+        vi.mocked(tryToggleWidgetPromotion).mockImplementation(() => {})
         const spies = {
           undo: mockChangeTracker.undo,
           redo: mockChangeTracker.redo,
-          clean: app.clean
+          clean: app.clean,
+          togglePromotion: tryToggleWidgetPromotion
         }
         app.canvas.selectOnly = selectOnly
 

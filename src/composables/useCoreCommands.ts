@@ -1108,7 +1108,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      function: () => {
+        if (isSelectOnly(app.canvas)) return
+        tryToggleWidgetPromotion()
+      }
     },
     {
       id: 'Comfy.OpenManagerDialog',
