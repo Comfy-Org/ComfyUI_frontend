@@ -275,6 +275,7 @@ const graphMutationsByWorkflow = new Map<
 >()
 const liveWidgets = createLiveWidgetProjection({
   getRootGraph: () => app.rootGraphOrUndefined,
+  getCanvas: () => app.canvas,
   markDirty: () => app.canvas?.setDirty(true)
 })
 const graphMutations = (workflowId: string) => {
