@@ -377,21 +377,25 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('reports exhausted subscribe retries once with only an allowlisted code', () => {
+  it('reports the final refusal once per retry incident', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
-    const refusal = {
+    const initialRefusal = {
       ok: false,
-      code: 'Permission denied for private document',
+      code: 'not_found',
       message: 'secret server detail'
     }
 
     for (let attempt = 0; attempt < 6; attempt++) {
-      dispatchFrame('doc_subscribed', refusal)
+      dispatchFrame('doc_subscribed', initialRefusal)
       vi.advanceTimersByTime(500 * 2 ** attempt)
     }
-    dispatchFrame('doc_subscribed', refusal)
-    dispatchFrame('doc_subscribed', refusal)
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'Permission denied for private document',
+      message: 'different final detail'
+    })
+    dispatchFrame('doc_subscribed', initialRefusal)
 
     expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
     expect(telemetryState.reportError).toHaveBeenCalledWith(
@@ -406,6 +410,34 @@ describe('useAgentCrdtFollower', () => {
     )
     expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
       'secret server detail'
+    )
+    expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
+      'different final detail'
+    )
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        code: 'rate_limited'
+      })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_mismatch'
+    })
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'CRDT document subscription was refused'
+      }),
+      {
+        errorType: 'failure_subscribing_crdt_document',
+        tags: { code: 'schema_mismatch', attempts: 6 },
+        context: { workflow_id: 'wf-1' }
+      }
     )
     unmount()
   })
