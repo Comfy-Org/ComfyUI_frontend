@@ -4753,7 +4753,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(bodies[0]).toMatchObject({
-        content: '@[Node: KSampler #12]  Keep this draft',
+        content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
         selection: { node_ids: ['12'] },
         workflow_references: []
@@ -5505,12 +5505,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       } else {
         expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft'
-            ? 'New input'
-            : nextAction === 'removed-reference' ||
-                nextAction === 'removed-attachment'
-              ? ' '
-              : ''
+          nextAction === 'new-draft' ? 'New input' : ''
         )
         expect(composer.attachments).toEqual([])
         expect(
