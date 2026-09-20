@@ -241,6 +241,26 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledOnce()
   })
 
+  it('does not throw out of flushErrorReports when the sink probe throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    hostTelemetryEnabled.mockImplementation(() => {
+      throw new Error('storage is blocked')
+    })
+
+    expect(() => flushErrorReports()).not.toThrow()
+
+    hostTelemetryEnabled.mockReturnValue(true)
+    datadogLive(true)
+    flushErrorReports()
+    expect(addError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
   it('buffers reports raised before any sink is live, then flushes them', async () => {
     sentryLive(false)
     datadogLive(false)

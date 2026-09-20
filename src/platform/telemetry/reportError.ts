@@ -205,6 +205,20 @@ function isPending(delivered: DeliveryState): boolean {
 }
 
 /**
+ * A probe, not a delivery: `isHostTelemetryEnabled()` reads `localStorage` and
+ * the bridge lookup touches an Electron context that can be revoked, and both
+ * throw where `flushErrorReports()` promises not to.
+ */
+function hasLiveSink(): boolean {
+  try {
+    return isSentryEnabled() || isDatadogRumLive() || !!desktopExceptionSink()
+  } catch (probeFailure) {
+    console.error('[reportError] sink probe failed', probeFailure)
+    return false
+  }
+}
+
+/**
  * Drains reports buffered before a sink came up. Safe to call repeatedly;
  * a no-op while every sink is still inert.
  *
@@ -214,8 +228,7 @@ function isPending(delivered: DeliveryState): boolean {
  */
 export function flushErrorReports(): void {
   if (!pendingReports.length) return
-  if (!isSentryEnabled() && !isDatadogRumLive() && !desktopExceptionSink())
-    return
+  if (!hasLiveSink()) return
 
   const drained = pendingReports.splice(0, pendingReports.length)
   for (const report of drained) {
