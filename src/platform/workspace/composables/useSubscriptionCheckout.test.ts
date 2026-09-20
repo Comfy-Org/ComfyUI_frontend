@@ -24,6 +24,7 @@ import {
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
+  BillingStatusResponse,
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -1483,20 +1484,41 @@ describe('useSubscriptionCheckout', () => {
     describe('payment recovery on the SDK rail', () => {
       const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
 
+      /** Only `billing_status` is read, but the response requires six more. */
+      function railStatus(
+        billing_status: BillingStatus
+      ): BillingStatusResponse {
+        return {
+          billing_status,
+          has_funds: true,
+          is_active: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: null,
+          team_credit_stop: null
+        }
+      }
+
       /** A read rail answering `readStatus` with `result`. */
-      function readStatusOnRail(result: unknown) {
-        const readStatus = vi.fn().mockResolvedValue(result)
+      function readStatusOnRail(
+        result: Awaited<ReturnType<ReadRail['readStatus']>>
+      ) {
+        const readStatus = vi
+          .fn<ReadRail['readStatus']>()
+          .mockResolvedValue(result)
         railState.rail = {
           readStatus,
           readPaymentMethods: vi
-            .fn()
+            .fn<ReadRail['readPaymentMethods']>()
             .mockResolvedValue({ status: 'ok', value: [] })
         }
         return readStatus
       }
 
       function railPortal(outcome: SubscriptionRailOutcome<string>) {
-        const openPaymentPortal = vi.fn().mockResolvedValue(outcome)
+        const openPaymentPortal = vi
+          .fn<NonNullable<SubscriptionRailStub['openPaymentPortal']>>()
+          .mockResolvedValue(outcome)
         mockSubscriptionRail.value = railStub({ openPaymentPortal })
         return openPaymentPortal
       }
@@ -1504,7 +1526,7 @@ describe('useSubscriptionCheckout', () => {
       it('reads the second TRANSITION_NOT_ALLOWED check off the rail', async () => {
         const readStatus = readStatusOnRail({
           status: 'ok',
-          value: { billing_status: 'payment_failed' }
+          value: railStatus('payment_failed')
         })
 
         await submitRejectedPreview('TRANSITION_NOT_ALLOWED')
@@ -1522,13 +1544,13 @@ describe('useSubscriptionCheckout', () => {
       it.for([
         [
           'reports a healthy status',
-          { status: 'ok', value: { billing_status: 'paid' } }
+          { status: 'ok', value: railStatus('paid') }
         ],
         [
           'has left the scope the read was for',
           { status: 'error', code: 'SUPERSEDED' }
         ],
-        ['cannot answer at all', { status: 'error', code: 'SERVER_ERROR' }]
+        ['cannot answer at all', { status: 'error', code: 'REQUEST_FAILED' }]
       ] as const)('recovers nothing when the rail %s', async ([, result]) => {
         mockGetBillingStatus.mockResolvedValue({
           billing_status: 'payment_failed'
