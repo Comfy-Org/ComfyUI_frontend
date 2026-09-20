@@ -26,6 +26,7 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import type { DocSubscribed } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
@@ -203,12 +204,10 @@ const AUTH_REFUSAL_TOKENS = new Set([
   'permission'
 ])
 
-function refusalCode(detail: unknown): string {
-  if (typeof detail !== 'object' || detail === null || !('code' in detail))
-    return 'unknown'
-  if (typeof detail.code !== 'string') return 'unknown'
-  if (REFUSAL_CODES.has(detail.code)) return detail.code
-  return detail.code
+function refusalCode(code: DocSubscribed['code']): string {
+  if (code === undefined) return 'unknown'
+  if (REFUSAL_CODES.has(code)) return code
+  return code
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .some((token) => AUTH_REFUSAL_TOKENS.has(token))
@@ -322,8 +321,8 @@ function startAgentCrdtFollower(
     () => {
       connected.value = false
     },
-    (detail, attempts) => {
-      const code = refusalCode(detail)
+    (refusal, attempts) => {
+      const code = refusalCode(refusal)
       reportError(new Error('CRDT document subscription was refused'), {
         errorType:
           code === 'auth_reject'
@@ -457,15 +456,16 @@ function startAgentCrdtFollower(
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
-    const ok = event.detail?.ok === true
+    const subscribed = event.detail as DocSubscribed
+    const ok = subscribed.ok
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    recordDevEvent('doc_subscribed', subscribed)
     if (ok) {
       divergenceReported.clear()
       lifecycle.onSubscribeConfirmed()
     } else {
-      lifecycle.onSubscribeRefused(event.detail)
+      lifecycle.onSubscribeRefused(subscribed.code)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.

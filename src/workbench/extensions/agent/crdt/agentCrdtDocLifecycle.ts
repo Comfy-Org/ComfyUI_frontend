@@ -2,6 +2,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import type { DocSubscribed } from './docFrameClient'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -154,7 +155,7 @@ export class AgentCrdtDocLifecycle {
     private readonly resubscribe: () => void,
     private readonly onGaveUp: () => void,
     private readonly onSubscribeExhausted: (
-      detail: unknown,
+      code: DocSubscribed['code'],
       attempts: number
     ) => void = () => {}
   ) {}
@@ -176,10 +177,10 @@ export class AgentCrdtDocLifecycle {
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
 
-  onSubscribeRefused(detail?: unknown): void {
+  onSubscribeRefused(code?: DocSubscribed['code']): void {
     this.clearAckTimer()
     this.clearStaleProbe()
-    this.scheduleSubscribeRetry(detail)
+    this.scheduleSubscribeRetry(code)
   }
 
   onSubscribeSent(workflowId: string): void {
@@ -304,12 +305,12 @@ export class AgentCrdtDocLifecycle {
     this.subscribeFailureReported = false
   }
 
-  private scheduleSubscribeRetry(detail: unknown): void {
+  private scheduleSubscribeRetry(code: DocSubscribed['code']): void {
     if (this.shouldDeferSubscribe()) return
     if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
       if (!this.subscribeFailureReported) {
         this.subscribeFailureReported = true
-        this.onSubscribeExhausted(detail, this.subscribeRetryAttempt)
+        this.onSubscribeExhausted(code, this.subscribeRetryAttempt)
       }
       return
     }
