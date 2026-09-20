@@ -7,7 +7,6 @@
   },
   "knownPending": {
     "ar/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -26,7 +25,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "de/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -45,7 +43,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "es/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -64,7 +61,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "fa/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -83,7 +79,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "fr/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -102,7 +97,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "he/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -121,7 +115,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "it/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -140,7 +133,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "ja/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -159,7 +151,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "ko/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -178,7 +169,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "pt-BR/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -197,7 +187,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "ru/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -216,7 +205,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "tr/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -235,7 +223,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "zh/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -254,7 +241,6 @@
       "[\"rightSidePanel\",\"blockedLastRun\"]"
     ],
     "zh-TW/main.json": [
-      "[\"agent\",\"askComfyAgent\"]",
       "[\"agent\",\"editWhileWorking\"]",
       "[\"agent\",\"entryButton\"]",
       "[\"agent\",\"nodesAdded\"]",
@@ -271,6 +257,50 @@
       "[\"minimap\",\"highlightedNodes\"]",
       "[\"minimap\",\"label\"]",
       "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ]
+  },
+  "knownStray": {
+    "ar/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "de/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "es/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "fa/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "fr/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "he/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "it/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ja/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ko/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "pt-BR/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ru/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "tr/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "zh/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "zh-TW/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
     ]
   },
   "version": 1

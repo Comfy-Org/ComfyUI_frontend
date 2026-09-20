@@ -53,15 +53,23 @@ interface SourceManifest {
   // translations violated token validation when the manifest was recorded.
   // The check exempts them; a successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
-  // Transitional baseline: leaf path keys that were already untranslated or
-  // already stray when the manifest was recorded, keyed by `<locale>/<entry
-  // file>`. The check exempts them so pre-existing lag does not fail every
-  // unrelated PR; any key outside this list fails. Unlike `knownViolations`
-  // this is scoped per locale, because a key can be pending in one locale and
-  // translated in another, and a filename-only baseline would let a new gap in
-  // one locale hide behind another locale's recorded lag. A successful locale
-  // run heals and drops the entries for that entry file.
+  // Transitional baselines: leaf path keys that were already drifting when the
+  // manifest was recorded, keyed by `<locale>/<entry file>`. The check exempts
+  // them so pre-existing lag does not fail every unrelated PR; any key outside
+  // them fails. Scoped per locale, because a key can be pending in one locale
+  // and translated in another, and a filename-only baseline would let a new gap
+  // in one locale hide behind another locale's recorded lag. A successful
+  // locale run heals and drops the entries for that entry file.
+  //
+  // Pending and stray are kept apart deliberately. A single shared list would
+  // exempt a key in BOTH directions: `agent.askComfyAgent` is baselined here
+  // because it is stray, and re-adding it to `en` would make it pending in
+  // every locale and silently inherit that exemption — the exact silent
+  // fallback this check exists to catch.
+  /** Keys with no usable translation yet (missing, blanked or invalidated). */
   knownPending?: Record<string, string[]>
+  /** Keys the locale still carries that `en` no longer has. */
+  knownStray?: Record<string, string[]>
   version: 1
 }
 
@@ -82,8 +90,10 @@ export interface LocaleFileState {
   existing: LocaleObject
   pendingLeaves: LocaleLeafEntry[]
   strayPaths: string[][]
-  /** Baseline for THIS locale and entry file, from the source manifest. */
+  /** Pending baseline for THIS locale and entry file. */
   knownPendingKeys: ReadonlySet<string>
+  /** Stray baseline for THIS locale and entry file. */
+  knownStrayKeys: ReadonlySet<string>
 }
 
 interface ItemRef {
@@ -219,7 +229,8 @@ function loadManifest(filename: string): SourceManifest {
       (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
     ) ||
     !isValidBaselineField(manifest, 'knownViolations') ||
-    !isValidBaselineField(manifest, 'knownPending')
+    !isValidBaselineField(manifest, 'knownPending') ||
+    !isValidBaselineField(manifest, 'knownStray')
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }
@@ -305,7 +316,8 @@ function writeManifest(
   advancedFilenames: readonly string[],
   preservedFiles: Readonly<Record<string, string>>,
   preservedViolations: Readonly<Record<string, string[]>>,
-  preservedPending: Readonly<Record<string, string[]>>
+  preservedPending: Readonly<Record<string, string[]>>,
+  preservedStray: Readonly<Record<string, string[]>>
 ): void {
   const files = Object.fromEntries(
     [
@@ -326,6 +338,9 @@ function writeManifest(
       : {}),
     ...(Object.keys(preservedPending).length > 0
       ? { knownPending: preservedPending }
+      : {}),
+    ...(Object.keys(preservedStray).length > 0
+      ? { knownStray: preservedStray }
       : {}),
     version: 1
   }
@@ -377,7 +392,8 @@ function loadLocaleFileStates(
   config: TranslationPipelineConfig,
   outputDir: string,
   plans: readonly SourcePlan[],
-  knownPending: Readonly<Record<string, string[]>> | undefined
+  knownPending: Readonly<Record<string, string[]>> | undefined,
+  knownStray: Readonly<Record<string, string[]>> | undefined
 ): LocaleFileState[] {
   return config.outputLocales.flatMap((locale) =>
     plans.map((plan) => {
@@ -401,6 +417,9 @@ function loadLocaleFileStates(
         strayPaths,
         knownPendingKeys: new Set(
           knownPending?.[pendingBaselineKey(locale.code, plan.filename)] ?? []
+        ),
+        knownStrayKeys: new Set(
+          knownStray?.[pendingBaselineKey(locale.code, plan.filename)] ?? []
         )
       }
     })
@@ -507,7 +526,7 @@ function inspectLocaleFile(state: LocaleFileState): LocaleCheckFindings {
       ...unbaselinedDrift(
         label,
         strayPaths,
-        state.knownPendingKeys,
+        state.knownStrayKeys,
         'no longer exist in the English source'
       )
     ]
@@ -600,7 +619,8 @@ async function run(argv: readonly string[]): Promise<void> {
     config,
     outputDir,
     plans,
-    manifest.knownPending
+    manifest.knownPending,
+    manifest.knownStray
   )
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
@@ -784,7 +804,8 @@ async function run(argv: readonly string[]): Promise<void> {
     preservedBaseline(filenames, completedFilenames, manifest.knownViolations),
     // Likewise: a completed file has every pending key translated and every
     // stray key pruned, so its pending baseline is healed and dropped
-    preservedPendingBaseline(completedFilenames, manifest.knownPending)
+    preservedPendingBaseline(completedFilenames, manifest.knownPending),
+    preservedPendingBaseline(completedFilenames, manifest.knownStray)
   )
 
   if (failuresByFile.size > 0) {

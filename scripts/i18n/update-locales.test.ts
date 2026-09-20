@@ -526,6 +526,7 @@ describe('reportCheck', () => {
       pendingPaths?: string[][]
       strayPaths?: string[][]
       knownPendingKeys?: ReadonlySet<string>
+      knownStrayKeys?: ReadonlySet<string>
     } = {}
   ): LocaleFileState {
     const code = overrides.localeCode ?? locale.code
@@ -549,7 +550,8 @@ describe('reportCheck', () => {
         value: getLeaf(source, path) ?? ''
       })),
       strayPaths: overrides.strayPaths ?? [],
-      knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>()
+      knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>(),
+      knownStrayKeys: overrides.knownStrayKeys ?? new Set<string>()
     }
   }
 
@@ -575,10 +577,8 @@ describe('reportCheck', () => {
         state({
           pendingPaths: [['agent', 'entryButton']],
           strayPaths: [['agent', 'askComfyAgent']],
-          knownPendingKeys: new Set([
-            pathKey(['agent', 'entryButton']),
-            pathKey(['agent', 'askComfyAgent'])
-          ])
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])]),
+          knownStrayKeys: new Set([pathKey(['agent', 'askComfyAgent'])])
         })
       ])
     ).toBe(0)
@@ -599,6 +599,31 @@ describe('reportCheck', () => {
           localeCode: 'ja',
           pendingPaths: [['agent', 'entryButton']],
           knownPendingKeys: new Set<string>()
+        })
+      ])
+    ).toBe(1)
+  })
+
+  it('does not let a stray baseline exempt the same key once it is pending', () => {
+    // `agent.askComfyAgent` is baselined as STRAY. Re-adding it to `en` makes
+    // it PENDING in every locale; a single shared baseline would exempt it and
+    // ship the silent English fallback this check exists to catch.
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [['agent', 'askComfyAgent']],
+          knownStrayKeys: new Set([pathKey(['agent', 'askComfyAgent'])])
+        })
+      ])
+    ).toBe(1)
+  })
+
+  it('does not let a pending baseline exempt the same key once it is stray', () => {
+    expect(
+      reportCheck([
+        state({
+          strayPaths: [['agent', 'entryButton']],
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])])
         })
       ])
     ).toBe(1)
