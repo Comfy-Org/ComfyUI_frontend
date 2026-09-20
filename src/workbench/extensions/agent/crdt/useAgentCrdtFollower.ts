@@ -21,7 +21,11 @@ import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
+import {
+  AgentCrdtDocLifecycle,
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+} from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
@@ -43,7 +47,7 @@ import {
 } from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
 
-export { apiTransport, STALE_AFTER_MS }
+export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -293,11 +297,6 @@ function startAgentCrdtFollower(
 
   const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc
-  )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
@@ -342,6 +341,10 @@ function startAgentCrdtFollower(
       recordDevEvent('pending_ops', event)
     }
   })
+  // Doc node ids whose human delete the host has applied but whose effect
+  // frame has not yet removed them from the doc. Kept pending for the
+  // reconcile so the result-to-effect window cannot resurrect them.
+  const confirmedDeletes = new Set<string>()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -371,10 +374,37 @@ function startAgentCrdtFollower(
     onBatchMinted: (ops) => pendingOps.onBatchMinted(ops),
     onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
     onBatchSettled: (outcome) => {
+      if (outcome.state === 'acknowledged') {
+        const applied = new Set(outcome.result.applied)
+        for (const op of outcome.ops) {
+          if (op.op === 'delete_node' && applied.has(op.op_id))
+            confirmedDeletes.add(String(op.node_id))
+        }
+      }
       recordDevEvent('human_ops_settled', outcome)
       pendingOps.onBatchSettled(outcome)
     }
   })
+  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
+    const docNodeIds = currentDocNodeIds()
+    for (const id of confirmedDeletes) {
+      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+    }
+    const pending = new Set(confirmedDeletes)
+    for (const batch of sender.pendingOps()) {
+      if (batch.workflowId !== workflowId) continue
+      for (const op of batch.ops) {
+        if (op.op === 'delete_node') pending.add(String(op.node_id))
+      }
+    }
+    return pending
+  }
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc,
+    { pendingDeletes: pendingHumanDeletes }
+  )
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -438,6 +468,7 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      resumeHeldOpsIfSubscribed()
       if (subscribedWorkflowId.value !== null)
         retryPendingProjection(subscribedWorkflowId.value)
     } else {
@@ -445,6 +476,7 @@ function startAgentCrdtFollower(
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
+      releaseHeldOps()
       sender.abortIfUnbound()
     }
   }
@@ -519,6 +551,7 @@ function startAgentCrdtFollower(
     knownDocNodeIds = new Set()
     resetPendingCorrelation()
     pendingLiveNodeIds.clear()
+    confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -539,6 +572,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      confirmedDeletes.clear()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -613,6 +647,7 @@ function startAgentCrdtFollower(
   const onSocketActivity: EventListener = () => {
     if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
+    resumeHeldOpsIfSubscribed()
   }
 
   /**
@@ -671,17 +706,50 @@ function startAgentCrdtFollower(
         reconcileAndReportPending(boundWorkflowId)
     }
   })
+  // The bound workflow whose tab went inactive while the sender still held
+  // batches for it. A tab switch pauses the subscription without rebinding
+  // the session, so those batches are held rather than aborted (see
+  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
+  // them into the normal abort path.
+  let heldForWorkflowId: string | null = null
+  const releaseHeldOps = (): void => {
+    heldForWorkflowId = null
+    sender.resume()
+  }
+  const resumeHeldOpsIfSubscribed = (): void => {
+    if (
+      heldForWorkflowId !== null &&
+      bridge.subscribedWorkflowId === heldForWorkflowId
+    ) {
+      releaseHeldOps()
+    }
+  }
+  const holdOpsForInactiveTab = (workflowId: string): void => {
+    heldForWorkflowId = workflowId
+    sender.suspend()
+    bridge.unsubscribe()
+  }
   // Drive the bridge's intent, then give the sender the same eager signal the
   // refusal branch gets: `reconcile()` clears send reality synchronously when
   // the desired doc changes, and a batch minted for the old doc would
-  // otherwise wait out the 10 s result-silence window before noticing.
+  // otherwise wait out the 10 s result-silence window before noticing. The
+  // one exception is the workflow whose ops are held: its subscribe may not
+  // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
+    if (next !== null && next === heldForWorkflowId) {
+      resumeHeldOpsIfSubscribed()
+      return
+    }
+    releaseHeldOps()
     sender.abortIfUnbound()
   }
 
-  const deactivateTarget = (next: string | null): void => {
+  const deactivateTarget = (
+    next: string | null,
+    previousWorkflowId: string | null
+  ): void => {
     if (next !== null) initialBind = false
     if (boundWorkflowId !== null) {
       projection.unbind(boundWorkflowId)
@@ -689,7 +757,9 @@ function startAgentCrdtFollower(
       resetPendingCorrelation()
     }
     subscribedWorkflowId.value = null
-    retarget(null)
+    if (next !== null && next === previousWorkflowId)
+      holdOpsForInactiveTab(next)
+    else retarget(null)
   }
 
   const restorePersistedTarget = (justActivated: boolean): void => {
@@ -750,7 +820,7 @@ function startAgentCrdtFollower(
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
-        deactivateTarget(next)
+        deactivateTarget(next, previous?.[0] ?? null)
         return
       }
       if (next === null) {

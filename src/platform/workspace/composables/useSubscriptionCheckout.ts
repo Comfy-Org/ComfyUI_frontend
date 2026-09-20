@@ -554,19 +554,37 @@ export function useSubscriptionCheckout(
     )
   }
 
+  /**
+   * The portal URL for recovery, from whichever rail owns the subscription.
+   * An `unavailable` route is not deployed here, so the legacy client answers;
+   * a failure throws into the caller's catch, where a legacy throw already
+   * lands.
+   */
+  async function readPaymentPortalUrl(returnUrl: string): Promise<string> {
+    if (subscriptionRail) {
+      const outcome = await subscriptionRail.openPaymentPortal(returnUrl)
+      if (outcome.status === 'ok') return outcome.value
+      if (outcome.status === 'error') throw outcome.error
+    }
+    return (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+  }
+
   async function recoverOutstandingPayment(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
+    const readRail = useBillingReadRail()
     const hasPaymentRecoveryCode =
       hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
-        requiresRecovery =
-          (await workspaceApi.getBillingStatus()).billing_status ===
-          'payment_failed'
+        const status =
+          readRail === null
+            ? await workspaceApi.getBillingStatus()
+            : await readOnRail(readRail.readStatus)
+        requiresRecovery = status?.billing_status === 'payment_failed'
       } catch {
         return null
       }
@@ -576,7 +594,7 @@ export function useSubscriptionCheckout(
     try {
       const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
       const portalUrl = parseBillingPortalUrl(
-        (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+        await readPaymentPortalUrl(returnUrl)
       )
       if (!isCurrent()) return null
       if (!portalUrl) {
