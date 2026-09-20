@@ -92,6 +92,7 @@ describe('legacy error dialog catalog', () => {
       open: (response: PromptFailureResponse) =>
         useDialogService().showExecutionErrorDialog({
           exception_type: 'PromptValidationError',
+          node_type: 'CloudProxy',
           exception_message: `Failed to send prompt request: 400: ${JSON.stringify(response)}`
         })
     }
