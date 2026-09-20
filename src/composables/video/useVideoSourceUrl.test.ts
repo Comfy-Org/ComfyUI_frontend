@@ -221,9 +221,7 @@ describe('useVideoSourceUrl', () => {
   it('re-arms, reloads and resets the budget when a re-execution resolves the identical url', async () => {
     const url = '/api/view?filename=out.mp4&type=temp'
     mocks.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
-    mocks.getNodeImageUrls.mockReturnValue([
-      `${url}&rand=0.123`
-    ])
+    mocks.getNodeImageUrls.mockReturnValue([`${url}&rand=0.123`])
     mocks.getWidget.mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })
@@ -240,9 +238,7 @@ describe('useVideoSourceUrl', () => {
     const history = [videoUrl.value]
     watch(videoUrl, (value) => history.push(value), { flush: 'sync' })
 
-    mocks.getNodeImageUrls.mockReturnValue([
-      `${url}&rand=0.456`
-    ])
+    mocks.getNodeImageUrls.mockReturnValue([`${url}&rand=0.456`])
     mocks.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
     await nextTick()
     await nextTick()
@@ -260,9 +256,7 @@ describe('useVideoSourceUrl', () => {
   it('does not reload when an unrelated connection change resolves the same url', async () => {
     const url = '/api/view?filename=out.mp4&type=temp'
     mocks.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
-    mocks.getNodeImageUrls.mockReturnValue([
-      `${url}&rand=0.123`
-    ])
+    mocks.getNodeImageUrls.mockReturnValue([`${url}&rand=0.123`])
     mocks.getWidget.mockReturnValue(undefined)
 
     const upstream = fakeNode({ id: 'up' })

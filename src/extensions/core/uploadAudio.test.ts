@@ -17,16 +17,16 @@ const {
   mockReportError,
   mockStopAllTracks
 } = vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn(),
-    mockMediaRecorderConstruct: vi.fn(),
-    mockMediaRecorderStart: vi.fn(),
-    mockMediaRecorderStop: vi.fn(),
-    mockReportError: vi.fn(),
-    mockStopAllTracks: vi.fn()
-  }))
+  mockAddAlert: vi.fn(),
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn(),
+  mockRegisterExtension: vi.fn(),
+  mockMediaRecorderConstruct: vi.fn(),
+  mockMediaRecorderStart: vi.fn(),
+  mockMediaRecorderStop: vi.fn(),
+  mockReportError: vi.fn(),
+  mockStopAllTracks: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
