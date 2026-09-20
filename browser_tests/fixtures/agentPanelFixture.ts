@@ -37,8 +37,8 @@ interface BootAgentAppOptions {
   turnAccepted?: AgentTurnAccepted
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
-  /** `'server'` loads real node definitions instead of the empty catalog. */
-  objectInfo?: 'server'
+  /** Server definitions, optionally augmented with deterministic test entries. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
 }
