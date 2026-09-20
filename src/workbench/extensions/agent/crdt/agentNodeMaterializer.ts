@@ -1,3 +1,4 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import {
@@ -267,15 +268,19 @@ function reconcile(
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
     const serialised = state.lastSerialization
-    if (!serialised) continue
     if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconcileAutogrowInputs(live)
       // Reconciliation can retain the instance but replace its inputs with
       // serialized slots, losing the bindings that create promoted widgets.
       // Repair only broken bindings: replaying an intact host's serialization
       // would overwrite later set_widget values. Layout remains FE-owned.
-      repairPromotedBindings(graph, live, serialised)
+      // Guarded on `serialised` because the repair replays it; main's autogrow
+      // reconcile above runs either way, as it did before this branch moved
+      // the ownership check below the serialization guard.
+      if (serialised) repairPromotedBindings(graph, live, serialised)
       continue
     }
+    if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
     if (
       materialize(graph, scope, state, serialised, orphansById.get(state.id))
