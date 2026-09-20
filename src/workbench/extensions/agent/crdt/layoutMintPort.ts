@@ -204,7 +204,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
   function reportOpForUnboundGraph(
     operation: LayoutChangeView['operation'],
-    action: 'create' | 'delete'
+    action: 'create' | 'delete' | 'clear'
   ): boolean {
     const boundRootGraphId = foreignBoundRootGraphId(operation)
     if (boundRootGraphId === null) return false
@@ -214,9 +214,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
     reportedUnboundGraphChanges.add(reportKey)
     queueMicrotask(() => reportedUnboundGraphChanges.delete(reportKey))
+    const opName = action === 'clear' ? 'clearGraph' : `${action}Node`
     reportError(
       new Error(
-        `${action}Node targets graph ${operation.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`
+        `${opName} targets graph ${operation.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`
       ),
       {
         errorType: 'agent_crdt_op_for_unbound_graph',
@@ -289,6 +290,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'clearGraph': {
+        if (reportOpForUnboundGraph(operation, 'clear')) return
         const captured = intentionalClearNodes
         intentionalClearNodes = null
         mintedNodeIdsByRoot.delete(deps.boundRootGraphId())

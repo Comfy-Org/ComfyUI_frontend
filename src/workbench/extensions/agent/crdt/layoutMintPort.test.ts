@@ -33,8 +33,11 @@ function createNodeChange(
   }
 }
 
-function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
-  return { operation: { type: 'clearGraph', actor } }
+function clearChange(
+  actor: string = LOCAL_ACTOR,
+  graphId?: string
+): LayoutChangeView {
+  return { operation: { type: 'clearGraph', actor, graphId } }
 }
 
 function deleteChange(
@@ -209,11 +212,13 @@ describe('attachLayoutMintPort', () => {
     expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
   })
 
-  it("survives an A-to-B-and-back rebind without re-minting A's node on replay (regression)", () => {
+  it("mints B's own create while B is bound, then survives switching back to A without re-minting A's replay (regression)", () => {
     // A clear-on-transition strategy would let this A -> B -> A round trip
     // re-mint A's node 1, the exact id-collision replay the dedupe exists to
     // prevent - so rebinding away from and back to a root must leave its
-    // dedupe entries untouched.
+    // dedupe entries untouched. Delivering B's own create while B is bound
+    // (rather than switching straight back to A) proves production actually
+    // reads the accessor in the B state, not just at the two endpoints.
     const rootACreate = {
       operation: {
         ...createNodeChange('1').operation,
@@ -221,15 +226,71 @@ describe('attachLayoutMintPort', () => {
         ownerGraphId: 'root'
       }
     }
+    const rootBCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    }
 
     deliver(rootACreate)
     currentRoot = toRootGraphId('other')
+    minted.length = 0
+    deliver(rootBCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+
     currentRoot = toRootGraphId('root')
     minted.length = 0
 
     deliver(rootACreate)
 
     expect(minted).toEqual([])
+  })
+
+  it("does not let a foreign root graph's clear reset the bound graph's dedupe entry (regression)", () => {
+    // Mint node 1 for the bound graph (root), then a root-scoped clear for a
+    // different graph (other) sharing node ids - a workflow load still in
+    // flight, per reportOpForUnboundGraph's own scenario. That foreign clear
+    // must still be reported and dropped as a wire op, but it must not erase
+    // root's dedupe entry for node 1: a replayed create for root must not
+    // re-mint.
+    const rootCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+    const foreignClear = clearChange(LOCAL_ACTOR, 'other')
+
+    deliver(rootCreate)
+    deliver(foreignClear)
+    deliver(rootCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_op_for_unbound_graph',
+      context: { graphId: 'other', boundRootGraphId: 'root', nodeId: undefined }
+    })
+  })
+
+  it('a foreign clearGraph does not consume an active intentional-clear capture (regression)', () => {
+    // A foreign clear (a remote actor, so it never mints its own clear op
+    // either way) reaching the store mid-capture must be rejected before it
+    // can null out or otherwise consume the pending intentional-clear
+    // capture. Otherwise the genuine local clear that follows finds the
+    // capture already gone and mints nothing at all for it.
+    const foreignClear = clearChange('other-user-actor', 'other')
+
+    port.runIntentionalClear(() => {
+      graphNodes.clear()
+      deliver(foreignClear)
+      deliver(clearChange())
+    })
+
+    expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1'] }])
   })
 
   it('mints add_node again for the same id after an intentional clear', () => {
