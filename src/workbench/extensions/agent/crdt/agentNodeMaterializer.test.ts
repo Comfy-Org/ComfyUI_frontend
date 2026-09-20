@@ -628,7 +628,17 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).toHaveBeenCalledWith(
         'LiteGraph: max number of nodes in a graph reached',
         expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
+          errorType: 'agent_node_materialize_add_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'recovered',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          }
         })
       )
     })
@@ -701,7 +711,17 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'agent_node_materialize_configure_failed'
+          errorType: 'agent_node_materialize_configure_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          }
         })
       )
     })
@@ -802,11 +822,13 @@ describe('reconcileAgentAdapters', () => {
       expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
 
       // Both failures are reported: the original `onAdded` throw, and the
-      // cleanup that could not complete.
+      // cleanup that could not complete. A partial adapter survived the
+      // rollback, so the add is degraded rather than recovered.
       expect(reportError).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
+          errorType: 'agent_node_materialize_add_failed',
+          tags: expect.objectContaining({ outcome: 'degraded' })
         })
       )
       expect(reportError).toHaveBeenCalledWith(
@@ -1154,6 +1176,16 @@ describe('reconcileAgentAdapters', () => {
         expect.objectContaining({ message: 'interior node rejected' }),
         {
           errorType: 'agent_subgraph_definitions_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs',
+            feature_flag: 'agent_crdt_follower',
+            feature_flag_state: 'enabled',
+            project_context: 'active_workflow'
+          },
           context: { graphId: graph.id, definitionId: definition.id }
         }
       )
@@ -1193,6 +1225,13 @@ describe('reconcileAgentAdapters', () => {
         expect.any(AggregateError),
         {
           errorType: 'agent_subgraph_definitions_failed',
+          tags: expect.objectContaining({
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'degraded',
+            integration_target: 'ecs'
+          }),
           context: { graphId: graph.id, definitionId: definition.id }
         }
       )
@@ -1252,6 +1291,13 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',
+        tags: expect.objectContaining({
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'degraded',
+          integration_target: 'ecs'
+        }),
         context: { graphId: graph.id, definitionId: bad.id }
       })
     })
@@ -1310,6 +1356,13 @@ describe('reconcileAgentAdapters', () => {
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',
+        tags: expect.objectContaining({
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'degraded',
+          integration_target: 'ecs'
+        }),
         context: { graphId: graph.id, definitionId: 'legacy-subgraph' }
       })
     })
