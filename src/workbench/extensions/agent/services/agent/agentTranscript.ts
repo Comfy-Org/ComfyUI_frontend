@@ -61,6 +61,45 @@ function parseUserAttachments(
     : undefined
 }
 
+/**
+ * A persisted user row's `workflow_references` are `{workflow_id, name,
+ * unavailable?}` entries describing workflows the user @-referenced in their
+ * message text. Parsing them rewrites the display text (dropping the raw
+ * reference markup) and yields the structured references the UI renders as
+ * chips, so this returns both together or `undefined` when there is nothing
+ * to apply.
+ */
+function parseUserWorkflowReferences(
+  text: string,
+  rawReferences: unknown
+): { text: string; references: WorkflowReference[] } | undefined {
+  if (!Array.isArray(rawReferences)) return undefined
+  const references = (rawReferences as unknown[]).flatMap((value) => {
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      !('workflow_id' in value) ||
+      !('name' in value)
+    )
+      return []
+    const { workflow_id: id, name } = value
+    return typeof id === 'string' && typeof name === 'string'
+      ? [
+          {
+            id,
+            name,
+            ...('unavailable' in value && value.unavailable === true
+              ? { unavailable: true }
+              : {})
+          }
+        ]
+      : []
+  })
+  return references.length > 0
+    ? parseWorkflowReferences(text, references)
+    : undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -87,34 +126,13 @@ export function normalizeAgentTranscript(
       const attachments = parseUserAttachments(row.content)
       if (attachments) userAttachments.set(turnId, attachments)
       if (row.workflow_id) latestWorkflowId = row.workflow_id
-      const rawReferences = row.content?.workflow_references
-      if (Array.isArray(rawReferences)) {
-        const references = rawReferences.flatMap((value) => {
-          if (
-            typeof value !== 'object' ||
-            value === null ||
-            !('workflow_id' in value) ||
-            !('name' in value)
-          )
-            return []
-          const { workflow_id: id, name } = value
-          return typeof id === 'string' && typeof name === 'string'
-            ? [
-                {
-                  id,
-                  name,
-                  ...('unavailable' in value && value.unavailable === true
-                    ? { unavailable: true }
-                    : {})
-                }
-              ]
-            : []
-        })
-        if (references.length > 0) {
-          const prompt = parseWorkflowReferences(text, references)
-          userTexts.set(turnId, prompt.text)
-          userWorkflowReferences.set(turnId, prompt.references)
-        }
+      const referenceUpdate = parseUserWorkflowReferences(
+        text,
+        row.content?.workflow_references
+      )
+      if (referenceUpdate) {
+        userTexts.set(turnId, referenceUpdate.text)
+        userWorkflowReferences.set(turnId, referenceUpdate.references)
       }
     }
     if (row.role === 'assistant') {
