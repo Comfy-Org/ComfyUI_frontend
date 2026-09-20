@@ -472,11 +472,29 @@ describe('useAgentCrdtFollower', () => {
         message: 'CRDT update has no bound projection target'
       }),
       {
-        errorType: 'error_reading_crdt_document',
+        errorType: 'missing_crdt_projection_target',
         tags: { reason: 'missing_projection_target' },
         context: { workflow_id: 'wf-1', seq: 4 }
       }
     )
+    unmount()
+  })
+
+  it('keeps the unbound-projection slug distinct from the document-read slug', () => {
+    adapterState.applyFrame.mockReturnValue(false)
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    // `errorType` is the queryable telemetry contract: an alert on
+    // `error_reading_crdt_document` must not also fire for an update that was
+    // read fine and only had no projection target bound.
+    expect(
+      telemetryState.reportError.mock.calls.map(
+        ([, options]) => options.errorType
+      )
+    ).toEqual(['missing_crdt_projection_target', 'error_reading_crdt_document'])
     unmount()
   })
 
@@ -602,9 +620,9 @@ describe('useAgentCrdtFollower', () => {
         options.context?.workflow_id
       ])
     ).toEqual([
-      ['error_reading_crdt_document', 'wf-1'],
+      ['missing_crdt_projection_target', 'wf-1'],
       ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-1'],
-      ['error_reading_crdt_document', 'wf-2'],
+      ['missing_crdt_projection_target', 'wf-2'],
       ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-2']
     ])
     unmount()

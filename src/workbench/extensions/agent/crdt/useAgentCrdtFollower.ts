@@ -213,6 +213,25 @@ function isKnownRefusalCode(code: string): code is KnownRefusalCode {
   return REFUSAL_CODES.has(code)
 }
 
+/**
+ * `errorType` is a stable telemetry contract, so the two divergence reasons
+ * keep separate slugs: only `schema_mismatch` is a document-read failure. A
+ * missing projection target means the document was read fine and had nowhere
+ * to land, so sharing `error_reading_crdt_document` would make every alert or
+ * query on schema failures also count projection-binding failures.
+ */
+const DOC_DIVERGENCE_REPORTS = {
+  schema_mismatch: {
+    errorType: 'error_reading_crdt_document',
+    message: 'CRDT document schema is unreadable'
+  },
+  missing_projection_target: {
+    errorType: 'missing_crdt_projection_target',
+    message: 'CRDT update has no bound projection target'
+  }
+} as const
+type DocDivergenceReason = keyof typeof DOC_DIVERGENCE_REPORTS
+
 function refusalCode(code: DocSubscribed['code']): RefusalCode {
   if (code === undefined) return 'unknown'
   if (isKnownRefusalCode(code)) return code
@@ -379,27 +398,19 @@ function startAgentCrdtFollower(
   // Schema and projection failures repeat on every inbound frame until the
   // document becomes healthy. Report each reason once per incident, then
   // re-arm after a successful apply, confirmed subscribe, or retarget.
-  const divergenceReported = new Set<
-    'apply_error' | 'missing_projection_target' | 'schema_mismatch'
-  >()
+  const divergenceReported = new Set<'apply_error' | DocDivergenceReason>()
   function reportDocDivergence(
-    reason: 'missing_projection_target' | 'schema_mismatch',
+    reason: DocDivergenceReason,
     context: { workflow_id: string | undefined; seq?: number }
   ): void {
     if (divergenceReported.has(reason)) return
     divergenceReported.add(reason)
-    reportError(
-      new Error(
-        reason === 'schema_mismatch'
-          ? 'CRDT document schema is unreadable'
-          : 'CRDT update has no bound projection target'
-      ),
-      {
-        errorType: 'error_reading_crdt_document',
-        tags: { reason },
-        context
-      }
-    )
+    const report = DOC_DIVERGENCE_REPORTS[reason]
+    reportError(new Error(report.message), {
+      errorType: report.errorType,
+      tags: { reason },
+      context
+    })
   }
   const currentDocNodeIds = (): Set<string> => {
     try {
