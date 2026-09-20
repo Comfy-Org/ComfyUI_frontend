@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture';
-import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture';
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
