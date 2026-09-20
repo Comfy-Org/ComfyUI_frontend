@@ -1,6 +1,6 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
@@ -16,8 +16,6 @@ interface Fixture {
   target: LGraphNode
   doc: Y.Doc
 }
-
-let fixture: Fixture | undefined
 
 function buildFixture(): Fixture {
   const graph = new LGraph()
@@ -39,8 +37,8 @@ function buildFixture(): Fixture {
     },
     { types: {} }
   )
-  fixture = { graph, source, target, doc }
-  return fixture
+  onTestFinished(() => doc.destroy())
+  return { graph, source, target, doc }
 }
 
 type IndexedConnectOperation = Extract<ConnectOperation, { to_slot: number }>
@@ -60,11 +58,6 @@ function connectTo(
     link_type: 'INT'
   }
 }
-
-afterEach(() => {
-  fixture?.doc.destroy()
-  fixture = undefined
-})
 
 function insertDocumentInputs(doc: Y.Doc, nodeId: NodeId, entries: unknown[]) {
   const inputs = nodesMap(doc).get(String(nodeId))?.get('inputs')
