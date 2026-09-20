@@ -439,7 +439,7 @@ const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
-  if (event.altKey && node) {
+  if (event.altKey && node && canEditNodes.value) {
     const result = LGraphCanvas.cloneNodes([node])
     if (result?.created.length) {
       const [newNode] = result.created
@@ -596,7 +596,7 @@ const handleOpenErrors = () => {
 
 const handleToggleAdvanced = () => {
   const node = resolveLGraphNode()
-  if (!node) return
+  if (!node || !canEditNodes.value) return
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
   if (node instanceof SubgraphNode) {
@@ -759,7 +759,7 @@ const isDraggingOver = ref(false)
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()
-  if (!node || !node.onDragOver) {
+  if (!node || !node.onDragOver || !canEditNodes.value) {
     isDraggingOver.value = false
     return
   }
@@ -775,6 +775,7 @@ function handleDragLeave() {
 
 function handleDrop() {
   isDraggingOver.value = false
+  if (!canEditNodes.value) return
   app.dragOverNode = resolveLGraphNode()
 }
 </script>

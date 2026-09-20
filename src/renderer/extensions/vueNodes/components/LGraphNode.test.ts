@@ -20,6 +20,7 @@ import {
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -60,8 +61,13 @@ vi.mock<unknown>(
   () => {
     const handleNodeSelect = vi.fn()
     const handleNodeRightClick = vi.fn()
+    const toggleNodeSelectionAfterPointerUp = vi.fn()
     return {
-      useNodeEventHandlers: () => ({ handleNodeSelect, handleNodeRightClick })
+      useNodeEventHandlers: () => ({
+        handleNodeSelect,
+        handleNodeRightClick,
+        toggleNodeSelectionAfterPointerUp
+      })
     }
   }
 )
@@ -698,6 +704,61 @@ describe('LGraphNode', () => {
 
         expect(showNodeOptions).toHaveBeenCalledTimes(contextMenuCalls)
         expect(startResize).toHaveBeenCalledTimes(resizeCalls)
+      }
+    )
+
+    it.for([
+      { picking: false, cloneCalls: 1, showAdvanced: true, acceptsDrop: true },
+      { picking: true, cloneCalls: 0, showAdvanced: false, acceptsDrop: false }
+    ])(
+      'picking=$picking alt-clones $cloneCalls times, toggles advanced to $showAdvanced and accepts drops: $acceptsDrop',
+      async ({ picking, cloneCalls, showAdvanced, acceptsDrop }) => {
+        useAgentNodeSelectionStore().isActive = picking
+        const cloneNodes = vi
+          .spyOn(LGraphCanvas, 'cloneNodes')
+          .mockReturnValue(undefined)
+        mockData.mockLgraphNode = {
+          isSubgraphNode: () => false,
+          onDragOver: vi.fn(),
+          showAdvanced: false
+        }
+        const rootGraph: Record<string, unknown> = {
+          id: 'graph-test',
+          getNodeById: () => mockData.mockLgraphNode,
+          subgraphs: new Map()
+        }
+        rootGraph.rootGraph = rootGraph
+        useCanvasStore().currentGraph = fromAny(rootGraph)
+        const store = useWidgetValueStore()
+        const advancedId = widgetId('graph-test', mockNodeData.id, 'advanced')
+        store.registerWidget(advancedId, {
+          type: 'number',
+          value: 0,
+          options: { advanced: true }
+        })
+        const visibility = store.getWidgetVisibility(advancedId)
+        if (!visibility) throw new Error('advanced widget visibility missing')
+        visibility.surfaces.vueNode = 'advanced'
+        app.dragOverNode = null
+        const { container } = renderLGraphNode({
+          nodeData: { ...mockNodeData, graphId: 'graph-test' }
+        })
+
+        const user = userEvent.setup()
+        await user.keyboard('{Alt>}')
+        await user.pointer({
+          keys: '[MouseLeft>]',
+          target: getNodeRoot(container)
+        })
+        await user.keyboard('{/Alt}')
+        await user.click(screen.getByRole('button', { name: /show advanced/i }))
+        await fireEvent.drop(getNodeRoot(container))
+
+        expect(cloneNodes).toHaveBeenCalledTimes(cloneCalls)
+        expect(mockData.mockLgraphNode.showAdvanced).toBe(showAdvanced)
+        expect(app.dragOverNode).toBe(
+          acceptsDrop ? mockData.mockLgraphNode : null
+        )
       }
     )
   })
