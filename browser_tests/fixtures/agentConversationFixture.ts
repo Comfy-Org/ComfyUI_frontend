@@ -302,23 +302,36 @@ class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  private async waitForRecordedOffset(
+    startedAt: number,
+    offset: number | undefined
+  ): Promise<void> {
+    if (this.replayTiming !== 'recorded' || offset === undefined) return
+
+    let remaining = offset - (Date.now() - startedAt)
+    // A timer can fire a millisecond early, so wait until the offset has really passed.
+    while (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining))
+      remaining = offset - (Date.now() - startedAt)
+    }
+  }
+
+  async replayResponse(
+    turn = 0,
+    beforeFirstGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    const entries = this.conversation.turns[turn].response.entries()
-    for (const [index, entry] of entries) {
-      // A timer can fire a millisecond early, so wait until the offset has really passed.
-      while (
-        this.replayTiming === 'recorded' &&
-        entry.at_ms !== undefined &&
-        Date.now() - startedAt < entry.at_ms
-      )
-        await new Promise((resolve) =>
-          setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
-        )
+    const response = this.conversation.turns[turn].response
+    const firstGraphOps = response.findIndex(
+      (entry) => entry.kind === 'graph_ops'
+    )
+    for (const [index, entry] of response.entries()) {
+      await this.waitForRecordedOffset(startedAt, entry.at_ms)
       if (entry.kind === 'event')
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
+        if (index === firstGraphOps) await beforeFirstGraphOps?.()
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
