@@ -39,12 +39,8 @@ export function useCanvasInteractions() {
     () => pickingPolicy.value.canSelectNodes
   )
 
-  /** Whether Vue node surfaces may mutate the graph (widgets, title, resize, links). */
   const canEditNodes = computed(() => pickingPolicy.value.canEditNodes)
 
-  const canOpenMenus = computed(() => pickingPolicy.value.canOpenMenus)
-
-  /** Whether the Vue widget subtree stays clickable and focusable; false only while picking. */
   const canFocusWidgets = computed(() => pickingPolicy.value.canFocusWidgets)
 
   /**
@@ -178,7 +174,6 @@ export function useCanvasInteractions() {
     forwardEventToCanvas,
     shouldHandleNodePointerEvents,
     canEditNodes,
-    canOpenMenus,
     canFocusWidgets
   }
 }

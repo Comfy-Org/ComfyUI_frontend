@@ -402,12 +402,8 @@ const nodeOpacity = computed(() => {
 const hasInputs = computed(() => nonWidgetedInputs(nodeData.inputs).length > 0)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
-const {
-  handleWheel,
-  shouldHandleNodePointerEvents,
-  canEditNodes,
-  canOpenMenus
-} = useCanvasInteractions()
+const { handleWheel, shouldHandleNodePointerEvents, canEditNodes } =
+  useCanvasInteractions()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -463,7 +459,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
 const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
-  if (!canOpenMenus.value) return
+  if (!canEditNodes.value) return
 
   // First handle the standard right-click behavior (selection)
   handleNodeRightClick(event as PointerEvent, nodeData.id)
