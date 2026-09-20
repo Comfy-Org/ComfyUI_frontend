@@ -5034,7 +5034,11 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[0]).toMatchObject({
         content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
-        selection: { node_ids: ['12'] },
+        // The chip was staged while `wf-cloud-current` was viewed, and the
+        // user then navigated to `wf-reference` before sending. Ownership must
+        // follow the workflow the node came from, not the one on screen at
+        // send time, so this asserts the owner rather than only `node_ids`.
+        selection: { node_ids: ['12'], workflow_id: 'wf-cloud-current' },
         workflow_references: []
       })
     }
