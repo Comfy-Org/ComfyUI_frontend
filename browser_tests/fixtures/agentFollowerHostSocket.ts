@@ -70,6 +70,8 @@ function parseClientDocFrame(
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
+  private refuseReason: string | null = null
+
   private socket: WebSocketRoute | null = null
   private subscribes = 0
   private readonly createdAt = Date.now()
@@ -155,7 +157,22 @@ export class AgentFollowerHostSocket {
       this.judgeHumanOps(frame.opsResult)
   }
 
+  /**
+   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
+   * when it is overloaded, or at the per-session document cap. No catch-up
+   * follows a refusal, so the follower gets no canvas frame at all.
+   */
+  refuseSubscribes(reason = 'overloaded'): void {
+    this.refuseReason = reason
+  }
+
   private answerSubscribe(stateVector: string): void {
+    if (this.refuseReason) {
+      this.send(this.host.subscribeRefused(this.refuseReason))
+      this.subscribes += 1
+      this.resolveSubscribed?.()
+      return
+    }
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(stateVector))
     this.subscribes += 1
