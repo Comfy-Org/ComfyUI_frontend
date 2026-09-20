@@ -1,4 +1,4 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
@@ -9,17 +9,17 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
@@ -28,10 +28,12 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -39,10 +41,9 @@ const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
-const SUBSCRIBE_TIMEOUT = 15_000
 const CANCEL_TIMEOUT = 10_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 // The composer names itself with the rendered message, escapes resolved; the
@@ -140,21 +141,16 @@ class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
 
   private readonly host: HostDoc
+  private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
   private readonly summaries: Locator
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
-  private socket: WebSocketRoute | null = null
   private postedTurns = 0
-  private subscribes = 0
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
 
   constructor(
     private readonly page: Page,
@@ -164,6 +160,12 @@ class AgentConversationHarness {
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+    this.hostSocket = new AgentFollowerHostSocket(
+      page,
+      workflow.id,
+      this.host,
+      SOCKET_SID
+    )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
     const recorded = expectations?.length ?? 0
@@ -178,22 +180,43 @@ class AgentConversationHarness {
     this.vueNodes = new VueNodeHelpers(page)
   }
 
+  addedNodeIds(): string[] {
+    return this.conversation.turns
+      .flatMap((turn) => turn.response)
+      .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+      .filter((op) => op.op === 'add_node')
+      .map((op) => String(op.node_id))
+  }
+
+  async nodesOutsideVisibleCanvas(ids: readonly string[]): Promise<string[]> {
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('this assertion needs a sized page')
+    const panelBox = await this.panel.boundingBox()
+    const visible = {
+      right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
+      bottom: viewport.height
+    }
+    const seen = await Promise.all(
+      ids.map(async (id) => {
+        const box = await this.vueNodes.getNodeLocator(id).boundingBox()
+        const inside =
+          box !== null &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= visible.right &&
+          box.y + box.height <= visible.bottom
+        return { id, inside }
+      })
+    )
+    return seen
+      .filter((node) => !node.inside)
+      .map((node) => node.id)
+      .sort()
+  }
+
   async boot(agentFlag: boolean): Promise<void> {
     await this.mockAgentApi()
-    // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
@@ -204,13 +227,15 @@ class AgentConversationHarness {
         'Comfy.Graph.CanvasInfo': false
       },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: 'server'
+      objectInfo: agentReplayNodeDefs
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
 
-    await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await this.page
+      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      .click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
@@ -277,23 +302,37 @@ class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  private async waitForRecordedOffset(
+    startedAt: number,
+    offset: number | undefined
+  ): Promise<void> {
+    if (this.replayTiming !== 'recorded' || offset === undefined) return
+
+    let remaining = offset - (Date.now() - startedAt)
+    // A timer can fire a millisecond early, so wait until the offset has really passed.
+    while (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining))
+      remaining = offset - (Date.now() - startedAt)
+    }
+  }
+
+  async replayResponse(
+    turn = 0,
+    beforeFirstGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    const entries = this.conversation.turns[turn].response.entries()
-    for (const [index, entry] of entries) {
-      // A timer can fire a millisecond early, so wait until the offset has really passed.
-      while (
-        this.replayTiming === 'recorded' &&
-        entry.at_ms !== undefined &&
-        Date.now() - startedAt < entry.at_ms
-      )
-        await new Promise((resolve) =>
-          setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
-        )
-      if (entry.kind === 'event') this.send(this.stampTurn(entry.event, turn))
+    const response = this.conversation.turns[turn].response
+    const firstGraphOps = response.findIndex(
+      (entry) => entry.kind === 'graph_ops'
+    )
+    for (const [index, entry] of response.entries()) {
+      await this.waitForRecordedOffset(startedAt, entry.at_ms)
+      if (entry.kind === 'event')
+        this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
-        await this.waitForSubscribe()
-        this.send(this.host.apply(entry.ops))
+        await this.hostSocket.waitForSubscribe()
+        if (index === firstGraphOps) await beforeFirstGraphOps?.()
+        this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -304,11 +343,11 @@ class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(): Promise<void> {
+  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn)
+      await this.replayResponse(turn, beforeFirstGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
@@ -373,17 +412,6 @@ class AgentConversationHarness {
       }
     }
     return [...latest.values()]
-  }
-
-  private displayName(type: string): string {
-    const name = this.displayNames.get(type)
-    if (name === undefined)
-      throw new Error(`the server registers no node type ${type}`)
-    return name
-  }
-
-  private expectedTitle(node: { type: string; title?: string }): string {
-    return node.title || this.displayName(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -482,9 +510,18 @@ class AgentConversationHarness {
       const id = String(node.id)
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
-      await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(node)
+      const materialized = await this.page.evaluate((nodeId) => {
+        const liveNode = window.app?.graph.getNodeById(nodeId)
+        return liveNode
+          ? { type: liveNode.type, hasErrors: liveNode.has_errors === true }
+          : null
+      }, toNodeId(id))
+      const expectedTitle = assertAgentReplayNodeContract(
+        node,
+        this.displayNames.get(node.type),
+        materialized
       )
+      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
@@ -593,51 +630,10 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | HostFrame): void {
-    // Every host frame must satisfy production's own parser, so a host that
-    // stopped emitting a required field fails here, not silently on the client.
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
-  }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (
-      workflow_id !== this.conversation.workflow.id ||
-      typeof state_vector_b64 !== 'string'
-    )
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.subscribes += 1
-    this.resolveSubscribed?.()
-  }
-
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
-    return this.subscribes
-  }
-
-  private waitForSubscribe(): Promise<void> {
-    return withTimeout(
-      this.subscribed,
-      SUBSCRIBE_TIMEOUT,
-      'the follower never subscribed to the conversation workflow; graph_ops need an agent_active_tab (or a bound tab) first'
-    )
+    return this.hostSocket.subscribeCount()
   }
 }
 
