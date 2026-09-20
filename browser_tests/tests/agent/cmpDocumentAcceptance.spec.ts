@@ -1,9 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
+import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const test = mergeTests(agentConversationTest, assetApiFixture)
 
 // @comfyorg/comfy-multi-player: the recorded second turn changes the graph
 // while transport is disconnected. Keeping the first graph cannot pass.
@@ -11,7 +16,10 @@ test.describe(
   'Multiplayer document catch-up',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test.use({ conversationCase: 'agent-rec-two-turn-dependent-edit' })
+    test.use({
+      conversationCase: 'agent-rec-two-turn-dependent-edit',
+      modelLibraryOptions: { folders: [] }
+    })
 
     test('recovers edits missed while the document socket was disconnected', async ({
       agentConversation,
@@ -38,11 +46,20 @@ test.describe(
     })
 
     test('exports agent edits and reloads the saved workflow file after a page reload', async ({
+      assetApi,
       agentConversation,
       page
     }) => {
+      assetApi.configure(withAsset(STABLE_CHECKPOINT))
+      await assetApi.mock()
       await agentConversation.runTurns()
       const rows = await agentConversation.renderedWidgetRows()
+      expect(rows).toContainEqual({
+        nodeId: '4',
+        label: 'ckpt_name',
+        value: 'ckpt_namesd_xl_base_1.0.safetensors',
+        invalid: false
+      })
       const topbar = new Topbar(page)
       const downloadPromise = page.waitForEvent('download')
       await topbar.exportWorkflow('cmp-acceptance-saved')
