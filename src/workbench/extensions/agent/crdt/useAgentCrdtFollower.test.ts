@@ -6,7 +6,8 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mint } from '@comfyorg/comfy-multi-player'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
@@ -15,6 +16,7 @@ import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
@@ -36,12 +38,17 @@ const bridgeState = vi.hoisted(() => {
     lastSequence = 41
     follower = {
       updatesApplied: 0,
-      doc: {
+      // A bound document, when a test needs the composable to read one.
+      doc: bridgeState.doc ?? {
         getMap: () => ({ toJSON: () => ({}) })
       }
     }
   }
-  return { FakeBridge, current: null as InstanceType<typeof FakeBridge> | null }
+  return {
+    FakeBridge,
+    current: null as InstanceType<typeof FakeBridge> | null,
+    doc: null as Y.Doc | null
+  }
 })
 
 const clientState = vi.hoisted(() => ({
@@ -233,6 +240,7 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
+    bridgeState.doc = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
@@ -1229,6 +1237,59 @@ describe('useAgentCrdtFollower', () => {
       'wf-1',
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
+    )
+    unmount()
+  })
+
+  // The production falsifier for CRDT-INPUTS-0030: with a real bound document
+  // and a graph whose inputs moved, what reaches the client must be the slot
+  // the document gives that input's NAME, not the local index the caller held.
+  it('sends a human connect at the document slot of the named input, not the local one', () => {
+    const source = new LGraphNode('Source', 'Source')
+    source.addOutput('value', 'INT')
+    const target = new LGraphNode('Target', 'Target')
+    target.addInput('image_0', 'IMAGE')
+    target.addInput('width', 'INT')
+    target.addInput('height', 'INT')
+    const graph = new LGraph()
+    graph.add(source)
+    graph.add(target)
+    const doc = mint(
+      {
+        nodes: [source, target].map((node) => ({
+          ...node.serialize(),
+          flags: { ...node.flags }
+        })),
+        links: []
+      },
+      { types: {} }
+    )
+    onTestFinished(() => doc.destroy())
+    bridgeState.doc = doc
+
+    // Autogrow appends locally and the node reorders, so `width` is no longer
+    // at the document's index 1.
+    target.addInput('image_1', 'IMAGE')
+    target.inputs = [target.inputs[3], ...target.inputs.slice(0, 3)]
+    expect(target.findInputSlot('width')).toBe(2)
+
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => graph)
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 7,
+        from_node: source.id,
+        from_slot: 0,
+        to_node: target.id,
+        to_slot: target.findInputSlot('width'),
+        link_type: 'INT'
+      }
+    ])
+
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'connect', to_slot: 1, grow: null })]
     )
     unmount()
   })
