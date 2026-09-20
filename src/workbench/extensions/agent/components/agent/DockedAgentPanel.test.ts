@@ -132,6 +132,8 @@ describe('DockedAgentPanel', () => {
   })
 
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
+    // Wide enough that the upper bound is the panel max, not the viewport.
+    window.innerWidth = 1920
     const store = openPanel()
     const user = userEvent.setup()
     renderPanel()

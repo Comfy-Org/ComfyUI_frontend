@@ -261,16 +261,73 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+})
 
-  it('clamps setWidth to the panel min and max bounds', () => {
-    const store = useAgentPanelStore()
+describe('agentPanelStore width', () => {
+  /** Side toolbar rail + sidebar minimum. */
+  const SIDEBAR_OPEN = 360
+  /** Side toolbar rail alone, with no sidebar tab showing. */
+  const SIDEBAR_CLOSED = 48
 
-    store.setWidth(100)
-    expect(store.width).toBe(420)
+  function resizeWindowTo(px: number): void {
+    window.innerWidth = px
+    window.dispatchEvent(new Event('resize'))
+  }
 
-    store.setWidth(2000)
-    expect(store.width).toBe(960)
+  beforeEach(() => {
+    resizeWindowTo(1920)
   })
+
+  it.for([
+    {
+      requested: 100,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 420
+    },
+    {
+      requested: 2000,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 960
+    },
+    {
+      requested: 700,
+      windowWidth: 1920,
+      reserved: SIDEBAR_OPEN,
+      expected: 700
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_OPEN,
+      expected: 840
+    },
+    {
+      requested: 2000,
+      windowWidth: 1200,
+      reserved: SIDEBAR_CLOSED,
+      expected: 960
+    },
+    {
+      requested: 2000,
+      windowWidth: 900,
+      reserved: SIDEBAR_CLOSED,
+      expected: 852
+    },
+    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 420 }
+  ] as const)(
+    'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
+    ({ requested, windowWidth, reserved, expected }) => {
+      resizeWindowTo(windowWidth)
+      const store = useAgentPanelStore()
+      store.setReservedWorkspaceWidth(reserved)
+
+      store.setWidth(requested)
+
+      expect(store.width).toBe(expected)
+    }
+  )
 
   it('toggleMaximize flips width between the min and max bounds', () => {
     const store = useAgentPanelStore()
@@ -283,5 +340,59 @@ describe('agentPanelStore open-state persistence', () => {
     store.toggleMaximize()
     expect(store.width).toBe(420)
     expect(store.isMaximized).toBe(false)
+  })
+
+  it('shrinks a maximized panel to fit a narrowed window and restores it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(1200)
+    expect(store.width).toBe(840)
+    expect(store.isMaximized).toBe(true)
+
+    resizeWindowTo(1920)
+    expect(store.width).toBe(960)
+  })
+
+  it('gives a maximized panel the room back when the sidebar closes', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+    resizeWindowTo(1200)
+    expect(store.width).toBe(840)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+
+    expect(store.width).toBe(960)
+  })
+
+  it('shrinks a panel that the opening sidebar would otherwise meet', () => {
+    const store = useAgentPanelStore()
+    store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
+    resizeWindowTo(1200)
+    store.setWidth(900)
+    expect(store.width).toBe(900)
+
+    store.setReservedWorkspaceWidth(SIDEBAR_OPEN)
+
+    expect(store.width).toBe(840)
+  })
+
+  it('keeps the panel at its minimum width in a window too narrow to fit it', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    resizeWindowTo(600)
+
+    expect(store.width).toBe(420)
+  })
+
+  it('drops the maximized state when the user drags the panel', () => {
+    const store = useAgentPanelStore()
+    store.toggleMaximize()
+
+    store.setWidth(600)
+
+    expect(store.isMaximized).toBe(false)
+    expect(store.width).toBe(600)
   })
 })

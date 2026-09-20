@@ -9,80 +9,85 @@
       @click="hideModal"
     ></div>
 
-    <ButtonGroup
-      role="toolbar"
-      :aria-label="t('graphCanvasMenu.canvasToolbar')"
-      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
-      :style="{
-        ...stringifiedMinimapStyles.buttonGroupStyles
-      }"
-      @wheel="canvasInteractions.handleWheel"
-    >
-      <CanvasModeSelector
-        :button-styles="stringifiedMinimapStyles.buttonStyles"
-      />
-
-      <div class="h-[27px] w-px self-center bg-node-divider" />
-
-      <Button
-        v-tooltip.top="fitViewTooltip"
-        variant="secondary"
-        :aria-label="fitViewTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
-        @click="() => commandStore.execute('Comfy.Canvas.FitView')"
-      >
-        <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
-      </Button>
-
-      <Button
-        v-tooltip.top="t('zoomControls.label')"
-        variant="secondary"
-        :class="zoomButtonClass"
-        :aria-label="t('zoomControls.label')"
-        data-testid="zoom-controls-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleModal"
-      >
-        <span class="inline-flex items-center gap-1 px-2 text-xs">
-          <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
-        </span>
-      </Button>
-
-      <div class="h-[27px] w-px self-center bg-node-divider" />
-
-      <Button
-        v-tooltip.top="minimapTooltip"
-        variant="secondary"
-        :aria-label="minimapTooltip"
-        data-testid="toggle-minimap-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        :class="minimapButtonClass"
-        @click="onMinimapToggleClick"
-      >
-        <i class="icon-[lucide--map] size-4" aria-hidden="true" />
-      </Button>
-
-      <Button
-        v-tooltip.top="{
-          value: linkVisibilityTooltip,
-          pt: {
-            root: {
-              style: 'z-index: 2; transform: translateY(-20px);'
-            }
-          }
+    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang
+         its left edge and cover the sidebar. Spanning the canvas and pushing
+         with an auto margin pins the toolbar there instead. -->
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
+      <ButtonGroup
+        role="toolbar"
+        :aria-label="t('graphCanvasMenu.canvasToolbar')"
+        class="pointer-events-auto ml-auto flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
+        :style="{
+          ...stringifiedMinimapStyles.buttonGroupStyles
         }"
-        variant="secondary"
-        :class="linkVisibleClass"
-        :aria-label="linkVisibilityAriaLabel"
-        data-testid="toggle-link-visibility-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
-        @click="onLinkVisibilityToggleClick"
+        @wheel="canvasInteractions.handleWheel"
       >
-        <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
-      </Button>
-    </ButtonGroup>
+        <CanvasModeSelector
+          :button-styles="stringifiedMinimapStyles.buttonStyles"
+        />
+
+        <div class="h-[27px] w-px self-center bg-node-divider" />
+
+        <Button
+          v-tooltip.top="fitViewTooltip"
+          variant="secondary"
+          :aria-label="fitViewTooltip"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
+          @click="() => commandStore.execute('Comfy.Canvas.FitView')"
+        >
+          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+        </Button>
+
+        <Button
+          v-tooltip.top="t('zoomControls.label')"
+          variant="secondary"
+          :class="zoomButtonClass"
+          :aria-label="t('zoomControls.label')"
+          data-testid="zoom-controls-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="toggleModal"
+        >
+          <span class="inline-flex items-center gap-1 px-2 text-xs">
+            <span>{{ canvasStore.appScalePercentage }}%</span>
+            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+          </span>
+        </Button>
+
+        <div class="h-[27px] w-px self-center bg-node-divider" />
+
+        <Button
+          v-tooltip.top="minimapTooltip"
+          variant="secondary"
+          :aria-label="minimapTooltip"
+          data-testid="toggle-minimap-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          :class="minimapButtonClass"
+          @click="onMinimapToggleClick"
+        >
+          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+        </Button>
+
+        <Button
+          v-tooltip.top="{
+            value: linkVisibilityTooltip,
+            pt: {
+              root: {
+                style: 'z-index: 2; transform: translateY(-20px);'
+              }
+            }
+          }"
+          variant="secondary"
+          :class="linkVisibleClass"
+          :aria-label="linkVisibilityAriaLabel"
+          data-testid="toggle-link-visibility-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="onLinkVisibilityToggleClick"
+        >
+          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+        </Button>
+      </ButtonGroup>
+    </div>
   </div>
 </template>
 

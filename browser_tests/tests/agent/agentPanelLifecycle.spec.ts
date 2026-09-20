@@ -127,6 +127,70 @@ test.describe(
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
     })
 
+    test('shrinks a maximized panel to stay inside a narrowed window', async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 1600, height: 900 })
+      await bootAgentApp(page, true)
+
+      await page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeVisible()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+      await expect
+        .poll(async () => (await panel.boundingBox())?.width ?? 0)
+        .toBe(960)
+
+      await page.setViewportSize({ width: 900, height: 900 })
+
+      await expect
+        .poll(async () => (await panel.boundingBox())?.width ?? 0)
+        .toBeLessThan(960)
+      const box = await panel.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.x).toBeGreaterThanOrEqual(-1)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(901)
+      // Still maximized, so the header offers to minimize rather than maximize.
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.minimize })
+      ).toBeVisible()
+    })
+
+    test('keeps the canvas toolbar clear of the sidebar as the panel squeezes it', async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 900, height: 900 })
+      await bootAgentApp(page, true)
+
+      await page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
+      const panel = page.getByTestId('docked-agent-panel')
+      await expect(panel).toBeVisible()
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+
+      const toolbar = page.getByRole('toolbar', {
+        name: enMessages.graphCanvasMenu.canvasToolbar
+      })
+      const sideToolbar = page.getByTestId('side-toolbar')
+      await expect(toolbar).toBeVisible()
+
+      const toolbarBox = await toolbar.boundingBox()
+      const sideToolbarBox = await sideToolbar.boundingBox()
+      expect(toolbarBox).not.toBeNull()
+      expect(sideToolbarBox).not.toBeNull()
+      expect(toolbarBox!.x).toBeGreaterThanOrEqual(
+        sideToolbarBox!.x + sideToolbarBox!.width - 1
+      )
+    })
+
     test('restores an open panel after a browser reload', async ({ page }) => {
       await bootAgentApp(page, true)
 
