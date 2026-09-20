@@ -125,7 +125,9 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
   for (const [name, url, method] of [
     ['release subpath', 'https://api.comfy.org/releases/anything', 'GET'],
     ['release prefix', 'https://api.comfy.org/releases-notes', 'GET'],
-    ['non-GET release', 'https://api.comfy.org/releases', 'POST']
+    ['non-GET release', 'https://api.comfy.org/releases', 'POST'],
+    ['plaintext release', 'http://api.comfy.org/releases', 'GET'],
+    ['off-port release', 'https://api.comfy.org:444/releases', 'GET']
   ] as const) {
     test(`blocks ${name}`, async ({ page }) => {
       expect(

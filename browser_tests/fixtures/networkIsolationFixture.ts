@@ -122,8 +122,8 @@ export const networkIsolationFixture = base.extend<{
     }
     await context.route(
       (url) =>
-        (url.hostname === 'api.comfy.org' ||
-          url.hostname === 'stagingapi.comfy.org') &&
+        (url.origin === 'https://api.comfy.org' ||
+          url.origin === 'https://stagingapi.comfy.org') &&
         url.pathname === '/releases',
       (route) =>
         route.request().method() === 'GET'
