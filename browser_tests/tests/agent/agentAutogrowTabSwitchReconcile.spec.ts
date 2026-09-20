@@ -224,7 +224,7 @@ const seed: WorkflowJSON = {
       inputs: [{ name: 'prompt', type: 'STRING', link: null }],
       outputs: [],
       properties: {},
-      widgets_values: ['']
+      widgets_values: []
     }
   ],
   links: [[LINK_ID, SOURCE_NODE_ID, 0, GPT_NODE_ID, 0, 'IMAGE']],
