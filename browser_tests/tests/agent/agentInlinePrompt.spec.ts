@@ -142,8 +142,15 @@ test(
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
-    await editor.press('ControlOrMeta+a')
-    await editor.press('ArrowRight')
+    // Move the caret to the end of the document to append.
+    //
+    // This was `ControlOrMeta+a` then `ArrowRight`. That collapses the DOM
+    // selection — `getSelection().isCollapsed` really does become true — but
+    // ProseMirror can still be holding its `AllSelection` when the first
+    // character arrives, and the insert then replaces the whole document. The
+    // case failed with the editor containing only " again". Addressing the
+    // caret directly does not depend on that state sync.
+    await editor.press('ControlOrMeta+End')
     await editor.pressSequentially(' again')
     await expect(editor).toHaveText(`${text} again`)
     await panel
