@@ -6,6 +6,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 type CapturedImageUploadOptions = {
   onUploadComplete: (paths: (string | ResultItem)[]) => void
@@ -150,6 +151,21 @@ describe('useImageUploadWidget', () => {
     expect(mocks.setNodeOutputs).toHaveBeenCalledWith(node, 'beach.jpg', {
       isAnimated: false
     })
+  })
+
+  it('loads the new preview when the file combo changes', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    construct(node)
+    fileComboWidget.value = 'beach.jpg'
+
+    fileComboWidget.callback?.('beach.jpg')
+
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'beach.jpg',
+      { isAnimated: false }
+    )
+    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
   })
 
   it('does not preview a combo whose value is still unset', () => {
