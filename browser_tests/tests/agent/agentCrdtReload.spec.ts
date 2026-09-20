@@ -7,14 +7,11 @@ import {
   pushAgentEvent
 } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { countDocFrames, webSocketFixture } from '@e2e/fixtures/ws'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 const test = mergeTests(agentTest, webSocketFixture)
-
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
@@ -28,6 +25,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(90_000)
     const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+    const agentPanel = new AgentPanel(page)
 
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
@@ -51,8 +49,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     const ws =
       await test.step('Bind the active workflow and persist its reload state', async () => {
         const ws = await getWebSocket()
-        await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-        await expect(page.locator('#agent-panel-root')).toBeVisible()
+        await agentPanel.open()
         pushAgentEvent(ws, {
           type: 'agent_active_tab',
           data: { workflow_id: workflowId, name: 'Reload receipt' }
@@ -123,7 +120,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       const pendingWs = nextWebSocket()
       await page.reload()
       await waitForCloudApp(page)
-      await expect(page.locator('#agent-panel-root')).toBeVisible()
+      // Not `agentPanel.open()`: the panel restores itself on reload, so this
+      // is a readiness wait on the same page object's root, not a second open.
+      await expect(agentPanel.root).toBeVisible()
       const reloadedWs = await pendingWs
       reloadedWs.send(
         JSON.stringify({
