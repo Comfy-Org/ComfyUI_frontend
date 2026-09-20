@@ -240,6 +240,29 @@ describe('applyLiveWidgetValue', () => {
     expect(node.properties.mode).toBe('after')
   })
 
+  it('invokes a custom setter even when its getter already mirrors the store write', () => {
+    const { graph, widget } = graphWithWidget()
+    const id = widget.widgetId!
+    const setter = vi.fn()
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => useWidgetValueStore().getWidget(id)?.value,
+      set: setter
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
+    expect(setter).toHaveBeenCalledExactlyOnceWith('after')
+  })
+
   it('creates an undefined backing property and syncs callback edits', () => {
     const { graph, node, widget } = graphWithWidget()
     widget.options = { ...widget.options, property: 'mode' }
