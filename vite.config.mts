@@ -262,6 +262,22 @@ function isCrossOrigin(req: IncomingMessage): boolean {
   }
 }
 
+// Browsers do not apply the same-origin policy to WebSocket handshakes, so any
+// page can open ws://localhost:5173/ws. Once the service token rides on that
+// upgrade the dev server is an authenticated relay to the gated backend, so
+// reject a cross-origin upgrade the same way `/api/agent` does. Only applied
+// where credentials are actually attached, leaving the unconfigured checkout's
+// `/ws` proxy exactly as it was.
+const authenticatedWsGuard: Pick<ProxyOptions, 'configure'> = accessHeaders
+  ? {
+      configure: (proxy) => {
+        proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+          if (isCrossOrigin(req)) socket.destroy()
+        })
+      }
+    }
+  : {}
+
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
@@ -450,7 +466,8 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...backendProxyConfig
+        ...backendProxyConfig,
+        ...authenticatedWsGuard
       },
 
       '/workflow_templates': {

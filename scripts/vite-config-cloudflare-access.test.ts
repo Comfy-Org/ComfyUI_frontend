@@ -43,6 +43,64 @@ async function apiProxyHeaders(
   return JSON.parse(printed[1])
 }
 
+// Exercises the real `configure` hook Vite would install, driving it with a
+// hostile, a same-origin and an origin-less upgrade so the assertion is on
+// observable socket behavior rather than on the config's shape.
+const PRINT_WS_UPGRADE_VERDICTS = `import('./vite.config.mts').then(({ default: config }) => {
+  const ws = config.server.proxy['/ws']
+  const handlers = {}
+  ws.configure?.({ on: (event, handler) => { handlers[event] = handler } }, ws)
+  const upgrade = (origin) => {
+    let destroyed = false
+    handlers.proxyReqWs?.(
+      {},
+      { headers: { host: 'localhost:5173', origin } },
+      { destroy: () => { destroyed = true } }
+    )
+    return destroyed
+  }
+  process.stdout.write(
+    '<verdicts>' +
+      JSON.stringify({
+        guarded: typeof ws.configure === 'function',
+        hostileRejected: upgrade('http://evil.example.com'),
+        sameOriginRejected: upgrade('http://localhost:5173'),
+        originlessRejected: upgrade(undefined)
+      }) +
+      '</verdicts>'
+  )
+})`
+
+interface WsUpgradeVerdicts {
+  guarded: boolean
+  hostileRejected: boolean
+  sameOriginRejected: boolean
+  originlessRejected: boolean
+}
+
+async function wsUpgradeVerdicts(
+  serviceToken: Record<string, string>
+): Promise<WsUpgradeVerdicts> {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ['--import', 'tsx', '--eval', PRINT_WS_UPGRADE_VERDICTS],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        VITE_REMOTE_DEV: 'false',
+        DEV_SERVER_COMFYUI_URL: 'https://nightly.example.com/',
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: '',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: '',
+        ...serviceToken
+      }
+    }
+  )
+  const printed = /<verdicts>(.*)<\/verdicts>/s.exec(stdout)
+  if (!printed) throw new Error(`Config printed no verdicts: ${stdout}`)
+  return JSON.parse(printed[1]) as WsUpgradeVerdicts
+}
+
 async function apiProxySecure(
   serviceToken: Record<string, string>
 ): Promise<boolean> {
@@ -101,5 +159,25 @@ describe('Cloudflare Access service token on the backend proxy', () => {
         DEV_SERVER_CF_ACCESS_CLIENT_SECRET: 'client-secret'
       })
     ).resolves.toBe(true)
+  }, 60_000)
+
+  it('destroys a cross-origin /ws upgrade before the token reaches the backend', async () => {
+    await expect(
+      wsUpgradeVerdicts({
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: 'client-id.access',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: 'client-secret'
+      })
+    ).resolves.toEqual({
+      guarded: true,
+      hostileRejected: true,
+      sameOriginRejected: false,
+      originlessRejected: false
+    })
+  }, 60_000)
+
+  it('leaves the /ws proxy unguarded when no service token is configured', async () => {
+    await expect(wsUpgradeVerdicts({})).resolves.toMatchObject({
+      guarded: false
+    })
   }, 60_000)
 })
