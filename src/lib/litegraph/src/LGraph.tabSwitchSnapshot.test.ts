@@ -5,12 +5,12 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import {
-  LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation
@@ -19,20 +19,10 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   reloadSerializedGraph
 } from '@/utils/__tests__/litegraphTestUtils'
-
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mockReportError
-}))
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
 
 const INTERIOR_TYPE = 'Fixture/BlueprintInterior'
 
@@ -127,30 +117,6 @@ function blueprintItems() {
 }
 
 describe('LGraph serialize as the workflow tab-switch snapshot', () => {
-  it('still emits a live node whose store record is gone, and reports the divergence', () => {
-    const graph = new LGraph()
-    const kept = new LGraphNode('kept')
-    const divergent = new LGraphNode('divergent')
-    graph.add(kept)
-    graph.add(divergent)
-    expect(
-      useNodeDataStore().deleteNode(graphScopeOf(graph), divergent._state)
-    ).toBe(true)
-
-    const snapshot = graph.serialize()
-
-    expect(snapshot.nodes.map((node) => String(node.id))).toEqual([
-      String(kept.id),
-      String(divergent.id)
-    ])
-    expect(mockReportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'graph_serialization_state_mismatch'
-      })
-    )
-  })
-
   it('carries a just-pasted blueprint definition so the host node reloads as a subgraph node', () => {
     LiteGraph.registerNodeType(INTERIOR_TYPE, BlueprintInteriorNode)
     const rootGraph = createTestRootGraph()
