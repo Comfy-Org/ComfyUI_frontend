@@ -22,14 +22,15 @@ test.describe(
       await comfyPage.page.route('**/api/upload/image', (route) =>
         route.fulfill(jsonRoute(response))
       )
+      await comfyPage.nodeOps.clearGraph()
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     })
 
     test('advertises .json in the attach accept list and accepts a .json file through the file browser', async ({
       agentPanel
     }) => {
       await agentPanel.open()
-      const panel = agentPanel.root
-      const fileInput = panel.getByTestId('agent-file-input')
+      const { fileInput, composerAssetSection: assetSection } = agentPanel
 
       // The OS picker filters on this attribute; a missing `.json`/
       // `application/json` entry is exactly what hid JSON files from it.
@@ -43,7 +44,6 @@ test.describe(
       // that was reported (the OS picker hid .json files) and the actual fix
       // (AGENT_ATTACH_ACCEPT now lists .json/application/json).
       await fileInput.setInputFiles(assetPath('default.json'))
-      const assetSection = panel.getByTestId('composer-asset-section')
       await expect(assetSection).toContainText('default.json')
       await expect(
         assetSection.locator(`[aria-label="${enMessages.agent.uploading}"]`)
@@ -60,10 +60,7 @@ test.describe(
       comfyPage
     }) => {
       await agentPanel.open()
-      await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      const panel = agentPanel.root
-      const assetSection = panel.getByTestId('composer-asset-section')
+      const { root: panel, composerAssetSection: assetSection } = agentPanel
       await expect(assetSection).toHaveCount(0)
 
       const panelBox = await panel.boundingBox()

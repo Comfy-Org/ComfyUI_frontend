@@ -37,20 +37,18 @@ describe('isAgentAttachable', () => {
     expect(isAgentAttachable(fileNamed('workflow.json'))).toBe(false)
   })
 
-  it('names every approved extension in the picker accept list', () => {
-    for (const extension of [
-      '.mp4',
-      '.m4a',
-      '.mov',
-      '.mp3',
-      '.wav',
-      '.glb',
-      '.md',
-      '.txt',
-      '.json'
-    ]) {
-      expect(AGENT_ATTACH_ACCEPT).toContain(extension)
-    }
-    expect(AGENT_ATTACH_ACCEPT).toContain('application/json')
+  it.for([
+    '.mp4',
+    '.m4a',
+    '.mov',
+    '.mp3',
+    '.wav',
+    '.glb',
+    '.md',
+    '.txt',
+    '.json',
+    'application/json'
+  ])('includes %s in the picker accept list', (format) => {
+    expect(AGENT_ATTACH_ACCEPT.split(',')).toContain(format)
   })
 })
