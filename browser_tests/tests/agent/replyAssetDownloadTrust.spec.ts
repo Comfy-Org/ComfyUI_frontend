@@ -14,14 +14,15 @@ test.describe(
     tag: ['@cloud', '@ui']
   },
   () => {
+    // Keyed by asset rather than collected in arrival order: the three fetches
+    // race, so an index-based record silently changes which request each
+    // assertion is checking.
+    let cookieByAsset: Map<string, string | null>
+    let downloads: string[]
+
     test.beforeEach(async ({ page, agentFlagEnabled }) => {
       await bootAgentApp(page, agentFlagEnabled)
-    })
 
-    test('keeps authentication on the trusted view route only', async ({
-      page
-    }) => {
-      const origin = new URL(page.url()).origin
       const threadId = '4efb615c-b3fd-4cdc-8767-38c2b44d2cec'
       const urls = [
         '/api/view?filename=trusted.png',
@@ -45,17 +46,18 @@ test.describe(
       await page.addInitScript((id) => {
         localStorage.setItem('Comfy.Agent.ThreadId', id)
       }, threadId)
-      // Keyed by asset rather than collected in arrival order: the three
-      // fetches race, so an index-based record silently changes which request
-      // each assertion below is checking.
-      const cookieByAsset = new Map<string, string | null>()
-      const downloads: string[] = []
+      cookieByAsset = new Map<string, string | null>()
+      downloads = []
       page.on('download', (download) =>
         downloads.push(download.suggestedFilename())
       )
-      await page
-        .context()
-        .addCookies([{ name: 'session', value: 'test-session', url: origin }])
+      await page.context().addCookies([
+        {
+          name: 'session',
+          value: 'test-session',
+          url: new URL(page.url()).origin
+        }
+      ])
       await page.route(
         /\/api\/(view|system_stats)\?filename=(trusted|untrusted|hostile)\.png/,
         async (route) => {
@@ -74,6 +76,11 @@ test.describe(
         }
       )
       await page.reload()
+    })
+
+    test('keeps authentication on the trusted view route only', async ({
+      page
+    }) => {
       await page
         .getByRole('button', {
           name: enMessages.agent.entryButton,

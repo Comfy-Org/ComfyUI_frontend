@@ -10,12 +10,17 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findOutputAsset: vi.fn()
 }))
 
-const asset = (url: string): ReplyAsset => ({
-  url,
-  filename: 'a.png',
-  kind: 'image'
-})
-const ok = () => new Response(new Blob(), { status: 200 })
+function asset(url: string): ReplyAsset {
+  return {
+    url,
+    filename: 'a.png',
+    kind: 'image'
+  }
+}
+
+function ok(): Response {
+  return new Response(new Blob(), { status: 200 })
+}
 
 describe('resolveReplyAssetDownload', () => {
   beforeEach(() => {
@@ -64,6 +69,26 @@ describe('resolveReplyAssetDownload', () => {
     expect(fetch).toHaveBeenCalledWith(sameOriginNonViewUrl, {
       credentials: 'omit'
     })
+  })
+
+  // The trust check compares the whole pathname. Relaxing it to a prefix,
+  // suffix or substring match on the view path would silently authenticate
+  // every route below, so each one is pinned rather than left to the single
+  // `/api/system_stats` case.
+  it.each([
+    ['a descendant of the view route', '/api/view/extra'],
+    ['a route whose name starts with the view route', '/api/viewevil'],
+    ['a route that only ends with the view route', '/evil/api/view'],
+    ['a route that only contains the view route', '/x/api/view/y']
+  ])('omits credentials for %s', async (_description, pathname) => {
+    const lookalikeUrl = `${window.location.origin}${pathname}?filename=a.png`
+
+    const resolved = await resolveReplyAssetDownload(asset(lookalikeUrl))
+
+    expect(resolved.url).toBe(lookalikeUrl)
+    await resolved.fetch?.(resolved.url)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledWith(lookalikeUrl, { credentials: 'omit' })
   })
 
   it('rejects a malformed URL before resolving a request', async () => {
