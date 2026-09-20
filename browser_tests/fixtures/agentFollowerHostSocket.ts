@@ -1,8 +1,12 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
-import type { ApplyOutcome, WireOp } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
+import type { ParsedWireBatch } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -32,7 +36,7 @@ interface ParsedClientDocFrame {
   type: string
   workflowId: string | null
   stateVector: string | null
-  ops: WireOp[]
+  opsResult: ParsedWireBatch
 }
 
 function docFrameEnvelope(
@@ -60,7 +64,7 @@ function parseClientDocFrame(
     type: envelope.type,
     workflowId: stringOrNull(workflow_id),
     stateVector: stringOrNull(state_vector_b64),
-    ops: parseWireOps(ops)
+    opsResult: parseWireOps(ops)
   }
 }
 
@@ -134,20 +138,21 @@ export class AgentFollowerHostSocket {
   private onClientFrame(raw: string | Buffer): void {
     const frame = parseClientDocFrame(raw)
     if (!frame) return
+    const ops = frame.opsResult.ok ? frame.opsResult.ops : []
     this.clientFrames.push({
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
-      ops: frame.ops.map(
+      ops: ops.map(
         (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
       ),
-      opIds: frame.ops.map((op) => op.op_id)
+      opIds: ops.map((op) => op.op_id)
     })
     if (frame.workflowId !== this.workflowId) return
     if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
       this.answerSubscribe(frame.stateVector)
     else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
-      this.judgeHumanOps(frame.ops)
+      this.judgeHumanOps(frame.opsResult)
   }
 
   private answerSubscribe(stateVector: string): void {
@@ -157,13 +162,32 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed?.()
   }
 
-  // The applier is the only judge of a human batch; the wire ops reach it
-  // structurally, exactly as the relay hands them to the host.
-  private judgeHumanOps(ops: WireOp[]): void {
-    const { result, update, outcomes } = this.host.applyWire(ops)
+  // The applier is the only judge of a structurally valid human batch; the
+  // wire ops reach it in place, exactly as the relay hands them to the host.
+  // A batch that failed the envelope check never reaches the applier at
+  // all — the relay itself rejects that frame as `invalid_frame` earlier.
+  private judgeHumanOps(opsResult: ParsedWireBatch): void {
+    if (!opsResult.ok) {
+      this.send(this.invalidFrameResult())
+      return
+    }
+    const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
     if (update) this.send(update)
+  }
+
+  private invalidFrameResult(): HostFrame {
+    return {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        code: 'invalid_frame',
+        message: 'doc_ops frame was not structurally valid'
+      }
+    }
   }
 
   /** Rises once per follower subscribe, after the catch-up frame was sent. */

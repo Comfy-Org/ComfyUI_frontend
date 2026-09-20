@@ -11,7 +11,6 @@ import type {
   GraphSnapshot,
   Op,
   WidgetCatalog,
-  WireOp,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
@@ -22,6 +21,7 @@ import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOper
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
+import type { WireOpEnvelope } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
 
@@ -53,6 +53,15 @@ type RejectedOutcome = Extract<ApplyOutcome, { outcome: 'rejected' }>
 
 function isRejected(outcome: ApplyOutcome): outcome is RejectedOutcome {
   return outcome.outcome === 'rejected'
+}
+
+// `WireOpEnvelope` only claims `op`/`op_id`; a real wire op also carries
+// `actor` (enforced by `applyOps`'s own `validateEnvelope`), read here
+// advisorily for the broadcast `doc_update`'s `actor` field only.
+function advisoryActor(op: WireOpEnvelope | undefined): string {
+  return op !== undefined && 'actor' in op && typeof op.actor === 'string'
+    ? op.actor
+    : HOST_ACTOR
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -159,14 +168,15 @@ export class HostDoc {
   // package's deprecated `result.applied`/`result.skipped` accessors
   // (`dist/applier.js` L183-199, marked "Remove in 0.3").
   //
-  // `ops` is typed `WireOp`, not `Op`: a deferred kind such as `reset_doc`
-  // must reach the real applier verbatim so its `op_deferred` +
+  // `ops` is typed `WireOpEnvelope`, not `Op`: a deferred kind such as
+  // `reset_doc` must reach the real applier verbatim so its `op_deferred` +
   // abort-remainder verdict runs, rather than being filtered out upstream
   // (`parseWireOps`). `applyOps`'s declared parameter is `Op[]`, but its own
   // `ApplyFailure.op` field is typed `WireOp` because a rejected `reset_doc`
   // genuinely reaches it (`dist/types.d.ts` ~L437-440) — the cast below
-  // matches that documented runtime contract.
-  applyWire(ops: WireOp[]): WireApplyResult {
+  // matches that documented runtime contract; `WireOpEnvelope` only claims
+  // the two fields `parseWireOps` actually validated upstream of this call.
+  applyWire(ops: WireOpEnvelope[]): WireApplyResult {
     const before = Y.encodeStateVector(this.doc)
     const seen = new Set(
       ops.filter((op) => hasAppliedOp(this.doc, op.op_id)).map((o) => o.op_id)
@@ -208,7 +218,7 @@ export class HostDoc {
       applied.length > 0
         ? this.updateFrame(
             Y.encodeStateAsUpdate(this.doc, before),
-            ops[0]?.actor ?? HOST_ACTOR,
+            advisoryActor(ops[0]),
             applied
           )
         : null

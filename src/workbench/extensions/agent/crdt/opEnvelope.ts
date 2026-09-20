@@ -11,7 +11,7 @@ import {
   DEFERRED_OPS,
   FROZEN_OPS
 } from '@comfyorg/comfy-multi-player'
-import type { Actor, Op, Stamp, WireOp } from '@comfyorg/comfy-multi-player'
+import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -103,14 +103,19 @@ export function chunkWireOps(ops: Op[]): Op[][] {
 const WIRE_OP_KINDS: readonly string[] = [...FROZEN_OPS, ...DEFERRED_OPS]
 
 /**
- * The minimal envelope every declared wire kind carries — `op` one of
- * `WIRE_OP_KINDS` (frozen or deferred) and a non-empty `op_id`. This is
- * {@link WireOp}'s shape, not `Op`'s: it does not check a kind-specific
- * payload, so it never claims more than it verified. `applyOps`'s own
- * `validateEnvelope` remains the judge of both the payload and of a
- * deferred kind such as `reset_doc` (rejected there with `op_deferred`).
+ * The minimal fields this parser actually checks on a client-declared op:
+ * `op` one of `WIRE_OP_KINDS` (frozen or deferred) and a non-empty `op_id`.
+ * Deliberately not the package's `WireOp`: this type claims nothing about
+ * `actor`, `base_version`, `stamp`, or a kind's payload — `applyOps`'s own
+ * `validateEnvelope` remains the judge of all of that, including a deferred
+ * kind such as `reset_doc` (rejected there with `op_deferred`).
  */
-function isWireShaped(value: unknown): value is WireOp {
+export interface WireOpEnvelope {
+  op: string
+  op_id: string
+}
+
+function isWireEnvelopeShaped(value: unknown): value is WireOpEnvelope {
   if (typeof value !== 'object' || value === null) return false
   const { op, op_id } = value as { op?: unknown; op_id?: unknown }
   return (
@@ -122,15 +127,32 @@ function isWireShaped(value: unknown): value is WireOp {
 }
 
 /**
- * Validates an untyped JSON value as one client batch: every member must be
- * wire-shaped or the whole frame is rejected (`[]`). A batch is never
- * filtered member-by-member — a malformed or deferred entry (e.g.
- * `reset_doc`) must reach `applyOps` in place so its real abort-remainder
- * verdict runs (`op_deferred` on that op, the remainder of the batch left
- * unapplied), rather than being dropped here and letting the rest of the
- * batch proceed as if it had arrived alone.
+ * The result of validating one client batch: either every member cleared
+ * the envelope check, or the whole frame is invalid. Mirrors the cloud
+ * relay, which rejects a structurally invalid or duplicate-id frame as
+ * `invalid_frame` before it ever reaches `applyOps` — distinct from a frame
+ * that clears this gate but carries an unknown or semantically malformed
+ * op, which still reaches `applyOps` and gets its own verdict there (e.g.
+ * `op_deferred`/`batch_aborted`).
  */
-export function parseWireOps(value: unknown): WireOp[] {
-  if (!Array.isArray(value)) return []
-  return value.every(isWireShaped) ? value : []
+export type ParsedWireBatch =
+  | { ok: true; ops: WireOpEnvelope[] }
+  | { ok: false; reason: 'invalid_frame' }
+
+/**
+ * Validates an untyped JSON value as one client batch. A missing value (a
+ * frame that carries no `ops` at all, such as `doc_subscribe`) is a valid
+ * empty batch. Otherwise every member must be wire-shaped or the whole
+ * frame is rejected as `invalid_frame` — a batch is never filtered
+ * member-by-member, so a malformed or deferred entry (e.g. `reset_doc`)
+ * either travels with its batch in place, to reach `applyOps` and produce
+ * its real abort-remainder verdict, or the whole frame is rejected before
+ * `applyOps` ever sees it.
+ */
+export function parseWireOps(value: unknown): ParsedWireBatch {
+  if (value === undefined) return { ok: true, ops: [] }
+  if (!Array.isArray(value)) return { ok: false, reason: 'invalid_frame' }
+  return value.every(isWireEnvelopeShaped)
+    ? { ok: true, ops: value }
+    : { ok: false, reason: 'invalid_frame' }
 }

@@ -21,19 +21,20 @@ test.describe('Workflow tab switch keeps nodes added on the canvas', () => {
     test(`keeps ${name} after switching to another tab and back`, async ({
       comfyPage
     }) => {
-      let nodeId!: string
-
-      await test.step('set up a blank workflow and add the node', async () => {
-        // A blank tab, so the double-click that opens the search box lands
-        // on the canvas and not on a default-graph node.
-        await comfyPage.workflow.newBlankWorkflow()
-        nodeId = await comfyPage.searchBoxV2.addNodeAndGetId(query, {
-          position: ADD_POSITION
+      const nodeId =
+        await test.step('set up a blank workflow and add the node', async () => {
+          // A blank tab, so the double-click that opens the search box lands
+          // on the canvas and not on a default-graph node.
+          await comfyPage.workflow.newBlankWorkflow()
+          const addedNodeId = await comfyPage.searchBoxV2.addNodeAndGetId(
+            query,
+            { position: ADD_POSITION }
+          )
+          await comfyPage.attachScreenshot(`${query}-before-tab-switch.png`, {
+            runInCI: true
+          })
+          return addedNodeId
         })
-        await comfyPage.attachScreenshot(`${query}-before-tab-switch.png`, {
-          runInCI: true
-        })
-      })
 
       await test.step('switch to another tab and back', async () => {
         await comfyPage.workflow.openNewTabThenReturn()

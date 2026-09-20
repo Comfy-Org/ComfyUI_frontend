@@ -20,13 +20,13 @@ function sentOp(raw: string): { type: unknown; op_id: string } {
     typeof frame === 'object' && frame !== null
       ? (frame as { type?: unknown; data?: unknown })
       : {}
-  const ops =
+  const parsed =
     typeof data === 'object' && data !== null
       ? parseWireOps((data as { ops?: unknown }).ops)
-      : []
-  if (ops.length === 0)
+      : { ok: false as const, reason: 'invalid_frame' as const }
+  if (!parsed.ok || parsed.ops.length === 0)
     throw new Error('the sent frame carried no wire-shaped op')
-  const [op] = ops
+  const [op] = parsed.ops
   return { type, op_id: op.op_id }
 }
 
