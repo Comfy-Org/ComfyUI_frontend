@@ -7,7 +7,8 @@ import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnail,
+  resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
@@ -92,6 +93,37 @@ describe('isAssetPreviewSupported', () => {
 
   it('returns false when the assets feature flag is disabled', () => {
     expect(isAssetPreviewSupported()).toBe(false)
+  })
+})
+
+describe('resolvePreviewUrl', () => {
+  it.for([
+    {
+      kind: 'a preview_url',
+      asset: cloudAssetWithPreview,
+      url: 'http://localhost:8188/api/view?type=output&filename=preview.png'
+    },
+    {
+      kind: 'a preview_id without preview_url',
+      asset: { ...cloudAsset, preview_id: 'aaaa-bbbb' },
+      url: 'http://localhost:8188/assets/aaaa-bbbb/content'
+    },
+    {
+      kind: 'a job-grouped card with no preview',
+      asset: {
+        ...cloudAsset,
+        id: 'job-1',
+        user_metadata: { jobId: 'job-1', subfolder: '', assetId: 'file-1' }
+      },
+      url: 'http://localhost:8188/assets/file-1/content'
+    },
+    {
+      kind: 'an ungrouped card with no preview',
+      asset: cloudAsset,
+      url: `http://localhost:8188/assets/${cloudAsset.id}/content`
+    }
+  ])('resolves $kind', ({ asset, url }) => {
+    expect(resolvePreviewUrl(asset)).toBe(url)
   })
 })
 

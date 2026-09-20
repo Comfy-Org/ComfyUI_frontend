@@ -21,7 +21,10 @@ test(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', {
+        name: enMessages.agent.entryButton,
+        exact: true
+      })
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
@@ -93,8 +96,11 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
     await expect(
-      page.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toHaveCount(0)
+      page.getByRole('button', {
+        name: enMessages.agent.entryButton,
+        exact: true
+      })
+    ).toHaveAttribute('aria-pressed', 'true')
 
     // Same order and content, not merely the same count: a hydration bug
     // that re-sorts or drops a row would still pass a bare toHaveCount check.
