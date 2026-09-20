@@ -290,7 +290,10 @@ function startAgentCrdtFollower(
   )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
-    () => bridge.resubscribe()
+    () => bridge.resubscribe(),
+    () => {
+      connected.value = false
+    }
   )
   const tabId = createUuidv4()
   const sender = createOpSender({
@@ -520,9 +523,15 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onSubscribeSent: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (typeof detail?.workflowId !== 'string') return
+    lifecycle.onSubscribeSent(detail.workflowId)
+  }
   const onReconnected: EventListener = () => {
     connected.value = false
-    lifecycle.clearStaleProbe()
+    lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -541,7 +550,7 @@ function startAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (lifecycle.hasPendingSubscribeRetry()) return
+    if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
   }
 
@@ -553,6 +562,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -668,6 +678,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('schema_error', onSchemaError),
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
+      () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
