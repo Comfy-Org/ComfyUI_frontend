@@ -7,7 +7,9 @@ import { externalLinks } from '../config/routes'
 
 const qwenImage21Links = {
   cloud:
-    'https://cloud.comfy.org/?template=image_qwen_image_2_1&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
+    'https://cloud.comfy.org/?template=image_qwen_image_2_1_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
+  cloudEdit:
+    'https://cloud.comfy.org/?template=image_qwen_image_2_1_image_edit&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
   docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image',
   hubModel: new URL('model/qwen/', externalLinks.workflows).href
 } as const
@@ -239,8 +241,8 @@ export const qwenImage21Page: ModelLaunchPage = {
           'zh-CN': '如何在 ComfyUI 中运行 Qwen Image 2.1？'
         },
         answer: {
-          en: `Open the template on [Comfy Cloud](${qwenImage21Links.cloud}) and press run, or download the weights and load the same workflow in ComfyUI on your own GPU. The [guide](${qwenImage21Links.docs}) lists the model files and where they go.`,
-          'zh-CN': `在 [Comfy Cloud](${qwenImage21Links.cloud}) 打开模板并运行，或下载权重后在自己的 GPU 上用 ComfyUI 加载同一工作流。[教程](${qwenImage21Links.docs}) 列出了所需模型文件及存放位置。`
+          en: `Open the [text-to-image](${qwenImage21Links.cloud}) or [image-edit](${qwenImage21Links.cloudEdit}) template on Comfy Cloud and press run, or download the weights and load the same workflow in ComfyUI on your own GPU. The [guide](${qwenImage21Links.docs}) lists the model files and where they go.`,
+          'zh-CN': `在 Comfy Cloud 打开[文生图](${qwenImage21Links.cloud})或[图像编辑](${qwenImage21Links.cloudEdit})模板并运行，或下载权重后在自己的 GPU 上用 ComfyUI 加载同一工作流。[教程](${qwenImage21Links.docs}) 列出了所需模型文件及存放位置。`
         }
       },
       {
@@ -262,9 +264,8 @@ export const qwenImage21Page: ModelLaunchPage = {
           'zh-CN': 'Qwen Image 2.1 可以编辑现有图像吗？'
         },
         answer: {
-          en: 'Yes. Feed in an image and describe the change: swap objects, restyle a scene, relight it, or revise the text it contains. Generation and editing live in the same model, so no second checkpoint is needed.',
-          'zh-CN':
-            '可以。输入图像并描述改动：替换物体、重塑场景风格、重新打光或修改图中文字。生成与编辑集成在同一模型中，无需加载第二个模型。'
+          en: `Yes. Open the [image-edit template](${qwenImage21Links.cloudEdit}), feed in an image and describe the change: swap objects, restyle a scene, relight it, or revise the text it contains. Generation and editing live in the same model, so no second checkpoint is needed.`,
+          'zh-CN': `可以。打开[图像编辑模板](${qwenImage21Links.cloudEdit})，输入图像并描述改动：替换物体、重塑场景风格、重新打光或修改图中文字。生成与编辑集成在同一模型中，无需加载第二个模型。`
         }
       },
       {
