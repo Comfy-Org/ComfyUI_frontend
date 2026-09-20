@@ -22,6 +22,7 @@
 
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
+  --shadow-floating-panel: var(--interface-floating-panel-shadow);
   --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
   --text-2xs: 0.625rem;
@@ -169,6 +170,7 @@
   --interface-menu-surface: var(--color-white);
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
+  --interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.2);
   --interface-stroke: var(--color-smoke-300);
 
   --interface-builder-mode-background: var(--color-ocean-300);
@@ -320,6 +322,7 @@
   --interface-menu-surface: var(--color-charcoal-800);
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
+  --interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
   --interface-stroke: var(--color-charcoal-400);
 
   --interface-builder-mode-background: var(--color-ocean-900);
@@ -579,6 +582,13 @@
   .dark-theme & {
     @slot;
   }
+}
+
+@utility floating-panel {
+  border-radius: var(--radius-xl);
+  padding: --spacing(1);
+  background-color: var(--color-interface-panel-surface);
+  box-shadow: var(--shadow-inset-highlight), var(--shadow-floating-panel);
 }
 
 @utility highlight {

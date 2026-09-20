@@ -179,7 +179,7 @@ const tooltipPt = {
         role="group"
         tabindex="-1"
         :aria-label="t('breadcrumbsMenu.workflowActions')"
-        class="group pointer-events-auto relative inline-block shrink-0 rounded-lg bg-base-background p-1"
+        class="group pointer-events-auto relative inline-block shrink-0 floating-panel"
         @focus="focusActiveSegment"
       >
         <TransitionGroup

@@ -12,10 +12,7 @@
     <ButtonGroup
       role="toolbar"
       :aria-label="t('graphCanvasMenu.canvasToolbar')"
-      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 bg-comfy-menu-bg p-1 shadow-xl shadow-black/40"
-      :style="{
-        ...stringifiedMinimapStyles.buttonGroupStyles
-      }"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 floating-panel"
       @wheel="canvasInteractions.handleWheel"
     >
       <CanvasModeSelector
@@ -116,7 +113,6 @@ const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['borderRadius']
   const buttonKeys = ['borderRadius']
   const additionalButtonStyles = {
     border: 'none'
@@ -132,11 +128,7 @@ const stringifiedMinimapStyles = computed(() => {
     ),
     ...additionalButtonStyles
   }
-  const buttonGroupStyles = Object.entries(containerStyles)
-    .filter(([key]) => buttonGroupKeys.includes(key))
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
-
-  return { buttonStyles, buttonGroupStyles }
+  return { buttonStyles }
 })
 
 // Computed properties for reactive states
