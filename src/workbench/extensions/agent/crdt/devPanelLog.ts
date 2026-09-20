@@ -32,6 +32,7 @@ export const DEV_EVENT_KINDS = [
   'schema_error',
   'reconnected',
   'subscribe_retry',
+  'subscribe_ack_timeout',
   'stale_probe',
   'rebind',
   'doc_gap',
