@@ -54,9 +54,12 @@ pnpm comfy-test record --backend https://nightly.engcomfy.com
 
 Ask the team that owns the environment for a service token; never commit one.
 Both variables must be set together, and the token is only forwarded to an
-`https` backend (or a loopback address). The proxy also rejects cross-origin
-WebSocket upgrades while a token is configured, so the dev server cannot be
-used as an authenticated relay by another page.
+`https` backend (or a loopback address). While a token is configured the dev
+server also refuses to act as an authenticated relay for another page: it
+rejects cross-origin WebSocket upgrades, and answers `403` to a foreign-origin
+HTTP request on every proxied route before the token is attached. Requests from
+the dev server's own pages, and from non-browser callers that send neither
+`Origin` nor `Sec-Fetch-Site`, are unaffected.
 
 `--backend` configures the dev server through its own environment, and a
 running Vite does not report which backend it proxies to. So when `--backend`

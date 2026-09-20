@@ -101,6 +101,79 @@ async function wsUpgradeVerdicts(
   return JSON.parse(printed[1]) as WsUpgradeVerdicts
 }
 
+// Drives the real `bypass` hook Vite would call on each token-bearing HTTP
+// route, so the assertion is on what a caller observes rather than on the
+// config's shape. A foreign page cannot read these responses, but the request
+// still reaches the gated backend with the service token attached.
+const PRINT_HTTP_BYPASS_VERDICTS = `import('./vite.config.mts').then(({ default: config }) => {
+  const call = (route, headers, url) => {
+    const bypass = config.server.proxy[route].bypass
+    if (typeof bypass !== 'function') return { guarded: false }
+    let status
+    let body
+    const res = {
+      statusCode: 200,
+      setHeader() {},
+      end(written) { status = this.statusCode; body = written }
+    }
+    const result = bypass({ url: url ?? route, method: 'POST', headers }, res, {})
+    return { guarded: true, rejected: result === false, status, body: String(body) }
+  }
+  const hostile = { host: 'localhost:5173', origin: 'http://localhost:5174' }
+  const sameOrigin = { host: 'localhost:5173', origin: 'http://localhost:5173' }
+  const crossSiteGet = { host: 'localhost:5173', 'sec-fetch-site': 'same-site' }
+  const sameOriginGet = { host: 'localhost:5173', 'sec-fetch-site': 'same-origin' }
+  const nonBrowser = { host: 'localhost:5173' }
+  const wsBypass = config.server.proxy['/ws'].bypass
+  process.stdout.write(
+    '<http>' +
+      JSON.stringify({
+        internalGuarded: call('/internal', hostile).guarded,
+        internalHostileStatus: call('/internal', hostile).status ?? null,
+        internalSameOriginRejected: call('/internal', sameOrigin).rejected,
+        internalCrossSiteGetRejected: call('/internal', crossSiteGet).rejected,
+        internalSameOriginGetRejected: call('/internal', sameOriginGet).rejected,
+        internalNonBrowserRejected: call('/internal', nonBrowser).rejected,
+        apiHostileRejected: call('/api', hostile).rejected,
+        apiExtensionsBody: call('/api', sameOrigin, '/api/extensions').body,
+        oauthHostileRejected: call('/oauth', hostile).rejected,
+        oauthConsentRewritten:
+          config.server.proxy['/oauth'].bypass(
+            { url: '/oauth/consent', method: 'GET', headers: sameOrigin },
+            { statusCode: 200, setHeader() {}, end() {} },
+            {}
+          ) === '/oauth/consent',
+        wsUpgradeUntouched:
+          typeof wsBypass !== 'function' ||
+          wsBypass({ url: '/ws', method: 'GET', headers: hostile }, undefined, {}) === null
+      }) +
+      '</http>'
+  )
+})`
+
+async function httpBypassVerdicts(
+  serviceToken: Record<string, string>
+): Promise<Record<string, unknown>> {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ['--import', 'tsx', '--eval', PRINT_HTTP_BYPASS_VERDICTS],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        VITE_REMOTE_DEV: 'false',
+        DEV_SERVER_COMFYUI_URL: 'https://nightly.example.com/',
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: '',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: '',
+        ...serviceToken
+      }
+    }
+  )
+  const printed = /<http>(.*)<\/http>/s.exec(stdout)
+  if (!printed) throw new Error(`Config printed no verdicts: ${stdout}`)
+  return JSON.parse(printed[1]) as Record<string, unknown>
+}
+
 async function apiProxySecure(
   serviceToken: Record<string, string>
 ): Promise<boolean> {
@@ -178,6 +251,47 @@ describe('Cloudflare Access service token on the backend proxy', () => {
   it('leaves the /ws proxy unguarded when no service token is configured', async () => {
     await expect(wsUpgradeVerdicts({})).resolves.toMatchObject({
       guarded: false
+    })
+  }, 60_000)
+
+  it('refuses a foreign caller on every token-bearing HTTP route', async () => {
+    await expect(
+      httpBypassVerdicts({
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: 'client-id.access',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: 'client-secret'
+      })
+    ).resolves.toMatchObject({
+      internalGuarded: true,
+      internalHostileStatus: 403,
+      internalCrossSiteGetRejected: true,
+      apiHostileRejected: true,
+      oauthHostileRejected: true
+    })
+  }, 60_000)
+
+  it('serves the dev server its own pages while the token is attached', async () => {
+    await expect(
+      httpBypassVerdicts({
+        DEV_SERVER_CF_ACCESS_CLIENT_ID: 'client-id.access',
+        DEV_SERVER_CF_ACCESS_CLIENT_SECRET: 'client-secret'
+      })
+    ).resolves.toMatchObject({
+      internalSameOriginRejected: false,
+      internalSameOriginGetRejected: false,
+      internalNonBrowserRejected: false,
+      apiExtensionsBody: '[]',
+      oauthConsentRewritten: true,
+      wsUpgradeUntouched: true
+    })
+  }, 60_000)
+
+  it('leaves the HTTP routes unguarded when no service token is configured', async () => {
+    await expect(httpBypassVerdicts({})).resolves.toMatchObject({
+      internalGuarded: false,
+      apiHostileRejected: false,
+      oauthHostileRejected: false,
+      apiExtensionsBody: '[]',
+      oauthConsentRewritten: true
     })
   }, 60_000)
 })

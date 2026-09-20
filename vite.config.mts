@@ -247,7 +247,12 @@ if (accessHeaders && VITE_REMOTE_DEV) {
 const backendProxyConfig: ProxyOptions = {
   ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
   ...(accessHeaders
-    ? { headers: accessHeaders, changeOrigin: true, secure: true }
+    ? {
+        headers: accessHeaders,
+        changeOrigin: true,
+        secure: true,
+        bypass: rejectForeignCaller
+      }
     : {})
 }
 
@@ -260,6 +265,43 @@ function isCrossOrigin(req: IncomingMessage): boolean {
   } catch {
     return true
   }
+}
+
+// A foreign page cannot read a cross-origin response without CORS headers, but
+// the request still reaches the gated backend with our service token attached,
+// so a CORS-simple `POST /api/interrupt` from another localhost port drives a
+// real side effect on it. `Origin` covers those writes; browsers omit it on a
+// simple GET, so `Sec-Fetch-Site` covers the rest. A caller that sends neither
+// is not a browser page and is left alone, which is the policy `/api/agent`
+// already applies to its own token.
+function isForeignCaller(req: IncomingMessage): boolean {
+  if (isCrossOrigin(req)) return true
+  const site = req.headers['sec-fetch-site']
+  return typeof site === 'string' && site !== 'same-origin' && site !== 'none'
+}
+
+// Refuses the caller before the Access token is attached. Vite turns a `false`
+// bypass result into a bare 404, so the 403 and its reason are written here
+// first; the already-ended response makes Vite's status assignment a no-op.
+// `res` is undefined on a WebSocket upgrade, which `authenticatedWsGuard`
+// owns, so this leaves that path untouched.
+function rejectForeignCaller(
+  req: IncomingMessage,
+  res: ServerResponse | undefined
+): false | null {
+  if (!accessHeaders || !res || !isForeignCaller(req)) return null
+  res.statusCode = 403
+  res.end('The authenticated dev proxy serves the dev server origin only')
+  return false
+}
+
+// `bypass` is a single slot, so a route that already owns one has to run the
+// credential guard itself rather than inheriting it from `backendProxyConfig`.
+function guardedBypass(
+  bypass: NonNullable<ProxyOptions['bypass']>
+): NonNullable<ProxyOptions['bypass']> {
+  return (req, res, options) =>
+    rejectForeignCaller(req, res) === false ? false : bypass(req, res, options)
 }
 
 // Browsers do not apply the same-origin policy to WebSocket handshakes, so any
@@ -430,7 +472,7 @@ export default defineConfig({
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
         ...backendProxyConfig,
-        bypass: (req, res, _options) => {
+        bypass: guardedBypass((req, res, _options) => {
           if (!res) return null
 
           // Return empty array for extensions API as these modules
@@ -448,19 +490,19 @@ export default defineConfig({
           }
 
           return null
-        }
+        })
       },
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
         ...backendProxyConfig,
-        bypass: (req) => {
+        bypass: guardedBypass((req) => {
           const path = (req.url ?? '').split('?')[0]
           if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
             return req.url
           }
           return null
-        }
+        })
       },
 
       '/ws': {
