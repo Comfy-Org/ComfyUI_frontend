@@ -12,7 +12,6 @@ const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 vi.mock(import('firebase/auth'))
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())

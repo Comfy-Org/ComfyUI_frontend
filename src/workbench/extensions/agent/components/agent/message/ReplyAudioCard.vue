@@ -5,14 +5,16 @@ import { useI18n } from 'vue-i18n'
 import Slider from '@/components/ui/slider/Slider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
+import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { downloadReplyAsset } from '../../../utils/downloadReplyAsset'
+import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 
 const { asset, title } = defineProps<{ asset: ReplyAsset; title: string }>()
 
 const { t } = useI18n()
+const { downloadFiles } = useAssetDownload()
 
 const {
   audioRef,
@@ -31,8 +33,8 @@ function onScrub(value: number[] | undefined): void {
   if (value?.length) seekToRatio(value[0] / 100)
 }
 
-function download(): void {
-  void downloadReplyAsset(asset).catch(() => {})
+async function download(): Promise<void> {
+  await downloadFiles([await resolveReplyAssetDownload(asset)])
 }
 </script>
 

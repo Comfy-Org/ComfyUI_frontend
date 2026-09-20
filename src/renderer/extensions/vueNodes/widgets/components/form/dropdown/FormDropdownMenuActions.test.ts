@@ -22,11 +22,6 @@ const i18n = createI18n({
 
 const popoverHide = vi.fn()
 
-const ButtonStub = defineComponent({
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
 const PopoverStub = defineComponent({
   inheritAttrs: false,
   data() {
@@ -126,7 +121,7 @@ function renderMenu(props: MenuProps = {}) {
   const utils = render(Harness, {
     global: {
       plugins: [i18n],
-      stubs: { Button: ButtonStub, Popover: PopoverStub }
+      stubs: { Popover: PopoverStub }
     }
   })
   return {

@@ -45,7 +45,10 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
@@ -388,6 +391,7 @@ function cancelRun() {
       }
     })
     activeRun = undefined
+    pendingRequest = undefined
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
@@ -550,6 +554,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     error instanceof WorkshopRouterError
       ? error
       : new WorkshopRouterError('client')
+  if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
