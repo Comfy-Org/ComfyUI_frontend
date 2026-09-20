@@ -257,6 +257,61 @@ describe('ChangeTracker', () => {
         expect(run).toHaveBeenCalledTimes(calls)
       }
     )
+
+    it.for([
+      { key: 'a', ctrlKey: true, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: false, shiftKey: false, altKey: false },
+      { key: 'z', ctrlKey: true, shiftKey: false, altKey: true },
+      { key: 'y', ctrlKey: true, shiftKey: true, altKey: false }
+    ])(
+      '$key ctrl=$ctrlKey shift=$shiftKey alt=$altKey is not a history shortcut',
+      async ({ key, ctrlKey, shiftKey, altKey }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const redo = vi.spyOn(tracker, 'redo').mockResolvedValue()
+
+        const handled = await tracker.undoRedo(
+          new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, altKey })
+        )
+
+        expect(handled).toBeUndefined()
+        expect(undo).not.toHaveBeenCalled()
+        expect(redo).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { selectOnlyAtKeydown: true, selectOnlyAtFrame: false, undoCalls: 0 },
+      { selectOnlyAtKeydown: false, selectOnlyAtFrame: true, undoCalls: 1 }
+    ])(
+      'Ctrl+Z with selectOnly=$selectOnlyAtKeydown at keydown and $selectOnlyAtFrame at the frame undoes $undoCalls times',
+      async ({ selectOnlyAtKeydown, selectOnlyAtFrame, undoCalls }) => {
+        const tracker = createTracker()
+        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi.spyOn(window, 'addEventListener')
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+        onTestFinished(() => {
+          app.canvas.selectOnly = false
+        })
+
+        app.canvas.selectOnly = selectOnlyAtKeydown
+        keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
+        app.canvas.selectOnly = selectOnlyAtFrame
+        expect(frames).toHaveLength(1)
+        await frames[0](0)
+
+        expect(undo).toHaveBeenCalledTimes(undoCalls)
+      }
+    )
   })
 
   describe('captureCanvasState', () => {

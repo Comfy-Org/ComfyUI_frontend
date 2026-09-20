@@ -495,10 +495,10 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent) {
+  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(app.canvas)) {
     const shortcut = historyShortcut(e)
     if (!shortcut) return
-    if (!isSelectOnly(app.canvas)) {
+    if (!selectOnly) {
       await (shortcut === 'redo' ? this.redo() : this.undo())
     }
     return true
@@ -537,6 +537,7 @@ export class ChangeTracker {
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
+        const selectOnlyAtKeydown = isSelectOnly(app.canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
@@ -562,7 +563,7 @@ export class ChangeTracker {
           if (!changeTracker) return
 
           // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e)) return
+          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
