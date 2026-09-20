@@ -70,8 +70,7 @@ export function reconcilePersistedDocId(): string | null {
     // `Number.isFinite`, not `typeof === 'number'`: `JSON.parse` turns an
     // out-of-range literal such as `1e400` into `Infinity`, which is a number
     // and is never `<= Date.now()`, so a `typeof` check alone hands back a
-    // record that can never expire. Do not relax this to a `typeof` test; it
-    // has been lost to a rebase twice already.
+    // record that can never expire.
     if (
       typeof record.docId !== 'string' ||
       typeof record.nonce !== 'string' ||
