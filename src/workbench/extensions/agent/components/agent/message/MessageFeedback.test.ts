@@ -60,6 +60,11 @@ describe('MessageFeedback', () => {
     )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
+    // The download sink appends an `<a href="blob:...">` and clicks it, which
+    // this DOM treats as a navigation: `window.location.origin` becomes "null"
+    // and the next reply-asset URL is unparseable. Only the invocation matters
+    // here, and the object-URL assertions below still observe the real sink.
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
