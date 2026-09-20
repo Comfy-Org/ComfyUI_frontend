@@ -15,6 +15,13 @@ import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import { PromptExecutionError } from '@/scripts/api'
+import {
+  normalizePromptError,
+  tryExtractValidationError
+} from '@/utils/executionErrorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -108,6 +115,24 @@ export interface ExecutionErrorDialogInput {
 
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
+function getPromptErrorSources(
+  promptError: PromptError | null,
+  nodeErrors: Record<string, NodeError> = {}
+): RunErrorMessageSource[] {
+  return [
+    ...(promptError
+      ? [{ kind: 'prompt' as const, error: promptError, isCloud }]
+      : []),
+    ...Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) =>
+      nodeError.errors.map((error) => ({
+        kind: 'node_validation' as const,
+        error,
+        nodeDisplayName: `${nodeError.class_type} (#${nodeId})`
+      }))
+    )
+  ]
+}
+
 // dialogStore.showDialog raises an existing dialog with the same key instead of
 // wiring the new caller's callbacks, so a second concurrent caller on that key
 // would never settle. Serialize FIFO per key; distinct keys stay concurrent.
@@ -134,7 +159,22 @@ export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+    const validationError = tryExtractValidationError(
+      executionError.exception_message
+    )
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources: validationError
+        ? getPromptErrorSources(
+            normalizePromptError(validationError.error),
+            validationError.node_errors
+          )
+        : [
+            {
+              kind: 'execution',
+              error: executionError,
+              nodeDisplayName: executionError.node_type ?? ''
+            }
+          ],
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
@@ -203,6 +243,13 @@ export const useDialogService = () => {
           }
 
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources:
+        error instanceof PromptExecutionError
+          ? getPromptErrorSources(
+              normalizePromptError(error.response.error),
+              error.response.node_errors ?? {}
+            )
+          : undefined,
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
