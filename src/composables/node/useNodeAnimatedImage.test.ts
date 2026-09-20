@@ -22,9 +22,10 @@ vi.mock<unknown>(
 )
 // `@/scripts/app` has a heavy import graph (pinia stores, LGraphCanvas, etc.)
 // that we cannot pull in here, so we stub only the constant we need.
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  ANIM_PREVIEW_WIDGET: '$$comfy_animation_preview'
-}))
+vi.mock(
+  import('@/scripts/app'),
+  () => ({ ANIM_PREVIEW_WIDGET: '$$comfy_animation_preview' }) as const
+)
 
 describe('useNodeAnimatedImage', () => {
   function setup() {

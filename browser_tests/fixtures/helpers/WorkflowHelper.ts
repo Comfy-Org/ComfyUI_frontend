@@ -105,6 +105,9 @@ export class WorkflowHelper {
   async reloadAndWaitForApp() {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
     await this.comfyPage.waitForAppReady()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
@@ -113,6 +116,9 @@ export class WorkflowHelper {
       workflow
     )
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadWorkflow(workflowName: string) {
@@ -214,6 +220,26 @@ export class WorkflowHelper {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.isModified
     })
+  }
+
+  async openPersistedWorkflow(workflowName: string): Promise<void> {
+    await this.comfyPage.page.evaluate(async (name) => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      await store.syncWorkflows()
+      const workflow =
+        store.getWorkflowByPath(`workflows/${name}.json`) ??
+        store.persistedWorkflows.find(
+          (candidate) =>
+            candidate.filename === name ||
+            candidate.path.endsWith(`${name}.json`)
+        )
+      if (!workflow) {
+        throw new Error(`Persisted workflow not found: ${name}`)
+      }
+      await store.openWorkflow(workflow)
+    }, workflowName)
+    await this.waitForWorkflowIdle()
+    await this.comfyPage.vueNodes.waitForNodes()
   }
 
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {

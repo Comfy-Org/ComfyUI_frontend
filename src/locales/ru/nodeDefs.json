@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Вставьте в изображение объект, описанный простым текстом, с помощью Bria. Bria повторно рендерит весь кадр с разрешением около 1 мегапикселя, поэтому результат не выровнен по пикселям с входным изображением.",
+    "display_name": "Bria: добавить объект",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "instruction": {
+        "name": "инструкция",
+        "tooltip": "Что и куда добавить, например: «Поместите на стол красную вазу с цветами»."
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Bria не использует здесь сид и по-новому интерпретирует правку при каждом вызове, поэтому повторные запуски могут отличаться. Значение никогда не отправляется: оно лишь изменяет ключ кэша этого узла, чтобы в остальном идентичный граф снова выполнил правку, а не вернул кэшированный результат."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующей правки с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Удалите из изображения объект, названный простым текстом, с помощью Bria. Bria повторно рендерит весь кадр с разрешением около 1 мегапикселя, поэтому результат не выровнен по пикселям с входным изображением.",
+    "display_name": "Bria: удалить по тексту",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Название удаляемого объекта, например «лампа». Можно указать сразу несколько объектов, например «телефон и карандаши». Если указать то, чего нет на изображении, всё равно будет возвращено и оплачено повторно отрендеренное изображение."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующей правки с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Удалите передний план изображения с помощью Bria и создайте на его месте фон. Будет удалено всё, что Bria распознаёт как передний план, а не только люди. Нетронутые пиксели сохраняются, но выходное изображение повторно рендерится в стандартном размере около 1 мегапикселя.",
+    "display_name": "Bria: удалить передний план",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Удаляет объекты или области, выделенные маской, с изображения с помощью Bria.",
     "display_name": "Bria Eraser",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Измените атмосферу и направление освещения изображения с помощью Bria. Bria повторно рендерит весь кадр с разрешением около 1 мегапикселя, поэтому результат не выровнен по пикселям с входным изображением.",
+    "display_name": "Bria: изменить освещение",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Направление, откуда идёт свет. Атмосферы с жёстким светом, такие как полдень, прожектор на объекте и жёсткое студийное освещение, реагируют на него сильнее всего."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Применяемая атмосфера освещения."
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующей правки с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Удалите фон с изображения с помощью Bria RMBG 2.0.",
     "display_name": "Bria Удалить фон изображения",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Замените фон изображения с помощью Bria, описав его промптом или используя референсные изображения. Пиксели объекта сохраняются; фон генерируется вокруг него.",
+    "display_name": "Bria: заменить фон изображения",
+    "inputs": {
+      "background": {
+        "name": "фон",
+        "tooltip": "Опишите новый фон с помощью промпта или направьте его с помощью референсных изображений."
+      },
+      "background_mode": {
+        "name": "режим"
+      },
+      "background_prompt": {
+        "name": "промпт"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Возвращает точный размер входного изображения в пикселях вместо масштабирования результата примерно до 1 мегапикселя. Для большого входного изображения будет возвращено большое изображение."
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Один и тот же сид обычно возвращает один и тот же фон; однако автоматическое уточнение промпта всё ещё может его изменить."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Промпт, сгенерированный Bria; пустой при использовании пути с референсным изображением."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Заменяет объект на изображении другим, описанным простым текстом, с помощью Bria. Bria повторно рендерит весь кадр примерно в 1 мегапиксель, поэтому результат не выровнен по пикселям с входным изображением.",
+    "display_name": "Bria: замена объекта",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "instruction": {
+        "name": "инструкция",
+        "tooltip": "Что и на что заменить, например: «Заменить красное яблоко на зелёную грушу»."
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "seed": {
+        "name": "сид",
+        "tooltip": "Bria не использует сид и при каждом вызове заново создаёт редактирование, поэтому повторные запуски могут отличаться. Значение никогда не отправляется: оно изменяет только ключ кэша этого узла, чтобы в остальном идентичный граф снова выполнил редактирование вместо возврата закэшированного результата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующего редактирования с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Переносит изображение в другой сезон с помощью Bria. Вся сцена повторно рендерится, поэтому пейзаж может измениться не только из-за сезона. Bria повторно рендерит весь кадр примерно в 1 мегапиксель, поэтому результат не выровнен по пикселям с входным изображением.",
+    "display_name": "Bria: смена сезона",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "season": {
+        "name": "сезон",
+        "tooltip": "Применяемый сезон."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующего редактирования с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Восстанавливает старую или повреждённую фотографию с помощью Bria: удаляются зернистость, царапины и размытие, а возрастные цветовые оттенки нейтрализуются. Картонные паспарту и студийные рамки могут быть обрезаны, а лица перерисованы. Bria повторно рендерит весь кадр примерно в 1 мегапиксель, поэтому результат не выровнен по пикселям с входным изображением. Для увеличения используйте Bria Increase Resolution.",
+    "display_name": "Bria: восстановление фото",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Структурированное описание отредактированного изображения для последующего редактирования с помощью Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Удалите фон с видео с помощью Bria и получите вырезанные кадры плюс альфа-маску. Подключите оба к узлу компоновки или передайте их в Save WEBM для записи прозрачного видео.",
     "display_name": "Bria Удаление фона видео (прозрачный)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Удаляет из видео всё, что покрыто покадровой маской, с помощью Bria и заполняет образовавшиеся области. Маска должна быть белой в областях, которые нужно удалить, и чёрной в остальных. Bria принимает клипы длительностью не более 5,1 секунды с частотой от 20 до 30 кадров в секунду и чётными размерами в пикселях; аудио сохраняется по умолчанию. Возвращённый клип может быть на несколько кадров короче исходного.",
+    "display_name": "Bria Video Eraser",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Одна маска на каждый кадр видео; белым отмечается объект, который нужно удалить. Укажите либо маску, либо видео маски, но не оба."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Уже закодированное видео маски с теми же размерами и количеством кадров, что и видео. Укажите либо маску, либо видео маски, но не оба."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Сохранить аудиодорожку входного файла."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Клип, из которого нужно удалить объект."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5091,6 +5352,33 @@
       }
     }
   },
+  "EndLoop": {
+    "display_name": "Конец цикла",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "При включении возвращает output_value из каждой итерации; иначе возвращает только последнюю итерацию."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Значение, отправляемое из узла «Конец цикла» обратно в «Начало цикла» для следующей итерации."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Значение, возвращаемое узлом «Конец цикла». В соответствии с accumulate возвращается последняя итерация или все итерации."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Подключите выходы, которые должны выполняться на каждой итерации. Их значения не возвращаются."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "выходы",
+        "tooltip": "output_value последней итерации или значения, накопленные за все итерации при включённом accumulate."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Масштабирование эпсилон",
     "inputs": {
@@ -5955,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Редактирует clip по текстовой инструкции: удаляет, добавляет или заменяет объекты, меняет окружение, стилизует видеоматериал, изменяет текст на экране или заменяет произносимые реплики. Длительность, кадрирование, движение камеры и аудио берутся из исходного clip.",
+    "display_name": "Flux Video Edit",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Автоматически уменьшает перед загрузкой источники, площадь которых превышает 1280x704 пикселей. Соотношение сторон сохраняется; видео меньшего размера не изменяются."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Что изменить, простым языком, до 4096 символов. Всё, что не упомянуто, должно остаться как было. Замещающие реплики должны укладываться во время исходной речи, а clip без звука останется без звука."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Допуск модерации: 0 — самый строгий уровень."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, определяющий, следует ли node запускаться повторно; FLUX выбирает собственный seed, поэтому фактические результаты недетерминированы независимо от этого значения."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Исходный clip длительностью от 0,7 до 15 секунд, не менее 160x160 пикселей. Результат рендерится с частотой 24 кадр/с и ограничен примерно 0,9 мегапикселя на кадр, поэтому более крупный исходник будет возвращён в меньшем размере."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Увеличивает разрешение видео в 1,5–3 раза с помощью суперразрешения FLUX, точно сохраняя исходник или творчески улучшая его детализацию.",
     "display_name": "Увеличение разрешения видео Flux",
@@ -6530,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Генерирует текстовые ответы с помощью моделей Gemini от Google. Укажите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Генерируйте видео со звуком по текстовому промпту с помощью модели Google Gemini Omni Flash. Дополнительно можно добавить референсные изображения и/или видео для направления или редактирования результата. Опишите желаемую длительность (3-10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
     "display_name": "Google Gemini Omni (Video)",
@@ -6717,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Получить элемент из списка",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11328,6 +11702,73 @@
       "1": {
         "name": "тексты",
         "tooltip": "Список текстовых подписей."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -17763,6 +18204,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Анимирует изображение в видео с помощью видеомоделей Pruna, с возможностью указать последний кадр, сгенерированный звук или аудиодорожку.",
+    "display_name": "Pruna P-Video-2: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Генерирует видео из текстового промпта с помощью видеомоделей Pruna, с возможностью добавить сгенерированный звук или аудиодорожку для управления видео.",
+    "display_name": "Pruna P-Video-2: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_draft": {
+        "name": "черновик"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_enhance_prompt": {
+        "name": "улучшить промпт"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[Рецепты]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -22406,6 +22934,52 @@
       }
     }
   },
+  "StartLoop": {
+    "display_name": "Начало цикла",
+    "inputs": {
+      "cache_iterations": {
+        "name": "кэшировать итерации",
+        "tooltip": "Повторно использует неизменённые результаты итераций из предыдущих запусков. Отключите, чтобы выполнить все итерации заново."
+      },
+      "initial_iteration_value": {
+        "name": "начальное значение итерации",
+        "tooltip": "Значение, доступное как current_iteration_value на первой итерации."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Режим итераций цикла."
+      },
+      "mode_num_iterations": {
+        "name": "количество итераций"
+      },
+      "parent_iteration": {
+        "name": "родительская итерация",
+        "tooltip": "Подключите iteration_index из внешнего Start Loop, чтобы вложить этот цикл."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "индекс итерации",
+        "tooltip": "Индекс текущей итерации цикла."
+      },
+      "1": {
+        "name": "первая",
+        "tooltip": "Истина во время первой итерации цикла."
+      },
+      "2": {
+        "name": "последняя",
+        "tooltip": "Истинно на последней итерации цикла."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Текущий элемент списка при использовании режима списка. None в режимах Simple и For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Значение, передаваемое между итерациями, для текущей итерации: initial_iteration_value на первой итерации, затем next_iteration_value из End Loop на каждой последующей итерации."
+      }
+    }
+  },
   "StringCompare": {
     "display_name": "Сравнить",
     "inputs": {
@@ -24601,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по изображению в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из изображения в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "идентификатор задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по виду спереди и от одного до трёх видов слева, сзади и справа в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Из нескольких ракурсов в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Tripo серии P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Создаёт низкополигональную 3D-модель с чистой топологией по текстовому запросу в виде треугольной сетки (GLB) или сетки с преобладанием четырёхугольников (FBX).",
+    "display_name": "Tripo P2: Текст в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель серии Tripo P."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "текстура"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
       }
     }
   },
@@ -28669,11 +29429,27 @@
         "name": "режим",
         "tooltip": "full: генерирует мелодию и аккорды; melody: генерирует только мелодию, рекомендуется для каверов."
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Количество последних токенов ABC, используемых для штрафа за повторения."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "seed"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28702,7 +29478,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "Максимальная длительность; генерация может завершиться раньше. В релизе используется лимит в 360 секунд."
+        "tooltip": "Максимальная длительность в секундах. Автоматически уменьшается для длинных запросов; генерация может завершиться раньше."
       },
       "mode": {
         "name": "режим",

@@ -19,7 +19,18 @@ import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -175,9 +186,9 @@ function registerSubgraphDefinitions(
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
   // still register when its outer is already live.
-  const missing = flattenDefinitions(definitions).filter(
-    (definition) => !rootGraph.subgraphs.has(definition.id)
-  )
+  const missing = allSubgraphDefinitions(definitions)
+    .map((definition) => ({ ...definition, definitions: undefined }))
+    .filter((definition) => !rootGraph.subgraphs.has(definition.id))
   const pending = new Set(missing.map((definition) => definition.id))
   if (missing.length === 0) return pending
 
@@ -200,6 +211,7 @@ function registerSubgraphDefinitions(
     reported.add(definition.id)
     reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
@@ -248,19 +260,6 @@ function tryCreateSubgraph(
     }
     return cause
   }
-}
-
-/**
- * Each definition plus every definition nested under its `definitions`, with
- * the nesting stripped so each one registers on its own.
- */
-function flattenDefinitions(
-  definitions: ExportedSubgraph[]
-): ExportedSubgraph[] {
-  return definitions.flatMap((definition) => [
-    { ...definition, definitions: undefined },
-    ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
-  ])
 }
 
 /**
@@ -394,11 +393,16 @@ function materialize(
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
+      tags: {
+        ...AGENT_ECS_TAGS,
+        outcome: cleanupFailed ? 'degraded' : 'recovered'
+      },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
       reportError(cleanupCause, {
         errorType: 'agent_node_materialize_rollback_failed',
+        tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, nodeId: String(state.id) }
       })
     }
@@ -429,6 +433,7 @@ function materialize(
     // would also drop the layout entry it adopted. Keep it and report.
     reportError(cause, {
       errorType: 'agent_node_materialize_configure_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }

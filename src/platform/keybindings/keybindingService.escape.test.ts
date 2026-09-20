@@ -116,19 +116,22 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it('should leave Escape events from menus to the menu', async () => {
-    const menu = document.createElement('div')
-    menu.setAttribute('role', 'menu')
-    const menuItem = document.createElement('div')
-    menuItem.setAttribute('role', 'menuitemcheckbox')
-    menu.appendChild(menuItem)
+  it.for(['menu', 'menubar'])(
+    'should leave Escape events from role=%s to the menu',
+    async (role) => {
+      const menu = document.createElement('div')
+      menu.setAttribute('role', role)
+      const menuItem = document.createElement('div')
+      menuItem.setAttribute('role', 'menuitemcheckbox')
+      menu.appendChild(menuItem)
 
-    const event = createKeyboardEvent('Escape', { target: menuItem })
-    await keybindingService.keybindHandler(event)
+      const event = createKeyboardEvent('Escape', { target: menuItem })
+      await keybindingService.keybindHandler(event)
 
-    expect(event.preventDefault).not.toHaveBeenCalled()
-    expect(useCommandStore().execute).not.toHaveBeenCalled()
-  })
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+    }
+  )
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {
     const escapeBinding = CORE_KEYBINDINGS.find(
