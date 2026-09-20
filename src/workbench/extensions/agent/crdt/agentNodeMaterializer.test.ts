@@ -5,7 +5,7 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
@@ -418,8 +418,10 @@ describe('reconcileAgentAdapters', () => {
 
       reconcileAgentAdapters(graph)
 
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
       expect({
-        live: [...graph.getNodeById(toNodeId(1))!.pos],
+        live: [...live.pos],
         stored: layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
           ?.position
       }).toEqual({ live: [400, 500], stored: { x: 400, y: 500 } })
@@ -487,8 +489,10 @@ describe('reconcileAgentAdapters', () => {
         scope.rootGraphId,
         toNodeId(1)
       )
+      assert.exists(addedState)
       reconcileAgentAdapters(graph)
-      const live = graph.getNodeById(toNodeId(1))!
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
       const materializedState = live._state
 
       mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) => {
@@ -512,7 +516,9 @@ describe('reconcileAgentAdapters', () => {
         liveWidget: 9,
         storedWidget: 9
       })
-      live.widgets![0].value = 10
+      const widgets = live.widgets
+      assert.exists(widgets)
+      widgets[0].value = 10
       expect(
         useWidgetValueStore().getWidget(
           widgetId(scope.rootGraphId, toNodeId(1), 'value')
@@ -530,13 +536,16 @@ describe('reconcileAgentAdapters', () => {
       remoteMutations(scope).addNode(docPayload, REMOTE)
       reconcileAgentAdapters(graph)
 
-      graph.getNodeById(toNodeId(1))!.title = 'My Custom Prompt'
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
+      live.title = 'My Custom Prompt'
       graph.configure(graph.serialize())
 
       remoteMutations(scope).batch(
         { ...REMOTE, opId: 'unrelated-reconcile' },
         (batch) => batch.reconcileNode(docPayload)
       )
+      reconcileAgentAdapters(graph)
 
       expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
     })

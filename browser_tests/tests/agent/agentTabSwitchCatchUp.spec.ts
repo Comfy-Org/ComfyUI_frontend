@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -237,32 +236,29 @@ test.describe(
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
-    async function switchAwayAndBack(page: Page) {
-      const topbar = new Topbar(page)
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
-      await expect(tabs).toHaveCount(1)
-      await topbar.newWorkflowButton.click()
-      await expect(tabs).toHaveCount(2)
-      await topbar.getTab(0).click()
-      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
-    }
-
     test('keeps a canvas rename after switching away and back', async ({
       agentConversation,
       page
     }) => {
       test.setTimeout(90_000)
       const customTitle = 'My Custom Sampler'
+      const topbar = new Topbar(page)
       await agentConversation.runTurns()
       const sampler =
         await agentConversation.vueNodes.getFixtureByTitle('KSampler')
       await sampler.setTitle(customTitle)
       await expect(sampler.title).toHaveText(customTitle)
 
-      await switchAwayAndBack(page)
-      await agentConversation.expectCanvasReplayed(
-        agentConversation.conversation.turns.length - 1
-      )
+      const subscribeCount = agentConversation.subscribeCount()
+      await expect(topbar.getTab(1)).toHaveCount(0)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getTab(1)).toHaveCount(1)
+      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBe(subscribeCount + 1)
 
       test.fail()
       await expect(sampler.title).toHaveText(customTitle)
@@ -276,22 +272,39 @@ test.describe(
       const nodeId = '3'
       const nodes = agentConversation.vueNodes
       const wrapper = nodes.getNodeInnerWrapper(nodeId)
+      const topbar = new Topbar(page)
       await agentConversation.runTurns()
       await nodes.selectNode(nodeId)
+      const originalBackground = await wrapper.evaluate(
+        (element) => getComputedStyle(element).backgroundColor
+      )
       await page
         .getByTestId(TestIds.selectionToolbox.colorPickerButton)
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)
         .dispatchEvent('click')
+      await expect
+        .poll(() =>
+          wrapper.evaluate(
+            (element) => getComputedStyle(element).backgroundColor
+          )
+        )
+        .not.toBe(originalBackground)
       const background = await wrapper.evaluate(
         (element) => getComputedStyle(element).backgroundColor
       )
 
-      await switchAwayAndBack(page)
-      await agentConversation.expectCanvasReplayed(
-        agentConversation.conversation.turns.length - 1
-      )
+      const subscribeCount = agentConversation.subscribeCount()
+      await expect(topbar.getTab(1)).toHaveCount(0)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getTab(1)).toHaveCount(1)
+      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBe(subscribeCount + 1)
 
       test.fail()
       await expect(wrapper).toHaveCSS('background-color', background)

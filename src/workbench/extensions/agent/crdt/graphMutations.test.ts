@@ -305,7 +305,8 @@ describe('graphMutations', () => {
   it.fails('keeps a live-renamed title across a reconcile the doc never learned about', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
-    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
     existing.title = 'My Renamed Sampler'
 
     expect(

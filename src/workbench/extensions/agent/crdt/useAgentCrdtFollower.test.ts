@@ -6,7 +6,15 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
@@ -22,6 +30,10 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { ServerDocFrame } from './docFrameClient'
+import type { OpSenderDeps } from './opSender'
+
+type DocOpsResult = Extract<ServerDocFrame, { type: 'doc_ops_result' }>['data']
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -45,10 +57,7 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(
-    (_workflowId: string, _tab: string, _ops: readonly { op_id: string }[]) =>
-      true
-  )
+  sendOps: vi.fn<OpSenderDeps['sendOps']>(() => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -1286,9 +1295,9 @@ describe('useAgentCrdtFollower', () => {
 
   it.fails('reports a rejected human add_node result', () => {
     const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
+    let enqueue:
+      | ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
+      | undefined
     const host = defineComponent({
       setup() {
         const follower = useAgentCrdtFollower(workflowId, graphMutations)
@@ -1300,6 +1309,7 @@ describe('useAgentCrdtFollower', () => {
     onTestFinished(unmount)
     telemetryState.reportError.mockClear()
 
+    assert.exists(enqueue)
     enqueue([
       {
         op: 'add_node',
@@ -1319,7 +1329,7 @@ describe('useAgentCrdtFollower', () => {
     const opId = sentOps?.[0]?.op_id
     expect(opId).toBeTypeOf('string')
 
-    dispatchFrame('doc_ops_result', {
+    const result: DocOpsResult = {
       workflowId: 'wf-1',
       ok: false,
       applied: [],
@@ -1330,7 +1340,8 @@ describe('useAgentCrdtFollower', () => {
         code: 'uncatalogued_widget_write',
         message: 'add_node(Note) could not be projected'
       }
-    })
+    }
+    dispatchFrame('doc_ops_result', result)
 
     expect(telemetryState.reportError).toHaveBeenCalled()
   })

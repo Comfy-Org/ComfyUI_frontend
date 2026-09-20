@@ -271,8 +271,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
           graphScopeOf(graph).rootGraphId,
           graphScopeOf(graph).owningGraphId
         )
-        .map(({ id }) => id)
-    ).toContain(local.id)
+        .map(({ id }) => String(id))
+    ).toContain(String(local.id))
     expect(graph.serialize().nodes.map(({ id }) => id)).toContain(local.id)
     expect(layout.deleteNodes).not.toHaveBeenCalledWith(
       graphScopeOf(graph),

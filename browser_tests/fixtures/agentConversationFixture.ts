@@ -16,6 +16,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -25,7 +26,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
-  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -661,17 +661,18 @@ class AgentConversationHarness {
   }
 
   resyncWidget(nodeId: string, widget: string): void {
-    const widgets = this.host.graph().nodes[nodeId]?.widgets as
-      | Record<string, unknown>
-      | undefined
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
     const value = widgets?.[widget]
-    const operation: RecordedGraphOperation = {
+    const operation = {
       op: 'set_widget',
       node_id: nodeId,
       widget,
       value,
       old: value
-    }
+    } satisfies GraphOperation
     this.hostSocket.send(this.host.apply([operation]))
   }
 }
