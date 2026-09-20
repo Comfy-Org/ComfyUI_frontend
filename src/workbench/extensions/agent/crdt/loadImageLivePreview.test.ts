@@ -7,7 +7,6 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
@@ -139,7 +138,6 @@ function nodePayload(id: number, type: string) {
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({
     getScope: () => scope,
-    placement: inertPlacementPort,
     layout: {
       createNode(scope, nodeId, { position, size }, context) {
         layoutStore.applyOperation({
