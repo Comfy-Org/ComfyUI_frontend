@@ -4,13 +4,21 @@ import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
+type WorkflowTargetSelection =
+  | { status: 'uninitialized' }
+  | { status: 'cleared' }
+  | { status: 'selected'; workflow: ComfyWorkflow }
+
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
+  const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
@@ -18,17 +26,55 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
+  const workflowTargetSelection = ref<WorkflowTargetSelection>({
+    status: 'uninitialized'
+  })
+  const selectedWorkflow = computed(() =>
+    workflowTargetSelection.value.status === 'selected'
+      ? workflowTargetSelection.value.workflow
+      : null
+  )
+  const canRestoreWorkflow = computed(
+    () => workflowTargetSelection.value.status === 'uninitialized'
+  )
+
+  function resetWorkflowTarget(): void {
+    workflowTargetSelection.value = { status: 'uninitialized' }
+  }
+
+  function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
+    workflowTargetSelection.value = workflow
+      ? { status: 'selected', workflow }
+      : { status: 'cleared' }
+  }
+
+  const workflowStore = useWorkflowStore()
+  watch(
+    () => [selectedWorkflow.value, ...workflowStore.openWorkflows],
+    () => {
+      if (
+        selectedWorkflow.value !== null &&
+        !workflowStore.openWorkflows.includes(selectedWorkflow.value)
+      )
+        setWorkflowTarget(null)
+    }
+  )
 
   let openedAt: number | null = null
 
-  watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
-    }
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && consentAccepted.value
   )
+
+  watch(isVisible, (visible) => {
+    if (!visible) {
+      openedAt = null
+      return
+    }
+    if (openedAt !== null) return
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
@@ -50,6 +96,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
+  function suppressRestoredOpen(): void {
+    if (!isOpen.value || isVisible.value) return
+    isOpen.value = false
+    openedAt = null
+  }
+
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
     else open()
@@ -65,13 +117,22 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   return {
     enabled,
+    consentAccepted,
     isOpen,
+    isVisible,
     gateSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,
+    open,
+    workflowTargetSelection,
+    selectedWorkflow,
+    canRestoreWorkflow,
+    resetWorkflowTarget,
+    setWorkflowTarget,
     toggle,
     close,
+    suppressRestoredOpen,
     setWidth,
     toggleMaximize
   }

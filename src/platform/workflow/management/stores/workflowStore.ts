@@ -389,7 +389,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Check if workflow is still open
       if (openWorkflowPathSet.value.has(path)) {
         validPaths.unshift(path)
-        const workflow = workflowLookup.value[path]
+        const workflow = getWorkflowByPath(path)
         {
           // Lazy cleanup: keep only valid paths
           tabActivationHistory.value = validPaths
@@ -455,7 +455,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           existingWorkflow.unload()
         },
-        /* exclude */ (workflow) => workflow.isTemporary
+        /* exclude */ (workflow) => workflow.isTemporary,
+        /* beforeDelete */ (workflow, path) => {
+          if (isActive(workflow)) return false
+          openWorkflowPaths.value = openWorkflowPaths.value.filter(
+            (openPath) => openPath !== path
+          )
+          return true
+        }
       )
     },
     undefined,
@@ -540,7 +547,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
-      delete workflowLookup.value[workflow.path]
+      detachWorkflow(workflow)
     } finally {
       isBusy.value = false
     }

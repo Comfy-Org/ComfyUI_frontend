@@ -18,24 +18,36 @@ describe('reportAssertFailure', () => {
   it('reports an assertion failure as an invariant error', async () => {
     const reportAssertFailure = await loadReporter()
 
-    reportAssertFailure('[Assertion failed]: graph must exist')
+    reportAssertFailure('[Assertion failed]: graph must exist', {
+      graphId: 'root'
+    })
 
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         message: '[Assertion failed]: graph must exist'
       }),
-      { errorType: 'invariant_assert' }
+      {
+        errorType: 'invariant_assert',
+        context: { graphId: 'root', occurrenceCount: 1 }
+      }
     )
   })
 
-  it('deduplicates repeats so a render-loop invariant reports once', async () => {
+  it('reports coarse recurrence thresholds without reporting every repeat', async () => {
     const reportAssertFailure = await loadReporter()
 
-    reportAssertFailure('same message')
-    reportAssertFailure('same message')
-    reportAssertFailure('same message')
+    for (let i = 0; i < 100; i++) {
+      reportAssertFailure('same message')
+    }
 
-    expect(mockReportError).toHaveBeenCalledOnce()
+    expect(mockReportError).toHaveBeenCalledTimes(3)
+    expect(
+      mockReportError.mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      { occurrenceCount: 1 },
+      { occurrenceCount: 10 },
+      { occurrenceCount: 100 }
+    ])
   })
 
   it('caps distinct reports per session', async () => {

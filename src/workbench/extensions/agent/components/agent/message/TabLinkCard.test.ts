@@ -46,6 +46,11 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
     },
     get activeWorkflow() {
       return mocks.activeWorkflow
+    },
+    getWorkflowByPath(path: string) {
+      return (mocks.openWorkflows as FakeTab[]).find(
+        (workflow) => workflow.path === path
+      )
     }
   })
 }))

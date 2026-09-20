@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, within } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
@@ -17,7 +18,17 @@ import { i18n } from '@/i18n'
 
 import UserMessage from './UserMessage.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+const clipboard = vi.hoisted(() => ({
+  text: '',
+  copy: vi.fn((value: string) => {
+    clipboard.text = value
+  })
+}))
+
+beforeEach(() => {
+  clipboard.text = ''
+  clipboard.copy.mockClear()
+})
 
 vi.mock('@vueuse/core', () => ({
   createSharedComposable: (composable: () => unknown) => composable,
@@ -27,18 +38,18 @@ vi.mock('@vueuse/core', () => ({
     isSupported: ref(true),
     text: ref('')
   }),
+  useClipboardItems: () => ({
+    copy: vi.fn(),
+    copied: ref(false),
+    isSupported: ref(false)
+  }),
   useDocumentVisibility: () => ref('visible'),
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
 }))
 
 const t = i18n.global.t
 
-function renderMessage(props: {
-  text: string
-  attachments?: { name: string; previewUrl?: string; ref?: string }[]
-  tags?: string[]
-  editable?: boolean
-}) {
+function renderMessage(props: ComponentProps<typeof UserMessage>) {
   return render(UserMessage, {
     props,
     global: {
@@ -61,6 +72,84 @@ function stubbedAssets(): { url: string; filename: string; kind: string }[] {
 }
 
 describe('UserMessage', () => {
+  it('shows references on attachment-only turns and disables unavailable ones', async () => {
+    const view = renderMessage({
+      text: '',
+      attachments: [{ name: 'image.png', ref: 'image.png' }],
+      workflowReferences: [
+        {
+          id: 'missing',
+          name: 'Deleted workflow',
+          unavailable: true,
+          textOffset: 0
+        },
+        { id: 'available', name: 'Available', textOffset: 0 }
+      ]
+    })
+    const unavailable = screen.getByRole('button', {
+      name: 'Deleted workflow (unavailable)'
+    })
+    expect(unavailable).toHaveAttribute('aria-disabled', 'true')
+    expect(unavailable).toHaveAttribute(
+      'aria-description',
+      t('agent.workflowReferenceUnavailableReason')
+    )
+    await userEvent.tab()
+    expect(unavailable).toHaveFocus()
+    await userEvent.keyboard('{Enter} ')
+    await userEvent.click(unavailable)
+    expect(view.emitted().openReferenceWorkflow).toBeUndefined()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open Available' })
+    )
+    expect(view.emitted().openReferenceWorkflow).toEqual([
+      ['available', 'Available']
+    ])
+  })
+  it('renders submitted workflow references inline with the prompt snapshot', () => {
+    renderMessage({
+      text: 'Use  and compare with  today.',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1', textOffset: 4 },
+        { id: 'wf-2', name: 'Workflow 2', textOffset: 22 }
+      ]
+    })
+
+    const bubble = screen.getByTestId('user-message-bubble')
+    expect(bubble).toHaveTextContent(
+      /^Use Workflow 1 and compare with Workflow 2 today\.$/
+    )
+    expect(
+      within(bubble).getByRole('button', { name: 'Open Workflow 1' })
+    ).toBeVisible()
+    expect(
+      within(bubble).getByRole('button', { name: 'Open Workflow 2' })
+    ).toBeVisible()
+  })
+
+  it.for(['pointer', 'Enter', 'Space'])(
+    'opens a sent workflow reference with %s',
+    async (interaction) => {
+      const view = renderMessage({
+        text: 'Compare this',
+        workflowReferences: [
+          { id: 'wf-reference', name: 'Reference', textOffset: 0 }
+        ]
+      })
+
+      const chip = screen.getByRole('button', { name: 'Open Reference' })
+      if (interaction === 'pointer') await userEvent.click(chip)
+      else {
+        chip.focus()
+        await userEvent.keyboard(interaction === 'Enter' ? '{Enter}' : ' ')
+      }
+
+      expect(view.emitted('openReferenceWorkflow')).toEqual([
+        ['wf-reference', 'Reference']
+      ])
+    }
+  )
+
   it('renders a caption-only placeholder tile for a preview-less attachment', () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
@@ -128,6 +217,36 @@ describe('UserMessage', () => {
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
   })
 
+  it('copies a reference-only message with readable workflow names', async () => {
+    renderMessage({
+      text: '',
+      workflowReferences: [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+    })
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.text).toBe('@[Workflow: Portrait]')
+  })
+
+  it.for([true, false])(
+    'respects Edit eligibility for a workflow-reference-only message: %s',
+    async (editable) => {
+      const workflowReferences = [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+      const { emitted } = renderMessage({
+        text: '',
+        workflowReferences,
+        editable
+      })
+      if (!editable) {
+        expect(
+          screen.queryByRole('button', { name: t('g.edit') })
+        ).not.toBeInTheDocument()
+        return
+      }
+
+      await userEvent.click(screen.getByRole('button', { name: t('g.edit') }))
+      expect(emitted().edit).toEqual([[{ text: '', workflowReferences }]])
+    }
+  )
+
   it('reaches and triggers the copy action by keyboard alone', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
@@ -151,7 +270,7 @@ describe('UserMessage', () => {
     ).toHaveTextContent(t('g.edit'))
     await user.click(editButton)
 
-    expect(emitted().edit).toEqual([[prompt]])
+    expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])
   })
 
   it('does not offer edit for a settled prompt without edit eligibility', () => {
@@ -162,9 +281,10 @@ describe('UserMessage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers no copy action on an attachment-only message', () => {
+  it('copies the filename on an attachment-only message', async () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.text).toBe('@[File: clip.bin]')
   })
 })

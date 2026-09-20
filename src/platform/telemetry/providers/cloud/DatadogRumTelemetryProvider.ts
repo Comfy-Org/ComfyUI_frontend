@@ -6,6 +6,7 @@ import type {
   BootstrapCompleteMetadata,
   CheckoutJourneyTelemetryEvent,
   ExecutionOutcomeMetadata,
+  FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
   UnifiedAuthRefreshMetadata,
@@ -20,6 +21,10 @@ import {
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     datadogRum.addAction(
       metadata.outcome === 'succeeded'
