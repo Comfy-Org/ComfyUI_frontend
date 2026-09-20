@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router'
+import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
 import {
   prepareRouterRender,
@@ -9,7 +9,7 @@ import {
   router_render
 } from './router-render'
 
-vi.mock(import('../src/config/workshop-router'), () => ({
+vi.mock(import('../src/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
