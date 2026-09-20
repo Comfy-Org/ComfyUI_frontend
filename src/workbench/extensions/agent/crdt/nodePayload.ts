@@ -70,6 +70,10 @@ export function parseWidgetValues(value: unknown): WidgetValuePayload {
  * values only from `widgets_values_named`. Named payloads therefore use the
  * separate named slot; callers may retain the original record for extension
  * hooks.
+ *
+ * Values are handed over as-is: {@link parseWidgetValues} is the single
+ * detachment boundary, so a `WidgetValuePayload` never aliases the wire
+ * payload and re-cloning here would only repeat that work.
  */
 export function serialisedWidgetSlots(
   widgets: WidgetValuePayload
@@ -78,16 +82,9 @@ export function serialisedWidgetSlots(
     case 'omitted':
       return {}
     case 'positional':
-      return { widgets_values: widgets.values.map(cloneWidgetValue) }
+      return { widgets_values: [...widgets.values] }
     case 'named':
-      return {
-        widgets_values_named: Object.fromEntries(
-          [...widgets.values].map(([name, value]) => [
-            name,
-            cloneWidgetValue(value)
-          ])
-        )
-      }
+      return { widgets_values_named: Object.fromEntries(widgets.values) }
   }
 }
 

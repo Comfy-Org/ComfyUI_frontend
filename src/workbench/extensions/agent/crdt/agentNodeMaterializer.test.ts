@@ -390,7 +390,7 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
     })
 
-    it('restores the extension slot when the record is already normalized', () => {
+    it('passes a payload that already carries widgets_values_named through untouched', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
       remoteMutations(scope).addNode(
@@ -407,7 +407,8 @@ describe('reconcileAgentAdapters', () => {
       expect(configureSpy).toHaveBeenCalledTimes(1)
       const info = configureSpy.mock.calls[0][0]
       expect(info.widgets_values_named).toEqual({ value: 7 })
-      expect(info.widgets_values).toEqual({ value: 7 })
+      // Hooks see the wire payload; no positional record is synthesised.
+      expect(info).not.toHaveProperty('widgets_values')
     })
 
     it('is idempotent once the node is live', () => {

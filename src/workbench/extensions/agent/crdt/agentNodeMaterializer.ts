@@ -357,18 +357,13 @@ function missingNode(state: NodeState): LGraphNode {
  * Op-layer serialisations carry widget values keyed by name in
  * `widgets_values`; route them through the one shape boundary so restoration
  * reads `widgets_values_named` while extension hooks retain the wire shape.
+ *
+ * A payload that already carries `widgets_values_named` is passed through
+ * unchanged: restoration reads that slot directly, and hooks keep seeing
+ * exactly the wire payload (no `widgets_values` is synthesised for them).
  */
 function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  if (serialised.widgets_values_named !== undefined) {
-    if (serialised.widgets_values !== undefined) return serialised
-    const configureInfo = { ...serialised }
-    Reflect.set(
-      configureInfo,
-      'widgets_values',
-      serialised.widgets_values_named
-    )
-    return configureInfo
-  }
+  if (serialised.widgets_values_named !== undefined) return serialised
   const { widgets_values, ...rest } = serialised
   const widgets = parseWidgetValues(widgets_values)
   if (widgets.kind === 'named') {

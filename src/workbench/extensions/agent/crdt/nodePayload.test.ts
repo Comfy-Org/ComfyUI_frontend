@@ -69,28 +69,31 @@ describe('serialisedWidgetSlots', () => {
     expect(slots).not.toHaveProperty('widgets_values')
   })
 
-  it('detaches nested positional values from the payload', () => {
+  it('hands parsed positional values over without re-cloning them', () => {
     const nested = { tags: ['a'], size: { w: 1 } }
     const slots = serialisedWidgetSlots({
       kind: 'positional',
       values: [nested]
     })
-    nested.tags.push('b')
-    nested.size.w = 2
-    expect(slots.widgets_values).toEqual([{ tags: ['a'], size: { w: 1 } }])
+    // parseWidgetValues is the only detachment boundary; the slot shares the
+    // already-detached value rather than paying for a second structuredClone.
+    expect(slots.widgets_values?.[0]).toBe(nested)
   })
 
-  it('detaches nested named values from the payload', () => {
+  it('hands parsed named values over without re-cloning them', () => {
     const nested = { tags: ['a'], size: { w: 1 } }
     const slots = serialisedWidgetSlots({
       kind: 'named',
       values: new Map([['options', nested]])
     })
-    nested.tags.push('b')
-    nested.size.w = 2
-    expect(slots.widgets_values_named).toEqual({
-      options: { tags: ['a'], size: { w: 1 } }
-    })
+    expect(slots.widgets_values_named?.options).toBe(nested)
+  })
+
+  it('detaches the wire payload exactly once across parse and slots', () => {
+    const wire = { options: { tags: ['a'] } }
+    const slots = serialisedWidgetSlots(parseWidgetValues(wire))
+    wire.options.tags.push('b')
+    expect(slots.widgets_values_named).toEqual({ options: { tags: ['a'] } })
   })
 
   it('round-trips through parseWidgetValues without changing shape', () => {
