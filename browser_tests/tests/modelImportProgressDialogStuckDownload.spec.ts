@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
+
 import {
   comfyPageFixture as test,
   comfyExpect as expect
@@ -167,6 +169,56 @@ test.describe(
       // (`data-testid="close-minimap-button"`) and is a strict-mode
       // violation with the minimap visible.
       await toast.getByRole('button', { name: 'Close' }).click()
+
+      await expect(toast).toBeHidden()
+    })
+
+    test('closing a failed download while polling does not reopen its toast', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224b'
+      let releaseResponse!: () => void
+      const responseReady = new Promise<void>((resolve) => {
+        releaseResponse = resolve
+      })
+      const response: TaskResponse = {
+        id: taskId,
+        idempotency_key: taskId,
+        task_name: 'task:download_file',
+        payload: {},
+        status: 'failed',
+        error_message: 'Download failed',
+        create_time: new Date().toISOString(),
+        update_time: new Date().toISOString()
+      }
+      await page.route(`**/tasks/${taskId}`, async (route) => {
+        await responseReady
+        await route.fulfill({ json: response })
+      })
+      await page.clock.install()
+      await dispatchAssetDownload(page, {
+        task_id: taskId,
+        asset_name: ASSET_NAME,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'failed',
+        error: 'Source server error'
+      })
+      const request = page.waitForRequest(`**/tasks/${taskId}`)
+      await page.clock.runFor(10_000)
+      await request
+
+      const toast = page
+        .getByRole('status')
+        .filter({ hasText: '1 download failed' })
+      await toast.getByRole('button', { name: 'Close' }).click()
+      await expect(toast).toBeHidden()
+      const completedResponse = page.waitForResponse(`**/tasks/${taskId}`)
+      releaseResponse()
+      await (await completedResponse).finished()
+      await page.clock.runFor(100)
 
       await expect(toast).toBeHidden()
     })

@@ -156,6 +156,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     async function pollSingleDownload(download: AssetDownload) {
       try {
         const task = await taskService.getTask(download.taskId)
+        if (downloads.value.get(download.taskId) !== download) return
 
         if (task.status === 'completed' || task.status === 'failed') {
           const result = task.result

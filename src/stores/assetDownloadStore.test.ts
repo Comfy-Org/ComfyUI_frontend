@@ -222,6 +222,45 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].status).toBe('completed')
     })
 
+    it('reconciles a failed download through polling without another socket message', async () => {
+      const store = useAssetDownloadStore()
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      vi.mocked(taskService.getTask).mockResolvedValue(createTaskResponse())
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        progress: 100,
+        error: undefined
+      })
+      expect(store.sessionDownloadCount).toBe(1)
+      expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('does not restore a dismissed failed download when an in-flight poll finishes', async () => {
+      const store = useAssetDownloadStore()
+      let resolveResponse!: (value: TaskResponse) => void
+      const response = new Promise<TaskResponse>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(taskService.getTask).mockReturnValue(response)
+      dispatch(
+        createDownloadMessage({ status: 'failed', error: 'Network error' })
+      )
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledWith('task-123')
+
+      store.clearFinishedDownloads()
+      resolveResponse(createTaskResponse({ status: 'failed' }))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.hasDownloads).toBe(false)
+    })
+
     it('polls and marks failed downloads', async () => {
       const store = useAssetDownloadStore()
 
