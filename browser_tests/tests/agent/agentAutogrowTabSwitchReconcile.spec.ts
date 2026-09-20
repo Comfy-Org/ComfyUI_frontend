@@ -239,7 +239,7 @@ test.describe(
       })
 
       await bootAgentApp(page, true, {
-        objectInfo: {},
+        objectInfo: 'server',
         // Only the Vue node renderer projects follower edits onto the
         // canvas as DOM nodes this test can query.
         settings: {
