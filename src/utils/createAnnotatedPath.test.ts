@@ -133,6 +133,16 @@ const roundTripCases = [
 ] as const
 
 describe('parseAnnotatedPath', () => {
+  it.for(['', 'photo.png [output]x', 'photo.png [other]'])(
+    'preserves non-annotated input %j and the fallback root',
+    (filepath) => {
+      expect(parseAnnotatedPath(filepath, 'temp')).toEqual({
+        filepath,
+        rootFolder: 'temp'
+      })
+    }
+  )
+
   it.for(roundTripCases)(
     'parses paths formatted by createAnnotatedPath for $path',
     ({ path, filepath, rootFolder }) => {

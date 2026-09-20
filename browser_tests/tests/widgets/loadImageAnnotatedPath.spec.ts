@@ -33,7 +33,7 @@ test.describe(
     test(
       'renders a Generated asset after drag and workflow restore',
       { tag: '@slow' },
-      async ({ comfyPage, getWebSocket }) => {
+      async ({ comfyPage, getWebSocket }, testInfo) => {
         test.setTimeout(30_000)
         await comfyPage.assets.mockOutputHistory([
           createMockJob({
@@ -107,6 +107,13 @@ test.describe(
             .toBe(true)
         }
 
+        await test.step('Render the dropped output preview', async () => {
+          await expectPreviewLoaded()
+          await loadImageNode.root.screenshot({
+            path: testInfo.outputPath('01-dropped-preview.png')
+          })
+        })
+
         await test.step('Save and restore the workflow', async () => {
           await comfyPage.menu.topbar.saveWorkflow('annotated-widget-output')
 
@@ -127,15 +134,10 @@ test.describe(
           const jobId = await execution.run({
             triggerPrompt: () => comfyPage.runButton.click()
           })
-          execution.executed(jobId, '10', {
-            images: [
-              {
-                filename: 'generated.png',
-                subfolder: 'runs/2026',
-                type: 'output'
-              }
-            ]
-          })
+          execution.executionStart(jobId)
+          execution.executing(jobId, '10')
+          execution.executing(jobId, null)
+          execution.executionSuccess(jobId)
           await comfyPage.nextFrame()
           await expectPreviewLoaded()
 
@@ -145,6 +147,9 @@ test.describe(
           await workflowsTab.switchToWorkflow('annotated-widget-output')
           await comfyPage.workflow.waitForWorkflowIdle()
           await expectPreviewLoaded()
+          await loadImageNode.root.screenshot({
+            path: testInfo.outputPath('02-restored-preview.png')
+          })
         })
       }
     )
