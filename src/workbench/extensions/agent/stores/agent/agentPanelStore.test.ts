@@ -265,9 +265,9 @@ describe('agentPanelStore open-state persistence', () => {
 
 describe('agentPanelStore width', () => {
   /** Side toolbar rail + sidebar minimum. */
-  const SIDEBAR_OPEN = 360
+  const SIDEBAR_OPEN = 368
   /** Side toolbar rail alone, with no sidebar tab showing. */
-  const SIDEBAR_CLOSED = 48
+  const SIDEBAR_CLOSED = 56
 
   function resizeWindowTo(px: number): void {
     window.innerWidth = px
@@ -301,7 +301,7 @@ describe('agentPanelStore width', () => {
       requested: 2000,
       windowWidth: 1200,
       reserved: SIDEBAR_OPEN,
-      expected: 840
+      expected: 832
     },
     {
       requested: 2000,
@@ -313,7 +313,7 @@ describe('agentPanelStore width', () => {
       requested: 2000,
       windowWidth: 900,
       reserved: SIDEBAR_CLOSED,
-      expected: 852
+      expected: 844
     },
     { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 420 }
   ] as const)(
@@ -347,7 +347,7 @@ describe('agentPanelStore width', () => {
     store.toggleMaximize()
 
     resizeWindowTo(1200)
-    expect(store.width).toBe(840)
+    expect(store.width).toBe(832)
     expect(store.isMaximized).toBe(true)
 
     resizeWindowTo(1920)
@@ -358,7 +358,7 @@ describe('agentPanelStore width', () => {
     const store = useAgentPanelStore()
     store.toggleMaximize()
     resizeWindowTo(1200)
-    expect(store.width).toBe(840)
+    expect(store.width).toBe(832)
 
     store.setReservedWorkspaceWidth(SIDEBAR_CLOSED)
 
@@ -374,7 +374,7 @@ describe('agentPanelStore width', () => {
 
     store.setReservedWorkspaceWidth(SIDEBAR_OPEN)
 
-    expect(store.width).toBe(840)
+    expect(store.width).toBe(832)
   })
 
   it('keeps the panel at its minimum width in a window too narrow to fit it', () => {
