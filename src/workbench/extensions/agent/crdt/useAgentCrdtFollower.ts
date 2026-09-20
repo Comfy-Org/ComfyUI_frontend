@@ -460,8 +460,8 @@ function startAgentCrdtFollower(
     }
     projection.clearForReset(detail.workflowId, context)
     events.onReset?.(detail.workflowId)
-    // `status.connected` derives from this, so clearing the acknowledgement is
-    // what main's `connected.value = false` used to do here.
+    // A lineage reset drops the acknowledged binding, which disconnects the
+    // follower: `status.connected` is derived from this ref.
     acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
