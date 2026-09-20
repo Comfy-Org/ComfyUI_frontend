@@ -282,4 +282,35 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       expect(mockHandleBackToPricing).toHaveBeenCalled()
     }
   )
+
+  it.for(['personal-new', 'personal-change', 'team-change'])(
+    'keeps the embedded chrome on the success step (%s)',
+    (variant) => {
+      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
+      mockCheckoutStep.value = 'success'
+      mockPreviewVariant.value = variant
+
+      renderComponent()
+
+      expect(screen.getByTestId('checkout-dialog-shell')).toHaveClass(
+        'rounded-2xl',
+        'overflow-hidden'
+      )
+    }
+  )
+
+  it('renders the success step without the embedded chrome when the flag is off', () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
+    mockCheckoutStep.value = 'success'
+    mockPreviewVariant.value = 'personal-change'
+
+    renderComponent({ embeddedCheckoutEnabled: false })
+
+    expect(screen.getByTestId('checkout-dialog-shell')).not.toHaveClass(
+      'rounded-2xl'
+    )
+    expect(screen.getByTestId('checkout-dialog-shell')).not.toHaveClass(
+      'overflow-hidden'
+    )
+  })
 })
