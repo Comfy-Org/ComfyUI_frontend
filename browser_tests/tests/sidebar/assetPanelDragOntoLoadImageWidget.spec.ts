@@ -32,9 +32,9 @@ import { TestIds } from '@e2e/fixtures/selectors'
 // upload.
 const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
 const STALE_TEMP_ASSET: Asset = {
-  id: 'stale-temp-preview-001',
+  id: '55555555-5555-4555-a555-555555555555',
   name: STALE_TEMP_FILENAME,
-  job_id: 'job-stale-temp-001',
+  job_id: '66666666-6666-4666-a666-666666666666',
   tags: ['output', 'temp'],
   mime_type: 'image/png',
   size: 12_345,
