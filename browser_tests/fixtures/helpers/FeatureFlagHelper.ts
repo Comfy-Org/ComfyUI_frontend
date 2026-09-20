@@ -164,12 +164,20 @@ export class FeatureFlagHelper {
    * is the channel `api.serverFeatureFlags` is actually populated from
    * (`api.ts:1012`).
    *
-   * This is the only seam early enough for a flag a **boot-time** read depends
-   * on. `seedServerFlags()` hooks the `window.app` assignment in `GraphCanvas`'s
-   * `onMounted`, which is already too late for anything the billing gate reads
-   * while resolving auth and workspace — and `resolveFailClosedBooleanFlag` has
-   * no localStorage or session override path by design, so `ff:` cannot reach
-   * these flags either.
+   * Early enough for a flag a **boot-time** read depends on, unlike
+   * `seedServerFlags()`, which hooks the `window.app` assignment in
+   * `GraphCanvas`'s `onMounted` — already too late for anything the billing
+   * gate reads while resolving auth and workspace.
+   *
+   * It is not the *earliest* seam, and for the billing SDK flags it is no
+   * longer the primary one. #18141 moved them onto `/api/features`, which boot
+   * awaits at `main.ts:56`, so a route stub on that endpoint lands before the
+   * handshake. Prefer it for those flags and use this to pin both channels.
+   *
+   * `ff:` still cannot reach these flags from a spec, though not for the
+   * reason this note used to give: `getDevOverride` is tree-shaken outside
+   * DEV, and `getSessionOverride` needs a signed-in, email-verified
+   * `@comfy.org` identity.
    *
    * Must be called before `page.goto()`. The socket is answered locally and
    * never connected to a server, which suits a fully mocked cloud spec: the

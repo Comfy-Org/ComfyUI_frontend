@@ -145,15 +145,28 @@ interface RecoveryRoutes {
   readonly pollRequests: Request[]
 }
 
+interface RecoveryOptions {
+  /**
+   * Serves `billing_sdk_subscription_enabled` on `/api/features`, the channel
+   * the staged rollout publishes on. Boot awaits it (`main.ts:56`), so unlike
+   * the websocket handshake it is readable before the billing gate picks a
+   * rail for recovery.
+   */
+  railOnFeatures?: boolean
+}
+
 async function setupRecovery(
   page: Page,
-  operation: BillingOpStatusResponse
+  operation: BillingOpStatusResponse,
+  { railOnFeatures = false }: RecoveryOptions = {}
 ): Promise<RecoveryRoutes> {
   const ws = workspace('personal', 'owner')
   const pollRequests: Request[] = []
 
   await mockCloudBoot(page, {
-    features: BOOT_FEATURES,
+    features: railOnFeatures
+      ? { ...BOOT_FEATURES, billing_sdk_subscription_enabled: true }
+      : BOOT_FEATURES,
     settings: { 'Comfy.TutorialCompleted': true }
   })
   await mockGraphBootExtras(page)
@@ -186,10 +199,12 @@ function transports(requests: Request[]): string[] {
 }
 
 /**
- * Answered on the websocket handshake rather than seeded on `window.app`:
- * recovery runs while the billing gate resolves, before `GraphCanvas`'s
- * `onMounted` assigns `window.app`, so `seedServerFlags()` lands after the rail
- * has already been chosen — which is what the first run of this spec showed.
+ * The websocket half of the flag, paired with `railOnFeatures` so both
+ * channels agree. Answered on the handshake rather than seeded on
+ * `window.app`: recovery runs while the billing gate resolves, before
+ * `GraphCanvas`'s `onMounted` assigns `window.app`, so `seedServerFlags()`
+ * lands after the rail has already been chosen — which is what the first run
+ * of this spec showed.
  */
 async function enableSdkRail(page: Page) {
   await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
@@ -241,34 +256,38 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
   })
 
   /**
-   * Asserts the invariant, not the rail, because **the rail is not
-   * deterministic here** — and that is itself the finding.
+   * Asserts **exactly one adopter** first, and the rail second.
    *
-   * `billingSdkSubscriptionRailEnabled` needs two halves from two channels:
+   * The invariant is the one FE-2484 is actually about: two transports polling
+   * one operation is the double-poll this PR exists to prevent. It is also the
+   * stronger claim, because it holds no matter which rail wins.
+   *
+   * The rail assertion was previously omitted, because
+   * `billingSdkSubscriptionRailEnabled` drew its two halves from two channels:
    * `unified_cloud_auth` off `/api/features`, which boot awaits, and
    * `billing_sdk_subscription_enabled` off `api.serverFeatureFlags`, which only
    * the websocket `feature_flags` handshake populates (`api.ts:1012`) and which
-   * nothing awaits — `createSocket()` does not even open the socket until the
-   * cloud auth token resolves. `resumePendingOperation` runs from the billing
-   * gate's first status read, so the two race. The trace from this spec's first
-   * CI run measures one outcome: the legacy poll went out 145ms before the
-   * handshake reached the page.
+   * nothing awaits. `resumePendingOperation` runs from the billing gate's first
+   * status read, so the two raced — this spec's first CI run measured the
+   * legacy poll going out 145ms before the handshake landed.
    *
-   * Asserting either transport would therefore be a flake, so this row asserts
-   * what holds on both sides of the race and is what FE-2484 is actually for:
-   * **exactly one adopter**. Two transports polling one operation is the
-   * double-poll this PR exists to prevent, and that fails here whichever side
-   * wins.
+   * #18141 moved that flag onto `/api/features` as its primary channel, so
+   * with `railOnFeatures` both halves are readable before the gate chooses and
+   * the race is gone from this spec.
    *
-   * The race is written up on the PR; fixing it is flag plumbing, not billing,
-   * and needs its own ticket. Once it is fixed, tighten this back to the
-   * `fetch`/no-`xhr` assertion it was written with.
+   * **This makes the test deterministic, not production.** Anonymous
+   * `/api/features` returns a concrete `false` for this key
+   * (`cloud@main:common/featuregates/flags.go:591`), so a real boot still
+   * resolves `false` and its first reads still go legacy. The FE-2487 evidence
+   * caveat stands.
    */
   test('adopts a server-reported pending operation exactly once, on one rail', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await setupRecovery(page, PENDING_OPERATION)
+    const routes = await setupRecovery(page, PENDING_OPERATION, {
+      railOnFeatures: true
+    })
     await enableSdkRail(page)
 
     await page.goto(APP_URL)
@@ -277,7 +296,10 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     await cloudAppExpect
       .poll(() => routes.pollRequests.length)
       .toBeGreaterThan(0)
+    // Exactly one adopter, and it is the SDK: the second assertion is only
+    // sound because the flag now arrives on a channel boot awaits.
     expect(new Set(transports(routes.pollRequests)).size).toBe(1)
+    expect(transports(routes.pollRequests)).not.toContain('xhr')
   })
 
   test('still restores the tier and cycle from the host pointer when recovery fails', async ({
@@ -287,7 +309,7 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     // The SDK's own pointer is scope-keyed and carries no selection; the host
     // pointer is what reopens the checkout on the plan the customer chose.
     await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
-    await setupRecovery(page, FAILED_OPERATION)
+    await setupRecovery(page, FAILED_OPERATION, { railOnFeatures: true })
     await enableSdkRail(page)
 
     await page.goto(APP_URL)

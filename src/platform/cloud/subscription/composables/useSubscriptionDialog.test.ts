@@ -107,7 +107,8 @@ function recoveredOperation(
     phase: null,
     authenticationState: null,
     isAuthenticating: false,
-    canRetryAuthentication: false
+    canRetryAuthentication: false,
+    errorMessage: null
   }
 }
 
