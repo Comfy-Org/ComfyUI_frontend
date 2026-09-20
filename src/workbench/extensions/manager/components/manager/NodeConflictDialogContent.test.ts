@@ -55,8 +55,7 @@ describe('NodeConflictDialogContent', () => {
       global: {
         plugins: [pinia, i18n],
         stubs: {
-          ContentDivider: true,
-          Button: { template: '<button><slot /></button>' }
+          ContentDivider: true
         }
       }
     })
