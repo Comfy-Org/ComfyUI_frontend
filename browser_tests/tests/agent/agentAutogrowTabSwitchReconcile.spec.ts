@@ -333,9 +333,17 @@ test.describe(
       const topbar = new Topbar(page)
       const vueNodes = new VueNodeHelpers(page)
       const gptNodeId = String(GPT_NODE_ID)
-      const checkpointCombo = vueNodes
+      const checkpointWidget = vueNodes
         .getNodeLocator(String(CHECKPOINT_NODE_ID))
-        .getByRole('combobox', { name: 'ckpt_name', exact: true })
+        .getByTestId(TestIds.widgets.widget)
+        .filter({ hasText: 'ckpt_name' })
+      const checkpointValueButton = checkpointWidget.getByRole('button', {
+        name: MISSING_CHECKPOINT,
+        exact: true
+      })
+      const checkpointInvalidState = checkpointWidget.locator(
+        '[aria-invalid="true"]'
+      )
 
       const panel = page.locator('#agent-panel-root')
 
@@ -398,8 +406,8 @@ test.describe(
           { id: toNodeId(GPT_NODE_ID), ...API_NODE_COLOR }
         )
         await expect.poll(() => readNodeColor()).toEqual(API_NODE_COLOR)
-        await expect(checkpointCombo).toHaveValue(MISSING_CHECKPOINT)
-        await expect(checkpointCombo).toHaveAttribute('aria-invalid', 'true')
+        await expect(checkpointValueButton).toBeVisible()
+        await expect(checkpointInvalidState).toHaveCount(1)
       })
 
       await test.step('user switches to a new tab and back', async () => {
@@ -422,8 +430,8 @@ test.describe(
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
         )
-        await expect(checkpointCombo).toHaveValue(MISSING_CHECKPOINT)
-        await expect(checkpointCombo).toHaveAttribute('aria-invalid', 'true')
+        await expect(checkpointValueButton).toBeVisible()
+        await expect(checkpointInvalidState).toHaveCount(1)
         await page
           .getByRole('button', {
             name: enMessages.agent.askComfyAgent,
