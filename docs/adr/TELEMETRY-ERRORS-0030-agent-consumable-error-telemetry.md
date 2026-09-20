@@ -47,6 +47,14 @@ remain. The gap is coverage and discipline, not another reporting API.
    - `outcome`: `failed`, `recovered`, `aborted`, `timed_out`, or `missing`
    - `assert_mode`: `soft`, `hard`, or `sampled` for assertions
 
+   A conforming event always supplies `failure_kind`, `feature_area`, and
+   `outcome`. It supplies `operation` when the failure occurs during one of the
+   enumerated operations; invariants and bad states with no discrete operation
+   omit it. Assertion events also supply `assert_mode`; non-assertion events
+   omit it. `ReportErrorOptions.tags` remains optional for existing callers,
+   but an event does not conform to this taxonomy unless its tags satisfy this
+   record shape.
+
    New enum values require an entry under Registry Amendments. Dynamic values
    such as ids, names, and paths are forbidden in tags; permitted diagnostic
    values belong in `context`.
