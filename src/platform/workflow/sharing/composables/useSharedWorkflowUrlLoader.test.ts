@@ -194,6 +194,7 @@ beforeEach(() => {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
+    mockRouterReplace.mockResolvedValue(undefined)
     mockQueryParams = {}
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
