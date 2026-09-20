@@ -57,7 +57,6 @@ const isContentFirst = hero.layout === 'content-first'
   >
     <ModelLaunchHeroLogoMask
       :image-src="hero.logoMaskImageSrc"
-      :fallback-image-src="hero.placeholderImageSrc"
       class="mb-2 w-full max-w-4xl"
     />
 

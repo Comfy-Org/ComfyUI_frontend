@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
@@ -37,6 +38,17 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 // with bounded exponential backoff while the desired doc is unchanged.
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+
+/**
+ * A `doc_subscribe` that left the transport and was never answered is retried
+ * on the same lineage after this long. The ingest relay's own resync budget is
+ * 15 s, so a shorter window would stack a duplicate subscribe behind a slow but
+ * live catch-up.
+ */
+export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
+// The third unanswered attempt is terminal: frames at 0 s, 15 s and 30 s,
+// give-up at 45 s. Silent attempts also count into the shared refusal budget.
+const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
 
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
@@ -121,6 +133,15 @@ export class AgentCrdtDocLifecycle {
   // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
   // reality - and a stale channel's intent DOES equal reality).
   private staleProbeTimer: ReturnType<typeof setTimeout> | null = null
+  // Armed by every subscribe frame that leaves the transport, disarmed by its
+  // answer (confirm or refusal). Expiry is the third outcome the bridge cannot
+  // see: the frame was delivered, intent equals reality, and nothing answers.
+  private ackTimer: ReturnType<typeof setTimeout> | null = null
+  private ackTimeouts = 0
+  // Latched after the silent budget is spent so neither the recency probe nor
+  // a status-frame reconcile can turn the bounded retry into an unbounded one.
+  // Released only by a lifecycle edge: confirm, reconnect, retarget.
+  private gaveUp = false
   // FEC-5: `Date.now()` of the last persisted-record write by this instance.
   // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
@@ -129,7 +150,8 @@ export class AgentCrdtDocLifecycle {
 
   constructor(
     private readonly workflowId: () => string | null,
-    private readonly resubscribe: () => void
+    private readonly resubscribe: () => void,
+    private readonly onGaveUp: () => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -141,6 +163,8 @@ export class AgentCrdtDocLifecycle {
   }
 
   onSubscribeConfirmed(): void {
+    this.clearAckTimer()
+    this.gaveUp = false
     this.clearSubscribeRetry()
     this.armStaleProbe()
     const workflowId = this.workflowId()
@@ -148,8 +172,37 @@ export class AgentCrdtDocLifecycle {
   }
 
   onSubscribeRefused(): void {
+    this.clearAckTimer()
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
+  }
+
+  onSubscribeSent(workflowId: string): void {
+    this.clearAckTimer()
+    if (this.gaveUp) return
+    this.ackTimer = setTimeout(() => {
+      this.ackTimer = null
+      if (this.workflowId() !== workflowId) return
+      this.ackTimeouts += 1
+      if (
+        this.ackTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
+        this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
+      ) {
+        this.giveUp(workflowId)
+        return
+      }
+      this.subscribeRetryAttempt += 1
+      recordDevEvent('subscribe_ack_timeout', {
+        attempt: this.subscribeRetryAttempt,
+        workflowId
+      })
+      this.resubscribe()
+    }, SUBSCRIBE_ACK_TIMEOUT_MS)
+  }
+
+  /** A new socket is a new server-side session: every budget starts over. */
+  onReconnected(): void {
+    this.clearForRetarget()
   }
 
   onDocumentUpdate(): void {
@@ -170,13 +223,15 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  hasPendingSubscribeRetry(): boolean {
-    return this.subscribeRetryTimer !== null
+  shouldDeferSubscribe(): boolean {
+    return this.gaveUp || this.subscribeRetryTimer !== null
   }
 
   clearForRetarget(): void {
+    this.clearAckTimer()
     this.clearSubscribeRetry()
     this.clearStaleProbe()
+    this.gaveUp = false
   }
 
   destroy(): void {
@@ -199,10 +254,39 @@ export class AgentCrdtDocLifecycle {
     this.clearStaleProbe()
     this.staleProbeTimer = setTimeout(() => {
       this.staleProbeTimer = null
+      if (this.gaveUp) return
+      this.armStaleProbe()
+      // A probe that is still awaiting its own answer is the ack timer's job.
+      if (this.ackTimer !== null) return
       recordDevEvent('stale_probe', { workflowId: this.workflowId() })
       this.resubscribe()
-      this.armStaleProbe()
     }, STALE_AFTER_MS)
+  }
+
+  private clearAckTimer(): void {
+    if (this.ackTimer !== null) {
+      clearTimeout(this.ackTimer)
+      this.ackTimer = null
+    }
+  }
+
+  private giveUp(workflowId: string): void {
+    this.clearStaleProbe()
+    this.gaveUp = true
+    recordDevEvent(
+      'subscribe_ack_timeout',
+      { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
+      { level: 'warn' }
+    )
+    reportError(
+      new Error('agent doc subscribe was sent but never acknowledged'),
+      {
+        errorType: 'failure_confirming_agent_doc_subscribe',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    this.onGaveUp()
   }
 
   private clearSubscribeRetry(): void {
@@ -211,10 +295,11 @@ export class AgentCrdtDocLifecycle {
       this.subscribeRetryTimer = null
     }
     this.subscribeRetryAttempt = 0
+    this.ackTimeouts = 0
   }
 
   private scheduleSubscribeRetry(): void {
-    if (this.subscribeRetryTimer !== null) return
+    if (this.shouldDeferSubscribe()) return
     if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return

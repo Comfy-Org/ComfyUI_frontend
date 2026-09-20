@@ -287,7 +287,10 @@ function startAgentCrdtFollower(
   )
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
-    () => bridge.resubscribe()
+    () => bridge.resubscribe(),
+    () => {
+      connected.value = false
+    }
   )
   const tabId = createUuidv4()
   const sender = createOpSender({
@@ -595,9 +598,16 @@ function startAgentCrdtFollower(
       seq: detail?.seq
     })
   }
+
+  const onSubscribeSent: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (typeof detail?.workflowId !== 'string') return
+    lifecycle.onSubscribeSent(detail.workflowId)
+  }
   const onReconnected: EventListener = () => {
     connected.value = false
-    lifecycle.clearStaleProbe()
+    lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -616,7 +626,7 @@ function startAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (lifecycle.hasPendingSubscribeRetry()) return
+    if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
     // KA-10 (scope-hydration recovery): also probe here so a tab that stays
     // active the whole time (scope hydrates asynchronously after subscribe,
@@ -651,6 +661,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('apply_error', onApplyError)
+  bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -771,6 +782,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('apply_error', onApplyError),
+      () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

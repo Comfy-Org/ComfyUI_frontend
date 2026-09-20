@@ -38,7 +38,7 @@ function op(id: string, baseVersion: number, payload: object) {
     op_id: id,
     actor: 'agent:test',
     base_version: baseVersion,
-    stamp: [baseVersion, 'agent:test', id],
+    stamp: [baseVersion, 'agent:test'],
     ...payload
   }
 }
