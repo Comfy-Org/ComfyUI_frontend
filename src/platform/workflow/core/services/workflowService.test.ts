@@ -1824,6 +1824,44 @@ describe('useWorkflowService', () => {
       expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
+
+    // Second-lens coverage for the crash reproduced in isolation by
+    // comfyWorkflow.test.ts (PR #18121): ComfyWorkflow.promptSave()
+    // destructures `useDialogService` straight out of a dynamic
+    // `import('@/services/dialogService')`, which throws instead of
+    // resolving when that import does not yield the expected export.
+    // useWorkflowService().saveWorkflow() is the exact function the real
+    // "Save" command (useCoreCommands.ts's Comfy.SaveWorkflow, wired to
+    // Ctrl+S and File > Save) calls for a never-saved workflow, so this
+    // proves the crash reaches all the way to the command layer uncaught
+    // -- an unhandled rejection from the Save action -- rather than being
+    // caught and turned into a graceful "save failed" outcome.
+    //
+    // This intentionally simulates the failure via a spy on
+    // `promptSave()` rather than re-stubbing `@/services/dialogService`
+    // here: dialogService is *also* imported statically by
+    // workflowService.ts itself (`useDialogService()` is called eagerly
+    // in useWorkflowService()'s own setup), so stubbing the module for
+    // this test would break useWorkflowService() construction for an
+    // unrelated reason instead of isolating this call path. See the PR
+    // description for why that also rules out forcing this exact failure
+    // from a Playwright e2e test.
+    it('propagates a promptSave() crash uncaught instead of failing the save gracefully', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.spyOn(workflow, 'promptSave').mockRejectedValue(
+        new TypeError(
+          "Cannot destructure property 'useDialogService' of '(intermediate value)' as it is undefined."
+        )
+      )
+
+      await expect(useWorkflowService().saveWorkflow(workflow)).rejects.toThrow(
+        "Cannot destructure property 'useDialogService'"
+      )
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
   })
 
   describe('closeWorkflow', () => {
