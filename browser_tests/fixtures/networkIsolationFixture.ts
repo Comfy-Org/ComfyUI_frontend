@@ -121,8 +121,14 @@ export const networkIsolationFixture = base.extend<{
       )
     }
     await context.route(
-      'https://{api,stagingapi}.comfy.org/releases**',
-      (route) => route.fulfill(jsonRoute([] satisfies ReleaseNote[]))
+      (url) =>
+        (url.hostname === 'api.comfy.org' ||
+          url.hostname === 'stagingapi.comfy.org') &&
+        url.pathname === '/releases',
+      (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill(jsonRoute([] satisfies ReleaseNote[]))
+          : route.fallback()
     )
     await context.route(
       'https://{api,stagingapi}.comfy.org/comfy-nodes/*/node',
