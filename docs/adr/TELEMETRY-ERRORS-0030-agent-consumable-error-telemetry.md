@@ -54,10 +54,12 @@ remain. The gap is coverage and discipline, not another reporting API.
 3. **Choose levels by impact.** Use `error` for `invariant`, `bad_state`,
    `caught_unexpected`, and `outcome:failed`. Use `warning` for `degraded`,
    `outcome:recovered`, and `missing_event` unless the user lost work.
-4. **Retain default grouping.** The default fingerprint plus the stable slug
-   subdivides issues without merging distinct causes. Never use a bare
-   `[errorType]` fingerprint. Configure a fingerprint at the emitter when one
-   is needed, not globally in `beforeSend`, so it remains reviewable.
+4. **Retain default grouping unless a slug must subdivide an issue.** Sentry's
+   default grouping ignores tags, including `error_type`. When separate issues
+   are needed per slug, configure an emitter fingerprint containing both
+   `{{ default }}` and `errorType`. Never use a bare `[errorType]` fingerprint,
+   and do not set fingerprints globally in `beforeSend`, so each override stays
+   reviewable at its call site.
 5. **Use soft assertions by default in the browser.** Hard assertions are only
    for cases where continuing corrupts document or CRDT state, authentication,
    or billing. Sampled assertions are only for render and pointer hot paths and
