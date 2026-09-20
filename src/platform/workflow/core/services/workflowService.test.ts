@@ -2044,31 +2044,30 @@ describe('useWorkflowService', () => {
      * `TypeError: Cannot read properties of null (reading 'id')`.
      * The tracker itself is present in these cases — a missing tracker would
      * throw reading `reset`, not `id`.
+     *
+     * These drive the workflow-object branch. The same-path reuse branch makes
+     * the identical read, but is not reachable with a null active state from
+     * here: that branch decides reuse from `existingWorkflow?.activeState?.id`,
+     * so a null active state routes the load to `createNewTemporary` instead.
+     * It is covered by sharing `activeStateFallbackId`, not by a red test.
      */
     describe('when the change tracker has no active state (SEN-5)', () => {
       beforeEach(() => {
-        // @ts-expect-error deliberately reproducing the runtime state the
-        // LoadedComfyWorkflow cast claims is impossible
-        existingWorkflow.changeTracker.activeState = null
-      })
-
-      it('activates a same-path reload instead of throwing on a null active state', async () => {
-        await expect(
-          useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
-        ).resolves.not.toThrow()
-
-        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
-          expect.objectContaining({ id: expect.any(String) })
-        )
+        // Runtime fixture, not a compiler-error assertion: reproduce the state
+        // the LoadedComfyWorkflow cast claims is impossible.
+        const tracker = existingWorkflow.changeTracker as unknown as {
+          activeState: ComfyWorkflowJSON | null
+        }
+        tracker.activeState = null
       })
 
       it('activates a workflow object reload instead of throwing on a null active state', async () => {
-        await expect(
-          useWorkflowService().afterLoadNewGraph(
-            existingWorkflow,
-            makeWorkflowData()
-          )
-        ).resolves.not.toThrow()
+        // A plain await is the assertion: before the fix this rejected with
+        // `TypeError: Cannot read properties of null (reading 'id')`.
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          makeWorkflowData()
+        )
 
         expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
           expect.objectContaining({ id: expect.any(String) })
@@ -2076,10 +2075,12 @@ describe('useWorkflowService', () => {
       })
 
       it('still prefers the incoming workflow id over the missing fallback', async () => {
+        // The object branch reaches the same read without depending on the
+        // reuse heuristics above.
         const incomingId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
         await useWorkflowService().afterLoadNewGraph(
-          'repeat',
+          existingWorkflow,
           makeWorkflowDataWithId(incomingId)
         )
 
