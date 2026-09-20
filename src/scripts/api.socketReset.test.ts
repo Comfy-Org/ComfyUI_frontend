@@ -140,18 +140,21 @@ describe('ComfyApi realtime socket reset', () => {
     })
   })
 
-  it('does not accept reconnected lifecycle events from the server', async () => {
-    const onReconnected = vi.fn()
-    api.addEventListener('reconnected', onReconnected)
-    onTestFinished(() => api.removeEventListener('reconnected', onReconnected))
-    await api.resetSocket()
+  it.for(['socketClosed', 'reconnecting', 'reconnected'] as const)(
+    'does not accept %s lifecycle events from the server',
+    async (eventType) => {
+      const listener = vi.fn()
+      api.addEventListener(eventType, listener)
+      onTestFinished(() => api.removeEventListener(eventType, listener))
+      await api.resetSocket()
 
-    FakeWebSocket.instances[0].handlers['message']?.({
-      data: JSON.stringify({ type: 'reconnected', data: null })
-    })
+      FakeWebSocket.instances[0].handlers['message']?.({
+        data: JSON.stringify({ type: eventType, data: null })
+      })
 
-    expect(onReconnected).not.toHaveBeenCalled()
-  })
+      expect(listener).not.toHaveBeenCalled()
+    }
+  )
 
   it('supersedes an in-flight reset so the socket cannot settle on a stale identity', async () => {
     await api.resetSocket()
