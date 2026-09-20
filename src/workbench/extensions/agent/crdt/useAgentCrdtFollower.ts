@@ -137,6 +137,10 @@ function clearPersistedDocId(): void {
  */
 export const STALE_AFTER_MS = 30_000
 
+/** Match the relay's resync budget before retrying a silent subscribe. */
+export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
+const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
+
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
@@ -386,6 +390,9 @@ function startAgentCrdtFollower(
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  let subscribeAckTimer: ReturnType<typeof setTimeout> | null = null
+  let subscribeAckTimeouts = 0
+  let subscribeGaveUp = false
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -417,15 +424,24 @@ function startAgentCrdtFollower(
     }
   }
 
+  const clearSubscribeAckTimer = (): void => {
+    if (subscribeAckTimer !== null) {
+      clearTimeout(subscribeAckTimer)
+      subscribeAckTimer = null
+    }
+  }
+
   const armStaleProbe = (): void => {
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
+      if (subscribeGaveUp) return
+      armStaleProbe()
+      if (subscribeAckTimer !== null) return
       recordDevEvent('stale_probe', {
         workflowId: subscribedWorkflowId.value
       })
       bridge.resubscribe()
-      armStaleProbe()
     }, STALE_AFTER_MS)
   }
 
@@ -435,10 +451,57 @@ function startAgentCrdtFollower(
       subscribeRetryTimer = null
     }
     subscribeRetryAttempt = 0
+    subscribeAckTimeouts = 0
+  }
+
+  const giveUpOnSubscribe = (workflowId: string): void => {
+    clearStaleProbe()
+    subscribeGaveUp = true
+    recordDevEvent(
+      'subscribe_ack_timeout',
+      { attempt: subscribeRetryAttempt, workflowId, terminal: true },
+      { level: 'warn' }
+    )
+    reportError(
+      new Error('agent doc subscribe was sent but never acknowledged'),
+      {
+        errorType: 'failure_confirming_agent_doc_subscribe',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    connected.value = false
+  }
+
+  const onSubscribeSent: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    const workflowId = detail?.workflowId
+    if (typeof workflowId !== 'string') return
+    clearSubscribeAckTimer()
+    if (subscribeGaveUp) return
+    subscribeAckTimer = setTimeout(() => {
+      subscribeAckTimer = null
+      if (subscribedWorkflowId.value !== workflowId) return
+      subscribeAckTimeouts += 1
+      if (
+        subscribeAckTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
+        subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
+      ) {
+        giveUpOnSubscribe(workflowId)
+        return
+      }
+      subscribeRetryAttempt += 1
+      recordDevEvent('subscribe_ack_timeout', {
+        attempt: subscribeRetryAttempt,
+        workflowId
+      })
+      bridge.resubscribe()
+    }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
   const scheduleSubscribeRetry = (): void => {
-    if (subscribeRetryTimer !== null) return
+    if (subscribeGaveUp || subscribeRetryTimer !== null) return
     if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = subscribedWorkflowId.value
     if (target === null) return
@@ -464,6 +527,8 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      clearSubscribeAckTimer()
+      subscribeGaveUp = false
       clearSubscribeRetry()
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
@@ -471,6 +536,7 @@ function startAgentCrdtFollower(
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
+      clearSubscribeAckTimer()
       clearStaleProbe()
       scheduleSubscribeRetry()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -631,6 +697,9 @@ function startAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    clearSubscribeAckTimer()
+    clearSubscribeRetry()
+    subscribeGaveUp = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -650,7 +719,7 @@ function startAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (subscribeRetryTimer !== null) return
+    if (subscribeGaveUp || subscribeRetryTimer !== null) return
     bridge.reconcile()
   }
 
@@ -662,6 +731,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('schema_error', onSchemaError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
+  bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -720,7 +790,9 @@ function startAgentCrdtFollower(
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
+      clearSubscribeAckTimer()
       clearSubscribeRetry()
+      subscribeGaveUp = false
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
@@ -775,6 +847,7 @@ function startAgentCrdtFollower(
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
     runFollowerTeardown([
+      clearSubscribeAckTimer,
       clearSubscribeRetry,
       clearStaleProbe,
       () => api.removeEventListener('reconnected', onReconnected),
@@ -787,6 +860,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('schema_error', onSchemaError),
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
+      () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
       () => adapter.destroy(),
       () => bridge.destroy(),
