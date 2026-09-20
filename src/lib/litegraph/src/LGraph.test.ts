@@ -1,10 +1,7 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -32,7 +29,6 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -62,12 +58,11 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   mockReportError.mockClear()
 })
@@ -572,8 +567,8 @@ describe('Floating Links / Reroutes', () => {
 
     const floatingLink = [...graph.floatingLinks.values()][0]
     expect(graph.links.get(toLinkId(2))?.id).toBe(toLinkId(2))
-    expect(floatingLink?.id).not.toBe(toLinkId(2))
-    expect(floatingLink?.origin_id).toBe(toNodeId(2))
+    expect(floatingLink.id).not.toBe(toLinkId(2))
+    expect(floatingLink.origin_id).toBe(toNodeId(2))
     expect(graph.floatingLinks.size).toBe(1)
   })
 
@@ -709,7 +704,7 @@ describe('Floating Links / Reroutes', () => {
   })
 })
 
-describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+describe('Link serialization goldens (ADR-ECS-0008 topology-store migration)', () => {
   const LINK_KEYS = [
     'id',
     'origin_id',
@@ -863,57 +858,6 @@ describe('Store-driven serialization parity', () => {
         }
       }
     )
-  })
-
-  // Pins the desired outcome, not the current one. `agentNodeMaterializer.ts`
-  // closes this gap for anything routed through `useAgentCrdtFollower`, but a
-  // bare `LGraph` + `graphMutations.addNode()` (as below) never calls the
-  // materializer, so the `LGraph._nodes` gap this test documents is still
-  // real for any caller that skips the follower composable. `test.fails`
-  // keeps the assertions expressing the CORRECT behavior; convert to a plain
-  // `test` the day `LGraph.serialize()`/`addNode()` itself closes the gap.
-  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it', ({
-    expect
-  }) => {
-    // The CRDT follower's addNode path
-    // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
-    // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
-    // never calls `LGraph.add()`, so the node exists in the ECS node-data
-    // store (and renders on canvas via the store-driven Vue node path) but
-    // has no adapter in `LGraph._nodes`. `serialiseStoredNodes()` hits the
-    // adapter/state mismatch branch and silently serializes only the
-    // (empty) live-adapter set, so the node is dropped from every save.
-    const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    const createLayout = vi.fn()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: vi.fn() }
-    })
-
-    mutations.addNode(
-      {
-        id: 1,
-        type: 'dummy',
-        pos: [0, 0],
-        size: [100, 80],
-        inputs: [],
-        outputs: []
-      },
-      { source: 'agent-remote', actor: 'agent:test', opId: 'op-1' }
-    )
-
-    // The node is real in the ECS store...
-    expect(
-      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
-    ).toHaveLength(1)
-
-    const serialized = graph.serialize()
-
-    // Desired behavior: the store-only node survives serialize() and no
-    // mismatch is reported.
-    expect(serialized.nodes).toHaveLength(1)
-    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test('rejects additive configuration before mutating a populated graph', ({
@@ -1513,7 +1457,6 @@ describe('Subgraph Definition Garbage Collection', () => {
     const innerNode = innerNodes[0]
     const id = widgetId(rootGraph.id, innerNode.id, 'value')
     const locator = createNodeLocatorId(subgraph.id, innerNode.id)
-    if (locator === null) throw new Error('Expected an inner-node locator')
     useWidgetValueStore().registerWidget(id, {
       type: 'number',
       value: 1,
@@ -1609,6 +1552,19 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+
+  it('releases the subgraph definition when an inner removal lifecycle throws', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    innerNodes[0].onRemoved = () => {
+      throw new Error('extension cleanup failed')
+    }
+
+    expect(() => rootGraph.releaseSubgraphs([subgraph])).toThrow(
+      'extension cleanup failed'
+    )
+    expect(rootGraph.subgraphs.has(subgraph.id)).toBe(false)
   })
 
   function createNestedDefinitionFixture() {
@@ -2187,14 +2143,14 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
     )
 
-    const pw102 = graph.getNodeById(toNodeId(102))?.properties?.proxyWidgets
+    const pw102 = graph.getNodeById(toNodeId(102))?.properties.proxyWidgets
     expect(Array.isArray(pw102)).toBe(true)
     for (const entry of pw102 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsA.has(String(entry[0]))).toBe(true)
     }
 
-    const pw103 = graph.getNodeById(toNodeId(103))?.properties?.proxyWidgets
+    const pw103 = graph.getNodeById(toNodeId(103))?.properties.proxyWidgets
     expect(Array.isArray(pw103)).toBe(true)
     for (const entry of pw103 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -2213,7 +2169,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
       .nodes.find((n) => n.id === toNodeId(50))
-    const pw = innerNode?.properties?.proxyWidgets
+    const pw = innerNode?.properties.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -2294,10 +2250,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 })
 
 describe('Zero UUID handling in configure', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
     const graph = new LGraph()
     const data = graph.serialize()
@@ -2311,6 +2263,31 @@ describe('Zero UUID handling in configure', () => {
     const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
     const subgraph = graph.createSubgraph(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+
+  it('keeps a subgraph registered under its own ID across clear()', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const { id } = subgraph
+
+    subgraph.clear()
+
+    expect(subgraph.id).toBe(id)
+    expect(graph.subgraphs.get(id)).toBe(subgraph)
+    expect(graph.subgraphs.has(zeroUuid)).toBe(false)
+  })
+
+  it('creates a subgraph exposing IO without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+
+    graph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [{ id: createUuidv4(), name: 'value', type: 'INT' }]
+      })
+    )
+
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

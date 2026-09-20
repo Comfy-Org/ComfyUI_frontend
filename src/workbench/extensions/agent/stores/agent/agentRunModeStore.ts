@@ -4,10 +4,10 @@ import { computed } from 'vue'
 
 import { zAgentRunMode } from '../../schemas/agentApiSchema'
 import type {
-  AgentRunMode,
-  AgentRunModePreference
+  AgentRunModePreference,
+  AgentRunModeValue
 } from '../../schemas/agentApiSchema'
-export type { AgentRunMode } from '../../schemas/agentApiSchema'
+export type { AgentRunModeValue } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
   createAgentRestClient
@@ -113,7 +113,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   }
 
   async function save(
-    nextMode: AgentRunMode,
+    nextMode: AgentRunModeValue,
     nextLimit: number | null
   ): Promise<void> {
     const next = zAgentRunMode.parse({

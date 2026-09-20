@@ -96,10 +96,7 @@ export const useManagerQueue = (
     taskQueue.value.pending_queue = filterQueueByClientId(state.pending_queue)
     taskHistory.value = filterHistoryByClientId(state.history)
 
-    if (state.installed_packs) {
-      // Normalize pack keys to ensure consistent access
-      installedPacks.value = normalizePackKeys(state.installed_packs)
-    }
+    installedPacks.value = normalizePackKeys(state.installed_packs)
     updateProcessingState()
   }
 
@@ -108,7 +105,7 @@ export const useManagerQueue = (
     app.api,
     MANAGER_WS_TASK_DONE_NAME,
     (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
-      if (event?.type === MANAGER_WS_TASK_DONE_NAME && event.detail?.state) {
+      if (event.type === MANAGER_WS_TASK_DONE_NAME) {
         updateTaskState(event.detail.state)
       }
     }
@@ -119,7 +116,7 @@ export const useManagerQueue = (
     app.api,
     MANAGER_WS_TASK_STARTED_NAME,
     (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
-      if (event?.type === MANAGER_WS_TASK_STARTED_NAME && event.detail?.state) {
+      if (event.type === MANAGER_WS_TASK_STARTED_NAME) {
         updateTaskState(event.detail.state)
       }
     }

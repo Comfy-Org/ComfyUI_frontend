@@ -4,7 +4,7 @@ import type { Ref, ShallowRef } from 'vue'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
-import type { UpdateFlags } from '../types'
+import type { MinimapRenderContext, UpdateFlags } from '../types'
 
 export function useMinimapRenderer(
   canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,
@@ -20,7 +20,8 @@ export function useMinimapRenderer(
     renderError: Ref<boolean>
   },
   width: number,
-  height: number
+  height: number,
+  decorations: Ref<MinimapRenderContext['decorations']> = ref([])
 ) {
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
@@ -33,7 +34,7 @@ export function useMinimapRenderer(
     if (!ctx) return
 
     // Fast path for 0 nodes - just show background
-    if (!g._nodes || g._nodes.length === 0) {
+    if (g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
     }
@@ -55,7 +56,9 @@ export function useMinimapRenderer(
           renderError: settings.renderError.value
         },
         width,
-        height
+        height,
+        decorations: decorations.value,
+        now: performance.now()
       })
 
       needsFullRedraw.value = false

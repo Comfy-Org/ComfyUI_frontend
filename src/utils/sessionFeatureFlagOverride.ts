@@ -1,6 +1,4 @@
-import { parseQuery } from 'vue-router'
-import { useCurrentUser } from 'vuefire'
-
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { isCloud } from '@/platform/distribution/types'
 
 const STORAGE_KEY = 'Comfy.FeatureFlagOverride'
@@ -15,12 +13,13 @@ type OverrideMap = Record<string, unknown>
  * the only thing standing between a `?ff=` link and the app's behaviour, so it
  * fails closed.
  *
- * Reads VueFire rather than `authStore`, which imports `useFeatureFlags` and
- * would drag the whole app module graph into every feature flag read.
+ * Reads the identity module rather than `authStore`, which imports
+ * `useFeatureFlags` and would drag the whole app module graph into every
+ * feature flag read.
  */
 function isComfyEmployee(): boolean {
   try {
-    const user = useCurrentUser().value
+    const user = firebaseIdentity.currentUser()
     if (!user?.emailVerified) return false
 
     return user.email?.toLowerCase().endsWith(EMPLOYEE_EMAIL_DOMAIN) ?? false
@@ -104,9 +103,7 @@ function splitRequest(request: string): [name: string, value?: string] {
 }
 
 function readOverrideRequests(search: string): string[] {
-  const value = parseQuery(search)[QUERY_PARAM]
-  if (value === undefined) return []
-  return (Array.isArray(value) ? value : [value]).map((value) => value ?? '')
+  return new URLSearchParams(search).getAll(QUERY_PARAM)
 }
 
 /**
@@ -151,13 +148,17 @@ function loadSessionOverrides(): OverrideMap {
  *
  * The request is captured into `sessionStorage` on the first read, so it
  * survives reloads and in-app navigation but dies when the tab closes. Capture
- * happens before authentication resolves; the employee check is applied here on
- * every read instead, so a flag flips as soon as the user is known.
+ * happens before authentication resolves; the employee check is re-evaluated
+ * on every read instead, against the SDK's current user. That read carries no
+ * reactive dependency of its own, so a flag flips on the next read after the
+ * user is known, not the moment it is.
  *
  * Returns undefined (not null) as the "no override" sentinel, matching
  * `getDevOverride`.
  */
-export function getSessionOverride<T>(flagKey: string): T | undefined {
+export function getSessionOverride<T>(
+  flagKey: string & { readonly valueType?: T }
+): T | undefined {
   if (!isCloud) return undefined
 
   const overrides = loadSessionOverrides()

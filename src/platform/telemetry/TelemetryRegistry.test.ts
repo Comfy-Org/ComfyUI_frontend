@@ -10,6 +10,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent,
   TelemetryProvider
 } from './types'
 
@@ -221,6 +222,28 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches the same checkout journey event to every provider', () => {
+    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: CheckoutJourneyTelemetryEvent = {
+      phase: 'entered',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-09-09T00:00:00.000Z',
+      assignment_status: 'resolved',
+      assigned_arm: 'treatment',
+      entry_flow: 'initial_subscription',
+      entry_source: 'pricing'
+    }
+    registry.trackCheckoutJourneyEvent(event)
+
+    expect(a.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {

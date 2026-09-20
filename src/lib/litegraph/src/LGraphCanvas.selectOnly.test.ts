@@ -10,7 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
@@ -229,5 +229,15 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.processSelect(null, event)
 
     expect(canvas.selectedItems.size).toBe(0)
+  })
+
+  it('supports deselecting through the deprecated selectNode API', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.selectNode(firstNode)
+
+    canvas.selectNode(null)
+
+    expect(canvas.selectedItems.size).toBe(0)
+    expect(firstNode.selected).toBe(false)
   })
 })

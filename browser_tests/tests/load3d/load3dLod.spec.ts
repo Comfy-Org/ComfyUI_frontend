@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
-test.describe('Load3D LOD', () => {
+test.describe('Load3D LOD', { tag: '@vue-nodes' }, () => {
   test(
     'canvas pixel dimensions scale with ComfyUI canvas zoom level',
     { tag: '@smoke' },

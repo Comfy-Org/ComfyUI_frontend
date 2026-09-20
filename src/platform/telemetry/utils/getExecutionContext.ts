@@ -29,15 +29,16 @@ export function getExecutionContext(): ExecutionContext {
   const nodeCounts = reduceAllNodes<NodeMetrics>(
     app.rootGraph,
     (metrics, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =
-        nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
+        nodeDef?.nodeSource.type === NodeSourceType.CustomNodes
       const isApiNode = nodeDef?.api_node
-      const isSubgraph = node.isSubgraphNode?.()
+      const isSubgraph =
+        typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true
-        const canonicalName = nodeDef?.name
+        const canonicalName = nodeDef.name
         if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
           metrics.api_node_names.push(canonicalName)
         }

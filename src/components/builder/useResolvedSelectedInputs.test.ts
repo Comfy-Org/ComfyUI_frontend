@@ -11,13 +11,16 @@ import { widgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       id: '11111111-1111-4111-8111-111111111111',
       nodes: [] as LGraphNode[],
       events: new EventTarget(),
       getNodeById: vi.fn() as (id: number) => LGraphNode | null
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))

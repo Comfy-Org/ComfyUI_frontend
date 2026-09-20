@@ -1,10 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp } from '@/scripts/app'
 
 const { app } = vi.hoisted(() => ({
   app: {
@@ -13,7 +13,7 @@ const { app } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({ app }))
+vi.mock(import('@/scripts/app'), () => ({ app: fromPartial<ComfyApp>(app) }))
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']
@@ -62,8 +62,6 @@ async function createNodeWithFilenamePrefix(
 
 describe('Comfy.SaveImageExtraOutput', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const graph = new LGraph()
     const sampler = new LGraphNode('Sampler')
     sampler.properties['Node name for S&R'] = 'Sampler'
@@ -72,7 +70,7 @@ describe('Comfy.SaveImageExtraOutput', () => {
     app.graph = graph
   })
 
-  it.each([
+  it.for([
     'SaveImage',
     'SaveImageAdvanced',
     'SaveSVGNode',

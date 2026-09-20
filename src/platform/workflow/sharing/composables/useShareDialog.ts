@@ -26,7 +26,7 @@ export function useShareDialog() {
     if (!wf) return share()
 
     const isAppDefault = wf.initialMode === 'app'
-    const linearData = wf.changeTracker?.activeState?.extra?.linearData
+    const linearData = wf.changeTracker.activeState.extra?.linearData
     const { outputs } = pruneLinearData(linearData)
 
     if (isAppDefault && outputs.length === 0) {

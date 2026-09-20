@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const mockKeyboard = vi.hoisted(() => ({
   addListeners: vi.fn(),
@@ -34,66 +35,29 @@ const mockMaskEditorLoader = vi.hoisted(() => ({
   loadFromNode: vi.fn().mockResolvedValue(undefined)
 }))
 
-const mockCanvasHistory = vi.hoisted(() => ({
-  saveInitialState: vi.fn(),
-  clearStates: vi.fn()
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-const initialMockStore = () =>
-  reactive({
-    activeLayer: 'mask',
-    maskCanvas: null as HTMLCanvasElement | null,
-    rgbCanvas: null as HTMLCanvasElement | null,
-    imgCanvas: null as HTMLCanvasElement | null,
-    canvasContainer: null as HTMLElement | null,
-    canvasBackground: null as HTMLElement | null,
-    canvasHistory: mockCanvasHistory,
-    resetState: vi.fn()
-  })
-
-let mockStore: ReturnType<typeof initialMockStore>
-
-const mockDataStore = vi.hoisted(() => ({
-  reset: vi.fn()
-}))
-
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
-
-vi.mock('@/composables/maskeditor/useKeyboard', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useKeyboard'), () => ({
   useKeyboard: () => mockKeyboard
 }))
 
-vi.mock('@/composables/maskeditor/usePanAndZoom', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/usePanAndZoom'), () => ({
   usePanAndZoom: () => mockPanZoom
 }))
 
-vi.mock('@/composables/maskeditor/useToolManager', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useToolManager'), () => ({
   useToolManager: () => mockToolManager
 }))
 
-vi.mock('@/composables/maskeditor/useImageLoader', () => ({
+vi.mock(import('@/composables/maskeditor/useImageLoader'), () => ({
   useImageLoader: () => mockImageLoader
 }))
 
-vi.mock('@/composables/maskeditor/useMaskEditorLoader', () => ({
+vi.mock(import('@/composables/maskeditor/useMaskEditorLoader'), () => ({
   useMaskEditorLoader: () => mockMaskEditorLoader
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
-
-vi.mock('@/stores/maskEditorDataStore', () => ({
-  useMaskEditorDataStore: () => mockDataStore
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => mockDialogStore
-}))
-
-vi.mock('@/components/common/LoadingOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/common/LoadingOverlay.vue'), () => ({
   default: {
     name: 'LoadingOverlayStub',
     props: ['loading', 'size'],
@@ -101,7 +65,7 @@ vi.mock('@/components/common/LoadingOverlay.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/ToolPanel.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/ToolPanel.vue'), () => ({
   default: {
     name: 'ToolPanelStub',
     props: ['toolManager'],
@@ -109,7 +73,7 @@ vi.mock('@/components/maskeditor/ToolPanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/PointerZone.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/PointerZone.vue'), () => ({
   default: {
     name: 'PointerZoneStub',
     props: ['toolManager', 'panZoom'],
@@ -117,7 +81,7 @@ vi.mock('@/components/maskeditor/PointerZone.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/SidePanel.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/SidePanel.vue'), () => ({
   default: {
     name: 'SidePanelStub',
     props: ['toolManager'],
@@ -125,7 +89,7 @@ vi.mock('@/components/maskeditor/SidePanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/BrushCursor.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/BrushCursor.vue'), () => ({
   default: {
     name: 'BrushCursorStub',
     props: ['containerRef'],
@@ -157,7 +121,13 @@ let originalResizeObserver: typeof ResizeObserver | undefined
 
 describe('MaskEditorContent', () => {
   beforeEach(() => {
-    mockStore = initialMockStore()
+    mockStore = useMaskEditorStore()
+    vi.spyOn(mockStore.canvasHistory, 'saveInitialState').mockImplementation(
+      () => {}
+    )
+    vi.spyOn(mockStore.canvasHistory, 'clearStates').mockImplementation(
+      () => {}
+    )
     mockMaskEditorLoader.loadFromNode.mockResolvedValue(undefined)
     mockImageLoader.loadImages.mockResolvedValue({ width: 100, height: 100 })
     mockPanZoom.initializeCanvasPanZoom.mockResolvedValue(undefined)
@@ -221,11 +191,11 @@ describe('MaskEditorContent', () => {
         orderOf(mockPanZoom.initializeCanvasPanZoom)
       )
       expect(orderOf(mockPanZoom.initializeCanvasPanZoom)).toBeLessThan(
-        orderOf(mockCanvasHistory.saveInitialState)
+        orderOf(vi.mocked(mockStore.canvasHistory).saveInitialState)
       )
-      expect(orderOf(mockCanvasHistory.saveInitialState)).toBeLessThan(
-        orderOf(mockBrushDrawing.initGPUResources)
-      )
+      expect(
+        orderOf(vi.mocked(mockStore.canvasHistory).saveInitialState)
+      ).toBeLessThan(orderOf(mockBrushDrawing.initGPUResources))
       expect(orderOf(mockBrushDrawing.initGPUResources)).toBeLessThan(
         orderOf(mockBrushDrawing.initPreviewCanvas)
       )
@@ -274,7 +244,7 @@ describe('MaskEditorContent', () => {
       renderContent()
 
       await waitFor(() => {
-        expect(mockDialogStore.closeDialog).toHaveBeenCalledTimes(1)
+        expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
       })
       expect(errorSpy).toHaveBeenCalledWith(
         '[MaskEditorContent] Initialization failed:',
@@ -292,7 +262,7 @@ describe('MaskEditorContent', () => {
       renderContent()
 
       await waitFor(() => {
-        expect(mockDialogStore.closeDialog).toHaveBeenCalledTimes(1)
+        expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
       })
       expect(errorSpy).toHaveBeenCalledWith(
         '[MaskEditorContent] Initialization failed:',
@@ -344,9 +314,11 @@ describe('MaskEditorContent', () => {
 
       expect(mockBrushDrawing.saveBrushSettings).toHaveBeenCalledTimes(1)
       expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.clearStates).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(mockStore.canvasHistory).clearStates
+      ).toHaveBeenCalledTimes(1)
       expect(mockStore.resetState).toHaveBeenCalledTimes(1)
-      expect(mockDataStore.reset).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorDataStore().reset).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -106,8 +106,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          # `state` rather than `merged`: gh removed the `merged` JSON field, and
+          # the 2>/dev/null || echo false here would swallow that error and pin
+          # this to false forever — see scripts/cicd/gh-pr-view-fields.test.ts.
           is_merged() {
-            [ "$(GH_TOKEN="$READ_TOKEN" gh pr view "$1" --repo "$GH_REPO" --json merged --jq '.merged' 2>/dev/null || echo false)" = "true" ]
+            [ "$(GH_TOKEN="$READ_TOKEN" gh pr view "$1" --repo "$GH_REPO" --json state --jq '.state == "MERGED"' 2>/dev/null || echo false)" = "true" ]
           }
 
           for pr in $CANDIDATES; do

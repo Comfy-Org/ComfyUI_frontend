@@ -12,7 +12,7 @@ export function toError(value: unknown): Error {
   if (value === undefined) return new Error('undefined')
   try {
     const serialised = JSON.stringify(value)
-    return new Error(serialised ?? String(value))
+    return new Error(serialised)
   } catch {
     return new Error(String(value))
   }

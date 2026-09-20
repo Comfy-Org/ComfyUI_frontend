@@ -87,6 +87,13 @@ export function hexToInt(hex: string): number {
   return (r << 16) | (g << 8) | b
 }
 
+export function intToHex(value: number): string {
+  const normalized = Number.isFinite(value)
+    ? Math.max(0, Math.min(0xffffff, Math.round(value)))
+    : 0
+  return `#${normalized.toString(16).padStart(6, '0')}`
+}
+
 export function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))

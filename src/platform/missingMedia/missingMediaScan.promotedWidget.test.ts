@@ -33,6 +33,11 @@ describe('scanNodeMediaCandidates — promoted host widgets', () => {
       name: 'missing-host.png',
       isMissing: true
     })
+    // Node-level validation errors stay on the interior node, so the candidate
+    // has to carry the source identity the host widget name hides.
+    expect(result[0].promotedSources).toEqual([
+      { executionId: '65:42', widgetName: 'image' }
+    ])
   })
 
   it('does not report a promoted host when its leaf source is bypassed', () => {
@@ -145,6 +150,7 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
         nodeId: '65',
         nodeType: 'LoadImage',
         widgetName: 'outer_image',
+        promotedSources: [{ executionId: '65:42', widgetName: 'image' }],
         mediaType: 'image',
         name: 'missing-host.png',
         isMissing: true
@@ -172,8 +178,16 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
 
     expect(result).toHaveLength(2)
     expect(result).toMatchObject([
-      { nodeId: '65', widgetName: 'outer_image' },
-      { nodeId: '66', widgetName: 'outer_image' }
+      {
+        nodeId: '65',
+        widgetName: 'outer_image',
+        promotedSources: [{ executionId: '65:42', widgetName: 'image' }]
+      },
+      {
+        nodeId: '66',
+        widgetName: 'outer_image',
+        promotedSources: [{ executionId: '66:42', widgetName: 'image' }]
+      }
     ])
   })
 
@@ -224,14 +238,22 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
     const hostCandidate = [
       expect.objectContaining({ nodeId: '65', widgetName: 'outer_image' })
     ]
-    if (!keepsHost) {
-      expect
-        .soft(
-          scanAllMediaCandidates(graph, false),
-          `${caseName}: active baseline`
-        )
-        .toEqual(hostCandidate)
-    }
+    expect
+      .soft(
+        scanAllMediaCandidates(graph, false),
+        `${caseName}: active baseline`
+      )
+      .toEqual([
+        expect.objectContaining({
+          nodeId: '65',
+          widgetName: 'outer_image',
+          promotedSources: [
+            { executionId: '65:42', widgetName: 'image' },
+            { executionId: '65:43', widgetName: 'image' },
+            { executionId: '65:44', widgetName: 'image' }
+          ]
+        })
+      ])
     for (const index of consumerIndexes) {
       sourceNodes[index].mode = mode
     }
@@ -239,6 +261,16 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
     const result = scanAllMediaCandidates(graph, false)
 
     expect(result).toEqual(keepsHost ? hostCandidate : [])
+    if (keepsHost) {
+      expect(result[0].promotedSources).toEqual(
+        sourceNodes
+          .filter((node) => node.mode === LGraphEventMode.ALWAYS)
+          .map((node) => ({
+            executionId: `65:${node.id}`,
+            widgetName: 'image'
+          }))
+      )
+    }
   })
 
   it('keeps one outer host candidate when the last nested branch is bypassed', () => {
@@ -249,7 +281,6 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
       sourceIds: [42, 43],
       depth: 2
     })
-    if (!lastInnerHost) throw new Error('Expected nested fanout branch')
     lastInnerHost.mode = LGraphEventMode.BYPASS
 
     const result = scanAllMediaCandidates(graph, false)
@@ -258,7 +289,8 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
       expect.objectContaining({
         nodeId: '65',
         widgetName: 'outer_image',
-        nodeType: 'LoadImage'
+        nodeType: 'LoadImage',
+        promotedSources: [{ executionId: '65:77:42', widgetName: 'image' }]
       })
     ])
   })
