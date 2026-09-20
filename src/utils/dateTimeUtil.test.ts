@@ -203,4 +203,13 @@ describe('formatClockTime', () => {
 
     expect(formatClockTime(ts, 'en-US', 'en-u-hc-h23')).toBe('14:05:06')
   })
+
+  it('takes the hour cycle from the system when no preference is given', () => {
+    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+    const systemLocale = new Intl.DateTimeFormat().resolvedOptions().locale
+
+    expect(formatClockTime(ts, 'de-DE')).toBe(
+      formatClockTime(ts, 'de-DE', systemLocale)
+    )
+  })
 })
