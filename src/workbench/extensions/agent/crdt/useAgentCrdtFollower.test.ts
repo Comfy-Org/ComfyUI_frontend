@@ -58,7 +58,11 @@ const adapterState = vi.hoisted(() => ({
   retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  // Captured from the constructor so a test can exercise the composable's
+  // real `hasPendingAddNode` closure directly (the mocked adapter itself
+  // never calls it).
+  hasPendingAddNode: undefined as ((nodeId: string) => boolean) | undefined
 }))
 
 const materializerState = vi.hoisted(() => ({
@@ -117,6 +121,12 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
+    constructor(
+      _mutations: unknown,
+      hasPendingAddNode?: (nodeId: string) => boolean
+    ) {
+      adapterState.hasPendingAddNode = hasPendingAddNode
+    }
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
@@ -237,6 +247,7 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     adapterState.applyFrame.mockReset().mockReturnValue(true)
     adapterState.retryPending.mockReset().mockReturnValue(null)
+    adapterState.hasPendingAddNode = undefined
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
@@ -1430,6 +1441,109 @@ describe('useAgentCrdtFollower', () => {
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
       type: 'cleared',
       opIds: [opId]
+    })
+    unmount()
+  })
+
+  it("ADR-CRDT-RECONCILE-0035 (c): hasPendingAddNode reports true only while the ledger holds that node's add_node", () => {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    const hasPendingAddNode = adapterState.hasPendingAddNode
+    expect(hasPendingAddNode).toBeDefined()
+    if (!hasPendingAddNode) throw new Error('expected a captured predicate')
+
+    // Before any add_node is minted, nothing matches.
+    expect(hasPendingAddNode('7')).toBe(false)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: '7',
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 7, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+
+    expect(hasPendingAddNode('7')).toBe(true)
+    expect(hasPendingAddNode('some-other-id')).toBe(false)
+    unmount()
+  })
+
+  it('ADR-CRDT-RECONCILE-0035 (a): a delivery-unknown batch resolves per op against the next same-lineage catch-up', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      },
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      },
+      { op: 'delete_node', node_id: '6', removed_links: [] }
+    ])
+    const sentOps = clientState.sendOps.mock.lastCall?.[2] as Op[]
+    expect(sentOps).toHaveLength(3)
+    const opIds = sentOps.map((sentOp) => sentOp.op_id)
+
+    // One silent send, one silent resend: the batch settles delivery-unknown.
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds
+    })
+
+    // A same-lineage catch-up: the added node and the new link both landed,
+    // and the deleted node stayed gone -- every parked op's effect is
+    // present, so `docEffectPresent` resolves all three kinds it can check.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map())
+    doc.getMap('links').set('9', new Y.Map())
+    bridge().follower.doc = doc
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: expect.arrayContaining(opIds)
     })
     unmount()
   })

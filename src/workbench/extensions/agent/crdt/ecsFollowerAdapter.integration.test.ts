@@ -1377,7 +1377,7 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   describe('ADR-CRDT-RECONCILE-0035 (c): an already-registered add is never a fresh add', () => {
-    function makeAdapter(hasPendingAddNode: (nodeId: string) => boolean) {
+    function makeAdapter(hasPendingAddNode?: (nodeId: string) => boolean) {
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
@@ -1475,6 +1475,26 @@ describe('EcsFollowerAdapter integration', () => {
           .getGraphNodesFor('root', 'root')
           .find(({ id }) => id === toNodeId(1))?.type
       ).toBe('Source')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('defaults to treating every already-registered add as a collision when no hasPendingAddNode is supplied', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter()
+      expect(deliver(seedNode99)).toBe(true)
+
+      mutations.addNode(
+        { id: 1, type: 'LocalOnlyType', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
+      })
 
       adapter.destroy()
       follower.destroy()
