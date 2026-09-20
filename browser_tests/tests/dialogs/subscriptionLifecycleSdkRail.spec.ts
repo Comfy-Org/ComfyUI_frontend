@@ -1,6 +1,13 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
-import type { BillingPlansResponse, Plan } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingOpStatusResponse,
+  BillingPlansResponse,
+  PaymentPortalResponse,
+  Plan,
+  ResubscribeResponse
+} from '@comfyorg/ingest-types'
 
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -137,7 +144,12 @@ async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
     r.fulfill(jsonRoute(CANCELLED_STATUS))
   )
   await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
+    r.fulfill(
+      jsonRoute({
+        amount_micros: 0,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse)
+    )
   )
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute(PLAN_CATALOG))
@@ -151,28 +163,49 @@ async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
     )
   })
   await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
+    r.fulfill(
+      jsonRoute({
+        amount_micros: 0,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse)
+    )
   )
 
+  // Both lifecycle routes answer POST only. A regression to GET would
+  // otherwise be served the success fixture and pass every assertion below,
+  // since none of them reads the method.
   await page.route('**/api/billing/subscription/resubscribe', async (r) => {
     resubscribeRequests.push(r.request())
+    if (r.request().method() !== 'POST') {
+      await r.fulfill({ status: 405, body: '' })
+      return
+    }
     if (resubscribeNotFound) {
       resubscribeNotFound = false
       await r.fulfill({ status: 404, body: '' })
       return
     }
     await r.fulfill(
-      jsonRoute({ billing_op_id: 'op-resubscribe-1', status: 'pending' })
+      jsonRoute({
+        billing_op_id: 'op-resubscribe-1',
+        status: 'pending'
+      } satisfies ResubscribeResponse)
     )
   })
   await page.route('**/api/billing/payment-portal', async (r) => {
     portalRequests.push(r.request())
+    if (r.request().method() !== 'POST') {
+      await r.fulfill({ status: 405, body: '' })
+      return
+    }
     if (portalNotFound) {
       portalNotFound = false
       await r.fulfill({ status: 404, body: '' })
       return
     }
-    await r.fulfill(jsonRoute({ url: PROVIDER_PORTAL_URL }))
+    await r.fulfill(
+      jsonRoute({ url: PROVIDER_PORTAL_URL } satisfies PaymentPortalResponse)
+    )
   })
   // Both rails poll the same operation route; it settles on the first read.
   await page.route('**/api/billing/ops/**', (r) =>
@@ -182,7 +215,7 @@ async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
         status: 'succeeded',
         started_at: '2026-09-20T00:00:00Z',
         completed_at: '2026-09-20T00:00:05Z'
-      })
+      } satisfies BillingOpStatusResponse)
     )
   )
 
