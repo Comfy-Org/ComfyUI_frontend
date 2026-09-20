@@ -31,7 +31,7 @@ function wait(ms: number): Promise<void> {
  *
  * No bare `--` separator — Vite ignores every argument after one.
  */
-export function devServerArgs(script: string): string[] {
+function devServerArgs(script: string): string[] {
   return ['run', script, '--port', String(devServerPort()), '--strictPort']
 }
 
