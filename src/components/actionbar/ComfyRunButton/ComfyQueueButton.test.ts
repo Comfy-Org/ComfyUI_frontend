@@ -23,7 +23,6 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

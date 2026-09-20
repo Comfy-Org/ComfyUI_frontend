@@ -8,7 +8,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -425,7 +425,7 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified(previousState)
-      this.squashState()
+      void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {

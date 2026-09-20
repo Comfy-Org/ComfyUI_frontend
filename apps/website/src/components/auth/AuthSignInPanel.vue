@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import SocialAuthButtons from '@comfyorg/account/vue/SocialAuthButtons'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'

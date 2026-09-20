@@ -21,7 +21,7 @@ vi.mock<unknown>(import('../scripts/posthog'), () => ({
   captureSignupRollbackFailure: h.captureRollback
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/firebase'), () => ({
+vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
   createFirebaseIdentity: () => ({
     onUserChanged: vi.fn(() => () => undefined),
     signInWithGoogle: h.signInWithGoogle,

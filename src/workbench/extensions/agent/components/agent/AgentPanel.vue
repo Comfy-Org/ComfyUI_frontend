@@ -10,6 +10,7 @@ import {
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
@@ -162,7 +163,7 @@ const sessionTitle = computed(() => {
 const renaming = ref(false)
 const renameDraft = ref('')
 const renameInput = ref<InstanceType<typeof Input>>()
-const titleButton = ref<HTMLButtonElement>()
+const titleButton = ref<InstanceType<typeof Button>>()
 
 async function startRename(): Promise<void> {
   renameDraft.value = sessionTitle.value ?? ''
@@ -175,7 +176,8 @@ async function startRename(): Promise<void> {
 async function exitRename(): Promise<void> {
   renaming.value = false
   await nextTick()
-  titleButton.value?.focus()
+  const button: unknown = titleButton.value?.$el
+  if (button instanceof HTMLButtonElement) button.focus()
 }
 
 function onRenameKeydown(event: KeyboardEvent): void {
@@ -253,15 +255,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <button
+        <Button
+          id="agent-chat-history"
           v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
+          variant="muted-textonly"
+          size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
+          class="size-6 shrink-0"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
-        </button>
+        </Button>
         <template v-if="renaming">
           <Input
             ref="renameInput"
@@ -279,24 +284,30 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-label="t('agent.chatOptions')"
           class="flex w-fit max-w-full min-w-0 items-center"
         >
-          <button
+          <Button
             ref="titleButton"
             type="button"
+            variant="muted-textonly"
+            size="sm"
             :disabled="sessionId === null"
-            class="flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+            class="min-w-0 justify-start text-left"
             @click="startRename"
           >
             <span class="min-w-0 truncate">{{
               sessionTitle || t('agent.newChatTitle')
             }}</span>
-          </button>
+          </Button>
           <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger
-              v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
-              :aria-label="t('agent.chatOptions')"
-              class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-            >
-              <span class="icon-[lucide--chevron-down] size-3" />
+            <DropdownMenuTrigger as-child>
+              <Button
+                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                variant="muted-textonly"
+                size="icon-sm"
+                :aria-label="t('agent.chatOptions')"
+                class="size-6 shrink-0"
+              >
+                <span class="icon-[lucide--chevron-down] size-3" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
