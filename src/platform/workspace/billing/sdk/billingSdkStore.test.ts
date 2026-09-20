@@ -780,3 +780,49 @@ describe('useBillingSdkStore operation projections', () => {
     expect(store.getOperation(opId)).toBeUndefined()
   })
 })
+
+describe('useBillingSdkStore billing events', () => {
+  const EVENT = {
+    createdAt: '2026-09-01T12:00:00.000Z',
+    event_id: 'evt-1',
+    event_type: 'topup_completed'
+  }
+
+  const SNAPSHOT = {
+    status: 'ok',
+    value: {
+      events: [EVENT],
+      page: 2,
+      limit: 20,
+      total: 21,
+      totalPages: 2,
+      scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+      readAt: 1_700_000_000_000
+    }
+  } as const
+
+  it('asks for the page it was given and returns it without the read metadata', async () => {
+    vi.mocked(harness.sdk.events.read).mockResolvedValue(SNAPSHOT)
+
+    const result = await useBillingSdkStore().readEvents({
+      page: 2,
+      limit: 20
+    })
+
+    expect(harness.sdk.events.read).toHaveBeenCalledWith({
+      page: 2,
+      limit: 20
+    })
+    expect(result).toEqual({
+      status: 'ok',
+      value: { events: [EVENT], page: 2, limit: 20, total: 21, totalPages: 2 }
+    })
+  })
+
+  it('passes a failed read through untouched', async () => {
+    const failure = { status: 'error', code: 'ACCESS_DENIED' } as const
+    vi.mocked(harness.sdk.events.read).mockResolvedValue(failure)
+
+    expect(await useBillingSdkStore().readEvents()).toEqual(failure)
+  })
+})

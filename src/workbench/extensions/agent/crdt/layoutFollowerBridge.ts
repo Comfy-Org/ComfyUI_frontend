@@ -11,6 +11,11 @@ import { wireLog } from './crdtLog'
 import { FollowerApplyError, FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
+/** A document update after the follower bridge has classified its provenance. */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
+
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
@@ -266,18 +271,32 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!this.applyFollowerUpdate(update, isCatchUp)) return
     if (!this.acceptReadableSchema(update)) return
 
-    this.dispatchFrameEvent('doc_update', update)
+    // Carries `catchUp` so consumers can tell the subscribe's own catch-up
+    // frame from a live one; see {@link ClassifiedDocUpdate}.
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
+    this.dispatchFrameEvent('doc_update', classifiedUpdate)
     this.finishRecoveryAfter(update)
   }
 
   private canProcessUpdate(update: DocUpdate): boolean {
     return (
       update.workflowId === this.sentWorkflowId &&
+      // The first incompatible frame is already in the Y.Doc. Same-lineage
+      // updates cannot remove those CRDT bytes, so keep the read gate latched
+      // until an explicit doc_reset replaces the lineage.
       this.schemaError === null &&
       !this.queueDuringApplyRecovery(update)
     )
   }
 
+  /**
+   * Deliberately compares against `ackSeq`, never `lastSeq`: while `lastSeq` is
+   * null the catch-up arrives AT `ackSeq`, so a `<= ackSeq` test would drop it
+   * and leave the follower on an empty doc (KA-11).
+   */
   private isCatchUp(update: DocUpdate): boolean {
     return this.catchUpPending && update.seq === this.ackSeq
   }
@@ -288,6 +307,19 @@ export class LayoutFollowerBridge extends EventTarget {
     this.finishApplyRecovery(this.applyRecovery.queued)
   }
 
+  /**
+   * Stale/duplicate frames cannot advance the replica, and ignoring them also
+   * prevents a replayed Yjs frame from spuriously re-running ECS effects. The
+   * one exception is the subscribe's own catch-up: see {@link isCatchUp}.
+   *
+   * Seq is only a gap detector. A jump withholds the uncertain frame and asks
+   * the host for a same-lineage state-vector delta using this EXACT follower
+   * doc; only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
+   * Before the first applied update the detector is armed from the ack seq N
+   * instead: the catch-up (seq N) and the first live frame (seq N+1) are both
+   * contiguous with it, while a first frame at N+2 or beyond is a real drop.
+   * Nothing arms it before the ack lands.
+   */
   private rejectSequence(update: DocUpdate, isCatchUp: boolean): boolean {
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
       this.dispatchFrameEvent('doc_stale', {
@@ -310,6 +342,10 @@ export class LayoutFollowerBridge extends EventTarget {
     return false
   }
 
+  /**
+   * Applies first and only then advances `lastSeq`, so a throwing apply does
+   * not consume its sequence and let the next frame past the gap detector.
+   */
   private applyFollowerUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
     try {
       this.follower.applyRemoteUpdate(update.update)
@@ -324,6 +360,13 @@ export class LayoutFollowerBridge extends EventTarget {
     return true
   }
 
+  /**
+   * KA-11 read-time gate. The frame must merge before its schema can be
+   * checked, but nothing downstream may READ a doc whose declared schema this
+   * build was not written against. Failing closed here, before the frame is
+   * re-dispatched, is what keeps a v2 doc from being half-projected onto the
+   * canvas by a v1 reader.
+   */
   private acceptReadableSchema(update: DocUpdate): boolean {
     try {
       assertReadableSchema(this.follower.doc)
