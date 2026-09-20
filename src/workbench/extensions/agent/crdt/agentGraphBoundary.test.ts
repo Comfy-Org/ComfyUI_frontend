@@ -17,7 +17,8 @@ import { describe, expect, it } from 'vitest'
  * This is a lexical scan, not an AST lint rule: it matches the member-access
  * forms TypeScript offers (`a.b`, `a?.b`, `a['b']`, `a?.['b']`) so a
  * rewrite cannot dodge the ratchet by changing call syntax. Aliasing the
- * store to another name is the remaining gap, deferred to an ESLint rule.
+ * store to another name (including `(nodeStore as X).deleteNode`) is the
+ * remaining gap, deferred to an ESLint rule.
  *
  * @see https://linear.app/comfyorg/issue/PM-1293
  * @see https://linear.app/comfyorg/issue/FE-2504
@@ -27,7 +28,11 @@ import { describe, expect, it } from 'vitest'
 function memberAccess(receiver: string, member: string): RegExp {
   const dot = String.raw`\??\.\s*${member}(?![$\w])`
   const bracket = String.raw`(?:\?\.)?\s*\[\s*['"]${member}['"]\s*\]`
-  return new RegExp(String.raw`\b${receiver}\s*!?\s*(?:${dot}|${bracket})`, 'g')
+  // `(?:\s*!)*` accepts any number of chained non-null assertions (`a!!.b`).
+  return new RegExp(
+    String.raw`\b${receiver}(?:\s*!)*\s*(?:${dot}|${bracket})`,
+    'g'
+  )
 }
 
 const FORBIDDEN_OPERATIONS = {
@@ -76,6 +81,7 @@ describe('forbidden-operation matcher', () => {
     'nodeStore.deleteNode(node)',
     'nodeStore?.deleteNode(node)',
     'nodeStore!.deleteNode(node)',
+    'nodeStore!!.deleteNode(node)',
     'nodeStore.deleteNode!(node)',
     'nodeStore.deleteNode<Node>(node)',
     "nodeStore['deleteNode'](node)",
