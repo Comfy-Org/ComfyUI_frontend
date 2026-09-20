@@ -234,6 +234,34 @@ describe('applyLiveWidgetValue', () => {
     expect(node.properties.mode).toBe('after')
   })
 
+  it('invokes a custom setter even when its getter already mirrors the store write', () => {
+    // Regression for a DynamicCombo-style widget (dynamicWidgets.ts): its
+    // `value` getter reads straight from the widget value store, so right
+    // after `widgetStore.setValue()` runs, `widget.value` already equals the
+    // new value, and a check comparing the getter's *post-write* result was
+    // always skipping the setter that carries the widget's real side effect.
+    const { graph, widget } = graphWithWidget()
+    const id = widget.widgetId!
+    const setter = vi.fn()
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => useWidgetValueStore().getWidget(id)?.value,
+      set: setter
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
+    expect(setter).toHaveBeenCalledExactlyOnceWith('after')
+  })
+
   it('creates an undefined backing property and syncs callback edits', () => {
     const { graph, node, widget } = graphWithWidget()
     widget.options = { ...widget.options, property: 'mode' }

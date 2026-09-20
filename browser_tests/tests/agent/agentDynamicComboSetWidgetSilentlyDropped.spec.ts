@@ -11,6 +11,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { toNodeId } from '@/types/nodeId'
 
 /**
  * Regression for the #comfy-agent-user-feedback report from Jo Zhang
@@ -70,7 +71,13 @@ const nodeDef: ComfyNodeDef = {
                 required: {
                   skin_detail: [
                     'INT',
-                    { default: 80, min: 0, max: 100, step: 1, display: 'slider' }
+                    {
+                      default: 80,
+                      min: 0,
+                      max: 100,
+                      step: 1,
+                      display: 'slider'
+                    }
                   ]
                 }
               }
@@ -277,22 +284,13 @@ test.describe(
         page.evaluate((id) => {
           const node = window.app!.graph.getNodeById(id)
           return (node?.widgets ?? []).map((widget) => widget.name)
-        }, NODE_ID)
+        }, toNodeId(NODE_ID))
 
       // The document now authoritatively records mode: "faithful" (matching
       // an agent tool call that reports success), so the canvas should grow
       // the `mode.skin_detail` widget the "faithful" option declares in the
       // node's real Python schema — exactly what a human clicking the same
-      // dropdown gets. It currently does not: `liveWidgetProjection.ts`
-      // never invokes the DynamicCombo widget's setter for a remote value
-      // patch, so the option looks stuck to the user even though the
-      // document (and any agent tool call reporting on it) has moved on.
-      test.fail(
-        true,
-        'liveWidgetProjection.ts setWidgetValue skips the DynamicCombo ' +
-          'value setter for a remote set_widget, so mode.skin_detail never ' +
-          'materializes on the live canvas'
-      )
+      // dropdown gets.
       await expect.poll(widgetNames).toContain('mode.skin_detail')
     })
   }
