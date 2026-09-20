@@ -10,7 +10,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import CurrentUserButton from './CurrentUserButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
