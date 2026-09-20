@@ -53,19 +53,17 @@ beforeEach(() => {
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, enabled: true, modelsAvailable: false },
-    { workshopInBuild: true, enabled: false, modelsAvailable: false },
-    { workshopInBuild: true, enabled: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true },
+    { workshopInBuild: true, enabled: false },
+    { workshopInBuild: true, enabled: true }
   ])(
-    'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    async ({ workshopInBuild, enabled, modelsAvailable }) => {
+    'keeps Models out of the top navigation when workshopInBuild is $workshopInBuild',
+    async ({ workshopInBuild, enabled }) => {
       hoisted.visibility!.value = enabled
       render(HeaderMain, { props: { workshopInBuild } })
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
-        modelsAvailable
-      )
+      expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
     }
   )
 
@@ -168,7 +166,7 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('ignores credits requests while Models is hidden', async () => {
+  it('ignores credits requests while workshop access is hidden', async () => {
     hoisted.flag!.value = true
     render(HeaderMain, { props: { workshopInBuild: true } })
     await nextTick()
@@ -187,17 +185,17 @@ describe('HeaderMain workshop gating', () => {
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('updates navigation and removes the account controls when access is revoked', async () => {
+  it('removes the account controls when access is revoked', async () => {
     hoisted.flag!.value = true
     render(HeaderMain, { props: { workshopInBuild: true } })
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     hoisted.visibility!.value = true
-    await screen.findByRole('link', { name: /^Models\b/i })
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
     hoisted.visibility!.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

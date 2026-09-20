@@ -4252,6 +4252,7 @@ Enterprise`
   },
 
   // SiteNav
+  'nav.enterprise': { en: 'Enterprise', 'zh-CN': '企业版' },
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
   'nav.community': { en: 'Community', 'zh-CN': '社区' },
@@ -4259,6 +4260,7 @@ Enterprise`
   'nav.company': { en: 'Company', 'zh-CN': '公司' },
   'nav.comfyLocal': { en: 'Comfy Desktop', 'zh-CN': 'Comfy 桌面版' },
   'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
+  'nav.appMode': { en: 'App Mode', 'zh-CN': 'App 模式' },
   'nav.comfyEnterprise': {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
@@ -4267,6 +4269,17 @@ Enterprise`
     en: 'Managed Builds',
     'zh-CN': '托管构建'
   },
+  'nav.serverlessApi': { en: 'Serverless API', 'zh-CN': 'Serverless API' },
+  'nav.comfyRouter': { en: 'Comfy Router', 'zh-CN': 'Comfy Router' },
+  'nav.comfySdks': { en: 'Comfy SDKs', 'zh-CN': 'Comfy SDKs' },
+  'nav.builds': { en: 'Builds', 'zh-CN': '构建' },
+  'nav.teamBilling': { en: 'Team Billing', 'zh-CN': '团队账单' },
+  'nav.commercialLicensing': {
+    en: 'Commercial Licensing',
+    'zh-CN': '商业授权'
+  },
+  'nav.comfyForTeams': { en: 'Comfy for Teams', 'zh-CN': 'Comfy 团队版' },
+  'nav.contactSales': { en: 'Contact Sales', 'zh-CN': '联系销售' },
   'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
   'nav.fdct': {
     en: 'Forward Deployed Creatives',
@@ -4316,7 +4329,22 @@ Enterprise`
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
-  'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
+  'nav.colExplore': { en: 'Explore', 'zh-CN': '探索' },
+  'nav.colCreate': { en: 'Create', 'zh-CN': '创作' },
+  'nav.colAutomate': { en: 'Automate', 'zh-CN': '自动化' },
+  'nav.colBuild': { en: 'Build', 'zh-CN': '构建' },
+  'nav.colScale': { en: 'Scale', 'zh-CN': '规模化' },
+  'nav.colResources': { en: 'Resources', 'zh-CN': '资源' },
+  'nav.colForTeams': { en: 'For Teams', 'zh-CN': '适用于团队' },
+  'nav.colForEnterprise': {
+    en: 'For Enterprise',
+    'zh-CN': '适用于企业'
+  },
+  'nav.colExploreParticipate': {
+    en: 'Explore & Participate',
+    'zh-CN': '探索与参与'
+  },
+  'nav.colUpdates': { en: 'Updates', 'zh-CN': '动态' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
   'nav.colMore': { en: 'More', 'zh-CN': '更多' },

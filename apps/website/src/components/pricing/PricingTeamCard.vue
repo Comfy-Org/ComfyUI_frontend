@@ -102,7 +102,7 @@ const ctaHref = computed(() =>
 </script>
 
 <template>
-  <PricingCard class="col-span-full">
+  <PricingCard id="team" class="col-span-full scroll-mt-32">
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-20">
       <div class="lg:col-span-2 lg:max-w-xl">
         <div

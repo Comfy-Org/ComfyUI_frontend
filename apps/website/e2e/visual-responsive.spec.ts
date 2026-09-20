@@ -33,7 +33,7 @@ async function navigateAndSettle(page: Page, url: string) {
   await expect(
     page
       .getByTestId('desktop-nav-links')
-      .getByRole('link', { name: 'Models', includeHidden: true })
+      .getByRole('button', { name: 'Products', includeHidden: true })
   ).toBeAttached()
   await waitForPpFormulaLight(page)
 }

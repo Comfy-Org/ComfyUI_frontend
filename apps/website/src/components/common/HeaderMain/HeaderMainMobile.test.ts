@@ -4,22 +4,34 @@ import { describe, expect, it } from 'vitest'
 
 import HeaderMainMobile from './HeaderMainMobile.vue'
 
-async function openMenu(workshopInBuild: boolean) {
+async function openMenu() {
   const user = userEvent.setup()
-  render(HeaderMainMobile, { props: { workshopInBuild } })
+  render(HeaderMainMobile)
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
+  return user
 }
 
 describe('HeaderMainMobile', () => {
-  it('omits Models when the workshop is not in the build', async () => {
-    await openMenu(false)
+  it('offers Products and Enterprise without a top-level Models item', async () => {
+    await openMenu()
 
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /^Products\b/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
 
-  it('offers Models when the workshop is in the build', async () => {
-    await openMenu(true)
+  it('shows the Enterprise links in one section', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Enterprise\b/i }))
 
-    expect(screen.getByRole('link', { name: /^Models\b/i })).toBeTruthy()
+    for (const label of [
+      'Comfy Enterprise',
+      'Forward Deployed Creatives',
+      'Team Billing',
+      'Commercial Licensing',
+      'Contact Sales'
+    ]) {
+      expect(screen.getByRole('link', { name: label })).toBeTruthy()
+    }
   })
 })
