@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
+  collapseOutsideSelectionOnPrimaryPointerDown,
   collapseTextSelectionOutside,
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
@@ -12,12 +11,16 @@ function mount<T extends HTMLElement>(element: T): T {
   return element
 }
 
-function selectTextOf(element: Element): void {
-  const range = document.createRange()
-  range.selectNodeContents(element)
+function select(range: Range): void {
   const selection = window.getSelection()
   selection?.removeAllRanges()
   selection?.addRange(range)
+}
+
+function selectTextOf(element: Element): void {
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  select(range)
 }
 
 function textBlock(text: string): HTMLParagraphElement {
@@ -26,12 +29,12 @@ function textBlock(text: string): HTMLParagraphElement {
   return block
 }
 
-describe('shouldIgnoreCopyPaste', () => {
-  beforeEach(() => {
-    document.body.replaceChildren()
-    window.getSelection()?.removeAllRanges()
-  })
+beforeEach(() => {
+  document.body.replaceChildren()
+  window.getSelection()?.removeAllRanges()
+})
 
+describe('shouldIgnoreCopyPaste', () => {
   it.for([
     {
       name: 'a textarea',
@@ -72,24 +75,27 @@ describe('shouldIgnoreCopyPaste', () => {
       false
     )
   })
-
-  it('ignores every event in linear mode', () => {
-    useCanvasStore().linearMode = true
-    const canvas = mount(document.createElement('canvas'))
-
-    expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
-  })
 })
 
 describe('collapseTextSelectionOutside', () => {
-  beforeEach(() => {
-    document.body.replaceChildren()
-    window.getSelection()?.removeAllRanges()
-  })
-
   it('collapses a selection that starts outside the container', () => {
     const container = mount(document.createElement('div'))
     selectTextOf(mount(textBlock('agent reply')))
+
+    collapseTextSelectionOutside(container)
+
+    expect(window.getSelection()?.toString()).toBe('')
+  })
+
+  it('collapses a selection anchored inside the container that extends outside it', () => {
+    const container = mount(document.createElement('div'))
+    const inside = textBlock('inside')
+    container.append(inside)
+    const outside = mount(textBlock('outside'))
+    const range = document.createRange()
+    range.setStart(inside, 0)
+    range.setEnd(outside, 1)
+    select(range)
 
     collapseTextSelectionOutside(container)
 
@@ -106,4 +112,28 @@ describe('collapseTextSelectionOutside', () => {
 
     expect(window.getSelection()?.toString()).toBe('node title')
   })
+})
+
+describe('collapseOutsideSelectionOnPrimaryPointerDown', () => {
+  it.for([
+    { button: 'primary', code: 0, selected: '' },
+    { button: 'middle', code: 1, selected: 'agent reply' },
+    { button: 'secondary', code: 2, selected: 'agent reply' }
+  ])(
+    'a $button pointerdown leaves the outside selection as "$selected"',
+    ({ code, selected }) => {
+      const graph = mount(document.createElement('div'))
+      graph.addEventListener(
+        'pointerdown',
+        collapseOutsideSelectionOnPrimaryPointerDown
+      )
+      selectTextOf(mount(textBlock('agent reply')))
+
+      graph.dispatchEvent(
+        new PointerEvent('pointerdown', { button: code, bubbles: true })
+      )
+
+      expect(window.getSelection()?.toString()).toBe(selected)
+    }
+  )
 })

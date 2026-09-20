@@ -199,7 +199,7 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
-  collapseTextSelectionOutside,
+  collapseOutsideSelectionOnPrimaryPointerDown,
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
@@ -627,17 +627,16 @@ onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
-function collapseOutsideSelectionOnClick(e: PointerEvent) {
-  if (e.button === 0 && e.target instanceof Element)
-    collapseTextSelectionOutside(e.target)
-}
 
-useEventListener(canvasRef, 'pointerdown', collapseOutsideSelectionOnClick, {
-  capture: true
-})
+useEventListener(
+  canvasRef,
+  'pointerdown',
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  { capture: true }
+)
 
 function forwardPointerDownPanEvent(e: PointerEvent) {
-  collapseOutsideSelectionOnClick(e)
+  collapseOutsideSelectionOnPrimaryPointerDown(e)
   forwardPanEvent(e, isMiddlePointerInput)
 }
 
