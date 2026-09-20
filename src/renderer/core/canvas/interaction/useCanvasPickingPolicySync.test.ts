@@ -11,8 +11,11 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import { useCanvasPickingPolicySync } from './useCanvasPickingPolicySync'
 
-function createCanvas(draw: () => void = vi.fn()): LGraphCanvas {
-  return fromPartial<LGraphCanvas>({ draw, read_only: false })
+function createCanvas(
+  draw: () => void = vi.fn(),
+  selectOnly = false
+): LGraphCanvas {
+  return fromPartial<LGraphCanvas>({ draw, read_only: false, selectOnly })
 }
 
 describe('useCanvasPickingPolicySync', () => {
@@ -112,5 +115,51 @@ describe('useCanvasPickingPolicySync', () => {
     expect(canvasStore.canvas.selectOnly).toBe(true)
     expect(canvasStore.canvas.show_info).toBe(false)
     expect(draw).not.toHaveBeenCalled()
+  })
+
+  it.for([{ initial: false }, { initial: true }])(
+    'restores selectOnly=$initial once picking ends',
+    ({ initial }) => {
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = createCanvas(vi.fn(), initial)
+      scope.run(useCanvasPickingPolicySync)
+
+      useAgentNodeSelectionStore().isActive = true
+
+      expect(canvasStore.canvas.selectOnly).toBe(true)
+
+      useAgentNodeSelectionStore().isActive = false
+
+      expect(canvasStore.canvas.selectOnly).toBe(initial)
+    }
+  )
+
+  it('restores the replaced canvas and pins the new one mid-pick', () => {
+    const canvasStore = useCanvasStore()
+    const first = createCanvas(vi.fn(), false)
+    const second = createCanvas(vi.fn(), true)
+    canvasStore.canvas = first
+    scope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    canvasStore.canvas = second
+
+    expect(first.selectOnly).toBe(false)
+    expect(second.selectOnly).toBe(true)
+
+    useAgentNodeSelectionStore().isActive = false
+
+    expect(second.selectOnly).toBe(true)
+  })
+
+  it('restores selectOnly when the scope stops mid-pick', () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = createCanvas()
+    scope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    scope.stop()
+
+    expect(canvasStore.canvas.selectOnly).toBe(false)
   })
 })
