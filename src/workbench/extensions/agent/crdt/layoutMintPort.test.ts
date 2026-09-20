@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
@@ -78,7 +79,7 @@ describe('attachLayoutMintPort', () => {
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      boundRootGraphId: () => 'root',
+      boundRootGraphId: () => toRootGraphId('root'),
       source: {
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
@@ -122,6 +123,62 @@ describe('attachLayoutMintPort', () => {
     deliver(createNodeChange('1'))
 
     expect(minted).toHaveLength(1)
+  })
+
+  it('clears the dedupe entry on a same-root delete_node', () => {
+    const rootCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+    const rootDelete = {
+      operation: {
+        ...deleteChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+
+    deliver(rootCreate)
+    deliver(rootDelete)
+    deliver(rootCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(2)
+  })
+
+  it("does not let a foreign root graph's delete clear the dedupe entry for the bound graph (regression)", () => {
+    // Mint node 1 for the bound graph (root), then a root-scoped delete for
+    // a different graph (other) sharing the same node id - a workflow load
+    // still in flight, per reportOpForUnboundGraph's own scenario. That
+    // foreign delete must still be reported and dropped as a wire op, but it
+    // must not clear the dedupe entry `mintedNodeIds` holds for root's node
+    // 1: a replayed create for root must not re-mint.
+    const rootCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+    const foreignDelete = {
+      operation: {
+        ...deleteChange('1').operation,
+        graphId: 'other',
+        ownerGraphId: 'other'
+      }
+    }
+
+    deliver(rootCreate)
+    deliver(foreignDelete)
+    deliver(rootCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_op_for_unbound_graph',
+      context: { graphId: 'other', boundRootGraphId: 'root', nodeId: '1' }
+    })
   })
 
   it('mints add_node again for the same id after an intentional clear', () => {

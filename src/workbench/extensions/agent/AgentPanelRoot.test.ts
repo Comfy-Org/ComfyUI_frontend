@@ -6612,7 +6612,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-42')
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
     )
   })
 
@@ -6633,14 +6635,18 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('start on A')
 
     await vi.waitFor(() =>
-      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-a')
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-a')
+      )
     )
 
     // A stays bound but leaves the screen; a write-once latch would also
     // still report wf-a here, so this alone would not catch a regression.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-a')
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-a')
+    )
 
     // The agent moves the session onto B's own tab.
     ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
@@ -6648,6 +6654,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
     )
-    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe('wf-b')
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-b')
+    )
   })
 })

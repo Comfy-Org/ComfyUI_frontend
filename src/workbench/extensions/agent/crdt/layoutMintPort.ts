@@ -9,6 +9,7 @@
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { RootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
 import type { SeveranceLog } from './linkMintPort'
@@ -65,7 +66,7 @@ export interface LayoutMintPortDeps {
    * graph belongs to a workflow load still in flight and must not mint into
    * this document.
    */
-  boundRootGraphId(): string | null
+  boundRootGraphId(): RootGraphId | null
   source: MintSnapshotSource
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
@@ -173,14 +174,27 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     return true
   }
 
+  /**
+   * The bound root graph id when `operation` names a different graph, or
+   * null when it targets the bound graph (or scope cannot be judged: no
+   * bound graph latched, or no graphId on the operation).
+   */
+  function foreignBoundRootGraphId(
+    operation: LayoutChangeView['operation']
+  ): RootGraphId | null {
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId === null) return null
+    if (operation.graphId === undefined) return null
+    if (operation.graphId === boundRootGraphId) return null
+    return boundRootGraphId
+  }
+
   function reportOpForUnboundGraph(
     operation: LayoutChangeView['operation'],
     action: 'create' | 'delete'
   ): boolean {
-    const boundRootGraphId = deps.boundRootGraphId()
+    const boundRootGraphId = foreignBoundRootGraphId(operation)
     if (boundRootGraphId === null) return false
-    if (operation.graphId === undefined) return false
-    if (operation.graphId === boundRootGraphId) return false
 
     const reportKey = `${action}:${operation.graphId}:${boundRootGraphId}`
     if (reportedUnboundGraphChanges.has(reportKey)) return true
@@ -237,12 +251,17 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        // The document lost this id the moment a deleteNode change fired,
-        // regardless of whether this port also gates the delete_node op for
-        // echo-suppression or teardown - the two questions are independent
-        // (see the leading comment on `mintedNodeIds`).
+        // The document lost this id the moment a same-root deleteNode change
+        // fired, regardless of whether this port also gates the delete_node
+        // op for echo-suppression or teardown - the two questions are
+        // independent (see the leading comment on `mintedNodeIds`). A
+        // foreign-graph delete (a workflow load still in flight, sharing a
+        // node id with the bound document) must not touch this bookkeeping:
+        // it names no id the bound document actually lost.
         if (operation.nodeId === undefined) return
-        mintedNodeIds.delete(String(operation.nodeId))
+        if (foreignBoundRootGraphId(operation) === null) {
+          mintedNodeIds.delete(String(operation.nodeId))
+        }
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         if (reportOpForUnboundGraph(operation, 'delete')) return

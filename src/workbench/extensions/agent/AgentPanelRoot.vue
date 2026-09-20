@@ -55,6 +55,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -626,11 +627,11 @@ const {
 // workflow's `activeState` before the shared renderer graph is rewritten, so
 // this stays the bound workflow's own root id through a tab switch instead of
 // tracking whichever graph the switch is loading.
-const boundRootGraphId = computed<string | null>(() => {
+const boundRootGraphId = computed<RootGraphId | null>(() => {
   const bound = boundWorkflowId.value
-  return bound === null
-    ? null
-    : (boundOrOpenWorkflowFor(bound)?.activeState?.id ?? null)
+  if (bound === null) return null
+  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
+  return id === undefined ? null : toRootGraphId(id)
 })
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,

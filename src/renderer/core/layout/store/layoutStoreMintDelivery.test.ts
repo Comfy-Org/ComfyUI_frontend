@@ -18,7 +18,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { GraphScope } from '@/types/graphScopeId'
+import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
@@ -125,7 +125,7 @@ describe('mint ports against the real layout store delivery', () => {
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      boundRootGraphId: () => graphId
+      boundRootGraphId: () => toRootGraphId(graphId)
     })
   })
 
@@ -323,7 +323,7 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
   let wiring: MintPortWiring
   let liveGraph: LGraph
   let graphNodes: Map<string, LGraphNode>
-  let boundRootGraphId: string
+  let boundRootGraphId: RootGraphId
 
   beforeEach(() => {
     minted = []
@@ -333,7 +333,7 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
     // The workflow bound before the switch below starts; `boundRootGraphId`
     // (AgentPanelRoot.vue) reads it off the bound workflow's own serialized
     // state, which does not change until the binding itself changes.
-    boundRootGraphId = liveGraph.id
+    boundRootGraphId = toRootGraphId(liveGraph.id)
 
     const graphAdapter: MintableGraph = {
       get id() {

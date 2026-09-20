@@ -90,7 +90,7 @@ describe('attachMintPortWiring', () => {
       },
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      boundRootGraphId: () => ROOT_ID
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 

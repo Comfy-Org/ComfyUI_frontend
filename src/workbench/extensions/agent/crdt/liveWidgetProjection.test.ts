@@ -56,7 +56,7 @@ function withMintWiring(
     layoutChanges: () => () => undefined,
     localActorPrefix: 'user-',
     getGraph: () => graph,
-    boundRootGraphId: () => graph.id
+    boundRootGraphId: () => toRootGraphId(graph.id)
   })
   try {
     run(minted)

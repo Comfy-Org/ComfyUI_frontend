@@ -8,6 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -56,7 +57,7 @@ export interface MintPortWiringDeps {
    * already in flight when the binding flips cannot mint the new graph's
    * nodes into the old document.
    */
-  boundRootGraphId(): string | null
+  boundRootGraphId(): RootGraphId | null
 }
 
 export interface MintPortWiring {
