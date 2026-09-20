@@ -12,6 +12,7 @@ function assetPath(relativePath: string) {
 
 const IMAGE_PLACEHOLDER = assetPath('../assets/placeholder-1x1.webp')
 const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
+const TEMPLATE_GRAPH = assetPath('../assets/workflow-template.json')
 const INTER_FONT = readFileSync(
   assetPath('../assets/inter-latin.woff2')
 ).toString('base64')
@@ -34,6 +35,10 @@ const MEDIA_PATTERNS = [
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/assets\.sync\.so\/docs\/example-(?:audio\.wav|video\.mp4)$/i
 ]
+// The workflow page draws the published template, so the graph it draws in a
+// test is a stub of one rather than whatever main holds today.
+const TEMPLATE_GRAPH_PATTERN =
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/[^/]+\.json(?:\?.*)?$/i
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'
@@ -112,6 +117,11 @@ const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
     matches: (_route, url) =>
       MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)),
     handle: fulfillMedia
+  },
+  {
+    matches: (_route, url) => TEMPLATE_GRAPH_PATTERN.test(url.href),
+    handle: (route) =>
+      route.fulfill({ path: TEMPLATE_GRAPH, contentType: 'application/json' })
   },
   {
     matches: isNodeImage,

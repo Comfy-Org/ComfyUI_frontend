@@ -145,7 +145,9 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
     await expect(page.getByTestId('workflow-outputs')).toBeVisible()
     await expect(page.getByTestId('workflow-needs')).toBeVisible()
-    await expect(page.getByTestId('workflow-graph')).toBeVisible()
+    await expect(
+      page.getByTestId('workflow-graph').getByRole('img')
+    ).toBeVisible()
   })
 
   // The way out and the way to keep it are both offered, and the graph opens
@@ -155,7 +157,11 @@ test.describe('V2 catalogue', () => {
   }) => {
     await page.goto('/playground/workflow/video_minimax_h3_i2v/')
 
-    const actions = page.getByTestId('workflow-actions')
+    // The graph is what decides whether to take the workflow anywhere, so the
+    // two ways of taking it live with it rather than in the sidebar.
+    const actions = page
+      .getByTestId('workflow-graph-section')
+      .getByTestId('workflow-actions')
     await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
       'href',
       /cloud\.comfy\.org\/\?template=video_minimax_h3_i2v/
