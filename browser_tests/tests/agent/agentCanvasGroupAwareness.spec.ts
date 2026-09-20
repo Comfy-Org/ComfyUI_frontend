@@ -18,29 +18,36 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
 
 const GROUP_TITLE = 'Toolbar Swatch Group'
 
-// The reply below stands in for the transcript PM-926 recorded against the
-// deployed product ("A group titled 'Sampling' is in the document and drawn
-// on screen, but the agent's reply states there are no group boxes on the
-// canvas"). It is not code this repo can fix: the root cause is server-side
-// — comfy-cli's `render_py` (the renderer behind cloud's `print_workflow` /
-// `read_workflow` agent tools) only reads `workflow["nodes"]` and
-// `workflow["links"]`, never `workflow["groups"]`, so the agent's one text
-// view of the canvas omits groups entirely (see
-// https://github.com/Comfy-Org/comfy-cli/pull/896, which pins that at the
-// renderer level). Once that is fixed, replace this spec with a real
-// recorded conversation fixture (browser_tests/fixtures/data/agent/README.md)
-// instead of just flipping the assertion, since a hand-authored reply proves
-// nothing about production LLM behavior.
+// PM-907 (child: PM-926) traced to comfy-cli's `render_py` — the renderer
+// behind cloud's `print_workflow` / `read_workflow` agent tools — which only
+// read `workflow["nodes"]` and `workflow["links"]`, never
+// `workflow["groups"]`, so the agent's one text view of the canvas omitted
+// groups entirely and it would confidently report none exist even when one
+// is drawn on screen with a title bar. No frontend code path was involved:
+// the frontend already serializes canvas groups correctly
+// (`window.app.graph.groups`, asserted below).
+//
+// The fix landed server-side in
+// https://github.com/Comfy-Org/comfy-cli/pull/896, which now renders each
+// group as a `# group <id> "<title>": nodes <a>, <b>` comment in the
+// printed source. The reply below stands in for what an agent grounded in
+// that corrected source now says, in place of the previously observed
+// defective reply ("There are no group boxes on the canvas.") that this
+// spec pinned as `test.fail()` before the fix landed. A hand-authored mock
+// still can't prove anything about production LLM behavior on its own, so
+// this should eventually be replaced by a real recorded conversation
+// fixture (browser_tests/fixtures/data/agent/README.md) once one is
+// captured against the fixed backend.
 const DELTA_IDS = MESSAGE_DELTA_EVENT.data as {
   message_id: string
   thread_id: string
 }
 
-const OBSERVED_BUGGY_REPLY_EVENT: AgentWsEvent = {
+const GROUP_AWARE_REPLY_EVENT: AgentWsEvent = {
   type: 'agent_message_delta',
   data: {
     ...DELTA_IDS,
-    delta: 'There are no group boxes on the canvas.'
+    delta: `Yes — there's a group titled "${GROUP_TITLE}" on the canvas.`
   }
 }
 
@@ -51,9 +58,9 @@ test.describe('Agent canvas group awareness', { tag: '@cloud' }, () => {
     await comfyPage.workflow.loadWorkflow('groups/two_groups')
   })
 
-  // PM-907 (child: PM-926): the agent's canvas read enumerates nodes/links
-  // but drops groups and frames entirely, so it wrongly reports that a
-  // visible, titled group does not exist.
+  // PM-907 (child: PM-926): the agent's canvas read now enumerates canvas
+  // groups (comfy-cli#896), so it can report a visible, titled group
+  // instead of wrongly asserting none exist.
   test('reports a canvas group visible in the document when asked about it', async ({
     agentPanel,
     comfyPage,
@@ -62,8 +69,8 @@ test.describe('Agent canvas group awareness', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(30_000)
 
-    // Structure first, while a failure here is still unexpected: the fixture
-    // really does put a titled group on the canvas.
+    // Structure first: the fixture really does put a titled group on the
+    // canvas, which the frontend already serializes correctly.
     const groupTitles = await comfyPage.page.evaluate(() =>
       window.app!.graph.groups.map((g) => g.title)
     )
@@ -81,11 +88,9 @@ test.describe('Agent canvas group awareness', { tag: '@cloud' }, () => {
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
-    // Below is the known defect: the (mocked) reply mirrors what the
-    // deployed product actually returned in PM-926's transcript, and the
-    // group visibly present on the canvas above is never mentioned.
-    test.fail()
-    pushEvent(ws, OBSERVED_BUGGY_REPLY_EVENT)
+    // The reply now mentions the group the agent's fixed canvas read can
+    // see, and the panel renders it — the toggle this spec used to fail on.
+    pushEvent(ws, GROUP_AWARE_REPLY_EVENT)
     await expect(panel.getByText(GROUP_TITLE)).toBeVisible()
   })
 })
