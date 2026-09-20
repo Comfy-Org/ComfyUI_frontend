@@ -1,5 +1,6 @@
 import {
   applyOps,
+  linksMap,
   mint,
   project,
   readGraph
@@ -21,6 +22,15 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
+
+type HostLinkTuple = [
+  id: number,
+  fromNode: string | number,
+  fromSlot: number,
+  toNode: string | number,
+  toSlot: number,
+  type: string
+]
 
 // The shape the fake host puts on the wire; production's parseServerDocFrame
 // validates each one at send time.
@@ -122,6 +132,24 @@ export class HostDoc {
       ),
       outcomes: result.outcomes
     }
+  }
+
+  replaceLink(link: HostLinkTuple): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const replacement = new Y.Array<unknown>()
+    replacement.push(link)
+    linksMap(this.doc).set(String(link[0]), replacement)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  link(id: number): unknown {
+    const link = linksMap(this.doc).get(String(id))
+    return link instanceof Y.Array ? link.toJSON() : link
   }
 
   // A human tab's batch arrives already enveloped. It is applied as sent and
