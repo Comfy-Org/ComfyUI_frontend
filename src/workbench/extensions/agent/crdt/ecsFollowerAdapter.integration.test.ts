@@ -1,4 +1,9 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -49,6 +54,72 @@ function op(id: string, baseVersion: number, payload: object) {
 describe('EcsFollowerAdapter integration', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('retires a previously valid link when its replacement targets an incompatible slot', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'image', type: 'IMAGE', link: 9 }]
+          },
+          {
+            id: 3,
+            type: 'Sink',
+            inputs: [{ name: 'prompt', type: 'STRING', link: null }]
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+    adapter.bind('wf', follower)
+    try {
+      const initial = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(initial)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: initial })
+      ).toBe(true)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toMatchObject({ targetNodeId: '2' })
+
+      const before = Y.encodeStateVector(host)
+      const replacement = new Y.Array<unknown>()
+      replacement.push([9, 1, 0, 3, 0, 'STRING'])
+      linksMap(host).set('9', replacement)
+      const update = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        true
+      )
+      const retainedLink = linksMap(follower.doc).get('9')
+      expect(retainedLink).toBeInstanceOf(Y.Array)
+      if (!(retainedLink instanceof Y.Array)) throw new Error('link is missing')
+      expect(retainedLink.toJSON()).toEqual([9, 1, 0, 3, 0, 'STRING'])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
+    } finally {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    }
   })
 
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
@@ -308,6 +379,95 @@ describe('EcsFollowerAdapter integration', () => {
       [toNodeId(99)],
       expect.objectContaining({ opId: 'replay' })
     )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('does not let an already-invalid retained link block reconciliation of unrelated valid state', () => {
+    let scopeAvailable = true
+    const mutations = createGraphMutations({
+      placement: inertPlacementPort,
+      getScope: () => (scopeAvailable ? scope : null),
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'prompt', type: 'STRING', link: 9 }],
+            outputs: []
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const seedUpdate = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(seedUpdate)
+
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: seedUpdate })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+
+    const before = Y.encodeStateVector(host)
+    const ops = [
+      op('add-node-3', 1, {
+        op: 'add_node',
+        node_id: 3,
+        class_type: 'Sink',
+        pos: [500, 0],
+        node: { id: 3, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ] as Parameters<typeof applyOps>[1]
+    const result = applyOps(host, ops, catalog)
+    expect(result.outcomes[0]?.outcome).toBe('applied')
+    const growUpdate = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(growUpdate)
+
+    scopeAvailable = false
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: growUpdate })
+    ).toBe(false)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+
+    scopeAvailable = true
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 3, update: growUpdate })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2), toNodeId(3)])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(linksMap(follower.doc).has('9')).toBe(true)
 
     adapter.destroy()
     follower.destroy()
