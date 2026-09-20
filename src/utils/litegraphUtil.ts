@@ -1,7 +1,7 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -117,7 +117,7 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
-export function resolveComboValues(widget: IComboWidget): string[] {
+export function resolveComboValues(widget: IComboWidget): (string | number)[] {
   const values = widget.options.values
   if (typeof values === 'function') return values(widget)
   if (Array.isArray(values)) return values

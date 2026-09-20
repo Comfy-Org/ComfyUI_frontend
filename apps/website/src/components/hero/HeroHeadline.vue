@@ -17,7 +17,7 @@ const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
 
 <template>
   <h1
-    class="font-formula-narrow flex flex-col items-center font-semibold tracking-[-0.02em] uppercase"
+    class="flex flex-col items-center font-formula-narrow font-semibold tracking-[-0.02em] uppercase"
   >
     <template v-for="(line, i) in lines" :key="line">
       <!-- The link piece keeps a floor size: purely em-proportional it
@@ -37,7 +37,7 @@ const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
           aria-hidden="true"
         />
         <span
-          class="bg-primary-comfy-yellow flex items-center leading-none text-primary-comfy-ink"
+          class="flex items-center bg-primary-comfy-yellow leading-none text-primary-comfy-ink"
         >
           <span :class="inner">{{ line }}</span>
         </span>

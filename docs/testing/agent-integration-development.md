@@ -84,6 +84,15 @@ Paste the recorder command it prints, one `--prompt` per turn.
 4. Start a local ComfyUI backend at `http://127.0.0.1:8188`.
 5. Export `ANTHROPIC_API_KEY`. `ANTHROPIC_BASE_URL` may be used instead for a local
    compatible model endpoint.
+6. To complete a turn through the Comfy model proxy without a browser login, start the
+   harness with a Comfy API key:
+
+   ```bash
+   DEV_AGENT_COMFY_TOKEN=comfyui-… pnpm tsx scripts/dev-agent-integration.ts
+   ```
+
+   Vite forwards it to the standalone agent as `X-Comfy-Token`. Without it, the panel
+   starts but model requests return 401.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
@@ -112,7 +121,9 @@ traffic continues to reach ComfyUI.
 HTTP and the socket are stubs because a replay must be deterministic and
 model-free, so the agent's side is data; the in-process doc host runs the same
 library the real host runs. The smoke is the only path that proves the real
-HTTP, socket, agent and doc host together. Every frame carries its offset from
+HTTP, socket and agent together; it runs on the standalone harness, which
+unsets `DOC_HOST_ENDPOINT` and turns CRDT mode off, so the external doc host
+is not on that path. Every frame carries its offset from
 the turn's first frame; replay sends back to back by default and
 `AGENT_REPLAY_TIMING=recorded` waits out the recorded gaps.
 

@@ -39,7 +39,7 @@ const {
 </script>
 
 <template>
-  <section :id :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :id :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-24">
       <div class="shrink-0 lg:w-80">
         <h2

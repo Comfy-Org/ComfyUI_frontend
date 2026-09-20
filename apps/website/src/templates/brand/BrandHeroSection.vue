@@ -10,15 +10,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto px-6 pt-4 pb-10 text-center lg:px-20 lg:pb-12"
+    class="mx-auto max-w-9xl px-6 pt-4 pb-10 text-center lg:px-20 lg:pb-12"
   >
     <p
-      class="text-primary-comfy-yellow text-sm font-extrabold tracking-[0.7px] uppercase"
+      class="text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
     >
       {{ t('brand.hero.label', locale) }}
     </p>
     <h1
-      class="lg:text-6.5xl mx-auto mt-6 max-w-4xl text-4xl leading-[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl"
+      class="mx-auto mt-6 max-w-4xl text-4xl leading-[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl lg:text-6.5xl"
     >
       {{ t('brand.hero.heading', locale) }}
     </h1>

@@ -147,4 +147,21 @@ describe('GlobalToast', () => {
 
     expect(toastService.add).not.toHaveBeenCalled()
   })
+  it('does not replay a removed progress message or discard other deferred messages', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const selection = useAgentNodeSelectionStore()
+    const progress = { severity: 'info' as const, summary: 'Preparing samples' }
+    const warning = { severity: 'warn' as const, summary: 'Missing sample' }
+    selection.isActive = true
+    await nextTick()
+    toastStore.add(progress)
+    toastStore.add(warning)
+    await nextTick()
+    toastStore.remove(progress)
+    await nextTick()
+    selection.isActive = false
+    await nextTick()
+    expect(toastService.add).toHaveBeenCalledExactlyOnceWith(warning)
+  })
 })
