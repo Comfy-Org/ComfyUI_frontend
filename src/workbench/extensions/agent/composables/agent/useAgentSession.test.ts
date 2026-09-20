@@ -1464,7 +1464,9 @@ describe('useAgentSession (v1 composition root)', () => {
     [15000, 5],
     [30999, 5],
     [31000, 6],
-    [100_000, 6]
+    [46999, 6],
+    [47000, 7],
+    [100_000, 10]
   ] as const)(
     '(g17) %i ms after reconnect the still-streaming turn has been polled %i times',
     async ([elapsedMs, polls]) => {
@@ -1491,10 +1493,16 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
-  it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
+  it('(g18) a 404 answered after the socket already settled the turn does not forget the thread', async () => {
     vi.useFakeTimers()
     try {
-      const getMessages = vi.fn(hangingGetMessages)
+      const pendingHistory: Array<(reason: unknown) => void> = []
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            pendingHistory.push(reject)
+          })
+      )
       const rest = fakeRest({ getMessages })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -1506,20 +1514,25 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(59_999)
-      expect(getMessages).toHaveBeenCalledTimes(1)
-      const signal = getMessages.mock.calls[0]?.[1]?.signal
-      assert.exists(signal)
-      expect(signal.aborted).toBe(false)
-
-      await vi.advanceTimersByTimeAsync(1)
-      expect(signal.aborted).toBe(true)
-      expect(session.isStreaming.value).toBe(true)
-
-      status(false)
-      status(true)
       await vi.advanceTimersByTimeAsync(0)
-      expect(getMessages).toHaveBeenCalledTimes(2)
+      const [recovery] = pendingHistory
+      assert.exists(recovery)
+
+      emit(delta('msg-1', ' from socket'))
+      emit(done('msg-1'))
+      expect(session.isStreaming.value).toBe(false)
+
+      recovery(new AgentApiError('gone', 404, undefined))
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(session.threadId.value).toBe('th-1')
+      expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
     } finally {
       vi.useRealTimers()
     }
