@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page, Request } from '@playwright/test'
 import type {
+  BillingBalanceResponse,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
@@ -106,7 +107,7 @@ const BALANCE = {
   effective_balance_micros: 6_000,
   cloud_credit_balance_micros: 5_000,
   prepaid_balance_micros: 1_000
-}
+} satisfies BillingBalanceResponse
 
 /**
  * Beyond Number.MAX_SAFE_INTEGER, sent as raw JSON: written as a JS literal the
@@ -434,5 +435,22 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     // in-flight answer.
     await expect(content.getByText('node-on-page-2')).toBeVisible()
     await expect.poll(() => routes.eventPages).toContain('2')
+
+    // Page 2 is fetched by the *same* rail, not just fetched. Both rails serve
+    // this fixture identically, so the rendered row and the recorded page
+    // number above are both satisfied by a legacy paging request — the
+    // transport is the only thing that separates them, and the boot-time
+    // assertion cannot speak for a request made after a click.
+    await expect
+      .poll(() =>
+        routes.reads
+          .filter(
+            (request) =>
+              request.url().includes('/api/billing/events') &&
+              new URL(request.url()).searchParams.get('page') === '2'
+          )
+          .map(transport)
+      )
+      .toEqual(['fetch'])
   })
 })
