@@ -76,7 +76,9 @@ export interface MintPortWiringDeps {
    * state (`_restoringState`). Such a load is a human intent whose result
    * must reach the doc, so the wiring diffs the graph across the load bracket
    * and mints node additions/deletions, changed present widget values, and
-   * link additions (QAF-51). Optional: absent means never.
+   * link additions (QAF-51). Widget-key deletion and standalone disconnect
+   * are outside that subset; FE-2229 tracks them along with the restore
+   * target/follower races. Optional: absent means never.
    */
   isRestoringState?(): boolean
 }
@@ -276,8 +278,9 @@ function reportDetachedLinks(
  * Express the supported undo/redo subset as semantic ops: node deletions
  * (with the links they severed), node additions, changed values for widget
  * keys present after restore, and link additions. Removed widget keys and
- * standalone disconnects are not representable; a standalone disconnect is
- * surfaced rather than silently dropped.
+ * standalone disconnects are not representable by the current operation
+ * contract; a standalone disconnect is surfaced rather than silently dropped.
+ * FE-2229 tracks lifting both limits.
  */
 function diffRestore(
   before: RestoreSnapshot,
