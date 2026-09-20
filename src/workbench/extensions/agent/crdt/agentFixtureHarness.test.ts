@@ -35,7 +35,6 @@ class TestGraphAdapter implements AgentFixtureAdapter {
     expect(context).toBe(this.activeContext)
     for (const node of workflow.nodes) {
       this.nodes.set(node.id, node)
-      if (context.source !== 'agent-remote') this.emitLocalOp(node)
     }
   }
 }
@@ -54,6 +53,18 @@ describe('replayAgentFixture', () => {
       type: 'LoadImage',
       widgets_values: ['reference.png', 'image']
     })
+    // Vacuous today, and deliberately left visible rather than deleted.
+    // `replayAgentFixture` builds its context with `source: 'agent-remote'`
+    // and `applyDraftPatch` is typed `RemoteMutationContext`, whose `source`
+    // is the literal `'agent-remote'`. So no replay can produce a non-remote
+    // context, and nothing can call `emitLocalOp` whatever the code under
+    // test does. The guard that used to sit in `applyDraftPatch` was
+    // unreachable for the same reason and was removed; `oxlint` flagged it as
+    // a comparison between literal types.
+    //
+    // Making this assertion mean something requires the harness to be able to
+    // replay a local context, which is a change to `agentFixtureHarness.ts`
+    // rather than to this file.
     expect(adapter.emitLocalOp).not.toHaveBeenCalled()
   })
 
