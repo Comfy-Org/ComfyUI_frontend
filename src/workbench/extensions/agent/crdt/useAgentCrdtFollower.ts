@@ -620,9 +620,6 @@ function startAgentCrdtFollower(
     bridge.resubscribe()
   }
   let reconnectTelemetryState = initialReconnectTelemetryState()
-  const resetReconnectTelemetry = (): void => {
-    reconnectTelemetryState = initialReconnectTelemetryState()
-  }
   const onSocketClosed = (
     event: CustomEvent<SocketClosedEventPayload>
   ): void => {
@@ -771,7 +768,7 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       divergenceReported.clear()
-      resetReconnectTelemetry()
+      reconnectTelemetryState = initialReconnectTelemetryState()
       connected.value = false
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
