@@ -343,8 +343,8 @@ class AgentConversationHarness {
   }
 
   async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
-    await this.waitForSubscribe()
-    this.send(this.host.apply(ops))
+    await this.hostSocket.waitForSubscribe()
+    this.hostSocket.send(this.host.apply(ops))
     const addedNodeIds = ops.flatMap((op) =>
       op.op === 'add_node' && op.node_id != null ? [String(op.node_id)] : []
     )
