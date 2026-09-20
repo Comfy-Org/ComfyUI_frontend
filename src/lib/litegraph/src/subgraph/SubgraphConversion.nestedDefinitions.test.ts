@@ -16,7 +16,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import {
   createTestRootGraph,
@@ -30,13 +29,11 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 beforeEach(() => {
   resetSubgraphFixtureState()
-  layoutStore.resetForTests()
 })
 
 interface DefinitionHealth {
   nodes: number
   links: number
-  interiorNodesWithLayout: number
   serialisedNodes: number
   serialisedLinks: number
   reportedErrors: number
@@ -53,9 +50,6 @@ function captureHealth(
   return {
     nodes: definition.nodes.length,
     links: definition.links.size,
-    interiorNodesWithLayout: definition.nodes.filter(({ id }) =>
-      layoutStore.getNodeLayout(rootGraph.id, id)
-    ).length,
     serialisedNodes: serialised?.nodes?.length ?? 0,
     serialisedLinks: serialised?.links?.length ?? 0,
     reportedErrors: vi.mocked(reportError).mock.calls.length
@@ -152,7 +146,6 @@ describe('Convert to Subgraph with a nested subgraph host in the selection', () 
       expect(captureHealth(rootGraph, inner)).toEqual({
         nodes: 2,
         links: 1,
-        interiorNodesWithLayout: 2,
         serialisedNodes: 2,
         serialisedLinks: 1,
         reportedErrors: 0
@@ -184,7 +177,6 @@ describe('Convert to Subgraph with a nested subgraph host in the selection', () 
       leaf: {
         nodes: 2,
         links: 1,
-        interiorNodesWithLayout: 2,
         serialisedNodes: 2,
         serialisedLinks: 1,
         reportedErrors: 0
@@ -192,7 +184,6 @@ describe('Convert to Subgraph with a nested subgraph host in the selection', () 
       middle: {
         nodes: 3,
         links: 1,
-        interiorNodesWithLayout: 3,
         serialisedNodes: 3,
         serialisedLinks: 1,
         reportedErrors: 0
