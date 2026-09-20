@@ -1429,26 +1429,23 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g20) finishing one recovery does not unmark a sibling turn whose ids concatenate identically', async () => {
     vi.useFakeTimers()
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th/1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th', message_id: '1/msg-1' })
+    const pendingHistory = new Map<string, (rows: AgentMessages) => void>()
+    const getMessages = vi.fn(
+      (threadId: string) =>
+        new Promise<AgentMessages>((resolve) => {
+          pendingHistory.set(threadId, resolve)
+        })
+    )
+    const rest = fakeRest({ postMessage, getMessages })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
     try {
-      const postMessage = vi
-        .fn<
-          (
-            threadId: string,
-            req: PostMessageInput
-          ) => Promise<AgentTurnAccepted>
-        >()
-        .mockResolvedValueOnce({ thread_id: 'th/1', message_id: 'msg-1' })
-        .mockResolvedValueOnce({ thread_id: 'th', message_id: '1/msg-1' })
-      const pendingHistory = new Map<string, (rows: AgentMessages) => void>()
-      const getMessages = vi.fn(
-        (threadId: string) =>
-          new Promise<AgentMessages>((resolve) => {
-            pendingHistory.set(threadId, resolve)
-          })
-      )
-      const rest = fakeRest({ postMessage, getMessages })
-      const { source, emit, status } = fakeEvents()
-      const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
 
@@ -1483,6 +1480,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(getMessages).toHaveBeenCalledTimes(2)
     } finally {
+      session.stop()
       vi.useRealTimers()
     }
   })
