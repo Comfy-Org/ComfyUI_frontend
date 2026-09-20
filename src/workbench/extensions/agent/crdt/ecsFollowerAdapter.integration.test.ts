@@ -1627,9 +1627,13 @@ describe('EcsFollowerAdapter integration', () => {
     // The blocker DrJKL reproduced against the real layout store: a group the
     // user created locally is absent from `meta.groups`, because
     // `layoutMintPort` mints no group op. Reconciling against "every group the
-    // owner holds" therefore deletes the user's own group. Wired through the
-    // real store and the same layout port AgentPanelRoot.vue installs, so a
-    // regression here fails on observable canvas state, not on a spy.
+    // owner holds" therefore deletes the user's own group. This asserts on the
+    // real `layoutStore`, so the failure is observable canvas state rather than
+    // a spy call. The port below is EQUIVALENT to, not the same object as, the
+    // one `AgentPanelRoot.vue` installs inline: it re-states that mapping here,
+    // so this test cannot detect the production port drifting away from it.
+    // Covering the production wiring needs a component-level test that mounts
+    // `AgentPanelRoot.vue`.
     it('leaves a local-only group the doc never named alone', () => {
       const mutations = createGraphMutations({
         getScope: () => scope,
