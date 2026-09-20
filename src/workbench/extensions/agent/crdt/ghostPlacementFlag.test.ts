@@ -72,7 +72,7 @@ describe('ghost placement flag across a follower reconcile', () => {
     })
   }
 
-  it.fails('KNOWN BUG: a reconcile restores flags.ghost on a node the user already placed', () => {
+  it('leaves flags.ghost off a node the user already placed', () => {
     const graph = mutations()
     const nodeStore = useNodeDataStore()
 
