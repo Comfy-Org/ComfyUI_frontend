@@ -1324,7 +1324,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g10) a failing history fetch surfaces one notice and leaves the turn live for the socket', async () => {
+  it('(g10) a failing history fetch surfaces one notice, stops after six consecutive failures, and leaves the turn live for the socket', async () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
@@ -1342,9 +1342,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(60_000)
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(rest.getMessages).toHaveBeenCalledTimes(6)
 
-      expect(rest.getMessages).toHaveBeenCalledTimes(7)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(rest.getMessages).toHaveBeenCalledTimes(6)
       expect(session.notices.value).toEqual([
         { level: 'error', text: 'Failed to fetch' }
       ])
@@ -1352,8 +1354,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
       emit(done('msg-1'))
       expect(session.isStreaming.value).toBe(false)
-      await vi.advanceTimersByTimeAsync(60_000)
-      expect(rest.getMessages).toHaveBeenCalledTimes(7)
     } finally {
       vi.useRealTimers()
     }
@@ -1759,6 +1759,85 @@ describe('useAgentSession (v1 composition root)', () => {
 
       successor.stop()
       expect(recoverySignals()).toEqual([true])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g24) a streaming row between failed fetches resets the failure budget', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<AgentRestClient['getMessages']>()
+        .mockRejectedValue(new Error('offline'))
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(200_000)
+
+      expect(getMessages).toHaveBeenCalledTimes(12)
+      expect(session.isStreaming.value).toBe(true)
+      expect(session.notices.value).toEqual([
+        { level: 'error', text: 'offline' }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g25) a history with no row for the turn settles it after six checks without inventing text', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<AgentRestClient['getMessages']>()
+        .mockResolvedValue([historyRow(1, 'user', 'msg-1', 'go')])
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(15_000)
+      expect(getMessages).toHaveBeenCalledTimes(5)
+      expect(session.isStreaming.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(16_000)
+      expect(getMessages).toHaveBeenCalledTimes(6)
+      expect(session.isStreaming.value).toBe(false)
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'partial', state: 'done' }
+      ])
+      expect(session.notices.value).toEqual([])
+      expect(session.threadId.value).toBe('th-1')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(getMessages).toHaveBeenCalledTimes(6)
     } finally {
       vi.useRealTimers()
     }
