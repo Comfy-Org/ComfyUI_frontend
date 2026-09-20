@@ -20,7 +20,7 @@
  *                   schema this build does not understand was projected anyway.
  */
 import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -120,7 +120,11 @@ function wire() {
 
 describe('follower commit boundary', () => {
   it.fails('does not publish a frame rejected by graph projection', () => {
-    const { transport, bridge } = wire()
+    const { transport, client, bridge } = wire()
+    onTestFinished(() => {
+      bridge.destroy()
+      client.destroy()
+    })
     const mutations = {
       batch: vi.fn(() => false),
       addNode: vi.fn(() => false),
@@ -130,6 +134,7 @@ describe('follower commit boundary', () => {
       clearSemanticGraph: vi.fn(() => false)
     } satisfies GraphMutations
     const adapter = new EcsFollowerAdapter(mutations)
+    onTestFinished(() => adapter.destroy())
     const projectionResults: boolean[] = []
     adapter.bind(WORKFLOW_ID, bridge.follower)
     bridge.addEventListener('doc_update', (event) => {
@@ -152,12 +157,14 @@ describe('follower commit boundary', () => {
 
   it.fails('does not integrate Yjs structs when a truncated update throws', () => {
     const host = new Y.Doc()
+    onTestFinished(() => host.destroy())
     host.transact(() => {
       host.getMap('nodes').set('1', { type: 'Source' })
       host.getMap('nodes').set('2', { type: 'Sink' })
       host.getMap('nodes').delete('2')
     })
     const follower = new FollowerDoc()
+    onTestFinished(() => follower.destroy())
     const initialVector = encodeBase64(follower.stateVector())
     const update = Y.encodeStateAsUpdate(host)
 

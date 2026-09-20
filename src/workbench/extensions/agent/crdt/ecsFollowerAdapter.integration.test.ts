@@ -403,6 +403,13 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toBeUndefined()
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find(({ id }) => id === toNodeId(2))
+    ).toMatchObject({
+      inputs: [{ name: 'in', type: 'IMAGE', link: null }]
+    })
   })
 
   it('retries authoritative reconciliation after a rejected first batch', () => {

@@ -107,8 +107,9 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         await field.pressSequentially(appended.slice(0, 5), { delay: 20 })
 
         const typing = field.pressSequentially(appended.slice(5), { delay: 20 })
-        agentConversation.resyncWidget(nodeId, 'text')
+        const resync = agentConversation.resyncWidget(nodeId, 'text')
         await typing
+        await resync
 
         test.fail()
         await expect(field).toHaveValue(`a photo of a pier${appended}`)

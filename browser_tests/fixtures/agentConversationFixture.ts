@@ -660,12 +660,16 @@ class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
-  resyncWidget(nodeId: string, widget: string): void {
+  async resyncWidget(nodeId: string, widget: string): Promise<void> {
     const widgets = z
       .record(z.string(), z.unknown())
       .optional()
       .parse(this.host.graph().nodes[nodeId]?.widgets)
     const value = widgets?.[widget]
+    const status = this.page.getByTestId('crdt-dev-panel-chip')
+    const applied = Number((await status.textContent())?.split('·').at(-1))
+    if (!Number.isInteger(applied))
+      throw new Error('CRDT status has no applied-update count')
     const operation = {
       op: 'set_widget',
       node_id: nodeId,
@@ -674,6 +678,7 @@ class AgentConversationHarness {
       old: value
     } satisfies GraphOperation
     this.hostSocket.send(this.host.apply([operation]))
+    await expect(status).toContainText(`· ${applied + 1}`)
   }
 }
 

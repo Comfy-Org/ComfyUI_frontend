@@ -1343,7 +1343,16 @@ describe('useAgentCrdtFollower', () => {
     }
     dispatchFrame('doc_ops_result', result)
 
-    expect(telemetryState.reportError).toHaveBeenCalled()
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          workflowId: 'wf-1',
+          opId,
+          code: 'uncatalogued_widget_write'
+        })
+      })
+    )
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
