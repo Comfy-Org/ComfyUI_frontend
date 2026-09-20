@@ -216,5 +216,58 @@ test.describe(
         .poll(async () => (await promptBox.boundingBox())?.height)
         .toBeGreaterThanOrEqual(before!.height)
     })
+
+    test('resized authored height survives removal and restoration of output previews', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await comfyPage.page.setViewportSize({ width: 1440, height: 1200 })
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const { nodeId } = await readPromptWidget(comfyPage)
+      const node = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
+      const savedSize = async () =>
+        (await comfyPage.workflow.getExportedWorkflow()).nodes.find(
+          (entry) => String(entry.id) === nodeId
+        )?.size
+      const initialSize = await savedSize()
+      expect(initialSize).toBeDefined()
+
+      await runGeneration(comfyPage, exec, ws, nodeId)
+      const beforeHeight = (await node.boundingBox())?.height
+      expect(beforeHeight).toBeDefined()
+      const beforeResize = Date.now()
+      await node.resizeFromCorner('SE', 0, 83)
+      await expect.poll(savedSize).not.toEqual(initialSize)
+      await expect
+        .poll(async () => (await node.boundingBox())?.height)
+        .toBeCloseTo(beforeHeight! + 83, 0)
+      const resizedSize = await savedSize()
+      const expandedHeight = (await node.boundingBox())?.height
+      expect(expandedHeight).toBeDefined()
+
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(
+        getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
+      ).toBeHidden()
+      await expect
+        .poll(async () => (await node.boundingBox())?.height)
+        .toBeLessThan(expandedHeight!)
+      expect(await savedSize()).toEqual(resizedSize)
+
+      const restoredWs = await getWebSocket()
+      await runGeneration(
+        comfyPage,
+        new ExecutionHelper(comfyPage, restoredWs),
+        restoredWs,
+        nodeId
+      )
+      await expect
+        .poll(async () => (await node.boundingBox())?.height)
+        .toBeCloseTo(expandedHeight!, 0)
+      expect(await savedSize()).toEqual(resizedSize)
+      await expect(getPromptBox(comfyPage)).toHaveValue(PROMPT)
+    })
   }
 )

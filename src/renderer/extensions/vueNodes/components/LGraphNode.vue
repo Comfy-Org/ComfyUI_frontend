@@ -145,10 +145,11 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
               bodyRoundingClass
             )
           "
+          :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
         >
           <NodeSlots :node-data />
@@ -330,7 +331,10 @@ import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-import { IMAGE_PREVIEW_HEIGHT_RESERVE } from './imagePreviewLayout'
+import {
+  IMAGE_PREVIEW_HEIGHT_RESERVE,
+  NODE_CONTENT_GAP
+} from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState
