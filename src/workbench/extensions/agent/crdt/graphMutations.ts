@@ -70,6 +70,19 @@ function patchLiveSlot(live: object, serialized: object): void {
   )
 }
 
+/**
+ * One endpoint's prepared slot patch. The document's slots and the live slots
+ * they are merged onto are decided together at prepare time and are only ever
+ * read together at commit, so they travel as one value rather than as two
+ * optionals that could disagree about whether this endpoint was prepared.
+ */
+interface EndpointPatch<TSlots> {
+  /** Slots derived from the document, in document order. */
+  serialized: TSlots
+  /** The node's own slot objects, whose identity commit must preserve. */
+  live: TSlots
+}
+
 interface SemanticNodeLayout {
   position: { x: number; y: number }
   size: { width: number; height: number }
@@ -180,10 +193,8 @@ type PreparedMutation =
   | {
       kind: 'connect'
       topology: LinkTopology
-      originOutputs?: NodeState['outputs']
-      targetInputs?: NodeState['inputs']
-      liveOriginOutputs?: NodeState['outputs']
-      liveTargetInputs?: NodeState['inputs']
+      originPatch?: EndpointPatch<NodeState['outputs']>
+      targetPatch?: EndpointPatch<NodeState['inputs']>
     }
   | {
       kind: 'removeMissing'
@@ -635,12 +646,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             kind: mutation.kind,
             topology,
             ...(mutation.link.originOutputs && {
-              originOutputs,
-              liveOriginOutputs: [...origin.outputs]
+              originPatch: {
+                serialized: originOutputs,
+                live: [...origin.outputs]
+              }
             }),
             ...(mutation.link.targetInputs && {
-              targetInputs,
-              liveTargetInputs: [...target.inputs]
+              targetPatch: {
+                serialized: targetInputs,
+                live: [...target.inputs]
+              }
             })
           })
           break
@@ -969,43 +984,40 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const target = endpointNodes.get(
             nodeKey(mutation.topology.targetNodeId)
           )
-          if (origin && mutation.originOutputs) {
-            for (const [index, output] of (
-              mutation.liveOriginOutputs ?? origin.outputs
-            ).entries()) {
-              const serialized = mutation.originOutputs[index]
-              if (isSlotRecord(output) && isSlotRecord(serialized)) {
-                patchLiveSlot(output, serialized)
+          if (origin && mutation.originPatch) {
+            const { serialized, live } = mutation.originPatch
+            // Outputs keep their document positions, so each live slot is
+            // patched from the serialized slot sharing its index.
+            for (const [index, output] of live.entries()) {
+              if (isSlotRecord(output) && isSlotRecord(serialized[index])) {
+                patchLiveSlot(output, serialized[index])
               }
-              mutation.originOutputs[index] = output
+              serialized[index] = output
             }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
-              {
-                inputs: origin.inputs,
-                outputs: mutation.originOutputs
-              },
+              { inputs: origin.inputs, outputs: serialized },
               context
             )
           }
-          if (target && mutation.targetInputs) {
-            for (const input of mutation.liveTargetInputs ?? target.inputs) {
+          if (target && mutation.targetPatch) {
+            const { serialized, live } = mutation.targetPatch
+            // Inputs may have been reordered locally, so each live slot is
+            // matched to its serialized slot by name (CRDT-INPUTS-0030).
+            for (const input of live) {
               if (!isSlotRecord(input)) continue
-              const index = mutation.targetInputs.findIndex(
-                (serialized) => serialized.name === input.name
+              const index = serialized.findIndex(
+                (candidate) => candidate.name === input.name
               )
               if (index < 0) continue
-              patchLiveSlot(input, mutation.targetInputs[index])
-              mutation.targetInputs[index] = input
+              patchLiveSlot(input, serialized[index])
+              serialized[index] = input
             }
             nodeStore.updateNodeSlots(
               scope,
               target.id,
-              {
-                inputs: mutation.targetInputs,
-                outputs: target.outputs
-              },
+              { inputs: serialized, outputs: target.outputs },
               context
             )
           }
