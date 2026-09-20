@@ -82,39 +82,44 @@ describe('useCanvasInteractions', () => {
         picking: false,
         readOnly: false,
         shouldHandleNodePointerEvents: true,
-        canEditNodes: true
+        canEditNodes: true,
+        canFocusWidgets: true
       },
       {
         picking: true,
         readOnly: false,
         shouldHandleNodePointerEvents: true,
-        canEditNodes: false
+        canEditNodes: false,
+        canFocusWidgets: false
       },
       {
         picking: false,
         readOnly: true,
         shouldHandleNodePointerEvents: false,
-        canEditNodes: false
+        canEditNodes: false,
+        canFocusWidgets: true
       },
       {
         picking: true,
         readOnly: true,
         shouldHandleNodePointerEvents: false,
-        canEditNodes: false
+        canEditNodes: false,
+        canFocusWidgets: false
       }
     ])(
-      'picking=$picking readOnly=$readOnly selects nodes: $shouldHandleNodePointerEvents, edits nodes: $canEditNodes',
+      'picking=$picking readOnly=$readOnly selects nodes: $shouldHandleNodePointerEvents, edits nodes: $canEditNodes, focuses widgets: $canFocusWidgets',
       (row) => {
         useAgentNodeSelectionStore().isActive = row.picking
         useCanvasStore().isReadOnly = row.readOnly
 
-        const { shouldHandleNodePointerEvents, canEditNodes } =
+        const { shouldHandleNodePointerEvents, canEditNodes, canFocusWidgets } =
           useCanvasInteractions()
 
         expect(shouldHandleNodePointerEvents.value).toBe(
           row.shouldHandleNodePointerEvents
         )
         expect(canEditNodes.value).toBe(row.canEditNodes)
+        expect(canFocusWidgets.value).toBe(row.canFocusWidgets)
       }
     )
   })

@@ -11,6 +11,7 @@ describe('resolvePickingPolicy', () => {
         canSelectNodes: true,
         canEditNodes: true,
         canOpenMenus: true,
+        canFocusWidgets: true,
         suppressesCanvasInfo: false
       }
     },
@@ -21,6 +22,7 @@ describe('resolvePickingPolicy', () => {
         canSelectNodes: true,
         canEditNodes: false,
         canOpenMenus: false,
+        canFocusWidgets: false,
         suppressesCanvasInfo: true
       }
     },
@@ -31,6 +33,7 @@ describe('resolvePickingPolicy', () => {
         canSelectNodes: false,
         canEditNodes: false,
         canOpenMenus: false,
+        canFocusWidgets: true,
         suppressesCanvasInfo: false
       }
     },
@@ -41,6 +44,7 @@ describe('resolvePickingPolicy', () => {
         canSelectNodes: false,
         canEditNodes: false,
         canOpenMenus: false,
+        canFocusWidgets: false,
         suppressesCanvasInfo: true
       }
     }

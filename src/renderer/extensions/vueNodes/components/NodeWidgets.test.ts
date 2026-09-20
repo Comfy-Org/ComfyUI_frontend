@@ -267,12 +267,29 @@ describe('NodeWidgets', () => {
   })
 
   it.for([
-    { picking: false, pointerClass: 'pointer-events-auto', inert: false },
-    { picking: true, pointerClass: 'pointer-events-none', inert: true }
+    {
+      picking: false,
+      readOnly: false,
+      pointerClass: 'pointer-events-auto',
+      inert: false
+    },
+    {
+      picking: true,
+      readOnly: false,
+      pointerClass: 'pointer-events-none',
+      inert: true
+    },
+    {
+      picking: false,
+      readOnly: true,
+      pointerClass: 'pointer-events-none',
+      inert: false
+    }
   ])(
-    'picking=$picking renders the widget grid with $pointerClass and inert=$inert',
-    ({ picking, pointerClass, inert }) => {
+    'picking=$picking readOnly=$readOnly renders the widget grid with $pointerClass and inert=$inert',
+    ({ picking, readOnly, pointerClass, inert }) => {
       useAgentNodeSelectionStore().isActive = picking
+      useCanvasStore().isReadOnly = readOnly
       const nodeId = toNodeId('test_node')
       const id = widgetId(GRAPH_ID, nodeId, 'text')
 

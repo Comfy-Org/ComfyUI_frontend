@@ -457,7 +457,10 @@ describe('SelectionToolbox', () => {
         >['canEditNodes'],
         canOpenMenus: { value: true } as ReturnType<
           typeof useCanvasInteractions
-        >['canOpenMenus']
+        >['canOpenMenus'],
+        canFocusWidgets: { value: true } as ReturnType<
+          typeof useCanvasInteractions
+        >['canFocusWidgets']
       })
 
       const mockExtensionService = vi.mocked(useExtensionService)

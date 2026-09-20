@@ -69,14 +69,15 @@ agent store owns the fact; everything else is a projection of it.
    `src/renderer/core/canvas/interaction/pickingPolicy.ts` returns a
    `PickingPolicy` with `canSelectNodes: !readOnly`,
    `canEditNodes: !readOnly && !picking`,
-   `canOpenMenus: !readOnly && !picking` and `suppressesCanvasInfo: picking`:
+   `canOpenMenus: !readOnly && !picking`, `canFocusWidgets: !picking` and
+   `suppressesCanvasInfo: picking`:
 
-   | readOnly | picking | canSelect | canEdit | canOpenMenus | suppressInfo |
-   | -------- | ------- | --------- | ------- | ------------ | ------------ |
-   | false    | false   | true      | true    | true         | false        |
-   | false    | true    | true      | false   | false        | true         |
-   | true     | false   | false     | false   | false        | false        |
-   | true     | true    | false     | false   | false        | true         |
+   | readOnly | picking | canSelect | canEdit | canOpenMenus | canFocusWidgets | suppressInfo |
+   | -------- | ------- | --------- | ------- | ------------ | --------------- | ------------ |
+   | false    | false   | true      | true    | true         | true            | false        |
+   | false    | true    | true      | false   | false        | false           | true         |
+   | true     | false   | false     | false   | false        | true            | false        |
+   | true     | true    | false     | false   | false        | false           | true         |
 
    There is no mode ordering. Space-bar pan, drag-zoom and the lock commands
    write `read_only` synchronously (`LGraphCanvas.ts` L3959-3963,
@@ -90,8 +91,11 @@ agent store owns the fact; everything else is a projection of it.
 3. **Vue surfaces read the policy through `useCanvasInteractions`.** It keeps
    `shouldHandleNodePointerEvents` (`canSelectNodes`) for selection paths and
    adds `canEditNodes` for mutation paths: `NodeWidgets.vue` pointer gating
-   plus `:inert="!canEditNodes"` so Tab or an already-focused textarea cannot
-   type; `NodeHeader.vue` title double-click; `LGraphNode.vue`
+   plus `:inert="!canFocusWidgets"` so Tab or an already-focused textarea
+   cannot type while picking (`inert` stays off under plain read-only: the
+   app builder's select step sets `read_only` and its `AppInput.vue`
+   promotion overlay must keep receiving clicks under the
+   `pointer-events-none` grid); `NodeHeader.vue` title double-click; `LGraphNode.vue`
    `handleResizePointerDown` (L472) and `handleContextMenu` (L435-444), which
    returns before `handleNodeRightClick` and `showNodeOptions`;
    `useNodeEventHandlers.ts` collapse (L70), title (L87) and right-click

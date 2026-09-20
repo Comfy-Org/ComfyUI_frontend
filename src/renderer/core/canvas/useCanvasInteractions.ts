@@ -44,6 +44,9 @@ export function useCanvasInteractions() {
 
   const canOpenMenus = computed(() => pickingPolicy.value.canOpenMenus)
 
+  /** Whether the Vue widget subtree stays clickable and focusable; false only while picking. */
+  const canFocusWidgets = computed(() => pickingPolicy.value.canFocusWidgets)
+
   /**
    * Returns true if the wheel event target is inside an element that should
    * capture wheel events AND that element (or a descendant) currently has focus.
@@ -175,6 +178,7 @@ export function useCanvasInteractions() {
     forwardEventToCanvas,
     shouldHandleNodePointerEvents,
     canEditNodes,
-    canOpenMenus
+    canOpenMenus,
+    canFocusWidgets
   }
 }

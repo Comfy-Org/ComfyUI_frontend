@@ -7,7 +7,7 @@
     v-bind="widgetModel"
     :node-id="nodeData?.id"
     :class="canEditNodes ? 'pointer-events-auto' : 'pointer-events-none'"
-    :inert="!canEditNodes"
+    :inert="!canFocusWidgets"
     @pointerdown.capture="handleBringToFront"
     @pointerdown="handleWidgetPointerEvent"
     @pointermove="handleWidgetPointerEvent"
@@ -41,8 +41,12 @@ interface NodeWidgetsProps {
 const { nodeData, widgetIds, processedWidgetModel } =
   defineProps<NodeWidgetsProps>()
 
-const { shouldHandleNodePointerEvents, canEditNodes, forwardEventToCanvas } =
-  useCanvasInteractions()
+const {
+  shouldHandleNodePointerEvents,
+  canEditNodes,
+  canFocusWidgets,
+  forwardEventToCanvas
+} = useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
