@@ -153,35 +153,44 @@ silent.
 
 ### Durable guarantee vs. interim mechanism
 
-This ADR is deciding two different things, and they age differently. The
-guarantees are durable, independent of how the layer is implemented: an
-unresolved human intent (a queued or in-flight op) is never silently
-discarded by a reconcile, and any collision between local and document state
-is reported rather than resolved silently, with the document winning. Those
-are the requirements this ADR exists to satisfy, and they should outlive any
-one mechanism below.
+This ADR is deciding two different things, and they age differently.
+Independent of how the layer is implemented, four behavior requirements are
+durable and should outlive any one mechanism below:
 
-The mechanism in (b) and (c) — ledger-aware and lineage-aware
-`removeMissing`, the materializer's orphan sweep, and the ledger-gated
-`reconcileNode`/`reconcileNextFrame` echo check — is interim. It is the
-correct next step given the store-first projection the follower runs today,
-but it is a compensator for that projection, not the design this ADR is
-betting the guarantee on long-term. There is a proposed semantic-apply
-direction under discussion (store-first projection replaced by semantic
-`LGraph`/`LGraphNode` apply with call-carried provenance) that, if adopted,
-would remove the root cause these compensators work around instead of
-compensating for it. Adopting that direction is out of scope here, is not a
-prerequisite for landing (a)-(d), and is not decided by this ADR.
+- an unresolved human intent (a queued or in-flight op) is never silently
+  discarded by a reconcile;
+- a human op the host rejects is reported to the user;
+- an outcome whose delivery is unknown is resolved at the next same-lineage
+  catch-up rather than left ambiguous indefinitely;
+- any collision between local and document state is reported rather than
+  resolved silently, with the document winning.
 
-If that direction is adopted, the following are deleted, not amended:
-`removeMissing`'s ledger- and lineage-awareness, `reconcileNode`,
-`reconcileNextFrame`, the materializer's repair pass, and the ledger checks
-in the adapter that gate those branches (all of (b) and the reconcile half
-of (c)). What survives unchanged: the ledger's own intent record (the
-queued/in-flight/terminal state per human op) and its rejection reporting
-(the revert-and-toast and `reportError` calls in (a)) — those satisfy the
-durable guarantee under either mechanism and are not compensators for the
-store-first projection.
+Under the store-first projection the follower runs today, section (a)'s
+workflow/document-scoped ledger and (b)/(c)'s ledger-aware compensators
+supply all four together: the ledger records each op's outcome, (b) and (c)
+consult it to decide what to retain or reconcile, and the revert-and-toast
+plus `reportError` calls surface rejections and collisions.
+
+That whole mechanism is interim, not only the compensators in (b) and (c).
+There is a proposed semantic-apply direction under discussion (store-first
+projection replaced by semantic `LGraph`/`LGraphNode` apply with
+call-carried provenance) that, if adopted, does not just remove the
+compensators' root cause: it deletes the parallel pending ledger itself and
+re-evaluates #16309, because a command-minted operation already carries its
+own identity (`opId`/actor provenance at the command site), so satisfying
+the same four requirements would use command-carried provenance plus
+ingress echo filtering instead of a separate ledger lookup. Adopting that
+direction is out of scope here, is not a prerequisite for landing (a)-(d),
+and is not decided by this ADR.
+
+If that direction is adopted, the following are deleted or replaced, not
+amended: `removeMissing`'s ledger- and lineage-awareness, `reconcileNode`,
+`reconcileNextFrame`, the materializer's repair pass, the ledger-gated echo
+check in (c), and `pendingOpLedger.ts` itself, whose intent-tracking and
+rejection-reporting role would move to command-carried provenance and
+ingress echo filtering. The four requirements above are what must keep
+holding across that change; neither the ledger nor the compensators are
+guaranteed to survive it unchanged.
 
 ### (b) `removeMissing` and the orphan sweep are ledger-aware and lineage-aware
 
