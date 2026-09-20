@@ -2,6 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it } from 'vitest'
 
+import type { AugmentedResultItem } from '@/utils/resultItem'
+
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
@@ -136,6 +138,53 @@ describe('useMediaAssetGalleryStore', () => {
       expect(store.items).toHaveLength(1)
       expect(store.items[0].filename).toBe('second.png')
       expect(store.activeIndex).toBe(0)
+    })
+  })
+
+  describe('openItems', () => {
+    const galleryItems = [
+      fromPartial<AugmentedResultItem>({ filename: 'a.png', url: '/a.png' }),
+      fromPartial<AugmentedResultItem>({ filename: 'b.png', url: '/b.png' }),
+      fromPartial<AugmentedResultItem>({ filename: 'c.png', url: '/c.png' })
+    ]
+
+    it('should open the gallery focused on the requested item', () => {
+      const store = useMediaAssetGalleryStore()
+
+      store.openItems(galleryItems, 1)
+
+      expect(store.items).toHaveLength(3)
+      expect(store.items[1].filename).toBe('b.png')
+      expect(store.activeIndex).toBe(1)
+    })
+
+    it.for([
+      { name: 'should clamp an index below range', requested: -5, expected: 0 },
+      { name: 'should clamp an index above range', requested: 99, expected: 2 }
+    ])('$name', ({ requested, expected }) => {
+      const store = useMediaAssetGalleryStore()
+
+      store.openItems(galleryItems, requested)
+
+      expect(store.activeIndex).toBe(expected)
+    })
+
+    it('should stay closed when given no items', () => {
+      const store = useMediaAssetGalleryStore()
+
+      store.openItems([], 0)
+
+      expect(store.activeIndex).toBe(-1)
+    })
+
+    it('should not keep a live reference to the caller array', () => {
+      const store = useMediaAssetGalleryStore()
+      const callerItems = [...galleryItems]
+
+      store.openItems(callerItems, 0)
+      callerItems.pop()
+
+      expect(store.items).toHaveLength(3)
     })
   })
 

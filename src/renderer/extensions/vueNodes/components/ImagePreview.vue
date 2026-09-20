@@ -24,6 +24,7 @@
           })
         "
         @click="handleGridClick(index)"
+        @dblclick.stop="openInLightbox(index)"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -53,6 +54,7 @@
       :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
+      @dblclick.stop="handleGalleryDoubleClick"
     >
       <!-- Error State -->
       <div
@@ -81,6 +83,7 @@
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
         @click="openHdrViewer(currentImageUrl)"
+        @dblclick.stop
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -105,6 +108,7 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
+        @dblclick.stop
       >
         <!-- Mask/Edit Button -->
         <button
@@ -214,14 +218,20 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
-import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import {
+  getImageFilenameFromUrl,
+  isHdrImageUrl,
+  toFullResolutionUrl
+} from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
@@ -237,6 +247,7 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
+const galleryStore = useMediaAssetGalleryStore()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -392,6 +403,38 @@ function handleGridClick(index: number) {
     return
   }
   void openImageInGallery(index)
+}
+
+function toGalleryItem(url: string): AugmentedResultItem {
+  return {
+    filename: getImageFilenameFromUrl(url) ?? '',
+    mediaType: 'images',
+    nodeId: nodeId ?? '',
+    subfolder: '',
+    type: 'output',
+    url: toFullResolutionUrl(url)
+  }
+}
+
+function openInLightbox(index: number) {
+  const url = imageUrls[index]
+  if (!url) return
+  if (isHdrImageUrl(url)) {
+    openHdrViewer(url)
+    return
+  }
+  const lightboxUrls = imageUrls.filter(
+    (candidate) => !isHdrImageUrl(candidate)
+  )
+  galleryStore.openItems(
+    lightboxUrls.map(toGalleryItem),
+    lightboxUrls.indexOf(url)
+  )
+}
+
+function handleGalleryDoubleClick() {
+  if (imageError.value) return
+  openInLightbox(currentIndex.value)
 }
 
 function getNavigationDotClass(index: number) {

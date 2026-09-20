@@ -1,3 +1,4 @@
+import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
@@ -29,11 +30,21 @@ export const useMediaAssetGalleryStore = defineStore(
       activeIndex.value = 0
     }
 
+    const openItems = (
+      galleryItems: readonly AugmentedResultItem[],
+      index: number
+    ) => {
+      if (!galleryItems.length) return
+      items.value = [...galleryItems]
+      activeIndex.value = clamp(index, 0, galleryItems.length - 1)
+    }
+
     return {
       activeIndex,
       items,
       close,
-      openSingle
+      openSingle,
+      openItems
     }
   }
 )

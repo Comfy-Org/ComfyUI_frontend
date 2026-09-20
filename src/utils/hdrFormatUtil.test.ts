@@ -73,4 +73,10 @@ describe('toFullResolutionUrl', () => {
       toFullResolutionUrl('https://x.test/api/view?filename=out.exr&preview=w')
     ).toBe('https://x.test/api/view?filename=out.exr')
   })
+
+  it('keeps the scheme of non-http absolute urls such as blob previews', () => {
+    expect(toFullResolutionUrl('blob:http://localhost:5173/abc-123')).toBe(
+      'blob:http://localhost:5173/abc-123'
+    )
+  })
 })

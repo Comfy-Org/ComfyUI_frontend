@@ -10,7 +10,9 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { openHdrViewer } from '@/services/hdrViewerService'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -186,6 +188,112 @@ describe('ImagePreview', () => {
     await user.click(downloadButton)
 
     expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+  })
+
+  describe('double-click to open the lightbox', () => {
+    it('opens the lightbox on the double-clicked grid thumbnail', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      const thumbnails = screen.getAllByRole('button', {
+        name: /^View image/
+      })
+      await user.dblClick(thumbnails[1])
+
+      expect(galleryStore.activeIndex).toBe(1)
+      expect(galleryStore.items.map((item) => item.url)).toEqual(
+        defaultProps.imageUrls
+      )
+    })
+
+    it('opens the lightbox from the gallery panel of a single image', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(galleryStore.activeIndex).toBe(0)
+      expect(galleryStore.items).toHaveLength(1)
+      expect(galleryStore.items[0]).toMatchObject({
+        filename: 'test1.png',
+        mediaType: 'images',
+        url: defaultProps.imageUrls[0]
+      })
+    })
+
+    it('opens the lightbox at full resolution', async () => {
+      renderImagePreview({
+        imageUrls: ['/api/view?filename=test1.png&preview=webp;75&rand=1']
+      })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(galleryStore.items[0].url).toBe(
+        '/api/view?filename=test1.png&rand=1'
+      )
+    })
+
+    it('routes hdr outputs to the hdr viewer instead of the lightbox', async () => {
+      const hdrUrl = '/api/view?filename=out.exr&type=output'
+      renderImagePreview({ imageUrls: [hdrUrl] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(openHdrViewer).toHaveBeenCalledWith(hdrUrl)
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
+    it('leaves hdr outputs out of a mixed lightbox gallery', async () => {
+      renderImagePreview({
+        imageUrls: [
+          '/api/view?filename=out.exr&type=output',
+          defaultProps.imageUrls[0],
+          defaultProps.imageUrls[1]
+        ]
+      })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      const thumbnails = screen.getAllByRole('button', {
+        name: /^View image/
+      })
+      await user.dblClick(thumbnails[2])
+
+      expect(galleryStore.items.map((item) => item.url)).toEqual(
+        defaultProps.imageUrls
+      )
+      expect(galleryStore.activeIndex).toBe(1)
+    })
+
+    it('does not open the lightbox from the action buttons', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(
+        screen.getByRole('button', { name: 'Download image' })
+      )
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
+    it('does not open the lightbox for an image that failed to load', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await fireEvent.error(screen.getByTestId('main-image'))
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
   })
 
   it('switches images when navigation dots are clicked', async () => {
