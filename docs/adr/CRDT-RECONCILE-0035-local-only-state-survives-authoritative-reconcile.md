@@ -95,13 +95,31 @@ entries. Its revert-and-toast for a host-rejected `add_node` stands, as does
 its first-pass scope (non-add reverts are toast-only). The deltas, decided
 here and landed in PR A:
 
-- **The tracker survives target deactivation.** #16309 calls
-  `pendingOps.reset()` in the follower watch's `!active` branch, before
-  `retarget(null)` settles the in-flight batch, so on a tab switch the ledger
-  is empty at the first frame after the return and (b) would have nothing to
-  consult. The tracker instead resets only on a lineage break (`doc_reset`,
-  `follower_replaced`, a bind to a different workflow) and on follower
-  teardown; a same-workflow rebind keeps it.
+- **The ledger is owned per bound workflow/document, not per follower
+  mount.** #16309 calls `pendingOps.reset()` in the follower watch's
+  `!active` branch, before `retarget(null)` settles the in-flight batch, so
+  on a tab switch the ledger is empty at the first frame after the return
+  and (b) would have nothing to consult. Resetting only on deactivation is
+  not enough on its own: reading current `main` confirms
+  `useAgentCrdtFollower` constructs the tracker's seam (`createOpSender`)
+  inside an effect scope owned by `AgentPanelRoot`, and an ordinary panel
+  close or mode change stops that scope and tears the tracker down with it —
+  that is not a lineage break. After a remount on the same workflow, a
+  pending `delete_node` has no ledger entry, so catch-up can silently
+  restore the node the user deleted; lineage-aware `removeMissing` in (b)
+  only protects absent local adds, not pending deletion intent. The ledger
+  instead lives in a store or registry keyed by the bound workflow/document's
+  lineage id: created on first bind to that lineage, independent of any one
+  follower mount, and cleared only on an actual lineage break (the document
+  is reset or replaced, the workflow is closed, or the document is
+  explicitly destroyed) — never on panel close or a mode change alone.
+  Acceptance case: close the agent panel with a pending human delete still
+  in the ledger, reopen it on the same workflow, and confirm catch-up does
+  not restore the deleted node. This lands in two steps, not one: the first
+  tracker PR (stacked on #16309) keeps the ledger inside the follower and
+  closes only the tab-deactivation gap; hoisting its ownership to
+  workflow/document scope is the following PR in the stack, and this ADR's
+  guarantee does not hold for panel close/reopen until that PR lands.
 - **`unconfirmed` joins `unacknowledged` in the parked set.** Both mean the
   host may have applied the batch. Parked entries enter `delivery_unknown`
   and resolve at the next same-lineage catch-up by a per-kind effect check:
@@ -132,6 +150,38 @@ means: the delete is parked, (b) keeps the node out of the reconcile upsert
 while it is parked, and if the host still holds the node after the catch-up
 the delete reverts and the toast fires. The divergence is surfaced, not
 silent.
+
+### Durable guarantee vs. interim mechanism
+
+This ADR is deciding two different things, and they age differently. The
+guarantees are durable, independent of how the layer is implemented: an
+unresolved human intent (a queued or in-flight op) is never silently
+discarded by a reconcile, and any collision between local and document state
+is reported rather than resolved silently, with the document winning. Those
+are the requirements this ADR exists to satisfy, and they should outlive any
+one mechanism below.
+
+The mechanism in (b) and (c) — ledger-aware and lineage-aware
+`removeMissing`, the materializer's orphan sweep, and the ledger-gated
+`reconcileNode`/`reconcileNextFrame` echo check — is interim. It is the
+correct next step given the store-first projection the follower runs today,
+but it is a compensator for that projection, not the design this ADR is
+betting the guarantee on long-term. There is a proposed semantic-apply
+direction under discussion (store-first projection replaced by semantic
+`LGraph`/`LGraphNode` apply with call-carried provenance) that, if adopted,
+would remove the root cause these compensators work around instead of
+compensating for it. Adopting that direction is out of scope here, is not a
+prerequisite for landing (a)-(d), and is not decided by this ADR.
+
+If that direction is adopted, the following are deleted, not amended:
+`removeMissing`'s ledger- and lineage-awareness, `reconcileNode`,
+`reconcileNextFrame`, the materializer's repair pass, and the ledger checks
+in the adapter that gate those branches (all of (b) and the reconcile half
+of (c)). What survives unchanged: the ledger's own intent record (the
+queued/in-flight/terminal state per human op) and its rejection reporting
+(the revert-and-toast and `reportError` calls in (a)) — those satisfy the
+durable guarantee under either mechanism and are not compensators for the
+store-first projection.
 
 ### (b) `removeMissing` and the orphan sweep are ledger-aware and lineage-aware
 
@@ -182,12 +232,23 @@ The frontend cannot fix gap 4 alone. When the human insert path
 the bound document lacks, the layout mint port emits `define_subgraph` for
 that definition (nested definitions first) ahead of the host's `add_node`, in
 mint order, so the applier registers the type before the node that uses it.
-The op itself is #17454's. Preconditions, in order: the workspace move
-(#16644), #17454, #17458, and the doc host admitting the op from human
+The op itself is #17454's, but that chain is stale: #16644 (the workspace
+move meant to give the frontend its own writable copy of
+`packages/comfy-multi-player`) closed unmerged on 2026-09-17, `main` still
+consumes the npm-published `@comfyorg/comfy-multi-player@0.2.1`, and #17454
+is still a draft based on #16644's now-abandoned branch head. No live
+successor package-integration path is verified as of this writing.
+**PR C is therefore blocked pending a new package-integration plan**, not
+merely pending review of the existing chain: #17454 must be restacked onto
+`main` (or replaced) once that plan exists, and #17458 (which projects the
+definitions #17454's applier writes) is blocked on it in turn. Nothing in PR
+A, the ledger-ownership follow-up, or PR B depends on this chain. Once a
+plan exists, the remaining preconditions are unchanged: the op lands in the
+package, the frontend consumes it, and the doc host admits it from human
 actors. The server-side doc host pins the npm package separately, so a
-package release carrying the op is still required for it even once the
-frontend consumes the workspace copy. Until then the host lands as an opaque
-positional node (#18078) and the port reports once per definition id
+package release carrying the op is still required even once the frontend
+consumes a workspace or updated npm copy. Until then the host lands as an
+opaque positional node (#18078) and the port reports once per definition id
 (`agent_crdt_blueprint_definition_not_in_doc`).
 
 ## Alternatives considered
@@ -227,53 +288,43 @@ positional node (#18078) and the port reports once per definition id
 
 ## Sequencing
 
-Four PRs, each landing its failing test first. No new feature flag: the whole
-layer sits behind `agentPanelStore.enabled`, consumed by `mintGate.ts` and the
-follower lifetime, and is not generally available; (b) and (c) fail safe by
-retaining more and reconciling less. (a)'s revert applier is destructive when
-its resolution is wrong and gets no kill-switch for the same reason; add a
-settings switch if the layer reaches general availability before the revert
-path has soaked.
+Five dependency-ordered slices, each landing its failing test first. No new
+feature flag: the whole layer sits behind `agentPanelStore.enabled`,
+consumed by `mintGate.ts` and the follower lifetime, and is not generally
+available; (b) and (c) fail safe by retaining more and reconciling less.
+(a)'s revert applier is destructive when its resolution is wrong and gets no
+kill-switch for the same reason; add a settings switch if the layer reaches
+general availability before the revert path has soaked.
 
-- **PR A0**, independent: the layout mint port drops and reports
-  (`agent_crdt_op_for_unbound_graph`) a `createNode` whose graph is not the
-  bound document's root graph, closing the window in which a workflow load's
-  first nodes mint into the previous document. Entry condition is a red test
-  in `layoutMintPort.test.ts`; two prior code walks disagree on whether the
-  window is reachable, so A0 is dropped if that test cannot be made red.
-- **PR A**, after #18071 and #16309 (rebased, restacked on #16302): the (a)
-  deltas and (c). Files: #16309's `pendingOpTracker.ts` and
-  `pendingOpRevert.ts`, `pendingOpLedger.ts` (the `delivery_unknown` state),
-  `opSender.ts`, `useAgentCrdtFollower.ts`, `ecsFollowerAdapter.ts`.
-  Contracts that change: #16309's `pendingOpTracker.test.ts` ("reverts an
-  undeliverable batch even though it never flew") and the undeliverable
-  settles in its `useAgentCrdtFollower.test.ts` gain a "survives
-  deactivation" case; the `unconfirmed` settles in
-  `useAgentCrdtFollower.test.ts` and `crossWorkflowPending.test.ts` keep
-  their label and gain "nothing is reverted". Acceptance: #18078's
-  `useAgentCrdtFollower.rejectedHumanAdd.test.ts` and
-  `agentCrdtProjection.tabReturn.test.ts` case 2 ("keeps a node the doc never
-  took when a later accepted add is echoed"), whose `hostApplies(...)` control
-  flips to `true` in the same commit that lands (c).
-- **PR B**, after A and after the decision on #16358, which rewrites the
-  adapter's retry accounting on the path B changes: (b). Files:
-  `ecsFollowerAdapter.ts`, `graphMutations.ts`
-  (`removeMissing` only; `prepareNode`, `prepareInputSlots`, `setWidgetValue`
-  and `assignNodeFields` belong to #18081, #18089 and #18075, which edit or
-  pin them today),
-  `agentNodeMaterializer.ts`. Acceptance: `tabReturn` case 1 ("keeps a node
-  the user added whose add_node never reached the doc") and #18063's
-  `agentDeleteTabSwitchRace.test.ts`, which B edits to wire
-  `createPendingOpTracker` into its hand-built sender and to pass the ledger
-  query into the adapter; the flip is its final `toBeNull()`.
-- **PR C**, blocked on the (d) chain; nothing in A or B waits on it.
+- **PR A0**, independent: closes the window in which a workflow load's first
+  nodes mint into the previous document, by dropping and reporting a
+  `createNode` whose graph is not the bound document's root graph. Dropped
+  if its entry-condition test cannot be made to fail first.
+- **PR A**, after #18071 and #16309: the (a) deltas and (c), with the ledger
+  still owned inside the follower (survives tab deactivation, not yet panel
+  unmount). Acceptance: a rejected human add is reverted and reported, and
+  an echo of the page's own accepted add reconciles instead of forcing a
+  full resync.
+- **PR A1**, after A: hoists the ledger's ownership from the follower to the
+  bound workflow/document, per the delta decided in (a). Acceptance: the
+  panel close/reopen case in (a) — closing the panel with a pending human
+  delete and reopening on the same workflow does not restore the deleted
+  node. This ADR's guarantee does not fully hold until A1 lands.
+- **PR B**, after A1 and after the retry-accounting decision on #16358: (b),
+  ledger-aware and lineage-aware `removeMissing` and orphan sweep.
+  Acceptance: a node the user added whose `add_node` never reached the doc
+  survives a tab-return reconcile, and a node the user deleted stays deleted
+  across a tab switch even when the delete was still in flight.
+- **PR C**, blocked on a new define_subgraph package-integration plan (see
+  (d)); nothing in A, A1 or B waits on it.
 
-Coordination: `useAgentCrdtFollower.ts`'s watch block is edited by one PR at
-a time (#16309, #16358, #16372, #16382 and #16849 all touch it), and PR A
-starts by walking #16309's authors through the (a) delta. Server dependencies
-named, not owned here: per-op outcomes on `doc_ops_result` or op ids on
-`doc_update` (for effect-correlated clearing), and `define_subgraph` admission
-from human actors (for C).
+Coordination and the file/test-level rollout checklist for this stack (exact
+files touched, test names, fixture wiring, which open PRs are in flight) are
+tracked outside this ADR, since that detail changes independently of the
+architecture decision and goes stale quickly. Server dependencies named, not
+owned here: per-op outcomes on `doc_ops_result` or op ids on `doc_update`
+(for effect-correlated clearing), and `define_subgraph` admission from human
+actors (for C).
 
 ## Consequences
 
