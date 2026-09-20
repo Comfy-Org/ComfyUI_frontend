@@ -2,12 +2,12 @@ import { expect, mergeTests } from '@playwright/test'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_EDITED_TEXT,
@@ -92,17 +92,10 @@ test.describe(
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
 
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
-      const panel = page.locator('#agent-panel-root')
-      await panel.getByRole('button', { name: 'Switch workflow' }).click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow' })
-        .click()
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      const panel = agentPanel.root
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       await composer.fill('Build the subgraph')
       await panel.getByRole('button', { name: 'Send' }).click()
