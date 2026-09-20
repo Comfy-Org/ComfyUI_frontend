@@ -1,5 +1,5 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { Op, WireOp } from '@comfyorg/comfy-multi-player'
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -8,8 +8,7 @@ import {
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
   mintOpId,
-  mintWireOps,
-  parseWireOps
+  mintWireOps
 } from './opEnvelope'
 
 const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
@@ -136,66 +135,5 @@ describe('chunkWireOps', () => {
     const ops: Op[] = mintWireOps([huge], MINT)
 
     expect(chunkWireOps(ops)).toEqual([ops])
-  })
-})
-
-describe('parseWireOps', () => {
-  const resetDoc: WireOp = {
-    op: 'reset_doc',
-    op_id: mintOpId(),
-    actor: MINT.actor,
-    base_version: MINT.baseVersion,
-    stamp: [MINT.baseVersion, MINT.actor],
-    workflow: { nodes: [], links: [] }
-  }
-
-  it('reports a valid empty batch as ok for a frame that carries no ops', () => {
-    expect(parseWireOps(undefined)).toEqual({ ok: true, ops: [] })
-  })
-
-  it('reports invalid_frame for a non-array value', () => {
-    expect(parseWireOps('not-an-array')).toEqual({
-      ok: false,
-      reason: 'invalid_frame'
-    })
-  })
-
-  it('reports invalid_frame for the whole batch when any member is not wire-shaped', () => {
-    const [addOp] = mintWireOps([addNode(1)], MINT)
-    expect(parseWireOps([addOp, { op: 'add_node' }])).toEqual({
-      ok: false,
-      reason: 'invalid_frame'
-    })
-  })
-
-  it('passes every declared kind through unfiltered, including a deferred one', () => {
-    const [addOp] = mintWireOps([addNode(1)], MINT)
-    expect(parseWireOps([resetDoc, addOp])).toEqual({
-      ok: true,
-      ops: [resetDoc, addOp]
-    })
-  })
-
-  it('reaches the real applier intact: a leading reset_doc defers and aborts the batch', () => {
-    const doc = mint({ nodes: [], links: [] }, { types: {} })
-    const [addOp] = mintWireOps([addNode(1)], MINT)
-
-    const parsed = parseWireOps([resetDoc, addOp])
-    if (!parsed.ok) throw new Error('expected a valid batch')
-    const result = applyOps(doc, parsed.ops as Op[])
-
-    expect(result.outcomes).toEqual([
-      {
-        op_id: resetDoc.op_id,
-        outcome: 'rejected',
-        reason: expect.objectContaining({ code: 'op_deferred' })
-      },
-      {
-        op_id: addOp.op_id,
-        outcome: 'rejected',
-        reason: expect.objectContaining({ code: 'batch_aborted' })
-      }
-    ])
-    expect(nodesMap(doc).has('1')).toBe(false)
   })
 })

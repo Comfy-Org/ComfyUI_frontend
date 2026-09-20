@@ -123,4 +123,57 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       { type: 'doc_update', data: expect.objectContaining({}) }
     ])
   })
+
+  const validOp = (opId: string, nodeId: number): Record<string, unknown> => ({
+    op: 'add_node',
+    op_id: opId,
+    actor: 'human:test-user:tab-1',
+    base_version: 1,
+    stamp: [1, 'human:test-user:tab-1'],
+    node_id: nodeId,
+    class_type: 'TestNode',
+    pos: [10, 20],
+    node: { id: nodeId, type: 'TestNode', pos: [10, 20] }
+  })
+
+  it.for([
+    { label: 'an omitted ops field', ops: undefined },
+    { label: 'an empty ops batch', ops: [] },
+    {
+      label: 'a duplicate op_id within the batch',
+      ops: [validOp('a'.repeat(32), 1), validOp('a'.repeat(32), 2)]
+    }
+  ])(
+    'rejects a doc_ops frame with $label as invalid_frame before applyWire runs',
+    async ({ ops }) => {
+      const host = new HostDoc(
+        WORKFLOW_ID,
+        { nodes: [], links: [] },
+        { types: {} }
+      )
+      const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        WORKFLOW_ID,
+        host,
+        'sid-1',
+        'apply'
+      )
+      await hostSocket.install()
+
+      emitClientFrame({
+        type: 'doc_ops',
+        data: { workflow_id: WORKFLOW_ID, ops }
+      })
+
+      expect(hostSocket.humanOpOutcomes()).toEqual([])
+      expect(sentFrames().at(-1)).toEqual({
+        type: 'doc_ops_result',
+        data: expect.objectContaining({
+          ok: false,
+          code: 'invalid_frame'
+        })
+      })
+    }
+  )
 })

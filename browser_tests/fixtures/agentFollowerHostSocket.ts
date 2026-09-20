@@ -5,12 +5,12 @@ import {
   DOC_PROTOCOL_VERSION,
   parseServerDocFrame
 } from '@/workbench/extensions/agent/crdt/docFrameClient'
-import { parseWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
-import type { ParsedWireBatch } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type { ParsedWireBatch } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
@@ -164,10 +164,15 @@ export class AgentFollowerHostSocket {
 
   // The applier is the only judge of a structurally valid human batch; the
   // wire ops reach it in place, exactly as the relay hands them to the host.
-  // A batch that failed the envelope check never reaches the applier at
-  // all — the relay itself rejects that frame as `invalid_frame` earlier.
+  // A batch that failed the envelope check, or that cleared it but is empty
+  // or carries a duplicate `op_id`, never reaches the applier at all — the
+  // relay itself rejects that frame as `invalid_frame` earlier.
   private judgeHumanOps(opsResult: ParsedWireBatch): void {
     if (!opsResult.ok) {
+      this.send(this.invalidFrameResult())
+      return
+    }
+    if (!isValidDocOpsBatch(opsResult.ops)) {
       this.send(this.invalidFrameResult())
       return
     }

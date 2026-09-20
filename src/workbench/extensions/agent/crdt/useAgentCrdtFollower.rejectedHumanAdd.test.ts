@@ -7,8 +7,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
+
 import type { GraphMutations } from './graphMutations'
-import { parseWireOps } from './opEnvelope'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
