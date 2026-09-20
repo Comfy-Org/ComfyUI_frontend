@@ -306,6 +306,48 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(1)
     })
 
+    // The gallery panel is ~55px shorter than the grid it replaces, so a
+    // double-click aimed at a thumbnail can land under it. The handler lives
+    // on the preview root for that reason — moving it to the panel regresses.
+    it('opens the lightbox from below the gallery panel', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 2 of 2' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByText('Calculating dimensions'))
+
+      expect(galleryStore.activeIndex).toBe(1)
+    })
+
+    it('does not open the lightbox from the navigation dots', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.click(
+        screen.getByRole('button', { name: 'View image 1 of 2' })
+      )
+      await nextTick()
+      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
+      await user.dblClick(dots[dots.length - 1])
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
+    it('does not open the lightbox while the grid is showing', async () => {
+      renderImagePreview()
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      await user.dblClick(screen.getByTestId('image-grid'))
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
     it('does not open the lightbox from the action buttons', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()

@@ -3,6 +3,7 @@
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
+    @dblclick.stop="handleGalleryDoubleClick"
   >
     <!-- Grid View -->
     <div
@@ -54,7 +55,6 @@
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
       aria-keyshortcuts="Enter"
-      @dblclick.stop="handleGalleryDoubleClick"
     >
       <!-- Error State -->
       <div
@@ -187,6 +187,7 @@
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
         @click="viewMode = 'grid'"
+        @dblclick.stop
       >
         <i class="icon-[lucide--layout-grid] size-3.5" />
       </button>
@@ -204,6 +205,7 @@
           })
         "
         @click="setCurrentIndex(index)"
+        @dblclick.stop
       />
     </div>
   </div>
@@ -441,7 +443,7 @@ function openInLightbox(index: number) {
 }
 
 function handleGalleryDoubleClick() {
-  if (imageError.value) return
+  if (viewMode.value !== 'gallery' || imageError.value) return
   openInLightbox(currentIndex.value)
 }
 
