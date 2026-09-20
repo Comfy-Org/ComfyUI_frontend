@@ -869,7 +869,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         name: widget.name,
         type: widget.type,
         value:
-          projected.status === 'skipped' ? widget.value : projected.resolvedValue,
+          projected.status === 'skipped'
+            ? widget.value
+            : projected.resolvedValue,
         options: {},
         label: widget.name
       },
@@ -911,7 +913,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       }
     }
     const previous = state.value
-    const projected = projectLiveWidgetValue(scope, nodeId, name, value, context)
+    const projected = projectLiveWidgetValue(
+      scope,
+      nodeId,
+      name,
+      value,
+      context
+    )
     const effectsRan = projected.status !== 'skipped'
     const applied = widgetStore.setValue(
       id,
