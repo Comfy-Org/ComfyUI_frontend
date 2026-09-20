@@ -1118,6 +1118,41 @@ describe('Composer', () => {
     }
   )
 
+  it('appends after Select All without dropping restored workflow chips', async () => {
+    useAgentComposerStore().replacePrompt({
+      text: 'Before  between  after',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+        { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+      ]
+    })
+    mount()
+    const store = useAgentComposerStore()
+    const epoch = store.promptEpoch
+    store.setNodeScope('workflows/Unsaved Workflow (3).json')
+    expect(store.promptEpoch).toBe(epoch)
+
+    const textbox = screen.getByRole('textbox')
+    expect(textbox).toHaveTextContent(
+      'Before Unsaved Workflow between Unsaved Workflow (2) after'
+    )
+    expect(
+      within(textbox).getAllByTestId('workflow-reference-chip')
+    ).toHaveLength(2)
+
+    await userEvent.click(textbox)
+    await userEvent.keyboard('{Control>}a{/Control}{ArrowRight}')
+    await userEvent.keyboard(' again')
+
+    expect(textbox).toHaveTextContent(
+      'Before Unsaved Workflow between Unsaved Workflow (2) after again'
+    )
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+      { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+    ])
+  })
+
   it('removes the workflow reference before the text caret with Backspace', async () => {
     useAgentComposerStore().setText('keep me')
     const { emitted } = mount({
