@@ -4,16 +4,18 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { openMoreOptionsMenu } from '@e2e/fixtures/utils/selectionToolboxMoreOptions'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe(
   'Selection Toolbox - More Options Submenus',
   { tag: '@ui' },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.SelectionToolbox': true
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await comfyPage.nextFrame()

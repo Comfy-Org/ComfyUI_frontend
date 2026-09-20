@@ -1,6 +1,5 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -53,8 +52,35 @@ async function drop(files: File[]) {
 }
 
 describe('file source selection', () => {
+  it('shows and enforces the configured video size instead of the image limit', async () => {
+    const values = mountInput(false, {
+      ...field,
+      accept: ['video/mp4'],
+      maxBytes: 100_000_000
+    })
+    const visitor = userEvent.setup()
+    expect(screen.getByText('MP4 · up to 100 MB')).toBeTruthy()
+    const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      file
+    )
+    expect(values.value).toMatchObject([{ file }])
+    const oversized = new File([new Uint8Array(100_000_001)], 'oversized.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      oversized
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('File is over 100 MB')
+    expect(values.value).toMatchObject([{ file }])
+  })
+
   it.for([
-    { name: 'character.fbx', type: 'application/octet-stream', label: 'FBX' },
+    { name: 'price-$&.fbx', type: 'application/octet-stream', label: 'FBX' },
     { name: 'clip.mp4', type: 'video/mp4', label: 'MP4' },
     { name: 'voice.wav', type: 'audio/wav', label: 'WAV' },
     { name: 'attachment', type: '', label: 'File' }
@@ -68,18 +94,20 @@ describe('file source selection', () => {
         screen.getByLabelText('Images', { selector: 'input' }),
         file
       )
-      if (type.startsWith('video/') || type.startsWith('audio/')) {
-        const preview = screen.getByLabelText(name)
-        expect(preview).toBeInstanceOf(HTMLMediaElement)
-        expect(preview).toHaveProperty('controls', true)
+      if (type.startsWith('video/')) {
+        const trigger = screen.getByRole('button', {
+          name: `Expand ${name}`
+        })
+        const preview = within(trigger).getByTestId('video-source-thumbnail')
+        expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
       } else {
         expect(screen.getByText(label)).toBeTruthy()
-        expect(screen.getByText('2 KB')).toBeTruthy()
       }
+      expect(screen.getByText('2 KB')).toBeTruthy()
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
-      expect(screen.getByText('Choose files or drop them here')).toBeTruthy()
+      expect(screen.getByText('Select or drop up to 2 files')).toBeTruthy()
       await user.click(screen.getByRole('button', { name: `Replace ${name}` }))
       const replacement = new File(['replacement bytes'], 'replacement.fbx', {
         type: 'application/octet-stream'
@@ -114,6 +142,45 @@ describe('file source selection', () => {
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.queryByRole('status')).toBeNull()
   })
+
+  it('renders MIME, extension and bare accept entries without throwing', () => {
+    mountInput(false, {
+      ...field,
+      accept: ['application/x-fbx', '.glb', 'usd']
+    })
+
+    expect(screen.getByText(/FBX, GLB, USD/)).toBeTruthy()
+  })
+
+  it.for([
+    {
+      accept: ['.fbx'],
+      file: new File(['mesh'], 'character.fbx'),
+      name: 'character.fbx'
+    },
+    {
+      accept: ['usd'],
+      file: new File(['scene'], 'stage.usd'),
+      name: 'stage.usd'
+    },
+    {
+      accept: ['image/*'],
+      file: new File(['image'], 'reference.avif', { type: 'image/avif' }),
+      name: 'reference.avif'
+    }
+  ])(
+    'accepts chooser-compatible pattern $accept',
+    async ({ accept, file, name }) => {
+      const values = mountInput(false, { ...field, accept })
+
+      await drop([file])
+
+      expect(values.value).toMatchObject([{ file }])
+      expect(
+        screen.getByRole('button', { name: `Remove ${name}` })
+      ).toBeTruthy()
+    }
+  )
 
   it('still enforces declared non-image MIME types', async () => {
     const values = mountInput(false, { ...field, accept: ['video/mp4'] })
@@ -171,7 +238,7 @@ describe('file source selection', () => {
       file: new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'large.png', {
         type: 'image/png'
       }),
-      error: 'File is over 25 MB'
+      error: 'File is over 25 MiB'
     }
   ])(
     'keeps valid images when a drop is rejected: $error',
@@ -202,6 +269,33 @@ describe('file source selection', () => {
     )
     expect(value.value).toMatchObject([{ file: first }])
     expect(screen.getAllByRole('img')).toHaveLength(1)
+  })
+
+  // The drop zone is the whole group, not the prompt, so a field that is full
+  // still takes a replacement by drop even with nothing left inviting one.
+  it('takes the drop zone away once the one image it holds is chosen', async () => {
+    const single = { ...field, multiple: false, maxItems: 1 }
+    const value = mountInput(false, single)
+    expect(screen.getByText('Select or drop an image')).toBeTruthy()
+
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(value.value).toMatchObject({ name: 'two.png' })
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+  })
+
+  // Room left is what the prompt is for, so it stays until the last slot goes.
+  it('keeps the drop zone while a multi-image field has room', async () => {
+    const two = { ...field, multiple: true, maxItems: 2 }
+    mountInput(false, two)
+
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.getByText('Select or drop up to 2 images')).toBeTruthy()
+
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
   })
 
   it('ignores file drops while disabled', async () => {

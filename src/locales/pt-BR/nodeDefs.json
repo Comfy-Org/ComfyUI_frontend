@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Insira em uma imagem um objeto descrito em texto simples usando Bria. O Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
+    "display_name": "Bria Adicionar Objeto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "O que adicionar e onde, como \"Coloque um vaso vermelho com flores sobre a mesa\"."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O Bria não usa seed aqui e recria a edição a cada chamada, portanto execuções repetidas podem variar. O valor nunca é enviado: ele apenas altera a chave de cache deste nó, para que um grafo idêntico execute a edição novamente em vez de retornar o resultado em cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição subsequente com Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Remova de uma imagem, usando Bria, um objeto nomeado em texto simples. O Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
+    "display_name": "Bria Apagar por Texto",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Configurações de moderação"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Nome do objeto a remover, como \"a luminária\". Vários objetos podem ser nomeados de uma vez, como \"o telefone e os lápis\". Nomear algo que não está na imagem ainda retorna, e cobra por, uma imagem renderizada novamente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição subsequente com Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Remova o primeiro plano de uma imagem com Bria e gere um plano de fundo em seu lugar. Tudo o que o Bria identificar como primeiro plano será removido, não apenas pessoas. Os pixels não alterados são preservados, mas a saída é renderizada novamente em um tamanho padrão próximo de 1 megapixel.",
+    "display_name": "Bria Apagar Primeiro Plano",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Configurações de moderação"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Remova objetos ou áreas delimitadas por uma máscara de uma imagem usando Bria.",
     "display_name": "Bria Eraser",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Altere a atmosfera e a direção da iluminação de uma imagem usando Bria. O Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
+    "display_name": "Bria Reiluminar",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "De onde vem a luz. Atmosferas de luz intensa, como meio-dia, holofote sobre o assunto e iluminação forte de estúdio, reagem mais a isso."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Atmosfera de iluminação a aplicar."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Configurações de moderação"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição subsequente com Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
     "display_name": "Bria Remover Fundo da Imagem",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Substitua o plano de fundo de uma imagem com Bria, descrito por um prompt ou guiado por imagens de referência. Os pixels do assunto são preservados; o plano de fundo é gerado ao redor deles.",
+    "display_name": "Bria Substituir Plano de Fundo da Imagem",
+    "inputs": {
+      "background": {
+        "name": "fundo",
+        "tooltip": "Descreva o novo fundo com um prompt ou oriente-o com imagens de referência."
+      },
+      "background_mode": {
+        "name": "modo"
+      },
+      "background_prompt": {
+        "name": "prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Retorna o tamanho exato em pixels da entrada em vez de dimensionar o resultado para cerca de 1 megapixel. Uma entrada grande retorna então uma imagem grande."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A mesma semente geralmente retorna o mesmo fundo; o refinamento automático do prompt ainda pode alterá-lo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "O prompt gerado pela Bria, vazio no caminho de imagem de referência."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Substitui um objeto em uma imagem por outro descrito em texto simples usando a Bria. A Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
+    "display_name": "Bria Substituir Objeto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "instruction": {
+        "name": "instrução",
+        "tooltip": "O que substituir por quê, como \"Substitua a maçã vermelha por uma pera verde\"."
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A Bria não aceita semente aqui e recria a edição a cada chamada, portanto execuções repetidas podem diferir. O valor nunca é enviado: ele apenas altera a chave de cache deste nó, para que um grafo idêntico execute a edição novamente em vez de retornar o resultado em cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição posterior com Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Move uma imagem para outra estação com a Bria. Toda a cena é renderizada novamente, portanto o cenário pode mudar além da própria estação. A Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
+    "display_name": "Bria Reseason",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "season": {
+        "name": "estação",
+        "tooltip": "Estação a aplicar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição posterior com Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Repara uma fotografia antiga ou danificada com a Bria: granulação, arranhões e desfoque são removidos, e alterações de cor relacionadas à idade são neutralizadas. Suportes de cartão e bordas de estúdio podem ser cortados, e rostos são redesenhados. A Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada. Use Bria Increase Resolution para ampliar.",
+    "display_name": "Bria Restaurar Foto",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descrição estruturada da imagem editada, para uma edição posterior com o Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Remove o fundo de um vídeo usando Bria e retorna os frames recortados mais uma máscara alfa. Conecte ambos a um nó de composição ou envie-os para Salvar WEBM para gerar um vídeo transparente.",
     "display_name": "Bria Remover Fundo de Vídeo (Transparente)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Apague de um vídeo tudo o que uma máscara por quadro cobrir com o Bria e preencha a lacuna. A máscara deve ser branca no que deve ser removido e preta em todo o restante. O Bria aceita clipes de no máximo 5,1 segundos a 20 a 30 quadros por segundo, com dimensões de pixels pares; o áudio é mantido por padrão. O clipe retornado pode ter alguns quadros a menos que a entrada.",
+    "display_name": "Removedor de Vídeo Bria",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Uma máscara para cada quadro do vídeo, branca onde está o objeto a ser apagado. Forneça uma máscara ou um vídeo de máscara, não ambos."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Um vídeo de máscara já codificado, com as mesmas dimensões e quantidade de quadros do vídeo. Forneça uma máscara ou um vídeo de máscara, não ambos."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Mantém a faixa de áudio da entrada."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clipe do qual apagar."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Concatena vídeos em ordem sem decodificar entradas codificadas compatíveis.",
+    "display_name": "Concatenar Vídeo",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec usado para codificar tensores de vídeo. Auto usa H.264; vídeos já codificados permanecem inalterados."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Trilha sonora completa opcional para o vídeo concatenado. Substitui o áudio dos vídeos de entrada."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Segmentos de vídeo a serem concatenados na ordem de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O vídeo concatenado."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Média de Condicionamento",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "condicionamento_para"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Carrega um condicionamento salvo com Salvar Condicionamento, ou qualquer arquivo safetensors com um tensor 'conditioning', da pasta embeddings.",
+    "display_name": "Carregar Condicionamento",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +4206,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto usa 8 bits para sRGB e 10 bits para HDR. As opções explícitas de 8 bits e 10 bits são independentes do espaço de cores."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Opcionalmente, codifica o vídeo imediatamente. Nenhum mantém as imagens em formato de tensor; Auto usa H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5034,6 +5336,49 @@
       }
     }
   },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Áudio latent YuE2 Vazio",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Encerrar Loop",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "Retorna output_value de cada iteração quando ativado; caso contrário, retorna apenas a iteração final."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "Valor enviado de End Loop de volta para Start Loop para a próxima iteração."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "Valor retornado por End Loop. Retorna a iteração final ou todas as iterações conforme accumulate."
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "Conecte saídas que devem ser executadas em todas as iterações. Seus valores não são retornados."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "O output_value da iteração final ou os valores acumulados entre as iterações quando accumulate está ativado."
+      }
+    }
+  },
   "Epsilon Scaling": {
     "display_name": "Escalonamento Epsilon",
     "inputs": {
@@ -5898,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Edita um clip a partir de uma instrução escrita: remove, adiciona ou substitui objetos, altera o cenário, muda o estilo da filmagem, altera o texto na tela ou substitui o diálogo falado. A duração, o enquadramento, o movimento da câmera e o áudio vêm do clip de origem.",
+    "display_name": "Edição de Vídeo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Reduz automaticamente a resolução de origens maiores que 1280x704 pixels em área antes do envio. A proporção é preservada; vídeos menores não são alterados."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O que alterar, em linguagem simples, com até 4096 caracteres. Tudo o que você não mencionar deve permanecer como estava. O diálogo substituto deve caber no tempo da fala original, e um clip silencioso permanece silencioso."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerância da moderação; 0 é o mais rigoroso."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; o FLUX escolhe sua própria seed, portanto os resultados reais não são determinísticos, independentemente deste valor."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Clip de origem de 0,7 a 15 segundos, com pelo menos 160x160 pixels. A saída é renderizada a 24 fps e limitada a cerca de 0,9 megapixel por quadro, portanto uma origem maior retorna menor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Aumenta a resolução de um vídeo em 1,5 a 3 vezes com super-resolução FLUX, preservando precisamente a fonte ou aprimorando criativamente seus detalhes.",
     "display_name": "Ampliação de Vídeo Flux",
@@ -6473,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Gere respostas de texto com os modelos Gemini do Google. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens, clipes de áudio, vídeos ou arquivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo Gemini usado para gerar a resposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Gere um vídeo com áudio a partir de um prompt de texto usando o modelo Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para guiar ou editar o resultado. Descreva o comprimento desejado (3-10s) e a proporção (16:9 ou 9:16) diretamente no prompt.",
     "display_name": "Google Gemini Omni (Vídeo)",
@@ -6660,6 +7075,22 @@
       },
       "2": {
         "name": "tamanho_do_lote",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Obter Item da Lista",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7979,7 +8410,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB (Rec.709), HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Usa branco SDR de 203 nits e uma tela de referência HLG de 1000 nits. O estreitamento aplica mapeamento de tons à luminância excedente em todo o lote e comprime cores fora da gama. As conversões são calculadas em float32 e retornam o device e dtype intermediários. Alfa reto não passa por transformação de cor.",
+    "description": "Converte sRGB, Rec.709 linear, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Linear 1.0 usa o mesmo branco de referência de 203 nits do sRGB; HLG usa uma tela de referência de 1000 nits. A saída linear e as conversões de linear para HDR preservam valores estendidos sem mapeamento de tons. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons ao excesso de luminância em todo o lote e comprimem cores fora da gama. As conversões são calculadas em float32 e retornam o dispositivo e dtype intermediários. O alfa reto não passa por transformação de cor.",
     "display_name": "Converter Espaço de Cor da Imagem",
     "inputs": {
       "destination": {
@@ -11274,6 +11705,73 @@
       }
     }
   },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
+      }
+    }
+  },
   "LoraLoader": {
     "description": "LoRAs são usados para modificar modelos de difusão e CLIP, alterando a forma como os latents são denoizados, como na aplicação de estilos. Vários nós LoRA podem ser conectados juntos.",
     "display_name": "Carregar LoRA",
@@ -12366,6 +12864,23 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MarigoldV2PostProcess": {
+    "description": "Transforma uma previsão Marigold V2 decodificada em uma imagem: profundidade normalizada, com áreas próximas claras, normais de superfície unitárias ou albedo sRGB.",
+    "display_name": "Pós-processamento Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
       }
     },
     "outputs": {
@@ -16022,6 +16537,9 @@
       "model": {
         "name": "modelo"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "deslocamento"
       }
@@ -17678,6 +18196,93 @@
     "inputs": {
       "value": {
         "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaImageToVideoNode": {
+    "description": "Anima uma imagem em um vídeo usando modelos de vídeo Pruna, com um último quadro opcional, som gerado ou faixa de áudio.",
+    "display_name": "Pruna P-Video-2 Image to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_draft": {
+        "name": "rascunho"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_enhance_prompt": {
+        "name": "aprimorar_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Gera um vídeo a partir de um prompt de texto usando modelos de vídeo Pruna, com som gerado opcional ou uma faixa de áudio para guiá-lo.",
+    "display_name": "Pruna P-Video-2 Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_de_aspecto"
+      },
+      "model_draft": {
+        "name": "rascunho"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_enhance_prompt": {
+        "name": "aprimorar_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
       }
     },
     "outputs": {
@@ -20988,6 +21593,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Salva um condicionamento na pasta de saída como safetensors; mova o arquivo para models/embeddings para carregá-lo com Carregar Condicionamento, por exemplo, para ignorar o codificador de texto.",
+    "display_name": "Salvar Condicionamento",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "Salvar GLB",
     "inputs": {
@@ -21680,6 +22303,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "Transcreve melodias vocais e instrumentais de músicas para a notação ABC. Conecte a saída abc ao nó YuE2 Generate Music e use o modo correspondente.",
+    "display_name": "SheetSage2 Áudio para ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: gera melodia e acordes; melody: gera apenas melodia, recomendado para covers."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "Embaralha aleatoriamente a ordem das imagens em uma lista.",
     "display_name": "Embaralhar Conjunto de Imagens",
@@ -22286,6 +22931,52 @@
       "2": {
         "name": "latente",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Iniciar Loop",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Reutiliza resultados de iterações inalteradas de execuções anteriores. Desative para executar todas as iterações novamente."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Valor exposto como current_iteration_value na primeira iteração."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "O modo de iteração do loop."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Conecte iteration_index de um Start Loop externo para aninhar este loop."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Índice da iteração atual do loop."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Verdadeiro durante a primeira iteração do loop."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Verdadeiro durante a última iteração do loop."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Item atual da lista ao usar o modo Lista. None nos modos Simples e Para."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Valor transportado pelo loop para a iteração atual: initial_iteration_value na primeira iteração e, em seguida, next_iteration_value do End Loop em cada iteração subsequente."
       }
     }
   },
@@ -24484,6 +25175,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Gera um modelo 3D de baixa poligonagem com topologia limpa a partir de uma imagem, como malha triangular (GLB) ou malha dominada por quads (FBX).",
+    "display_name": "Tripo P2: Imagem para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo da série P da Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido somente quando quad está ativado."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Gera um modelo 3D de baixa poligonagem com topologia limpa a partir de uma vista frontal e de uma a três vistas esquerda, traseira e direita, como malha triangular (GLB) ou malha dominada por quads (FBX).",
+    "display_name": "Tripo P2: Multivisualização para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo da série P da Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "textura"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID da tarefa do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Gera um modelo 3D de baixa poligonagem com topologia limpa a partir de um prompt de texto, como uma malha triangular (GLB) ou uma malha predominantemente de quads (FBX).",
+    "display_name": "Tripo P2: Texto para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo da série P da Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "textura"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID da tarefa do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
       }
     }
   },
@@ -28528,6 +29405,110 @@
     "outputs": {
       "0": {
         "name": "malha",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Gera a notação ABC de uma música a partir do estilo e da letra. Conecte abc ao nó YuE2 Generate Music.",
+    "display_name": "YuE2 Gerar ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "completo: gera melodia e acordes; melodia: gera apenas a melodia, recomendado para covers."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Número de tokens ABC recentes usados para penalizar a repetição."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Gera tokens de música e condicionamento acústico a partir do estilo, da letra e de uma notação ABC. Informe os segundos gerados ao nó Empty YuE2 Latent Audio. Uma entrada ABC vazia ignora o modo selecionado.",
+    "display_name": "YuE2 Gerar Música",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Conecte o gerador ABC ou forneça uma partitura editada. Deixe vazio para usar automaticamente o modo desativado."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "lyrics": {
+        "name": "letra"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Duração máxima em segundos. Reduzida automaticamente para prompts longos; a geração pode parar antes."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "completo: gera melodia e acordes; melodia: gera apenas a melodia, recomendado para covers."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "style": {
+        "name": "estilo"
+      },
+      "temperature": {
+        "name": "temperatura"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "segundos",
         "tooltip": null
       }
     }

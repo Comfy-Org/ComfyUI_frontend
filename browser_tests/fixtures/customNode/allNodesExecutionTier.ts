@@ -148,7 +148,6 @@ export async function assertExecutionTier({
   registeredKeys: string[]
 }): Promise<void> {
   const keys = registeredKeys
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
   const queueBusy = await waitForQueueQuiet(comfyPage.page, 150_000)
   expect(

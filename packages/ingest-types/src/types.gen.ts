@@ -2624,17 +2624,19 @@ export type JobAssetsResponse = {
 }
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export type InputUploadUrlRequest = {
   /**
    * MIME type of the file to upload. Must be one of the image types
-   * image/jpeg, image/png, image/webp, image/gif, or the audio types
+   * image/jpeg, image/png, image/webp, image/gif, the audio types
    * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
-   * audio/flac, audio/x-flac, audio/ogg.
+   * audio/flac, audio/x-flac, audio/ogg, or — where the deployment has
+   * enabled video input uploads — the video types video/mp4,
+   * video/webm, video/quicktime.
    * Advisory: the stored asset's format always follows the uploaded
    * bytes as identified server-side (decoded for images, sniffed for
-   * audio containers).
+   * audio and video containers).
    *
    */
   content_type: string
@@ -3605,6 +3607,53 @@ export type CreateTopupRequest = {
 }
 
 /**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export type CreateTopupCheckoutResponse = {
+  /**
+   * Stripe-hosted Checkout URL to send the customer to.
+   */
+  checkout_url: string
+  /**
+   * Stripe Checkout session id, for support and log correlation. There
+   * is no billing operation to return: the purchase has not happened
+   * yet, and the operation recording it is created once the payment
+   * completes. Nothing needs polling — the credits land on their own.
+   *
+   */
+  session_id?: string
+}
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export type CreateTopupCheckoutRequest = {
+  /**
+   * Amount to charge in cents, before any promotion code the customer
+   * enters. Whole dollars only, from $5.00 to $4,739.00. The ceiling is
+   * a fixed business limit (not a Stripe technical constraint) on how
+   * much a single unauthenticated-approval session may sell. The
+   * credits granted are derived server-side from this amount and
+   * cannot be set by the caller.
+   *
+   */
+  amount_cents: number
+  /**
+   * Optional client-provided key. Forwarded to Stripe so a double-submit
+   * collapses onto one session instead of minting two payable links.
+   *
+   */
+  idempotency_key?: string
+  /**
+   * Where Stripe returns the customer after a completed or cancelled
+   * payment. Must match an allowlisted origin; an arbitrary URL is
+   * rejected rather than redirected to.
+   *
+   */
+  return_url: string
+}
+
+/**
  * Response after creating a session cookie
  */
 export type CreateSessionResponse = {
@@ -4455,23 +4504,17 @@ export type AgentRunMode = {
  */
 export type AgentPostMessageRequest = {
   /**
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   */
+  attachments?: Array<string>
+  /**
    * The user's message.
    */
   content: string
   /**
-   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
-  workflow_id?: string
-  /**
-   * Optional canvas selection context ("change these nodes").
-   */
-  selection?: {
-    [key: string]: unknown
-  }
-  /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
-   */
-  attachments?: Array<string>
+  current_tab?: string
   /**
    * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
    */
@@ -4492,24 +4535,30 @@ export type AgentPostMessageRequest = {
    */
   open_tabs?: Array<{
     /**
-     * Cloud workflow id of the open tab.
-     */
-    workflow_id: string
-    /**
      * Display name of the tab, shown to the agent so the user can reference tabs by name.
      */
     name?: string
+    /**
+     * Cloud workflow id of the open tab.
+     */
+    workflow_id: string
   }>
   /**
-   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * Optional canvas selection context ("change these nodes").
    */
-  current_tab?: string
+  selection?: {
+    [key: string]: unknown
+  }
+  /**
+   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
+   */
+  workflow_id?: string
   /**
    * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
    */
   workflow_references?: Array<{
-    workflow_id: string
     name?: string
+    workflow_id: string
   }>
 }
 
@@ -4548,14 +4597,21 @@ export type AgentPendingAsk = {
  * A persisted message in an agent thread.
  */
 export type AgentMessage = {
+  /**
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
+   */
+  content?: {
+    [key: string]: unknown
+  }
   id: string
-  thread_id: string
+  pending_ask?: AgentPendingAsk
+  role: 'user' | 'assistant' | 'tool' | 'system'
   /**
    * Monotonic ordering within the thread.
    */
   seq: number
-  role: 'user' | 'assistant' | 'tool' | 'system'
   status: 'streaming' | 'complete' | 'error' | 'interrupted'
+  thread_id: string
   /**
    * Groups the user message, assistant reply, and its tool calls.
    */
@@ -4564,13 +4620,6 @@ export type AgentMessage = {
    * The workflow/draft this turn operated on. Recorded per message so a thread can span or switch workflows over its lifetime; the thread's own workflow_id is only the active-workflow pointer. Empty for a workflow-less turn.
    */
   workflow_id?: string
-  /**
-   * Message payload. User turns carry {text, attachments?, workflow_references?}. Attachments are the input-image filenames from the request. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
-   */
-  content?: {
-    [key: string]: unknown
-  }
-  pending_ask?: AgentPendingAsk
 }
 
 /**
@@ -7578,6 +7627,53 @@ export type CreateTopupResponses = {
 
 export type CreateTopupResponse2 =
   CreateTopupResponses[keyof CreateTopupResponses]
+
+export type CreateTopupCheckoutData = {
+  body: CreateTopupCheckoutRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/checkout'
+}
+
+export type CreateTopupCheckoutErrors = {
+  /**
+   * Bad request (invalid amount or return URL)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden. Buying credits is an owner action: the route is
+   * registered on the workspace-owner group, so a workspace member
+   * is rejected by middleware before the handler runs. Email
+   * verification is enforced on the same group.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * Not found (feature flag disabled for this caller)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateTopupCheckoutError =
+  CreateTopupCheckoutErrors[keyof CreateTopupCheckoutErrors]
+
+export type CreateTopupCheckoutResponses = {
+  /**
+   * Checkout session created
+   */
+  200: CreateTopupCheckoutResponse
+}
+
+export type CreateTopupCheckoutResponse2 =
+  CreateTopupCheckoutResponses[keyof CreateTopupCheckoutResponses]
 
 export type GetBillingUsageTimeSeriesData = {
   body?: never

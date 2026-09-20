@@ -45,6 +45,7 @@ const baseRoutes = {
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   chatgptImage25: '/chatgpt-image-2.5',
+  qwenImage21: '/qwen-image-2.1',
   brand: '/brand',
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
@@ -163,6 +164,7 @@ export const externalLinks = {
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
+  eventHostApplicationForm: 'https://form.typeform.com/to/Fr2FrB6c',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
@@ -184,6 +186,8 @@ export const externalLinks = {
   docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+  docsComfyRouterModels:
+    'https://docs.comfy.org/development/comfy-router/models',
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
