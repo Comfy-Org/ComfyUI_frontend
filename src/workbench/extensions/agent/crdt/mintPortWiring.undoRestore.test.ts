@@ -219,6 +219,60 @@ describe('attachMintPortWiring undo/redo restore', () => {
     ])
   })
 
+  it('does not mint a delete for a still-present node whose serialize() throws after the restore', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    seedFourNodeGraph()
+    restoring = true
+
+    restoreThrough(() => {
+      graphNodes.get('4')!.serialize = () => {
+        throw new Error('custom node serialize failed')
+      }
+    })
+
+    expect(minted).toEqual([])
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('could not serialize every present node'),
+      ['4']
+    )
+    error.mockRestore()
+  })
+
+  it('does not mint an add for a node that only became serializable during the restore', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    seedFourNodeGraph()
+    const restored = fakeNode(4, 'PreviewImage')
+    graphNodes.get('4')!.serialize = () => {
+      throw new Error('custom node serialize failed')
+    }
+    restoring = true
+
+    restoreThrough(() => graphNodes.set('4', restored))
+
+    expect(minted).toEqual([])
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('could not serialize every present node'),
+      ['4']
+    )
+    error.mockRestore()
+  })
+
+  it('suppresses the whole diff, including real changes, while a snapshot is incomplete', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    seedFourNodeGraph()
+    restoring = true
+
+    restoreThrough(() => {
+      graphNodes.get('1')!.widgets_values_named = { image: 'b.png' }
+      graphNodes.get('4')!.serialize = () => {
+        throw new Error('custom node serialize failed')
+      }
+    })
+
+    expect(minted).toEqual([])
+    error.mockRestore()
+  })
+
   it('surfaces a link removed without its node instead of dropping it silently', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     seedFourNodeGraph()

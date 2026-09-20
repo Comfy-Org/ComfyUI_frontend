@@ -162,19 +162,27 @@ function serializeForMint(node: MintableNode): WorkflowNode | null {
 interface RestoreSnapshot {
   nodes: Map<string, WorkflowNode>
   links: Map<string, MintableLink>
+  /**
+   * Ids of nodes that are present in the graph but whose `serialize()` threw,
+   * so they are missing from `nodes`. Absence from `nodes` otherwise means
+   * "not in the graph", which the diff reads as an addition or a deletion.
+   */
+  unserializableNodeIds: string[]
 }
 
 function snapshotGraph(graph: MintableGraph): RestoreSnapshot {
   const nodes = new Map<string, WorkflowNode>()
+  const unserializableNodeIds: string[] = []
   for (const node of graph._nodes) {
     const serialized = serializeForMint(node)
     if (serialized) nodes.set(String(node.id), serialized)
+    else unserializableNodeIds.push(String(node.id))
   }
   const links = new Map<string, MintableLink>()
   if (typeof graph.links?.values === 'function') {
     for (const link of graph.links.values()) links.set(String(link.id), link)
   }
-  return { nodes, links }
+  return { nodes, links, unserializableNodeIds }
 }
 
 function widgetValuesOf(node: WorkflowNode): Record<string, unknown> {
@@ -281,11 +289,31 @@ function reportDetachedLinks(
  * standalone disconnects are not representable by the current operation
  * contract; a standalone disconnect is surfaced rather than silently dropped.
  * FE-2229 tracks lifting both limits.
+ *
+ * A snapshot that could not serialize every present node is incomplete, not a
+ * smaller graph: the diff would read a node that threw only after the restore
+ * as a deletion and mint `delete_node` for a node still on the canvas (and the
+ * mirror case as a duplicate `add_node`). Serialization failure is not
+ * representable as an operation either, so an incomplete snapshot on either
+ * side aborts the whole diff loudly instead of minting a destructive guess.
  */
 function diffRestore(
   before: RestoreSnapshot,
   after: RestoreSnapshot
 ): GraphOperation[] {
+  const unserializable = [
+    ...new Set([
+      ...before.unserializableNodeIds,
+      ...after.unserializableNodeIds
+    ])
+  ]
+  if (unserializable.length > 0) {
+    console.error(
+      '[agent-crdt] undo/redo restore snapshot could not serialize every present node; skipping the restore diff so the doc is not told a still-present node was deleted',
+      unserializable
+    )
+    return []
+  }
   reportDetachedLinks(before, after)
   return [
     ...removedNodeOperations(before, after),
