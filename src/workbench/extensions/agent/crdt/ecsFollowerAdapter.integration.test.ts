@@ -54,6 +54,7 @@ function controlledMutations(firstOutcome: false | Error): {
       define({
         addNode: vi.fn(),
         reconcileNode: ({ id }) => reconciledNodeIds.push(toNodeId(id)),
+        reconcileNodeFields: vi.fn(),
         setWidget: vi.fn(),
         connect: vi.fn(),
         removeMissing: vi.fn(),
