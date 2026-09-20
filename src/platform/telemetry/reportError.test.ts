@@ -357,6 +357,21 @@ describe('reportError', () => {
     expect(context).toMatchObject({ api_endpoint: '/settings/{key}' })
   })
 
+  it('keeps a caller tag out of the reserved level field', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      errorType: 'http_error',
+      tags: { level: 'warning', error_type: 'spoofed' }
+    })
+
+    const [, properties] = captureDesktopException.mock.calls[0]
+    expect(properties).toEqual({ error_type: 'http_error' })
+  })
+
   it('does not throw out of flushErrorReports when a sink throws', async () => {
     sentryLive(false)
     datadogLive(false)

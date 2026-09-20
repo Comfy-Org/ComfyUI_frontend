@@ -61,15 +61,19 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
+/** Written from `options`, so a caller tag of the same name never lands. */
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level'])
+
 const definedEntriesOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
   Object.fromEntries(
     Object.entries(tags ?? {}).filter(
-      ([, value]) =>
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean'
+      ([key, value]) =>
+        !RESERVED_TAG_KEYS.has(key) &&
+        (typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean')
     )
   ) as Record<string, string | number | boolean>
 
