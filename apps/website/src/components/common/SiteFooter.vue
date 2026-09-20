@@ -186,7 +186,6 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
         <div class="flex flex-col gap-12">
-          <!-- Products, Models, Resources, Company: stacked on mobile, 4-col on desktop -->
           <div class="grid grid-cols-1 gap-12 lg:grid-cols-4">
             <FooterLinkColumn
               v-for="column in topColumns"
@@ -196,7 +195,6 @@ const contactColumn: { title: string; links: FooterLink[] } = {
             />
           </div>
 
-          <!-- Contact: standalone row -->
           <div class="grid grid-cols-1 gap-12">
             <FooterLinkColumn
               :title="contactColumn.title"
