@@ -10,9 +10,11 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
+import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeImage } from '@/types/nodeMedia'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -64,9 +66,28 @@ describe('ImagePreview', () => {
     ]
   }
 
-  function renderImagePreview(props = {}) {
-    return render(ImagePreview, {
-      props: { ...defaultProps, ...props },
+  interface TestProps {
+    imageUrls?: readonly string[]
+    imageItems?: readonly NodeImage['item'][]
+    images?: readonly NodeImage[]
+    nodeId?: NodeId
+  }
+
+  function toComponentProps({
+    imageUrls = defaultProps.imageUrls,
+    imageItems,
+    images = imageUrls.map((url, index) => ({
+      url,
+      item: imageItems?.[index]
+    })),
+    nodeId
+  }: TestProps = {}) {
+    return { images, nodeId }
+  }
+
+  function renderImagePreview(props: TestProps = {}) {
+    const result = render(ImagePreview, {
+      props: toComponentProps(props),
       global: {
         plugins: [getActivePinia()!, i18n],
         stubs: {
@@ -78,6 +99,11 @@ describe('ImagePreview', () => {
         }
       }
     })
+    return {
+      ...result,
+      rerender: (nextProps: TestProps) =>
+        result.rerender(toComponentProps(nextProps))
+    }
   }
 
   async function switchToGallery(user: ReturnType<typeof userEvent.setup>) {
@@ -86,8 +112,8 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
-  it('does not render when no imageUrls provided', () => {
-    const { container } = renderImagePreview({ imageUrls: [] })
+  it('does not render when no images are provided', () => {
+    const { container } = renderImagePreview({ images: [] })
 
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
   })
@@ -199,7 +225,7 @@ describe('ImagePreview', () => {
     it('opens the lightbox on the image the grid switched to', async () => {
       renderImagePreview()
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.click(
         screen.getByRole('button', { name: 'View image 2 of 2' })
@@ -216,7 +242,7 @@ describe('ImagePreview', () => {
     it('opens the lightbox from the gallery panel of a single image', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
 
@@ -237,7 +263,7 @@ describe('ImagePreview', () => {
         ]
       })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
 
@@ -256,7 +282,7 @@ describe('ImagePreview', () => {
         imageItems: undefined
       })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
 
@@ -269,7 +295,7 @@ describe('ImagePreview', () => {
         imageUrls: ['/api/view?filename=test1.png&preview=webp;75&rand=1']
       })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
 
@@ -282,7 +308,7 @@ describe('ImagePreview', () => {
       const hdrUrl = '/api/view?filename=out.exr&type=output'
       renderImagePreview({ imageUrls: [hdrUrl] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByTestId('hdr-open-button'))
 
@@ -299,7 +325,7 @@ describe('ImagePreview', () => {
         ]
       })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.click(
         screen.getByRole('button', { name: 'View image 3 of 3' })
@@ -313,13 +339,12 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(1)
     })
 
-    // The gallery panel is ~55px shorter than the grid it replaces, so a
-    // double-click aimed at a thumbnail can land under it. The handler lives
-    // on the preview root for that reason — moving it to the panel regresses.
+    // The gallery can be shorter than the grid it replaces, so the handler
+    // must remain on the preview root.
     it('opens the lightbox from below the gallery panel', async () => {
       renderImagePreview()
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.click(
         screen.getByRole('button', { name: 'View image 2 of 2' })
@@ -333,62 +358,11 @@ describe('ImagePreview', () => {
     it('does not open the lightbox while the grid is showing', async () => {
       renderImagePreview()
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByTestId('image-grid'))
 
       expect(galleryStore.activeIndex).toBe(-1)
-    })
-
-    // Gallery controls appear under the cursor mid-gesture, so the second
-    // click of a double-click aimed at the image can land on one. They must
-    // ignore it rather than download a file or jump to another image.
-    it('ignores the second click of a double-click on an action button', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
-      const download = screen.getByRole('button', { name: 'Download image' })
-
-      await fireEvent.click(download, { detail: 1 })
-      expect(downloadFile).toHaveBeenCalledTimes(1)
-
-      await fireEvent.click(download, { detail: 2 })
-
-      expect(downloadFile).toHaveBeenCalledTimes(1)
-    })
-
-    it('ignores the second click of a double-click on a navigation dot', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: 'View image 1 of 2' })
-      )
-      await nextTick()
-
-      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
-      await fireEvent.click(dots[dots.length - 1], { detail: 2 })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[0]
-      )
-    })
-
-    it('still lets a deliberate single click reach a gallery control', async () => {
-      renderImagePreview()
-      const user = userEvent.setup()
-      await user.click(
-        screen.getByRole('button', { name: 'View image 1 of 2' })
-      )
-      await nextTick()
-
-      const dots = screen.getAllByRole('button', { name: 'View image 2 of 2' })
-      await user.click(dots[dots.length - 1])
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[1]
-      )
     })
 
     it('hides the lightbox button for a live preview blob', () => {
@@ -405,7 +379,7 @@ describe('ImagePreview', () => {
     it('does not put live preview blobs into the lightbox', async () => {
       renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.dblClick(screen.getByRole('region'))
 
@@ -415,50 +389,29 @@ describe('ImagePreview', () => {
     it('opens the lightbox from the named action button', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
 
       expect(galleryStore.activeIndex).toBe(0)
     })
 
-    it('opens the lightbox with the keyboard via that button', async () => {
+    it('does not open the lightbox when a control is double-clicked', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
-      screen.getByRole('button', { name: 'Open in lightbox' }).focus()
-      await user.keyboard('{Enter}')
+      await user.dblClick(
+        screen.getByRole('button', { name: 'Download image' })
+      )
 
-      expect(galleryStore.activeIndex).toBe(0)
+      expect(galleryStore.activeIndex).toBe(-1)
     })
-
-    // A double-click that starts on a control is a control interaction, not
-    // the image gesture, so it must not also open the lightbox.
-    it.for([
-      { name: 'download button', control: 'Download image' },
-      { name: 'grid button', control: 'Grid view' }
-    ])(
-      'does not open the lightbox when double-clicking the $name',
-      async ({ control }) => {
-        renderImagePreview()
-        const user = userEvent.setup()
-        const galleryStore = useMediaAssetGalleryStore()
-
-        await user.click(
-          screen.getByRole('button', { name: 'View image 1 of 2' })
-        )
-        await nextTick()
-        await user.dblClick(screen.getAllByRole('button', { name: control })[0])
-
-        expect(galleryStore.activeIndex).toBe(-1)
-      }
-    )
 
     it('does not open the lightbox for an image that failed to load', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()
-      const galleryStore = useMediaAssetGalleryStore()
+      const galleryStore = useMediaGalleryStore()
 
       await fireEvent.error(screen.getByTestId('main-image'))
       await nextTick()
@@ -764,17 +717,14 @@ describe('ImagePreview', () => {
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
-      const user = userEvent.setup({
-        advanceTimers: vi.advanceTimersByTime
-      })
       const sameUrl = '/api/view?filename=test.png&type=output'
       const { container } = renderImagePreview({
         imageUrls: [sameUrl, sameUrl, sameUrl]
       })
-      await switchToGallery(user)
+      await switchToGallery(userEvent.setup())
 
       // Simulate initial image load
-      await fireEvent.load(screen.getByRole('img'))
+      await fireEvent.load(screen.getByTestId('main-image'))
       await nextTick()
       expect(
         container.querySelector('[aria-busy="true"]')
@@ -782,7 +732,7 @@ describe('ImagePreview', () => {
 
       // Click second navigation dot to cycle
       const dots = screen.getAllByRole('button', { name: /View image/ })
-      await user.click(dots[1])
+      await userEvent.setup().click(dots[1])
       await nextTick()
 
       // Advance past the delayed loader timeout

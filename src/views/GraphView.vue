@@ -30,7 +30,10 @@
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
-  <GlobalMediaLightbox />
+  <MediaLightbox
+    v-model:active-index="galleryStore.activeIndex"
+    :all-gallery-items="galleryStore.items"
+  />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
 </template>
@@ -51,6 +54,7 @@ import {
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
@@ -70,7 +74,6 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
-import GlobalMediaLightbox from '@/platform/assets/components/GlobalMediaLightbox.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -91,6 +94,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
@@ -115,6 +119,7 @@ useBrowserTabTitle()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
+const galleryStore = useMediaGalleryStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
@@ -287,6 +292,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
+  galleryStore.close()
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)

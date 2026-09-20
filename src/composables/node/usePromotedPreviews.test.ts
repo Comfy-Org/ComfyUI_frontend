@@ -90,8 +90,15 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
   addInteriorNode(setup, { id, previewMediaType })
   exposePreview(setup, String(id))
   seedOutputs(setup.subgraph.id, [id])
-  vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(urls)
-  return { setup, urls }
+  const images = urls.map((url) => ({
+    url,
+    item: { filename: 'output.png' }
+  }))
+  vi.mocked(useNodeOutputStore().getNodeImages).mockReturnValue(images)
+  vi.mocked(useNodeOutputStore().getNodeImagesByExecutionId).mockReturnValue(
+    images
+  )
+  return { setup, images }
 }
 
 describe(usePromotedPreviews, () => {
@@ -127,7 +134,7 @@ describe(usePromotedPreviews, () => {
   })
 
   it('returns image preview for promoted $$ widget with outputs', () => {
-    const { setup, urls } = arrangePromotedPreview({
+    const { setup, images } = arrangePromotedPreview({
       previewMediaType: 'image'
     })
 
@@ -137,8 +144,7 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls,
-        items: [{ filename: 'output.png' }]
+        images
       }
     ])
   })
@@ -160,11 +166,11 @@ describe(usePromotedPreviews, () => {
   )
 
   it('defaults preview type to image when previewMediaType is unset', () => {
-    const { setup, urls } = arrangePromotedPreview()
+    const { setup, images } = arrangePromotedPreview()
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      expect.objectContaining({ type: 'image', urls })
+      expect.objectContaining({ type: 'image', images })
     ])
   })
 
@@ -182,18 +188,22 @@ describe(usePromotedPreviews, () => {
     exposePreview(setup, '20')
 
     seedOutputs(setup.subgraph.id, [10, 20])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+    vi.mocked(useNodeOutputStore().getNodeImages).mockImplementation(
       (node: LGraphNode) => {
-        if (node === node10) return ['/view?a=1']
-        if (node === node20) return ['/view?b=2']
+        if (node === node10) return [{ url: '/view?a=1' }]
+        if (node === node20) return [{ url: '/view?b=2' }]
         return undefined
       }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toHaveLength(2)
-    expect(promotedPreviews.value[0].urls).toEqual(['/view?a=1'])
-    expect(promotedPreviews.value[1].urls).toEqual(['/view?b=2'])
+    expect(promotedPreviews.value[0]).toMatchObject({
+      images: [{ url: '/view?a=1' }]
+    })
+    expect(promotedPreviews.value[1]).toMatchObject({
+      images: [{ url: '/view?b=2' }]
+    })
   })
 
   it('returns preview when only nodePreviewImages exist (e.g. GLSL live preview)', () => {
@@ -205,7 +215,9 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
+    vi.mocked(useNodeOutputStore().getNodeImages).mockReturnValue([
+      { url: blobUrl }
+    ])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
@@ -213,7 +225,7 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: [blobUrl]
+        images: [{ url: blobUrl }]
       }
     ])
   })
@@ -230,14 +242,16 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
+    vi.mocked(useNodeOutputStore().getNodeImages).mockReturnValue([
+      { url: blobUrl }
+    ])
 
     expect(promotedPreviews.value).toEqual([
       {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: [blobUrl]
+        images: [{ url: blobUrl }]
       }
     ])
   })
@@ -289,8 +303,11 @@ describe(usePromotedPreviews, () => {
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node: LGraphNode) => (node === leafNode ? mockUrls : [])
+    vi.mocked(useNodeOutputStore().getNodeImages).mockImplementation(
+      (node: LGraphNode) =>
+        node === leafNode
+          ? [{ url: mockUrls[0], item: { filename: 'output.png' } }]
+          : []
     )
 
     const { promotedPreviews } = usePromotedPreviews(
@@ -301,8 +318,7 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: mockUrls,
-        items: [{ filename: 'output.png' }]
+        images: [{ url: mockUrls[0], item: { filename: 'output.png' } }]
       }
     ])
   })
@@ -347,16 +363,25 @@ describe(usePromotedPreviews, () => {
     outputStore.nodeOutputs[hostLocator] = {
       images: [{ filename: 'host.webm' }]
     }
-    vi.mocked(outputStore.getNodeImageUrls).mockImplementation(
+    vi.mocked(outputStore.getNodeImages).mockImplementation(
       (node: LGraphNode) =>
-        node === leafNode ? ['/view?filename=leaf.png'] : []
+        node === leafNode
+          ? [
+              {
+                url: '/view?filename=leaf.png',
+                item: { filename: 'leaf.png' }
+              }
+            ]
+          : []
     )
 
     const { promotedPreviews } = usePromotedPreviews(
       () => outerSetup.subgraphNode
     )
 
-    expect(promotedPreviews.value[0].items).toEqual([{ filename: 'leaf.png' }])
+    expect(promotedPreviews.value[0]).toMatchObject({
+      images: [{ item: { filename: 'leaf.png' } }]
+    })
   })
 
   // The URLs and the records must be resolved through the same accessor
@@ -369,18 +394,18 @@ describe(usePromotedPreviews, () => {
     outputStore.nodeOutputs[interiorLocator] = {
       images: [{ filename: 'locator.png' }]
     }
-    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockReturnValue([
-      '/view?filename=execution.png'
-    ])
-    vi.mocked(outputStore.getNodeImageItemsByExecutionId).mockReturnValue([
-      { filename: 'execution.png' }
+    vi.mocked(outputStore.getNodeImagesByExecutionId).mockReturnValue([
+      {
+        url: '/view?filename=execution.png',
+        item: { filename: 'execution.png' }
+      }
     ])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
 
-    expect(promotedPreviews.value[0].items).toEqual([
-      { filename: 'execution.png' }
-    ])
+    expect(promotedPreviews.value[0]).toMatchObject({
+      images: [{ item: { filename: 'execution.png' } }]
+    })
   })
 
   it('carries no records when the execution url is a live preview', () => {
@@ -393,14 +418,16 @@ describe(usePromotedPreviews, () => {
     vi.mocked(outputStore.getNodePreviewImagesByExecutionId).mockReturnValue([
       'blob:live'
     ])
-    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockReturnValue([
-      'blob:live'
+    vi.mocked(outputStore.getNodeImagesByExecutionId).mockReturnValue([
+      { url: 'blob:live' }
     ])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
 
-    expect(promotedPreviews.value[0].urls).toEqual(['blob:live'])
-    expect(promotedPreviews.value[0].items).toBeUndefined()
+    expect(promotedPreviews.value[0]).toMatchObject({
+      images: [{ url: 'blob:live' }]
+    })
+    expect(promotedPreviews.value[0]).not.toHaveProperty('images.0.item')
   })
 
   it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {
@@ -445,10 +472,11 @@ describe(usePromotedPreviews, () => {
         return undefined
       }
     )
-    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockImplementation(
+    vi.mocked(outputStore.getNodeImagesByExecutionId).mockImplementation(
       (executionId) => {
-        if (executionId === firstLeafExecutionId) return ['blob:first']
-        if (executionId === secondLeafExecutionId) return ['blob:second']
+        if (executionId === firstLeafExecutionId) return [{ url: 'blob:first' }]
+        if (executionId === secondLeafExecutionId)
+          return [{ url: 'blob:second' }]
         return undefined
       }
     )
@@ -459,7 +487,7 @@ describe(usePromotedPreviews, () => {
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
           type: 'image',
-          urls: ['blob:first']
+          images: [{ url: 'blob:first' }]
         }
       ]
     )
@@ -470,7 +498,7 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        urls: ['blob:second']
+        images: [{ url: 'blob:second' }]
       }
     ])
   })

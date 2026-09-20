@@ -21,6 +21,7 @@ import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeImage } from '@/types/nodeMedia'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -143,32 +144,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
+    return getNodeImages(node)?.map(({ url }) => url)
+  }
+
+  function getNodeImages(node: LGraphNode): NodeImage[] | undefined {
     const previews = getNodePreviews(node)
-    if (previews?.length) return previews
+    if (previews?.length) return previews.map((url) => ({ url }))
 
-    return buildImageUrls(node, getNodeOutputs(node))
-  }
-
-  /**
-   * The records behind {@link getNodeImageUrls}, positionally aligned with it.
-   * Undefined while live previews are showing, because those URLs are not
-   * built from result items and have no backing record.
-   */
-  function getNodeImageItems(
-    node: LGraphNode
-  ): (ResultItem | null)[] | undefined {
-    if (getNodePreviews(node)?.length) return undefined
-
-    return getNodeOutputs(node)?.images
-  }
-
-  /** As {@link getNodeImageItems}, for {@link getNodeImageUrlsByExecutionId}. */
-  function getNodeImageItemsByExecutionId(
-    executionId: NodeExecutionId
-  ): (ResultItem | null)[] | undefined {
-    if (getNodePreviewImagesByExecutionId(executionId)?.length) return undefined
-
-    return getNodeOutputByExecutionId(executionId)?.images
+    const outputs = getNodeOutputs(node)
+    const urls = buildImageUrls(node, outputs)
+    return urls?.map((url, index) => ({ url, item: outputs?.images?.[index] }))
   }
 
   function getNodeOutputByExecutionId(
@@ -191,10 +176,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     executionId: NodeExecutionId,
     node: LGraphNode
   ): string[] | undefined {
-    const previews = getNodePreviewImagesByExecutionId(executionId)
-    if (previews?.length) return previews
+    return getNodeImagesByExecutionId(executionId, node)?.map(({ url }) => url)
+  }
 
-    return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
+  function getNodeImagesByExecutionId(
+    executionId: NodeExecutionId,
+    node: LGraphNode
+  ): NodeImage[] | undefined {
+    const previews = getNodePreviewImagesByExecutionId(executionId)
+    if (previews?.length) return previews.map((url) => ({ url }))
+
+    const outputs = getNodeOutputByExecutionId(executionId)
+    const urls = buildImageUrls(node, outputs)
+    return urls?.map((url, index) => ({ url, item: outputs?.images?.[index] }))
   }
 
   function setOutputsByLocatorId(
@@ -541,9 +535,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    getNodeImages,
+    getNodeImagesByExecutionId,
     getNodeImageUrls,
-    getNodeImageItems,
-    getNodeImageItemsByExecutionId,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,

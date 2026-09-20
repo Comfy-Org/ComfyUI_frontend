@@ -21,8 +21,7 @@
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
-        :image-urls="media.urls"
-        :image-items="media.items"
+        :images="media.images"
         :node-id="nodeId"
         class="mt-2 flex-auto"
       />
@@ -33,7 +32,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { NodeMedia } from '@/types/nodeMedia'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -44,17 +43,16 @@ import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?: {
-    type: 'image' | 'video' | 'audio'
-    urls: string[]
-    /** Records for {@link urls}, from whichever node produced them. */
-    items?: (ResultItem | null)[]
-  }
+  media?: NodeMedia
 }
 
 const props = defineProps<NodeContentProps>()
 
-const hasMedia = computed(() => props.media && props.media.urls.length > 0)
+const hasMedia = computed(() =>
+  props.media?.type === 'image'
+    ? props.media.images.length > 0
+    : !!props.media?.urls.length
+)
 
 const nodeId = computed(() => props.nodeData?.id)
 

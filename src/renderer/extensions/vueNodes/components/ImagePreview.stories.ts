@@ -7,6 +7,7 @@ const SAMPLE_URLS = [
   'https://picsum.photos/seed/preview2/800/600',
   'https://picsum.photos/seed/preview3/800/600'
 ]
+const toImages = (urls: readonly string[]) => urls.map((url) => ({ url }))
 
 const meta: Meta<typeof ImagePreview> = {
   title: 'Components/Display/ImagePreview',
@@ -35,27 +36,29 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    imageUrls: [SAMPLE_URLS[0]]
+    images: toImages([SAMPLE_URLS[0]])
   }
 }
 
 export const MultipleImages: Story = {
   args: {
-    imageUrls: SAMPLE_URLS
+    images: toImages(SAMPLE_URLS)
   }
 }
 
 export const ErrorState: Story = {
   args: {
-    imageUrls: ['https://invalid.example.com/no-image.png']
+    images: toImages(['https://invalid.example.com/no-image.png'])
   }
 }
 
 export const ManyImages: Story = {
   args: {
-    imageUrls: Array.from(
-      { length: 8 },
-      (_, i) => `https://picsum.photos/seed/many${i}/800/600`
+    images: toImages(
+      Array.from(
+        { length: 8 },
+        (_, i) => `https://picsum.photos/seed/many${i}/800/600`
+      )
     )
   }
 }

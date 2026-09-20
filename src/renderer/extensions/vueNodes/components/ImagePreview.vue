@@ -3,7 +3,7 @@
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
-    @mousedown="handleGestureStart"
+    @click.capture="handleRepeatedClick"
     @dblclick.stop="handleGalleryDoubleClick"
   >
     <!-- Grid View -->
@@ -25,7 +25,7 @@
             total: imageUrls.length
           })
         "
-        @click="withSingleClick($event, () => handleGridClick(index))"
+        @click="handleGridClick(index)"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -82,8 +82,7 @@
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
-        data-preview-control
-        @click="withSingleClick($event, () => openHdrViewer(currentImageUrl))"
+        @click="openHdrViewer(currentImageUrl)"
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -108,7 +107,6 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
-        data-preview-control
       >
         <!-- Mask/Edit Button -->
         <button
@@ -116,7 +114,7 @@
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
-          @click="withSingleClick($event, handleEditMask)"
+          @click="handleEditMask"
         >
           <i-comfy:mask class="size-4" />
         </button>
@@ -127,12 +125,11 @@
           :class="actionButtonClass"
           :title="$t('g.openLayerEditor')"
           :aria-label="$t('g.openLayerEditor')"
-          @click="withSingleClick($event, handleOpenLayerEditor)"
+          @click="handleOpenLayerEditor"
         >
           <i class="icon-[lucide--layers] size-4" />
         </button>
 
-        <!-- Open in Lightbox Button -->
         <button
           v-if="
             !imageError && !currentImageIsHdr && !isObjectUrl(currentImageUrl)
@@ -141,7 +138,7 @@
           :class="actionButtonClass"
           :title="$t('g.openInLightbox')"
           :aria-label="$t('g.openInLightbox')"
-          @click="withSingleClick($event, openCurrentInLightbox)"
+          @click="openCurrentInLightbox"
         >
           <i class="icon-[lucide--expand] size-4" />
         </button>
@@ -152,7 +149,7 @@
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
-          @click="withSingleClick($event, handleDownload)"
+          @click="handleDownload"
         >
           <i class="icon-[lucide--download] size-4" />
         </button>
@@ -163,11 +160,7 @@
           :class="actionButtonClass"
           :title="$t('g.viewGrid')"
           :aria-label="$t('g.viewGrid')"
-          @click="
-            withSingleClick($event, () => {
-              viewMode = 'grid'
-            })
-          "
+          @click="viewMode = 'grid'"
         >
           <i class="icon-[lucide--layout-grid] size-4" />
         </button>
@@ -198,18 +191,13 @@
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
       class="flex flex-wrap items-center justify-center gap-1 pt-4"
-      data-preview-control
     >
       <!-- Back to Grid button -->
       <button
         class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
-        @click="
-          withSingleClick($event, () => {
-            viewMode = 'grid'
-          })
-        "
+        @click="viewMode = 'grid'"
       >
         <i class="icon-[lucide--layout-grid] size-3.5" />
       </button>
@@ -226,7 +214,7 @@
             total: imageUrls.length
           })
         "
-        @click="withSingleClick($event, () => setCurrentIndex(index))"
+        @click="setCurrentIndex(index)"
       />
     </div>
   </div>
@@ -240,13 +228,13 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { NodeImage } from '@/types/nodeMedia'
 import type { NodeId } from '@/types/nodeId'
 import {
   getImageFilenameFromUrl,
@@ -259,25 +247,18 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
-  /** Array of image URLs to display */
-  readonly imageUrls: readonly string[]
-  /**
-   * Records for {@link imageUrls}, supplied by whichever node produced them.
-   * A promoted subgraph preview shows an interior node's images inside a host
-   * node, so these cannot be looked up from {@link nodeId} here.
-   */
-  readonly imageItems?: readonly (ResultItem | null)[]
+  readonly images: readonly NodeImage[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
 }
 
-const { imageUrls, imageItems, nodeId } = defineProps<ImagePreviewProps>()
+const { images, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
-const galleryStore = useMediaAssetGalleryStore()
+const galleryStore = useMediaGalleryStore()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -293,12 +274,12 @@ const { width: gridWidth, height: gridHeight } = useElementSize(
 )
 
 const currentIndex = ref(0)
-const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const imageUrls = computed(() => images.map(({ url }) => url))
+const viewMode = ref<ViewMode>(defaultViewMode(imageUrls.value))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-const gestureStartedOnControl = ref(false)
 const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -310,23 +291,25 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const currentImageUrl = computed(
+  () => imageUrls.value[currentIndex.value] ?? ''
+)
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
-const hasMultipleImages = computed(() => imageUrls.length > 1)
+const gridImageUrls = computed(() => imageUrls.value.map(getGridThumbnailUrl))
+const hasMultipleImages = computed(() => imageUrls.value.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
-    total: imageUrls.length
+    total: imageUrls.value.length
   })
 )
 const gridCols = computed(() => {
   const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
+  return Math.max(Math.round(Math.sqrt(imageUrls.value.length * bias)), 1)
 })
 
 watch(
-  () => imageUrls,
+  imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -412,8 +395,8 @@ function handleDownload() {
 
 function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < imageUrls.length) {
-    const urlChanged = imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < imageUrls.value.length) {
+    const urlChanged = imageUrls.value[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
     if (urlChanged) startDelayedLoader()
@@ -428,7 +411,7 @@ async function openImageInGallery(index: number) {
 }
 
 function handleGridClick(index: number) {
-  const url = imageUrls[index]
+  const url = imageUrls.value[index]
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
@@ -440,9 +423,7 @@ function isObjectUrl(url: string): boolean {
   return url.startsWith('blob:')
 }
 
-// `sourceIndex` addresses imageUrls, which imageItems is aligned with.
-function toGalleryItem(url: string, sourceIndex: number): AugmentedResultItem {
-  const item = imageItems?.[sourceIndex]
+function toGalleryItem({ url, item }: NodeImage): AugmentedResultItem {
   return {
     ...item,
     filename: item?.filename ?? getImageFilenameFromUrl(url) ?? '',
@@ -454,8 +435,9 @@ function toGalleryItem(url: string, sourceIndex: number): AugmentedResultItem {
 }
 
 function openInLightbox(index: number) {
-  const url = imageUrls[index]
-  if (!url) return
+  const selectedImage = images[index]
+  if (!selectedImage) return
+  const { url } = selectedImage
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
@@ -464,44 +446,20 @@ function openInLightbox(index: number) {
   // and the gallery store outlives the node, so it must not retain one.
   if (isObjectUrl(url)) return
 
-  const renderable = imageUrls
-    .map((candidate, sourceIndex) => ({ candidate, sourceIndex }))
-    .filter(
-      ({ candidate }) => !isHdrImageUrl(candidate) && !isObjectUrl(candidate)
-    )
-
-  galleryStore.openItems(
-    renderable.map(({ candidate, sourceIndex }) =>
-      toGalleryItem(candidate, sourceIndex)
-    ),
-    renderable.findIndex(({ sourceIndex }) => sourceIndex === index)
+  const renderable = images.filter(
+    ({ url }) => !isHdrImageUrl(url) && !isObjectUrl(url)
   )
+  const galleryItems = renderable.map(toGalleryItem)
+  const selectedItem = galleryItems[renderable.indexOf(selectedImage)]
+  if (selectedItem) galleryStore.openItems(galleryItems, selectedItem)
 }
 
-// Gallery controls are revealed under the cursor mid-double-click, so the
-// second click can land on one of them. The browser still counts it as the
-// second click, which is how a control tells it apart from a deliberate press.
-function withSingleClick(
-  event: MouseEvent,
-  action: () => void | Promise<void>
-): void | Promise<void> {
-  if (event.detail > 1) return
-  return action()
+function handleRepeatedClick(event: MouseEvent) {
+  if (event.detail > 1) event.stopPropagation()
 }
 
-// `detail` counts the press within a click sequence, so 1 is the opening
-// press of a gesture. pointerdown reports 0 for every press and cannot tell
-// the first from the second.
-function handleGestureStart(event: MouseEvent) {
-  if (event.detail > 1) return
-  const { target } = event
-  gestureStartedOnControl.value =
-    target instanceof Element &&
-    target.closest('[data-preview-control]') !== null
-}
-
-function handleGalleryDoubleClick() {
-  if (gestureStartedOnControl.value) return
+function handleGalleryDoubleClick(event: MouseEvent) {
+  if (event.target instanceof Element && event.target.closest('button')) return
   openCurrentInLightbox()
 }
 
@@ -530,19 +488,23 @@ function handleKeyDown(event: KeyboardEvent) {
     return
   }
 
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
+  if (imageUrls.value.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+        currentIndex.value > 0
+          ? currentIndex.value - 1
+          : imageUrls.value.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
+        currentIndex.value < imageUrls.value.length - 1
+          ? currentIndex.value + 1
+          : 0
       )
       break
     case 'Home':
@@ -551,7 +513,7 @@ function handleKeyDown(event: KeyboardEvent) {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(imageUrls.length - 1)
+      setCurrentIndex(imageUrls.value.length - 1)
       break
   }
 }

@@ -80,7 +80,7 @@ const segments = computed<Segment[]>(() => {
 })
 
 const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
+  () => import('@/components/common/MediaLightbox.vue')
 )
 
 const proseItems = ref<AugmentedResultItem[]>([])

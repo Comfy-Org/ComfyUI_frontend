@@ -103,8 +103,8 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  allGalleryItems: AugmentedResultItem[]
-  activeIndex: number
+  readonly allGalleryItems: AugmentedResultItem[]
+  readonly activeIndex: number
 }>()
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */

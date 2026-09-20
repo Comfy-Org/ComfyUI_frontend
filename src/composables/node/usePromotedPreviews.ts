@@ -2,8 +2,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { NodeImage, NodeMedia } from '@/types/nodeMedia'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -17,14 +17,12 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
-interface PromotedPreview {
+interface PromotedPreviewBase {
   sourceNodeId: NodeId
   sourceWidgetName: string
-  type: 'image' | 'video' | 'audio'
-  urls: string[]
-  /** Records for {@link urls}, from the same leaf that produced them. */
-  items?: (ResultItem | null)[]
 }
+
+type PromotedPreview = PromotedPreviewBase & NodeMedia
 
 const PREVIEW_TYPES_BY_MEDIA = {
   video: 'video',
@@ -51,7 +49,7 @@ export function usePromotedPreviews(
     leafSourceNodeId: NodeId,
     leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
-  ): { urls: string[]; items?: (ResultItem | null)[] } | undefined {
+  ): NodeImage[] | undefined {
     const locatorId = createNodeLocatorId(
       leafHost.subgraph.id,
       leafSourceNodeId
@@ -71,26 +69,13 @@ export function usePromotedPreviews(
       reactiveExecutionPreviews?.length
     if (!hasAnySource) return undefined
 
-    // URLs and records must come from the same accessor family: resolving
-    // them independently can pair execution previews with node output
-    // records, which are different sources of different length.
-    const byExecution = nodeOutputStore.getNodeImageUrlsByExecutionId(
+    const byExecution = nodeOutputStore.getNodeImagesByExecutionId(
       leafExecutionId,
       interiorNode
     )
-    if (byExecution?.length) {
-      return {
-        urls: byExecution,
-        items: nodeOutputStore.getNodeImageItemsByExecutionId(leafExecutionId)
-      }
-    }
+    if (byExecution?.length) return byExecution
 
-    const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
-    if (!urls?.length) return undefined
-    return {
-      urls,
-      items: nodeOutputStore.getNodeImageItems(interiorNode)
-    }
+    return nodeOutputStore.getNodeImages(interiorNode)
   }
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -166,15 +151,19 @@ export function usePromotedPreviews(
         leafExecutionId,
         interiorNode
       )
-      if (!preview?.urls.length) return []
+      if (!preview?.length) return []
+
+      const type = getPreviewMediaType(interiorNode)
+      const media =
+        type === 'image'
+          ? { type, images: preview }
+          : { type, urls: preview.map(({ url }) => url) }
 
       return [
         {
           sourceNodeId: leaf.sourceNodeId,
           sourceWidgetName: leaf.sourcePreviewName,
-          type: getPreviewMediaType(interiorNode),
-          urls: preview.urls,
-          items: preview.items
+          ...media
         }
       ]
     })

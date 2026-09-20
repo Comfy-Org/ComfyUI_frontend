@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-import MediaLightbox from './MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 
 const i18n = createI18n({
   legacy: false,

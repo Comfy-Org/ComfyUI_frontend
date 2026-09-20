@@ -17,6 +17,6 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
 const { result } = defineProps<{
-  result: AugmentedResultItem
+  readonly result: AugmentedResultItem
 }>()
 </script>

@@ -22,7 +22,7 @@ import { resultItemHtmlVideoType } from '@/utils/resultItem'
 defineOptions({ name: 'ResultVideo' })
 
 const props = defineProps<{
-  result: AugmentedResultItem
+  readonly result: AugmentedResultItem
 }>()
 
 const settingStore = useSettingStore()

@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+
+import MediaLightbox from './MediaLightbox.vue'
 
 const SAMPLE_IMAGES: AugmentedResultItem[] = [
   {
@@ -32,7 +33,7 @@ const SAMPLE_IMAGES: AugmentedResultItem[] = [
 ]
 
 const meta: Meta<typeof MediaLightbox> = {
-  title: 'Platform/Assets/MediaLightbox',
+  title: 'Components/MediaLightbox',
   component: MediaLightbox
 }
 

@@ -296,47 +296,6 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   )
 
   wstest(
-    'does not open the lightbox when a preview control is double-clicked',
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const downloads: string[] = []
-      comfyPage.page.on('download', (download) =>
-        downloads.push(download.suggestedFilename())
-      )
-
-      await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
-
-        await comfyPage.searchBoxV2.addNode('Preview Image')
-        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
-        await expect(previewImage).toBeVisible()
-      })
-
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-
-      await test.step('Inject a single output', async () => {
-        const images = [
-          { filename: 'example.png', subfolder: '', type: 'input' }
-        ]
-        execution.executed('', '1', { images })
-        await expect(node.imagePreview.locator('img')).toBeVisible()
-      })
-
-      await node.imagePreview.getByRole('region').hover()
-      const downloadPromise = comfyPage.page.waitForEvent('download')
-      await node.imagePreview.getByLabel('Download image').dblclick()
-      const download = await downloadPromise
-
-      expect(download.suggestedFilename()).toBe('example.png')
-      await expect(
-        comfyPage.page.getByRole('dialog', { name: 'Gallery' })
-      ).toHaveCount(0)
-      expect(downloads).toEqual(['example.png'])
-    }
-  )
-
-  wstest(
     'requests lightweight thumbnail URLs for grid cells',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())

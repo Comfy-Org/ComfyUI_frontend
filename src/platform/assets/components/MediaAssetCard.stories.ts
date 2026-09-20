@@ -2,10 +2,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
+import { useMediaGalleryStore } from '@/components/common/mediaGalleryStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
-import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type { AssetItem } from '../schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
 
@@ -16,17 +17,21 @@ const meta: Meta<typeof MediaAssetCard> = {
     (_story, context) => ({
       components: { MediaLightbox },
       setup() {
-        const galleryStore = useMediaAssetGalleryStore()
+        const galleryStore = useMediaGalleryStore()
         const args = context.args as {
           onZoom?: (asset: AssetItem) => void
         }
         args.onZoom = (asset: AssetItem) => {
           const kind = getMediaTypeFromFilename(asset.name)
-          galleryStore.openSingle({
-            ...asset,
-            kind,
-            src: asset.preview_url || ''
-          })
+          const item: AugmentedResultItem = {
+            filename: asset.name,
+            subfolder: '',
+            type: 'output',
+            nodeId: '0',
+            mediaType: kind === 'image' ? 'images' : kind,
+            url: asset.preview_url || ''
+          }
+          galleryStore.openItems([item], item)
         }
         return { galleryStore }
       },

@@ -25,13 +25,11 @@ export function isHdrImageUrl(url: string | undefined): boolean {
   return isHdrImageFilename(getImageFilenameFromUrl(url))
 }
 
-const ABSOLUTE_URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i
-
 export function toFullResolutionUrl(url: string): string {
   try {
     const parsed = new URL(url, window.location.origin)
     parsed.searchParams.delete('preview')
-    return ABSOLUTE_URL_SCHEME.test(url)
+    return url.startsWith('http')
       ? parsed.toString()
       : `${parsed.pathname}${parsed.search}`
   } catch {
