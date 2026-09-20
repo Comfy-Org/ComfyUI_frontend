@@ -16,7 +16,7 @@ import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits
 import { runWorkshopRouter } from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import * as draftStorage from '../../config/workshop-draft-storage'
