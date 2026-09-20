@@ -35,7 +35,9 @@ remain. The gap is coverage and discipline, not another reporting API.
    emitting `missing_event` observations where expected completion has a
    bounded window.
 2. **Use a fixed snake_case tag taxonomy:**
-   - `error_type`: existing stable slug shaped as `<area>_<what>_<how>`
+   - `error_type`: existing stable slug shaped as
+     `<category>_<operation>_<subject>[_detail]`, with the operation written as
+     a present participle
    - `failure_kind`: `invariant`, `bad_state`, `missing_event`,
      `caught_unexpected`, or `degraded`
    - `feature_area`: `workflow`, `queue`, `canvas`, `nodes`, `auth`, `cloud`,
