@@ -637,6 +637,36 @@ class AgentConversationHarness {
   setSubscribeBehavior(behavior: SubscribeBehavior): void {
     this.hostSocket.setSubscribeBehavior(behavior)
   }
+
+  // Apply a turn's recorded graph operations to the HOST document and
+  // deliberately DISCARD the resulting doc_update instead of sending it.
+  //
+  // This is the production shape of an unsubscribed follower: the agent's ops
+  // land in the document server-side, and the doc_update is published to the
+  // workflow channel the client never joined, so it never reaches this page.
+  // `replayResponse` cannot model it — it blocks on `waitForSubscribe()`,
+  // which never resolves under a standing refusal.
+  //
+  // It exists because "the canvas did not change" is a vacuous assertion
+  // otherwise: with nothing ever applied, it passes just as happily against a
+  // perfectly healthy follower. Returns the host's node count after applying,
+  // so a test can PROVE the divergence is real rather than assume it.
+  applyOpsHostSideOnly(turn = 0): number {
+    for (const entry of this.conversation.turns[turn].response) {
+      if (entry.kind !== 'graph_ops') continue
+      // The frame is intentionally not sent — that omission IS the scenario.
+      this.host.apply(entry.ops)
+      for (const id of Object.keys(this.host.graph().nodes))
+        this.seenIds.add(id)
+    }
+    return Object.keys(this.host.graph().nodes).length
+  }
+
+  // Node count the host document currently holds — the server-side truth the
+  // client's canvas is compared against.
+  hostNodeCount(): number {
+    return Object.keys(this.host.graph().nodes).length
+  }
 }
 
 export type ReplayTiming = 'immediate' | 'recorded'

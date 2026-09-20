@@ -2,8 +2,10 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-// A recorded turn whose ops add nodes, so "the canvas did not change" is
-// visible as a node count rather than inferred from a frame that never came.
+// A recorded turn that adds, sets and deletes nodes, so the document's node
+// count provably MOVES when the ops are applied — which is what makes "the
+// canvas did not follow it" a real assertion rather than a vacuous one. The
+// net can move either way; the test asserts divergence, not growth.
 const CASE = 'agent-rec-add-set-delete'
 
 // agentCrdtDocLifecycle.ts: SUBSCRIBE_RETRY_BASE_MS = 500 doubling over
@@ -11,6 +13,12 @@ const CASE = 'agent-rec-add-set-delete'
 // 16000 = 31.5s of retries before scheduleSubscribeRetry() stops scheduling.
 const SUBSCRIBE_RETRY_ATTEMPTS = 6
 const SUBSCRIBE_RETRY_BUDGET_MS = 31_500
+// The host counts the INITIAL doc_subscribe as well as each retry, so an
+// exhausted follower has sent 1 + 6 = 7 and must never send an eighth.
+const TERMINAL_SUBSCRIBE_ATTEMPTS = SUBSCRIBE_RETRY_ATTEMPTS + 1
+// Had a seventh retry been scheduled its delay would be 500 * 2^6 = 32s.
+// Waiting past that is what turns "has not retried yet" into "has stopped".
+const NEXT_BACKOFF_MS = 32_000
 
 test.describe(
   'Agent follower subscribe refusal',
@@ -32,7 +40,7 @@ test.describe(
       agentConversation,
       page
     }) => {
-      test.setTimeout(120_000)
+      test.setTimeout(180_000)
 
       await test.step('the host refuses every doc_subscribe', async () => {
         agentConversation.setSubscribeBehavior({
@@ -51,27 +59,68 @@ test.describe(
         await agentConversation.sendPrompt(0)
       })
 
+      // The agent's edit lands in the document server-side. Its doc_update goes
+      // to the workflow channel this client never joined, so it never arrives —
+      // that omission is the scenario, and applying host-side only is what
+      // models it. Without this the canvas assertion below is vacuous: nothing
+      // would ever have tried to change the canvas, so it would pass against a
+      // perfectly healthy follower too.
+      const hostNodes =
+        await test.step('the agent edit lands in the document the client cannot see', () => {
+          const hostBefore = agentConversation.hostNodeCount()
+          const after = agentConversation.applyOpsHostSideOnly(0)
+          // The recorded turn adds, sets AND deletes, so the net node count can
+          // move either way. What matters is that the document moved at all and
+          // now differs from what the canvas is showing.
+          expect(after).not.toBe(hostBefore)
+          expect(after).not.toBe(nodesBefore)
+          return after
+        })
+
       await test.step('the follower exhausts its retry budget', async () => {
         // Climbing attempts with zero accepted subscribes is the only way to
-        // tell "still trying" from "gave up" from outside the page.
+        // tell "still trying" from "gave up" from outside the page. The count
+        // includes the initial subscribe, so exhaustion is exactly 7.
         await expect
           .poll(() => agentConversation.subscribeAttemptCount(), {
-            timeout: SUBSCRIBE_RETRY_BUDGET_MS + 15_000,
+            timeout: SUBSCRIBE_RETRY_BUDGET_MS + 20_000,
             message:
               'the follower should retry a refused subscribe with bounded backoff'
           })
-          .toBeGreaterThanOrEqual(SUBSCRIBE_RETRY_ATTEMPTS)
+          .toBe(TERMINAL_SUBSCRIBE_ATTEMPTS)
         expect(agentConversation.subscribeCount()).toBe(0)
       })
 
-      // THE GAP. The turn's ops reached the document server-side and the turn
-      // reports success, but no canvas frame can arrive on a subscription that
-      // was never established, and nothing user-visible says so: the follower's
-      // status feeds CrdtDevPanel only, which is a dev surface.
+      await test.step('and then stops retrying entirely', async () => {
+        // A seventh retry would have been scheduled 32s out, so sitting past
+        // that window is what separates "has not retried yet" from "has given
+        // up". Expressed as a poll that must NEVER succeed rather than a sleep:
+        // it occupies the whole window, and if an eighth attempt ever appears
+        // the inner poll resolves and this line fails. The stale probe cannot
+        // confuse the count — onSubscribeRefused() clears it, so it is never
+        // armed while the subscription is refused.
+        await expect(
+          expect
+            .poll(() => agentConversation.subscribeAttemptCount(), {
+              timeout: NEXT_BACKOFF_MS + 3_000
+            })
+            .toBeGreaterThan(TERMINAL_SUBSCRIBE_ATTEMPTS)
+        ).rejects.toThrow()
+
+        expect(agentConversation.subscribeAttemptCount()).toBe(
+          TERMINAL_SUBSCRIBE_ATTEMPTS
+        )
+        expect(agentConversation.subscribeCount()).toBe(0)
+      })
+
+      // THE GAP. The document and the user's canvas have now genuinely
+      // diverged, and nothing user-visible says so: the follower's status feeds
+      // CrdtDevPanel only, which is a dev surface.
       //
       // These assertions describe CURRENT behavior deliberately. They are the
       // repro, not the desired end state — see the bug note below.
-      await test.step('the canvas never changes and nothing says why', async () => {
+      await test.step('the canvas stays behind the document, silently', async () => {
+        expect(agentConversation.hostNodeCount()).toBe(hostNodes)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(nodesBefore)
 
         // No alert, status message, or error region mentions the connection.
