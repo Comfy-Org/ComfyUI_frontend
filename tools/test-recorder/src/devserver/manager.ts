@@ -21,21 +21,6 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * A `--backend <url>` run configures the dev server entirely through the
- * environment of the process that starts it: `DEV_SERVER_COMFYUI_URL` picks the
- * backend and `DEV_SERVER_CF_ACCESS_CLIENT_ID`/`_SECRET` decide whether the
- * proxy forwards a Cloudflare Access service token. None of that is reported
- * back over the wire, so a Vite we did not start cannot be shown to match the
- * requested backend. Reusing it would silently record against whatever host
- * that server proxies to, or land on the Access login page with no token.
- */
-function reuseNeedsThisProcessToConfigureIt(
-  distribution: Distribution
-): boolean {
-  return distribution.id === 'custom'
-}
-
 function unverifiableReuseInstructions(
   port: number,
   backendUrl: string | undefined
@@ -69,7 +54,15 @@ export async function ensureDevServer(
   const url = devServerUrl()
   const initial = await probeDevServer(url, projectRoot)
   if (initial.status === 'ready') {
-    if (reuseNeedsThisProcessToConfigureIt(distribution)) {
+    // A `--backend <url>` run configures the dev server entirely through the
+    // environment of the process that starts it: `DEV_SERVER_COMFYUI_URL` picks
+    // the backend and `DEV_SERVER_CF_ACCESS_CLIENT_ID`/`_SECRET` decide whether
+    // the proxy forwards a Cloudflare Access service token. None of that is
+    // reported back over the wire, so a Vite we did not start cannot be shown
+    // to match the requested backend. Reusing it would silently record against
+    // whatever host that server proxies to, or land on the Access login page
+    // with no token. `custom` is the id `--backend` produces.
+    if (distribution.id === 'custom') {
       throw new Error(
         unverifiableReuseInstructions(
           devServerPort(),
