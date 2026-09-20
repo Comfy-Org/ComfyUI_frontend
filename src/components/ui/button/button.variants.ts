@@ -40,8 +40,8 @@ export const buttonVariants = cva({
       md: 'h-8 rounded-lg p-2 text-xs',
       lg: 'h-10 rounded-lg px-4 py-2 text-sm',
       'icon-sm': 'size-5 p-0',
-      icon: 'size-8',
-      'icon-lg': 'size-10',
+      icon: 'size-8 rounded-lg',
+      'icon-lg': 'size-10 rounded-lg',
       brand:
         'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
       'brand-icon': 'size-10 rounded-2xl xl:size-12',
