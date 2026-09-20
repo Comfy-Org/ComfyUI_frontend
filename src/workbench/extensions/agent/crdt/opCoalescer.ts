@@ -11,8 +11,6 @@ import type { GraphOperation } from './graphOperations'
 
 export interface OpCoalescer {
   enqueue(operations: GraphOperation[]): void
-  /** Operations buffered for the pending flush. */
-  pending(): number
   detach(): void
 }
 
@@ -38,9 +36,6 @@ export function createOpCoalescer(
       if (flushScheduled) return
       flushScheduled = true
       queueMicrotask(flush)
-    },
-    pending() {
-      return buffer.length
     },
     detach() {
       detached = true
