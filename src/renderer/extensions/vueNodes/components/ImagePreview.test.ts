@@ -376,8 +376,29 @@ describe('ImagePreview', () => {
       ).toBeInTheDocument()
     })
 
+    it('hides the lightbox button for a webcam data url', () => {
+      renderImagePreview({ imageUrls: ['data:image/png;base64,iVBORw0KGgo='] })
+
+      expect(
+        screen.queryByRole('button', { name: 'Open in lightbox' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Download image' })
+      ).toBeInTheDocument()
+    })
+
     it('does not put live preview blobs into the lightbox', async () => {
       renderImagePreview({ imageUrls: ['blob:http://localhost:5173/abc-123'] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaGalleryStore()
+
+      await user.dblClick(screen.getByRole('region'))
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
+    it('does not put webcam data urls into the lightbox', async () => {
+      renderImagePreview({ imageUrls: ['data:image/png;base64,iVBORw0KGgo='] })
       const user = userEvent.setup()
       const galleryStore = useMediaGalleryStore()
 

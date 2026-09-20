@@ -132,7 +132,9 @@
 
         <button
           v-if="
-            !imageError && !currentImageIsHdr && !isObjectUrl(currentImageUrl)
+            !imageError &&
+            !currentImageIsHdr &&
+            !isTransientUrl(currentImageUrl)
           "
           data-testid="open-lightbox-button"
           :class="actionButtonClass"
@@ -419,8 +421,11 @@ function handleGridClick(index: number) {
   void openImageInGallery(index)
 }
 
-function isObjectUrl(url: string): boolean {
-  return url.startsWith('blob:')
+// Live previews are inline or object URLs the node output store owns; neither
+// survives being handed to a gallery that outlives the node, and
+// toFullResolutionUrl only round-trips http(s) URLs intact.
+function isTransientUrl(url: string): boolean {
+  return url.startsWith('blob:') || url.startsWith('data:')
 }
 
 function toGalleryItem({ url, item }: NodeImage): AugmentedResultItem {
@@ -442,12 +447,10 @@ function openInLightbox(index: number) {
     openHdrViewer(url)
     return
   }
-  // The node output store owns and revokes these short-lived object URLs,
-  // and the gallery store outlives the node, so it must not retain one.
-  if (isObjectUrl(url)) return
+  if (isTransientUrl(url)) return
 
   const renderable = images.filter(
-    ({ url }) => !isHdrImageUrl(url) && !isObjectUrl(url)
+    ({ url }) => !isHdrImageUrl(url) && !isTransientUrl(url)
   )
   const galleryItems = renderable.map(toGalleryItem)
   const selectedItem = galleryItems[renderable.indexOf(selectedImage)]
