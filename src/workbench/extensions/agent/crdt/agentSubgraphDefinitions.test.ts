@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -175,8 +175,19 @@ describe('readSubgraphDefinitions', () => {
       id: '00000000-0000-4000-8000-000000000003',
       definitions: { subgraphs: [first, second] }
     })
+    const doc = seed(outer)
+    const storedOuter = doc.getMap<Y.Map<unknown>>('definitions').get(outer.id)
+    assert.exists(storedOuter)
+    const nested = seed(second, first).getMap<Y.Map<unknown>>('definitions')
+    storedOuter.set(
+      'definitions',
+      new Y.Map<unknown>([
+        ['subgraphs', nested.clone()],
+        ['subgraph_order', [first.id, second.id]]
+      ])
+    )
     const follower = new Y.Doc()
-    Y.applyUpdate(follower, Y.encodeStateAsUpdate(seed(outer)))
+    Y.applyUpdate(follower, Y.encodeStateAsUpdate(doc))
     const before = Y.encodeStateAsUpdate(follower)
 
     expect(readSubgraphDefinitions(follower)).toEqual([outer])
