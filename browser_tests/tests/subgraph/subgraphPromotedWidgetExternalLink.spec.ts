@@ -101,10 +101,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
     })
 
-    // Legacy canvas keeps the row and its name for a connection-suppressed
-    // widget (occupiesCanvasRow). The Vue node collapses the row to a bare dot,
-    // which reads as the widget vanishing. Reproduces on the promoted host AND
-    // on a plain node, so this half of the report is not subgraph-specific.
     for (const [label, targetId, targetInput] of [
       ['promoted subgraph host', HOST_ID, HOST_WIDTH_INPUT],
       ['plain EmptyLatentImage', PLAIN_LATENT_ID, PLAIN_WIDTH_INPUT]
@@ -112,7 +108,6 @@ test.describe(
       test(`keeps the width label visible after an Int is wired into the ${label}`, async ({
         comfyPage
       }, testInfo) => {
-        test.fail(true, 'connection-suppressed width row loses its label')
         const node = comfyPage.vueNodes.getNodeLocator(targetId)
         const widthLabel = node.getByText('width', { exact: true })
         await expect(widthLabel).toBeVisible()
@@ -134,19 +129,13 @@ test.describe(
       })
     }
 
-    // Subgraph-specific half of the report: the promoted text host widget is a
-    // DOM widget whose connectionSuppressed flag never reaches the store the
-    // Vue renderer reads, so the textarea stays editable while the wire lands.
-    test('hides the promoted text control after a String is wired into the host', async ({
+    test('keeps the promoted text control visible and disabled after a String is wired into the host', async ({
       comfyPage
     }, testInfo) => {
-      test.fail(
-        true,
-        'promoted textarea stays visible while its input is linked'
-      )
       const host = comfyPage.vueNodes.getNodeLocator(HOST_ID)
       const textarea = host.getByRole('textbox', { name: 'text', exact: true })
       await expect(textarea).toBeVisible()
+      await expect(textarea).toBeEnabled()
 
       await wireFirstOutputInto(
         comfyPage,
@@ -156,9 +145,10 @@ test.describe(
       )
 
       await attachNodeScreenshot(testInfo, host, 'after-wire.png')
-      await expect(textarea).toHaveCount(0)
+      await expect(textarea).toBeVisible()
+      await expect(textarea).toBeDisabled()
       await expect(
-        host.locator('.lg-slot--input[aria-label="text"]')
+        comfyPage.vueNodes.getInputSlotConnectionDot(HOST_ID, HOST_TEXT_INPUT)
       ).toBeVisible()
     })
 

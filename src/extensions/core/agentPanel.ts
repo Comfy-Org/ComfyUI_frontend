@@ -193,6 +193,17 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    reportError(error, {
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
+    })
   }
 }

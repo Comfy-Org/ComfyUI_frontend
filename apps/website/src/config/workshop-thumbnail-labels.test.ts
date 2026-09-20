@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import labelsJson from '../data/workshop-thumbnail-labels.json'
 import routerIndex from '../content/workshop-router-index.json'
 import type { WorkshopModel } from './models-catalogue'
-import { workshopModels } from './workshop-browse-content'
+import { authoredWorkshopModels } from './workshop-browse-content'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 
 function model(id: string, url?: string): WorkshopModel {
@@ -70,7 +70,7 @@ describe('shared thumbnail labels', () => {
 
   it('labels different Router models sharing artwork without labeling repeated use-case variants', () => {
     const groups = new Map<string, WorkshopModel[]>()
-    for (const entry of workshopModels) {
+    for (const entry of authoredWorkshopModels) {
       if (!entry.thumbnail) continue
       const key = `${entry.thumbnail.kind}:${entry.thumbnail.url}`
       groups.set(key, [...(groups.get(key) ?? []), entry])
