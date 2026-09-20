@@ -748,7 +748,10 @@ export class AgentConversationHarness {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')
-    const input = dialog.getByRole('combobox')
+    // Scoped by accessible name: the seed workflow already has nodes on the
+    // canvas, and a widget-select trigger (e.g. LoadImage's) is also
+    // role="combobox", so an unnamed query resolves to more than one match.
+    const input = dialog.getByRole('combobox', { name: enMessages.g.addNode })
     await input.waitFor({ state: 'visible' })
     await input.fill('Note')
     const results = dialog.getByTestId(TestIds.searchBoxV2.resultItem)
