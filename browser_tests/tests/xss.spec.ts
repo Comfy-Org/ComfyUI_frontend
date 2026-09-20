@@ -61,7 +61,6 @@ test(
     )
 
     try {
-      await comfyPage.searchBoxV2.ensureV2Search()
       // Reload so the node definition store boots from the patched object_info.
       await comfyPage.workflow.reloadAndWaitForApp()
 

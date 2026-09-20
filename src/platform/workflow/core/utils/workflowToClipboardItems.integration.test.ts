@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import {
@@ -21,15 +19,9 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('workflow clipboard insertion', () => {
   it('pastes reroutes at their source-relative position', () => {
@@ -44,7 +36,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, WorkflowClipboardNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     const canvas = createCanvas(graph)
@@ -78,7 +69,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, WorkflowClipboardNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     const origin = LiteGraph.createNode(nodeType)!
@@ -116,7 +106,6 @@ describe('workflow clipboard insertion', () => {
     }
 
     LiteGraph.registerNodeType(nodeType, ReorderingNode)
-    onTestFinished(() => LiteGraph.unregisterNodeType(nodeType))
 
     const graph = new LGraph()
     createCanvas(graph)._deserializeItems(reorderedInputsWorkflow(nodeType), {

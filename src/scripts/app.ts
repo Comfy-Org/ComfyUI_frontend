@@ -1,9 +1,8 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { reactive, unref } from 'vue'
-import { shallowRef } from 'vue'
+import { reactive, unref, shallowRef } from 'vue'
 
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
@@ -31,6 +30,7 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -44,9 +44,15 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
@@ -61,20 +67,14 @@ import {
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   ExecutionErrorWsMessage,
-  NodeError,
   NodeExecutionOutput,
   ResultItem
-} from '@/schemas/apiSchema'
-import {
-  type ComfyNodeDef as ComfyNodeDefV1,
-  isComboInputSpecV1,
-  isComboInputSpecV2
-} from '@/schemas/nodeDefSchema'
-import {
-  type BaseDOMWidget,
-  ComponentWidgetImpl,
-  DOMWidgetImpl
-} from '@/scripts/domWidget'
+} from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -106,7 +106,10 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import type { ExtensionManager } from '@/types/extensionTypes'
+import type {
+  ExtensionManager,
+  ToastMessageOptions
+} from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
@@ -120,11 +123,14 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
   forEachNode,
@@ -148,14 +154,15 @@ import {
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { type ComfyApi, PromptExecutionError, api } from './api'
+import { PromptExecutionError, api } from './api'
+import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import { type ComfyWidgetConstructor } from './widgets'
+import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -184,7 +191,7 @@ function isMeshModelFile(file: File): boolean {
 }
 
 export function sanitizeNodeName(string: string) {
-  let entityMap = {
+  const entityMap = {
     '&': '',
     '<': '',
     '>': '',
@@ -193,7 +200,7 @@ export function sanitizeNodeName(string: string) {
     '`': '',
     '=': ''
   }
-  return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
+  return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
 }
@@ -247,9 +254,9 @@ export interface QueuePromptOptions {
 }
 
 function createNodeOutputsMutationView(
-  outputs: Record<string, NodeExecutionOutput>,
+  outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
-): Record<string, NodeExecutionOutput> {
+): Partial<Record<string, NodeExecutionOutput>> {
   const views = new WeakMap<object, Map<string, object>>()
   const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
@@ -312,13 +319,15 @@ export class ComfyApp {
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
   static maskeditor_is_opended: (() => void) | null = null
-  static clipspace_return_node = null
+  static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly nodeOutputsData: Partial<
+    Record<string, NodeExecutionOutput>
+  > = {}
   private readonly _nodeOutputs = createNodeOutputsMutationView(
     this.nodeOutputsData,
     (id, output) => {
@@ -328,7 +337,7 @@ export class ComfyApp {
       else store.setOutputFromLegacy(id, output)
     }
   )
-  nodePreviewImages: Record<string, string[]>
+  nodePreviewImages: Partial<Record<string, string[]>>
 
   private rootGraphInternal: LGraph | undefined
 
@@ -345,12 +354,31 @@ export class ComfyApp {
     return this.rootGraphInternal!
   }
 
+  get rootGraphOrUndefined(): LGraph | undefined {
+    return this.rootGraphInternal
+  }
+
   /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
   get isGraphReady(): boolean {
     return !!this.rootGraphInternal
   }
 
-  canvas!: LGraphCanvas
+  private canvasInternal: LGraphCanvas | undefined
+
+  /** The canvas, once {@link setup} has created it. Accessing it earlier is a bug. */
+  get canvas(): LGraphCanvas {
+    return this.canvasInternal!
+  }
+
+  set canvas(value: LGraphCanvas) {
+    this.canvasInternal = value
+  }
+
+  /** Same as {@link canvas}, but `undefined` before {@link setup} creates it. */
+  get canvasOrUndefined(): LGraphCanvas | undefined {
+    return this.canvasInternal
+  }
+
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -412,8 +440,13 @@ export class ComfyApp {
   /**
    * @deprecated Use useWidgetStore().widgets instead
    */
-  get widgets(): Record<string, ComfyWidgetConstructor> {
-    return Object.fromEntries(useWidgetStore().widgets.entries())
+  get widgets(): Record<string, CustomComfyWidgetConstructor> &
+    typeof ComfyWidgets {
+    const widgetStore = useWidgetStore()
+    return Object.assign(
+      Object.fromEntries(widgetStore.widgets.entries()),
+      widgetStore.coreWidgets
+    )
   }
 
   /**
@@ -510,7 +543,7 @@ export class ComfyApp {
    * force the server to load the output file as an image.
    */
   getPreviewFormatParam() {
-    let preview_format = useSettingStore().get('Comfy.PreviewFormat')
+    const preview_format = useSettingStore().get('Comfy.PreviewFormat')
     if (preview_format) return `&preview=${preview_format}`
     else return ''
   }
@@ -531,7 +564,7 @@ export class ComfyApp {
   }
 
   static copyToClipspace(node: LGraphNode) {
-    var widgets = null
+    let widgets = null
     if (node.widgets) {
       widgets = node.widgets.map(({ type, name, value }) => ({
         type,
@@ -540,8 +573,8 @@ export class ComfyApp {
       }))
     }
 
-    var imgs = undefined
-    var orig_imgs = undefined
+    let imgs = undefined
+    let orig_imgs = undefined
     if (node.imgs != undefined) {
       imgs = []
       orig_imgs = []
@@ -553,7 +586,7 @@ export class ComfyApp {
       }
     }
 
-    var selectedIndex = 0
+    let selectedIndex = 0
     if (node.imageIndex) {
       selectedIndex = node.imageIndex
     }
@@ -711,9 +744,10 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        canvas.graph_mouse[0] = event.canvasX
+        canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -722,7 +756,15 @@ export class ComfyApp {
         if (await n?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
-        if (files.length === 0) return
+        if (files.length === 0) {
+          if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
+            reportError(new Error('Dropped asset card yielded no file'), {
+              errorType: 'asset_drop_load_failure'
+            })
+            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+          }
+          return
+        }
 
         const workspace = useWorkspaceStore()
         try {
@@ -781,11 +823,9 @@ export class ComfyApp {
       this.canvasElRef,
       'dragover',
       (event: DragEvent) => {
-        this.canvas.adjustMouseEvent(event)
-        const node = this.canvas.graph?.getNodeOnPos(
-          event.canvasX,
-          event.canvasY
-        )
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        const node = canvas.graph?.getNodeOnPos(event.canvasX, event.canvasY)
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null
@@ -824,7 +864,7 @@ export class ComfyApp {
           keybinding &&
           keybinding.targetElementId === 'graph-canvas-container'
         ) {
-          useCommandStore().execute(keybinding.commandId)
+          void useCommandStore().execute(keybinding.commandId)
 
           this.graph.change()
           e.preventDefault()
@@ -884,10 +924,6 @@ export class ComfyApp {
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-        useExecutionErrorStore().showErrorOverlay()
-      } else {
-        useDialogService().showExecutionErrorDialog(detail)
       }
       this.canvas.draw(true, true)
     })
@@ -916,7 +952,7 @@ export class ComfyApp {
       void useNodeReplacementStore().load()
     })
 
-    api.init()
+    void api.init()
   }
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
@@ -963,7 +999,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useExtensionService().loadExtensions()
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      useExtensionService().loadExtensions()
+    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1006,10 +1044,7 @@ export class ComfyApp {
 
         const widgetStore = useDomWidgetStore()
 
-        const activeWidgets: Record<
-          string,
-          BaseDOMWidget<object | string>
-        > = Object.fromEntries(
+        const activeWidgets: Record<string, BaseDOMWidget> = Object.fromEntries(
           newGraph.nodes
             .flatMap((node) => node.widgets ?? [])
             .filter(
@@ -1058,12 +1093,17 @@ export class ComfyApp {
       }
     })
 
-    await useExtensionService().invokeExtensionsAsync('init')
+    await bootstrapTracer.settle('bootstrap/extensions-init', () =>
+      useExtensionService().invokeExtensionsAsync('init')
+    )
+
     await this.registerNodes()
 
     this.addDropHandler()
 
-    await useExtensionService().invokeExtensionsAsync('setup')
+    await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
+      useExtensionService().invokeExtensionsAsync('setup')
+    )
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1109,7 +1149,7 @@ export class ComfyApp {
         output_node: false,
         python_module: 'custom_nodes.frontend_only',
         description: node.description ?? `Frontend only node for ${name}`
-      } as ComfyNodeDefV1
+      }
     }
 
     const allNodeDefs = {
@@ -1165,10 +1205,14 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
-    const defs = await this.getNodeDefs()
-    await this.registerNodesFromDefs(defs)
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    const defs = await bootstrapTracer.settle('bootstrap/object-info', () =>
+      this.getNodeDefs()
+    )
+
+    await bootstrapTracer.settle('bootstrap/extensions', async () => {
+      await this.registerNodesFromDefs(defs)
+      await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    })
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
@@ -1258,7 +1302,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean> {
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1268,8 +1312,9 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean !== false)
+    useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    useExecutionErrorStore().setActiveGraph(null)
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1285,7 +1330,7 @@ export class ComfyApp {
       useMissingMediaStore().clearMissingMedia()
     }
 
-    if (clean !== false) {
+    if (clean) {
       // Reset canvas context before configuring a new graph so subgraph UI
       // state from the previous workflow cannot leak into the newly loaded
       // one, and so `clean()` can clear the root graph even when the user is
@@ -1357,7 +1402,7 @@ export class ComfyApp {
         )
         return
       }
-      for (let n of nodes) {
+      for (const n of nodes) {
         if (!(n.type in LiteGraph.registered_node_types)) {
           // Always sanitize so configure() can handle unregistered types,
           // but only report as missing if the node is active.
@@ -1441,6 +1486,9 @@ export class ComfyApp {
     }
 
     ChangeTracker.isLoadingGraph = true
+    let activatedWorkflow: LoadedComfyWorkflow | undefined
+    let reconcileResourceErrors: (() => void) | undefined
+    let resourceScanLoadCompleted = false
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
@@ -1469,6 +1517,10 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          error
+        )
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -1484,7 +1536,7 @@ export class ComfyApp {
         if (node.widgets) {
           // If you break something in the backend and want to patch workflows in the frontend
           // This is the place to do this
-          for (let widget of node.widgets) {
+          for (const widget of node.widgets) {
             if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
               if (widget.name == 'sampler_name') {
                 if (
@@ -1555,6 +1607,9 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      // Capture the workflow this load activated before the asset-scan awaits
+      // below can hand control back and let the user switch to another one.
+      activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1575,17 +1630,37 @@ export class ComfyApp {
       )
 
       if (!skipAssetScans) {
+        const errorStore = useExecutionErrorStore()
+        const resourceScanKey = errorStore.captureRunErrorKey()
+        let models: MissingModelCandidate[] | undefined
+        let media: MissingMediaCandidate[] | undefined
+        const reconcile = () => {
+          if (!resourceScanLoadCompleted || (!models && !media)) return
+          errorStore.retireResolvedMissingResourceErrors(
+            { models, media },
+            resourceScanKey
+          )
+        }
+        reconcileResourceErrors = reconcile
         await runMissingModelPipeline({
           graph: this.rootGraph,
           graphData,
           missingModelStore: useMissingModelStore(),
           missingNodeTypes: activeMissingNodeTypes,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            models = candidates
+            reconcile()
+          }
         })
 
         await runMissingMediaPipeline({
           rootGraph: this.rootGraph,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            media = candidates
+            reconcile()
+          }
         })
       }
 
@@ -1594,11 +1669,12 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
       }
+      resourceScanLoadCompleted = true
 
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
-      return true
+      return activatedWorkflow ?? true
     } finally {
       // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
@@ -1606,6 +1682,9 @@ export class ComfyApp {
         workflowNavigationId
       )
       ChangeTracker.isLoadingGraph = false
+      // The retirement watcher skips transitions made during the load.
+      useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      reconcileResourceErrors?.()
     }
   }
 
@@ -1646,6 +1725,12 @@ export class ComfyApp {
       ? { queueNodeIds: optionsOrQueueNodeIds }
       : optionsOrQueueNodeIds
     const { queueNodeIds, intent } = options
+    if (
+      intent?.trigger_source === 'auto_queue' &&
+      partnerRunGateBlocksAutoQueue()
+    ) {
+      return false
+    }
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({
       number,
@@ -1763,10 +1848,13 @@ export class ComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture workflow and mode before await — both may change if the
+          // user switches tabs or toggles app/graph mode while the request is
+          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
+          const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph).catch(
             (error: unknown) => {
@@ -1786,7 +1874,7 @@ export class ComfyApp {
             workflowContext = toWorkflowExecutionContext(executionContext, {
               executableNodeCount: Object.keys(p.output).length,
               executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: getWorkflowMode(queuedWorkflow)
+              viewMode: queuedMode
             })
           }
           if (
@@ -1825,7 +1913,10 @@ export class ComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
-            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            executionErrorStore.recordNodeErrors(
+              res.node_errors ?? null,
+              queuedRunErrorKey
+            )
             queueResultOverride = null
             try {
               if (res.prompt_id) {
@@ -1836,6 +1927,7 @@ export class ComfyApp {
                   startTime,
                   submissionAcceptedAt: responseReceivedAt,
                   workflow: queuedWorkflow,
+                  mode: queuedMode,
                   workflowContext,
                   workflowExecutionIntent
                 })
@@ -1936,15 +2028,21 @@ export class ComfyApp {
               // Keep the legacy result before empty node errors are normalized.
               const nodeErrors = error.response.node_errors
               queueResultOverride = !nodeErrors
-              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
+              executionErrorStore.recordNodeErrors(
+                nodeErrors ?? null,
+                queuedRunErrorKey
+              )
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!executionErrorStore.hasNodeError) {
+              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
                 const promptError = normalizePromptError(error.response.error)
                 if (promptError) {
-                  executionErrorStore.recordPromptError(promptError)
+                  executionErrorStore.recordPromptError(
+                    promptError,
+                    queuedRunErrorKey
+                  )
                 }
               }
 
@@ -2050,9 +2148,8 @@ export class ComfyApp {
     // Check workflow first - it should take priority over parameters
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
-      let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
-        workflowObj =
+        const workflowObj =
           typeof workflow === 'string'
             ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
             : (workflow as ComfyWorkflowJSON)
@@ -2099,15 +2196,20 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(this.rootGraph, parameters, () => {
-        try {
-          // false: final destination; no later load republishes the hash.
-          useWorkflowService().beforeLoadNewGraph(false)
-        } finally {
-          useMissingNodesErrorStore().setMissingNodeTypes([])
+      const outcome = await importA1111(
+        this.rootGraph,
+        parameters,
+        async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
+          }
+          this.canvas.setGraph(this.rootGraph)
         }
-        this.canvas.setGraph(this.rootGraph)
-      })
+      )
       switch (outcome) {
         case 'core-nodes-unavailable':
           useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2131,10 +2233,17 @@ export class ComfyApp {
           )
         }
       }
+      // Intentionally no beforeConfigureGraph: A1111 has no mutable
+      // workflow JSON before graph construction, so there is no payload.
+      await useExtensionService().invokeExtensionsAsync(
+        'afterConfigureGraph',
+        []
+      )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
 
@@ -2270,6 +2379,7 @@ export class ComfyApp {
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 
@@ -2356,67 +2466,92 @@ export class ComfyApp {
       }
     }
 
+    const unresolvedInputs: (() => boolean)[] = []
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
       const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
       const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
+      const targetNode = node
 
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
-          const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(
-            importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
-          )
-          if (!fromNode) continue
+          function connectInput() {
+            const [fromId, fromSlot] = value
+            const fromNode = app.rootGraph.getNodeById(
+              importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+            )
+            if (!fromNode?.outputs?.[fromSlot]) return false
 
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
-          if (toSlot === -1) {
-            try {
-              const widget = node.widgets?.find((w) => w.name === input)
-              const convertFn = (
-                node as LGraphNode & {
-                  convertWidgetToInput?: (w: IBaseWidget) => boolean
+            let toSlot =
+              targetNode.inputs?.findIndex((inp) => inp.name === input) ?? -1
+            if (toSlot === -1) {
+              try {
+                const widget = targetNode.widgets?.find((w) => w.name === input)
+                const convertFn = (
+                  targetNode as LGraphNode & {
+                    convertWidgetToInput?: (w: IBaseWidget) => boolean
+                  }
+                ).convertWidgetToInput
+                if (widget && convertFn?.(widget)) {
+                  // Re-find the target slot by name after conversion
+                  toSlot =
+                    targetNode.inputs?.findIndex((inp) => inp.name === input) ??
+                    -1
                 }
-              ).convertWidgetToInput
-              if (widget && convertFn?.(widget)) {
-                // Re-find the target slot by name after conversion
-                toSlot =
-                  node.inputs?.findIndex((inp) => inp.name === input) ?? -1
+              } catch (_error) {
+                // Ignore conversion errors
               }
-            } catch (_error) {
-              // Ignore conversion errors
             }
+            if (toSlot === -1) return false
+
+            fromNode.connect(fromSlot, targetNode, toSlot)
+            return true
           }
-          if (toSlot !== -1) {
-            fromNode.connect(fromSlot, node, toSlot)
-          }
+          if (!connectInput()) unresolvedInputs.push(connectInput)
         } else {
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
+          function applyWidgetValue() {
+            const widget = targetNode.widgets?.find((w) => w.name === input)
+            if (!widget) return false
             const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
             widget.value = widgetValue
             widget.callback?.(widgetValue)
+            return true
           }
+          if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)
         }
-      }
-      if (node.last_serialization) {
-        node.last_serialization.inputs = node.inputs.map((input, i) =>
-          inputAsSerialisable(input, node, i)
-        )
       }
     }
 
     for (const id of ids) processNodeInputs(id)
-    app.rootGraph.arrange()
-    for (const id of ids) processNodeInputs(id)
+    let pendingInputs = unresolvedInputs
+    while (pendingInputs.length > 0) {
+      const remainingInputs = pendingInputs.filter(
+        (applyInput) => !applyInput()
+      )
+      if (remainingInputs.length === pendingInputs.length) break
+      pendingInputs = remainingInputs
+    }
+    for (const node of app.rootGraph.nodes) {
+      if (!node.last_serialization) continue
+      node.last_serialization.inputs = node.inputs.map((input, i) =>
+        inputAsSerialisable(input, node, i)
+      )
+    }
     app.rootGraph.arrange()
 
+    // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
+    // and never passes a ComfyWorkflowJSON through the configure stage.
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }
@@ -2458,7 +2593,7 @@ export class ComfyApp {
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
+      await this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
@@ -2562,7 +2697,7 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearRunErrors()
+    executionErrorStore.setActiveGraph(null)
     useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
@@ -2571,7 +2706,10 @@ export class ComfyApp {
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (this.rootGraph && !this.canvas.subgraph) {
       this.rootGraph.clear()
+      ensureNonZeroUuid(this.rootGraph)
     }
+
+    executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {

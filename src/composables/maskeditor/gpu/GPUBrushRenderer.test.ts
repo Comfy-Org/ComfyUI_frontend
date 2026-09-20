@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
 
-vi.mock('typegpu', () => ({
+vi.mock<unknown>(import('typegpu'), () => ({
   tgpu: { resolve: vi.fn(() => '/* mock wgsl */') }
 }))
 
-vi.mock('typegpu/data', () => ({
+vi.mock<unknown>(import('typegpu/data'), () => ({
   struct: vi.fn(() => ({})),
   vec2f: {},
   vec3f: {},

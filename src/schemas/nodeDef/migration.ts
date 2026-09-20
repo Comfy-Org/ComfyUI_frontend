@@ -121,6 +121,33 @@ export function transformInputSpecV1ToV2(
         ? inputSpecV1[0]
         : getComboSpecComboOptions(inputSpecV1)
     }
+  } else if (inputSpecV1[0] === 'CHART') {
+    // CHART uses `chartType` in V2 because `type` is the discriminator key
+    const { type, ...chartOptions } = options
+    const chartType =
+      type === 'bar' || type === 'line'
+        ? type
+        : options.chartType === 'bar' || options.chartType === 'line'
+          ? options.chartType
+          : undefined
+    return {
+      type: 'CHART',
+      name,
+      isOptional,
+      ...chartOptions,
+      chartType
+    }
+  } else if (
+    inputSpecV1[0] === 'COMFY_DYNAMICCOMBO_V3' &&
+    inputSpecV1[1] === undefined
+  ) {
+    // Synthetic nodedefs (e.g. subgraphStore.ts boundary inputs) promote the
+    // type into a bare [type, undefined] tuple with no options supplied
+    return {
+      type: 'COMFY_DYNAMICCOMBO_V3',
+      ...baseProps,
+      options: []
+    }
   } else if (typeof inputSpecV1[0] === 'string') {
     // Handle standard types (INT, FLOAT, BOOLEAN, STRING) and custom types
     return {

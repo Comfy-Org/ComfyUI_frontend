@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -34,15 +32,15 @@ describe('computeBadges', () => {
     expect(computeBadges(sources())).toEqual([
       {
         kind: 'core',
-        part: 'lifecycle',
-        text: '[BETA]',
+        part: 'id',
+        text: '#5',
         fgColor: '#fff',
         bgColor: '#0b8'
       },
       {
         kind: 'core',
-        part: 'id',
-        text: '#5',
+        part: 'lifecycle',
+        text: '[BETA]',
         fgColor: '#fff',
         bgColor: '#0b8'
       },
@@ -157,10 +155,6 @@ describe('computeBadges', () => {
 })
 
 describe('nodeBadges', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function makeNode(id: number): LGraphNode {
     const node = new LGraphNode('Test', 'TestNode')
     node.id = toNodeId(id)
@@ -191,8 +185,8 @@ describe('nodeBadges', () => {
     seedTestNodeDef()
 
     expect(nodeBadges(node).map((b) => b.text)).toEqual([
-      '[BETA]',
       '#7',
+      '[BETA]',
       'my_pack'
     ])
   })

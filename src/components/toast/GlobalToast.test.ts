@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -13,14 +13,18 @@ const toastService = vi.hoisted(() => ({
   removeAllGroups: vi.fn()
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => toastService
-}))
+vi.mock<unknown>(
+  // eslint-disable-next-line primevue-removal/no-imports
+  import('primevue/usetoast'),
+  () => ({
+    useToast: () => toastService
+  })
+)
 
 function renderToast() {
   return render(GlobalToast, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn })],
+      plugins: [getActivePinia()!],
       stubs: { Toast: true }
     }
   })
@@ -31,7 +35,7 @@ describe('GlobalToast', () => {
     cleanup()
   })
 
-  it('forwards queued messages and clears the queue', async () => {
+  it('forwards queued additions and clears the queue', async () => {
     renderToast()
     const toastStore = useToastStore()
     const message = { severity: 'error' as const, summary: 'Failed' }
@@ -142,5 +146,22 @@ describe('GlobalToast', () => {
     await nextTick()
 
     expect(toastService.add).not.toHaveBeenCalled()
+  })
+  it('does not replay a removed progress message or discard other deferred messages', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const selection = useAgentNodeSelectionStore()
+    const progress = { severity: 'info' as const, summary: 'Preparing samples' }
+    const warning = { severity: 'warn' as const, summary: 'Missing sample' }
+    selection.isActive = true
+    await nextTick()
+    toastStore.add(progress)
+    toastStore.add(warning)
+    await nextTick()
+    toastStore.remove(progress)
+    await nextTick()
+    selection.isActive = false
+    await nextTick()
+    expect(toastService.add).toHaveBeenCalledExactlyOnceWith(warning)
   })
 })

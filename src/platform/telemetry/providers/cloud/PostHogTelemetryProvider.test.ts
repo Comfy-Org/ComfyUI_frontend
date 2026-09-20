@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueModule from 'vue'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
-import type { BillingTelemetryEvent, OnboardingTourStage } from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
+import type {
+  BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
+  OnboardingTourStage
+} from '../../types'
 import { TelemetryEvents } from '../../types'
 
 const hoisted = vi.hoisted(() => {
@@ -14,8 +20,6 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
   const mockReset = vi.fn()
-  const mockOnUserResolved = vi.fn()
-  const mockOnUserLogout = vi.fn()
   const executionContext = {
     is_template: true,
     workflow_name: 'image_qwen_image_edit_2509',
@@ -33,7 +37,7 @@ const hoisted = vi.hoisted(() => {
   }
   const refs = {
     tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+    remoteConfig: null as unknown as Ref<RemoteConfig>
   }
 
   return {
@@ -44,8 +48,6 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSetOnce,
     mockRegister,
     mockReset,
-    mockOnUserResolved,
-    mockOnUserLogout,
     executionContext,
     refs,
     mockPosthog: {
@@ -61,30 +63,26 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved,
-    onUserLogout: hoisted.mockOnUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
+vi.mock(import('@/platform/remoteConfig/remoteConfig'), async () => {
+  hoisted.refs.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: hoisted.refs.remoteConfig }
 })
 
-vi.mock('posthog-js', () => hoisted.mockPosthog)
+vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.tier = ref<string | null>(null)
-  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
-})
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    hoisted.refs.tier = ref<string | null>(null)
+    return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
+  }
+)
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -100,13 +98,13 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig.value = null
+    hoisted.refs.remoteConfig.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
   })
 
   describe('initialization', () => {
@@ -182,14 +180,15 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserResolved).toHaveBeenCalledOnce()
     })
 
     it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
@@ -205,7 +204,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-123' })
 
       // Unresolved tier (null) does not set the property
@@ -226,7 +226,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-2' })
@@ -343,7 +344,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-456' })
 
       const setCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -366,7 +368,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-789' })
 
       const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -401,6 +404,22 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
       )
     })
 
@@ -459,6 +478,26 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.IMAGE_LOAD_FAILED,
         { source: 'node_image_preview' }
+      )
+    })
+
+    it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        total_ms: 5200,
+        outcome: 'timed_out',
+        phase_count: 1,
+        phases: { 'auth-gate/user-store': 2500 },
+        pending: ['bootstrap/object-info']
+      } satisfies BootstrapCompleteMetadata
+
+      provider.trackBootstrapComplete(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BOOTSTRAP_COMPLETE,
+        metadata
       )
     })
 
@@ -1149,14 +1188,14 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
     })
 
     it('calls posthog.reset(true) when the watcher fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
       callback()
 
       expect(hoisted.mockReset).toHaveBeenCalledWith(true)
@@ -1165,7 +1204,7 @@ describe('PostHogTelemetryProvider', () => {
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
-      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
       expect(hoisted.mockReset).not.toHaveBeenCalled()
     })
   })

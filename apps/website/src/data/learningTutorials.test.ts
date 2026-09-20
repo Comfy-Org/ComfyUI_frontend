@@ -104,7 +104,7 @@ describe('directory meta', () => {
       basics: {
         title: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet',
         description:
-          'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.'
+          'Free ComfyUI tutorials for beginners: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.'
       },
       vfx: {
         title: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging',
@@ -131,7 +131,7 @@ describe('directory meta', () => {
       basics: {
         title: 'ComfyUI 基础教程：节点图、LoRA 与 ControlNet 新手入门',
         description:
-          '面向初学者的免费 ComfyUI 教程。先学节点图，再加入 LoRA、风格迁移与 ControlNet，每一步都有可打开的工作流。'
+          '面向初学者的免费 ComfyUI 教程：节点图、文生图与图生图、LoRA 与 ControlNet，再到局部重绘、扩图与放大。'
       },
       vfx: {
         title: 'ComfyUI VFX 教程：净板、天空替换与减龄',

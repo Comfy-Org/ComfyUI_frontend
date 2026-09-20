@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
-import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
+import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
@@ -94,20 +100,225 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints an agent-remote echo (KA-6 sender half)', () => {
-    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
+  it('skips a redo that recreates an already-minted node instead of re-minting add_node', () => {
+    // Simulate litegraph's own undo/redo stack: a redo re-delivers the same
+    // createNode shape a genuine new node would, for a node this port
+    // already relayed. Without a delete_node in between, the second
+    // createNode is a replay, not a new node, and must not mint again.
+    deliver(createNodeChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
   })
 
-  it('uses call-carried source to suppress an echoed local actor', () => {
-    const change = createNodeChange('1', LOCAL_ACTOR)
-    change.operation.source = 'agent-remote'
+  it('mints add_node again for the same id after a delete_node clears it', () => {
+    deliver(createNodeChange('1'))
+    deliver(deleteChange('1'))
+    minted.length = 0
 
-    deliver(change)
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('mints add_node again for the same id after an intentional clear', () => {
+    deliver(createNodeChange('1'))
+    port.runIntentionalClear(() => {
+      graphNodes.clear()
+      deliver(clearChange())
+    })
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      widgets_values: [7]
+    })
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('mints add_node without the ghost flag of a node still being placed', () => {
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      flags: { ghost: true, pinned: true },
+      widgets_values: [7]
+    })
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: {
+          id: 1,
+          type: 'TestNode',
+          pos: [128, 96],
+          flags: { pinned: true },
+          widgets_values: [7]
+        }
+      }
+    ])
+  })
+
+  it('surfaces interior create and delete without minting root operations', () => {
+    const interior = {
+      graphId: 'root',
+      ownerGraphId: 'subgraph'
+    }
+
+    deliver({
+      operation: { ...createNodeChange('1').operation, ...interior }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, ...interior }
+    })
 
     expect(minted).toEqual([])
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node create')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_create',
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
+      }
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: expect.stringContaining('Subgraph-interior node delete')
+      }),
+      {
+        errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+        context: {
+          graphId: 'root',
+          ownerGraphId: 'subgraph',
+          nodeId: '1'
+        }
+      }
+    )
   })
+
+  it('reports one interior-delete error per subgraph per tick', async () => {
+    for (let index = 0; index < 30; index++) {
+      deliver({
+        operation: {
+          ...deleteChange(String(index)).operation,
+          graphId: 'root',
+          ownerGraphId: 'subgraph-a'
+        }
+      })
+    }
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenLastCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unrepresentable_subgraph_node_delete',
+      context: {
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a',
+        nodeId: '0'
+      }
+    })
+
+    deliver({
+      operation: {
+        ...deleteChange('30').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-b'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(2)
+
+    await Promise.resolve()
+    deliver({
+      operation: {
+        ...deleteChange('31').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph-a'
+      }
+    })
+    expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
+  it('fails closed on a graphId with no ownerGraphId instead of minting as root', () => {
+    deliver({
+      operation: { ...createNodeChange('1').operation, graphId: 'root' }
+    })
+    deliver({
+      operation: { ...deleteChange('1').operation, graphId: 'root' }
+    })
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: expect.stringContaining('createNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_create',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+    expect(reportError).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: expect.stringContaining('deleteNode has no ownerGraphId')
+      }),
+      {
+        errorType: 'agent_crdt_missing_owner_graph_id_delete',
+        context: { graphId: 'root', nodeId: '1' }
+      }
+    )
+  })
+
+  it('mints a root createNode when ownerGraphId equals graphId', () => {
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    })
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
+      }
+    ])
+  })
+
+  it.for([
+    ['create', createNodeChange('1', LOCAL_ACTOR)],
+    ['delete', deleteChange('1', LOCAL_ACTOR)]
+  ] as const)(
+    'uses call-carried source to suppress an echoed %s',
+    ([_operation, change]) => {
+      change.operation.source = 'agent-remote'
+
+      deliver(change)
+
+      expect(minted).toEqual([])
+    }
+  )
 
   it('never mints an actor-less change (no call-carried provenance)', () => {
     const change = createNodeChange('1')
@@ -164,11 +375,10 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints a teardown-bracketed or agent-remote deleteNode', () => {
+  it('never mints a teardown-bracketed deleteNode', () => {
     session.beginGraphTeardown()
     deliver(deleteChange('1'))
     session.endGraphTeardown()
-    deliver(deleteChange('2', AGENT_REMOTE_ACTOR))
 
     expect(minted).toEqual([])
   })

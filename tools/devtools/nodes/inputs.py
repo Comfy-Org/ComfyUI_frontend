@@ -217,6 +217,20 @@ class NodeWithBooleanInput:
         print(f"boolean_input: {boolean_input}")
 
 
+class NodeWithColorInput:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"color_input": ("COLOR", {"default": "#00ff00"})}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_color_input"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node with a color input that declares a non-black default"
+
+    def node_with_color_input(self, color_input: str):
+        print(f"color_input: {color_input}")
+
+
 class SimpleSlider:
     @classmethod
     def INPUT_TYPES(cls):
@@ -333,6 +347,20 @@ class NodeWithPreAttachLegacyWidgets:
         return ()
 
 
+class NodeWithComparerWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_comparer_widget"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node whose web extension mirrors rgthree's image comparer"
+
+    def node_with_comparer_widget(self):
+        return ()
+
+
 class NodeWithHiddenAriaDialog:
     @classmethod
     def INPUT_TYPES(cls):
@@ -428,12 +456,14 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithStringInput": NodeWithStringInput,
     "DevToolsNodeWithUnionInput": NodeWithUnionInput,
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
+    "DevToolsNodeWithColorInput": NodeWithColorInput,
     "DevToolsSimpleSlider": SimpleSlider,
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPreAttachLegacyWidgets": NodeWithPreAttachLegacyWidgets,
+    "DevToolsNodeWithComparerWidget": NodeWithComparerWidget,
     "DevToolsNodeWithHiddenAriaDialog": NodeWithHiddenAriaDialog,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
@@ -451,12 +481,14 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithStringInput": "Node With String Input",
     "DevToolsNodeWithUnionInput": "Node With Union Input",
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
+    "DevToolsNodeWithColorInput": "Node With Color Input",
     "DevToolsSimpleSlider": "Simple Slider",
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPreAttachLegacyWidgets": "Node With Pre-Attach Legacy Widgets",
+    "DevToolsNodeWithComparerWidget": "Node With Comparer Widget",
     "DevToolsNodeWithHiddenAriaDialog": "Node With Hidden ARIA Dialog",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
@@ -474,6 +506,7 @@ __all__ = [
     "NodeWithStringInput",
     "NodeWithUnionInput",
     "NodeWithBooleanInput",
+    "NodeWithColorInput",
     "SimpleSlider",
     "NodeWithSeedInput",
     "NodeWithValidation",

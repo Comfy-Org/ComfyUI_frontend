@@ -4,14 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import {
-  getOutputKey,
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from './outputAssetUtil'
+import { getTotalAssetOutputCount } from './outputAssetCountUtil'
+import { resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
@@ -20,13 +18,13 @@ const mocks = vi.hoisted(() => ({
   isCloud: false
 }))
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobDetail: mocks.getJobDetail,
   getPreviewableOutputsFromJobDetail: mocks.getPreviewableOutputsFromJobDetail,
   getJobAssets: mocks.getJobAssets
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
   }
@@ -38,13 +36,16 @@ type OutputOverrides = Partial<{
   nodeId: SerializedNodeId
   url: string
   display_name: string
+  assetId: string
 }>
 
-function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
-  const merged = {
+function createOutput(overrides: OutputOverrides = {}): AugmentedResultItem {
+  const merged: AugmentedResultItem = {
     filename: 'file.png',
     subfolder: 'sub',
+    type: 'output',
     nodeId: '1',
+    mediaType: 'images',
     url: 'https://example.com/file.png',
     ...overrides
   }
@@ -52,7 +53,7 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
     ...merged,
     previewUrl: merged.url,
     display_name: merged.display_name
-  } as ResultItemImpl
+  }
 }
 
 function createAsset(
@@ -114,12 +115,17 @@ describe('getTotalAssetOutputCount', () => {
     const parent = createAsset({
       id: 'job-1-parent',
       name: 'parent.png',
-      user_metadata: { jobId: 'job-1', nodeId: '1', outputCount: 4 }
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4
+      }
     })
     const child = createAsset({
       id: 'job-1-child',
       name: 'child.png',
-      user_metadata: { jobId: 'job-1', nodeId: '2' }
+      user_metadata: { jobId: 'job-1', nodeId: '2', subfolder: 'outputs' }
     })
 
     expect(getTotalAssetOutputCount([parent, child])).toBe(4)
@@ -162,6 +168,45 @@ describe('getTotalAssetOutputCount', () => {
 describe('resolveOutputAssetItems', () => {
   beforeEach(() => {
     mocks.isCloud = false
+  })
+
+  it('keeps the asset id an output already carries as the item id', async () => {
+    const output = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      assetId: 'asset-a'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe('asset-a')
+  })
+
+  it('synthesizes an item id when the output carries an empty asset id', async () => {
+    const output = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      assetId: ''
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results[0].id).toBe(`job-1-${getOutputKey(output)}`)
   })
 
   it('maps outputs and excludes a composite output key', async () => {
@@ -428,9 +473,7 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+
     expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')

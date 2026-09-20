@@ -3,6 +3,8 @@ import {
   declaredInputNamesForTypes,
   initializationSignalsForTypes,
   isCanvasPreviewImagePath,
+  isWidgetValuesContainerSwap,
+  serializedWidgetNames,
   matchesTopologyExpectation,
   namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
@@ -275,5 +277,39 @@ describe('namedWidgetValueDrifts', () => {
     expect(
       namedWidgetValueDrifts({ mode: 'basic' }, { detail: 0.5 })
     ).toBeNull()
+  })
+})
+
+describe('isWidgetValuesContainerSwap', () => {
+  it.for([
+    { after: { multiply_by: 1 }, before: [1], swap: true },
+    { after: [1], before: { multiply_by: 1 }, swap: true },
+    { after: null, before: [], swap: false },
+    { after: undefined, before: [], swap: false },
+    { after: [], before: null, swap: false },
+    { after: [], before: undefined, swap: false },
+    { after: [1], before: [1], swap: false },
+    { after: { a: 1 }, before: { a: 1 }, swap: false }
+  ])('$before -> $after is swap=$swap', ({ before, after, swap }) => {
+    expect(isWidgetValuesContainerSwap(before, after)).toBe(swap)
+  })
+})
+
+describe('serializedWidgetNames', () => {
+  it('drops a leading non-serialized widget so names line up with values', () => {
+    const names = serializedWidgetNames([
+      { name: 'hidden_state', serialize: false },
+      { name: 'steps' },
+      { name: 'cfg' }
+    ])
+
+    expect(names).toEqual(['steps', 'cfg'])
+  })
+
+  it('keeps every widget when none opts out', () => {
+    expect(serializedWidgetNames([{ name: 'a' }, { name: 'b' }])).toEqual([
+      'a',
+      'b'
+    ])
   })
 })

@@ -24,9 +24,7 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
     // `isConnected` overrides the Style setting when the toolbar overflows;
     // small (48px) items keep content under the default viewport so Style
     // actually drives rendering.
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
-    })
+    test.use({ initialSettings: { 'Comfy.Sidebar.Size': 'small' } })
 
     test('"connected" applies connected-sidebar class', async ({
       comfyPage
@@ -97,8 +95,9 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
   test.describe('Comfy.TreeExplorer.ItemPadding', () => {
     // The setting writes a CSS var consumed by .p-tree-node-content,
     // which only renders in the legacy PrimeVue Tree.
+    test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
       await comfyPage.menu.nodeLibraryTab.open()
     })
 

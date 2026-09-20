@@ -10,13 +10,16 @@ import type {
   CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
-  LLink,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -47,6 +50,33 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   }
 }
 
+interface StubPathMethods {
+  moveTo: Path2D['moveTo']
+  lineTo: Path2D['lineTo']
+  bezierCurveTo: Path2D['bezierCurveTo']
+  quadraticCurveTo: Path2D['quadraticCurveTo']
+}
+
+export class StubPath2D implements StubPathMethods {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
+  }
+}
+
 /**
  * Creates a mock LGraphNode with minimal required properties
  */
@@ -62,6 +92,7 @@ export function createMockLGraphNode(
     renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
+    flags: {},
     ...nodeOverrides
   })
 }
@@ -77,7 +108,7 @@ export function createMockPositionable(
     pos: [0, 0],
     ...overrides
   }
-  return partial as Partial<Positionable> as Positionable
+  return partial as Positionable
 }
 
 /**
@@ -92,7 +123,7 @@ export function createMockLGraphGroup(
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
   }
-  return partial as Partial<LGraphGroup> as LGraphGroup
+  return partial as LGraphGroup
 }
 
 /**
@@ -190,13 +221,14 @@ export function createMockCanvasRenderingContext2D(
     getTransform: vi.fn(
       () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
     ),
+    createPattern: vi.fn(() => null),
     font: '',
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
     ...overrides
   }
   return partial as CanvasRenderingContext2D
@@ -282,7 +314,7 @@ export function createMockFileList(files: File[]): FileList {
     },
     files
   )
-  return fileList as FileList
+  return fileList
 }
 
 /**
@@ -293,6 +325,15 @@ export function createMockChangeTracker(
   overrides: Partial<ChangeTracker> = {}
 ): ChangeTracker {
   const partial = {
+    initialState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
     activeState: {
       last_node_id: 0,
       last_link_id: 0,
@@ -367,6 +408,7 @@ export function createMockCanvas2DContext(
     stroke: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    createPattern: vi.fn(() => null),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
@@ -398,7 +440,7 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
     map.set(link.id, link)
     record[link.id] = link
   }
-  return Object.assign(map, record) as LGraph['links']
+  return Object.assign(map, record)
 }
 export function reloadSerializedGraph(
   serialized: ISerialisedGraph | SerialisableGraph,
@@ -411,4 +453,48 @@ export function reloadSerializedGraph(
   usePreviewExposureStore().clearGraph(payload.id)
   reloaded.configure(payload)
   return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  if (!graph._addLink(link)) {
+    throw new Error('Failed to add test link')
+  }
+  return link
+}
+
+export function createTestCanvas(
+  graph: LGraph,
+  ctx: CanvasRenderingContext2D
+): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  element.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  return new LGraphCanvas(element, graph, { skip_render: true })
 }

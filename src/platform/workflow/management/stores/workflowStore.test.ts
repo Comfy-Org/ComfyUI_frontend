@@ -16,6 +16,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -28,7 +29,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -39,14 +40,17 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {} // Start with empty canvas object
+    canvas: {}, // Start with empty canvas object
+    get canvasOrUndefined() {
+      return this.canvas
+    }
   }
 }))
 
 // Mock isSubgraph
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
 }))
 
@@ -204,6 +208,17 @@ describe('useWorkflowStore', () => {
 
       const workflow2 = store.createTemporary()
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
+    })
+
+    it('assigns each workflow a stable unique session identity', async () => {
+      const workflow = store.createTemporary()
+      const otherWorkflow = store.createTemporary()
+      const instanceId = workflow.instanceId
+
+      await workflow.rename('workflows/renamed.json')
+
+      expect(workflow.instanceId).toBe(instanceId)
+      expect(otherWorkflow.instanceId).not.toBe(instanceId)
     })
 
     it('should create a temporary workflow not clashing with persisted workflows', async () => {
@@ -598,6 +613,47 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
     })
+
+    it('renames only jobs from the matching workflow instance', async () => {
+      const duplicateId = 'duplicate-workflow-id'
+      const workflow = store.createTemporary('app-to-save.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
+      const otherWorkflow = store.createTemporary('other.json', {
+        ...defaultGraph,
+        id: duplicateId
+      })
+      const executionStore = useExecutionStore()
+
+      executionStore.ensureSessionWorkflowPath(
+        'job-1',
+        workflow.path,
+        workflow.instanceId
+      )
+      executionStore.ensureSessionWorkflowPath(
+        'job-other',
+        workflow.path,
+        otherWorkflow.instanceId
+      )
+
+      vi.spyOn(workflow, 'rename').mockImplementation(
+        async (renamedPath: string) => {
+          workflow.path = renamedPath
+          return workflow
+        }
+      )
+
+      const newPath = 'workflows/saved-app.app.json'
+      await store.renameWorkflow(workflow, newPath)
+
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        newPath
+      )
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-other')).toBe(
+        'workflows/app-to-save.json'
+      )
+    })
   })
 
   describe('closeWorkflow', () => {
@@ -645,6 +701,54 @@ describe('useWorkflowStore', () => {
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
+
+    it('should remove a deleted workflow without closing other tabs', async () => {
+      const survivor = store.createTemporary('survivor.json')
+      const doomed = store.createTemporary('doomed.json')
+      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(doomed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        doomed.path
+      ])
+
+      await store.deleteWorkflow(doomed)
+
+      expect(store.isOpen(doomed)).toBe(false)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
+    })
+  })
+
+  describe('openWorkflows integrity', () => {
+    it('should retain a missing active workflow until it becomes inactive', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockImplementation(() =>
+        Promise.resolve(new Response(defaultGraphJSON, { status: 200 }))
+      )
+      const survivor = store.getWorkflowByPath('workflows/a.json')!
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(removed)
+
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(removed)
+      expect(store.getWorkflowByPath(removed.path)).toBe(removed)
+      expect(store.isOpen(removed)).toBe(true)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        removed.path
+      ])
+
+      await store.openWorkflow(survivor)
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(survivor)
+      expect(store.getWorkflowByPath(removed.path)).toBeNull()
+      expect(store.isOpen(removed)).toBe(false)
+      expect(store.openWorkflows).toEqual([survivor])
+    })
   })
 
   describe('save', () => {
@@ -670,9 +774,9 @@ describe('useWorkflowStore', () => {
 
       // Verify the content was updated
       expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
 
@@ -701,7 +805,7 @@ describe('useWorkflowStore', () => {
       expect(api.storeUserData).toHaveBeenCalled()
 
       // Verify the content was updated
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
   })
@@ -734,7 +838,7 @@ describe('useWorkflowStore', () => {
 
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
       expect(newWorkflow.isModified).toBe(false)
     })

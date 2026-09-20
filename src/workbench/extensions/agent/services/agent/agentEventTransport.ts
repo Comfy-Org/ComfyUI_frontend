@@ -2,6 +2,7 @@ import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type {
   AssistantMessage,
+  RunApprovalPart,
   TextPart,
   ThinkingPart,
   ToolPart
@@ -17,6 +18,8 @@ export type AgentChatEvent = Extract<
       | 'agent_message_delta'
       | 'agent_message_done'
       | 'agent_active_tab'
+      | 'agent_ask'
+      | 'agent_ask_resolved'
   }
 >
 
@@ -32,9 +35,9 @@ export function createAgentEventTransport(
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
-  let toolCount = 0
+  const tools = new Map<string, ToolPart>()
   let settled = false
-  let lastTabWorkflowId: string | undefined
+  let lastTabTargetKey: string | undefined
 
   function closeOpenText(): void {
     if (openText) {
@@ -85,31 +88,65 @@ export function createAgentEventTransport(
         closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
-        const part: ToolPart = {
-          type: 'tool',
-          callId: `tool_${toolCount++}`,
-          name: event.data.tool_name,
-          state: 'done',
-          ok: event.data.status === 'ok',
-          durationMs: event.data.duration_ms
+        let part = tools.get(event.data.tool_call_id)
+        if (!part) {
+          part = {
+            type: 'tool',
+            callId: event.data.tool_call_id,
+            name: event.data.tool_name,
+            state: 'streaming'
+          }
+          tools.set(event.data.tool_call_id, part)
+          message.parts.push(part)
         }
-        message.parts.push(part)
+        part.name = event.data.tool_name
+        if (event.data.status !== 'running') {
+          part.state = 'done'
+          part.ok = event.data.status === 'success'
+          part.durationMs = event.data.duration_ms
+        }
         break
       }
       case 'agent_active_tab': {
         // The agent re-announces the same tab as it keeps working on it, with
         // text and tool calls in between, so the tail of parts is not the test;
         // only a change of tab is worth another link in the transcript.
-        if (lastTabWorkflowId === event.data.workflow_id) return
-        lastTabWorkflowId = event.data.workflow_id
+        const targetKey = `${event.data.workflow_id}\u0000${event.data.node_locator_id ?? ''}`
+        if (lastTabTargetKey === targetKey) return
+        lastTabTargetKey = targetKey
         closeOpenText()
+        closeOpenThinking()
+        message.thinking = false
+        message.thinkingText = undefined
         message.parts.push({
           type: 'tabLink',
           workflowId: event.data.workflow_id,
+          locatorId: event.data.node_locator_id,
           name: event.data.name
         })
         break
       }
+      case 'agent_ask': {
+        if (event.data.kind !== 'run_approval') return
+        closeOpenText()
+        closeOpenThinking()
+        message.thinking = false
+        message.thinkingText = undefined
+        const part: RunApprovalPart = {
+          type: 'runApproval',
+          askId: event.data.ask_id,
+          workflowId: event.data.context?.workflow_id || undefined,
+          workflowName: event.data.context?.workflow_name || undefined
+        }
+        message.parts.push(part)
+        break
+      }
+      case 'agent_ask_resolved':
+        message.parts = message.parts.filter(
+          (part) =>
+            part.type !== 'runApproval' || part.askId !== event.data.ask_id
+        )
+        break
       case 'agent_message_delta':
         closeOpenThinking()
         message.thinking = false

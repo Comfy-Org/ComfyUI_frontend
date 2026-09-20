@@ -119,10 +119,10 @@ test('DOM churn is sampled at a fixed rate, not per mutation', async ({
         typeof globalThis & { __recorderQueries?: number }
       const originalDocumentQuery = document.querySelectorAll.bind(document)
       target.__recorderQueries = 0
-      document.querySelectorAll = ((selector: string) => {
+      document.querySelectorAll = (selector: string) => {
         target.__recorderQueries! += 1
         return originalDocumentQuery(selector)
-      }) as typeof document.querySelectorAll
+      }
     })
     await trackVisibleErrors(probe)
 

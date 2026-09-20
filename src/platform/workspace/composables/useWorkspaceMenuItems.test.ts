@@ -1,15 +1,18 @@
-import { computed } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
+import { computed, createApp, defineComponent, ref } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
+import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
-  canCancel: false,
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
-  isActiveSubscription: true,
+  canAccessSubscriptionFeatures: true,
   isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
@@ -19,18 +22,7 @@ const state = vi.hoisted(() => ({
   isSubscriptionCancelled: false
 }))
 
-const dialogMocks = vi.hoisted(() => ({
-  showCancelSubscriptionFlow: vi.fn(),
-  showEditWorkspaceDialog: vi.fn(),
-  showDeleteWorkspaceDialog: vi.fn(),
-  showLeaveWorkspaceDialog: vi.fn()
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
@@ -42,64 +34,82 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canCancel: {
-      get value() {
-        return state.canCancel
-      }
-    }
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canLeaveWorkspace: state.canLeaveWorkspace,
-          canManageSubscription: state.canManageSubscription,
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canLeaveWorkspace: state.canLeaveWorkspace,
+            canManageSubscription: state.canManageSubscription,
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
         }
-      }
-    },
-    uiConfig: computed(() => ({
-      showEditWorkspaceMenuItem: false,
-      workspaceMenuAction: null,
-      workspaceMenuDisabledTooltip: null
-    })),
-    isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
-    isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
-    isDeleteDisabled: {
-      get value() {
-        return state.isDeleteDisabled
-      }
-    },
-    deleteDisabledTooltipKey: computed(() => null)
+      },
+      uiConfig: computed(() => ({
+        showEditWorkspaceMenuItem: false,
+        workspaceMenuAction: null,
+        workspaceMenuDisabledTooltip: null
+      })),
+      isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
+      canAccessSubscriptionFeatures: computed(
+        () => state.canAccessSubscriptionFeatures
+      ),
+      isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
+      isDeleteDisabled: {
+        get value() {
+          return state.isDeleteDisabled
+        }
+      },
+      deleteDisabledTooltipKey: computed(() => null)
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => dialogMocks
-}))
+vi.mock(import('@/services/dialogService'))
+
+const apps: App<Element>[] = []
+
+function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
+  let result: ReturnType<typeof createWorkspaceMenuItems> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createWorkspaceMenuItems()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('workspace menu items not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
-    state.canCancel = false
+
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.isActiveSubscription = true
+    state.canAccessSubscriptionFeatures = true
     state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
@@ -110,7 +120,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
@@ -122,7 +132,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       '2026-08-01T00:00:00Z'
     )
   })
@@ -136,7 +146,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for a free plan the capability still allows', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isFreeTier = true
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -147,9 +157,9 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('defers to the capability for subscription state it already encodes', () => {
-    state.canCancel = true
+    useBillingCapabilities().canCancel = computed(() => true)
     state.isSubscriptionCancelled = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -214,7 +224,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -227,7 +237,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'paused'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -240,7 +250,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -254,7 +264,7 @@ describe('useWorkspaceMenuItems', () => {
     state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = false
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -276,19 +286,21 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('rechecks eligibility before opening the cancellation dialog', () => {
-    state.canCancel = true
+    const canCancel = ref(true)
+    useBillingCapabilities().canCancel = computed(() => canCancel.value)
+
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
       (item) => item.label === 'subscription.cancelPlan'
     )
 
-    state.canCancel = false
+    canCancel.value = false
     cancelItem?.command?.({
       originalEvent: new Event('click'),
       item: cancelItem
     })
 
-    expect(dialogMocks.showCancelSubscriptionFlow).not.toHaveBeenCalled()
+    expect(useDialogService().showCancelSubscriptionFlow).not.toHaveBeenCalled()
   })
 
   it('shows Leave only when workspace permission grants it', () => {
@@ -319,7 +331,7 @@ describe('useWorkspaceMenuItems', () => {
       item: leaveItem
     })
 
-    expect(dialogMocks.showLeaveWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('shows Leave and Delete when owner permissions grant both', () => {
@@ -380,7 +392,7 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('rechecks the subscription lock before opening the Delete dialog', () => {
@@ -396,6 +408,6 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

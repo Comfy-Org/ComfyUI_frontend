@@ -1,6 +1,7 @@
 import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -11,6 +12,7 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
+import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
@@ -35,6 +37,8 @@ export interface PendingWarnings {
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
+  /** Unique, stable identity for this workflow instance in the current session. */
+  readonly instanceId = generateUUID()
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -196,12 +200,19 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async promptSave(): Promise<string | null> {
-    const { useDialogService } = await import('@/services/dialogService')
-    return await useDialogService().prompt({
-      title: t('workflowService.saveWorkflow'),
-      message: t('workflowService.enterFilenamePrompt'),
-      defaultValue: this.filename
-    })
+    try {
+      const { useDialogService } = await import('@/services/dialogService')
+      return await useDialogService().prompt({
+        title: t('workflowService.saveWorkflow'),
+        message: t('workflowService.enterFilenamePrompt'),
+        defaultValue: this.filename
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'error_loading_dialog_service_prompt_save'
+      })
+      return null
+    }
   }
 }
 
