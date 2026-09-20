@@ -189,10 +189,11 @@ describe('NodeHeader.vue', () => {
 
   it('does not open the title editor on double click while picking nodes', async () => {
     useAgentNodeSelectionStore().isActive = true
-    renderHeader({ nodeData: makeNodeData({ title: 'Locked' }) })
+    const { user } = renderHeader({
+      nodeData: makeNodeData({ title: 'Locked' })
+    })
 
-    // eslint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+    await user.dblClick(screen.getByTestId('node-header-1'))
 
     expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
     expect(screen.getByTestId('node-title').textContent).toContain('Locked')
