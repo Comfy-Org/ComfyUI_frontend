@@ -36,7 +36,7 @@ test.describe(
       const subgraphNode = await ksampler.convertToSubgraph()
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
@@ -52,9 +52,10 @@ test.describe(
         comfyPage.page.getByTestId('node-selection-mode-banner')
       ).toBeVisible()
 
-      const interior = (
-        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      )[0]
+      // Conversion keeps the interior node's local id; `getNodeRefsByTitle`
+      // does not resolve inside the entered subgraph, which is why the other
+      // subgraph specs address the interior by id.
+      const interior = await comfyPage.nodeOps.getNodeRefById('1')
       const [{ x, y }, { width, height }] = await Promise.all([
         interior.getPosition(),
         interior.getSize()
