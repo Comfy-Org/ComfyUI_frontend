@@ -94,14 +94,10 @@ describe('LGraphNode configure named values shadow diff', () => {
     expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
   })
 
-  it('does not treat a name-keyed extension payload as a positional shadow', () => {
+  it('does not treat a name-keyed record without a length as a positional shadow', () => {
     LiteGraph.namedValuesRestore = true
     const info = agreeingInfo()
-    Reflect.set(info, 'widgets_values', {
-      steps: 30,
-      seed: 12345,
-      length: 2
-    })
+    Reflect.set(info, 'widgets_values', { steps: 30, seed: 12345 })
     let configuredValues: unknown
     node.onConfigure = (configured) => {
       configuredValues = Reflect.get(configured, 'widgets_values')
@@ -109,8 +105,29 @@ describe('LGraphNode configure named values shadow diff', () => {
 
     node.configure(info)
 
-    expect(configuredValues).toEqual({ steps: 30, seed: 12345, length: 2 })
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(configuredValues).toEqual({ steps: 30, seed: 12345 })
     expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
+  })
+
+  it('reports a name-keyed record that declares a length, because configure() reads it positionally', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = agreeingInfo()
+    Reflect.set(info, 'widgets_values', {
+      steps: 30,
+      seed: 12345,
+      length: 2
+    })
+
+    node.configure(info)
+
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        mismatch_widget_count: 2,
+        checked_widget_count: 2
+      })
+    )
   })
 
   it('still checks a non-iterable array-like positional shadow', () => {
