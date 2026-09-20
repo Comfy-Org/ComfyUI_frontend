@@ -149,6 +149,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return buildImageUrls(node, getNodeOutputs(node))
   }
 
+  /**
+   * The records behind {@link getNodeImageUrls}, positionally aligned with it.
+   * Undefined while live previews are showing, because those URLs are not
+   * built from result items and have no backing record.
+   */
+  function getNodeImageItems(
+    node: LGraphNode
+  ): (ResultItem | null)[] | undefined {
+    if (getNodePreviews(node)?.length) return undefined
+
+    return getNodeOutputs(node)?.images
+  }
+
   function getNodeOutputByExecutionId(
     executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
@@ -520,6 +533,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   return {
     getNodeOutputs,
     getNodeImageUrls,
+    getNodeImageItems,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,

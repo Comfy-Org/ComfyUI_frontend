@@ -244,9 +244,9 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useMediaAssetGalleryStore } from '@/platform/assets/composables/useMediaAssetGalleryStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { NodeId } from '@/types/nodeId'
 import {
   getImageFilenameFromUrl,
@@ -434,23 +434,25 @@ function isObjectUrl(url: string): boolean {
   return url.startsWith('blob:')
 }
 
-function searchParamsOf(url: string): URLSearchParams | undefined {
-  try {
-    return new URL(url, window.location.origin).searchParams
-  } catch {
-    return undefined
-  }
+function nodeImageItems(): (ResultItem | null)[] | undefined {
+  if (!nodeId) return undefined
+  const node = resolveNode(nodeId)
+  return node ? nodeOutputStore.getNodeImageItems(node) : undefined
 }
 
-function toGalleryItem(url: string): AugmentedResultItem {
-  const params = searchParamsOf(url)
-  const parsedType = resultItemType.safeParse(params?.get('type'))
+// `sourceIndex` addresses imageUrls, which getNodeImageItems is aligned with.
+function toGalleryItem(
+  url: string,
+  sourceIndex: number,
+  items: (ResultItem | null)[] | undefined
+): AugmentedResultItem {
+  const item = items?.[sourceIndex]
   return {
-    filename: getImageFilenameFromUrl(url) ?? '',
+    ...item,
+    filename: item?.filename ?? getImageFilenameFromUrl(url) ?? '',
+    subfolder: item?.subfolder ?? '',
     mediaType: 'images',
     nodeId: nodeId ?? '',
-    subfolder: params?.get('subfolder') ?? '',
-    type: parsedType.success ? parsedType.data : 'output',
     url: toFullResolutionUrl(url)
   }
 }
@@ -465,11 +467,20 @@ function openInLightbox(index: number) {
   // Live sampler previews are refcounted object URLs revoked on the next
   // frame; the store outlives the node, so it must not hold one.
   if (isObjectUrl(url)) return
-  const isRenderable = (candidate: string) =>
-    !isHdrImageUrl(candidate) && !isObjectUrl(candidate)
-  const lightboxUrls = imageUrls.filter(isRenderable)
-  const activeIndex = imageUrls.slice(0, index).filter(isRenderable).length
-  galleryStore.openItems(lightboxUrls.map(toGalleryItem), activeIndex)
+
+  const items = nodeImageItems()
+  const renderable = imageUrls
+    .map((candidate, sourceIndex) => ({ candidate, sourceIndex }))
+    .filter(
+      ({ candidate }) => !isHdrImageUrl(candidate) && !isObjectUrl(candidate)
+    )
+
+  galleryStore.openItems(
+    renderable.map(({ candidate, sourceIndex }) =>
+      toGalleryItem(candidate, sourceIndex, items)
+    ),
+    renderable.findIndex(({ sourceIndex }) => sourceIndex === index)
+  )
 }
 
 // Gallery controls are revealed under the cursor mid-double-click, so the
