@@ -76,7 +76,7 @@ function liveAddedNodeIds(
   if (!graph) return []
   return added.flatMap((id) => {
     const nodeId = parseNodeId(id)
-    return nodeId && graph._nodes_by_id[nodeId] ? [nodeId] : []
+    return nodeId && graph.getNodeById(nodeId) ? [nodeId] : []
   })
 }
 

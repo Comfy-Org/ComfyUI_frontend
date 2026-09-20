@@ -28,6 +28,7 @@ export type MaterializableGraph = Pick<
   | 'rootGraph'
   | '_nodes'
   | '_nodes_by_id'
+  | 'getNodeById'
   | 'add'
   | 'remove'
   | 'setDirtyCanvas'
