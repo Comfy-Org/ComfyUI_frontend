@@ -211,6 +211,34 @@ describe('devPanelLog', () => {
     expect(devEvents.value[0]?.detail).toEqual(detail)
   })
 
+  it('redacts credentials carried by strings under unrecognized keys', () => {
+    recordDevEvent('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'upload_failed',
+      message:
+        'PUT https://svc:hunter2@assets.example.com/a.png?X-Amz-Signature=abcdef0123456789&access_token=abcdef0123456789 failed',
+      url: 'https://svc:hunter2@assets.example.com/a.png?X-Amz-Signature=abcdef0123456789',
+      description: 'retry with Bearer sk-live-0123456789abcdef',
+      failed: { op_id: 'op-1', code: 'unknown_node' }
+    })
+
+    const copied = stringifyDevEvents(devEvents.value)
+    expect(copied).not.toContain('hunter2')
+    expect(copied).not.toContain('X-Amz-Signature')
+    expect(copied).not.toContain('access_token')
+    expect(copied).not.toContain('sk-live-0123456789abcdef')
+    expect(devEvents.value[0]?.detail).toEqual({
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'upload_failed',
+      message: 'PUT https://assets.example.com/a.png?[REDACTED] failed',
+      url: 'https://assets.example.com/a.png?[REDACTED]',
+      description: 'retry with [REDACTED]',
+      failed: { op_id: 'op-1', code: 'unknown_node' }
+    })
+  })
+
   it('preserves bounded descriptions of non-plain objects', () => {
     recordDevEvent('doc_update', {
       error: new TypeError('invalid update'),

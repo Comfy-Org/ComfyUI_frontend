@@ -73,8 +73,44 @@ const CONTENT_KEYS = new Set([
   'workflow'
 ])
 
+// Key-based redaction only works when the producer used a recognized name, and
+// the server-controlled `message`/`code`/`description` fields on `doc_subscribed`
+// and `doc_ops_result` do not. These run over every retained string so a
+// credential embedded in one is redacted whatever key it arrived under.
+const URL_LIKE = /\b(?:https?|wss?):\/\/[^\s"'<>]+/gi
+const AUTH_SCHEME_TOKEN = /\b(?:Bearer|Basic|Token)\s+[\w.~+/=-]{8,}/gi
+const PREFIXED_SECRET =
+  /\b(?:sk|pk|rk|ghp|gho|ghs|xox[abprs])[-_][\w.-]{8,}\b/gi
+
 let nextSeq = 1
 let buffer: DevEvent[] | undefined
+
+/**
+ * Keeps a URL's scheme, host and path (the part that says which endpoint a
+ * frame was about) and drops userinfo and the whole query, because that is
+ * where a presigned URL carries its signature and access token.
+ */
+function sanitizeUrl(raw: string): string {
+  let url
+  try {
+    url = new URL(raw)
+  } catch {
+    return REDACTED
+  }
+  url.username = ''
+  url.password = ''
+  url.hash = ''
+  const query = url.search === '' ? '' : `?${REDACTED}`
+  url.search = ''
+  return `${url.toString()}${query}`
+}
+
+function sanitizeString(value: string): string {
+  return value
+    .replace(URL_LIKE, (match) => sanitizeUrl(match))
+    .replace(AUTH_SCHEME_TOKEN, REDACTED)
+    .replace(PREFIXED_SECRET, REDACTED)
+}
 
 function normalizeKey(key: string): string {
   return key
@@ -93,7 +129,7 @@ function sanitizeObject(
     return value.map((item) => sanitizeDetail(item, depth + 1, nextAncestors))
   }
   if (value instanceof Error)
-    return { name: value.name, message: value.message }
+    return { name: value.name, message: sanitizeString(value.message) }
   if (value instanceof Map) return `Map(${value.size})`
   if (value instanceof Set) return `Set(${value.size})`
   if (value instanceof Date) {
@@ -126,6 +162,7 @@ function sanitizeDetail(
   if (Object.prototype.toString.call(value) === '[object ArrayBuffer]') {
     return `ArrayBuffer(${(value as ArrayBuffer).byteLength})`
   }
+  if (typeof value === 'string') return sanitizeString(value)
   if (value === null || typeof value !== 'object') return value
   if (ancestors.includes(value)) return '[Circular]'
 
