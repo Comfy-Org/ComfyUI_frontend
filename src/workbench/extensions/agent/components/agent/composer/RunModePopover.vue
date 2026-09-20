@@ -109,6 +109,7 @@ const options: {
         side="top"
         align="end"
         :side-offset="8"
+        :aria-describedby="descriptionId"
         class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
@@ -127,14 +128,9 @@ const options: {
           </div>
         </div>
 
-        <span role="status" class="sr-only">
-          {{ savingMode === null ? '' : t('g.saving') }}
-        </span>
-
         <DropdownMenuRadioGroup
           :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
-          :aria-describedby="descriptionId"
           class="flex flex-col gap-1"
           @update:model-value="onSelectMode"
         >
@@ -193,6 +189,9 @@ const options: {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
+      <span v-if="open" role="status" class="sr-only">
+        {{ savingMode === null ? '' : t('g.saving') }}
+      </span>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
 </template>

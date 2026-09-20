@@ -524,9 +524,7 @@ describe('Composer', () => {
           })
         ).toBeChecked()
       )
-      expect(
-        within(screen.getByRole('menu')).getByRole('status')
-      ).toBeEmptyDOMElement()
+      expect(screen.getByRole('status')).toBeEmptyDOMElement()
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
@@ -553,9 +551,7 @@ describe('Composer', () => {
       const ask = screen.getByRole('menuitemradio', {
         name: /Ask before a workflow runs/
       })
-      expect(
-        within(screen.getByRole('menu')).getByRole('status')
-      ).toHaveTextContent('Saving')
+      expect(screen.getByRole('status')).toHaveTextContent('Saving')
       expect(ask).toHaveAttribute('aria-disabled', 'true')
       expect(
         screen.getByRole('menuitemradio', {
