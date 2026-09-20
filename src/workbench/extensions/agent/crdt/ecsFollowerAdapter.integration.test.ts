@@ -1734,6 +1734,36 @@ describe('EcsFollowerAdapter integration', () => {
         expect(deleteNodes).toHaveBeenCalled()
       })
 
+      // Falsifier for the test above: that one still passes against an
+      // implementation that clears semantic state in one transaction and
+      // deletes the groups in a second. Here the scope resolves for exactly
+      // one transaction after the seed, so a split implementation commits the
+      // clear and then has its group cleanup rejected — a partial clear that
+      // leaves the group layouts behind. One batch resolves scope once and
+      // lands both effects.
+      it('commits both reset effects when only one transaction can resolve a scope', () => {
+        let resetStarted = false
+        let resolutions = 0
+        const { mutations, deleteGroups, deleteNodes } = groupSpyMutations(
+          () => {
+            if (!resetStarted) return scope
+            resolutions += 1
+            return resolutions > 1 ? null : scope
+          }
+        )
+        const { adapter } = bindTarget({
+          graph: groupGraph(5, 'Stage 1'),
+          mutations
+        })
+
+        resetStarted = true
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+
+        expect(deleteNodes).toHaveBeenCalled()
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+      })
+
       it('keeps the delete authorization when the reset batch is rejected', () => {
         let scopeAvailable = true
         const { mutations, deleteGroups } = groupSpyMutations(() =>
