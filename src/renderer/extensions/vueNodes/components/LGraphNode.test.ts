@@ -29,6 +29,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockProgress: undefined as number | undefined,
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
@@ -103,7 +104,7 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
+      progress: computed(() => mockData.mockProgress),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -201,6 +202,7 @@ describe('LGraphNode', () => {
       )
     )
     mockData.mockExecuting = false
+    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
 
     const canvasStore = useCanvasStore()
@@ -549,6 +551,23 @@ describe('LGraphNode', () => {
     expect(
       screen.queryByRole('button', { name: /show advanced/i })
     ).not.toBeInTheDocument()
+  })
+
+  it('renders the collapsed progress bar outside the inner wrapper, so it spans the node including its footer', () => {
+    mockData.mockExecuting = true
+    mockData.mockProgress = 0.5
+    mockData.mockLgraphNode = { isSubgraphNode: () => true }
+
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, flags: { collapsed: true } }
+    })
+
+    const progressBar = screen.getByTestId('node-collapsed-progress')
+    const innerWrapper = screen.getByTestId('node-inner-wrapper')
+
+    expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()
+    expect(innerWrapper).toHaveClass('contain-layout')
+    expect(innerWrapper.contains(progressBar)).toBe(false)
   })
 
   describe('Reroute node sizing', () => {
