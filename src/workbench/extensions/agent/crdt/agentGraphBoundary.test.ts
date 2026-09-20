@@ -15,18 +15,18 @@ import { describe, expect, it } from 'vitest'
  * new use anywhere under `crdt/` fails this test.
  *
  * This is a lexical scan, not an AST lint rule: it matches the member-access
- * forms TypeScript offers (`a.b(`, `a?.b(`, `a['b'](`, `a?.['b'](`) so a
+ * forms TypeScript offers (`a.b`, `a?.b`, `a['b']`, `a?.['b']`) so a
  * rewrite cannot dodge the ratchet by changing call syntax. Aliasing the
  * store to another name is the remaining gap, deferred to an ESLint rule.
  *
  * @see https://linear.app/comfyorg/issue/PM-1293
  */
 
-/** `receiver.member(`, `receiver?.member(`, `receiver['member'](`, `receiver?.['member'](`. */
-function memberCall(receiver: string, member: string): RegExp {
-  const dot = String.raw`\??\.\s*${member}`
+/** `receiver.member`, `receiver?.member`, `receiver['member']`, `receiver?.['member']`. */
+function memberAccess(receiver: string, member: string): RegExp {
+  const dot = String.raw`\??\.\s*${member}(?![$\w])`
   const bracket = String.raw`(?:\?\.)?\s*\[\s*['"]${member}['"]\s*\]`
-  return new RegExp(String.raw`\b${receiver}\s*(?:${dot}|${bracket})\s*\(`, 'g')
+  return new RegExp(String.raw`\b${receiver}\s*!?\s*(?:${dot}|${bracket})`, 'g')
 }
 
 const FORBIDDEN_OPERATIONS = {
@@ -34,8 +34,8 @@ const FORBIDDEN_OPERATIONS = {
   _nodes_by_id: /_nodes_by_id/g,
   // Store-record surgery around `graph.add()` / `graph.remove()`. Store
   // records belong to `graphMutations` (the store leg), not the materializer.
-  'nodeStore.deleteNode(': memberCall('nodeStore', 'deleteNode'),
-  'nodeStore.registerNode(': memberCall('nodeStore', 'registerNode')
+  'nodeStore.deleteNode': memberAccess('nodeStore', 'deleteNode'),
+  'nodeStore.registerNode': memberAccess('nodeStore', 'registerNode')
 } as const satisfies Record<string, RegExp>
 
 type ForbiddenToken = keyof typeof FORBIDDEN_OPERATIONS
@@ -44,13 +44,13 @@ const FORBIDDEN_TOKENS = Object.keys(FORBIDDEN_OPERATIONS) as ForbiddenToken[]
 const RATCHET: Record<string, Partial<Record<ForbiddenToken, number>>> = {
   'agentNodeMaterializer.ts': {
     _nodes_by_id: 5,
-    'nodeStore.deleteNode(': 1,
-    'nodeStore.registerNode(': 1
+    'nodeStore.deleteNode': 1,
+    'nodeStore.registerNode': 1
   },
   // The store leg owns store records; these are the sanctioned call sites.
   'graphMutations.ts': {
-    'nodeStore.deleteNode(': 1,
-    'nodeStore.registerNode(': 1
+    'nodeStore.deleteNode': 1,
+    'nodeStore.registerNode': 1
   }
 }
 
@@ -74,22 +74,26 @@ describe('forbidden-operation matcher', () => {
   it.for([
     'nodeStore.deleteNode(node)',
     'nodeStore?.deleteNode(node)',
+    'nodeStore!.deleteNode(node)',
+    'nodeStore.deleteNode!(node)',
+    'nodeStore.deleteNode<Node>(node)',
     "nodeStore['deleteNode'](node)",
+    "nodeStore!['deleteNode'](node)",
+    "nodeStore['deleteNode']!(node)",
     'nodeStore?.["deleteNode"](node)',
-    'nodeStore\n  .deleteNode(node)'
+    'nodeStore\n  .deleteNode(node)',
+    'const fn = nodeStore.deleteNode'
   ])('matches %j', (snippet) => {
-    expect(countOccurrences(snippet, 'nodeStore.deleteNode(')).toBe(1)
+    expect(countOccurrences(snippet, 'nodeStore.deleteNode')).toBe(1)
   })
 
   it.for([
     // A different receiver: the CRDT batch API, not the node store.
     'batch.deleteNode(id)',
-    // A reference without a call.
-    'const fn = nodeStore.deleteNode',
     // A different member.
     'nodeStore.deleteNodes(ids)'
   ])('ignores %j', (snippet) => {
-    expect(countOccurrences(snippet, 'nodeStore.deleteNode(')).toBe(0)
+    expect(countOccurrences(snippet, 'nodeStore.deleteNode')).toBe(0)
   })
 })
 
