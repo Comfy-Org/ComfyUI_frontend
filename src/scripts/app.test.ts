@@ -6,7 +6,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -30,12 +30,14 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
 import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   pasteAudioNode,
@@ -1637,6 +1639,69 @@ describe('ComfyApp', () => {
         } finally {
           cleanupErrorHooks()
         }
+      }
+    )
+
+    it.for([
+      { name: 'without pack metadata', metadata: { title: 'Original text' } },
+      {
+        name: 'with pack metadata',
+        metadata: { title: 'Original text', cnr_id: 'old-pack', ver: '1.0.0' }
+      }
+    ])(
+      'preserves replacement defaults for API text substitutions $name',
+      async ({ metadata }) => {
+        const graph = new LGraph()
+        const previousGraph = Reflect.get(singletonApp, 'rootGraphInternal')
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeType = 'test/ReplacementText'
+        class ReplacementText extends LGraphNode {
+          constructor() {
+            super('Replacement text')
+            this.addProperty('Node name for S&R', nodeType, 'string')
+            this.addWidget('text', 'text', 'Default text', () => {})
+          }
+        }
+        LiteGraph.registerNodeType(nodeType, ReplacementText)
+        const cleanupErrorHooks = installErrorClearingHooks(graph)
+        onTestFinished(() => {
+          cleanupErrorHooks()
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+        const replacementStore = useNodeReplacementStore()
+        replacementStore.isLoaded = true
+        replacementStore.replacements = {
+          OldTextNode: [
+            {
+              old_node_id: 'OldTextNode',
+              new_node_id: nodeType,
+              old_widget_ids: ['text'],
+              input_mapping: [{ old_id: 'text', new_id: 'text' }],
+              output_mapping: null
+            }
+          ]
+        }
+
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'OldTextNode',
+              inputs: { text: 'Imported prompt text' },
+              _meta: metadata
+            }
+          },
+          ''
+        )
+        const missingTypes =
+          useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
+        expect(useNodeReplacement().replaceNodesInPlace(missingTypes)).toEqual([
+          'OldTextNode'
+        ])
+        expect(
+          applyTextReplacements(graph, '%test/ReplacementText.text%')
+        ).toBe('Imported prompt text')
       }
     )
 

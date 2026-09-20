@@ -259,7 +259,7 @@ function replaceWithMapping(
   const serialized = node.last_serialization ?? node.serialize()
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
-    newNode.properties = { ...serialized.properties }
+    newNode.properties = { ...newNode.properties, ...serialized.properties }
     if ('Node name for S&R' in newNode.properties) {
       newNode.properties['Node name for S&R'] = replacement.new_node_id
     }
