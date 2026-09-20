@@ -907,10 +907,12 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function clearTextPreviewsForJob(jobId: JobId) {
     if (!(jobId in queuedJobs.value)) return
+    const job = queuedJobs.value[jobId]
+    if (!job.workflow || job.workflow !== workflowStore.activeWorkflow) return
 
     const { removeTextPreview } = useNodeProgressText()
-    for (const nodeId of Object.keys(queuedJobs.value[jobId].nodes)) {
-      const currentId = getNodeIdIfExecuting(nodeId)
+    for (const nodeId of Object.keys(job.nodes)) {
+      const currentId = workflowStore.executionIdToCurrentId(nodeId)
       if (!currentId) continue
       const parsedCurrentId = parseNodeId(currentId)
       if (!parsedCurrentId) continue

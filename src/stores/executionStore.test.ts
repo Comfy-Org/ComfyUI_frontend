@@ -2457,10 +2457,12 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     const node = createMockLGraphNode({ id: 1 })
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn(() => node) }
-    } as unknown as LGraphCanvas
+    })
     const workflow = createQueuedWorkflow()
+    useWorkflowStore().activeWorkflow = workflow
+    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
     store.storeJob({
       nodes: ['1'],
       id: 'job-1',
@@ -2473,6 +2475,59 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     fire(event, detail)
 
     expect(mockRemoveTextPreview).toHaveBeenCalledWith(node)
+  })
+
+  it('preserves progress text in another workflow with the same node ID', async () => {
+    const node = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: vi.fn(() => node) }
+    })
+    const workflow = createQueuedWorkflow('workflows/finished.json')
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'Node') },
+      workflow,
+      mode: 'graph'
+    })
+    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+    useWorkflowStore().activeWorkflow = createQueuedWorkflow(
+      'workflows/other.json'
+    )
+    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
+
+    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
+
+    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
+    expect(store.queuedJobs['job-1']).toBeUndefined()
+  })
+
+  it('preserves progress text when the executed node is outside the viewed subgraph', async () => {
+    const node = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: vi.fn(() => node) }
+    })
+    const workflow = createQueuedWorkflow()
+    useWorkflowStore().activeWorkflow = workflow
+    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
+      undefined
+    )
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'Node') },
+      workflow,
+      mode: 'graph'
+    })
+    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
+
+    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
   })
 
   describe('executed', () => {
