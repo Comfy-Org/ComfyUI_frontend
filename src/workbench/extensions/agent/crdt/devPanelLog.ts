@@ -34,6 +34,7 @@ export const DEV_EVENT_KINDS = [
   'subscribe_retry',
   'subscribe_ack_timeout',
   'stale_probe',
+  'catchup_probe',
   'rebind',
   'doc_gap',
   'doc_stale',
