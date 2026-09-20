@@ -33,7 +33,6 @@ function write(dir: string, rel: string, contents: string): void {
 }
 
 function commitAll(
-  dir: string,
   git: (...args: string[]) => string,
   message: string
 ): string {
@@ -60,9 +59,9 @@ describe('check-adr-evil-merge', () => {
   it('passes when the range has no merge commits', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/adr/TOPIC-0001.md', '# adr\n')
-    const base = commitAll(dir, git, 'base')
+    const base = commitAll(git, 'base')
     write(dir, 'src/index.ts', 'export {}\n')
-    commitAll(dir, git, 'ordinary commit adds an unrelated file')
+    commitAll(git, 'ordinary commit adds an unrelated file')
 
     const result = runScript(dir, base)
     expect(result.status).toBe(0)
@@ -71,10 +70,10 @@ describe('check-adr-evil-merge', () => {
   it('passes when the ADR arrived on a branch commit and the merge only integrates it', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'src/index.ts', 'export {}\n')
-    const base = commitAll(dir, git, 'base')
+    const base = commitAll(git, 'base')
     git('checkout', '-b', 'feature')
     write(dir, 'docs/adr/TOPIC-0002.md', '# adr\n')
-    commitAll(dir, git, 'branch commit adds the ADR')
+    commitAll(git, 'branch commit adds the ADR')
     git('checkout', 'main')
     git('merge', '--no-ff', '--no-edit', 'feature')
 
@@ -85,13 +84,13 @@ describe('check-adr-evil-merge', () => {
   it('fails when a merge commit introduces a docs/adr file present in neither parent', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'src/index.ts', 'export {}\n')
-    commitAll(dir, git, 'base')
+    commitAll(git, 'base')
     git('checkout', '-b', 'feature')
     write(dir, 'src/feature.ts', 'export {}\n')
-    commitAll(dir, git, 'branch commit')
+    commitAll(git, 'branch commit')
     git('checkout', 'main')
     write(dir, 'src/main-drift.ts', 'export {}\n')
-    const mainDrift = commitAll(dir, git, 'main drifts independently')
+    const mainDrift = commitAll(git, 'main drifts independently')
     git('merge', '--no-ff', '--no-commit', 'feature')
     // Smuggle governance content into the merge itself: present in NEITHER parent.
     write(dir, 'docs/adr/TOPIC-0003-evil.md', '# smuggled\n')
@@ -106,13 +105,13 @@ describe('check-adr-evil-merge', () => {
   it('does not flag a merge that only resolves conflicts in files both parents already have', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/adr/TOPIC-0004.md', '# adr\n')
-    commitAll(dir, git, 'base')
+    commitAll(git, 'base')
     git('checkout', '-b', 'feature')
     write(dir, 'docs/adr/TOPIC-0004.md', '# adr with branch edit\n')
-    commitAll(dir, git, 'branch edits the ADR')
+    commitAll(git, 'branch edits the ADR')
     git('checkout', 'main')
     write(dir, 'docs/adr/TOPIC-0004.md', '# adr with main edit\n')
-    const mainEdit = commitAll(dir, git, 'main edits the ADR')
+    const mainEdit = commitAll(git, 'main edits the ADR')
     expect(() => git('merge', '--no-ff', '--no-edit', 'feature')).toThrow()
     write(dir, 'docs/adr/TOPIC-0004.md', '# adr resolved\n')
     git('add', '.')
@@ -125,7 +124,7 @@ describe('check-adr-evil-merge', () => {
   it('is a no-op when the base is the all-zero new-branch sentinel', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/adr/TOPIC-0005.md', '# adr\n')
-    commitAll(dir, git, 'base')
+    commitAll(git, 'base')
 
     const result = runScript(dir, '0'.repeat(40))
     expect(result.status).toBe(0)
