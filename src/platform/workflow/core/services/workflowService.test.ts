@@ -2035,6 +2035,60 @@ describe('useWorkflowService', () => {
       expect(tempWorkflow.shareId).toBe('share-1')
     })
 
+    /**
+     * SEN-5 / CLOUD-FRONTEND-PROD-1MB: `LoadedComfyWorkflow` declares
+     * `activeState: ComfyWorkflowJSON`, but it is produced by an unchecked
+     * `this as this & LoadedComfyWorkflow` cast over a getter that still
+     * returns `this.changeTracker?.activeState ?? null`. When the tracker has
+     * no active state the cast is a lie and activation threw
+     * `TypeError: Cannot read properties of null (reading 'id')`.
+     * The tracker itself is present in these cases — a missing tracker would
+     * throw reading `reset`, not `id`.
+     */
+    describe('when the change tracker has no active state (SEN-5)', () => {
+      beforeEach(() => {
+        // @ts-expect-error deliberately reproducing the runtime state the
+        // LoadedComfyWorkflow cast claims is impossible
+        existingWorkflow.changeTracker.activeState = null
+      })
+
+      it('activates a same-path reload instead of throwing on a null active state', async () => {
+        await expect(
+          useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+        ).resolves.not.toThrow()
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: expect.any(String) })
+        )
+      })
+
+      it('activates a workflow object reload instead of throwing on a null active state', async () => {
+        await expect(
+          useWorkflowService().afterLoadNewGraph(
+            existingWorkflow,
+            makeWorkflowData()
+          )
+        ).resolves.not.toThrow()
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: expect.any(String) })
+        )
+      })
+
+      it('still prefers the incoming workflow id over the missing fallback', async () => {
+        const incomingId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowDataWithId(incomingId)
+        )
+
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: incomingId })
+        )
+      })
+    })
+
     it('preserves share attribution on repeated same-path loads', async () => {
       existingWorkflow.shareId = 'share-1'
 
