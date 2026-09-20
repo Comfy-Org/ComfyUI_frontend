@@ -555,6 +555,38 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('re-arms divergence and reconnect telemetry when the target changes', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    adapterState.applyFrame.mockReturnValue(false)
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('doc_update', { workflowId: 'wf-2', seq: 1 })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+
+    expect(
+      telemetryState.reportError.mock.calls.map(([, options]) => [
+        options.errorType,
+        options.context?.workflow_id
+      ])
+    ).toEqual([
+      ['error_reading_crdt_document', 'wf-1'],
+      ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-1'],
+      ['error_reading_crdt_document', 'wf-2'],
+      ['failure_reconnecting_crdt_websocket_repeatedly', 'wf-2']
+    ])
+    unmount()
+  })
+
   it('FE-1901: a confirmed subscribe clears the retry timer', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
