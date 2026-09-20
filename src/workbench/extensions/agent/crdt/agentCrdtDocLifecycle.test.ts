@@ -5,7 +5,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
-  SUBSCRIBE_ACK_TIMEOUT_MS
+  SUBSCRIBE_ACK_TIMEOUT_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { recordDevEvent } from './devPanelLog'
 
@@ -75,18 +76,84 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
   })
 
   it('a confirm disarms the ack timer and hands the channel to the recency probe', () => {
-    const { lifecycle, resubscribe } = wire()
+    // A bare resubscribe double (not `wire()`'s auto-chaining one) isolates
+    // the catch-up-grace-probe/recency-probe handoff from the ack-timeout
+    // retry cascade, which has its own dedicated tests above.
+    const resubscribe = vi.fn()
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      vi.fn()
+    )
     lifecycle.onSubscribeSent(WORKFLOW_ID)
     vi.advanceTimersByTime(1000)
     lifecycle.onSubscribeConfirmed()
 
-    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    // A confirm arms the catch-up grace probe, not the ack timer it just
+    // disarmed (which would otherwise fire at t=15000).
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
     expect(resubscribe).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1)
     expect(resubscribe).toHaveBeenCalledTimes(1)
     expect(devEvents()).toEqual([
-      { kind: 'stale_probe', detail: { workflowId: WORKFLOW_ID } }
+      { kind: 'catchup_probe', detail: { workflowId: WORKFLOW_ID } }
+    ])
+
+    // The grace probe hands off to the full-budget recency probe: the next
+    // resubscribe is STALE_AFTER_MS later (confirming the disarmed ack timer
+    // never fired at t=15000 either), not another grace interval away.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(devEvents().at(-1)).toEqual({
+      kind: 'stale_probe',
+      detail: { workflowId: WORKFLOW_ID }
+    })
+  })
+
+  it('PM-1405: an acked-but-contentless resubscribe gets one fast probe per gap, then the full budget', () => {
+    // Unlike `wire()`'s bare resubscribe double (which never answers), this
+    // mock models Christian's reported backend state: the resubscribe is
+    // acknowledged every time but never delivers a doc_update.
+    const onGaveUp = vi.fn()
+    const resubscribe = vi.fn(() => {
+      lifecycle.onSubscribeSent(WORKFLOW_ID)
+      lifecycle.onSubscribeConfirmed()
+    })
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      onGaveUp
+    )
+
+    // The initial subscribe also confirms with no catch-up content, arming
+    // this gap episode's one fast probe.
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeConfirmed()
+
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS - 1)
+    expect(resubscribe).not.toHaveBeenCalled()
+
+    // The fast probe fires and resubscribes; the ack-without-content comes
+    // straight back through the mock.
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    // Bug: that ack re-armed another SUBSCRIBE_CATCHUP_GRACE_MS probe here,
+    // so a second resubscribe would already have fired by this point. Fix:
+    // the episode already spent its one fast shot, so this probe waits the
+    // full STALE_AFTER_MS instead.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(devEvents().map(({ kind }) => kind)).toEqual([
+      'catchup_probe',
+      'stale_probe'
     ])
   })
 

@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -418,6 +419,34 @@ function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
 }
 
+/**
+ * Whether a link's declared origin output type and target input type are
+ * both resolvable and definitively incompatible, using the exact rule
+ * `connect` enforces before applying a link (`LiteGraph.isValidConnection`).
+ * An unresolvable slot (missing slot list, or an index past its end) reports
+ * `false` rather than `true`: `connect`'s own "does not exist" checks give
+ * that case a more specific rejection reason, and this predicate exists only
+ * to let a caller pre-exclude a link it already knows would be refused for
+ * an origin/target TYPE mismatch, not to duplicate every reason `connect`
+ * can refuse a link.
+ *
+ * Exposed so `EcsFollowerAdapter` can keep an already-invalid retained link
+ * out of what it projects into the local canvas mirror during
+ * reconciliation, without duplicating `LiteGraph`'s compatibility rules or
+ * risking them drifting from what `connect` actually enforces.
+ */
+export function isIncompatibleLinkType(link: {
+  originSlot: number
+  targetSlot: number
+  originOutputs?: readonly ISerialisableNodeOutput[]
+  targetInputs?: readonly ISerialisableNodeInput[]
+}): boolean {
+  const originType = link.originOutputs?.[link.originSlot]?.type
+  const targetType = link.targetInputs?.[link.targetSlot]?.type
+  if (originType === undefined || targetType === undefined) return false
+  return !LiteGraph.isValidConnection(originType, targetType)
+}
+
 function detachedLinkSlots(
   nodes: Iterable<NodeState>,
   topology: LinkTopology
@@ -662,6 +691,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (topology.targetSlot >= targetInputs.length) {
             return `connect target slot ${topology.targetSlot} does not exist`
+          }
+          const originType = originOutputs[topology.originSlot]?.type
+          const targetType = targetInputs[topology.targetSlot]?.type
+          if (
+            isIncompatibleLinkType({
+              originSlot: topology.originSlot,
+              targetSlot: topology.targetSlot,
+              originOutputs,
+              targetInputs
+            })
+          ) {
+            return `connect origin slot ${topology.originSlot} type ${String(originType)} is not compatible with target slot ${topology.targetSlot} type ${String(targetType)}`
           }
           if (mutation.link.originOutputs) {
             nodes.set(nodeKey(topology.originNodeId), {
