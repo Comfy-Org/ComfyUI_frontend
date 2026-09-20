@@ -1,4 +1,9 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -298,6 +303,123 @@ describe('EcsFollowerAdapter integration', () => {
       [toNodeId(99)],
       expect.objectContaining({ opId: 'replay' })
     )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  // `connect` refuses an IMAGE output wired into a STRING input (see
+  // graphMutations.test.ts's "rejects connecting an incompatible slot type
+  // pair"). Before that check existed the host-owned document could already
+  // carry such a link, and `GraphMutations.batch` validates a whole batch
+  // atomically, so an unfiltered full reconciliation that replays every
+  // retained link would fail on that one link and take every other node it
+  // was reconciling down with it — including one added afterwards, since a
+  // failed batch re-arms `reconcileNextFrame` and the very next full
+  // reconciliation reads the identical bad link from the doc and fails
+  // again. Nothing ever cleans that link up, so this repeats forever.
+  it('does not let an already-invalid retained link block reconciliation of unrelated valid state', () => {
+    let scopeAvailable = true
+    const mutations = createGraphMutations({
+      getScope: () => (scopeAvailable ? scope : null),
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+
+    // The document is already invalid by the time this follower binds: an
+    // IMAGE output (node 1) wired straight into a STRING input (node 2).
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'prompt', type: 'STRING', link: 9 }],
+            outputs: []
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const seedUpdate = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(seedUpdate)
+
+    // Frame 1 (the initial full reconciliation): both otherwise-valid nodes
+    // must land even though the document's only link cannot be
+    // materialized — the type check must still refuse it.
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: seedUpdate })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+
+    // Grow the doc with a third, valid, unrelated node, but land it while
+    // scope is unavailable so the batch is rejected for a reason that has
+    // nothing to do with the link — this is what arms another FULL
+    // reconciliation for the next frame, which is the exact mechanism that
+    // replays the still-present incompatible link.
+    const before = Y.encodeStateVector(host)
+    const ops = [
+      op('add-node-3', 1, {
+        op: 'add_node',
+        node_id: 3,
+        class_type: 'Sink',
+        pos: [500, 0],
+        node: { id: 3, type: 'Sink', inputs: [], outputs: [] }
+      })
+    ] as Parameters<typeof applyOps>[1]
+    const result = applyOps(host, ops, catalog)
+    expect(result.outcomes[0]?.outcome).toBe('applied')
+    const growUpdate = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(growUpdate)
+
+    scopeAvailable = false
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: growUpdate })
+    ).toBe(false)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+
+    // Frame 3: scope is back, and `reconcileNextFrame` is armed, so this is
+    // a full reconciliation replaying the STILL-invalid link from the doc
+    // alongside the new node. The follower must not rewrite the document to
+    // "fix" the link — it is still present, unresolved, in the doc — but
+    // the new, unrelated, valid node must land this time instead of the
+    // batch failing again forever.
+    scopeAvailable = true
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 3, update: growUpdate })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2), toNodeId(3)])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    // The follower must not rewrite the shared document to "recover": link
+    // 9 is still exactly as invalid in the doc as it always was.
+    expect(linksMap(follower.doc).has('9')).toBe(true)
 
     adapter.destroy()
     follower.destroy()
