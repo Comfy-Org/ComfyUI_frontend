@@ -33,7 +33,7 @@ export interface AgentEventSource {
   onStatus?(listener: (live: boolean) => void): () => void
 }
 
-export interface SessionNotice {
+interface SessionNotice {
   level: 'error'
   text: string
 }
