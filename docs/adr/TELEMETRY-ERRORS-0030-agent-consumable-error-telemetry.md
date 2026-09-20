@@ -19,8 +19,8 @@ immediately-binding gate.
 Real-user state exposes failures that tests and pre-deploy checks cannot see:
 invariants, bad user states, expected-but-missing events, unexpected catches,
 and degraded paths. These signals need intentional common tags so agents can
-query them by family and Sentry can route useful alerts without creating one
-rule per error slug.
+query them by family and Datadog RUM can route useful alerts without creating
+one monitor per error slug.
 
 The frontend already provides `reportError` and mandates it in
 `src/AGENTS.md`; 33 snake_case `errorType` slugs exist across 29 files.
@@ -70,13 +70,16 @@ remain. The gap is coverage and discipline, not another reporting API.
 7. **Do not include PII.** Prompts, workflow names or paths, file names, node
    titles, emails, and tokens are forbidden in tags and context. Limit context
    to ids, counts, enums, and booleans.
-8. **Route alerts by family.** Use one Sentry rule per family rather than per
-   slug: new invariant, hard assertion, broken user operation, unexpected
-   catch, missing completion, failure-rate deviation, dynamic anomaly by
-   feature area, and a recovered-degradation digest.
-9. **Add denominators in a later phase.** Paired success counters should use
-   Sentry Application Metrics with the same attribute names as these tags so
-   deviation alerts have a denominator.
+8. **Route operational alerts through Datadog by family.** Following
+   [ADR-TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md),
+   use one RUM monitor per family rather than per slug: new invariant, hard
+   assertion, broken user operation, unexpected catch, missing completion,
+   failure-rate deviation, dynamic anomaly by feature area, and a
+   recovered-degradation digest. Sentry remains an error exploration and
+   grouping sink, not the operational alert route.
+9. **Add denominators in a later phase.** Paired Datadog RUM success actions
+   should use the same bounded attributes as these error tags so Datadog
+   calculated metrics and monitors can measure failure rates.
 10. **Keep this decision frontend-scoped.** Backend telemetry transports need
     their own amendment before adopting this taxonomy.
 
@@ -96,14 +99,15 @@ remain. The gap is coverage and discipline, not another reporting API.
 - A new `reportInvariant()` or `Telemetry` wrapper was rejected because it
   duplicates `reportError`, which already fans out to every configured sink.
 - Kebab-case tags were rejected because existing slugs use snake_case.
-- One Slack alert per `error_type` was rejected because it creates an
+- One Datadog monitor per `error_type` was rejected because it creates an
   unbounded rule count and alert fatigue.
 - A bare `[errorType]` fingerprint was rejected because it merges distinct root
   causes.
 - Global sampling was rejected because it can discard the rare invariants this
   decision is intended to expose.
-- Datadog-first instrumentation was rejected because Sentry already receives
-  frontend errors and supports the intended query and alert path.
+- Sentry-only alerting was rejected because accepted
+  [ADR-TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)
+  assigns low-latency incident response to Datadog RUM and monitors.
 
 ## Registry Amendments
 
