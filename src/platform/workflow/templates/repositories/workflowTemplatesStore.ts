@@ -85,7 +85,7 @@ export const useWorkflowTemplatesStore = defineStore(
       ...templateCategory,
       localizedTitle: st(
         `templateWorkflows.category.${normalizeI18nKey(templateCategory.title)}`,
-        templateCategory.title ?? templateCategory.moduleName
+        templateCategory.title
       ),
       templates: localizeTemplateList(
         templateCategory.templates,
@@ -342,7 +342,7 @@ export const useWorkflowTemplatesStore = defineStore(
       if (essentialCats.length > 0) {
         essentialCats.forEach((essentialCat) => {
           const categoryIcon = essentialCat.icon
-          const categoryTitle = essentialCat.title ?? 'Getting Started'
+          const categoryTitle = essentialCat.title
           const categoryId = generateCategoryId('basics', essentialCat.title)
           items.push({
             id: categoryId,

@@ -1,13 +1,17 @@
 {
-  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v2.104.0/schema.json",
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
   // Entry points fallow cannot infer. These files are roots (run by package.json
-  // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
+  // scripts / CI / tool CLIs / Storybook or loaded by Vitest convention), not
+  // imported from the app graph.
   "entry": [
     "src/main.ts",
+    "src/**/__mocks__/**/*.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
+    // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
+    "apps/website/src/routes/models/*.{astro,ts}",
     "**/.storybook/{main,preview}.ts",
     "packages/ingest-types/openapi-ts.config.ts"
   ],
@@ -29,7 +33,9 @@
     // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
     // stylelint customSyntax (.stylelintrc.json) respectively.
     "eslint-plugin-playwright",
-    "postcss-html"
+    "postcss-html",
+    // Executed by models-snippets.test.ts inside the generated Node examples.
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [
@@ -41,7 +47,7 @@
 
   "ignoreExports": [
     // Public extension API surface, deliberately exported for the 40+ custom-node
-    // ecosystem (ADR 0003 / 0008). No internal importer by design.
+    // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },
     { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },

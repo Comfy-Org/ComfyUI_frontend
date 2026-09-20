@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -34,10 +32,6 @@ function mockCanvasContext() {
 }
 
 describe('ecosystem slot patterns', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('duck-typed slots wrapped by _setConcreteSlots', () => {
     it('renders a connected duck-typed input in collapsed mode', () => {
       const { source, target } = createSourceAndTarget()

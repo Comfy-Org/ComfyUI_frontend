@@ -11,7 +11,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto mb-12 flex flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
+    class="relative mx-auto mb-12 flex max-w-9xl flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div class="pointer-events-none mx-auto w-full flex-1 md:-translate-x-20">
@@ -380,13 +380,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <ProductHeroBadge text="CLOUD" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('cloud.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-lg text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-lg text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('cloud.hero.subtitle', locale) }}
       </p>

@@ -1,3 +1,5 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -5,6 +7,7 @@ import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -48,9 +51,6 @@ const testState = vi.hoisted(() => {
   const contentSizes = new Map<string, { width: number; height: number }>()
 
   return {
-    linearMode: false,
-    rootGraphId: ROOT_GRAPH_ID,
-    visibility: null as { value: 'visible' | 'hidden' } | null,
     nodeLayouts: new Map<NodeId, NodeLayout>(),
     contentSizes,
     reportContentSize: vi.fn(
@@ -67,30 +67,21 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => {
-    const visibility = ref<'visible' | 'hidden'>('visible')
-    testState.visibility = visibility
-    return visibility
-  },
-  createSharedComposable: <T>(fn: T) => fn
-}))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    linearMode: testState.linearMode,
-    rootGraphId: testState.rootGraphId,
-    canvas: { setDirty: testState.setDirty }
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+    })
   })
-}))
+)
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
-  })
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
@@ -100,7 +91,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/layout/slots/syncSlotOffsets', () => ({
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
   syncSlotOffsets: (
     _element: HTMLElement,
     _rootGraphId: UUID,
@@ -185,11 +176,14 @@ function seedNodeLayout(options: {
   })
 }
 
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
+})
+
 describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
-    testState.linearMode = false
-    testState.rootGraphId = ROOT_GRAPH_ID
-    if (testState.visibility) testState.visibility.value = 'visible'
+    useCanvasStore().linearMode = false
+    Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
   })
@@ -224,7 +218,7 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
     vi.clearAllMocks()
-    testState.rootGraphId = SECOND_GRAPH_ID
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_GRAPH_ID })
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -285,7 +279,7 @@ describe('useVueNodeResizeTracking', () => {
     })
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.rootGraphId).toBe(ROOT_GRAPH_ID)
+    expect(useCanvasStore().rootGraphId).toBe(ROOT_GRAPH_ID)
     expect(testState.reportContentSize).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       subgraphNodeId,
@@ -324,13 +318,12 @@ describe('useVueNodeResizeTracking', () => {
     const { entry } = createResizeEntry({ nodeId })
     document.body.append(entry.target)
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    if (!testState.visibility) throw new Error('visibility ref not initialized')
-
     resizeObserverState.callback?.([entry], createObserverMock())
     expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
     vi.clearAllMocks()
 
-    testState.visibility.value = 'hidden'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -339,7 +332,8 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
 
     vi.clearAllMocks()
-    testState.visibility.value = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
 
     expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)

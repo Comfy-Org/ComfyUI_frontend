@@ -181,9 +181,9 @@ export function useArrangeNodes() {
     if (updates.length === 0) return
 
     mutations.batchMoveNodes(rootGraphId, updates)
-    app.canvas?.setDirty(true, true)
+    app.canvas.setDirty(true, true)
     if (captureUndo) {
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     }
   }
 

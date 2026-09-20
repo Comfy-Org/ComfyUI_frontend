@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('../providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -60,13 +60,6 @@ function renderComponent(props: {
     props,
     global: {
       plugins: [i18n],
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
       directives: {
         tooltip: () => {}
       }
@@ -266,7 +259,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[0])
 
       expect(emitted()['edit']).toBeDefined()
-      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit'].length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
@@ -278,7 +271,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[1])
 
       expect(emitted()['delete']).toBeDefined()
-      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete'].length).toBeGreaterThanOrEqual(1)
     })
   })
 })

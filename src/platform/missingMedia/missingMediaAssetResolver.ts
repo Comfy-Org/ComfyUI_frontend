@@ -138,7 +138,7 @@ async function fetchCloudGeneratedAssets(
   const foundTargetNames = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const assetPage = await assetService.getAssetsPageByTag('output', true, {
@@ -184,7 +184,7 @@ async function fetchGeneratedHistoryAssets(
   const seenJobIds = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const requestedOffset = offset

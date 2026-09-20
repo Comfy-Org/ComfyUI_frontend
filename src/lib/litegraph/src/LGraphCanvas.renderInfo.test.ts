@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -9,7 +7,6 @@ describe('LGraphCanvas.renderInfo', () => {
   let ctx: CanvasRenderingContext2D
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     const canvasElement = document.createElement('canvas')
     ctx = {
       save: vi.fn(),
@@ -36,6 +33,16 @@ describe('LGraphCanvas.renderInfo', () => {
     lgCanvas.renderInfo(ctx, 10, 500)
 
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('draws every line at the x it was given', () => {
+    lgCanvas.renderInfo(ctx, 100, 500)
+
+    expect(ctx.translate).toHaveBeenCalledWith(100, 500)
+
+    const drawnAt = vi.mocked(ctx.fillText).mock.calls
+    expect(drawnAt.length).toBeGreaterThan(0)
+    expect(drawnAt.map(([, x]) => x)).toEqual(drawnAt.map(() => 0))
   })
 
   it('uses canvas.height divided by devicePixelRatio as y fallback', () => {

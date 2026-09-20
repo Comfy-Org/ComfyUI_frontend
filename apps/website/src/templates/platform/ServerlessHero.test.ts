@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -11,12 +10,14 @@ describe('ServerlessHero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.products.serverless.title', 'en')
+        name: t('platform.serverlessHero.heading', 'en')
       })
     ).toBeTruthy()
+    expect(screen.getByText(/into an autoscaling endpoint/)).toBeTruthy()
     expect(
       screen.getAllByRole('link', { name: t('platform.hero.getStarted', 'en') })
         .length
     ).toBeGreaterThan(0)
+    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 })

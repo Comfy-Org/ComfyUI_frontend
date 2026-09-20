@@ -16,7 +16,13 @@
     />
     <div
       data-testid="docked-agent-panel-shell"
-      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
+      :class="
+        cn(
+          'size-full p-2',
+          hasOpaqueNeighbor &&
+            'border-l border-interface-stroke bg-base-background'
+        )
+      "
     >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
@@ -28,13 +34,15 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
@@ -63,9 +71,18 @@ const AgentPanelRoot = defineAsyncComponent({
   }
 })
 
+/** Set by the parent that lays out both this panel and its left neighbour. */
+const { hasOpaqueNeighbor = false } = defineProps<{
+  hasOpaqueNeighbor?: boolean
+}>()
+
 const agentPanelStore = useAgentPanelStore()
-const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
+const { isVisible: docked, width } = storeToRefs(agentPanelStore)
+const agentRunModeStore = useAgentRunModeStore()
+
+void agentRunModeStore.load().catch((error: unknown) => {
+  reportError(error, { errorType: 'agent_run_mode_load_failure' })
+})
 
 const isResizing = ref(false)
 let resizeStartX = 0

@@ -1,13 +1,57 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
 describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+  })
+
+  it.for(['before', 'after'])(
+    'reconnects a restored draft when bindings initialize %s tab restoration',
+    async (timing) => {
+      const path = 'workflows/Agent draft.json'
+      localStorage.setItem(
+        'Comfy.Agent.WorkflowTabBindings',
+        JSON.stringify({ 'wf-minted': path })
+      )
+      const workflows = useWorkflowStore()
+      if (timing === 'before') useAgentWorkflowTabBindingStore()
+      const restored = workflows.createTemporary('Agent draft.json')
+      workflows.openWorkflowsInBackground({ right: [restored.path] })
+      const bindings = useAgentWorkflowTabBindingStore()
+      await nextTick()
+
+      expect(bindings.tabPathFor('wf-minted')).toBe(restored.path)
+      expect(bindings.matchesWorkflow('wf-minted', restored)).toBe(true)
+
+      await workflows.closeWorkflow(restored)
+      const replacement = workflows.createTemporary('Agent draft.json')
+      workflows.openWorkflowsInBackground({ right: [replacement.path] })
+      await nextTick()
+
+      expect(replacement.path).toBe(restored.path)
+      expect(bindings.workflowIdFor(replacement.path)).toBeUndefined()
+      expect(bindings.matchesWorkflow('wf-minted', replacement)).toBe(false)
+    }
+  )
+
+  it('releases a closed temporary tab binding before its path is reused', async () => {
+    const workflows = useWorkflowStore()
+    const first = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [first.path] })
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-first', first.path)
+    expect(bindings.matchesWorkflow('wf-first', first)).toBe(true)
+    await workflows.closeWorkflow(first)
+    const replacement = workflows.createTemporary()
+    expect(replacement.path).toBe(first.path)
+    expect(bindings.tabPathFor('wf-first')).toBeUndefined()
+    expect(bindings.workflowIdFor(replacement.path)).toBeUndefined()
+    expect(bindings.matchesWorkflow('wf-first', replacement)).toBe(false)
   })
 
   it('resolves both directions after a bind', () => {
@@ -38,8 +82,8 @@ describe('agentWorkflowTabBindingStore', () => {
   it('T-18 / PM-664 / FE-1290 keeps sidebar context bound to the active workflow across reload', async () => {
     useAgentWorkflowTabBindingStore().bind('wf-1', 'workflows/a.json')
     await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
 
-    setActivePinia(createPinia())
     const reloaded = useAgentWorkflowTabBindingStore()
 
     expect(reloaded.tabPathFor('wf-1')).toBe('workflows/a.json')

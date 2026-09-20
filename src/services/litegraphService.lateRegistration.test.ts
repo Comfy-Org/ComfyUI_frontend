@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -148,7 +146,6 @@ function layoutEntities(graph: LGraph) {
 }
 
 beforeEach(async () => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.resetForTests()
   await useLitegraphService().registerNodeDef(INSTALLED, nodeDef(INSTALLED))
 })
@@ -234,15 +231,16 @@ describe('registering a node definition while a graph is already loaded', () => 
 
     const added = LiteGraph.createNode(LATE)
     expect(added).not.toBeNull()
-    graph.add(added!)
-    const link = graph.nodes[0].connect(0, added!, 0)
+    if (!added) throw new Error('Failed to create late-registered node')
+    graph.add(added)
+    const link = graph.nodes[0].connect(0, added, 0)
     expect(link).toBeTruthy()
 
-    expect(added!.widgets?.map((widget) => widget.name)).toEqual([
+    expect((added.widgets ?? []).map((widget) => widget.name)).toEqual([
       'seed',
       'control_after_generate'
     ])
-    const serialised = added!.serialize()
+    const serialised = added.serialize()
     expect(serialised.type).toBe(LATE)
     expect(serialised.widgets_values).toEqual([0, 'randomize'])
     expect(serialised.inputs?.[0]).toMatchObject({
@@ -266,7 +264,7 @@ describe('a node whose type was unknown when the graph loaded', () => {
     expect(unknown!.constructor).toBe(LGraphNode)
     expect(unknown!.has_errors).toBe(true)
     expect(unknown!.widgets?.map((widget) => widget.name)).toEqual(['UNKNOWN'])
-    expect(graph.serialize().nodes?.[2]).toEqual(serialisedNode(3, LATE))
+    expect(graph.serialize().nodes[2]).toEqual(serialisedNode(3, LATE))
   })
 
   it('is not retroactively upgraded by the registration alone', async () => {

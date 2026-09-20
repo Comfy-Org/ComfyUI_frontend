@@ -47,14 +47,6 @@ test.describe('Cloud nodes page @smoke', () => {
     await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
   })
 
-  test('direct pack detail route renders node entries', async ({ page }) => {
-    await page.goto('/cloud/supported-nodes/comfyui-impact-pack')
-    await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
-    await expect(
-      page.getByTestId('cloud-node-pack-detail-node').first()
-    ).toBeVisible()
-  })
-
   test('search with no matches shows empty state', async ({ page }) => {
     await page
       .getByTestId('cloud-nodes-search')
@@ -103,6 +95,56 @@ test.describe('Cloud nodes page @smoke', () => {
     ).toBeVisible()
   })
 
+  test('JSON-LD ItemList is emitted on the index page', async ({ page }) => {
+    const jsonLd = page.locator('script[type="application/ld+json"]')
+    const ldBlocks = await jsonLd.allTextContents()
+    expect(ldBlocks.some((b) => b.includes('"@type":"ItemList"'))).toBeTruthy()
+  })
+
+  test('JSON-LD payload escapes <-sequences', async ({ page }) => {
+    const ldBlocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    for (const block of ldBlocks) {
+      expect(block).not.toContain('</script')
+    }
+  })
+})
+
+test.describe('Cloud node detail pages @smoke', () => {
+  for (const { prefix, title, back } of [
+    { prefix: '', title: / on Comfy Cloud$/, back: 'Back to all packs' },
+    { prefix: '/zh-CN', title: /（Comfy Cloud）$/, back: '返回所有节点包' }
+  ]) {
+    test(`pack detail preserves locale and structured data at ${prefix || '/'}`, async ({
+      page
+    }) => {
+      const path = `${prefix}/cloud/supported-nodes/comfyui-impact-pack`
+      await page.goto(path)
+      await expect(page).toHaveTitle(title)
+      await expect(
+        page.getByTestId('cloud-node-pack-detail-node').first()
+      ).toBeVisible()
+      await expect(page.getByRole('link', { name: back })).toHaveAttribute(
+        'href',
+        `${prefix}/cloud/supported-nodes`
+      )
+
+      const jsonLd: unknown = JSON.parse(
+        await page.locator('script[type="application/ld+json"]').innerText()
+      )
+      expect(jsonLd).toMatchObject({
+        '@graph': expect.arrayContaining([
+          expect.objectContaining({
+            '@type': 'SoftwareApplication',
+            '@id': `https://comfy.org${path}/#software`,
+            url: `https://comfy.org${path}/`
+          })
+        ])
+      })
+    })
+  }
+
   test('clicking the back link returns to the index from a detail page', async ({
     page
   }) => {
@@ -128,21 +170,6 @@ test.describe('Cloud nodes page @smoke', () => {
       '/cloud/supported-nodes/this-pack-does-not-exist'
     )
     expect(response?.status()).toBe(404)
-  })
-
-  test('JSON-LD ItemList is emitted on the index page', async ({ page }) => {
-    const jsonLd = page.locator('script[type="application/ld+json"]')
-    const ldBlocks = await jsonLd.allTextContents()
-    expect(ldBlocks.some((b) => b.includes('"@type":"ItemList"'))).toBeTruthy()
-  })
-
-  test('JSON-LD payload escapes <-sequences', async ({ page }) => {
-    const ldBlocks = await page
-      .locator('script[type="application/ld+json"]')
-      .allTextContents()
-    for (const block of ldBlocks) {
-      expect(block).not.toContain('</script')
-    }
   })
 })
 

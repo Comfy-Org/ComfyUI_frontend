@@ -349,7 +349,14 @@ export function transferLayoutAttachment(
   return true
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+/** Release a node's adapter attachment without changing canonical layout state. */
+export function releaseNodeLayoutAttachment(node: LGraphNode): void {
+  takeNodeLayoutAttachment(node)
+}
+
+function takeNodeLayoutAttachment(
+  node: LGraphNode
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId, ownerGraphId } = attachment
@@ -358,12 +365,19 @@ export function detachNodeLayout(node: LGraphNode): void {
   layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
   projection.layoutRef = undefined
   nodeAttachments.delete(node)
-  if (!deleteNodeAttachmentOwner(graphId, node)) return
+  return deleteNodeAttachmentOwner(graphId, node)
+    ? { graphId, id: nodeId, ownerGraphId }
+    : undefined
+}
+
+export function detachNodeLayout(node: LGraphNode): void {
+  const attachment = takeNodeLayoutAttachment(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    graphId,
-    nodeId,
-    ownerGraphId,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
+    ownerGraphId: attachment.ownerGraphId,
     type: 'deleteNode'
   })
 }

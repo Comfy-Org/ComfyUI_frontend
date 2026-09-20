@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -95,6 +95,14 @@ describe('useNodeTooltips', () => {
 
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('returns empty tooltips for inputs absent from the live node definition', () => {
+    const { getInputSlotTooltip, getWidgetTooltip } =
+      useNodeTooltips('SAM3_Detect')
+
+    expect(getInputSlotTooltip('stale_input')).toBe('')
+    expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
   })
 
   it('reads output slot tooltips without i18n placeholder errors', () => {

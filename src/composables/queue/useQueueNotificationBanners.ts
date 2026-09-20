@@ -7,6 +7,8 @@ import type {
 } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 const BANNER_DISMISS_DELAY_MS = 4000
@@ -90,14 +92,14 @@ export const useQueueNotificationBanners = () => {
   }
 
   const showNextNotification = () => {
-    if (activeNotification.value !== null) {
+    if (
+      activeNotification.value !== null ||
+      pendingNotifications.value.length === 0
+    ) {
       return
     }
     const [nextNotification, ...rest] = pendingNotifications.value
     pendingNotifications.value = rest
-    if (!nextNotification) {
-      return
-    }
 
     activeNotification.value = nextNotification
     clearDismissTimer()
@@ -200,10 +202,7 @@ export const useQueueNotificationBanners = () => {
     }
 
     const queuedPendingNotification = pendingNotifications.value[pendingIndex]
-    if (
-      queuedPendingNotification === undefined ||
-      queuedPendingNotification.type !== 'queuedPending'
-    ) {
+    if (queuedPendingNotification.type !== 'queuedPending') {
       return false
     }
 
@@ -224,19 +223,19 @@ export const useQueueNotificationBanners = () => {
     event: CustomEvent<PromptQueueingEventPayload>
   ) => {
     const payload = event.detail
-    const count = sanitizeCount(payload?.batchCount)
+    const count = sanitizeCount(payload.batchCount)
     queueNotification(
-      toQueueLifecycleNotification('queuedPending', count, payload?.requestId)
+      toQueueLifecycleNotification('queuedPending', count, payload.requestId)
     )
   }
 
   const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
     const payload = event.detail
-    const count = sanitizeCount(payload?.batchCount)
-    const handled = convertQueuedPendingToQueued(payload?.requestId, count)
+    const count = sanitizeCount(payload.batchCount)
+    const handled = convertQueuedPendingToQueued(payload.requestId, count)
     if (!handled) {
       queueNotification(
-        toQueueLifecycleNotification('queued', count, payload?.requestId)
+        toQueueLifecycleNotification('queued', count, payload.requestId)
       )
     }
   }
@@ -264,8 +263,8 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        if (preview?.isImage) {
-          imagePreviews.push(preview.urlWithTimestamp)
+        if (preview && isImageResult(preview)) {
+          imagePreviews.push(resultItemUrlWithTimestamp(preview))
         }
       } else if (state === 'failed') {
         failedCount++

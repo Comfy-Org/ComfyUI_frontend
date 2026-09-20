@@ -17,8 +17,7 @@ export const useBoundingBoxesWidget = (): ComfyWidgetConstructorV2 => {
       })) ?? []
     return node.addWidget('boundingboxes', spec.name, defaultValue, null, {
       serialize: true,
-      canvasOnly: false,
       hideInPanel: true
-    }) as IBaseWidget
+    })
   }
 }

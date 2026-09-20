@@ -43,8 +43,6 @@
         "
         class="absolute inset-0"
         @download="handleDownload"
-        @video-playing-state-changed="isVideoPlaying = $event"
-        @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
       />
 
@@ -183,7 +181,7 @@ import {
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -245,9 +243,6 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const isVideoPlaying = ref(false)
-const showVideoControls = ref(false)
-
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
@@ -285,7 +280,11 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+        : asset.thumbnail_url ||
+          asset.preview_url ||
+          (fileKind.value === 'video' || fileKind.value === 'audio'
+            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
@@ -301,9 +300,7 @@ const adaptedAsset = computed(() => {
 
 provide(MediaAssetKey, {
   asset: toRef(() => adaptedAsset.value),
-  context: toRef(() => ({ type: assetType.value })),
-  isVideoPlaying,
-  showVideoControls
+  context: toRef(() => ({ type: assetType.value }))
 })
 
 const formattedDuration = computed(() => {
@@ -386,7 +383,8 @@ function dragStart(e: DragEvent) {
   if (!dataTransfer) return
 
   const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
-  const url = URL.parse(resolvePreviewUrl(asset), location.href)
+  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
+  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
   const assetInfo = {
     ...(output?.filename
       ? {
@@ -402,12 +400,12 @@ function dragStart(e: DragEvent) {
         }),
     attachment_ref: getAssetUrlFilename(asset),
     media_kind: fileKind.value,
-    preview_url: fileKind.value === 'image' ? url?.toString() : undefined
+    preview_url: fileKind.value === 'image' ? previewUrl?.toString() : undefined
   }
   dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
 
-  if (!url) return
+  if (!fileUrl) return
 
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  dataTransfer.items.add(fileUrl.toString(), 'text/uri-list')
 }
 </script>

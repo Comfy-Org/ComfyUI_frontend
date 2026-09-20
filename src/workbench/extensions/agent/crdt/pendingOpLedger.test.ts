@@ -283,7 +283,7 @@ describe('clearOnEffect (KA-9)', () => {
     // The effect is authoritative even when doc_ops_result was lost.
     const removed = ledger.clearOnEffect(['op-1'])
     expect(removed).toHaveLength(1)
-    expect(removed[0]!.state).toBe('inflight')
+    expect(removed[0].state).toBe('inflight')
     expect(ledger.size()).toBe(0)
   })
 
@@ -353,8 +353,8 @@ describe('entries', () => {
     expect(ledger.entries('failed').map((e) => e.opId)).toEqual(['op-2'])
 
     const snapshots = ledger.entries()
-    snapshots[0]!.shadow.label = 'mutated'
-    const failure = snapshots[1]!.failure as { message: string }
+    snapshots[0].shadow.label = 'mutated'
+    const failure = snapshots[1].failure as { message: string }
     failure.message = 'mutated'
     expect(ledger.get('op-1')?.shadow).toEqual({ label: 's1' })
     expect(ledger.get('op-2')?.failure).toEqual({ message: 'rejected' })

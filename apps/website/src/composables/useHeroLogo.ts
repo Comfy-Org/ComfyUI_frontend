@@ -27,6 +27,9 @@ interface HeroLogoConfig {
   targetSize: number
   respectReducedMotion: boolean
   baseUrl: string
+  // Frames shown through the extrusion. Overrides the baseUrl sequence; a
+  // single entry holds one still.
+  imageUrls?: readonly string[]
   fadeInDurationMs: number
 }
 
@@ -66,7 +69,10 @@ function parseShapes(markup: string): THREE.Shape[] {
   return shapes
 }
 
-function loadTextures(urls: string[]): Promise<THREE.Texture[]> {
+function loadTextures(
+  urls: readonly string[],
+  maxAnisotropy: number
+): Promise<THREE.Texture[]> {
   return Promise.all(
     urls.map(
       (url) =>
@@ -77,6 +83,7 @@ function loadTextures(urls: string[]): Promise<THREE.Texture[]> {
             const tex = new THREE.Texture(img)
             tex.needsUpdate = true
             tex.colorSpace = THREE.SRGBColorSpace
+            tex.anisotropy = maxAnisotropy
             resolve(tex)
           }
           img.onerror = () => resolve(null)
@@ -122,6 +129,7 @@ export function useHeroLogo(
       container.appendChild(renderer.domElement)
 
       let disposed = false
+      const isDisposed = () => disposed
       const teardowns: Array<() => void> = []
       cleanup = () => {
         disposed = true
@@ -148,7 +156,7 @@ export function useHeroLogo(
       const bb = tempGeo.boundingBox
       if (!bb) {
         tempGeo.dispose()
-        cleanup?.()
+        cleanup()
         return
       }
       const cx = (bb.max.x + bb.min.x) / 2
@@ -157,21 +165,26 @@ export function useHeroLogo(
         cfg.fitAxis === 'width' ? bb.max.x - bb.min.x : bb.max.y - bb.min.y
       if (fitExtent <= 0) {
         tempGeo.dispose()
-        cleanup?.()
+        cleanup()
         return
       }
       const scaleFactor = cfg.targetSize / fitExtent
       tempGeo.dispose()
 
       // Image sequence textures — load first frame eagerly, rest lazily
-      const urls = buildImageUrls(cfg.baseUrl)
-      const textures = await loadTextures(urls.slice(0, 1))
-      if (disposed) return
+      const urls = cfg.imageUrls ?? buildImageUrls(cfg.baseUrl)
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
+      const textures = await loadTextures(urls.slice(0, 1), maxAnisotropy)
+      if (isDisposed()) return
+      if (!textures[0]) {
+        cleanup()
+        return
+      }
 
       renderer.domElement.style.opacity = '1'
       loaded.value = true
 
-      void loadTextures(urls.slice(1)).then((rest) => {
+      void loadTextures(urls.slice(1), maxAnisotropy).then((rest) => {
         if (!disposed) textures.push(...rest)
       })
 
@@ -192,7 +205,12 @@ export function useHeroLogo(
       })
       const bgPlane = new THREE.Mesh(bgPlaneGeo, bgPlaneMat)
       bgPlane.renderOrder = 1
-      bgPlane.scale.set(cfg.bgScale, cfg.bgScale, 1)
+      const firstImage = textures[0]?.image
+      const bgAspect =
+        firstImage instanceof HTMLImageElement && firstImage.height > 0
+          ? firstImage.width / firstImage.height
+          : 1
+      bgPlane.scale.set(cfg.bgScale * bgAspect, cfg.bgScale, 1)
       scene.add(bgPlane)
 
       // Logo group
