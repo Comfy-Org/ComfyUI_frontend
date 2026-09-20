@@ -119,6 +119,7 @@ import {
 } from './crdt/crdtDebugGate'
 import { createLiveWidgetEffectPort } from './crdt/liveWidgetEffects'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
+import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -273,6 +274,10 @@ const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
 >()
+const liveWidgets = createLiveWidgetProjection({
+  getRootGraph: () => app.rootGraphOrUndefined,
+  markDirty: () => app.canvas?.setDirty(true)
+})
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
@@ -327,7 +332,8 @@ const graphMutations = (workflowId: string) => {
     widgets: createLiveWidgetEffectPort({
       getGraph: () => (app.isGraphReady ? app.rootGraph : null),
       getCanvas: () => app.canvas
-    })
+    }),
+    liveWidgets
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations

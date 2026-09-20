@@ -10,9 +10,12 @@ import {
   toOwningGraphId,
   toRootGraphId
 } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
@@ -81,10 +84,24 @@ describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
   let recorder: ReturnType<typeof createRecordingWidgetEffectPort>
+  const setLiveWidgetValue = vi.fn(
+    (
+      _scope: GraphScope,
+      _nodeId: NodeId,
+      _name: string,
+      _value: WidgetValue
+    ):
+      | { status: 'skipped' }
+      | {
+          status: 'applied' | 'rolledBack'
+          resolvedValue: WidgetValue
+        } => ({ status: 'skipped' })
+  )
 
   beforeEach(() => {
     createLayout.mockReset()
     deleteLayouts.mockReset()
+    setLiveWidgetValue.mockReset()
     mockReportError.mockReset()
     recorder = createRecordingWidgetEffectPort()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
@@ -94,7 +111,8 @@ describe('graphMutations', () => {
     return createGraphMutations({
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts },
-      widgets: recorder.port
+      widgets: recorder.port,
+      liveWidgets: { setValue: setLiveWidgetValue }
     })
   }
 
@@ -292,6 +310,99 @@ describe('graphMutations', () => {
     )
   })
 
+  it('projects a remote widget value into the live widget adapter', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockClear()
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(setLiveWidgetValue).toHaveBeenCalledOnce()
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'after.png',
+      context
+    )
+  })
+
+  it('projects add-node widget values before committing them to the store', () => {
+    setLiveWidgetValue.mockImplementation(() => {
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toBeUndefined()
+      return { status: 'applied', resolvedValue: 'added.png' }
+    })
+
+    expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
+      true
+    )
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'added.png',
+      context
+    )
+  })
+
+  it('converges canonical state on the live widget rollback value, not the remote value', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({
+      status: 'rolledBack',
+      resolvedValue: 'before.png'
+    })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'before.png' })
+  })
+
+  it.for([null, undefined])(
+    'preserves a nullish live widget result of %s',
+    (resolvedValue) => {
+      const graph = mutations()
+      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
+        true
+      )
+      setLiveWidgetValue.mockReset()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'applied',
+        resolvedValue
+      })
+
+      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+        true
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toMatchObject({ value: resolvedValue })
+    }
+  )
+
+  it('commits the remote value when live projection is skipped', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({ status: 'skipped' })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'after.png' })
+  })
+
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -479,6 +590,9 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const liveWidgetState = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -496,12 +610,14 @@ describe('graphMutations', () => {
     expect(reconciled.title).toBe('Seeded authority')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
+    ).toBe(liveWidgetState)
+    expect(liveWidgetState?.value).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
         ?.value
     ).toBe('old')
+    expect(graph.setWidget(toNodeId(1), 'seed', 84, context)).toBe(true)
+    expect(liveWidgetState?.value).toBe(84)
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).not.toHaveBeenCalled()
   })
@@ -1178,6 +1294,25 @@ describe('graphMutations', () => {
       expect(recorder.effects).toEqual(
         expected.map((effect) => ({ nodeId: toNodeId(1), ...effect }))
       )
+    })
+
+    it('records no post-commit effect for a write the live projection applied', () => {
+      const graph = mutations()
+      graph.addNode(node(1, { steps: 20 }), context)
+      setLiveWidgetValue.mockClear()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'applied',
+        resolvedValue: 21
+      })
+
+      expect(graph.setWidget(toNodeId(1), 'steps', 21, context)).toBe(true)
+
+      expect(setLiveWidgetValue).toHaveBeenCalledOnce()
+      expect(recorder.effects).toEqual([])
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'steps'))
+          ?.value
+      ).toBe(21)
     })
 
     it('reports one effect per changed positional slot of a live node', () => {

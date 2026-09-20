@@ -41,7 +41,8 @@ function resolveLiveWidget(
   const widget = mapLiveWidgetsById(node).get(
     widgetId(scope.rootGraphId, nodeId, name)
   )
-  return widget && { node, widget }
+  if (!widget || widget.type === 'button' || widget.serialize === false) return
+  return { node, widget }
 }
 
 /**

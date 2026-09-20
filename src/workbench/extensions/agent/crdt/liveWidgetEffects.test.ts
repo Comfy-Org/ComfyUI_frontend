@@ -86,11 +86,25 @@ describe('createLiveWidgetEffectPort', () => {
     {
       target: 'a widget the live node lacks',
       write: (m: Mutations) => m.setWidget(toNodeId(1), 'extra', 'x', context)
+    },
+    {
+      target: 'a button widget',
+      write: (m: Mutations, node: LGraphNode) => {
+        for (const widget of node.widgets ?? []) widget.type = 'button'
+        return m.setWidget(toNodeId(1), 'steps', 21, context)
+      }
+    },
+    {
+      target: 'a widget that does not serialize',
+      write: (m: Mutations, node: LGraphNode) => {
+        for (const widget of node.widgets ?? []) widget.serialize = false
+        return m.setWidget(toNodeId(1), 'steps', 21, context)
+      }
     }
   ])('fires nothing for $target', ({ write }) => {
-    const { callback, mutations } = liveGraph()
+    const { node, callback, mutations } = liveGraph()
 
-    expect(write(mutations)).toBe(true)
+    expect(write(mutations, node)).toBe(true)
 
     expect(callback).not.toHaveBeenCalled()
   })

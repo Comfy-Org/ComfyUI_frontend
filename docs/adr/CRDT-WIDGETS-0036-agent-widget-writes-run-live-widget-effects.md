@@ -117,6 +117,18 @@ effects a human edit produces. The effects are requested through a
 renderer-owned port on `GraphMutationsDeps`, are gated on the store value
 actually changing, and run after the batch has committed.
 
+The immediate-render change (#16936) adds a second, optional port,
+`liveWidgets`, whose projection (`liveWidgetProjection.ts`) replays a scalar
+value through the live widget before the store write, in the same frame,
+running `callback`, `onWidgetChanged`, and the backing property. The two
+compose: `applyWidgetWrite` projects first and reports `effectsRan` when the
+projection applied or rolled back the value, and a write the projection
+handled records no post-commit effect. The post-commit port is the fallback
+for what the projection skips (object and array values, a node or widget it
+cannot resolve), and it mirrors the projection's exclusions for `button` and
+`serialize: false` widgets, so each write runs a widget's effects exactly
+once, on one path or the other.
+
 ### Seam
 
 ```typescript
@@ -292,7 +304,8 @@ A throwing callback is isolated and reported instead of breaking the frame.
 
 **Reentrancy against the follower's own resync.** Effects run synchronously
 at the end of `batch`, inside `applyFrame`'s per-session `applying` guard, and
-before `reconcileLiveGraph`. The follower never writes the shared document,
+before `reconcileLiveGraph`. A live scalar widget's effects run earlier, inside
+the projection under `runMintPortsBuffered`, and are not repeated here. The follower never writes the shared document,
 so no callback can produce a new frame directly. A callback that writes a
 widget (`widget.value = x`, no remote context) is minted as a human
 `set_widget` by the mint port, and that is deliberate: the derived value is
