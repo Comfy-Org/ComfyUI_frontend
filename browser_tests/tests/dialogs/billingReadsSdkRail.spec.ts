@@ -127,7 +127,6 @@ function eventsPage(page: number): BillingEventsResponse {
         // no branch for a bare `api_usage`.
         event_type: 'api_usage_completed',
         createdAt: '2026-09-20T00:00:00Z',
-        amount: 100,
         params: { api_name: `node-on-page-${page}` }
       }
     ],
@@ -135,7 +134,7 @@ function eventsPage(page: number): BillingEventsResponse {
     limit: 10,
     total: 20,
     totalPages: 2
-  } as unknown as BillingEventsResponse
+  }
 }
 
 interface ReadRoutes {
@@ -391,7 +390,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    await mockCloudBoot(page, {
+    const routes = await mockCloudBoot(page, {
       unsafeBalance: true,
       readRailOnFeatures: true
     })
@@ -401,6 +400,18 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     const content = await openPlanAndCredits(page)
 
     await expect(content.getByText('Total credits')).toBeVisible()
+
+    // The absence below only means anything if the SDK reader is what asked:
+    // a balance never requested, or requested on the legacy client, would
+    // render nothing here for reasons that have nothing to do with int64.
+    await expect
+      .poll(() =>
+        routes.reads
+          .filter((request) => request.url().includes('/api/billing/balance'))
+          .map(transport)
+      )
+      .toContain('fetch')
+
     // 9007199254740993 micros rounds to ...992 through a double. Neither that
     // nor its dollar rendering may appear.
     await expect(content.getByText('9,007,199,254')).toBeHidden()
