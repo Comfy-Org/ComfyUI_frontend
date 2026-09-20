@@ -376,7 +376,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     dispatchFrame('doc_subscribed', { ok: true })
     // Below the retry backoff's own delay: anything firing here would be
-    // FE-1901's refused-subscribe retry, not the PM-1355 catch-up probe.
+    // FE-1901's refused-subscribe retry, not the PM-1405 catch-up probe.
     vi.advanceTimersByTime(499)
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -384,7 +384,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('PM-1355: a confirmed subscribe with no catch-up actively resubscribes well before the stale budget', () => {
+  it('PM-1405: a confirmed subscribe with no catch-up actively resubscribes well before the stale budget', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
@@ -400,7 +400,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('PM-1355: a catch-up that lands before the probe cancels it', () => {
+  it('PM-1405: a catch-up that lands before the probe cancels it', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
 
@@ -545,7 +545,7 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
-    // The catch-up: clears the PM-1355 grace probe before it can fire, same
+    // The catch-up: clears the PM-1405 grace probe before it can fire, same
     // as a healthy subscribe would in production.
     dispatchFrame('doc_update', {
       workflowId: 'wf-1',
@@ -1400,7 +1400,7 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
-    // The catch-up: past the PM-1355 grace window, this suite is about the
+    // The catch-up: past the PM-1405 grace window, this suite is about the
     // full-budget cadence on an already-current channel that then goes quiet.
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
@@ -1418,7 +1418,7 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
-    // The catch-up: clears the PM-1355 grace probe so what follows exercises
+    // The catch-up: clears the PM-1405 grace probe so what follows exercises
     // the full-budget sliding window, not the shorter grace one.
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 

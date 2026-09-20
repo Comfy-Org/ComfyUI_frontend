@@ -25,7 +25,7 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
- * Repro for the Jo Zhang / PM-1355-shaped report (nightly, 2026-09-20): asking
+ * Repro for the Jo Zhang / PM-1406-shaped report (nightly, 2026-09-20): asking
  * the in-app agent to run the workflow on the canvas makes the canvas go
  * fully blank the moment the agent starts working, for the whole run, with
  * every node reappearing at once once the run finishes.
@@ -75,7 +75,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * reports done under a PERMANENTLY dropped catch-up), the second pins that
  * the passive stale-probe genuinely recovers once given the chance -- the
  * "all nodes came back" half of the report is real, intended behavior, not
- * part of the bug -- and the third proves the PM-1355 fix itself: a
+ * part of the bug -- and the third proves the PM-1406 fix itself: a
  * TRANSIENT (one-off) dropped catch-up now recovers via the active probe
  * well inside the run's own duration, not just eventually.
  */
@@ -474,7 +474,7 @@ async function driveRunTurnUntilCanvasIsBlank(page: Page): Promise<{
 }
 
 /**
- * PM-1355 flip proof: drives the same run turn through the same mid-turn
+ * PM-1406 flip proof: drives the same run turn through the same mid-turn
  * `doc_reset`, but the anomaly this time is TRANSIENT -- only the very first
  * resubscribe that follows the reset has its catch-up withheld, exactly as a
  * real backend that would satisfy the next retry attempt. Under the old
@@ -530,7 +530,7 @@ test.describe(
       await expect(vueNodes.getNodeLocator('2')).toBeVisible()
     })
 
-    test('PM-1355 fix: a one-off dropped catch-up recovers via the active probe, well before the run completes', async ({
+    test('PM-1406 fix: a one-off dropped catch-up recovers via the active probe, well before the run completes', async ({
       page
     }) => {
       const { vueNodes } = await driveRunTurnThroughTransientCatchUpDrop(page)
