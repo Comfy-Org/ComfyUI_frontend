@@ -24,11 +24,14 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
+import type { LocaleFileState } from './update-locales'
 import {
   assembleLeafTranslations,
   buildTranslationItems,
   formatPruneSummary,
-  formatUsageSummary
+  formatUsageSummary,
+  preservedBaseline,
+  reportCheck
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -501,6 +504,125 @@ describe('formatPruneSummary', () => {
   })
 })
 
+describe('reportCheck', () => {
+  /**
+   * Regression guard for the September 2026 `agent.askComfyAgent` ->
+   * `agent.entryButton` rename, which left all 14 shipped non-English locales
+   * 14 keys behind `en` and carrying one dead key. `pnpm locale:check` runs in
+   * CI, printed the drift, and still exited 0, so every non-English user
+   * silently fell back to English for the whole Agent entry point and graph
+   * activity surface.
+   */
+  const source = { agent: { entryButton: 'Agent' } }
+
+  beforeEach(() => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  })
+
+  function state(
+    overrides: {
+      pendingPaths?: string[][]
+      strayPaths?: string[][]
+      knownPendingKeys?: ReadonlySet<string>
+    } = {}
+  ): LocaleFileState {
+    return {
+      locale,
+      plan: {
+        filename: 'main.json',
+        source,
+        changes: { added: [], deleted: [], modified: [] },
+        invalidated: new Set<string>(),
+        previousLeafCount: 1,
+        // The audit is not under test here; a degraded plan skips it so these
+        // cases assert drift handling alone.
+        degraded: true,
+        knownViolationKeys: new Set<string>(),
+        knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>()
+      },
+      outputFile: 'src/locales/xx/main.json',
+      existing: {},
+      pendingLeaves: (overrides.pendingPaths ?? []).map((path) => ({
+        path,
+        value: getLeaf(source, path) ?? ''
+      })),
+      strayPaths: overrides.strayPaths ?? []
+    }
+  }
+
+  it('passes when every locale matches the English source', () => {
+    expect(reportCheck([state()])).toBe(0)
+  })
+
+  it('fails on a key that is missing a translation and is not baselined', () => {
+    expect(
+      reportCheck([state({ pendingPaths: [['agent', 'entryButton']] })])
+    ).toBe(1)
+  })
+
+  it('fails on a key that no longer exists in English and is not baselined', () => {
+    expect(
+      reportCheck([state({ strayPaths: [['agent', 'askComfyAgent']] })])
+    ).toBe(1)
+  })
+
+  it('exempts pending and stray keys recorded in the manifest baseline', () => {
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [['agent', 'entryButton']],
+          strayPaths: [['agent', 'askComfyAgent']],
+          knownPendingKeys: new Set([
+            pathKey(['agent', 'entryButton']),
+            pathKey(['agent', 'askComfyAgent'])
+          ])
+        })
+      ])
+    ).toBe(0)
+  })
+
+  it('still fails on new drift once a baseline exists', () => {
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [
+            ['agent', 'entryButton'],
+            ['agent', 'nodesAdded']
+          ],
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])])
+        })
+      ])
+    ).toBe(1)
+  })
+})
+
+describe('preservedBaseline', () => {
+  const baseline = {
+    'main.json': [pathKey(['agent', 'entryButton'])],
+    'settings.json': [pathKey(['setting', 'label'])]
+  }
+
+  it('drops the baseline of a completed entry file and keeps the rest', () => {
+    expect(
+      preservedBaseline(
+        ['main.json', 'settings.json'],
+        new Set(['main.json']),
+        baseline
+      )
+    ).toEqual({ 'settings.json': [pathKey(['setting', 'label'])] })
+  })
+
+  it('keeps every baseline when no entry file completed', () => {
+    expect(
+      preservedBaseline(['main.json', 'settings.json'], new Set(), baseline)
+    ).toEqual(baseline)
+  })
+
+  it('records nothing when there is no baseline to carry', () => {
+    expect(preservedBaseline(['main.json'], new Set(), undefined)).toEqual({})
+  })
+})
+
 describe('formatUsageSummary', () => {
   it('sums usage across completions and tolerates missing fields', () => {
     expect(
@@ -573,8 +695,11 @@ describe('createOpenAiTranslator', () => {
       }
       requestBodies.push(init.body)
       calls++
+      // `.at()` is typed as possibly undefined, so the guard below stays live:
+      // a case scripting fewer responses than requests fails with its own
+      // message instead of returning undefined into the translator.
       const response = Array.isArray(respond)
-        ? respond[calls - 1]
+        ? respond.at(calls - 1)
         : respond(init.body, calls)
       if (!response) {
         throw new Error(`no scripted response for request ${calls}`)

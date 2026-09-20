@@ -53,6 +53,11 @@ interface SourceManifest {
   // translations violated token validation when the manifest was recorded.
   // The check exempts them; a successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
+  // Transitional baseline: leaf path keys per entry file that were already
+  // untranslated or already stray when the manifest was recorded. The check
+  // exempts them so pre-existing lag does not fail every unrelated PR; any key
+  // outside this list fails. A successful locale run heals and drops them.
+  knownPending?: Record<string, string[]>
   version: 1
 }
 
@@ -64,9 +69,10 @@ interface SourcePlan {
   previousLeafCount: number
   degraded: boolean
   knownViolationKeys: ReadonlySet<string>
+  knownPendingKeys: ReadonlySet<string>
 }
 
-interface LocaleFileState {
+export interface LocaleFileState {
   locale: OutputLocale
   plan: SourcePlan
   outputFile: string
@@ -196,6 +202,14 @@ function loadManifest(filename: string): SourceManifest {
         !Object.values(manifest.knownViolations).every(
           (keys) =>
             Array.isArray(keys) && keys.every((key) => typeof key === 'string')
+        ))) ||
+    ('knownPending' in manifest &&
+      (!manifest.knownPending ||
+        typeof manifest.knownPending !== 'object' ||
+        Array.isArray(manifest.knownPending) ||
+        !Object.values(manifest.knownPending).every(
+          (keys) =>
+            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
         )))
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
@@ -238,13 +252,34 @@ export function formatPruneSummary(
   return `WARNING: ${filename}: ${deletedCount} of ${previousLeafCount} English keys deleted; matching locale keys will be pruned.`
 }
 
+/**
+ * Carry a transitional manifest baseline forward for entry files whose locale
+ * run did not complete. A completed file has been fully revalidated, so its
+ * baseline is healed and dropped; that drain is what keeps a baseline
+ * transitional instead of a permanent exemption.
+ */
+export function preservedBaseline(
+  filenames: readonly string[],
+  completedFilenames: ReadonlySet<string>,
+  baseline: Readonly<Record<string, string[]>> | undefined
+): Record<string, string[]> {
+  return Object.fromEntries(
+    filenames.flatMap((filename) => {
+      if (completedFilenames.has(filename)) return []
+      const keys = baseline?.[filename]
+      return keys && keys.length > 0 ? [[filename, keys] as const] : []
+    })
+  )
+}
+
 function writeManifest(
   repoRoot: string,
   entryDir: string,
   manifestFile: string,
   advancedFilenames: readonly string[],
   preservedFiles: Readonly<Record<string, string>>,
-  preservedViolations: Readonly<Record<string, string[]>>
+  preservedViolations: Readonly<Record<string, string[]>>,
+  preservedPending: Readonly<Record<string, string[]>>
 ): void {
   const files = Object.fromEntries(
     [
@@ -262,6 +297,9 @@ function writeManifest(
     files,
     ...(Object.keys(preservedViolations).length > 0
       ? { knownViolations: preservedViolations }
+      : {}),
+    ...(Object.keys(preservedPending).length > 0
+      ? { knownPending: preservedPending }
       : {}),
     version: 1
   }
@@ -349,10 +387,14 @@ export function formatUsageSummary(
   return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} completions; ${promptTokens} input, ${completionTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
-function reportCheck(states: readonly LocaleFileState[]): number {
+export function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
   const auditErrors: string[] = []
+  // Drift outside the manifest's recorded baseline. Reporting alone let a
+  // rename ship with every non-English locale silently falling back to
+  // English, so unbaselined keys fail the check.
+  const driftErrors: string[] = []
 
   for (const state of states) {
     const label = `${state.locale.code}/${state.plan.filename}`
@@ -365,12 +407,28 @@ function reportCheck(states: readonly LocaleFileState[]): number {
       print(
         `${label}: ${state.pendingLeaves.length} strings need translation (${examples}${state.pendingLeaves.length > 5 ? ', …' : ''})`
       )
+      const unbaselined = state.pendingLeaves.filter(
+        (leaf) => !state.plan.knownPendingKeys.has(pathKey(leaf.path))
+      )
+      if (unbaselined.length > 0) {
+        driftErrors.push(
+          `${label}: ${unbaselined.length} keys are missing a translation and are not in the manifest baseline: ${unbaselined.map((leaf) => leaf.path.join('.')).join(', ')}`
+        )
+      }
     }
     if (state.strayPaths.length > 0) {
       strayTotal += state.strayPaths.length
       print(
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
+      const unbaselined = state.strayPaths.filter(
+        (path) => !state.plan.knownPendingKeys.has(pathKey(path))
+      )
+      if (unbaselined.length > 0) {
+        driftErrors.push(
+          `${label}: ${unbaselined.length} keys no longer exist in the English source and are not in the manifest baseline: ${unbaselined.map((path) => path.join('.')).join(', ')}`
+        )
+      }
     }
     // Skip keys queued because the English source changed (comparing an old
     // translation against new English is meaningless) and baseline violations
@@ -388,14 +446,20 @@ function reportCheck(states: readonly LocaleFileState[]): number {
   }
 
   for (const error of auditErrors) print(error)
+  for (const error of driftErrors) print(error)
   if (pendingTotal === 0 && strayTotal === 0 && auditErrors.length === 0) {
     print('All locales are up to date with the English sources.')
     return 0
   }
   print(
-    `Pending: ${pendingTotal} translations, ${strayTotal} prunable keys, ${auditErrors.length} protected-token violations.`
+    `Pending: ${pendingTotal} translations, ${strayTotal} prunable keys, ${auditErrors.length} protected-token violations, ${driftErrors.length} unbaselined drift reports.`
   )
-  return auditErrors.length > 0 ? 1 : 0
+  if (driftErrors.length > 0) {
+    print(
+      'Run `pnpm locale` to translate the new keys and prune the stray ones, then commit src/locales and src/locales/.source-manifest.json.'
+    )
+  }
+  return auditErrors.length > 0 || driftErrors.length > 0 ? 1 : 0
 }
 
 async function run(argv: readonly string[]): Promise<void> {
@@ -441,7 +505,8 @@ async function run(argv: readonly string[]): Promise<void> {
       ),
       previousLeafCount: collectLeaves(previous).size,
       degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? []),
+      knownPendingKeys: new Set(manifest.knownPending?.[filename] ?? [])
     }
   })
 
@@ -634,13 +699,10 @@ async function run(argv: readonly string[]): Promise<void> {
     ),
     // A completed file's translations were fully revalidated, so its baseline
     // violations are healed and dropped; failed files keep theirs
-    Object.fromEntries(
-      filenames.flatMap((filename) => {
-        if (completedFilenames.has(filename)) return []
-        const keys = manifest.knownViolations?.[filename]
-        return keys && keys.length > 0 ? [[filename, keys] as const] : []
-      })
-    )
+    preservedBaseline(filenames, completedFilenames, manifest.knownViolations),
+    // Likewise: a completed file has every pending key translated and every
+    // stray key pruned, so its pending baseline is healed and dropped
+    preservedBaseline(filenames, completedFilenames, manifest.knownPending)
   )
 
   if (failuresByFile.size > 0) {

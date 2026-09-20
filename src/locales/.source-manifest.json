@@ -5,5 +5,26 @@
     "nodeDefs.json": "b4cdcfccd4abc109b067f0949a78c009c6a7074b",
     "settings.json": "f8f06ec7a5c6acf3703c3bcdf42e0c9de85f5b89"
   },
+  "knownPending": {
+    "main.json": [
+      "[\"agent\",\"askComfyAgent\"]",
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ]
+  },
   "version": 1
 }
