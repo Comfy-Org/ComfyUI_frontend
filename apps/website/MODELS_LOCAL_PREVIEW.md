@@ -90,8 +90,8 @@ and zero generation requests. This is not a media-download or signed-in run test
 Use the repository's Node 26 runtime (at least 26.8.2). From `apps/website`:
 
 ```sh
-WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 \
-  PUBLIC_WORKSHOP_ROUTER_RUN=1 PUBLIC_WORKSHOP_CLOUD_ENV=prod \
+WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 \
+  PUBLIC_WORKSHOP_CLOUD_ENV=prod \
   pnpm dev --host localhost --port 4321
 ```
 
