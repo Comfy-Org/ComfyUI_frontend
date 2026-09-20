@@ -287,6 +287,18 @@ export const qwenImage21Page: ModelLaunchPage = {
         }
       },
       {
+        id: 'commercial-use',
+        question: {
+          en: 'Can I use Qwen-Image-2.1 commercially?',
+          'zh-CN': '我可以将 Qwen-Image-2.1 用于商业用途吗？'
+        },
+        answer: {
+          en: 'No. Qwen-Image-2.1 is released under the Qwen Research License Agreement, which grants a royalty-free license "FOR NON-COMMERCIAL PURPOSES ONLY" and directs commercial licensing inquiries to the model maker. The license also requires products built with the model to display "Built with Qwen" in their documentation. Check the license yourself before using output in any commercial work.',
+          'zh-CN':
+            '不可以。Qwen-Image-2.1 依据 Qwen Research License Agreement（Qwen 研究许可协议）发布，该协议授予的免版税许可"仅限非商业用途"（FOR NON-COMMERCIAL PURPOSES ONLY），并要求商业授权咨询联系模型开发方。该协议还要求基于该模型构建的产品在其文档中注明"Built with Qwen"。在将输出用于任何商业工作之前，请自行查阅许可协议。'
+        }
+      },
+      {
         id: 'transparency',
         question: {
           en: 'Can Qwen-Image 2.1 generate transparent images?',
