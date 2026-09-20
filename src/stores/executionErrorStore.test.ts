@@ -895,6 +895,16 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
       key: 'global-execution-error',
       visible: true,
       contentProps: {
+        errorSources: [
+          {
+            kind: 'execution',
+            nodeDisplayName: 'KSampler',
+            error: expect.objectContaining({
+              exception_type: 'RuntimeError',
+              exception_message: 'Not enough memory'
+            })
+          }
+        ],
         error: {
           exceptionType: 'RuntimeError',
           exceptionMessage: 'Not enough memory',
