@@ -179,6 +179,7 @@ describe('AssetsSidebarListView', () => {
   describe('dragging an asset out of list view', () => {
     const dragAsset = {
       ...buildAsset('drag-asset', 'clip.mp4'),
+      tags: ['output'],
       display_name: 'Clip',
       preview_url: '/api/view?filename=clip.mp4&type=output&subfolder=',
       user_metadata: {}
