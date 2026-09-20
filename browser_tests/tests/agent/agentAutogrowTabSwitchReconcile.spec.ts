@@ -208,20 +208,6 @@ test.describe(
     }) => {
       test.setTimeout(60_000)
 
-      // `objectInfo: 'server'` (passed to `bootAgentApp` below) stops
-      // `mockCloudBootRoutes` from also registering an (empty) handler for
-      // this route — Playwright runs the most-recently-registered handler
-      // first, so a route added here after that call would never fire.
-      await page.route('**/api/object_info', (route) =>
-        route.fulfill(
-          jsonRoute({
-            [IMAGE_SOURCE_NODE_TYPE]: imageSourceNodeDef,
-            [GPT_IMAGE_NODE_TYPE]: gptImageNodeDef,
-            [CHECKPOINT_NODE_TYPE]: checkpointNodeDef
-          })
-        )
-      )
-
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
       let socketSend: ((frame: unknown) => void) | null = null
       let subscribedTo: string | null = null
@@ -279,7 +265,11 @@ test.describe(
       })
 
       await bootAgentApp(page, true, {
-        objectInfo: 'server',
+        objectInfo: {
+          [IMAGE_SOURCE_NODE_TYPE]: imageSourceNodeDef,
+          [GPT_IMAGE_NODE_TYPE]: gptImageNodeDef,
+          [CHECKPOINT_NODE_TYPE]: checkpointNodeDef
+        },
         // Only the Vue node renderer projects follower edits onto the
         // canvas as DOM nodes this test can query.
         settings: {
