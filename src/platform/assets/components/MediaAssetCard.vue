@@ -183,7 +183,7 @@ import {
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -285,7 +285,11 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+        : asset.thumbnail_url ||
+          asset.preview_url ||
+          (fileKind.value === 'video' || fileKind.value === 'audio'
+            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
