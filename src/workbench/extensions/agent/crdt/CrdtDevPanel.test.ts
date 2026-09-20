@@ -2,6 +2,9 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
+import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -231,6 +234,44 @@ describe('CrdtDevPanel', () => {
     expect(copyReportButton.textContent).toContain('Copy failed')
 
     collectSpy.mockRestore()
+  })
+
+  it('copies retained tool metadata from real conversation events without prompt content', async () => {
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('turn-tool-report')
+    conversation.setThreadId('thread-tool-report')
+    conversation.recordUser(turnId, 'private user prompt')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          thread_id: 'thread-tool-report',
+          message_id: turnId,
+          tool_call_id: 'call-from-event',
+          tool_name: 'inspect_workflow',
+          status: 'success',
+          duration_ms: 73
+        }
+      })
+    )
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_message_done',
+        data: { thread_id: 'thread-tool-report', message_id: turnId }
+      })
+    )
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    const report = await navigator.clipboard.readText()
+    expect(report).toContain('"callId": "call-from-event"')
+    expect(report).toContain('"turnId": "turn-tool-report"')
+    expect(report).toContain('"durationMs": 73')
+    expect(report).toContain('"ok": true')
+    expect(report).not.toContain('private user prompt')
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {

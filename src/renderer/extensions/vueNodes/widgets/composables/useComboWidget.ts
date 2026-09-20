@@ -1,6 +1,7 @@
 import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
@@ -286,6 +287,10 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
+    registerComboWidgetInventory(widget, {
+      getStatus: remoteWidget.getInventoryStatus,
+      waitForSettled: remoteWidget.waitForInventory
+    })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 

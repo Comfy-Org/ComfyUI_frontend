@@ -167,7 +167,8 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'stale_probe',
   'rebind',
   'doc_gap',
-  'doc_stale'
+  'doc_stale',
+  'frame_send_failed'
 ]
 
 const VERDICT_TONE: Record<string, string> = {
@@ -435,6 +436,7 @@ async function copyReport() {
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
+      agentMessages: useAgentConversationStore().messages,
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,

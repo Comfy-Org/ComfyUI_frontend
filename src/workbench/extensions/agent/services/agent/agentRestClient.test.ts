@@ -10,10 +10,14 @@ vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
-function jsonResponse(status: number, body: unknown): Response {
+function jsonResponse(
+  status: number,
+  body: unknown,
+  headers?: Record<string, string>
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json', ...headers }
   })
 }
 
@@ -52,12 +56,19 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  it('percent-encodes a hostile thread id instead of retargeting the path', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1/x', { content: 'hi' })
+
+    expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
+  })
+
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
-    await makeClient().getMessages('t7')
+    await makeClient().getMessages('t7/x')
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/messages')
+    expect(route).toBe('/agent/threads/t7%2Fx/messages')
     expect(init.method).toBe('GET')
   })
 
@@ -97,20 +108,20 @@ describe('agentRestClient route + method', () => {
 
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
-    await makeClient().cancelMessage('t7', 'm3')
+    await makeClient().cancelMessage('t7/x', 'm3/y')
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/messages/m3/cancel')
+    expect(route).toBe('/agent/threads/t7%2Fx/messages/m3%2Fy/cancel')
     expect(init.method).toBe('POST')
     expect(init.body).toBe('{}')
   })
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
   })
@@ -274,6 +285,66 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe('access denied')
     expect((error as AgentApiError).status).toBe(403)
   })
+
+  it('retains the Agent admission body and Retry-After delay', async () => {
+    const body = {
+      error: {
+        message: 'Billing status is temporarily unavailable; please retry.',
+        type: 'SERVICE_UNAVAILABLE',
+        reason: 'funds_unavailable'
+      }
+    }
+    respond(jsonResponse(503, body, { 'Retry-After': '5' }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    const apiError = error as AgentApiError
+    expect(apiError.message).toBe(body.error.message)
+    expect(apiError.body).toEqual(body)
+    expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
+  })
+
+  it.for([
+    { label: 'absent', headers: undefined },
+    {
+      label: 'nonnumeric',
+      headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }
+    },
+    {
+      label: 'unsafe integer',
+      headers: { 'Retry-After': '9007199254740993' }
+    },
+    {
+      label: 'overflowing number',
+      headers: { 'Retry-After': '9'.repeat(400) }
+    }
+  ])(
+    'leaves retryAfterSeconds undefined for an $label Retry-After header',
+    async ({ headers }) => {
+      const body = {
+        error: {
+          message: 'Billing status is temporarily unavailable; please retry.',
+          type: 'SERVICE_UNAVAILABLE',
+          reason: 'funds_unavailable'
+        }
+      }
+      respond(jsonResponse(503, body, headers))
+
+      const error = await makeClient()
+        .postMessage('t1', { content: 'try it' })
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(error).toMatchObject({
+        message: body.error.message,
+        body,
+        retryAfterSeconds: undefined
+      })
+    }
+  )
 
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(
