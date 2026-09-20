@@ -323,8 +323,6 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imagePreview.locator('img')).toBeVisible()
       })
 
-      // A double-click that begins on a control is a control interaction, so
-      // it must run that control once and leave the lightbox closed.
       await node.imagePreview.getByRole('region').hover()
       const downloadPromise = comfyPage.page.waitForEvent('download')
       await node.imagePreview.getByLabel('Download image').dblclick()
