@@ -7,6 +7,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -157,7 +158,7 @@ function useBillingContextInternal(): BillingContext {
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
-        !freeTierQuota.quotaEnabled.value ||
+        !isCloud ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
