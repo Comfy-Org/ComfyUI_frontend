@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -115,6 +123,7 @@ describe('ComfyApi realtime socket reset', () => {
   it('emits bounded close details when the initial handshake fails', async () => {
     const onClosed = vi.fn()
     api.addEventListener('socketClosed', onClosed)
+    onTestFinished(() => api.removeEventListener('socketClosed', onClosed))
     await api.resetSocket()
 
     FakeWebSocket.instances[0].handlers['close']?.({
@@ -129,12 +138,12 @@ describe('ComfyApi realtime socket reset', () => {
       reason: 'handshake failed',
       wasClean: false
     })
-    api.removeEventListener('socketClosed', onClosed)
   })
 
   it('does not accept reconnected lifecycle events from the server', async () => {
     const onReconnected = vi.fn()
     api.addEventListener('reconnected', onReconnected)
+    onTestFinished(() => api.removeEventListener('reconnected', onReconnected))
     await api.resetSocket()
 
     FakeWebSocket.instances[0].handlers['message']?.({
@@ -142,7 +151,6 @@ describe('ComfyApi realtime socket reset', () => {
     })
 
     expect(onReconnected).not.toHaveBeenCalled()
-    api.removeEventListener('reconnected', onReconnected)
   })
 
   it('supersedes an in-flight reset so the socket cannot settle on a stale identity', async () => {
