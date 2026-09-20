@@ -190,16 +190,19 @@ describe('ImagePreview', () => {
     expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
   })
 
-  describe('double-click to open the lightbox', () => {
-    it('opens the lightbox on the double-clicked grid thumbnail', async () => {
+  describe('opening the lightbox from the node preview', () => {
+    // Driven as click-then-dblclick because the first click unmounts the grid,
+    // so a browser retargets the second click onto the gallery panel.
+    it('opens the lightbox on the grid thumbnail that was double-clicked', async () => {
       renderImagePreview()
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
 
-      const thumbnails = screen.getAllByRole('button', {
-        name: /^View image/
-      })
-      await user.dblClick(thumbnails[1])
+      await user.click(
+        screen.getByRole('button', { name: 'View image 2 of 2' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
 
       expect(galleryStore.activeIndex).toBe(1)
       expect(galleryStore.items.map((item) => item.url)).toEqual(
@@ -243,7 +246,7 @@ describe('ImagePreview', () => {
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
 
-      await user.dblClick(screen.getByRole('region'))
+      await user.dblClick(screen.getByTestId('hdr-open-button'))
 
       expect(openHdrViewer).toHaveBeenCalledWith(hdrUrl)
       expect(galleryStore.activeIndex).toBe(-1)
@@ -260,10 +263,11 @@ describe('ImagePreview', () => {
       const user = userEvent.setup()
       const galleryStore = useMediaAssetGalleryStore()
 
-      const thumbnails = screen.getAllByRole('button', {
-        name: /^View image/
-      })
-      await user.dblClick(thumbnails[2])
+      await user.click(
+        screen.getByRole('button', { name: 'View image 3 of 3' })
+      )
+      await nextTick()
+      await user.dblClick(screen.getByRole('region'))
 
       expect(galleryStore.items.map((item) => item.url)).toEqual(
         defaultProps.imageUrls
@@ -279,6 +283,28 @@ describe('ImagePreview', () => {
       await user.dblClick(
         screen.getByRole('button', { name: 'Download image' })
       )
+
+      expect(galleryStore.activeIndex).toBe(-1)
+    })
+
+    it('opens the lightbox with Enter on the focused gallery panel', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      screen.getByRole('region').focus()
+      await user.keyboard('{Enter}')
+
+      expect(galleryStore.activeIndex).toBe(0)
+    })
+
+    it('does not open the lightbox with Enter on an action button', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaAssetGalleryStore()
+
+      screen.getByRole('button', { name: 'Download image' }).focus()
+      await user.keyboard('{Enter}')
 
       expect(galleryStore.activeIndex).toBe(-1)
     })

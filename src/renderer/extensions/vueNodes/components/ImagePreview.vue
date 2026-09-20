@@ -24,7 +24,6 @@
           })
         "
         @click="handleGridClick(index)"
-        @dblclick.stop="openInLightbox(index)"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -423,13 +422,10 @@ function openInLightbox(index: number) {
     openHdrViewer(url)
     return
   }
-  const lightboxUrls = imageUrls.filter(
-    (candidate) => !isHdrImageUrl(candidate)
-  )
-  galleryStore.openItems(
-    lightboxUrls.map(toGalleryItem),
-    lightboxUrls.indexOf(url)
-  )
+  const isRenderable = (candidate: string) => !isHdrImageUrl(candidate)
+  const lightboxUrls = imageUrls.filter(isRenderable)
+  const activeIndex = imageUrls.slice(0, index).filter(isRenderable).length
+  galleryStore.openItems(lightboxUrls.map(toGalleryItem), activeIndex)
 }
 
 function handleGalleryDoubleClick() {
@@ -454,6 +450,16 @@ function handleKeyDown(event: KeyboardEvent) {
   ) {
     event.preventDefault()
     viewMode.value = 'grid'
+    return
+  }
+
+  if (
+    event.key === 'Enter' &&
+    viewMode.value === 'gallery' &&
+    event.target === galleryPanelEl.value
+  ) {
+    event.preventDefault()
+    handleGalleryDoubleClick()
     return
   }
 
