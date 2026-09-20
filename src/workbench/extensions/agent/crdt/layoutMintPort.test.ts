@@ -277,12 +277,12 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('a foreign clearGraph does not consume an active intentional-clear capture (regression)', () => {
-    // A foreign clear (a remote actor, so it never mints its own clear op
-    // either way) reaching the store mid-capture must be rejected before it
-    // can null out or otherwise consume the pending intentional-clear
-    // capture. Otherwise the genuine local clear that follows finds the
-    // capture already gone and mints nothing at all for it.
-    const foreignClear = clearChange('other-user-actor', 'other')
+    // A foreign clear (a local actor, so only its graphId is wrong - the
+    // in-flight workflow-load case) reaching the store mid-capture must be
+    // rejected before it can null out or otherwise consume the pending
+    // intentional-clear capture. Otherwise the genuine local clear that
+    // follows finds the capture already gone and mints nothing at all for it.
+    const foreignClear = clearChange(LOCAL_ACTOR, 'other')
 
     port.runIntentionalClear(() => {
       graphNodes.clear()
