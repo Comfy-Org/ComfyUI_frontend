@@ -280,31 +280,68 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
 }
 
 /**
+ * A state object the sender is willing to materialize: own enumerable string
+ * keys on a plain object. A class instance or `Date` serializes to something
+ * the receiver cannot round-trip into the same shape, so it is refused here
+ * rather than silently flattened.
+ */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+/**
+ * Go's `encoding/json` escapes `<`, `>` and `&` to six-byte `\u003c`-style
+ * sequences, and does the same for U+2028 and U+2029. Their cost differs by
+ * measure: `<` is one UTF-16 unit and one UTF-8 byte, while U+2028 is one
+ * UTF-16 unit but three UTF-8 bytes, so the same escape adds 5 to a length
+ * count and only 3 to a byte count.
+ */
+function goEscapeOverhead(encoded: string): {
+  chars: number
+  bytes: number
+} {
+  const ascii = encoded.match(/[<>&]/g)?.length ?? 0
+  const lineSeparators = encoded.match(/[\u2028\u2029]/g)?.length ?? 0
+  return {
+    chars: ascii * 5 + lineSeparators * 5,
+    bytes: ascii * 5 + lineSeparators * 3
+  }
+}
+
+/**
  * Outbound counterpart of `encodedJsonSize`. Receiving can afford the loose
  * count above because the server is then the stricter of the two; sending
- * inverts that margin, so bill `<`, `>` and `&` at the six bytes Go escapes
- * them to rather than the one byte they occupy here.
+ * inverts that margin, so bill every character Go escapes at the six bytes it
+ * escapes to rather than the one to three bytes it occupies here.
+ *
+ * Every property read happens inside this function's exception boundary. A
+ * throwing getter or a revoked Proxy is a refusal, never an exception escaping
+ * `sendAwareness`, whose contract is to return `false` and report.
  *
  * Returns the parsed round-trip of the very bytes that were measured. A getter,
  * a key-sensitive `toJSON`, or a Proxy can otherwise serialize differently on
- * the second pass, so sending the source object would put an unmeasured — and
- * possibly throwing — value on the wire.
+ * the second pass, so sending the source object would put an unmeasured value
+ * on the wire.
  */
-function encodeAwarenessState(
-  value: Record<string, unknown>
-): Record<string, unknown> | null {
-  let encoded: string
+function encodeAwarenessState(value: unknown): Record<string, unknown> | null {
   try {
-    encoded = JSON.stringify(value)
+    if (!isPlainObject(value)) return null
+    const encoded = JSON.stringify(value)
+    if (typeof encoded !== 'string') return null
+    const overhead = goEscapeOverhead(encoded)
+    if (encoded.length + overhead.chars > MAX_AWARENESS_STATE_BYTES) return null
+    if (
+      utf8.encode(encoded).length + overhead.bytes >
+      MAX_AWARENESS_STATE_BYTES
+    )
+      return null
+    return parseRecord(JSON.parse(encoded))
   } catch {
     return null
   }
-  if (typeof encoded !== 'string') return null
-  const escapeOverhead = (encoded.match(/[<>&]/g)?.length ?? 0) * 5
-  if (encoded.length + escapeOverhead > MAX_AWARENESS_STATE_BYTES) return null
-  if (utf8.encode(encoded).length + escapeOverhead > MAX_AWARENESS_STATE_BYTES)
-    return null
-  return parseRecord(JSON.parse(encoded))
 }
 
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
@@ -485,15 +522,23 @@ export class DocFrameClient extends EventTarget {
   /**
    * @returns whether the ephemeral awareness frame left the transport.
    *
-   * `false` from the transport is transient and reconcilable. `false` from the
-   * validation below is not: the same arguments will always be refused, so a
-   * caller that retries will spin. Those rejections are reported rather than
-   * returned distinctly, mirroring the inbound malformed-frame discard.
+   * `false` from the transport is transient and reconcilable. A `workflow_id`
+   * or `actor` rejection is not: those strings are immutable here, so an
+   * unchanged argument will always be refused and a caller that retries will
+   * spin. A `state` rejection is call-specific rather than permanent - the
+   * same object can be mutated below the cap, uncoupled, or produce different
+   * getter/`toJSON` output on a later call. Those rejections are reported
+   * rather than returned distinctly, mirroring the inbound malformed-frame
+   * discard.
    */
   sendAwareness(
     workflowId: string,
     actor: string,
-    state?: Record<string, unknown> | null
+    // Deliberately `unknown`: this method's contract is to validate whatever
+    // it is handed and refuse rather than throw. Declaring a record here would
+    // force every caller with untyped state - and every test of a rejected
+    // shape - into an assertion that tells the compiler something untrue.
+    state?: unknown
   ): boolean {
     if (!isValidWorkflowId(workflowId))
       return this.rejectAwareness('workflow_id')
@@ -501,9 +546,11 @@ export class DocFrameClient extends EventTarget {
 
     let encodedState: Record<string, unknown> | undefined
     if (!isAbsent(state)) {
-      const record = parseRecord(state)
-      if (record === null) return this.rejectAwareness('state_shape')
-      const measured = encodeAwarenessState(record)
+      // Shape and size are decided inside `encodeAwarenessState`'s single
+      // exception boundary: reading a property can itself throw, so nothing
+      // may touch `state` before it.
+      if (!isPlainObject(state)) return this.rejectAwareness('state_shape')
+      const measured = encodeAwarenessState(state)
       if (measured === null) return this.rejectAwareness('state_size')
       encodedState = measured
     }
