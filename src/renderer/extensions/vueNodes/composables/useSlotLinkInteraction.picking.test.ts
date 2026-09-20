@@ -34,6 +34,12 @@ function createConnectedGraph() {
   return { graph, canvas, source, target }
 }
 
+function targetInputInteraction(scope: EffectScope, target: LGraphNode) {
+  return scope.run(() =>
+    useSlotLinkInteraction({ nodeId: target.id, index: 0, type: 'input' })
+  )!
+}
+
 describe('useSlotLinkInteraction while picking nodes for the agent', () => {
   let scope: EffectScope
 
@@ -77,9 +83,7 @@ describe('useSlotLinkInteraction while picking nodes for the agent', () => {
         LinkConnectorAdapter.prototype,
         'beginFromInput'
       )
-      const { onPointerDown } = scope.run(() =>
-        useSlotLinkInteraction({ nodeId: target.id, index: 0, type: 'input' })
-      )!
+      const { onPointerDown } = targetInputInteraction(scope, target)
 
       onPointerDown(
         new PointerEvent('pointerdown', {
@@ -91,6 +95,73 @@ describe('useSlotLinkInteraction while picking nodes for the agent', () => {
 
       expect(target.inputs[0].link != null).toBe(linkKept)
       expect(beginFromInput).toHaveBeenCalledTimes(dragsStarted)
+    }
+  )
+
+  it.for([
+    { picking: false, clicks: 1, doubleClicks: 1 },
+    { picking: true, clicks: 0, doubleClicks: 0 }
+  ])(
+    'picking=$picking forwards $clicks slot clicks and $doubleClicks slot double clicks to the node',
+    ({ picking, clicks, doubleClicks }) => {
+      useAgentNodeSelectionStore().isActive = picking
+      const { target } = createConnectedGraph()
+      target.onInputClick = vi.fn()
+      target.onInputDblClick = vi.fn()
+      const { onClick, onDoubleClick } = targetInputInteraction(scope, target)
+
+      onClick(new PointerEvent('click', { button: 0, pointerId: 1 }))
+      onDoubleClick(new PointerEvent('dblclick', { button: 0, pointerId: 1 }))
+
+      expect(target.onInputClick).toHaveBeenCalledTimes(clicks)
+      expect(target.onInputDblClick).toHaveBeenCalledTimes(doubleClicks)
+    }
+  )
+
+  it.for([
+    { pickingMidDrag: false, tracksPointer: true, drops: 1 },
+    { pickingMidDrag: true, tracksPointer: false, drops: 0 }
+  ])(
+    'a drag started while editable with picking begun mid-drag=$pickingMidDrag tracks the pointer: $tracksPointer and drops on the canvas $drops times',
+    ({ pickingMidDrag, tracksPointer, drops }) => {
+      useAgentNodeSelectionStore().isActive = false
+      const { canvas, target } = createConnectedGraph()
+      const dropOnCanvas = vi
+        .spyOn(LinkConnectorAdapter.prototype, 'dropOnCanvas')
+        .mockImplementation(() => {})
+      vi.spyOn(document, 'elementFromPoint').mockReturnValue(canvas.canvas)
+      const { onPointerDown } = targetInputInteraction(scope, target)
+
+      onPointerDown(
+        new PointerEvent('pointerdown', {
+          button: 0,
+          pointerId: 1,
+          clientX: 10,
+          clientY: 10
+        })
+      )
+      const mouseBeforeMove = [...canvas.last_mouse]
+      useAgentNodeSelectionStore().isActive = pickingMidDrag
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          clientX: 40,
+          clientY: 50
+        })
+      )
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          button: 0,
+          pointerId: 1,
+          clientX: 40,
+          clientY: 50
+        })
+      )
+
+      expect([...canvas.last_mouse]).toEqual(
+        tracksPointer ? [40, 50] : mouseBeforeMove
+      )
+      expect(dropOnCanvas).toHaveBeenCalledTimes(drops)
     }
   )
 })
