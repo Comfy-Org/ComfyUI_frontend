@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
@@ -45,7 +45,10 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(
+    (_workflowId: string, _tab: string, _ops: readonly { op_id: string }[]) =>
+      true
+  )
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -1279,6 +1282,57 @@ describe('useAgentCrdtFollower', () => {
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
     unmount()
+  })
+
+  it.fails('reports a rejected human add_node result', () => {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const follower = useAgentCrdtFollower(workflowId, graphMutations)
+        enqueue = follower.enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    onTestFinished(unmount)
+    telemetryState.reportError.mockClear()
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 7,
+        class_type: 'Note',
+        pos: [400, 400],
+        node: {
+          id: 7,
+          type: 'Note',
+          inputs: [],
+          outputs: [],
+          widgets_values: { text: 'keep me' }
+        }
+      }
+    ])
+    const sentOps = clientState.sendOps.mock.calls.at(-1)?.[2]
+    const opId = sentOps?.[0]?.op_id
+    expect(opId).toBeTypeOf('string')
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'uncatalogued_widget_write',
+        message: 'add_node(Note) could not be projected'
+      }
+    })
+
+    expect(telemetryState.reportError).toHaveBeenCalled()
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {

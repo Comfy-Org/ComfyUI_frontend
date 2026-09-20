@@ -61,6 +61,61 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
     })
   })
 
+  test.describe('remote apply acceptance', () => {
+    test.describe('manual title', () => {
+      test.use({ conversationCase: 'agent-rec-clarifying-question' })
+
+      test('keeps a manual rename across an unrelated agent widget update', async ({
+        agentConversation
+      }) => {
+        test.setTimeout(90_000)
+        const customTitle = 'My renamed sampler'
+
+        await agentConversation.sendPrompt(0)
+        await agentConversation.replayResponse(0)
+        await agentConversation.waitForTurnComplete()
+        const sampler =
+          await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+        await sampler.setTitle(customTitle)
+        await expect(sampler.title).toHaveText(customTitle)
+
+        await agentConversation.sendPrompt(1)
+        await agentConversation.replayResponse(1)
+        await agentConversation.waitForTurnComplete()
+
+        await expect(sampler.title).toHaveText(customTitle)
+      })
+    })
+
+    test.describe('active widget edit', () => {
+      test.use({ conversationCase: 'agent-rec-replace-prompt-encoder' })
+
+      test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
+        agentConversation
+      }) => {
+        test.setTimeout(60_000)
+        const nodeId = '4181654812796082'
+        const appended = ' at sunset, golden hour, cinematic lighting'
+        await agentConversation.runTurns()
+
+        const field = agentConversation.vueNodes
+          .getNodeLocator(nodeId)
+          .getByLabel('text', { exact: true })
+        await expect(field).toHaveValue('a photo of a pier')
+        await field.click()
+        await field.press('End')
+        await field.pressSequentially(appended.slice(0, 5), { delay: 20 })
+
+        const typing = field.pressSequentially(appended.slice(5), { delay: 20 })
+        agentConversation.resyncWidget(nodeId, 'text')
+        await typing
+
+        test.fail()
+        await expect(field).toHaveValue(`a photo of a pier${appended}`)
+      })
+    })
+  })
+
   for (const conversationCase of listRecordedConversations()) {
     test.describe(`recorded ${conversationCase}`, () => {
       test.use({ conversationCase })

@@ -1,8 +1,10 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
@@ -225,6 +227,74 @@ test.describe(
         await returnToTabA()
         await expectTabA(tabAViewport)
       })
+    })
+  }
+)
+
+test.describe(
+  'Agent tab-return remote apply acceptance',
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
+  () => {
+    test.use({ conversationCase: EDITED_CASE })
+
+    async function switchAwayAndBack(page: Page) {
+      const topbar = new Topbar(page)
+      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      await expect(tabs).toHaveCount(1)
+      await topbar.newWorkflowButton.click()
+      await expect(tabs).toHaveCount(2)
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    }
+
+    test('keeps a canvas rename after switching away and back', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const customTitle = 'My Custom Sampler'
+      await agentConversation.runTurns()
+      const sampler =
+        await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+      await sampler.setTitle(customTitle)
+      await expect(sampler.title).toHaveText(customTitle)
+
+      await switchAwayAndBack(page)
+      await agentConversation.expectCanvasReplayed(
+        agentConversation.conversation.turns.length - 1
+      )
+
+      test.fail()
+      await expect(sampler.title).toHaveText(customTitle)
+    })
+
+    test('keeps a node color after switching away and back', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const nodeId = '3'
+      const nodes = agentConversation.vueNodes
+      const wrapper = nodes.getNodeInnerWrapper(nodeId)
+      await agentConversation.runTurns()
+      await nodes.selectNode(nodeId)
+      await page
+        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .dispatchEvent('click')
+      await page
+        .getByTestId(TestIds.selectionToolbox.colorRed)
+        .dispatchEvent('click')
+      const background = await wrapper.evaluate(
+        (element) => getComputedStyle(element).backgroundColor
+      )
+
+      await switchAwayAndBack(page)
+      await agentConversation.expectCanvasReplayed(
+        agentConversation.conversation.turns.length - 1
+      )
+
+      test.fail()
+      await expect(wrapper).toHaveCSS('background-color', background)
     })
   }
 )

@@ -404,6 +404,27 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(9)
     })
 
+    it.fails('keeps canonical layout geometry when configuring a materialized node', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        graphId: scope.rootGraphId,
+        nodeId: toNodeId(1),
+        position: { x: 400, y: 500 },
+        source: LayoutSource.AgentRemote,
+        timestamp: Date.now()
+      })
+
+      reconcileAgentAdapters(graph)
+
+      expect({
+        live: [...graph.getNodeById(toNodeId(1))!.pos],
+        stored: layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+          ?.position
+      }).toEqual({ live: [400, 500], stored: { x: 400, y: 500 } })
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
@@ -452,6 +473,72 @@ describe('reconcileAgentAdapters', () => {
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes).toHaveLength(1)
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
+    })
+
+    it.fails('adopts canonical node and widget state across materialization and reconcile', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const addedState = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      reconcileAgentAdapters(graph)
+      const live = graph.getNodeById(toNodeId(1))!
+      const materializedState = live._state
+
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) => {
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      })
+      reconcileAgentAdapters(graph)
+
+      expect({
+        adoptedAddedState: materializedState === addedState,
+        keptMaterializedState: live._state === materializedState,
+        liveWidget: live.widgets?.[0].value,
+        storedWidget: useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      }).toEqual({
+        adoptedAddedState: true,
+        keptMaterializedState: true,
+        liveWidget: 9,
+        storedWidget: 9
+      })
+      live.widgets![0].value = 10
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(10)
+    })
+
+    it.fails('keeps a live rename after a workflow reload and unrelated reconcile', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const docPayload = {
+        ...nodePayload(1),
+        title: 'Positive prompt'
+      }
+      remoteMutations(scope).addNode(docPayload, REMOTE)
+      reconcileAgentAdapters(graph)
+
+      graph.getNodeById(toNodeId(1))!.title = 'My Custom Prompt'
+      graph.configure(graph.serialize())
+
+      remoteMutations(scope).batch(
+        { ...REMOTE, opId: 'unrelated-reconcile' },
+        (batch) => batch.reconcileNode(docPayload)
+      )
+
+      expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
     })
 
     it('replaces a node whose record was re-created under the same id', () => {

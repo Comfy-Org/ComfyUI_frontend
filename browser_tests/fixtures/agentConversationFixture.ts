@@ -25,6 +25,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -657,6 +658,21 @@ class AgentConversationHarness {
     })
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+  }
+
+  resyncWidget(nodeId: string, widget: string): void {
+    const widgets = this.host.graph().nodes[nodeId]?.widgets as
+      | Record<string, unknown>
+      | undefined
+    const value = widgets?.[widget]
+    const operation: RecordedGraphOperation = {
+      op: 'set_widget',
+      node_id: nodeId,
+      widget,
+      value,
+      old: value
+    }
+    this.hostSocket.send(this.host.apply([operation]))
   }
 }
 
