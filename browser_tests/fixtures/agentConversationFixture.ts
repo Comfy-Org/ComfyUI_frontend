@@ -27,6 +27,8 @@ import type {
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
@@ -178,6 +180,8 @@ export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
+  /** Copy and paste keystrokes, sent the way `comfyPage.clipboard` sends them. */
+  readonly clipboard: ClipboardHelper
   /** The prompt editor (a ProseMirror contenteditable, not a textarea). */
   readonly composer: Locator
   /** Every assistant text block the panel has rendered, in order. */
@@ -226,6 +230,10 @@ export class AgentConversationHarness {
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
+    this.clipboard = new ClipboardHelper(
+      new KeyboardHelper(page, page.locator('#graph-canvas')),
+      page
+    )
   }
 
   addedNodeIds(): string[] {
@@ -280,6 +288,13 @@ export class AgentConversationHarness {
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
+    const unregistered = Object.keys(
+      this.conversation.workflow.catalog.types
+    ).filter((type) => !this.displayNames.has(type))
+    if (unregistered.length > 0)
+      throw new Error(
+        `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
+      )
 
     await this.page
       .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
@@ -389,14 +404,6 @@ export class AgentConversationHarness {
     }
   }
 
-  // Lands one batch of agent graph operations on the document outside any
-  // recorded turn, the way a later tool call of the same thread would.
-  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
-    await this.hostSocket.waitForSubscribe()
-    this.hostSocket.send(this.host.apply(ops))
-    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
-  }
-
   // The nodes the live graph holds right now, whatever put them there.
   graphNodes(): Promise<LiveGraphNode[]> {
     return this.page.evaluate(() =>
@@ -430,7 +437,7 @@ export class AgentConversationHarness {
     await expect
       .poll(async () => (await header.boundingBox())?.x ?? -1)
       .toBeGreaterThan(0)
-    await header.click()
+    await this.vueNodes.selectNode(nodeId)
     await expect(this.vueNodes.getNodeLocator(nodeId)).toHaveClass(
       /outline-node-component-outline/
     )

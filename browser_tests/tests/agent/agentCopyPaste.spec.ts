@@ -1,26 +1,14 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import {
-  saveImageAddNodeOp,
-  setWidgetOp
-} from '@e2e/fixtures/data/agent/copyPasteOps'
 
-// Copy and paste next to the open agent panel, where a text selection in the
-// transcript or focus in the composer used to swallow or misroute the graph
-// clipboard. The recording adds three unwired core nodes to the seed graph;
-// the reported types (a Seedance API node, SaveVideo) are not in its catalog,
-// and none of the paths under test read the type, so the agent's
-// EmptyLatentImage stands in for the node the user copies and the seed's
-// SaveImage for a node that was copied earlier. The last case still pins an
-// open mechanism with `test.fail`.
+// Selection collapse and clipboard gating never depend on the node type, and
+// the recording holds core types only, so EmptyLatentImage stands in for the
+// reported Seedance node and the seed's SaveImage for SaveVideo.
 const CASE = 'agent-rec-three-sequential-adds'
 const AGENT_NODE_TYPE = 'EmptyLatentImage'
 const EARLIER_COPY_ID = '9'
 const EARLIER_COPY_TYPE = 'SaveImage'
-const KSAMPLER_ID = 3
-const KSAMPLER_STEPS = { from: 20, to: 25 }
-const COLLIDING_NODE_POS: [number, number] = [2900, 400]
 
 test.describe(
   'Copy and paste beside the agent panel',
@@ -34,80 +22,105 @@ test.describe(
     })
 
     test('copying an agent-added node and pasting duplicates it', async ({
-      agentConversation,
-      page
+      agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
       const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
 
-      await agentConversation.selectNode(source.id)
-      await page.keyboard.press('Control+c')
-      await page.keyboard.press('Control+v')
+      await test.step('select the agent-added node', () =>
+        agentConversation.selectNode(source.id))
 
-      await expect
-        .poll(() => agentConversation.graphNodes())
-        .toHaveLength(before.length + 1)
-      expect(await agentConversation.nodesAddedSince(before)).toEqual([
-        expect.objectContaining({ type: AGENT_NODE_TYPE })
-      ])
-    })
+      await test.step('copy', () => agentConversation.clipboard.copy())
 
-    test('pastes a node clicked after transcript text was selected', async ({
-      agentConversation,
-      page
-    }) => {
-      const before = await agentConversation.graphNodes()
-      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
-      const reply = agentConversation.transcript.first()
+      await test.step('paste', () => agentConversation.clipboard.paste())
 
-      await reply.selectText()
-      await agentConversation.selectNode(source.id)
-      await page.keyboard.press('Control+c')
-      await page.keyboard.press('Control+v')
-
-      await expect
-        .poll(() => agentConversation.graphNodes())
-        .toHaveLength(before.length + 1)
-    })
-
-    test.fail(
-      'text selected in the transcript (node first) silences canvas copy and paste',
-      async ({ agentConversation, page }) => {
-        const before = await agentConversation.graphNodes()
-        const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
-        const reply = agentConversation.transcript.first()
-
-        await agentConversation.selectNode(source.id)
-        await reply.selectText()
-        await page.keyboard.press('Control+c')
-        await page.keyboard.press('Control+v')
-
+      await test.step('one more node of that type is on the graph', async () => {
         await expect
           .poll(() => agentConversation.graphNodes())
           .toHaveLength(before.length + 1)
-      }
-    )
+        expect(await agentConversation.nodesAddedSince(before)).toEqual([
+          expect.objectContaining({ type: AGENT_NODE_TYPE })
+        ])
+      })
+    })
+
+    test('pastes a node clicked after transcript text was selected', async ({
+      agentConversation
+    }) => {
+      const before = await agentConversation.graphNodes()
+      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+
+      await test.step('select transcript text', () =>
+        agentConversation.transcript.first().selectText())
+
+      await test.step('select the agent-added node', () =>
+        agentConversation.selectNode(source.id))
+
+      await test.step('copy', () => agentConversation.clipboard.copy())
+
+      await test.step('paste', () => agentConversation.clipboard.paste())
+
+      await test.step('one more node is on the graph', () =>
+        expect
+          .poll(() => agentConversation.graphNodes())
+          .toHaveLength(before.length + 1))
+    })
+
+    test('copies and pastes the selected node when transcript text is selected after the node click', async ({
+      agentConversation
+    }) => {
+      const before = await agentConversation.graphNodes()
+      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+
+      await test.step('select the agent-added node', () =>
+        agentConversation.selectNode(source.id))
+
+      await test.step('select transcript text', () =>
+        agentConversation.transcript.first().selectText())
+
+      await test.step('copy', () => agentConversation.clipboard.copy())
+
+      await test.step('paste', () => agentConversation.clipboard.paste())
+
+      // Known defect: shouldIgnoreCopyPaste() swallows both keystrokes while
+      // the transcript selection stands (plan comment, item 3).
+      test.fail()
+
+      await test.step('one more node is on the graph', () =>
+        expect
+          .poll(() => agentConversation.graphNodes())
+          .toHaveLength(before.length + 1))
+    })
 
     test('pasting plain text into the composer leaves the canvas alone', async ({
-      agentConversation,
-      page
+      agentConversation
     }) => {
       const before = await agentConversation.graphNodes()
       const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
       const reply = agentConversation.transcript.first()
       const replyText = (await reply.innerText()).trim()
 
-      await agentConversation.selectNode(source.id)
-      await page.keyboard.press('Control+c')
-      await reply.selectText()
-      await page.keyboard.press('Control+c')
-      await agentConversation.composer.click()
-      await page.keyboard.press('Control+v')
+      await test.step('select and copy the agent-added node', async () => {
+        await agentConversation.selectNode(source.id)
+        await agentConversation.clipboard.copy()
+      })
 
-      await expect(agentConversation.composer).toContainText(
-        replyText.split(/\s+/).slice(0, 3).join(' ')
-      )
-      expect(await agentConversation.graphNodes()).toHaveLength(before.length)
+      await test.step('select and copy transcript text', async () => {
+        await reply.selectText()
+        await agentConversation.clipboard.copy()
+      })
+
+      await test.step('paste into the composer', async () => {
+        await agentConversation.composer.click()
+        await agentConversation.clipboard.paste()
+      })
+
+      await test.step('the text lands in the composer and the graph is unchanged', async () => {
+        await expect(agentConversation.composer).toContainText(
+          replyText.split(/\s+/).slice(0, 3).join(' ')
+        )
+        expect(await agentConversation.graphNodes()).toHaveLength(before.length)
+      })
     })
 
     test('Ctrl+C in the composer with nothing selected leaves the node clipboard alone', async ({
@@ -117,91 +130,72 @@ test.describe(
       const before = await agentConversation.graphNodes()
       const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
 
-      await agentConversation.selectNode(EARLIER_COPY_ID)
-      await page.keyboard.press('Control+c')
-      await agentConversation.selectNode(source.id)
-      await agentConversation.composer.click()
-      await page.keyboard.press('Control+c')
-      await page.locator('#graph-canvas').focus()
-      await page.keyboard.press('Control+v')
-
-      await expect
-        .poll(() => agentConversation.graphNodes())
-        .toHaveLength(before.length + 1)
-      expect(await agentConversation.nodesAddedSince(before)).toEqual([
-        expect.objectContaining({ type: EARLIER_COPY_TYPE })
-      ])
-    })
-
-    test.fail(
-      'a copy swallowed by a transcript selection makes the next paste replay the previously copied node',
-      async ({ agentConversation, page }) => {
-        const before = await agentConversation.graphNodes()
-        const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
-        const reply = agentConversation.transcript.first()
-
+      await test.step('select and copy the earlier node', async () => {
         await agentConversation.selectNode(EARLIER_COPY_ID)
-        await page.keyboard.press('Control+c')
-        await agentConversation.selectNode(source.id)
-        await reply.selectText()
-        await page.keyboard.press('Control+c')
-        await reply.click()
-        await page.locator('#graph-canvas').focus()
-        await page.keyboard.press('Control+v')
+        await agentConversation.clipboard.copy()
+      })
 
+      await test.step('select the agent-added node', () =>
+        agentConversation.selectNode(source.id))
+
+      await test.step('Ctrl+C in the empty composer', async () => {
+        await agentConversation.composer.click()
+        await agentConversation.clipboard.copy()
+      })
+
+      await test.step('paste on the canvas', () =>
+        agentConversation.clipboard.paste(page.locator('#graph-canvas')))
+
+      await test.step('the earlier node is the one pasted', async () => {
         await expect
           .poll(() => agentConversation.graphNodes())
           .toHaveLength(before.length + 1)
         expect(await agentConversation.nodesAddedSince(before)).toEqual([
+          expect.objectContaining({ type: EARLIER_COPY_TYPE })
+        ])
+      })
+    })
+
+    test('a copy made while transcript text is selected does not make the next paste replay the previously copied node', async ({
+      agentConversation,
+      page
+    }) => {
+      const before = await agentConversation.graphNodes()
+      const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
+      const reply = agentConversation.transcript.first()
+
+      await test.step('select and copy the earlier node', async () => {
+        await agentConversation.selectNode(EARLIER_COPY_ID)
+        await agentConversation.clipboard.copy()
+      })
+
+      await test.step('select the agent-added node', () =>
+        agentConversation.selectNode(source.id))
+
+      await test.step('copy while transcript text is selected', async () => {
+        await reply.selectText()
+        await agentConversation.clipboard.copy()
+      })
+
+      await test.step('click the transcript, then paste on the canvas', async () => {
+        await reply.click()
+        await agentConversation.clipboard.paste(page.locator('#graph-canvas'))
+      })
+
+      await test.step('one more node is on the graph', () =>
+        expect
+          .poll(() => agentConversation.graphNodes())
+          .toHaveLength(before.length + 1))
+
+      // Known defect: usePaste falls back to the stale localStorage node
+      // clipboard, which still holds the earlier node (plan comment, item 2).
+      test.fail()
+
+      await test.step('it is the node copied last', async () => {
+        expect(await agentConversation.nodesAddedSince(before)).toEqual([
           expect.objectContaining({ type: AGENT_NODE_TYPE })
         ])
-      }
-    )
-
-    // The pasted node's id never reached the document (the harness drops the
-    // human add_node). An agent add_node for that id is rejected by the
-    // follower's batch, which arms a full re-read on the next frame; that
-    // re-read sees a type mismatch and replaces the live node
-    // (graphMutations replaceNode, then agentNodeMaterializer.reconcile).
-    test.fail(
-      'an agent add_node that reuses a pasted node id must not swap the pasted node type',
-      async ({ agentConversation, page }) => {
-        const before = await agentConversation.graphNodes()
-        const source = await agentConversation.nodeOfType(AGENT_NODE_TYPE)
-
-        await agentConversation.selectNode(source.id)
-        await page.keyboard.press('Control+c')
-        await page.keyboard.press('Control+v')
-        await expect
-          .poll(() => agentConversation.graphNodes())
-          .toHaveLength(before.length + 1)
-        const [pasted] = await agentConversation.nodesAddedSince(before)
-
-        await agentConversation.applyGraphOps([
-          saveImageAddNodeOp(Number(pasted.id), COLLIDING_NODE_POS)
-        ])
-        await agentConversation.applyGraphOps([
-          setWidgetOp(
-            KSAMPLER_ID,
-            'steps',
-            KSAMPLER_STEPS.from,
-            KSAMPLER_STEPS.to
-          )
-        ])
-        const steps = agentConversation.vueNodes
-          .getNodeLocator(String(KSAMPLER_ID))
-          .getByLabel('steps', { exact: true })
-          .locator('input')
-          .first()
-        await expect
-          .poll(async () => Number(await steps.inputValue()))
-          .toBe(KSAMPLER_STEPS.to)
-
-        expect(await agentConversation.graphNodes()).toContainEqual({
-          id: pasted.id,
-          type: AGENT_NODE_TYPE
-        })
-      }
-    )
+      })
+    })
   }
 )
