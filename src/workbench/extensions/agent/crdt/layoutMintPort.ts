@@ -74,6 +74,16 @@ export interface LayoutMintPort {
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
   const reportedInteriorChanges = new Set<string>()
+  // Ids this port has itself minted an add_node for, and not since minted a
+  // delete_node for. Deliberately NOT seeded from `deps.source.nodeIds()`:
+  // that snapshot already includes a node the moment its own createNode
+  // change fires (the live graph mutates before the change event reaches
+  // this port), so checking it at mint time would reject every genuine
+  // create. This set instead answers "did *this port* already relay an add
+  // for this id, with no relayed delete in between" — the shape of a redo
+  // that recreates an already-doc-known node under its original id (the
+  // node id_collision replay storm in agentCrdtProjection debug reports).
+  const mintedNodeIds = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -144,7 +154,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
-        const node = deps.source.serializeNode(String(operation.nodeId))
+        const nodeIdKey = String(operation.nodeId)
+        if (mintedNodeIds.has(nodeIdKey)) return
+        const node = deps.source.serializeNode(nodeIdKey)
         if (!node) {
           // A dropped human mint is a local-graph-vs-doc divergence; it must
           // be observable, never silent (the surfacing-honesty principle).
@@ -163,12 +175,14 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
             node
           }
         ])
+        mintedNodeIds.add(nodeIdKey)
         return
       }
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         if (operation.nodeId === undefined) return
+        mintedNodeIds.delete(String(operation.nodeId))
         deps.enqueue([
           {
             op: 'delete_node',
@@ -182,6 +196,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
         if (!gate(change, inTeardown || captured === null)) return
+        mintedNodeIds.clear()
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }

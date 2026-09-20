@@ -100,30 +100,46 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it.fails('KNOWN BUG: a redo that recreates an already-present node re-mints add_node instead of skipping it (PM-Jo-duplicate-rebuild-resend)', () => {
-    // Simulate litegraph's own undo/redo stack: a delete followed by a redo
-    // of that delete's inverse (an add) recreates node '1' under its
-    // ORIGINAL id. `graphNodes` still lists '1' the whole time, standing in
-    // for a doc that never actually lost the node server-side (e.g. the
-    // matching delete_node mint never landed) — the exact shape observed in
-    // Jo Zhang's CRDT debug report: a burst of `node_id_collision` failures
-    // for a contiguous slice of the doc's OWN existing node ids, resent
-    // one-by-one, at the tail of an otherwise idle session.
-    //
-    // `createNode`'s handler in layoutMintPort.ts never consults
-    // `source.nodeIds()` (the port's own "every node id currently on the
-    // graph" snapshot) before minting — it mints unconditionally whenever
-    // the change passes the actor/product gate. A redo re-delivers exactly
-    // the same `createNode` shape a genuine new node would, so the port
-    // cannot tell "this id is brand new" from "this id is already on the
-    // graph, we are just replaying its creation" and mints a second,
-    // redundant `add_node` for a node the doc already has.
+  it('skips a redo that recreates an already-minted node instead of re-minting add_node', () => {
+    // Simulate litegraph's own undo/redo stack: a redo re-delivers the same
+    // createNode shape a genuine new node would, for a node this port
+    // already relayed. Without a delete_node in between, the second
+    // createNode is a replay, not a new node, and must not mint again.
     deliver(createNodeChange('1'))
     minted.length = 0
 
     deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
+  })
+
+  it('mints add_node again for the same id after a delete_node clears it', () => {
+    deliver(createNodeChange('1'))
+    deliver(deleteChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('mints add_node again for the same id after an intentional clear', () => {
+    deliver(createNodeChange('1'))
+    port.runIntentionalClear(() => {
+      graphNodes.clear()
+      deliver(clearChange())
+    })
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      widgets_values: [7]
+    })
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
   })
 
   it('surfaces interior create and delete without minting root operations', () => {
