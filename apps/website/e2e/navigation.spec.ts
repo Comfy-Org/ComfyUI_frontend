@@ -11,13 +11,15 @@ function settleAnimations(root: Locator) {
 
 async function badgePlacement(row: Locator, label: string) {
   const labelBox = await row.getByText(label, { exact: true }).boundingBox()
-  const badgeBox = await row.getByText('NEW', { exact: true }).boundingBox()
+  const badgeBox = await row.locator('[data-slot="badge"]').boundingBox()
   if (!labelBox || !badgeBox)
     throw new Error(`"${label}" row is missing its label or NEW badge`)
   return {
     gap: badgeBox.x - (labelBox.x + labelBox.width),
     centerOffset:
-      badgeBox.y + badgeBox.height / 2 - (labelBox.y + labelBox.height / 2)
+      badgeBox.y + badgeBox.height / 2 - (labelBox.y + labelBox.height / 2),
+    width: badgeBox.width,
+    height: badgeBox.height
   }
 }
 
@@ -229,10 +231,13 @@ test.describe('Mobile menu @mobile', () => {
     await settleAnimations(menu)
     const drillDown = await badgePlacement(agent, 'Comfy Agent')
 
+    expect(topLevel.gap).toBeGreaterThan(0)
     expect(Math.abs(topLevel.gap - drillDown.gap)).toBeLessThanOrEqual(1)
     expect(
       Math.abs(topLevel.centerOffset - drillDown.centerOffset)
     ).toBeLessThanOrEqual(1)
+    expect(Math.abs(topLevel.width - drillDown.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(topLevel.height - drillDown.height)).toBeLessThanOrEqual(1)
   })
 })
 
