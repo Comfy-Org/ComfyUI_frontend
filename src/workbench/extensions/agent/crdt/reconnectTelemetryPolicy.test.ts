@@ -58,17 +58,4 @@ describe('reconnectTelemetryPolicy', () => {
     expect(reconnect(60_032)).toBeNull()
     expect(reconnect(60_033)).toBe('reconnect_storm')
   })
-
-  it('reset clears close and storm latches', () => {
-    const latched = {
-      reconnects: [1, 2, 3],
-      stormReported: true,
-      lastAbnormalCloseReportAt: 3
-    }
-
-    expect(transitionReconnectTelemetry(latched, { type: 'reset' })).toEqual({
-      state: initialReconnectTelemetryState(),
-      report: null
-    })
-  })
 })

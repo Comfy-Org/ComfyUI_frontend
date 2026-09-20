@@ -8,7 +8,6 @@ export interface ReconnectTelemetryState {
 }
 
 export type ReconnectTelemetryEvent =
-  | { type: 'reset' }
   | { type: 'closed'; code: number; now: number }
   | { type: 'reconnecting'; now: number }
 
@@ -28,9 +27,6 @@ export function transitionReconnectTelemetry(
   state: ReconnectTelemetryState,
   event: ReconnectTelemetryEvent
 ): ReconnectTelemetryTransition {
-  if (event.type === 'reset')
-    return { state: initialReconnectTelemetryState(), report: null }
-
   if (event.type === 'closed') {
     if (
       event.code !== 1006 ||
