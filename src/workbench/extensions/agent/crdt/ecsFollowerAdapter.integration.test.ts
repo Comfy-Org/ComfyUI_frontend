@@ -77,6 +77,7 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const adapter = new EcsFollowerAdapter(
       createGraphMutations({
+        placement: inertPlacementPort,
         getScope: () => scope,
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
@@ -391,6 +392,7 @@ describe('EcsFollowerAdapter integration', () => {
   it('does not let an already-invalid retained link block reconciliation of unrelated valid state', () => {
     let scopeAvailable = true
     const mutations = createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => (scopeAvailable ? scope : null),
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
