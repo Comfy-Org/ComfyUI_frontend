@@ -117,4 +117,70 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       expect(savedModes).toEqual(['auto'])
     })
   })
+
+  // A rejected write keeps the menu open to retry from, but the options go
+  // aria-disabled mid-write: that retry survives only if focus does.
+  test('A failed save can be retried from the keyboard', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const savedModes: string[] = []
+    let rejectNext = true
+    await page.route('**/api/agent/run-mode', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'PUT')
+        return route.fulfill(
+          jsonRoute({
+            mode: 'ask_approval',
+            credit_limit: null
+          } satisfies AgentRunModePreference)
+        )
+      const saved = zAgentRunMode.parse(request.postDataJSON())
+      savedModes.push(saved.mode)
+      if (rejectNext) {
+        rejectNext = false
+        return route.fulfill({ status: 500, body: 'nope' })
+      }
+      return route.fulfill(jsonRoute(saved))
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const autoOption = page.getByRole('menuitemradio', {
+      name: new RegExp(enMessages.agent.runModeAuto)
+    })
+
+    await panel
+      .getByRole('button', {
+        name: enMessages.agent.runModeTriggerAsk,
+        exact: true
+      })
+      .click()
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowDown')
+    await expect(autoOption).toBeFocused()
+
+    await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
+      await page.keyboard.press('Enter')
+      await expect(
+        page.getByText(enMessages.agent.runModeSaveFailed)
+      ).toBeVisible()
+      await expect(autoOption).toBeFocused()
+      await expect(autoOption).not.toBeChecked()
+      expect(savedModes).toEqual(['auto'])
+    })
+
+    await test.step('Enter retries it without re-navigating', async () => {
+      await page.keyboard.press('Enter')
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.runModeTriggerAuto,
+          exact: true
+        })
+      ).toBeVisible()
+      expect(savedModes).toEqual(['auto', 'auto'])
+    })
+  })
 })
