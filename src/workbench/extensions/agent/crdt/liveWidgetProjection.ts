@@ -209,7 +209,9 @@ export function applyLiveWidgetValue(
       try {
         setWidgetValue(widgetStore, node, widget, value, context)
         widget.callback?.(value, canvas, node)
-        node.onWidgetChanged?.(name, value, previousValue, widget)
+        if (!Object.is(value, previousValue)) {
+          node.onWidgetChanged?.(name, value, previousValue, widget)
+        }
         setBackingProperty(node, widget, widget.value)
       } catch (error) {
         const rollbackError = restoreWidgets(
