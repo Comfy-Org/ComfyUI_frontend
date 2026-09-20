@@ -13,15 +13,29 @@
  * ```
  * pending --release--> released --add-succeeded--> committed --configure-*--> settled
  *                        │
- *                        └--add-failed--> restoring --cleanup-*--> restored
+ *                        └--add-failed--> removing --cleanup-*--> restoring --restore-succeeded--> restored
+ *                                                                    │
+ *                                                                    └--restore-failed--> stranded
  * ```
  *
  * Commit point is `add` success. A `configure()` failure after that is an
  * effect to report, not a reason to restore: the successor is attached and
  * consistent with the stores, and removing it would also drop the layout
- * entry it adopted. Restoring the authoritative records after an `add`
- * failure is unconditional; taking the half-added successor out is
- * best-effort and its failure is reported separately.
+ * entry it adopted. After an `add` failure, taking the half-added successor
+ * out is best-effort and its failure is reported separately; restoring the
+ * authoritative records is unconditional, and no state is terminal until the
+ * driver has reported the outcome of that restore.
+ *
+ * Driver contract: run every returned effect in array order, then feed the
+ * result of the last asynchronous or fallible effect back as the matching
+ * event. A terminal state is only observable once its guarantee holds:
+ * `settled` means the successor is attached, `restored` means the records are
+ * back, `stranded` means the restore itself failed and the graph and stores
+ * disagree.
+ *
+ * An event with no meaning in the current phase returns the state unchanged
+ * with no effects, so duplicate or stale delivery is harmless
+ * (`docs/guidance/state-and-effects.md`, section 2).
  *
  * No graph, store or reporting import: this file is pure. Wiring the driver
  * is PM-1293 PR-2.
@@ -34,12 +48,16 @@ export type ReplacementState =
   | { phase: 'released' }
   /** `add` succeeded: the successor owns the id and layout entry. */
   | { phase: 'committed' }
-  /** Terminal success. `configureFailure` is set when configure threw. */
-  | { phase: 'settled'; configureFailure?: unknown }
+  /** Terminal success: the successor is attached, configured or not. */
+  | { phase: 'settled' }
   /** `add` failed; removing the half-added successor is in flight. */
-  | { phase: 'restoring'; cause: unknown }
-  /** Terminal failure: records restored. `cleanupFailure` set when removal threw. */
-  | { phase: 'restored'; cause: unknown; cleanupFailure?: unknown }
+  | { phase: 'removing'; cause: unknown }
+  /** Successor removal finished (either way); restoring records is in flight. */
+  | { phase: 'restoring' }
+  /** Terminal failure: the authoritative records are back. */
+  | { phase: 'restored' }
+  /** Terminal failure: the records could not be restored. */
+  | { phase: 'stranded' }
 
 export type ReplacementEvent =
   | { type: 'release' }
@@ -49,10 +67,13 @@ export type ReplacementEvent =
   | { type: 'configure-failed'; cause: unknown }
   | { type: 'cleanup-succeeded' }
   | { type: 'cleanup-failed'; cause: unknown }
+  | { type: 'restore-succeeded' }
+  | { type: 'restore-failed'; cause: unknown }
 
 type ReplacementErrorType =
   | 'agent_node_materialize_add_failed'
   | 'agent_node_materialize_rollback_failed'
+  | 'agent_node_materialize_restore_failed'
   | 'agent_node_materialize_configure_failed'
 
 /** Commands for the driver, to run in array order. */
@@ -69,21 +90,23 @@ export interface ReplacementTransition {
   effects: ReplacementEffect[]
 }
 
-export class IllegalReplacementTransition extends Error {
-  constructor(state: ReplacementState, event: ReplacementEvent) {
-    super(
-      `Node replacement in phase '${state.phase}' cannot handle event '${event.type}'`
-    )
-    this.name = 'IllegalReplacementTransition'
-  }
-}
-
 export function initialReplacementState(): ReplacementState {
   return { phase: 'pending' }
 }
 
 export function isTerminal(state: ReplacementState): boolean {
-  return state.phase === 'settled' || state.phase === 'restored'
+  return (
+    state.phase === 'settled' ||
+    state.phase === 'restored' ||
+    state.phase === 'stranded'
+  )
+}
+
+function report(
+  errorType: ReplacementErrorType,
+  cause: unknown
+): ReplacementEffect {
+  return { kind: 'report', errorType, cause }
 }
 
 export function transition(
@@ -108,7 +131,7 @@ export function transition(
       }
       if (event.type === 'add-failed') {
         return {
-          state: { phase: 'restoring', cause: event.cause },
+          state: { phase: 'removing', cause: event.cause },
           effects: [{ kind: 'remove-successor' }]
         }
       }
@@ -119,57 +142,51 @@ export function transition(
       }
       if (event.type === 'configure-failed') {
         return {
-          state: { phase: 'settled', configureFailure: event.cause },
+          state: { phase: 'settled' },
           effects: [
-            {
-              kind: 'report',
-              errorType: 'agent_node_materialize_configure_failed',
-              cause: event.cause
-            }
+            report('agent_node_materialize_configure_failed', event.cause)
           ]
         }
       }
       break
-    case 'restoring':
+    case 'removing':
       if (event.type === 'cleanup-succeeded') {
         return {
-          state: { phase: 'restored', cause: state.cause },
+          state: { phase: 'restoring' },
           effects: [
             { kind: 'restore-records' },
-            {
-              kind: 'report',
-              errorType: 'agent_node_materialize_add_failed',
-              cause: state.cause
-            }
+            report('agent_node_materialize_add_failed', state.cause)
           ]
         }
       }
       if (event.type === 'cleanup-failed') {
         return {
-          state: {
-            phase: 'restored',
-            cause: state.cause,
-            cleanupFailure: event.cause
-          },
+          state: { phase: 'restoring' },
           effects: [
             { kind: 'restore-records' },
-            {
-              kind: 'report',
-              errorType: 'agent_node_materialize_add_failed',
-              cause: state.cause
-            },
-            {
-              kind: 'report',
-              errorType: 'agent_node_materialize_rollback_failed',
-              cause: event.cause
-            }
+            report('agent_node_materialize_add_failed', state.cause),
+            report('agent_node_materialize_rollback_failed', event.cause)
+          ]
+        }
+      }
+      break
+    case 'restoring':
+      if (event.type === 'restore-succeeded') {
+        return { state: { phase: 'restored' }, effects: [] }
+      }
+      if (event.type === 'restore-failed') {
+        return {
+          state: { phase: 'stranded' },
+          effects: [
+            report('agent_node_materialize_restore_failed', event.cause)
           ]
         }
       }
       break
     case 'settled':
     case 'restored':
+    case 'stranded':
       break
   }
-  throw new IllegalReplacementTransition(state, event)
+  return { state, effects: [] }
 }

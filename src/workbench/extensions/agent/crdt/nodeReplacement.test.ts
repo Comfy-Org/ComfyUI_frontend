@@ -6,76 +6,71 @@ import type {
   ReplacementState
 } from './nodeReplacement'
 import {
-  IllegalReplacementTransition,
   initialReplacementState,
   isTerminal,
   transition
 } from './nodeReplacement'
 
-const addCause = new Error('onAdded threw')
-const configureCause = new Error('configure threw')
-const cleanupCause = new Error('onRemoved threw')
+const addCause = new Error('add failed')
+const configureCause = new Error('configure failed')
+const cleanupCause = new Error('cleanup failed')
+const restoreCause = new Error('restore failed')
 
-const states: Record<ReplacementState['phase'], ReplacementState> = {
+const states = {
   pending: { phase: 'pending' },
   released: { phase: 'released' },
   committed: { phase: 'committed' },
   settled: { phase: 'settled' },
-  restoring: { phase: 'restoring', cause: addCause },
-  restored: { phase: 'restored', cause: addCause }
-}
+  removing: { phase: 'removing', cause: addCause },
+  restoring: { phase: 'restoring' },
+  restored: { phase: 'restored' },
+  stranded: { phase: 'stranded' }
+} as const satisfies Record<ReplacementState['phase'], ReplacementState>
 
-const events: Record<ReplacementEvent['type'], ReplacementEvent> = {
+const events = {
   release: { type: 'release' },
   'add-succeeded': { type: 'add-succeeded' },
   'add-failed': { type: 'add-failed', cause: addCause },
   'configure-succeeded': { type: 'configure-succeeded' },
   'configure-failed': { type: 'configure-failed', cause: configureCause },
   'cleanup-succeeded': { type: 'cleanup-succeeded' },
-  'cleanup-failed': { type: 'cleanup-failed', cause: cleanupCause }
-}
+  'cleanup-failed': { type: 'cleanup-failed', cause: cleanupCause },
+  'restore-succeeded': { type: 'restore-succeeded' },
+  'restore-failed': { type: 'restore-failed', cause: restoreCause }
+} as const satisfies Record<ReplacementEvent['type'], ReplacementEvent>
 
-/**
- * Every legal (state, event) pair. Any pair absent from this table must throw;
- * the exhaustiveness test below enumerates the full cross product so a new
- * state or event cannot be added without deciding its row here.
- */
-const legal: {
+const phases = Object.values(states).map(({ phase }) => phase)
+const eventTypes = Object.values(events).map(({ type }) => type)
+
+const legal: ReadonlyArray<{
   from: ReplacementState['phase']
   on: ReplacementEvent['type']
-  to: ReplacementState
+  to: ReplacementState['phase']
   effects: ReplacementEffect[]
-}[] = [
+}> = [
   {
     from: 'pending',
     on: 'release',
-    to: { phase: 'released' },
+    to: 'released',
     effects: [{ kind: 'release-records' }, { kind: 'add-successor' }]
   },
   {
     from: 'released',
     on: 'add-succeeded',
-    to: { phase: 'committed' },
+    to: 'committed',
     effects: [{ kind: 'configure-successor' }]
   },
   {
     from: 'released',
     on: 'add-failed',
-    to: { phase: 'restoring', cause: addCause },
+    to: 'removing',
     effects: [{ kind: 'remove-successor' }]
   },
+  { from: 'committed', on: 'configure-succeeded', to: 'settled', effects: [] },
   {
-    from: 'committed',
-    on: 'configure-succeeded',
-    to: { phase: 'settled' },
-    effects: []
-  },
-  {
-    // Commit point is `add` success: a configure failure is an effect to
-    // report, not a reason to restore (the node stays attached).
     from: 'committed',
     on: 'configure-failed',
-    to: { phase: 'settled', configureFailure: configureCause },
+    to: 'settled',
     effects: [
       {
         kind: 'report',
@@ -85,11 +80,9 @@ const legal: {
     ]
   },
   {
-    // Restoring the authoritative records is unconditional; cleanup of the
-    // half-added successor is best-effort and reported separately.
-    from: 'restoring',
+    from: 'removing',
     on: 'cleanup-succeeded',
-    to: { phase: 'restored', cause: addCause },
+    to: 'restoring',
     effects: [
       { kind: 'restore-records' },
       {
@@ -100,9 +93,9 @@ const legal: {
     ]
   },
   {
-    from: 'restoring',
+    from: 'removing',
     on: 'cleanup-failed',
-    to: { phase: 'restored', cause: addCause, cleanupFailure: cleanupCause },
+    to: 'restoring',
     effects: [
       { kind: 'restore-records' },
       {
@@ -116,139 +109,244 @@ const legal: {
         cause: cleanupCause
       }
     ]
+  },
+  { from: 'restoring', on: 'restore-succeeded', to: 'restored', effects: [] },
+  {
+    from: 'restoring',
+    on: 'restore-failed',
+    to: 'stranded',
+    effects: [
+      {
+        kind: 'report',
+        errorType: 'agent_node_materialize_restore_failed',
+        cause: restoreCause
+      }
+    ]
   }
 ]
 
+function isLegal(
+  from: ReplacementState['phase'],
+  on: ReplacementEvent['type']
+): boolean {
+  return legal.some((row) => row.from === from && row.on === on)
+}
+
+function reportCauses(effects: ReplacementEffect[]): unknown[] {
+  return effects.flatMap((effect) =>
+    effect.kind === 'report' ? [effect.cause] : []
+  )
+}
+
 describe('nodeReplacement transition table', () => {
-  it('starts pending and not terminal', () => {
-    const start = initialReplacementState()
-    expect(start).toEqual({ phase: 'pending' })
-    expect(isTerminal(start)).toBe(false)
+  it('starts pending', () => {
+    expect(initialReplacementState()).toEqual({ phase: 'pending' })
   })
 
-  it.for(legal)('$from --$on--> $to.phase', ({ from, on, to, effects }) => {
-    expect(transition(states[from], events[on])).toEqual({
-      state: to,
-      effects
-    })
+  it.for(legal)('$from + $on -> $to', ({ from, on, to, effects }) => {
+    const result = transition(states[from], events[on])
+    expect(result.state.phase).toBe(to)
+    expect(result.effects).toEqual(effects)
   })
 
-  it('rejects every pair not in the table, and only those', () => {
-    const legalKeys = new Set(legal.map(({ from, on }) => `${from}/${on}`))
-    const phases = Object.keys(states) as ReplacementState['phase'][]
-    const types = Object.keys(events) as ReplacementEvent['type'][]
-    expect(phases.length * types.length).toBe(42)
-
-    const rejected: string[] = []
+  it('covers every (state, event) pair exactly once', () => {
+    let pairs = 0
     for (const phase of phases) {
-      for (const type of types) {
-        const key = `${phase}/${type}`
-        if (legalKeys.has(key)) continue
-        expect(() => transition(states[phase], events[type])).toThrow(
-          IllegalReplacementTransition
-        )
-        rejected.push(key)
+      for (const type of eventTypes) {
+        pairs += 1
+        const state = states[phase]
+        const result = transition(state, events[type])
+        if (isLegal(phase, type)) {
+          expect(result.state).not.toBe(state)
+        } else {
+          expect(result.state).toBe(state)
+          expect(result.effects).toEqual([])
+        }
       }
     }
-    expect(rejected.length).toBe(42 - legal.length)
+    expect(pairs).toBe(8 * 9)
+    expect(legal).toHaveLength(9)
   })
 
-  it('treats exactly settled and restored as terminal', () => {
-    const terminal = Object.values(states).filter(isTerminal)
-    expect(terminal.map((state) => state.phase).sort()).toEqual([
-      'restored',
-      'settled'
-    ])
+  it('only settled, restored and stranded are terminal', () => {
+    const terminal = phases.filter((phase) => isTerminal(states[phase]))
+    expect(terminal.sort()).toEqual(['restored', 'settled', 'stranded'])
   })
 
-  it('names the cause in the illegal-transition error', () => {
-    expect(() => transition({ phase: 'settled' }, { type: 'release' })).toThrow(
-      /settled.*release/
-    )
+  it('terminal states ignore every event', () => {
+    for (const phase of ['settled', 'restored', 'stranded'] as const) {
+      for (const type of eventTypes) {
+        const state = states[phase]
+        expect(transition(state, events[type])).toEqual({
+          state,
+          effects: []
+        })
+      }
+    }
   })
 })
 
-/** Fold a scripted event sequence, collecting effects in order. */
-function run(script: ReplacementEvent[]) {
-  let state = initialReplacementState()
-  const effects: ReplacementEffect[] = []
-  for (const event of script) {
-    const next = transition(state, event)
-    state = next.state
-    effects.push(...next.effects)
-  }
-  return { state, effects: effects.map(describeEffect) }
-}
-
-function describeEffect(effect: ReplacementEffect): string {
-  return effect.kind === 'report' ? `report:${effect.errorType}` : effect.kind
-}
-
-describe('nodeReplacement scripted paths', () => {
-  it('happy path: release, add, configure', () => {
-    expect(
-      run([
-        events.release,
-        events['add-succeeded'],
-        events['configure-succeeded']
-      ])
-    ).toEqual({
-      state: { phase: 'settled' },
-      effects: ['release-records', 'add-successor', 'configure-successor']
-    })
+describe('nodeReplacement failure causes', () => {
+  it('carries the add cause into removing by identity', () => {
+    const result = transition(states.released, events['add-failed'])
+    expect(result.state.phase).toBe('removing')
+    if (result.state.phase !== 'removing') throw new Error('unreachable')
+    expect(result.state.cause).toBe(addCause)
   })
 
-  it('configure failure after commit keeps the successor and reports once', () => {
-    const result = run([
+  it('reports the original add cause after cleanup, not the cleanup cause', () => {
+    const removing = transition(states.released, events['add-failed']).state
+    const succeeded = transition(removing, events['cleanup-succeeded'])
+    expect(reportCauses(succeeded.effects)).toEqual([addCause])
+    expect(reportCauses(succeeded.effects)[0]).toBe(addCause)
+
+    const failed = transition(removing, events['cleanup-failed'])
+    const causes = reportCauses(failed.effects)
+    expect(causes).toHaveLength(2)
+    expect(causes[0]).toBe(addCause)
+    expect(causes[1]).toBe(cleanupCause)
+  })
+
+  it('reports the configure cause by identity and still settles', () => {
+    const result = transition(states.committed, events['configure-failed'])
+    expect(result.state.phase).toBe('settled')
+    expect(reportCauses(result.effects)[0]).toBe(configureCause)
+  })
+
+  it('reports the restore cause by identity and strands', () => {
+    const result = transition(states.restoring, events['restore-failed'])
+    expect(result.state.phase).toBe('stranded')
+    expect(reportCauses(result.effects)[0]).toBe(restoreCause)
+  })
+})
+
+describe('nodeReplacement scripted paths', () => {
+  function run(script: ReplacementEvent[]) {
+    let state = initialReplacementState()
+    const effects: ReplacementEffect[] = []
+    for (const event of script) {
+      const result = transition(state, event)
+      state = result.state
+      effects.push(...result.effects)
+    }
+    return { state, effects }
+  }
+
+  it('happy path: release, add, configure', () => {
+    const { state, effects } = run([
+      events.release,
+      events['add-succeeded'],
+      events['configure-succeeded']
+    ])
+    expect(state).toEqual({ phase: 'settled' })
+    expect(effects.map((effect) => effect.kind)).toEqual([
+      'release-records',
+      'add-successor',
+      'configure-successor'
+    ])
+  })
+
+  it('configure failure commits anyway and reports once', () => {
+    const { state, effects } = run([
       events.release,
       events['add-succeeded'],
       events['configure-failed']
     ])
-    expect(result.state).toEqual({
-      phase: 'settled',
-      configureFailure: configureCause
-    })
-    expect(result.effects).toEqual([
-      'release-records',
-      'add-successor',
-      'configure-successor',
-      'report:agent_node_materialize_configure_failed'
+    expect(state).toEqual({ phase: 'settled' })
+    expect(effects.filter((effect) => effect.kind === 'report')).toEqual([
+      {
+        kind: 'report',
+        errorType: 'agent_node_materialize_configure_failed',
+        cause: configureCause
+      }
     ])
-    expect(result.effects).not.toContain('restore-records')
+    expect(effects.some((effect) => effect.kind === 'restore-records')).toBe(
+      false
+    )
   })
 
-  it('add failure removes the successor before restoring records', () => {
-    const result = run([
+  it('add failure removes, restores, then reports the add failure', () => {
+    const { state, effects } = run([
+      events.release,
+      events['add-failed'],
+      events['cleanup-succeeded'],
+      events['restore-succeeded']
+    ])
+    expect(state).toEqual({ phase: 'restored' })
+    expect(effects.map((effect) => effect.kind)).toEqual([
+      'release-records',
+      'add-successor',
+      'remove-successor',
+      'restore-records',
+      'report'
+    ])
+  })
+
+  it('cleanup failure still restores and reports both causes', () => {
+    const { state, effects } = run([
+      events.release,
+      events['add-failed'],
+      events['cleanup-failed'],
+      events['restore-succeeded']
+    ])
+    expect(state).toEqual({ phase: 'restored' })
+    expect(effects.filter((effect) => effect.kind === 'report')).toEqual([
+      {
+        kind: 'report',
+        errorType: 'agent_node_materialize_add_failed',
+        cause: addCause
+      },
+      {
+        kind: 'report',
+        errorType: 'agent_node_materialize_rollback_failed',
+        cause: cleanupCause
+      }
+    ])
+  })
+
+  it('restore failure strands the replacement and reports it', () => {
+    const { state, effects } = run([
+      events.release,
+      events['add-failed'],
+      events['cleanup-succeeded'],
+      events['restore-failed']
+    ])
+    expect(state).toEqual({ phase: 'stranded' })
+    expect(
+      effects.filter((effect) => effect.kind === 'report').map((e) => e.kind)
+    ).toHaveLength(2)
+    expect(effects.at(-1)).toEqual({
+      kind: 'report',
+      errorType: 'agent_node_materialize_restore_failed',
+      cause: restoreCause
+    })
+  })
+
+  it('is not restored until the driver reports the restore result', () => {
+    const { state } = run([
       events.release,
       events['add-failed'],
       events['cleanup-succeeded']
     ])
-    expect(result.state).toEqual({ phase: 'restored', cause: addCause })
-    expect(result.effects).toEqual([
-      'release-records',
-      'add-successor',
-      'remove-successor',
-      'restore-records',
-      'report:agent_node_materialize_add_failed'
-    ])
+    expect(state).toEqual({ phase: 'restoring' })
+    expect(isTerminal(state)).toBe(false)
   })
 
-  it('cleanup failure still restores records and reports both failures', () => {
-    const result = run([
+  it('duplicate and stale events are ignored without effects', () => {
+    const { state, effects } = run([
       events.release,
+      events.release,
+      events['add-succeeded'],
+      events['add-succeeded'],
+      events['configure-succeeded'],
       events['add-failed'],
-      events['cleanup-failed']
+      events['restore-failed']
     ])
-    expect(result.state).toEqual({
-      phase: 'restored',
-      cause: addCause,
-      cleanupFailure: cleanupCause
-    })
-    expect(result.effects.slice(2)).toEqual([
-      'remove-successor',
-      'restore-records',
-      'report:agent_node_materialize_add_failed',
-      'report:agent_node_materialize_rollback_failed'
+    expect(state).toEqual({ phase: 'settled' })
+    expect(effects.map((effect) => effect.kind)).toEqual([
+      'release-records',
+      'add-successor',
+      'configure-successor'
     ])
   })
 })
