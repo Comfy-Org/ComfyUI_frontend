@@ -176,6 +176,24 @@ export function assembleLeafTranslations(
   return assembled
 }
 
+/**
+ * A manifest baseline field is optional, but when present must be a plain
+ * object mapping an entry filename to an array of leaf path keys.
+ */
+function isValidBaselineField(manifest: object, field: string): boolean {
+  if (!(field in manifest)) return true
+  const value = (manifest as Record<string, unknown>)[field]
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+      (keys) =>
+        Array.isArray(keys) && keys.every((key) => typeof key === 'string')
+    )
+  )
+}
+
 function loadManifest(filename: string): SourceManifest {
   if (!existsSync(filename)) {
     throw new Error(
@@ -195,22 +213,8 @@ function loadManifest(filename: string): SourceManifest {
     !Object.values(manifest.files).every(
       (hash) => typeof hash === 'string' && /^[0-9a-f]{40,64}$/.test(hash)
     ) ||
-    ('knownViolations' in manifest &&
-      (!manifest.knownViolations ||
-        typeof manifest.knownViolations !== 'object' ||
-        Array.isArray(manifest.knownViolations) ||
-        !Object.values(manifest.knownViolations).every(
-          (keys) =>
-            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
-        ))) ||
-    ('knownPending' in manifest &&
-      (!manifest.knownPending ||
-        typeof manifest.knownPending !== 'object' ||
-        Array.isArray(manifest.knownPending) ||
-        !Object.values(manifest.knownPending).every(
-          (keys) =>
-            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
-        )))
+    !isValidBaselineField(manifest, 'knownViolations') ||
+    !isValidBaselineField(manifest, 'knownPending')
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
   }
@@ -387,6 +391,23 @@ export function formatUsageSummary(
   return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} completions; ${promptTokens} input, ${completionTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
+/**
+ * Leaf paths that drifted from the English source without being recorded in
+ * the manifest baseline, as at most one reviewer-facing line naming them.
+ */
+function unbaselinedDrift(
+  label: string,
+  paths: readonly string[][],
+  baseline: ReadonlySet<string>,
+  what: string
+): string[] {
+  const unbaselined = paths.filter((path) => !baseline.has(pathKey(path)))
+  if (unbaselined.length === 0) return []
+  return [
+    `${label}: ${unbaselined.length} keys ${what} and are not in the manifest baseline: ${unbaselined.map((path) => path.join('.')).join(', ')}`
+  ]
+}
+
 export function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
@@ -407,29 +428,27 @@ export function reportCheck(states: readonly LocaleFileState[]): number {
       print(
         `${label}: ${state.pendingLeaves.length} strings need translation (${examples}${state.pendingLeaves.length > 5 ? ', …' : ''})`
       )
-      const unbaselined = state.pendingLeaves.filter(
-        (leaf) => !state.plan.knownPendingKeys.has(pathKey(leaf.path))
-      )
-      if (unbaselined.length > 0) {
-        driftErrors.push(
-          `${label}: ${unbaselined.length} keys are missing a translation and are not in the manifest baseline: ${unbaselined.map((leaf) => leaf.path.join('.')).join(', ')}`
-        )
-      }
     }
     if (state.strayPaths.length > 0) {
       strayTotal += state.strayPaths.length
       print(
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
-      const unbaselined = state.strayPaths.filter(
-        (path) => !state.plan.knownPendingKeys.has(pathKey(path))
-      )
-      if (unbaselined.length > 0) {
-        driftErrors.push(
-          `${label}: ${unbaselined.length} keys no longer exist in the English source and are not in the manifest baseline: ${unbaselined.map((path) => path.join('.')).join(', ')}`
-        )
-      }
     }
+    driftErrors.push(
+      ...unbaselinedDrift(
+        label,
+        state.pendingLeaves.map((leaf) => leaf.path),
+        state.plan.knownPendingKeys,
+        'are missing a translation'
+      ),
+      ...unbaselinedDrift(
+        label,
+        state.strayPaths,
+        state.plan.knownPendingKeys,
+        'no longer exist in the English source'
+      )
+    )
     // Skip keys queued because the English source changed (comparing an old
     // translation against new English is meaningless) and baseline violations
     // recorded in the manifest; a key newly corrupted beyond those must fail
