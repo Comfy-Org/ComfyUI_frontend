@@ -4,8 +4,13 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
-test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
-  test.use({ agentConsentAccepted: false })
+test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
+  test.use({
+    agentConsentAccepted: false,
+    initialLocalStorage: {
+      'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+    }
+  })
 
   test('dismisses without activation and persists acceptance before opening', async ({
     comfyPage,
@@ -334,5 +339,54 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await expect(
       dialog.getByRole('button', { name: enMessages.g.play, exact: true })
     ).toHaveCount(0)
+  })
+})
+
+test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
+  test.use({ agentConsentAccepted: false })
+
+  test('offers once on first load and remains available manually after Skip', async ({
+    comfyPage,
+    agentPanel,
+    agentConsentWrites
+  }) => {
+    const page = comfyPage.page
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+
+    await test.step('First load shows consent without clicking the entry button', async () => {
+      await expect(dialog).toBeVisible()
+      await expect(agentPanel.root).toHaveCount(0)
+      expect(agentConsentWrites).toHaveLength(0)
+    })
+
+    await test.step('Skip dismisses the offer without accepting or opening Agent', async () => {
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.reject })
+        .click()
+      await expect(dialog).toHaveCount(0)
+      await expect(agentPanel.root).toHaveCount(0)
+      expect(agentConsentWrites).toHaveLength(0)
+    })
+
+    await test.step('Reload does not repeat the automatic offer', async () => {
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(agentPanel.openButton).toBeEnabled()
+      await expect(dialog).toHaveCount(0)
+      await expect(agentPanel.root).toHaveCount(0)
+      expect(agentConsentWrites).toHaveLength(0)
+    })
+
+    await test.step('The entry button can still request consent and activate Agent', async () => {
+      await agentPanel.openButton.click()
+      await expect(dialog).toBeVisible()
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+      await expect(dialog).toHaveCount(0)
+      await expect(agentPanel.root).toBeVisible()
+      expect(agentConsentWrites).toEqual([true])
+    })
   })
 })
