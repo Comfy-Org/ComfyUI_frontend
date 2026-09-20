@@ -7882,7 +7882,10 @@ Enterprise`
     'zh-CN':
       '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
   },
-  'qwenImage21.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'qwenImage21.hero.tagOpenWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开源权重'
+  },
   'qwenImage21.hero.tagTextToImage': {
     en: 'Text to Image',
     'zh-CN': '文生图'

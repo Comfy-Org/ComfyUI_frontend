@@ -11,7 +11,8 @@ const qwenImage21Links = {
   cloudEdit:
     'https://cloud.comfy.org/?template=image_qwen_image_2_1_image_edit&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
   docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image',
-  hubModel: new URL('model/qwen/', externalLinks.workflows).href
+  hubModel: new URL('model/qwen/', externalLinks.workflows).href,
+  license: 'https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE'
 } as const
 
 const mediaBase = 'https://media.comfy.org/website/qwen-image-2.1'
@@ -67,7 +68,7 @@ export const qwenImage21AnnouncementPage: ModelLaunchPage = {
       target: '_blank'
     },
     badgeKeys: [
-      'qwenImage21.hero.tagOpenSource',
+      'qwenImage21.hero.tagOpenWeights',
       'qwenImage21.hero.tagTextToImage',
       'qwenImage21.hero.tagImageEditing'
     ]
@@ -91,7 +92,7 @@ export const qwenImage21Page: ModelLaunchPage = {
     titleKey: 'qwenImage21.hero.title',
     descriptionKey: 'qwenImage21.hero.description',
     badgeKeys: [
-      'qwenImage21.hero.tagOpenSource',
+      'qwenImage21.hero.tagOpenWeights',
       'qwenImage21.hero.tagTextToImage',
       'qwenImage21.hero.tagImageEditing'
     ],
@@ -289,13 +290,12 @@ export const qwenImage21Page: ModelLaunchPage = {
       {
         id: 'commercial-use',
         question: {
-          en: 'Can I use Qwen-Image-2.1 commercially?',
-          'zh-CN': '我可以将 Qwen-Image-2.1 用于商业用途吗？'
+          en: 'Can I use Qwen-Image 2.1 commercially?',
+          'zh-CN': '我可以将 Qwen-Image 2.1 用于商业用途吗？'
         },
         answer: {
-          en: 'No. Qwen-Image-2.1 is released under the Qwen Research License Agreement, which grants a royalty-free license "FOR NON-COMMERCIAL PURPOSES ONLY" and directs commercial licensing inquiries to the model maker. The license also requires products built with the model to display "Built with Qwen" in their documentation. Check the license yourself before using output in any commercial work.',
-          'zh-CN':
-            '不可以。Qwen-Image-2.1 依据 Qwen Research License Agreement（Qwen 研究许可协议）发布，该协议授予的免版税许可"仅限非商业用途"（FOR NON-COMMERCIAL PURPOSES ONLY），并要求商业授权咨询联系模型开发方。该协议还要求基于该模型构建的产品在其文档中注明"Built with Qwen"。在将输出用于任何商业工作之前，请自行查阅许可协议。'
+          en: `No. Qwen-Image 2.1 is released under the [Qwen Research License Agreement](${qwenImage21Links.license}), which grants a royalty-free license "FOR NON-COMMERCIAL PURPOSES ONLY" and directs commercial licensing inquiries to the model maker. The license also requires products built with the model to display "Built with Qwen" in their documentation. Check the license yourself before using output in any commercial work.`,
+          'zh-CN': `不可以。Qwen-Image 2.1 依据 [Qwen Research License Agreement](${qwenImage21Links.license})（Qwen 研究许可协议）发布，该协议授予的免版税许可"仅限非商业用途"（FOR NON-COMMERCIAL PURPOSES ONLY），并要求商业授权咨询联系模型开发方。该协议还要求基于该模型构建的产品在其文档中注明"Built with Qwen"。在将输出用于任何商业工作之前，请自行查阅许可协议。`
         }
       },
       {
