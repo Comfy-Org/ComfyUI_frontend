@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -633,6 +633,10 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
     const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.color = '#432'
+    existing.bgcolor = '#653'
+    existing.inputs[0].localized_name = 'old display name'
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -651,6 +655,9 @@ describe('graphMutations', () => {
     )
     expect(replacement).not.toBe(existing)
     expect(replacement?.type).toBe('Replacement')
+    expect(replacement?.color).toBeUndefined()
+    expect(replacement?.bgcolor).toBeUndefined()
+    expect(replacement?.inputs[0].localized_name).toBeUndefined()
     expect(
       useWidgetValueStore().getWidget(
         widgetId(scope.rootGraphId, toNodeId(1), 'replacement')

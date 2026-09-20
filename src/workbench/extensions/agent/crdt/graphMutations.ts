@@ -313,6 +313,7 @@ function prepareNode(
   scope: GraphScope,
   existing?: NodeState
 ): PreparedNode {
+  const incumbent = existing?.type === payload.type ? existing : undefined
   const id = toNodeId(payload.id)
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
@@ -323,12 +324,12 @@ function prepareNode(
     type: payload.type,
     title: nodeTitle(payload.title, payload.type),
     flags: cloneRecord(payload.flags),
-    inputs: prepareInputSlots(payload.inputs, existing?.inputs),
+    inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
-    ...resolveNodeColors(payload, existing),
+    ...resolveNodeColors(payload, incumbent),
     ...resolveNodeDisplayFlags(payload)
   }
   return {

@@ -11,6 +11,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -372,6 +373,23 @@ test.describe(
         await expect(vueNodes.getInputSlotRow(gptNodeId, 0)).toContainText(
           IMAGE_1_FRIENDLY_LABEL
         )
+        await page
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
+          .click()
+        await expect(panel).toBeHidden()
+        await page.getByTestId(TestIds.canvas.zoomControlsButton).click()
+        await page.getByTestId(TestIds.canvas.zoomToFitAction).click()
+        await page.keyboard.press('Escape')
+        await expect(vueNodes.getNodeLocator(gptNodeId)).toBeInViewport({
+          ratio: 1
+        })
+        await test.info().attach('reconciled-node', {
+          body: await page.screenshot(),
+          contentType: 'image/png'
+        })
       })
     })
   }
