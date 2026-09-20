@@ -239,7 +239,7 @@ test.describe(
       })
 
       await bootAgentApp(page, true, {
-        objectInfo: 'server',
+        objectInfo: {},
         // Only the Vue node renderer projects follower edits onto the
         // canvas as DOM nodes this test can query.
         settings: {
@@ -307,7 +307,7 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.entryButton })
+          .getByRole('button', { name: enMessages.agent.askComfyAgent })
           .click()
         await expect(panel).toBeVisible()
         await panel
@@ -375,7 +375,7 @@ test.describe(
         )
         await page
           .getByRole('button', {
-            name: enMessages.agent.entryButton,
+            name: enMessages.agent.askComfyAgent,
             exact: true
           })
           .click()
