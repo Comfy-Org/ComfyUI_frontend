@@ -68,16 +68,16 @@ agent store owns the fact; everything else is a projection of it.
 2. **One pure derivation.** `resolvePickingPolicy({ readOnly, picking })` in
    `src/renderer/core/canvas/interaction/pickingPolicy.ts` returns a
    `PickingPolicy` with `canSelectNodes: !readOnly`,
-   `canEditNodes: !readOnly && !picking`,
-   `canOpenMenus: !readOnly && !picking`, `canFocusWidgets: !picking` and
-   `suppressesCanvasInfo: picking`:
+   `canEditNodes: !readOnly && !picking` and `canFocusWidgets: !picking`.
+   Only capabilities with distinct policy exist: menus follow `canEditNodes`
+   and the CanvasInfo projection reads the `picking` input directly.
 
-   | readOnly | picking | canSelect | canEdit | canOpenMenus | canFocusWidgets | suppressInfo |
-   | -------- | ------- | --------- | ------- | ------------ | --------------- | ------------ |
-   | false    | false   | true      | true    | true         | true            | false        |
-   | false    | true    | true      | false   | false        | false           | true         |
-   | true     | false   | false     | false   | false        | true            | false        |
-   | true     | true    | false     | false   | false        | false           | true         |
+   | readOnly | picking | canSelectNodes | canEditNodes | canFocusWidgets |
+   | -------- | ------- | -------------- | ------------ | --------------- |
+   | false    | false   | true           | true         | true            |
+   | false    | true    | true           | false        | false           |
+   | true     | false   | false          | false        | true            |
+   | true     | true    | false          | false        | false           |
 
    There is no mode ordering. Space-bar pan, drag-zoom and the lock commands
    write `read_only` synchronously (`LGraphCanvas.ts` L3959-3963,
@@ -96,8 +96,10 @@ agent store owns the fact; everything else is a projection of it.
    app builder's select step sets `read_only` and its `AppInput.vue`
    promotion overlay must keep receiving clicks under the
    `pointer-events-none` grid); `NodeHeader.vue` title double-click; `LGraphNode.vue`
-   `handleResizePointerDown` (L472) and `handleContextMenu` (L435-444), which
-   returns before `handleNodeRightClick` and `showNodeOptions`;
+   `handleResizePointerDown` (L472), `handleContextMenu` (L435-444), which
+   returns before `handleNodeRightClick` and `showNodeOptions`, the
+   alt-pointerdown clone, the footer's advanced toggle and the native
+   drag-over/drop handlers that register `app.dragOverNode`;
    `useNodeEventHandlers.ts` collapse (L70), title (L87) and right-click
    (L106); `useSlotLinkInteraction.ts` `onPointerDown`, `onClick`,
    `onDoubleClick`, `finishInteraction` (cleanup only) and
@@ -112,15 +114,16 @@ agent store owns the fact; everything else is a projection of it.
    instantiated once from `GraphCanvas.vue` next to `useLitegraphSettings()`
    (L491), takes over the `Comfy.Graph.CanvasInfo` watch from
    `useLitegraphSettings.ts` L19-31 so `canvas.show_info` keeps one writer.
-   Its explicit sources are the setting, `canvasStore.canvas` and `isActive`;
-   it writes `canvas.selectOnly = picking` and
+   Its explicit sources are the setting, `canvasStore.canvas` and `isActive`.
+   While picking it pins `canvas.selectOnly` to `true`, remembering the
+   value it overwrote, and restores that value when picking ends, when the
+   canvas is replaced mid-pick and when its scope is disposed; it writes
    `canvas.show_info = canvasInfoEnabled && !picking`, then one
    `draw(false, true)`. It uses
    `flush: 'sync'`: today's writes in `AgentPanelRoot.vue` L960-962 are
    synchronous and the store's chrome watch is created synchronously, so a
-   click or key in the same task as `enter()` already sees `selectOnly`. The
-   write site carries a one-line doc comment stating that `selectOnly` is a
-   projection of `agentNodeSelectionStore.isActive`. `allow_dragnodes` and
+   click or key in the same task as `enter()` already sees `selectOnly`.
+   `allow_dragnodes` and
    `multi_select` are not projected: `selectOnly` already forces accumulation
    (L4556) and blocks node drag (L2755, L3616), and writing them would
    overwrite extension-set values. `AgentPanelRoot.vue` L874-877, L893-909
@@ -138,13 +141,19 @@ agent store owns the fact; everything else is a projection of it.
    `Comfy.Canvas.PasteFromClipboard[WithConnect]`,
    `Comfy.Graph.GroupSelectedNodes`, `Comfy.Graph.ConvertToSubgraph`,
    `Comfy.Graph.UnpackSubgraph`, `Comfy.Graph.FitGroupToContents`,
-   `Comfy.Undo`, `Comfy.Redo` and `Comfy.ClearWorkflow`
-   (`DeleteSelectedItems` already does). The two non-command keyboard paths
-   get the same guard: the `usePaste.ts` handler returns, and
-   `ChangeTracker.undoRedo` returns `true` so the event is consumed. Classic
-   alt-click clone adds `!this.selectOnly` to its condition (`LGraphCanvas.ts`
-   L2461-2467), a condition edit, not a new member. A `mutatesGraph` flag on
-   `ComfyCommand`, checked once in the command store, is deferred (below).
+   `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.Undo`, `Comfy.Redo` and
+   `Comfy.ClearWorkflow` (`DeleteSelectedItems` already does). The two
+   non-command keyboard paths get the same guard: the `usePaste.ts` handler
+   returns, and the `ChangeTracker` keydown listener snapshots `selectOnly`
+   before deferring to the animation frame so `undoRedo` decides with the
+   value at keypress and returns `true` so the event is consumed. In the
+   classic canvas `_processPrimaryButton` adds `!this.selectOnly` to the
+   alt-click clone condition and skips the subgraph IO node, reroute and
+   link-segment handling and the group and empty-canvas double-click actions
+   while select-only; node clicks, empty-canvas clicks, panning and the
+   selection rectangle are unchanged. These are condition edits, not new
+   members. A `mutatesGraph` flag on `ComfyCommand`, checked once in the
+   command store, is deferred (below).
 6. **Chrome keeps reading the store.** Action bars, sidebar, splitter panels,
    selection toolbox, toasts, banner and the queue and error overlays in
    `TopMenuSection.vue` keep gating on `isActive` or `isActionBarsHidden`.
@@ -156,9 +165,11 @@ agent store owns the fact; everything else is a projection of it.
   `canvas.multi_select` keep their types, defaults and meaning. No member is
   added to `LGraphCanvas`, `LGraphNode`, `LGraph` or `Subgraph`. Entity
   callbacks and `node.widgets` access are untouched.
-- Classic picking is unchanged except that alt-click no longer clones; the
-  existing `LGraphCanvas.selectOnly.test.ts` cases pass unedited and gain one
-  row.
+- Classic picking keeps node selection, empty-canvas preservation, panning
+  and the selection rectangle; alt-click clone, reroute and link drags from
+  the canvas, link menus and the group and empty-canvas double-click actions
+  are suppressed. The existing `LGraphCanvas.selectOnly.test.ts` cases pass
+  unedited and gain rows for each suppressed path.
 - `ADR-CANVAS-SELECTION-0028`'s compatibility clause (L113-114) still holds:
   picker mode keeps node-only accumulation, empty-canvas preservation and its
   edit and drag guards through `canvas.selectOnly`, now a projection rather
@@ -171,10 +182,6 @@ agent store owns the fact; everything else is a projection of it.
 - `mutatesGraph` command metadata replacing per-site guards.
 - Whether the minimap follows the same derivation or keeps flipping the
   user's setting.
-- `Comfy.Graph.ToggleWidgetPromotion` (`useCoreCommands.ts` L1091): its only
-  first-party trigger is the widget context menu, which picking blocks at
-  the menu entry (L2337 classic, `canOpenMenus` Vue); the command guard
-  waits for `mutatesGraph`.
 - Whether picking should lock `GraphCanvasMenu`'s lock button, which can flip
   `read_only` mid-mode and turn every click into a pan.
 - [PR #17730](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17730)
@@ -226,16 +233,16 @@ agent store owns the fact; everything else is a projection of it.
 
 - Guards remain per-site until command metadata exists; a new mutating
   command or keyboard path must opt in.
-- An extension that sets `canvas.selectOnly` itself is overwritten while
-  picking and left `false` on exit. No first-party writer outside
-  `AgentPanelRoot.vue` exists; the extension corpus has not been scanned.
+- An extension that sets `canvas.selectOnly` itself is overridden to `true`
+  while picking; its value is restored on exit, but a value it writes
+  during picking is lost. No first-party writer outside `AgentPanelRoot.vue`
+  exists; the extension corpus has not been scanned.
 - The `show_info` settings write moves from the platform layer into a
   renderer composable, so two composables now sync settings onto litegraph.
 
 ## Notes
 
-Tracking: [PM-1329](https://linear.app/comfyorg/issue/PM-1329), child of
-[PM-995](https://linear.app/comfyorg/issue/PM-995). Implementation:
+Implementation:
 [PR #18066](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18066).
 
 The sequence number collides with open
