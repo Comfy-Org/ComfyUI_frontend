@@ -1340,6 +1340,96 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reports the live arrival the retained projection owed after an activity-only round trip', async () => {
+    // The interleaving between the two halves of that retention: the binding
+    // survives the deactivation, so the retry really does materialize the
+    // node, but the ids recording WHICH live agent arrival it owed were
+    // dropped on the same edge, leaving nothing to attribute the arrival to.
+    const onMaterialized = vi.fn()
+    const graph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn(),
+      _nodes_by_id: {}
+    })
+    const { unmount, isTargetActive } = mountFollower(
+      'wf-a',
+      true,
+      () => graph,
+      {
+        onMaterialized
+      }
+    )
+    bridge().follower.doc = {
+      getMap: () => ({ toJSON: () => ({ '3': {} }) })
+    }
+
+    // A live agent add that projection cannot place yet, so it stays pending.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-a',
+      seq: 9,
+      actor: 'agent:thread:turn',
+      catchUp: false
+    })
+    expect(onMaterialized).not.toHaveBeenCalled()
+
+    isTargetActive.value = false
+    await nextTick()
+
+    adapterState.retryPending.mockReturnValueOnce(true)
+    materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+      workflowId: 'wf-a',
+      actor: undefined,
+      nodeIds: [toNodeId(3)]
+    })
+    unmount()
+  })
+
+  it('does not carry a pending live arrival across a retarget to another workflow', async () => {
+    // The other half of moving that clear off the watcher edge: losing the
+    // binding is what makes the ids meaningless, so a real switch must still
+    // drop them -- otherwise the next workflow's first materialization is
+    // reported as the previous workflow's agent arrival.
+    const onMaterialized = vi.fn()
+    const graph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn(),
+      _nodes_by_id: {}
+    })
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => graph, {
+      onMaterialized
+    })
+    bridge().follower.doc = {
+      getMap: () => ({ toJSON: () => ({ '3': {} }) })
+    }
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-a',
+      seq: 9,
+      actor: 'agent:thread:turn',
+      catchUp: false
+    })
+    expect(onMaterialized).not.toHaveBeenCalled()
+
+    workflowId.value = 'wf-b'
+    await nextTick()
+    expect(adapterState.unbind).toHaveBeenCalledWith('wf-a')
+
+    materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-b',
+      seq: 1,
+      actor: 'human:user:tab',
+      catchUp: false
+    })
+
+    expect(onMaterialized).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('sends minted human operations through the doc client', () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<

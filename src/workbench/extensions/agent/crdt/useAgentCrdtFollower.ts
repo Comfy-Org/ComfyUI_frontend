@@ -700,23 +700,33 @@ function startAgentCrdtFollower(
     retarget(null)
   }
 
+  // `pendingLiveNodeIds` belongs to the binding, not to a watcher edge. The
+  // binding surviving an activity-only flip is the whole point of
+  // `deactivateTarget`, and the ids record WHICH live agent arrival the
+  // retained projection still owes: drop them on that edge and
+  // `retryPendingProjection` materializes the node on return with an empty
+  // attribution set, so `onMaterialized` never fires. Losing the binding is
+  // what makes them meaningless, so they are cleared there instead.
+  const rebindProjection = (next: string | null): void => {
+    if (boundWorkflowId === next) return
+    if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+    if (next !== null) projection.bind(next, bridge.follower)
+    boundWorkflowId = next
+    pendingLiveNodeIds.clear()
+  }
+
   const restorePersistedTarget = (justActivated: boolean): void => {
     const persisted = initialBind ? lifecycle.readPersistedDocId() : null
     initialBind = false
     if (persisted === null) {
       lifecycle.clearPersistedDocId()
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
+      rebindProjection(null)
       subscribedWorkflowId.value = null
       retarget(null)
       return
     }
     recordDevEvent('rebind', { workflowId: persisted })
-    if (boundWorkflowId !== persisted) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(persisted, bridge.follower)
-      boundWorkflowId = persisted
-    }
+    rebindProjection(persisted)
     subscribedWorkflowId.value = persisted
     retarget(persisted)
     // A pending projection drop already reconciles inside the retry, so only
@@ -727,11 +737,7 @@ function startAgentCrdtFollower(
 
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
-    if (boundWorkflowId !== next) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(next, bridge.follower)
-      boundWorkflowId = next
-    }
+    rebindProjection(next)
     subscribedWorkflowId.value = next
     retarget(next)
     const retried = retryPendingProjection(next)
@@ -752,7 +758,6 @@ function startAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       projectionDropActive = false
-      pendingLiveNodeIds.clear()
       if (!active) {
         deactivateTarget(next)
         return
