@@ -329,6 +329,30 @@ const graphMutations = (workflowId: string) => {
         )
       }
     },
+    placement: {
+      nodeBounds(scope, nodeId) {
+        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+        return layout
+          ? {
+              x: layout.position.x,
+              y: layout.position.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
+          : null
+      },
+      viewportBounds(scope) {
+        const canvas = canvasStore.canvas
+        if (
+          !canvas ||
+          String(canvas.graph?.id) !== String(scope.owningGraphId)
+        ) {
+          return null
+        }
+        const [x, y, width, height] = canvas.ds.visible_area
+        return { x, y, width, height }
+      }
+    },
     liveWidgets
   })
   graphMutationsByWorkflow.set(workflowId, mutations)

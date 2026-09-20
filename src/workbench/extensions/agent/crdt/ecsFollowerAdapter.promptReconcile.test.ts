@@ -14,6 +14,7 @@ import { widgetId } from '@/types/widgetId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 
 /**
@@ -100,7 +101,11 @@ function addProgressText(node: LGraphNode) {
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
 
 function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({ getScope: () => scope, layout })
+  return createGraphMutations({
+    getScope: () => scope,
+    layout,
+    placement: inertPlacementPort
+  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
