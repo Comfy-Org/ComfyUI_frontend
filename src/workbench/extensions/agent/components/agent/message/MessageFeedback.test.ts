@@ -30,7 +30,7 @@ function downloadResponse(ok = true): Response {
     status: ok ? 200 : 500,
     headers: { get: () => null },
     blob: async () => ({}) as Blob
-  } as Response
+  } as unknown as Response
 }
 
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({

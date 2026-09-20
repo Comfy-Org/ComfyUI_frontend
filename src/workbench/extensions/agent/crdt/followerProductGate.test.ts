@@ -3,10 +3,10 @@ import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { GraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
