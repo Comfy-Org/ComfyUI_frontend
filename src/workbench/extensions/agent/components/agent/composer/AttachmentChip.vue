@@ -26,7 +26,12 @@ const kindIconClass = computed(() =>
 </script>
 
 <template>
+  <!-- `data-attachment-name` anchors black-box coverage of what a drop actually
+       attached: the visible label truncates, so asserting on rendered text alone
+       cannot tell one long filename from another. -->
   <span
+    data-testid="agent-attachment-chip"
+    :data-attachment-name="name"
     class="text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-white/15 bg-white/4.5 px-2.5 text-xs/4 font-medium"
   >
     <span
