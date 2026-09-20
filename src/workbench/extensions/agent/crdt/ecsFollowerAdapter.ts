@@ -436,13 +436,28 @@ export class EcsFollowerAdapter {
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
-    if (!session) return false
+    // A lineage break makes the old doc's group ids meaningless either way:
+    // the next lineage may reuse the same numeric id for a different group,
+    // and this set is only ever used to authorise a delete. With no bound
+    // target there is nothing to delete them through, so drop the
+    // authorisation rather than carry it into the replacement lineage.
+    if (!session) {
+      this.remoteGroupIds.delete(workflowId)
+      return false
+    }
     this.discardSessionPending(session)
-    // A lineage break makes the old doc's group ids meaningless: the next
-    // lineage may reuse the same numeric id for a different group, and this
-    // set is only ever used to authorise a delete.
-    this.remoteGroupIds.delete(workflowId)
-    return session.mutations.clearSemanticGraph(context)
+    // `clearSemanticGraph` clears nodes, links, and widgets; it does not touch
+    // groups. The recorded ids are this follower's only authority to delete
+    // them, so they go out in the same accepted batch, and the baseline is
+    // dropped only once that batch commits — a rejected clear leaves the
+    // authorisation intact for the next attempt.
+    const observedGroupIds = [...(this.remoteGroupIds.get(workflowId) ?? [])]
+    const committed = session.mutations.batch(context, (batch) => {
+      batch.clearSemanticGraph()
+      if (observedGroupIds.length > 0) batch.deleteGroups(observedGroupIds)
+    })
+    if (committed) this.remoteGroupIds.delete(workflowId)
+    return committed
   }
 
   discardPending(workflowId: string): void {

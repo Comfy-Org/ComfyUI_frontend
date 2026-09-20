@@ -18,6 +18,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
@@ -1828,6 +1829,143 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.destroy()
       follower.destroy()
       host.destroy()
+    })
+
+    describe('lineage reset', () => {
+      const resetContext: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'doc-reset'
+      }
+
+      /** Binds a fresh session that has observed group 5 in `meta.groups`. */
+      function seedObservedGroup(mutations: GraphMutations): {
+        adapter: EcsFollowerAdapter
+        follower: FollowerDoc
+        host: Y.Doc
+      } {
+        const host = mint(
+          {
+            nodes: [],
+            links: [],
+            groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+          },
+          catalog
+        )
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(mutations)
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ['seed']
+        })
+        return { adapter, follower, host }
+      }
+
+      it('deletes the observed groups in the same accepted batch as the semantic clear', () => {
+        const deleteGroups = vi.fn()
+        const deleteNodes = vi.fn()
+        const mutations = createGraphMutations({
+          getScope: () => scope,
+          placement: inertPlacementPort,
+          layout: { createNode: vi.fn(), deleteNodes, deleteGroups }
+        })
+        const { adapter, follower, host } = seedObservedGroup(mutations)
+
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+
+        // `clearSemanticGraph` reaches the layout owner as `deleteNodes`; the
+        // group layouts only go with it because the recorded ids ride the same
+        // batch. Without that leg they survive the reset and a save writes
+        // them back under the replacement lineage.
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+        expect(deleteNodes).toHaveBeenCalled()
+
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
+
+      it('keeps the delete authorization when the reset batch is rejected', () => {
+        const deleteGroups = vi.fn()
+        let scopeAvailable = true
+        const mutations = createGraphMutations({
+          getScope: () => (scopeAvailable ? scope : null),
+          placement: inertPlacementPort,
+          layout: {
+            createNode: vi.fn(),
+            deleteNodes: vi.fn(),
+            deleteGroups
+          }
+        })
+        const { adapter, follower, host } = seedObservedGroup(mutations)
+
+        scopeAvailable = false
+        expect(adapter.clearForReset('wf', resetContext)).toBe(false)
+        expect(deleteGroups).not.toHaveBeenCalled()
+
+        // The baseline advanced only on commit, so the retry still carries the
+        // authorization to remove the group the rejected batch left behind.
+        scopeAvailable = true
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
+
+      it('drops stale group authorization when the reset arrives with no bound target', () => {
+        const deleteGroups = vi.fn()
+        const mutations = createGraphMutations({
+          getScope: () => scope,
+          placement: inertPlacementPort,
+          layout: {
+            createNode: vi.fn(),
+            deleteNodes: vi.fn(),
+            deleteGroups
+          }
+        })
+        const { adapter, follower, host } = seedObservedGroup(mutations)
+
+        // The tab went inactive before the reset landed, so there is no
+        // session to clear through.
+        adapter.unbind('wf')
+        follower.destroy()
+        expect(adapter.clearForReset('wf', resetContext)).toBe(false)
+
+        // The replacement lineage carries no groups of its own. A surviving
+        // baseline of {5} would diff against an empty doc on the first frame
+        // and delete group 5 in a lineage that never named it — the same
+        // local-group blocker, reached through the reset path.
+        const replacement = mint({ nodes: [], links: [], groups: [] }, catalog)
+        const rebound = new FollowerDoc()
+        adapter.bind('wf', rebound)
+        const update = Y.encodeStateAsUpdate(replacement)
+        rebound.applyRemoteUpdate(update)
+        expect(
+          adapter.applyFrame({
+            workflowId: 'wf',
+            seq: 1,
+            update,
+            actor: 'agent:test',
+            opIds: ['seed']
+          })
+        ).toBe(true)
+        expect(deleteGroups).not.toHaveBeenCalled()
+
+        adapter.destroy()
+        rebound.destroy()
+        replacement.destroy()
+        host.destroy()
+      })
     })
   })
 })
