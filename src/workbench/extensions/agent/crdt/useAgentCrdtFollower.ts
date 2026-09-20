@@ -191,21 +191,17 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
-type KnownRefusalCode =
-  | 'auth_reject'
-  | 'not_found'
-  | 'schema_mismatch'
-  | 'catalog_mismatch'
-  | 'rate_limited'
-type RefusalCode = KnownRefusalCode | 'unknown'
-
-const REFUSAL_CODES: ReadonlySet<string> = new Set<KnownRefusalCode>([
+const REFUSAL_CODE_VALUES = [
   'auth_reject',
   'not_found',
   'schema_mismatch',
   'catalog_mismatch',
   'rate_limited'
-])
+] as const
+type KnownRefusalCode = (typeof REFUSAL_CODE_VALUES)[number]
+type RefusalCode = KnownRefusalCode | 'unknown'
+
+const REFUSAL_CODES: ReadonlySet<string> = new Set(REFUSAL_CODE_VALUES)
 const AUTH_REFUSAL_TOKENS = new Set([
   'forbidden',
   'unauthorized',
