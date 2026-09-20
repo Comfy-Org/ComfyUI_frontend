@@ -13,7 +13,7 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
 

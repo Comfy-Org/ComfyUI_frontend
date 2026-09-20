@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
@@ -74,20 +75,10 @@ const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
-const mockCanTopUp = ref(true)
-const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
@@ -120,8 +111,6 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
   })
 
   function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
@@ -475,7 +464,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
-      mockCanTopUp.value = false
+      useBillingCapabilities().canTopUp = computed(() => false)
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

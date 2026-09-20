@@ -3,6 +3,8 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -16,6 +18,26 @@ import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+
+function writeAutoShown(key: string, shown: boolean): boolean {
+  try {
+    localStorage.setItem(key, String(shown))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function prepareAutoShow(key: string): boolean {
+  try {
+    if (localStorage.getItem(key) === 'true') return false
+    return writeAutoShown(key, false)
+  } catch {
+    return false
+  }
+}
 
 let registered = false
 
@@ -73,7 +95,9 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
-      const { resolvedUserInfo } = useCurrentUser()
+      const workspaceStore = useTeamWorkspaceStore()
+      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { withConsent } = useAgentConsent()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -84,13 +108,47 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      let autoShowInFlight = false
+      const offerConsentUnprompted = (): void => {
+        if (autoShowInFlight) return
+        if (!agentPanelStore.enabled || !isLoggedIn.value) return
+        if (consentStore.isChecking || consentStore.accepted) return
+
+        const userId = resolvedUserInfo.value?.id
+        const workspaceId = workspaceStore.activeWorkspaceId
+        if (!userId || !workspaceId || workspaceStore.isSwitching) return
+        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+        if (!prepareAutoShow(key)) return
+
+        const offeredIdentity = consentStore.identity
+        autoShowInFlight = true
+        agentPanelStore.suppressRestoredOpen()
+        void withConsent(
+          () => {
+            if (!agentPanelStore.enabled) return
+            agentPanelStore.open('automatic_consent')
+          },
+          () => {
+            writeAutoShown(key, true)
+          }
+        ).finally(() => {
+          autoShowInFlight = false
+          if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
+        })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
-        void consentStore.load().catch((error: unknown) => {
-          reportError(error, {
-            errorType: 'agent_consent_setting_load_failure'
+        void consentStore
+          .load()
+          .then((isAccepted) => {
+            if (!isAccepted) offerConsentUnprompted()
           })
-        })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_consent_setting_load_failure'
+            })
+          })
       }
       watch(
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
@@ -135,6 +193,17 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    reportError(error, {
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
+    })
   }
 }

@@ -106,8 +106,20 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function failAttachment(id: string, name: string, errorType: string) {
-    return (cause: unknown): undefined => {
-      reportError(cause, { errorType })
+    return (): undefined => {
+      reportError(new Error('Agent attachment upload failed'), {
+        errorType,
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'save',
+          outcome: 'failed',
+          integration_target: 'assets',
+          feature_flag: 'agent_panel',
+          feature_flag_state: 'enabled',
+          project_context: 'agent_composer'
+        }
+      })
       options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
       options.remove(id)
       return undefined
@@ -131,11 +143,15 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.uploadTimeoutMs ?? uploadDeadlineMs(file),
         () => controller.abort()
       )
-      options.update(id, { ref: result.ref, uploading: false })
+      options.update(id, {
+        ref: result.ref,
+        ...(result.url ? { previewUrl: result.url } : {}),
+        uploading: false
+      })
       return true
-    } catch (cause) {
+    } catch {
       if (!cancelled.has(id))
-        failAttachment(id, file.name, 'agent_attachment_upload_failed')(cause)
+        failAttachment(id, file.name, 'agent_attachment_upload_failed')()
       return false
     } finally {
       settle(id)
@@ -175,9 +191,9 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()
       return 'uploaded'
-    } catch (cause) {
+    } catch {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, name, 'agent_attachment_fetch_failed')(cause)
+      failAttachment(id, name, 'agent_attachment_fetch_failed')()
       return 'failed'
     } finally {
       settle(id)
