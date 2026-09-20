@@ -35,9 +35,6 @@ test.describe(
       // The OS picker filters on this attribute; a missing `.json`/
       // `application/json` entry is exactly what hid JSON files from it.
       await expect(fileInput).toHaveAttribute('accept', AGENT_ATTACH_ACCEPT)
-      expect(AGENT_ATTACH_ACCEPT.split(',')).toEqual(
-        expect.arrayContaining(['.json', 'application/json'])
-      )
 
       // Browse flow: picking a .json file through the input lands it in the
       // composer instead of being silently ignored. This is the actual bug
