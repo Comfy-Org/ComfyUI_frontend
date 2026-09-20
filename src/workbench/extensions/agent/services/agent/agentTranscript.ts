@@ -4,10 +4,22 @@ import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
+/**
+ * A file attached to a user turn. `ref` is the uploaded input-namespace
+ * filename that resolves the preview; on a persisted row this is the only
+ * name the server ever saw, so `name` and `ref` are the same string.
+ */
+export interface UserAttachment {
+  name: string
+  previewUrl?: string
+  ref?: string
+}
+
 export interface NormalizedAgentTranscript {
   /** Includes placeholders for turns without assistant text. */
   messages: AssistantMessage[]
   userTexts: Map<TurnId, string>
+  userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
   latestWorkflowId?: string
   rowIds: Set<string>
@@ -19,10 +31,41 @@ export interface NormalizedAgentTranscript {
   }
 }
 
+function attachmentRefNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return (value as unknown[]).flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null || !('name' in entry))
+      return []
+    const { name } = entry
+    return typeof name === 'string' ? [name] : []
+  })
+}
+
+/**
+ * A persisted user row carries `attachments` (the uploaded input filenames
+ * from the original request) and `attachment_refs` (the server's own
+ * resolution of those same filenames, as `{name, id?, kind?}`). Either one
+ * names the same input-namespace filenames the live send path uses as
+ * `SentAttachment.ref`, so either is enough to rebuild the preview grid.
+ */
+function parseUserAttachments(
+  content: Record<string, unknown> | undefined
+): UserAttachment[] | undefined {
+  const names = Array.isArray(content?.attachments)
+    ? content.attachments.filter(
+        (name): name is string => typeof name === 'string'
+      )
+    : attachmentRefNames(content?.attachment_refs)
+  return names.length > 0
+    ? names.map((name) => ({ name, ref: name }))
+    : undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
+  const userAttachments = new Map<TurnId, UserAttachment[]>()
   const userWorkflowReferences = new Map<TurnId, WorkflowReference[]>()
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
@@ -41,6 +84,8 @@ export function normalizeAgentTranscript(
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
       userTexts.set(turnId, text)
+      const attachments = parseUserAttachments(row.content)
+      if (attachments) userAttachments.set(turnId, attachments)
       if (row.workflow_id) latestWorkflowId = row.workflow_id
       const rawReferences = row.content?.workflow_references
       if (Array.isArray(rawReferences)) {
@@ -109,6 +154,7 @@ export function normalizeAgentTranscript(
   return {
     messages,
     userTexts,
+    userAttachments,
     userWorkflowReferences,
     latestWorkflowId,
     rowIds,

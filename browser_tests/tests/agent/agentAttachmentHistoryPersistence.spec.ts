@@ -10,22 +10,22 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 // PM-1148 / PM-1409 / PM-717: an attached asset preview on a USER message
-// disappears after a browser refresh, while the same preview inside the
-// agent's own reply survives (it is literal markdown in the persisted final
-// text). Root cause: the real backend already returns the resolved
-// attachment on reload -- getMessages (services/agent/server/agent_handler.go)
-// serializes the AgentMessage row's `content` field verbatim, and that
-// content carries `attachment_refs: [{name, id, kind}]` once a turn is
-// posted with attachments (services/agent/internal/persist/threads.go's
+// used to disappear after a browser refresh, while the same preview inside
+// the agent's own reply survived (it is literal markdown in the persisted
+// final text). The real backend returns the resolved attachment on reload --
+// getMessages (services/agent/server/agent_handler.go) serializes the
+// AgentMessage row's `content` field verbatim, and that content carries
+// `attachment_refs: [{name, id, kind}]` once a turn is posted with
+// attachments (services/agent/internal/persist/threads.go's
 // contentAttachments; database/schema/agent_message.go's `content` JSON
-// column stores it). But the frontend's normalizeAgentTranscript
-// (src/workbench/extensions/agent/services/agent/agentTranscript.ts) only
-// reads `row.content.text` and `row.content.workflow_references` when
-// rebuilding a user turn -- it never reads `attachments`/`attachment_refs`,
-// so agentConversationStore.hydrate() reconstructs the user entry with no
-// `attachments` at all. This test mimics the real API's verbatim content
-// pass-through (agentPromptHistoryFixture's own POST mock does not carry
-// attachments yet) and asserts the preview should still render post-reload.
+// column stores it). normalizeAgentTranscript
+// (src/workbench/extensions/agent/services/agent/agentTranscript.ts) now
+// reads `content.attachments`/`content.attachment_refs` when rebuilding a
+// user turn, so agentConversationStore.hydrate() restores the same
+// `attachments` the live send path recorded. This test mimics the real
+// API's verbatim content pass-through (agentPromptHistoryFixture's own POST
+// mock does not carry attachments yet) and asserts the preview still
+// renders post-reload.
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
@@ -153,13 +153,6 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-    // The resumed transcript has no `attachments` on the user entry at all,
-    // because normalizeAgentTranscript never reads
-    // `content.attachment_refs`/`content.attachments` (agentTranscript.ts).
-    // test.fail() stays right above the one assertion this bug breaks, so an
-    // unrelated failure earlier in arrange still fails the run loudly instead
-    // of reading as the expected defect.
-    test.fail()
     await expect(reopenedPanel.getByTestId('reply-image-preview')).toBeVisible({
       timeout: 10_000
     })
