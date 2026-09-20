@@ -284,18 +284,10 @@ describe('doc frame client', () => {
     })
   })
 
-  it('omits seq zero from a successful subscription acknowledgement', () => {
-    expect(
-      parseServerDocFrame({
-        type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 0 }
-      })
-    ).toEqual({
-      type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
-    })
-  })
-
+  // The subscribe-ack side of this domain is pinned by 'keeps a seq-0 or
+  // absent-seq doc_subscribed ok ack as a valid baseline' above. Both frame
+  // types share `isSequence`, so pin the update side too: a seq-0 `doc_update`
+  // must survive parsing rather than being read as "no seq".
   it('keeps seq zero on a doc update', () => {
     expect(
       parseServerDocFrame({
