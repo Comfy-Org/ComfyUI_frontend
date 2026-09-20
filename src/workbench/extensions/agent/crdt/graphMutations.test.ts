@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -16,6 +16,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import type { SemanticPlacementPort } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -74,10 +75,52 @@ const noteWidgets: readonly LiveWidget[] = [
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
+  const createdLayouts = new Map<
+    string,
+    {
+      position: { x: number; y: number }
+      size: { width: number; height: number }
+    }
+  >()
+  const placement: SemanticPlacementPort = {
+    nodeBounds: (_scope, nodeId) => {
+      const layout = createdLayouts.get(String(nodeId))
+      return layout
+        ? {
+            x: layout.position.x,
+            y: layout.position.y,
+            width: layout.size.width,
+            height: layout.size.height
+          }
+        : null
+    },
+    viewportBounds: () => null
+  }
+  const setLiveWidgetValue = vi.fn(
+    (
+      _scope,
+      _nodeId,
+      _name,
+      value
+    ):
+      | { status: 'skipped' }
+      | {
+          status: 'applied' | 'rolledBack'
+          resolvedValue: typeof value
+        } => ({
+      status: 'applied',
+      resolvedValue: value
+    })
+  )
 
   beforeEach(() => {
+    createdLayouts.clear()
     createLayout.mockReset()
+    createLayout.mockImplementation((_scope, nodeId, layout) => {
+      createdLayouts.set(String(nodeId), layout)
+    })
     deleteLayouts.mockReset()
+    setLiveWidgetValue.mockReset()
     mockReportError.mockReset()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
   })
@@ -90,7 +133,9 @@ describe('graphMutations', () => {
         deleteNodes: deleteLayouts,
         deleteGroups: vi.fn(),
         removeMissingGroups: vi.fn()
-      }
+      },
+      placement,
+      liveWidgets: { setValue: setLiveWidgetValue }
     })
   }
 
@@ -288,6 +333,156 @@ describe('graphMutations', () => {
     )
   })
 
+  it('repositions a template node placed far from an existing node', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    expect(graph.addNode({ ...node(2), pos: [9000, 9000] }, context)).toBe(true)
+
+    const [, , layout] = createLayout.mock.calls[0]
+    const distanceFromExistingNode = Math.hypot(
+      layout.position.x - 0,
+      layout.position.y - 0
+    )
+    expect(distanceFromExistingNode).toBeLessThan(2000)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+        ?.lastSerialization?.pos
+    ).toEqual([layout.position.x, layout.position.y])
+  })
+
+  it('keeps a far batch layout intact, moved by one shared offset', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({ ...node(2), pos: [9000, 9000] })
+        batch.addNode({ ...node(3), pos: [9400, 9100] })
+      })
+    ).toBe(true)
+
+    const [first, second] = createLayout.mock.calls.map(
+      ([, , layout]) => layout.position
+    )
+    expect(second.x - first.x).toBe(400)
+    expect(second.y - first.y).toBe(100)
+    expect(Math.hypot(first.x, first.y)).toBeLessThan(2000)
+  })
+
+  it.for(['reconcileNode', 'reconcileNodeFields'] as const)(
+    'keeps doc coordinates when a resync materializes a missing node via %s',
+    (via) => {
+      const graph = mutations()
+      graph.addNode({ ...node(1), pos: [0, 0] }, context)
+      createLayout.mockClear()
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch[via]({ ...node(2), pos: [9000, 9000] })
+        })
+      ).toBe(true)
+
+      const [, , layout] = createLayout.mock.calls[0]
+      expect(layout.position).toEqual({ x: 9000, y: 9000 })
+    }
+  )
+
+  it('projects a remote widget value into the live widget adapter', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockClear()
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(setLiveWidgetValue).toHaveBeenCalledOnce()
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'after.png',
+      context
+    )
+  })
+
+  it('projects add-node widget values before committing them to the store', () => {
+    setLiveWidgetValue.mockImplementation(() => {
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toBeUndefined()
+      return { status: 'applied', resolvedValue: 'added.png' }
+    })
+
+    expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
+      true
+    )
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'added.png',
+      context
+    )
+  })
+
+  it('converges canonical state on the live widget rollback value, not the remote value', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({
+      status: 'rolledBack',
+      resolvedValue: 'before.png'
+    })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'before.png' })
+  })
+
+  it.for([null, undefined])(
+    'preserves a nullish live widget result of %s',
+    (resolvedValue) => {
+      const graph = mutations()
+      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
+        true
+      )
+      setLiveWidgetValue.mockReset()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'applied',
+        resolvedValue
+      })
+
+      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+        true
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toMatchObject({ value: resolvedValue })
+    }
+  )
+
+  it('commits the remote value when live projection is skipped', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({ status: 'skipped' })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'after.png' })
+  })
+
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -388,6 +583,47 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  // The agent's connect tool used to wire an IMAGE output straight into a
+  // STRING prompt input (Grok Image Edit, GPT Image 2) and have the mutation
+  // accepted as if valid — only ComfyUI's execution-time prompt validator
+  // caught it later, long after the agent had told the user the graph was
+  // built. The interactive canvas never allows this: LGraphNode.connectSlots
+  // gates every human-dragged link on LiteGraph.isValidConnection(output.type,
+  // input.type). This remote/CRDT path is the ONLY way the agent edits the
+  // graph, so `connect` now runs the same isValidConnection check against the
+  // origin output's declared type and the target input's before applying it.
+  it('rejects connecting an incompatible slot type pair', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = mutations()
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }]
+      })
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'prompt', type: 'STRING', link: null }]
+      })
+      batch.connect({
+        id: 1,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'STRING'
+      })
+    })
+
+    // A human dragging this exact link on canvas is refused by
+    // LiteGraph.isValidConnection; the agent's remote mutation path refuses
+    // it too instead of silently wiring IMAGE into a STRING input.
+    expect(applied).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(1))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
@@ -400,7 +636,8 @@ describe('graphMutations', () => {
         deleteNodes: deleteLayouts,
         deleteGroups: vi.fn(),
         removeMissingGroups: vi.fn()
-      }
+      },
+      placement
     })
     sibling.addNode(node(9), context)
     createLayout.mockClear()
@@ -434,7 +671,8 @@ describe('graphMutations', () => {
         deleteNodes: deleteLayouts,
         deleteGroups: vi.fn(),
         removeMissingGroups: vi.fn()
-      }
+      },
+      placement
     })
     sibling.batch(context, (batch) => {
       batch.addNode(node(8))
@@ -483,6 +721,9 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const liveWidgetState = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -500,14 +741,66 @@ describe('graphMutations', () => {
     expect(reconciled.title).toBe('Seeded authority')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
+    ).toBe(liveWidgetState)
+    expect(liveWidgetState?.value).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
         ?.value
     ).toBe('old')
+    expect(graph.setWidget(toNodeId(1), 'seed', 84, context)).toBe(true)
+    expect(liveWidgetState?.value).toBe(84)
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).not.toHaveBeenCalled()
+  })
+
+  // Unit-level regression guard for the color/label preservation fix above (this file had no
+  // unit coverage of it before this commit, only the Playwright spec added
+  // alongside it): a reconcile must not wholesale-replace a live node's
+  // presentation-only `color` or an autogrow input's client-computed
+  // `localized_name` when the CRDT payload omits them, since the document
+  // never carries either field.
+  it("keeps a live node's color and friendly input label across a reconcile", () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#ff0000')
+    expect(reconciled.inputs[0].localized_name).toBe('image_1')
+  })
+
+  // The merge must still be a merge, not a pin: when the doc payload *does*
+  // carry an explicit color, or the slot at that index is genuinely a
+  // different input (not just a redundant resync of the same one), the fix
+  // must not keep stale values behind the live node's back.
+  it('still applies a color the doc payload sets, and does not carry a stale label onto a genuinely different input at the same slot index', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          color: '#00ff00',
+          inputs: [{ name: 'a-different-input', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#00ff00')
+    expect(reconciled.inputs[0].localized_name).toBeUndefined()
   })
 
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
@@ -598,6 +891,10 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
     const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.color = '#432'
+    existing.bgcolor = '#653'
+    existing.inputs[0].localized_name = 'old display name'
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -616,6 +913,9 @@ describe('graphMutations', () => {
     )
     expect(replacement).not.toBe(existing)
     expect(replacement?.type).toBe('Replacement')
+    expect(replacement?.color).toBeUndefined()
+    expect(replacement?.bgcolor).toBeUndefined()
+    expect(replacement?.inputs[0].localized_name).toBeUndefined()
     expect(
       useWidgetValueStore().getWidget(
         widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
@@ -992,7 +1292,8 @@ describe('graphMutations', () => {
         deleteNodes: deleteLayouts,
         deleteGroups: vi.fn(),
         removeMissingGroups: vi.fn()
-      }
+      },
+      placement
     }).addNode(
       {
         id: 1,

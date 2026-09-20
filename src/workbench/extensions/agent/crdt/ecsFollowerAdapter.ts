@@ -11,6 +11,7 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from './graphMutations'
+import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
@@ -270,13 +271,9 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 }
 
 /**
- * Group ids currently present in `meta.groups` (bbc #319). The pinned
- * applier (0.2.1) blanks `meta.groups` wholesale on `clear` with no per-id
- * target set and no stamp gate (unlike nodes/links) — see
- * reports/audit/2026-09-11-bbc-319-group-aware-clear.md. The follower does
- * not trust an op name for this: it reads whatever `meta.groups` says AFTER
- * a frame and diffs it against what it saw before, the same principle
- * already used for nodesMap/linksMap deep-observe rather than op replay.
+ * Group ids currently present in `meta.groups`. `meta.groups` carries no
+ * per-frame delta, so the follower diffs snapshots rather than replaying an
+ * op name — the same principle already used for nodesMap/linksMap.
  */
 function readGroupIds(doc: Y.Doc): ReadonlySet<GroupId> {
   const meta = readMeta(doc)
@@ -295,6 +292,54 @@ function readGroupIds(doc: Y.Doc): ReadonlySet<GroupId> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+/**
+ * Drops any link whose declared origin/target types `connect` would refuse.
+ * `GraphMutations.batch` validates a whole batch atomically (by design —
+ * see the "validates the whole plan before committing any writes" tests in
+ * graphMutations.test.ts), so replaying every retained link unconditionally
+ * during reconciliation means a single incompatible link already sitting in
+ * the host-owned document — written before this type check existed, or by
+ * any other path that bypassed it — would fail the SAME `connect` every
+ * time reconciliation re-reads it, taking every other node/link/widget
+ * queued in that batch down with it. Because a failed batch also re-arms
+ * `reconcileNextFrame`, the next frame replays the identical bad link and
+ * fails again, forever: no later valid mutation can ever land while that
+ * one link remains.
+ *
+ * This never rewrites the shared document to "recover" — the excluded
+ * link's doc entry is untouched, so it stays there exactly as before. It
+ * only keeps this follower from materializing that one link into the local
+ * canvas mirror, which is enough for the rest of the batch (every other
+ * retained node and link, plus any new mutation queued in the same frame)
+ * to validate and commit normally.
+ */
+function excludeIncompatibleLinks(
+  links: readonly SemanticLinkPayload[],
+  reported: Set<string>
+): SemanticLinkPayload[] {
+  return links.filter((link) => {
+    if (!isIncompatibleLinkType(link)) return true
+    reportOnce(
+      reported,
+      `link-type:${link.id}`,
+      new Error(
+        `Link ${link.id} (node ${link.originNodeId} slot ${link.originSlot} -> node ${link.targetNodeId} slot ${link.targetSlot}) has an incompatible origin/target type and will not be projected`
+      ),
+      {
+        errorType: 'error_reconciling_agent_incompatible_link_type',
+        context: {
+          linkId: link.id,
+          originNodeId: link.originNodeId,
+          originSlot: link.originSlot,
+          targetNodeId: link.targetNodeId,
+          targetSlot: link.targetSlot
+        }
+      }
+    )
+    return false
+  })
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
@@ -482,7 +527,7 @@ export class EcsFollowerAdapter {
       ])
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link ? [] : [Number(id)]
+      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
     // meta.groups carries no per-frame delta (bbc #319: the applier blanks
     // it wholesale) — diff snapshots the same way removeMissing already
@@ -529,15 +574,18 @@ export class EcsFollowerAdapter {
           )
           return payload ? [payload] : []
         })
-        const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(
-            doc,
-            id,
-            definitions(),
-            session.reportedErrors
-          )
-          return link ? [link] : []
-        })
+        const links = excludeIncompatibleLinks(
+          [...session.links.keys()].flatMap((id) => {
+            const link = readSemanticLink(
+              doc,
+              id,
+              definitions(),
+              session.reportedErrors
+            )
+            return link ? [link] : []
+          }),
+          session.reportedErrors
+        )
         batch.removeMissing(
           nodes.map(({ id }) => toNodeId(id)),
           links.map(({ id }) => id)
@@ -626,9 +674,13 @@ export class EcsFollowerAdapter {
           batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
-      for (const link of changedLinks.values()) {
-        if (link) batch.connect(link)
-      }
+      const incomingLinks = excludeIncompatibleLinks(
+        [...changedLinks.values()].filter(
+          (link): link is SemanticLinkPayload => link !== null
+        ),
+        session.reportedErrors
+      )
+      for (const link of incomingLinks) batch.connect(link)
     })
 
     // The pending sets were snapshotted and cleared before `batch` ran, so a
