@@ -93,10 +93,13 @@ describe('useAttachment', () => {
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
-    let resolveUpload: (result: { ref: string }) => void = () => {}
+    let resolveUpload: (result: {
+      ref: string
+      url?: string
+    }) => void = () => {}
     const upload = vi.fn(
       () =>
-        new Promise<{ ref: string }>((resolve) => {
+        new Promise<{ ref: string; url?: string }>((resolve) => {
           resolveUpload = resolve
         })
     )
@@ -113,10 +116,14 @@ describe('useAttachment', () => {
     })
     expect(registry.chips[0].previewUrl).toBeTruthy()
 
-    resolveUpload({ ref: 'uploaded_cat.png' })
+    resolveUpload({
+      ref: 'uploaded_cat.png',
+      url: '/api/view?filename=uploaded_cat.png&type=input'
+    })
     await batch
     expect(registry.chips[0]).toMatchObject({
       ref: 'uploaded_cat.png',
+      previewUrl: '/api/view?filename=uploaded_cat.png&type=input',
       uploading: false
     })
   })

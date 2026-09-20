@@ -47,7 +47,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     })
     try {
       const result = await options.upload(file)
-      options.update(id, { ref: result.ref, uploading: false })
+      options.update(id, {
+        ref: result.ref,
+        ...(result.url ? { previewUrl: result.url } : {}),
+        uploading: false
+      })
       return true
     } catch {
       options.onError?.(
