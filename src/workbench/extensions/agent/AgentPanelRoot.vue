@@ -17,7 +17,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import { createGraphMutations } from '@/core/graph/graphMutations'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -34,6 +35,7 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -53,12 +55,20 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  adoptSharedOnboardingFlag,
+  scopedOnboardingKey
+} from './composables/agent/useOnboarding'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
+import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
@@ -75,10 +85,12 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import type { CoachStep } from './composables/agent/useOnboarding'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
@@ -93,7 +105,10 @@ import { createStandaloneAgentEventSource } from './services/agent/standaloneAge
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
@@ -194,6 +209,66 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+const graphActivity = useAgentGraphActivityStore()
+const settingStore = useSettingStore()
+watch(
+  () => canvasStore.canvas?.graph,
+  (graph, _previous, onCleanup) => {
+    if (!graph?.events) return
+    const events = graph.events as EventTarget
+    const onNodeRemoved: EventListener = (event) => {
+      if (!(event instanceof CustomEvent)) return
+      const nodeId = parseNodeId(String(event.detail.node?.id))
+      if (nodeId) graphActivity.removeNodes([nodeId])
+    }
+    events.addEventListener('node:removed', onNodeRemoved)
+    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
+  },
+  { immediate: true }
+)
+const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+watch(
+  () => graphActivity.state,
+  (activity) => {
+    if (activity.phase === 'idle') {
+      agentMinimapLayer.replace([])
+      return
+    }
+    const rootGraphId = toRootGraphId(activity.rootGraphId)
+    agentMinimapLayer.replace(
+      activity.nodeIds.map((nodeId) => ({
+        target: {
+          rootGraphId,
+          owningGraphId: toOwningGraphId(activity.rootGraphId),
+          nodeId
+        },
+        enter: 'pop'
+      }))
+    )
+    if (
+      activity.phase === 'running' &&
+      !settingStore.get('Comfy.Minimap.Visible')
+    )
+      void settingStore.set('Comfy.Minimap.Visible', true)
+  },
+  { immediate: true }
+)
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const workspaceStore = useTeamWorkspaceStore()
+const onboardingKey = computed(() =>
+  scopedOnboardingKey(
+    resolvedUserInfo.value?.id,
+    workspaceStore.activeWorkspaceId
+  )
+)
+watch(
+  onboardingKey,
+  (key) => {
+    if (key) adoptSharedOnboardingFlag(key)
+  },
+  { immediate: true }
+)
+const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -502,7 +577,19 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  {
+    onMaterialized({ workflowId, nodeIds }) {
+      if (app.isGraphReady) {
+        graphActivity.recordMaterialized(
+          { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
+          nodeIds
+        )
+        if (status.value === 'idle') graphActivity.finishTurn()
+      }
+    },
+    onReset: graphActivity.resetWorkflow
+  }
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
@@ -515,6 +602,9 @@ const mintPortWiring = attachMintPortWiring({
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
+)
+const { activeTurnId: conversationTurnId } = storeToRefs(
+  useAgentConversationStore()
 )
 
 // The resumed turn's own workflow outlives a panel remount (the session
@@ -540,14 +630,25 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-watch(status, (value) => {
-  if (value === 'idle') {
-    const completedPath = tabActivity.editingTabPath
-    tabActivity.setEditing(null)
-    if (completedPath !== null) tabActivity.markModified(completedPath)
-  } else if (tabActivity.editingTabPath === null)
-    tabActivity.setEditing(resumedTurnTabPath())
-})
+let observedActivityStatus = false
+watch(
+  [status, conversationTurnId],
+  ([value, turnId]) => {
+    if (value === 'idle') {
+      // The immediate idle value on remount is a hydration snapshot, not a
+      // completed turn. A real idle transition is observed after this pass.
+      if (observedActivityStatus) graphActivity.finishTurn()
+    } else graphActivity.startTurn(turnId)
+    observedActivityStatus = true
+    if (value === 'idle') {
+      const completedPath = tabActivity.editingTabPath
+      tabActivity.setEditing(null)
+      if (completedPath !== null) tabActivity.markModified(completedPath)
+    } else if (tabActivity.editingTabPath === null)
+      tabActivity.setEditing(resumedTurnTabPath())
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 const executionErrorStore = useExecutionErrorStore()
 
@@ -700,6 +801,7 @@ onBeforeUnmount(() => {
   stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
+  agentMinimapLayer.dispose()
 })
 
 const history = useAgentChatHistoryStore()
@@ -765,6 +867,34 @@ function onCopyMarkdown(id: string): void {
   if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
+
+const coachSteps = computed<CoachStep[]>(() => [
+  {
+    target: '#agent-panel-root',
+    placement: 'left-center',
+    title: t('agent.coachTitle'),
+    body: t('agent.coachBody')
+  },
+  {
+    target: '#agent-composer',
+    placement: 'left-end',
+    title: t('agent.coachWorkflowTitle'),
+    body: t('agent.coachWorkflowBody')
+  },
+  {
+    target: '.graph-canvas-panel',
+    placement: 'graph-bottom',
+    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
+    title: t('agent.coachGraphTitle'),
+    body: t('agent.coachGraphBody')
+  },
+  {
+    target: '#agent-chat-history',
+    placement: 'left-start',
+    title: t('agent.coachHistoryTitle'),
+    body: t('agent.coachHistoryBody')
+  }
+])
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
@@ -1066,6 +1196,7 @@ function onPanelDrop(event: DragEvent): void {
 </script>
 
 <template>
+  <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
     class="size-full"
@@ -1139,5 +1270,15 @@ function onPanelDrop(event: DragEvent): void {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
+    <OnboardingCoach
+      v-if="
+        consentAccepted &&
+        onboardingKey &&
+        !canvasStore.linearMode &&
+        activeTour === null
+      "
+      :steps="coachSteps"
+      :storage-key="onboardingKey"
+    />
   </div>
 </template>

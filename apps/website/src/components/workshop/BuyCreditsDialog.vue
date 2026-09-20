@@ -32,15 +32,16 @@ import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { captureWorkshopEvent } from '../../scripts/posthog'
+import type { WorkshopCheckoutFailureStage } from '../../scripts/workshop-analytics'
+import {
+  workshopCheckoutErrorCode,
+  workshopHttpStatus
+} from '../../scripts/workshop-analytics'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
-import {
-  TopUpCheckoutError,
-  createTopUpCheckout
-} from '../../lib/workshop/buy-credits'
-import {
-  subscribeToTopUpReturns,
-  topUpReturnUrl
-} from '../../lib/workshop/topup-return'
+import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
+import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
+import { subscribeToTopUpReturns } from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -57,24 +58,21 @@ const state = ref<'amount' | 'pending' | 'checkout' | 'failed'>('amount')
 const topUp = useTopUpWatch()
 const lastCheckout = ref<TopUpCheckoutSession | undefined>(undefined)
 
-interface CheckoutAttempt {
-  readonly id: string
-  readonly uid: string
-  readonly workspaceId: string
-  readonly workspaceName: string
-  readonly previousCredits: number
-  readonly returned: boolean
-}
-
 interface CheckoutScope {
   readonly uid: string
   readonly workspaceId: string
   readonly workspaceName: string
 }
 
-const checkoutAttempt = ref<CheckoutAttempt | undefined>(undefined)
+interface CheckoutAttempt extends CheckoutScope {
+  readonly id: string
+  readonly previousCredits: number
+  readonly returned: boolean
+}
+
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
+let checkoutAttempt: CheckoutAttempt | undefined
 let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
@@ -92,9 +90,7 @@ watch(
       return
     }
     if (latchedReturn.value !== undefined) {
-      latchedReturn.value = undefined
-      lastCheckout.value = undefined
-      checkoutAttempt.value = undefined
+      clearReturnReceipt()
       open.value = false
     }
   },
@@ -116,20 +112,26 @@ const topUpWorkspaceName = computed(() =>
 // A receipt nobody acknowledged within a minute was read off the chip
 // instead; greeting the next visit with it would look like a fresh grant.
 const STALE_RECEIPT_MS = 60_000
+const AUTO_CLOSE_MS = 3_600
+let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(open, (value) => {
-  if (!value) {
-    cancelPendingCheckout()
-    usd.value = 25
-    state.value = 'amount'
-    if (
-      latchedReturn.value === 'landed' ||
-      latchedReturn.value === 'unresolved'
-    ) {
-      clearReturnReceipt()
-    }
-    return
-  }
+watch(open, handleOpenChange)
+
+function handleOpenChange(value: boolean): void {
+  if (value) prepareOpenDialog()
+  else resetClosedDialog()
+}
+
+function resetClosedDialog(): void {
+  stopAutoClose()
+  cancelPendingCheckout()
+  usd.value = 25
+  state.value = 'amount'
+  if (latchedReturn.value === 'landed' || latchedReturn.value === 'unresolved')
+    clearReturnReceipt()
+}
+
+function prepareOpenDialog(): void {
   if (
     topUp.value.status === 'landed' &&
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
@@ -138,29 +140,65 @@ watch(open, (value) => {
     latchedReturn.value = undefined
   } else if (topUp.value.status === 'idle') {
     latchedReturn.value = undefined
+    if (checkoutAttempt && lastCheckout.value) state.value = 'checkout'
   }
-})
+  if (step.value === 'landed') scheduleAutoClose()
+}
 
 function clearReturnReceipt(): void {
   latchedReturn.value = undefined
   lastCheckout.value = undefined
-  checkoutAttempt.value = undefined
+  checkoutAttempt = undefined
   if (topUp.value.status !== 'idle') clearTopUpWatch()
 }
 
 function finish() {
+  stopAutoClose()
   cancelPendingCheckout()
   clearReturnReceipt()
   open.value = false
 }
 
+function stopAutoClose(): void {
+  if (autoCloseTimer) clearTimeout(autoCloseTimer)
+  autoCloseTimer = undefined
+}
+
+function scheduleAutoClose(): void {
+  stopAutoClose()
+  if (document.hidden) return
+  autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
+}
+
+function onVisibilityChange(): void {
+  if (step.value !== 'landed' || !open.value) return
+  if (document.hidden) stopAutoClose()
+  else scheduleAutoClose()
+}
+
+function cancelAutoClose(): void {
+  if (step.value === 'landed') stopAutoClose()
+}
+
+watch(step, (value) => {
+  if (value === 'landed' && open.value) scheduleAutoClose()
+  else stopAutoClose()
+})
+
 onMounted(() => {
   unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  document.addEventListener('pointerdown', cancelAutoClose)
+  document.addEventListener('keydown', cancelAutoClose)
 })
 
 onBeforeUnmount(() => {
+  stopAutoClose()
   cancelPendingCheckout()
   unsubscribeFromTopUpReturns?.()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  document.removeEventListener('pointerdown', cancelAutoClose)
+  document.removeEventListener('keydown', cancelAutoClose)
 })
 
 function setAmount(next: number) {
@@ -177,12 +215,25 @@ function cancelPendingCheckout(): void {
 
 function claimCheckoutTab(): Window | null {
   try {
-    const tab = window.open('about:blank', '_blank')
-    if (tab) tab.opener = null
-    return tab
+    return window.open(
+      locale === 'zh-CN' ? '/zh-CN/checkout-opening' : '/checkout-opening',
+      '_blank'
+    )
   } catch {
     return null
   }
+}
+
+function onTopUpReturn(attemptId: string): void {
+  const attempt = checkoutAttempt
+  if (!attempt || attempt.id !== attemptId || attempt.returned) return
+  checkoutAttempt = { ...attempt, returned: true }
+  watchForTopUp({
+    uid: attempt.uid,
+    workspaceId: attempt.workspaceId,
+    workspaceName: attempt.workspaceName,
+    previousCredits: attempt.previousCredits
+  })
 }
 
 function closeCheckoutTab(tab: Window | null): void {
@@ -199,18 +250,6 @@ function navigateCheckoutTab(tab: Window | null, url: string): void {
   } catch {
     closeCheckoutTab(tab)
   }
-}
-
-function onTopUpReturn(attemptId: string): void {
-  const attempt = checkoutAttempt.value
-  if (!attempt || attempt.id !== attemptId || attempt.returned) return
-  checkoutAttempt.value = { ...attempt, returned: true }
-  watchForTopUp({
-    uid: attempt.uid,
-    workspaceId: attempt.workspaceId,
-    workspaceName: attempt.workspaceName,
-    previousCredits: attempt.previousCredits
-  })
 }
 
 function captureCheckoutScope(): CheckoutScope | undefined {
@@ -278,7 +317,7 @@ function recordCheckout(
   tab: Window | null
 ): void {
   lastCheckout.value = checkout
-  checkoutAttempt.value = {
+  checkoutAttempt = {
     id: attemptId,
     uid: scope.uid,
     workspaceId: scope.workspaceId,
@@ -298,18 +337,43 @@ function checkoutEndpointIsUnavailable(error: unknown): boolean {
   )
 }
 
+function checkoutErrorDetails(error: unknown) {
+  if (!(error instanceof TopUpCheckoutError)) return {}
+  const httpStatus = workshopHttpStatus(error.status)
+  const errorCode = workshopCheckoutErrorCode(error.code)
+  return {
+    ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
+    ...(errorCode === undefined ? {} : { error_code: errorCode })
+  }
+}
+
 function handleCheckoutFailure(
   error: unknown,
   controller: AbortController,
-  tab: Window | null
+  tab: Window | null,
+  scope: CheckoutScope,
+  attemptId: string | undefined,
+  stage: WorkshopCheckoutFailureStage
 ): void {
   if (checkoutController !== controller) return
+  checkoutAttempt = undefined
   if (checkoutEndpointIsUnavailable(error)) {
     lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
-    checkoutAttempt.value = undefined
     state.value = 'checkout'
     navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
     return
+  }
+  if (!controller.signal.aborted && checkoutScopeIsCurrent(scope)) {
+    captureWorkshopEvent({
+      name: 'checkout_failed',
+      properties: {
+        ...(attemptId === undefined ? {} : { attempt_id: attemptId }),
+        user_id: scope.uid,
+        workspace_id: scope.workspaceId,
+        stage,
+        ...checkoutErrorDetails(error)
+      }
+    })
   }
   closeCheckoutTab(tab)
   state.value = 'failed'
@@ -324,7 +388,7 @@ function releaseCheckoutAttempt(
 }
 
 async function continueToCheckout() {
-  if (state.value === 'pending') return
+  if (state.value === 'pending' || checkoutAttempt) return
   const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
   if (!scope) return
@@ -333,15 +397,19 @@ async function continueToCheckout() {
   checkoutController = controller
   checkoutTab = tab
   state.value = 'pending'
+  let attemptId: string | undefined
+  let stage: WorkshopCheckoutFailureStage = 'balance'
   try {
     const previousCredits = await creditsBeforeCheckout(scope, controller)
+    stage = 'credential'
     const token = await tokenForCheckout(scope, controller)
-    const attemptId = crypto.randomUUID()
-    const checkout = await createTopUpCheckout({
+    stage = 'checkout'
+    attemptId = crypto.randomUUID()
+    const checkout = await createWorkshopTopUpCheckout({
       token,
       amountCents,
-      returnUrl: topUpReturnUrl(window.location.href, attemptId),
       idempotencyKey: attemptId,
+      locale,
       signal: controller.signal
     })
     controller.signal.throwIfAborted()
@@ -350,7 +418,7 @@ async function continueToCheckout() {
     requireCurrentCheckoutScope(scope, 'Session changed before checkout opened')
     recordCheckout(scope, attemptId, previousCredits, checkout, tab)
   } catch (error) {
-    handleCheckoutFailure(error, controller, tab)
+    handleCheckoutFailure(error, controller, tab, scope, attemptId, stage)
   } finally {
     releaseCheckoutAttempt(controller, tab)
   }
@@ -376,12 +444,14 @@ const stepperClass =
       data-testid="buy-credits-dialog"
     >
       <template v-if="step === 'checkout'">
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.checkoutOpenedTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.checkoutOpenedBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.checkoutOpenedTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.checkoutOpenedBody', locale) }}
+          </DialogDescription>
+        </div>
         <div class="mt-2 flex flex-wrap items-center justify-end gap-3">
           <Button
             variant="outline"
@@ -397,7 +467,7 @@ const stepperClass =
             as="a"
             :href="lastCheckout.url"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="opener"
             size="lg"
             class="px-5"
             data-testid="buy-credits-open-checkout"
@@ -411,18 +481,20 @@ const stepperClass =
       </template>
 
       <template v-else-if="step === 'waiting'">
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.waitingTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.waitingBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.waitingTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.waitingBody', locale) }}
+          </DialogDescription>
+        </div>
         <p
-          class="bg-transparency-white-t4 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-primary-comfy-canvas"
+          class="flex items-center gap-3 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm text-primary-comfy-canvas"
           data-testid="buy-credits-polling"
         >
           <Loader2
-            class="text-primary-comfy-yellow size-4 animate-spin"
+            class="size-4 animate-spin text-primary-comfy-yellow"
             aria-hidden="true"
           />
           {{ t('workshop.credits.waitingPolling', locale) }}
@@ -435,7 +507,7 @@ const stepperClass =
           <a
             :href="lastCheckout.url"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="opener"
             class="text-primary-comfy-yellow underline-offset-4 hover:underline"
             data-testid="buy-credits-reopen"
           >
@@ -449,31 +521,33 @@ const stepperClass =
 
       <template v-else-if="step === 'landed'">
         <span
-          class="border-primary-comfy-yellow text-primary-comfy-yellow -mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2"
+          class="-mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2 border-primary-comfy-yellow text-primary-comfy-yellow"
           aria-hidden="true"
         >
           <Check class="size-7" :stroke-width="2.5" />
         </span>
-        <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
-          {{
-            t('workshop.credits.done', locale).replace(
-              '{n}',
-              format(landedDelta)
-            )
-          }}
-        </DialogTitle>
-        <DialogDescription
-          class="px-8 text-center text-base text-primary-comfy-canvas/70"
-        >
-          {{
-            t('workshop.credits.addedTo', locale).replace(
-              '{workspace}',
-              topUpWorkspaceName
-            )
-          }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="px-8 text-center" data-testid="buy-credits-done">
+            {{
+              t('workshop.credits.done', locale).replace(
+                '{n}',
+                format(landedDelta)
+              )
+            }}
+          </DialogTitle>
+          <DialogDescription
+            class="px-8 text-center text-base text-primary-comfy-canvas/70"
+          >
+            {{
+              t('workshop.credits.addedTo', locale).replace(
+                '{workspace}',
+                topUpWorkspaceName
+              )
+            }}
+          </DialogDescription>
+        </div>
         <dl
-          class="bg-transparency-white-t4 flex flex-col gap-2 rounded-2xl px-4 py-3 text-sm"
+          class="flex flex-col gap-2 rounded-2xl bg-transparency-white-t4 px-4 py-3 text-sm"
           data-testid="buy-credits-ledger"
         >
           <div class="flex items-baseline justify-between">
@@ -523,17 +597,19 @@ const stepperClass =
         >
           <Clock class="size-7" />
         </span>
-        <DialogTitle class="px-8 text-center" data-testid="buy-credits-held">
-          {{ t('workshop.credits.heldTitle', locale) }}
-        </DialogTitle>
-        <DialogDescription
-          class="px-8 text-center text-base text-primary-comfy-canvas/70"
-        >
-          {{ t('workshop.credits.heldBody', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="px-8 text-center" data-testid="buy-credits-held">
+            {{ t('workshop.credits.heldTitle', locale) }}
+          </DialogTitle>
+          <DialogDescription
+            class="px-8 text-center text-base text-primary-comfy-canvas/70"
+          >
+            {{ t('workshop.credits.heldBody', locale) }}
+          </DialogDescription>
+        </div>
         <div
           v-if="lastCheckout?.sessionId"
-          class="bg-transparency-white-t4 flex flex-col gap-1 rounded-2xl px-4 py-3"
+          class="flex flex-col gap-1 rounded-2xl bg-transparency-white-t4 px-4 py-3"
         >
           <span class="text-xs text-primary-warm-gray">
             {{ t('workshop.credits.heldSupport', locale) }}
@@ -570,12 +646,14 @@ const stepperClass =
       </template>
 
       <template v-else>
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.title', locale) }}
-        </DialogTitle>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.credits.body', locale) }}
-        </DialogDescription>
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="pr-16">
+            {{ t('workshop.credits.title', locale) }}
+          </DialogTitle>
+          <DialogDescription class="text-base text-primary-comfy-canvas/70">
+            {{ t('workshop.credits.body', locale) }}
+          </DialogDescription>
+        </div>
 
         <fieldset
           :disabled="state === 'pending'"
@@ -603,7 +681,7 @@ const stepperClass =
           </div>
 
           <div
-            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+            class="flex items-center justify-between gap-3 rounded-2xl bg-transparency-white-t4 px-4 py-3"
             data-testid="buy-credits-custom"
           >
             <span class="text-sm text-primary-warm-gray">
@@ -621,7 +699,7 @@ const stepperClass =
                 <Minus class="size-3.5" aria-hidden="true" />
               </button>
               <span
-                class="w-28 text-right text-sm text-primary-comfy-canvas tabular-nums"
+                class="w-28 text-center text-sm text-primary-comfy-canvas tabular-nums"
               >
                 ${{ format(usd) }} · {{ format(credits) }}
               </span>

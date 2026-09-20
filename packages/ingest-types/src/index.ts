@@ -219,6 +219,13 @@ export type {
   CreateSessionResponse,
   CreateSessionResponse2,
   CreateSessionResponses,
+  CreateTopupCheckoutData,
+  CreateTopupCheckoutError,
+  CreateTopupCheckoutErrors,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
+  CreateTopupCheckoutResponse2,
+  CreateTopupCheckoutResponses,
   CreateTopupData,
   CreateTopupError,
   CreateTopupErrors,
@@ -1124,4 +1131,4 @@ export type {
   WorkspaceApiKeyInfo,
   WorkspaceSummary,
   WorkspaceWithRole
-} from './types.gen'
+} from './types.gen.js'
