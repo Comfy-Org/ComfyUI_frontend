@@ -96,10 +96,11 @@ const PREPARE_TIMEOUT_MS = 3000
  * and its terminal event may never reach this socket (dropped during
  * hydration, or the row was orphaned and only a server sweep will end it).
  * Poll the persisted row with backoff, then keep checking at the last delay
- * for as long as the turn is still live here. Each check is bounded by the
- * REST client's own timeout; the job ends when the row reports a terminal
- * state or a missing thread, when the turn leaves the conversation store's
- * live set, or when the session that started it stops or is superseded.
+ * for as long as the turn is still live here. Each request uses the REST
+ * client's response-header timeout and remains abortable when the session
+ * stops. The job ends when the row reports a terminal state or a missing
+ * thread, when the turn leaves the conversation store's live set, or when the
+ * session that started it stops or is superseded.
  * Switching threads stashes the turn rather than ending it, so its recovery
  * keeps running in the background.
  */
