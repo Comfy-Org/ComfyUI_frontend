@@ -1709,6 +1709,15 @@ describe('useAgentCrdtFollower', () => {
       'status',
       expect.any(Function)
     )
+
+    telemetryState.reportError.mockClear()
+    bridge().resubscribe.mockClear()
+    dispatchSocketClosed({ code: 1006, reason: 'late', wasClean: false })
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    apiState.target.dispatchEvent(new Event('reconnecting'))
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
   })
 
   it('reports cleanup failures that throw a nullish value', () => {
