@@ -86,15 +86,19 @@ function withoutGhostFlag(node: WorkflowNode): WorkflowNode {
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
   const reportedInteriorChanges = new Set<string>()
-  // Ids this port has itself minted an add_node for, and not since minted a
-  // delete_node for. Deliberately NOT seeded from `deps.source.nodeIds()`:
-  // that snapshot already includes a node the moment its own createNode
-  // change fires (the live graph mutates before the change event reaches
-  // this port), so checking it at mint time would reject every genuine
-  // create. This set instead answers "did *this port* already relay an add
-  // for this id, with no relayed delete in between" — the shape of a redo
-  // that recreates an already-doc-known node under its original id (the
-  // node id_collision replay storm in agentCrdtProjection debug reports).
+  // Ids this port has itself minted an add_node for, and that the local
+  // document has not since lost (by any deleteNode or clearGraph change,
+  // whether or not that change itself went on to mint an op). Deliberately
+  // NOT seeded from `deps.source.nodeIds()`: that snapshot already includes
+  // a node the moment its own createNode change fires (the live graph
+  // mutates before the change event reaches this port), so checking it at
+  // mint time would reject every genuine create. This set instead answers
+  // "did *this port* already relay an add for this id, and does the
+  // document still hold that id" — the shape of a redo that recreates an
+  // already-doc-known node under its original id (the node id_collision
+  // replay storm in agentCrdtProjection debug reports) without falsely
+  // suppressing a genuine recreate after a real (possibly remote or
+  // teardown) removal.
   const mintedNodeIds = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
@@ -191,10 +195,14 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        if (!gate(change, inTeardown)) return
-        if (reportUnrepresentableInteriorChange(operation, 'delete')) return
+        // The document lost this id the moment a deleteNode change fired,
+        // regardless of whether this port also gates the delete_node op for
+        // echo-suppression or teardown - the two questions are independent
+        // (see the leading comment on `mintedNodeIds`).
         if (operation.nodeId === undefined) return
         mintedNodeIds.delete(String(operation.nodeId))
+        if (!gate(change, inTeardown)) return
+        if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         deps.enqueue([
           {
             op: 'delete_node',
@@ -207,8 +215,8 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        if (!gate(change, inTeardown || captured === null)) return
         mintedNodeIds.clear()
+        if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }
