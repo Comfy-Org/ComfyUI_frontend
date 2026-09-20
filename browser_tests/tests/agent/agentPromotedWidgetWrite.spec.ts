@@ -20,7 +20,7 @@ import type { NodeId } from '@/types/nodeId'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const ASSET_PATH = path.resolve(
   import.meta.dirname,
   '../../assets/subgraphs/nested-pack-promoted-values.json'
