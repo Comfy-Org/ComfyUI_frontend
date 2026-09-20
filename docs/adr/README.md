@@ -10,6 +10,7 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR                                                                                                              | Title                                                             | Status   | Date       |
 | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------- | ---------- |
+| [AGENT-BINDING-0035](AGENT-BINDING-0035-document-identity-gates-persisted-workflow-tab-bindings.md)              | Document Identity Gates Persisted Workflow Tab Bindings           | Proposed | 2026-09-19 |
 | [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)                        | Separate Workflow References from Editor Tabs                     | Proposed | 2026-09-07 |
 | [ASSETS-DRAG-DROP-0035](ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md)                                  | Asset Card Drag-and-Drop Uses the File URL, Never the Preview URL | Proposed | 2026-09-19 |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                       | Proposed | 2026-07-28 |
