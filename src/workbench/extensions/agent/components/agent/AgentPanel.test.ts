@@ -111,7 +111,7 @@ describe('AgentPanel', () => {
 
     await user.click(suggestion)
 
-    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveTextContent(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
@@ -141,7 +141,7 @@ describe('AgentPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveTextContent(prompt)
     expect(textarea).toHaveFocus()
 
     await user.clear(textarea)
