@@ -61,7 +61,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     mutations.addNode(
@@ -162,7 +163,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: vi.fn(),
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const context = {
@@ -260,7 +262,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: vi.fn(),
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const context = {
@@ -328,7 +331,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: vi.fn(),
         deleteNodes: vi.fn(),
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const context = {
@@ -369,7 +373,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: vi.fn(),
         deleteNodes: vi.fn(),
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const adapter = new EcsFollowerAdapter(mutations)
@@ -444,7 +449,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: vi.fn(),
         deleteNodes: vi.fn(),
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const adapter = new EcsFollowerAdapter(mutations)
@@ -550,7 +556,8 @@ describe('EcsFollowerAdapter integration', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     const adapter = new EcsFollowerAdapter(mutations)
@@ -750,7 +757,8 @@ describe('EcsFollowerAdapter integration', () => {
         layout: {
           createNode: vi.fn(),
           deleteNodes: vi.fn(),
-          deleteGroups: vi.fn()
+          deleteGroups: vi.fn(),
+          removeMissingGroups: vi.fn()
         }
       })
       const adapter = new EcsFollowerAdapter(mutations)
@@ -867,7 +875,12 @@ describe('EcsFollowerAdapter integration', () => {
     const createNode = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode, deleteNodes: vi.fn(), deleteGroups: vi.fn() }
+      layout: {
+        createNode,
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -972,7 +985,8 @@ describe('EcsFollowerAdapter integration', () => {
         removeLinks: () => undefined,
         deleteNode: () => undefined,
         clearSemanticGraph: () => undefined,
-        deleteGroups: () => undefined
+        deleteGroups: () => undefined,
+        removeMissingGroups: () => undefined
       }
       return {
         batch: (_context, define) => {
@@ -1055,7 +1069,8 @@ describe('EcsFollowerAdapter integration', () => {
         layout: {
           createNode: vi.fn(),
           deleteNodes: vi.fn(),
-          deleteGroups: vi.fn()
+          deleteGroups: vi.fn(),
+          removeMissingGroups: vi.fn()
         }
       })
       const adapter = new EcsFollowerAdapter(mutations)
@@ -1158,7 +1173,8 @@ describe('EcsFollowerAdapter integration', () => {
         layout: {
           createNode: vi.fn(),
           deleteNodes: vi.fn(),
-          deleteGroups
+          deleteGroups,
+          removeMissingGroups: vi.fn()
         }
       })
 
@@ -1220,7 +1236,12 @@ describe('EcsFollowerAdapter integration', () => {
       const deleteGroups = vi.fn()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn(), deleteGroups }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups,
+          removeMissingGroups: vi.fn()
+        }
       })
 
       const host = mint(
@@ -1286,7 +1307,12 @@ describe('EcsFollowerAdapter integration', () => {
       const deleteGroups = vi.fn()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn(), deleteGroups }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups,
+          removeMissingGroups: vi.fn()
+        }
       })
 
       const host = mint(
@@ -1330,6 +1356,203 @@ describe('EcsFollowerAdapter integration', () => {
 
       expect(deleteGroups).toHaveBeenCalledOnce()
       expect(deleteGroups.mock.calls[0]?.[1]).toEqual([7])
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    // A session rebound when its tab goes active again starts with an empty
+    // `lastGroupIds`, so the diff above can never see a group the doc lost
+    // while the tab was inactive. The reconcile frame carries the doc's whole
+    // group set instead, and the layout owner drops whatever it still holds
+    // beyond it — the same authority `removeMissing` has for nodes and links.
+    it('hands the doc group set to the layout owner on the first frame of a fresh session', () => {
+      const removeMissingGroups = vi.fn()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn(),
+          removeMissingGroups
+        }
+      })
+
+      const host = mint(
+        {
+          nodes: [],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ['seed']
+        })
+      ).toBe(true)
+
+      // Group 5 is retained; a group the live canvas still holds and the doc
+      // does not is absent from this set, so the owner deletes it.
+      expect(removeMissingGroups).toHaveBeenCalledOnce()
+      expect(removeMissingGroups.mock.calls[0]?.[1]).toEqual([5])
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('retries a rejected group deletion on the next frame', () => {
+      const deleteGroups = vi.fn()
+      const removeMissingGroups = vi.fn()
+      let scopeAvailable = true
+      const mutations = createGraphMutations({
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups,
+          removeMissingGroups
+        }
+      })
+
+      const host = mint(
+        {
+          nodes: [],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host),
+        actor: 'agent:test',
+        opIds: ['seed']
+      })
+
+      applyOps(host, [
+        op('clear-3', 2, { op: 'clear', removed_nodes: [] })
+      ] as Parameters<typeof applyOps>[1])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      // Rejected: no scope. Nothing reaches the layout owner, and the
+      // baseline must not advance — otherwise the retry would diff against a
+      // snapshot this session never committed against and lose the deletion.
+      scopeAvailable = false
+      removeMissingGroups.mockClear()
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-3']
+        })
+      ).toBe(false)
+      expect(deleteGroups).not.toHaveBeenCalled()
+      expect(removeMissingGroups).not.toHaveBeenCalled()
+
+      // A rejected batch arms a full reconcile, so the retry carries the
+      // doc's authoritative group set (now empty) rather than the incremental
+      // diff. Group 5 is absent from it, so the owner still drops it.
+      scopeAvailable = true
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 3,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-3']
+        })
+      ).toBe(true)
+      expect(removeMissingGroups).toHaveBeenCalledOnce()
+      expect(removeMissingGroups.mock.calls[0]?.[1]).toEqual([])
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('is idempotent when an already committed group deletion is delivered twice', () => {
+      const deleteGroups = vi.fn()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups,
+          removeMissingGroups: vi.fn()
+        }
+      })
+
+      const host = mint(
+        {
+          nodes: [],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host),
+        actor: 'agent:test',
+        opIds: ['seed']
+      })
+
+      applyOps(host, [
+        op('clear-4', 2, { op: 'clear', removed_nodes: [] })
+      ] as Parameters<typeof applyOps>[1])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-4']
+        })
+      ).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+
+      // Redelivery of the same frame: the baseline advanced on commit, so the
+      // diff is empty and no second delete reaches the layout owner.
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 3,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-4']
+        })
+      ).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
 
       adapter.destroy()
       follower.destroy()

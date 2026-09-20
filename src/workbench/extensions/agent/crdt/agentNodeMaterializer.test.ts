@@ -173,7 +173,8 @@ function remoteMutations(scope: GraphScope) {
           }))
         )
       },
-      deleteGroups: () => undefined
+      deleteGroups: () => undefined,
+      removeMissingGroups: () => undefined
     }
   })
 }

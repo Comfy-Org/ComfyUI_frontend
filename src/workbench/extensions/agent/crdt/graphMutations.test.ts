@@ -88,7 +88,8 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
   }
@@ -397,7 +398,8 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     sibling.addNode(node(9), context)
@@ -430,7 +432,8 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     })
     sibling.batch(context, (batch) => {
@@ -987,7 +990,8 @@ describe('graphMutations', () => {
       layout: {
         createNode: createLayout,
         deleteNodes: deleteLayouts,
-        deleteGroups: vi.fn()
+        deleteGroups: vi.fn(),
+        removeMissingGroups: vi.fn()
       }
     }).addNode(
       {

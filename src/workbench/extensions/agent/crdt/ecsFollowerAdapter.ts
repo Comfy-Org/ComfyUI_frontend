@@ -493,7 +493,14 @@ export class EcsFollowerAdapter {
       (id) => !currentGroupIds.has(id)
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
-      if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
+      // A reconcile frame is authoritative, so it carries the doc's whole
+      // group set and the layout owner drops whatever it still holds beyond
+      // it. The `lastGroupIds` diff cannot cover this case: a session rebound
+      // when its tab went active again starts with an empty baseline, so a
+      // group the doc lost while the tab was inactive would otherwise survive
+      // every later frame and get written back by the next save.
+      if (reconcile) batch.removeMissingGroups([...currentGroupIds])
+      else if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
