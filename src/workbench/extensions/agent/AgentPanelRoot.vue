@@ -946,6 +946,10 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
+  // A new chat targets whatever tab is on screen right now, not the previous
+  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
+  // so restoreTarget() can re-apply the loaded thread's own binding.
+  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
 }
 
