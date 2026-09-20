@@ -41,11 +41,12 @@ export function transitionReconnectTelemetry(
     }
   }
 
-  const reconnects = state.reconnects.filter(
+  const reconnectsInWindow = state.reconnects.filter(
     (at) => event.now - at <= RECONNECT_TELEMETRY_WINDOW_MS
   )
-  const stormReported = reconnects.length === 0 ? false : state.stormReported
-  reconnects.push(event.now)
+  const reconnects = [...reconnectsInWindow, event.now]
+  const stormReported =
+    reconnectsInWindow.length === 0 ? false : state.stormReported
   const report =
     reconnects.length >= STORM_THRESHOLD && !stormReported
       ? 'reconnect_storm'
