@@ -4853,34 +4853,53 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) throw new NullGraphError()
 
     this.emitBeforeChange()
-    graph.beforeChange()
+    let changeFailed = false
+    let changeError: unknown
+    let cleanupFailed = false
+    let cleanupError: unknown
+    try {
+      try {
+        graph.beforeChange()
+        // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
+        const toDelete = [...this.selectedItems]
+        for (const item of toDelete) {
+          if (item instanceof LGraphNode) {
+            const node = item
+            if (node.block_delete) continue
+            node.connectInputToOutput()
+            graph.remove(node)
+            this.onNodeDeselected?.(node)
+          } else if (item instanceof LGraphGroup) {
+            graph.remove(item)
+          } else if (item instanceof Reroute) {
+            graph.removeReroute(item.id)
+          }
+        }
 
-    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
-    const toDelete = [...this.selectedItems]
-    for (const item of toDelete) {
-      if (item instanceof LGraphNode) {
-        const node = item
-        if (node.block_delete) continue
-        node.connectInputToOutput()
-        graph.remove(node)
-        this.onNodeDeselected?.(node)
-      } else if (item instanceof LGraphGroup) {
-        graph.remove(item)
-      } else if (item instanceof Reroute) {
-        graph.removeReroute(item.id)
+        this.selected_nodes = {}
+        this.selectedItems.clear()
+        this.current_node = null
+        this.highlighted_links = {}
+
+        this.state.selectionChanged = true
+        this.onSelectionChange?.(this.selected_nodes)
+        this.setDirty(true)
+      } catch (error) {
+        changeFailed = true
+        changeError = error
+      } finally {
+        try {
+          graph.afterChange()
+        } catch (error) {
+          cleanupFailed = true
+          cleanupError = error
+        }
       }
+    } finally {
+      this.emitAfterChange()
     }
-
-    this.selected_nodes = {}
-    this.selectedItems.clear()
-    this.current_node = null
-    this.highlighted_links = {}
-
-    this.state.selectionChanged = true
-    this.onSelectionChange?.(this.selected_nodes)
-    this.setDirty(true)
-    graph.afterChange()
-    this.emitAfterChange()
+    if (changeFailed) throw changeError
+    if (cleanupFailed) throw cleanupError
   }
 
   /**
