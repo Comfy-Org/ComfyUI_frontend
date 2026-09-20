@@ -15,6 +15,7 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
 const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
 const SUITE_CALLBACK_MODIFIERS = new Set([
@@ -49,6 +50,19 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface TemplateLiteral extends Node {
+  readonly type: 'TemplateLiteral'
+  readonly expressions: readonly Expression[]
+  readonly quasis: readonly {
+    readonly value: { readonly cooked?: string; readonly raw: string }
+  }[]
+}
+
+interface ImportExpression extends Node {
+  readonly type: 'ImportExpression'
+  readonly source: Expression
+}
+
 interface PropertyDefinition extends Node {
   readonly type: 'PropertyDefinition'
   readonly static: boolean
@@ -70,6 +84,7 @@ type Expression =
   | Node
   | Identifier
   | StringLiteral
+  | TemplateLiteral
   | MemberExpression
   | ChainExpression
 
@@ -79,9 +94,49 @@ interface CallExpression extends Node {
   readonly arguments: readonly Expression[]
 }
 
+interface FunctionExpression extends Node {
+  readonly type:
+    | 'ArrowFunctionExpression'
+    | 'FunctionDeclaration'
+    | 'FunctionExpression'
+  readonly params: readonly Node[]
+}
+
+function isImportExpression(node: Node | undefined): node is ImportExpression {
+  return node?.type === 'ImportExpression'
+}
+
+function isTemplateLiteral(node: Node): node is TemplateLiteral {
+  return node.type === 'TemplateLiteral'
+}
+
+function staticModuleName(node: Node | undefined): string | undefined {
+  if (!node) return
+  if (isImportExpression(node)) return staticModuleName(node.source)
+  if ('value' in node && typeof node.value === 'string') return node.value
+  if (isTemplateLiteral(node)) {
+    if (node.expressions.length === 0) {
+      return node.quasis[0]?.value.cooked ?? node.quasis[0]?.value.raw
+    }
+  }
+}
+
+function isFunctionExpression(
+  node: Node | undefined
+): node is FunctionExpression {
+  return (
+    node?.type === 'ArrowFunctionExpression' ||
+    node?.type === 'FunctionDeclaration' ||
+    node?.type === 'FunctionExpression'
+  )
+}
+
 interface ScopeVariableDefinition {
   readonly type: string
-  readonly node: Node & { readonly imported?: Identifier }
+  readonly node: Node & {
+    readonly imported?: Identifier
+    readonly init?: Expression
+  }
   readonly parent: Node & { readonly source?: StringLiteral }
 }
 
@@ -151,6 +206,29 @@ function resolvedVariable(
     )
     if (reference) return reference.resolved
     scope = scope.upper
+  }
+}
+
+function mockFactory(
+  context: RuleContext,
+  expression: Expression | undefined
+): FunctionExpression | undefined {
+  if (isFunctionExpression(expression)) return expression
+  const identifier = expression && asIdentifier(expression)
+  if (!identifier) return
+
+  const variable = resolvedVariable(context, identifier)
+  const definition = variable?.defs.find(
+    ({ node }) =>
+      isFunctionExpression(node) ||
+      (node.type === 'VariableDeclarator' && isFunctionExpression(node.init))
+  )?.node
+  if (isFunctionExpression(definition)) return definition
+  if (
+    definition?.type === 'VariableDeclarator' &&
+    isFunctionExpression(definition.init)
+  ) {
+    return definition.init
   }
 }
 
@@ -389,6 +467,64 @@ export const noModuleScopeVitestMocks = {
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
         })
+      }
+    }
+  }
+}
+
+export const noImportActual = {
+  create(context: RuleContext) {
+    const mockedModulesByFactory = new Map<FunctionExpression, Set<string>>()
+    const importsInFactories: {
+      node: ImportExpression
+      factory: FunctionExpression
+      importedModule: string
+    }[] = []
+
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        const factory =
+          methodName !== undefined && PARTIAL_MOCK_METHODS.has(methodName)
+            ? mockFactory(context, node.arguments[1])
+            : undefined
+        if (factory !== undefined) {
+          const mockedModule = staticModuleName(node.arguments[0])
+          if (mockedModule !== undefined) {
+            const modules = mockedModulesByFactory.get(factory) ?? new Set()
+            modules.add(mockedModule)
+            mockedModulesByFactory.set(factory, modules)
+          }
+        }
+        const usesImportOriginal =
+          factory !== undefined && factory.params.length > 0
+
+        if (methodName !== 'importActual' && !usesImportOriginal) return
+
+        context.report({
+          node,
+          message:
+            'Avoid importOriginal() and vi.importActual(). Import the module normally and use vi.spyOn(), vi.mock(..., { spy: true }), or a focused full mock.'
+        })
+      },
+      ImportExpression(node: ImportExpression) {
+        const importedModule = staticModuleName(node.source)
+        if (importedModule === undefined) return
+        const ancestors = context.sourceCode.getAncestors(node)
+        const factory = ancestors.findLast(isFunctionExpression)
+        if (factory === undefined) return
+        importsInFactories.push({ node, factory, importedModule })
+      },
+      'Program:exit'() {
+        for (const { node, factory, importedModule } of importsInFactories) {
+          if (!mockedModulesByFactory.get(factory)?.has(importedModule))
+            continue
+          context.report({
+            node,
+            message:
+              'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
+          })
+        }
       }
     }
   }

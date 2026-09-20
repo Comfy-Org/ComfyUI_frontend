@@ -89,29 +89,41 @@
       :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <Button
-        v-if="agentPanelStore.enabled && !agentPanelStore.isOpen"
-        variant="link"
-        size="sm"
-        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
-        @click="onAgentEntryClick"
-      >
-        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
-        <span>{{ $t('agent.askComfyAgent') }}</span>
-      </Button>
+      <TopbarBadges />
+      <TopbarSubscribeButton />
+      <div
+        v-if="topbarBadgeStore.badges.length"
+        data-testid="environment-badge-separator"
+        class="h-5 w-px shrink-0 bg-border-subtle"
+      />
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
         size="icon"
-        class="shrink-0 text-base-foreground"
+        class="size-6 shrink-0 rounded-sm p-0"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--megaphone]" />
+        <i class="icon-[lucide--megaphone] size-4" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
+      <template v-if="showAgentEntry">
+        <div
+          data-testid="agent-entry-separator"
+          class="h-5 w-px shrink-0 bg-border-subtle"
+        />
+        <AgentEntryButton
+          :active="agentPanelStore.isVisible"
+          :inviting="!agentPanelStore.hasEverOpened"
+          @click="onAgentEntryClick"
+        />
+      </template>
+    </div>
+    <div v-else class="ml-auto flex h-full shrink-0 items-center">
+      <TopbarBadges />
+      <TopbarSubscribeButton />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -122,8 +134,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -138,8 +153,10 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -161,14 +178,40 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const topbarBadgeStore = useTopbarBadgeStore()
+const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
+const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
-function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
-  })
-  agentPanelStore.toggle()
+const showAgentEntry = computed(
+  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+)
+
+async function onAgentEntryClick(): Promise<void> {
+  if (isOpeningAgent.value) return
+  isOpeningAgent.value = true
+
+  try {
+    if (agentPanelStore.isVisible) {
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'closed'
+      })
+      agentPanelStore.toggle()
+      return
+    }
+
+    agentPanelStore.suppressRestoredOpen()
+    await withConsent(() => {
+      if (!agentPanelStore.enabled) return
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'opened'
+      })
+      agentPanelStore.open()
+    })
+  } finally {
+    isOpeningAgent.value = false
+  }
 }
 
 // Dismiss a tab's terminal status badge once it has been viewed

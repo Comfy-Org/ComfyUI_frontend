@@ -38,12 +38,6 @@ import { ComfyWorkflow } from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
-function currentCanvas(
-  canvas: typeof comfyApp.canvas | undefined
-): typeof comfyApp.canvas | undefined {
-  return canvas
-}
-
 /**
  * Exposed store interface for the workflow store.
  * Explicitly typed to avoid trigger following error:
@@ -389,7 +383,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Check if workflow is still open
       if (openWorkflowPathSet.value.has(path)) {
         validPaths.unshift(path)
-        const workflow = workflowLookup.value[path]
+        const workflow = getWorkflowByPath(path)
         {
           // Lazy cleanup: keep only valid paths
           tabActivationHistory.value = validPaths
@@ -455,7 +449,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
           existingWorkflow.unload()
         },
-        /* exclude */ (workflow) => workflow.isTemporary
+        /* exclude */ (workflow) => workflow.isTemporary,
+        /* beforeDelete */ (workflow, path) => {
+          if (isActive(workflow)) return false
+          openWorkflowPaths.value = openWorkflowPaths.value.filter(
+            (openPath) => openPath !== path
+          )
+          return true
+        }
       )
     },
     undefined,
@@ -540,7 +541,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
-      delete workflowLookup.value[workflow.path]
+      detachWorkflow(workflow)
     } finally {
       isBusy.value = false
     }
@@ -571,7 +572,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const canvas = currentCanvas(comfyApp.canvas)
+    const canvas = comfyApp.canvasOrUndefined
     if (!canvas) return
     const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined

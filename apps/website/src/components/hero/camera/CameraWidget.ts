@@ -31,10 +31,10 @@ import {
   TorusGeometry,
   TubeGeometry,
   Vector2,
-  Vector3,
-  WebGLRenderer
+  Vector3
 } from 'three'
 import type { Camera, Material } from 'three'
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
 
 import type { CameraPalette, CameraState, CameraWidgetOptions } from './types'
 

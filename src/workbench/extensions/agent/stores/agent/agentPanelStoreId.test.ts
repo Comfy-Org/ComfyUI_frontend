@@ -8,9 +8,7 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
@@ -62,6 +60,7 @@ describe('the agentPanel store id', () => {
     const { docked } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
+    store.consentAccepted = true
     store.isOpen = true
     expect(docked.value).toBe(true)
 
