@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -611,6 +611,56 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  // Unit-level regression guard for the color/label preservation fix above (this file had no
+  // unit coverage of it before this commit, only the Playwright spec added
+  // alongside it): a reconcile must not wholesale-replace a live node's
+  // presentation-only `color` or an autogrow input's client-computed
+  // `localized_name` when the CRDT payload omits them, since the document
+  // never carries either field.
+  it("keeps a live node's color and friendly input label across a reconcile", () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#ff0000')
+    expect(reconciled.inputs[0].localized_name).toBe('image_1')
+  })
+
+  // The merge must still be a merge, not a pin: when the doc payload *does*
+  // carry an explicit color, or the slot at that index is genuinely a
+  // different input (not just a redundant resync of the same one), the fix
+  // must not keep stale values behind the live node's back.
+  it('still applies a color the doc payload sets, and does not carry a stale label onto a genuinely different input at the same slot index', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          color: '#00ff00',
+          inputs: [{ name: 'a-different-input', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#00ff00')
+    expect(reconciled.inputs[0].localized_name).toBeUndefined()
+  })
+
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
@@ -699,6 +749,10 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
     const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.color = '#432'
+    existing.bgcolor = '#653'
+    existing.inputs[0].localized_name = 'old display name'
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -717,6 +771,9 @@ describe('graphMutations', () => {
     )
     expect(replacement).not.toBe(existing)
     expect(replacement?.type).toBe('Replacement')
+    expect(replacement?.color).toBeUndefined()
+    expect(replacement?.bgcolor).toBeUndefined()
+    expect(replacement?.inputs[0].localized_name).toBeUndefined()
     expect(
       useWidgetValueStore().getWidget(
         widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
