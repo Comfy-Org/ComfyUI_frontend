@@ -8,6 +8,11 @@ import {
   SUBSCRIBE_ACK_TIMEOUT_MS
 } from './agentCrdtDocLifecycle'
 import { recordDevEvent } from './devPanelLog'
+import {
+  DOC_ID_SESSION_KEY,
+  persistDocId,
+  reconcilePersistedDocId
+} from './persistedDocId'
 
 vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -272,5 +277,56 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
 
     vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(resubscribe).toHaveBeenCalledTimes(3)
+  })
+})
+
+/**
+ * FE-1969 regression. This file used to carry its OWN copy of the persisted
+ * doc-id record — same `Comfy.Agent.CrdtDocId` key, but a second module-scope
+ * page-load nonce. Two owners on one key can never agree: whichever module
+ * wrote last left the other's reader looking at a foreign nonce, so
+ * `readPersistedDocId()` answered "nothing persisted" for the rest of the page
+ * load. On a reload that is exactly the failing path — `useAgentDockMount`
+ * reconciles the record through `persistedDocId.ts` and re-stamps it with that
+ * module's nonce, then the follower's initial bind asks the lifecycle, gets
+ * `null`, clears the record and never resubscribes.
+ */
+describe('AgentCrdtDocLifecycle persisted doc id', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('reads back a record written through the single persistence owner', () => {
+    const { lifecycle } = wire()
+    persistDocId(WORKFLOW_ID)
+
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+  })
+
+  it('still sees the record after a reload adoption re-stamps its nonce', () => {
+    const { lifecycle } = wire()
+    // A previous page load's record: right key and shape, foreign nonce.
+    sessionStorage.setItem(
+      DOC_ID_SESSION_KEY,
+      JSON.stringify({
+        docId: WORKFLOW_ID,
+        nonce: 'the-pre-reload-page-load',
+        expiresAt: Date.now() + 60_000
+      })
+    )
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { type: 'reload' } as PerformanceNavigationTiming
+    ])
+    // What useAgentDockMount does before the follower ever binds.
+    expect(reconcilePersistedDocId()).toBe(WORKFLOW_ID)
+
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+  })
+
+  it('a confirmed subscribe persists through the same owner', () => {
+    const { lifecycle } = wire()
+    lifecycle.onSubscribeConfirmed()
+
+    expect(reconcilePersistedDocId()).toBe(WORKFLOW_ID)
   })
 })

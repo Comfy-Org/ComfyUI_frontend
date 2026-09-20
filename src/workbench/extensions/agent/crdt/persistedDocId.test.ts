@@ -171,3 +171,29 @@ describe('persistedDocId', () => {
     })
   })
 })
+
+/**
+ * Carried over from the duplicate reader that used to live in
+ * `agentCrdtDocLifecycle.ts`. Collapsing onto one owner must not drop its
+ * guards: an empty doc id passes `typeof === 'string'` and would be handed
+ * back for the follower to subscribe to.
+ */
+describe('empty doc id', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('refuses and consumes a record whose doc id is the empty string', () => {
+    sessionStorage.setItem(
+      DOC_ID_SESSION_KEY,
+      JSON.stringify({
+        docId: '',
+        nonce: 'a-different-page-load',
+        expiresAt: Date.now() + 60_000
+      })
+    )
+
+    expect(reconcilePersistedDocId()).toBeNull()
+    expect(rawRecord()).toBeNull()
+  })
+})

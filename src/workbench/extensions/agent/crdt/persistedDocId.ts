@@ -71,8 +71,11 @@ export function reconcilePersistedDocId(): string | null {
     // out-of-range literal such as `1e400` into `Infinity`, which is a number
     // and is never `<= Date.now()`, so a `typeof` check alone hands back a
     // record that can never expire.
+    // The empty string is a string and would subscribe to a doc id of `''`,
+    // so length is part of the shape check, not a separate caller concern.
     if (
       typeof record.docId !== 'string' ||
+      record.docId.length === 0 ||
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number' ||
       !Number.isFinite(record.expiresAt)
