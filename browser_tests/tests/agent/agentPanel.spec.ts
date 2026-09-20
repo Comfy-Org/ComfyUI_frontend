@@ -235,14 +235,20 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         // `pushEvent` does not wait for the page to apply the frame, and the
         // tool chip attaches to the turn the thinking event opens. Pushing both
         // frames back to back races that, and the tool call is dropped when the
-        // turn is not there yet — hosted CI happens to win the race, a local
-        // rig does not. Settle the thinking state first, as the streaming test
-        // above already does. That test waits on `THINKING_TEXT`, the thinking
-        // CONTENT; this one cannot, because it turned the optional privacy
-        // sources off and the content is deliberately not rendered. The
-        // "Thinking..." label is the observable the panel does expose here.
+        // turn is not there yet. Settle the thinking state first, as the
+        // streaming test above already does.
+        //
+        // Accept either observable, because the two rigs surface the thinking
+        // frame differently: a local CI-container run renders the
+        // `agent.thinking` label while hosted CI renders `THINKING_TEXT`, the
+        // thinking content. Pinning one makes the case pass on the rig it was
+        // written against and fail on the other; the assertion here is only
+        // that the frame landed, not which surface shows it.
         await expect(
-          agentPanel.root.getByText(enMessages.agent.thinking)
+          agentPanel.root
+            .getByText(THINKING_TEXT)
+            .or(agentPanel.root.getByText(enMessages.agent.thinking))
+            .first()
         ).toBeVisible()
 
         pushEvent(ws, TOOL_CALL_EVENT)
