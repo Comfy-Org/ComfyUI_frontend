@@ -5,6 +5,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 // Repro for a nightly report: dragging an item out of the Asset Library
 // panel onto an *existing* Load Image node's widget (not empty canvas)
@@ -58,20 +59,9 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     })
 
-    test('sets the widget filename but the preview fails to load, instead of uploading the file', async ({
+    test('sets the widget filename to the temp location, but the preview must load once the report is fixed', async ({
       comfyPage
     }) => {
-      // Expected to fail until the asset-panel-to-existing-node drop path
-      // re-uploads (or otherwise verifies) the dragged file instead of
-      // trusting the drag payload's original job location.
-      test.fail()
-
-      const uploadRequests: string[] = []
-      await comfyPage.page.route('**/upload/image', async (route) => {
-        uploadRequests.push(route.request().url())
-        await route.fallback()
-      })
-
       const tab = comfyPage.menu.assetsTab
       await tab.open()
       const card = tab.getAssetCardByName(STALE_TEMP_CARD_TEXT)
@@ -79,6 +69,20 @@ test.describe(
 
       const loadImageNode = comfyPage.vueNodes.getNodeByTitle('Load Image')
       await expect(loadImageNode).toBeVisible()
+
+      // The literal stale temp reference must keep failing - that's the
+      // report's defining condition, and it already happens for real
+      // against the local backend (the file is gone). Any other resolution
+      // - a fresh re-upload landing under a new name, or a fix that reads
+      // straight from the asset's own persisted location - gets a real
+      // image, since the RCA leaves the fix's shape open between those two.
+      await comfyPage.page.route('**/view?**', async (route) => {
+        const url = new URL(route.request().url())
+        if (url.searchParams.get('filename') === STALE_TEMP_FILENAME) {
+          return route.fallback()
+        }
+        return route.fulfill({ path: assetPath('test_upload_image.png') })
+      })
 
       // Drop onto the canvas at the node's center, matching the working
       // asset-card-drag convention used elsewhere (see assets.spec.ts's
@@ -95,20 +99,30 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       const imageWidget = await loadImageNodeRef.getWidgetByName('image')
 
-      // The widget value updates immediately, exactly matching the report:
-      // "it changed the image file name correctly so I assume it is loaded".
+      // Required precondition, asserted as a plain `expect` above
+      // `test.fail()`: the drag must actually land and set the widget to
+      // the asset's original, un-uploaded location, exactly matching the
+      // report ("it changed the image file name correctly so I assume it
+      // is loaded"). A failure here is a broken test setup, not the
+      // reported bug, so it must surface as a real failure instead of
+      // being swallowed as an "expected failure" that never reached the
+      // preview assertion below.
       await expect
         .poll(() => imageWidget.getValue())
         .toBe(`${STALE_TEMP_FILENAME} [temp]`)
 
-      // But nothing ever uploaded the dragged file - the drop path bypassed
-      // the real upload flow entirely.
-      expect(uploadRequests).toEqual([])
-
-      // ...so the preview 404s: broken image / "Image does not exist".
+      // Expected to fail until the asset-panel-to-existing-node drop path
+      // re-uploads (or otherwise verifies) the dragged file instead of
+      // trusting the drag payload's original job location: the preview
+      // 404s against the real, un-mocked stale path, showing a broken
+      // image / "Image does not exist" instead of the picture.
+      test.fail()
+      await expect(
+        loadImageNode.getByTestId(TestIds.node.mainImage)
+      ).toBeVisible()
       await expect(
         loadImageNode.getByTestId(TestIds.errors.imageLoadError)
-      ).toBeVisible()
+      ).toBeHidden()
     })
   }
 )
