@@ -7,12 +7,7 @@ function renderFooter(props: Record<string, unknown> = {}) {
   return render(ComfyHubPublishFooter, {
     props: { isFirstStep: false, isLastStep: true, ...props },
     global: {
-      mocks: { $t: (key: string) => key },
-      stubs: {
-        Button: {
-          template: '<button><slot /></button>'
-        }
-      }
+      mocks: { $t: (key: string) => key }
     }
   })
 }

@@ -16,6 +16,12 @@ const testIdentity = vi.mockObject<FirebaseIdentity>(
         return () => {}
       }
     }),
+    onTokenChanged(callback) {
+      callback(null)
+      return () => {}
+    },
+    initialize: () => {},
+    currentUser: () => null,
     signInWithGoogle: async () => testCredential(),
     signInWithGitHub: async () => testCredential(),
     signInWithEmail: async () => testCredential(),

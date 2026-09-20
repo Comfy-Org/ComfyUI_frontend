@@ -31,7 +31,6 @@ const identityMock: Account['workshopIdentity'] = {
 
 const sessionClientMock = vi.mockObject<SessionClient>(
   {
-    attachIdentity: () => () => {},
     dispose: () => {},
     getSnapshot: () => signedOut,
     subscribe: (callback) => {

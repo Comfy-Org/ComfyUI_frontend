@@ -80,11 +80,6 @@ const TEAM_STOP = {
   discountedUsd: 630
 }
 
-const ButtonStub = {
-  emits: ['click'],
-  template: '<button @click="$emit(\'click\')"><slot /></button>'
-}
-
 function createTestI18n() {
   return createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 }
@@ -99,10 +94,7 @@ function renderCard(props: Record<string, unknown> = {}) {
       ...props
     },
     global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        Button: ButtonStub
-      }
+      plugins: [createTestI18n()]
     }
   })
 }
@@ -157,10 +149,7 @@ describe('SubscriptionSuccessWorkspace', () => {
         previewData: makePreviewData(33_600, 'ANNUAL')
       },
       global: {
-        plugins: [createTestI18n()],
-        stubs: {
-          Button: ButtonStub
-        }
+        plugins: [createTestI18n()]
       }
     })
     expect(screen.getByText('$336')).toBeTruthy()
@@ -176,12 +165,7 @@ describe('SubscriptionSuccessWorkspace', () => {
         previewData: makePreviewData(3_500, 'MONTHLY')
       },
       global: {
-        plugins: [createTestI18n()],
-        stubs: {
-          Button: {
-            template: '<button @click="$emit(\'click\')"><slot /></button>'
-          }
-        }
+        plugins: [createTestI18n()]
       }
     })
     expect(screen.getByText('$35')).toBeTruthy()

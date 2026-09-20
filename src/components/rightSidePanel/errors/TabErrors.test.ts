@@ -160,9 +160,6 @@ describe('TabErrors.vue', () => {
           AsyncSearchInput: {
             template:
               '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
           }
         }
       }

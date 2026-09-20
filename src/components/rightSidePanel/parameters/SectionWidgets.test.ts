@@ -141,7 +141,6 @@ describe('SectionWidgets', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Button: true,
           WidgetItem: WidgetItemStub,
           PropertiesAccordionItem: PropertiesAccordionItemStub
         }

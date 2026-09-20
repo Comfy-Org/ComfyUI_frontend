@@ -8,6 +8,12 @@ export type WorkshopFailureStage =
   | 'request'
   | 'response'
 
+export type WorkshopRequestSettlement = 'pending' | 'terminal'
+
+interface WorkshopRouterErrorOptions extends ErrorOptions {
+  readonly requestSettlement?: WorkshopRequestSettlement
+}
+
 export function workshopResponseDetails(response: Response, body = '') {
   return {
     status: response.status,
@@ -21,6 +27,8 @@ export function workshopResponseDetails(response: Response, body = '') {
 }
 
 export class WorkshopRouterError extends Error {
+  readonly requestSettlement?: WorkshopRequestSettlement
+
   constructor(
     readonly reason: RunFailure,
     readonly requestId: string | null = null,
@@ -35,8 +43,20 @@ export class WorkshopRouterError extends Error {
       readonly body: string
     },
     readonly stage?: WorkshopFailureStage,
-    options?: ErrorOptions
+    options?: WorkshopRouterErrorOptions
   ) {
     super(`Router request failed: ${reason}`, options)
+    this.requestSettlement = options?.requestSettlement
   }
+}
+
+export function workshopRunMayStillSettle(
+  failure: WorkshopRouterError
+): boolean {
+  if (failure.requestSettlement) return failure.requestSettlement === 'pending'
+  if (['network', 'response', 'conflict'].includes(failure.reason)) return true
+  return (
+    failure.reason === 'timeout' &&
+    (!failure.response || failure.stage === 'response')
+  )
 }

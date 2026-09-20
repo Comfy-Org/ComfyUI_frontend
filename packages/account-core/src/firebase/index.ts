@@ -14,14 +14,16 @@
  */
 import type { FirebaseOptions } from 'firebase/app'
 import { getApps, initializeApp } from 'firebase/app'
-import type { Auth, Persistence, User, UserCredential } from 'firebase/auth'
+import type { Auth, Dependencies, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
+  onIdTokenChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -30,22 +32,22 @@ import {
 } from 'firebase/auth'
 
 import type { AccountIdentity } from '../core/identity.js'
-import { identityBrand } from '../core/identity.js'
+import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 export interface FirebaseIdentityAppConfig {
-  readonly options: FirebaseOptions
+  readonly options: FirebaseOptions | (() => FirebaseOptions)
   /** Named app: never contend with a default app another script creates. */
   readonly appName?: string
-  /** Host-selected persistence; Firebase's default when omitted. */
-  readonly persistence?: Persistence
+  /** One persistence or an ordered hierarchy, handed to `initializeAuth` as is; Firebase's default when omitted. */
+  readonly persistence?: Dependencies['persistence']
   /** A host-owned `Auth` and package-owned app options are exclusive. */
   readonly auth?: never
 }
 
 /**
- * A host that already holds an `Auth` (the cloud app's vuefire instance)
- * binds the entry to it: no second app, no second persistence store.
+ * A host that already holds an `Auth` binds the entry to it: no second app,
+ * no second persistence store.
  */
 export interface FirebaseIdentityAuthConfig {
   readonly auth: Auth
@@ -64,6 +66,12 @@ export interface FirebaseIdentity extends AccountIdentity<User> {
    * every change. This is the identity the session core binds to.
    */
   onUserChanged: (callback: (user: User | null) => void) => () => void
+  /** Fires on every ID token change, refreshes included. */
+  onTokenChanged: (callback: (user: User | null) => void) => () => void
+  /** Resolves the app and `Auth` now; a no-op once resolved. */
+  initialize: () => void
+  /** Null until `initialize()` or a subscribing/sign-in call has resolved `Auth`. */
+  currentUser: () => User | null
   signInWithGoogle: () => Promise<UserCredential>
   signInWithGitHub: () => Promise<UserCredential>
   signInWithEmail: (email: string, password: string) => Promise<UserCredential>
@@ -103,42 +111,82 @@ function resolveUnknownEmailAsSent(error: unknown): void {
   throw error
 }
 
+interface AuthResolver {
+  resolve: () => Auth
+  peek: () => Auth | undefined
+}
+
 /**
- * Resolved once per identity. A named app this entry creates gets the
- * host's persistence through `initializeAuth`; an app another entry already
- * created keeps the persistence its creator chose, since Firebase allows one
- * Auth per app.
+ * A pre-existing app under this name must be the same Firebase project, or
+ * `Auth` binds to another project's session. Deliberately a "same project"
+ * check on the fields that pick a session, not the SDK's byte-identical
+ * compare: `appId` is Installations/Analytics, so omitting it from a partial
+ * same-project config still binds rather than failing boot.
  */
-function authResolver(config: FirebaseIdentityConfig): () => Auth {
+function assertSameProject(
+  existing: FirebaseOptions,
+  requested: FirebaseOptions,
+  appName: string
+): void {
+  const mismatch = (['projectId', 'apiKey', 'authDomain'] as const)
+    .filter((key) => existing[key] !== requested[key])
+    .join(', ')
+  if (mismatch) {
+    throw new Error(
+      `Firebase app "${appName}" already exists for a different project (${mismatch})`
+    )
+  }
+}
+
+/**
+ * Host persistence goes through `initializeAuth`, whether this entry creates
+ * the named app or another script already did: Firebase allows one Auth per
+ * app, so an Auth another module initialized with different dependencies
+ * fails with `auth/already-initialized` instead of silently winning. Unlike
+ * `getAuth`, `initializeAuth` wires no popup resolver of its own, and popup
+ * sign-in throws `auth/argument-error` without one.
+ */
+function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   if (config.auth) {
     const { auth } = config
-    return () => auth
+    return { resolve: () => auth, peek: () => auth }
   }
   const appName = config.appName ?? 'comfy-account'
   let resolved: Auth | undefined
-  return () => {
+  const resolve = (): Auth => {
     if (resolved) return resolved
+    // Resolve options before the lookup so the host's config thunk (its
+    // unloaded-remote-config guard) always runs, even when reusing an app.
+    const options =
+      typeof config.options === 'function' ? config.options() : config.options
     const existing = getApps().find((app) => app.name === appName)
-    if (existing) {
-      resolved = getAuth(existing)
-      return resolved
-    }
-    const app = initializeApp(config.options, appName)
+    if (existing) assertSameProject(existing.options, options, appName)
+    const app = existing ?? initializeApp(options, appName)
     resolved = config.persistence
-      ? initializeAuth(app, { persistence: config.persistence })
+      ? initializeAuth(app, {
+          persistence: config.persistence,
+          popupRedirectResolver: browserPopupRedirectResolver
+        })
       : getAuth(app)
     return resolved
   }
+  return { resolve, peek: () => resolved }
 }
 
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
-  const auth = authResolver(config)
+  const { resolve: auth, peek } = authResolver(config)
 
   return {
-    [identityBrand]: true,
-    onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
+    ...brandIdentity<User>({
+      onUserChanged: (callback) => onAuthStateChanged(auth(), callback)
+    }),
+    onTokenChanged: (callback) => onIdTokenChanged(auth(), callback),
+    initialize: () => {
+      auth()
+    },
+    currentUser: () => peek()?.currentUser ?? null,
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
