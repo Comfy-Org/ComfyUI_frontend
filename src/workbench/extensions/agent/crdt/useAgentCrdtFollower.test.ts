@@ -468,9 +468,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('reports a fixed apply error while preserving the original exception', () => {
+  it('bounds apply errors until recovery while preserving the original exception', () => {
     const original = new Error('sensitive adapter detail')
-    adapterState.applyFrame.mockImplementationOnce(() => {
+    adapterState.applyFrame.mockImplementation(() => {
       throw original
     })
     const { unmount } = mountFollower('wf-1')
@@ -478,13 +478,26 @@ describe('useAgentCrdtFollower', () => {
     expect(() =>
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
     ).toThrow(original)
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
+    ).toThrow(original)
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ message: 'CRDT update could not be applied' }),
       {
         errorType: 'error_applying_crdt_update',
         context: { workflow_id: 'wf-1', seq: 9 }
       }
     )
+
+    adapterState.applyFrame.mockReturnValueOnce(true)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 11 })
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw original
+    })
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 12 })
+    ).toThrow(original)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
     expect(JSON.stringify(telemetryState.reportError.mock.calls)).not.toContain(
       'sensitive adapter detail'
     )

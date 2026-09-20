@@ -380,7 +380,7 @@ function startAgentCrdtFollower(
   // document becomes healthy. Report each reason once per incident, then
   // re-arm after a successful apply, confirmed subscribe, or retarget.
   const divergenceReported = new Set<
-    'missing_projection_target' | 'schema_mismatch'
+    'apply_error' | 'missing_projection_target' | 'schema_mismatch'
   >()
   const reportDocDivergence = (
     reason: 'missing_projection_target' | 'schema_mismatch',
@@ -452,10 +452,13 @@ function startAgentCrdtFollower(
           seq: update.seq
         })
     } catch (error) {
-      reportError(new Error('CRDT update could not be applied'), {
-        errorType: 'error_applying_crdt_update',
-        context: { workflow_id: update.workflowId, seq: update.seq }
-      })
+      if (!divergenceReported.has('apply_error')) {
+        divergenceReported.add('apply_error')
+        reportError(new Error('CRDT update could not be applied'), {
+          errorType: 'error_applying_crdt_update',
+          context: { workflow_id: update.workflowId, seq: update.seq }
+        })
+      }
       throw error
     }
     incrementOutcome(applied ? 'applied' : 'skipped')
