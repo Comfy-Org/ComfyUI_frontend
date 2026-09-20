@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
@@ -57,24 +58,64 @@ const ADDED_NODE_ID = '2785690574723683'
 
 const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
+// Real product opt-in for the CRDT debug instrument (crdtDebugGate.ts), not
+// test-only furniture — the same keys `agentDebugPanel.spec.ts` sets. Turning
+// it on surfaces `useAgentCrdtFollower`'s own `status.outcomes` counters in
+// the DOM, which is the browser-side apply/reconcile signal below.
+async function enableCrdtDebugPanel(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+  })
+}
+
+/**
+ * Reads `status.outcomes.applied` off the CRDT debug panel's "outcomes" row.
+ * That counter rises inside `useAgentCrdtFollower.ts`'s `applyAndReconcile`
+ * only after `projection.applyFrame` has merged the frame into the stores
+ * AND `projection.reconcileLiveGraph` has run for it — the actual apply +
+ * reconcile boundary, as opposed to `subscribeCount()`, which rises in the
+ * mock host the instant it calls `socket.send`, before the browser has even
+ * received the frame.
+ */
+async function appliedFrameCount(page: Page): Promise<number> {
+  const outcomesCell = page
+    .locator('[data-testid="crdt-dev-panel"] tr', { hasText: 'outcomes' })
+    .locator('td')
+    .nth(1)
+  const applied = Number.parseInt(
+    (await outcomesCell.innerText()).split('/')[1] ?? '',
+    10
+  )
+  if (Number.isNaN(applied))
+    throw new Error('could not read the CRDT debug panel applied-frame count')
+  return applied
+}
+
 /**
  * Opens a second, blank workflow tab and returns to the first one, forcing
  * the agent CRDT follower to unbind and rebind against the original workflow
  * (see agentTabSwitchCatchUp.spec.ts for the mechanism this mirrors). The tab
  * control switching back only proves the click landed, not that the new
- * follower subscription and its reconcile have happened, so — mirroring
- * agentTabSwitchCatchUp.spec.ts's `returnToTabA` — this captures
- * `subscribeCount()` before switching and polls for it to rise by one before
- * asserting anything about the canvas.
+ * follower subscription and its reconcile have happened, so this captures
+ * `subscribeCount()` (proof the follower's request/response round-trip
+ * happened) and `appliedFrameCount()` (proof the browser actually applied and
+ * reconciled the resulting catch-up frame) before switching, and polls both
+ * before asserting anything about the canvas.
  */
 async function reconcileByReturningToTab(
+  page: Page,
   topbar: Topbar,
   agentConversation: AgentConversationHarness,
   throughTurn: number
 ): Promise<void> {
-  const before = agentConversation.subscribeCount()
+  const beforeSubscribes = agentConversation.subscribeCount()
+  const beforeApplied = await appliedFrameCount(page)
   await topbar.openBlankTabAndReturn()
-  await expect.poll(() => agentConversation.subscribeCount()).toBe(before + 1)
+  await expect
+    .poll(() => agentConversation.subscribeCount())
+    .toBe(beforeSubscribes + 1)
+  await expect.poll(() => appliedFrameCount(page)).toBe(beforeApplied + 1)
   await agentConversation.expectCanvasReplayed(throughTurn)
 }
 
@@ -83,6 +124,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
     test('keeps a manually applied node color after an unrelated agent reconcile', async ({
       agentConversation,
@@ -121,7 +164,12 @@ test.describe(
       })
 
       await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
-        await reconcileByReturningToTab(topbar, agentConversation, lastTurn)
+        await reconcileByReturningToTab(
+          page,
+          topbar,
+          agentConversation,
+          lastTurn
+        )
       })
 
       await testInfo.attach('node-color-after-reconcile', {
@@ -141,6 +189,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
     test('keeps a manual canvas rename after an unrelated agent reconcile', async ({
       agentConversation,
@@ -173,7 +223,12 @@ test.describe(
       })
 
       await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
-        await reconcileByReturningToTab(topbar, agentConversation, lastTurn)
+        await reconcileByReturningToTab(
+          page,
+          topbar,
+          agentConversation,
+          lastTurn
+        )
       })
 
       await testInfo.attach('node-title-after-reconcile', {
