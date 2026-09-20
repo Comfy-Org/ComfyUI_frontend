@@ -52,14 +52,17 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 const GPT_IMAGE_NODE_TYPE = 'OpenAIGPTImageNodeV2'
 const IMAGE_SOURCE_NODE_TYPE = 'TestImageSource'
 const CHECKPOINT_NODE_TYPE = 'CheckpointLoaderSimple'
+const STRING_SINK_NODE_TYPE = 'TestStringSink'
 const IMAGES_GROUP = 'model.images'
 const IMAGE_1_NAME = `${IMAGES_GROUP}.image_1`
 const IMAGE_1_FRIENDLY_LABEL = 'image_1'
 const MISSING_CHECKPOINT = 'missing-checkpoint.safetensors'
+const AVAILABLE_CHECKPOINT = 'available-checkpoint.safetensors'
 
 const SOURCE_NODE_ID = 1
 const GPT_NODE_ID = 2
 const CHECKPOINT_NODE_ID = 3
+const STRING_SINK_NODE_ID = 4
 const LINK_ID = 9001
 
 const WORKFLOW_ID = '2f1a9b4e-3c7d-4e9a-9a1e-1c2d3e4f5a6b'
@@ -135,11 +138,26 @@ const checkpointNodeDef: ComfyNodeDef = {
   input_order: { required: ['ckpt_name'] }
 }
 
+const stringSinkNodeDef: ComfyNodeDef = {
+  name: STRING_SINK_NODE_TYPE,
+  display_name: 'Test String Sink',
+  description: '',
+  category: 'test',
+  python_module: 'test',
+  output_node: false,
+  output: [],
+  output_is_list: [],
+  output_name: [],
+  input: { required: { prompt: ['STRING', { forceInput: true }] } },
+  input_order: { required: ['prompt'] }
+}
+
 const catalog: WidgetCatalog = {
   types: {
     [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [] },
     [GPT_IMAGE_NODE_TYPE]: { widget_order: [] },
-    [CHECKPOINT_NODE_TYPE]: { widget_order: ['ckpt_name'] }
+    [CHECKPOINT_NODE_TYPE]: { widget_order: ['ckpt_name'] },
+    [STRING_SINK_NODE_TYPE]: { widget_order: [] }
   }
 }
 
@@ -194,6 +212,19 @@ const seed: WorkflowJSON = {
       ],
       properties: {},
       widgets_values: [MISSING_CHECKPOINT]
+    },
+    {
+      id: STRING_SINK_NODE_ID,
+      type: STRING_SINK_NODE_TYPE,
+      pos: [1200, 0],
+      size: [260, 100],
+      flags: {},
+      order: 3,
+      mode: 0,
+      inputs: [{ name: 'prompt', type: 'STRING', link: null }],
+      outputs: [],
+      properties: {},
+      widgets_values: ['']
     }
   ],
   links: [[LINK_ID, SOURCE_NODE_ID, 0, GPT_NODE_ID, 0, 'IMAGE']],
@@ -271,7 +302,8 @@ test.describe(
         objectInfo: {
           [IMAGE_SOURCE_NODE_TYPE]: imageSourceNodeDef,
           [GPT_IMAGE_NODE_TYPE]: gptImageNodeDef,
-          [CHECKPOINT_NODE_TYPE]: checkpointNodeDef
+          [CHECKPOINT_NODE_TYPE]: checkpointNodeDef,
+          [STRING_SINK_NODE_TYPE]: stringSinkNodeDef
         },
         // Only the Vue node renderer projects follower edits onto the
         // canvas as DOM nodes this test can query.
@@ -523,6 +555,55 @@ test.describe(
             )
           )
           .toEqual(pasted.pos)
+      })
+
+      await test.step('an incompatible replacement link is retired without blocking the next agent edit', async () => {
+        socketSend!(
+          host.replaceLink([
+            LINK_ID,
+            SOURCE_NODE_ID,
+            0,
+            STRING_SINK_NODE_ID,
+            0,
+            'STRING'
+          ])
+        )
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (id) =>
+                [...window.app!.graph.links.values()].some(
+                  (link) => String(link.id) === String(id)
+                ),
+              LINK_ID
+            )
+          )
+          .toBe(false)
+        expect(host.link(LINK_ID)).toEqual([
+          LINK_ID,
+          SOURCE_NODE_ID,
+          0,
+          STRING_SINK_NODE_ID,
+          0,
+          'STRING'
+        ])
+
+        socketSend!(
+          host.apply([
+            {
+              op: 'set_widget',
+              node_id: CHECKPOINT_NODE_ID,
+              widget: 'ckpt_name',
+              value: AVAILABLE_CHECKPOINT
+            }
+          ])
+        )
+        await expect(
+          checkpointWidget.getByRole('button', {
+            name: AVAILABLE_CHECKPOINT,
+            exact: true
+          })
+        ).toBeVisible()
       })
     })
   }
