@@ -307,7 +307,10 @@ type ApiToEventType<T = ApiCalls> = {
 /** Dictionary of types used in the detail for a custom event */
 type ApiEventTypes = ApiToEventType
 
-const CLIENT_LIFECYCLE_EVENTS = new Set(['socketClosed', 'reconnecting'])
+const CLIENT_LIFECYCLE_EVENTS: ReadonlySet<keyof ApiCalls> = new Set([
+  'socketClosed',
+  'reconnecting'
+] satisfies readonly (keyof FrontendApiCalls)[])
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
