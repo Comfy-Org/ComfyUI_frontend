@@ -131,6 +131,63 @@ test('Magnific Skin Enhancer uploads a source image instead of asking for a URL'
   ).toBeVisible()
 })
 
+test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-2-max--generate-images/')
+  const slider = page.getByRole('slider', { name: 'Height', exact: true })
+  const value = page.getByRole('spinbutton', {
+    name: 'Height value',
+    exact: true
+  })
+  await slider.fill('1023')
+  await expect(value).toHaveValue('1023')
+  await value.fill('1024')
+  await expect(slider).toHaveValue('1024')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
+  // The widest value the field accepts has to be readable, not scrolled out
+  // of a box sized for a shorter one.
+  await value.fill('2048')
+  expect(
+    await value.evaluate(
+      (box: HTMLInputElement) => box.scrollWidth <= box.clientWidth
+    )
+  ).toBe(true)
+})
+
+test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-pro-1.1-ultra--generate-images/')
+  await page.getByTestId('playground-advanced').locator('summary').click()
+
+  const slider = page.getByRole('slider', {
+    name: 'Image influence',
+    exact: true
+  })
+  const value = page.getByRole('spinbutton', {
+    name: 'Image influence value',
+    exact: true
+  })
+  await expect(value).toHaveValue('0.1')
+
+  // A 0-to-1 range with no declared step reports the thumb's pixel position in
+  // full double precision, so this drag used to hand back 0.367299194177281.
+  const track = await slider.boundingBox()
+  await slider.click({
+    position: { x: (track?.width ?? 0) * 0.37, y: (track?.height ?? 0) / 2 }
+  })
+  await expect(value).not.toHaveValue('0.1')
+
+  const readout = await value.evaluate((box: HTMLInputElement) => ({
+    fits: box.scrollWidth <= box.clientWidth,
+    decimals: (box.value.split('.')[1] ?? '').length
+  }))
+  expect(readout.fits).toBe(true)
+  expect(readout.decimals).toBeLessThanOrEqual(3)
+})
+
 // A field that holds every file it can take stops offering to take another.
 // The prompt has to come back when a slot frees, or removing a file would
 // leave the reader with no way to put one back.

@@ -1,6 +1,7 @@
 import type * as Y from 'yjs'
 
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { NodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
@@ -60,9 +61,10 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
-  reconcileLiveGraph(workflowId: string): void {
+  /** @returns ids that received a new live node on this pass. */
+  reconcileLiveGraph(workflowId: string): NodeId[] {
     const graph = this.getGraph()
-    if (!graph) return
+    if (!graph) return []
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
     const hasMissingDefinition = definitionIds.some(
@@ -81,6 +83,7 @@ export class AgentCrdtProjection {
         nodeIds
       })
     }
+    return nodeIds
   }
 
   destroy(): void {

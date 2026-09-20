@@ -17,7 +17,7 @@ import {
 import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import type { FakeImageDecoder } from '../../test/fakeImageDecoder'
 import { stubImageDecoder } from '../../test/fakeImageDecoder'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
 
