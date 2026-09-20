@@ -20,8 +20,8 @@ const mediaBase = 'https://media.comfy.org/website/qwen-image-2.1'
 const media = {
   hero: {
     kind: 'video',
-    src: `${mediaBase}/hero-sizzle.mp4`,
-    posterSrc: `${mediaBase}/hero-poster.webp`
+    src: `${mediaBase}/hero-sizzle-v2.mp4`,
+    posterSrc: `${mediaBase}/hero-poster-v2.webp`
   },
   infographic: { kind: 'image', src: `${mediaBase}/infographic.webp` },
   stoop: { kind: 'image', src: `${mediaBase}/harlem-stoop.webp` },
@@ -87,7 +87,7 @@ export const qwenImage21Page: ModelLaunchPage = {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
     mobileFallbackImageSrc: media.hero.posterSrc,
-    mobileVideoSrc: `${mediaBase}/hero-sizzle-mobile.mp4`,
+    mobileVideoSrc: `${mediaBase}/hero-sizzle-v2-mobile.mp4`,
     logoSrc: '/icons/ai-models/qwen.svg',
     titleKey: 'qwenImage21.hero.title',
     descriptionKey: 'qwenImage21.hero.description',
