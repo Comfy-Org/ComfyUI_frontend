@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "BoşCosmosGizliVideo",
+    "display_name": "Boş Cosmos Latent Video",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "Boş Hunyuan Görüntü Gizli",
+    "display_name": "Boş Hunyuan Görüntü Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_işlem_boyutu"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "BoşHunyuanGizliVideo",
+    "display_name": "Boş Hunyuan Video 1.0 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Boş HunyuanVideo 1.5 Latent",
+    "display_name": "Boş Hunyuan Video 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "BoşLTXVGizliVideo",
+    "display_name": "Boş LTXV Latent Video",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "BoşGizliHunyuan3Dv2",
+    "display_name": "Boş Hunyuan 3D v2 Latent",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Boş Trellis2 Latent Yapı",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Model ile Hunyuan Video 1.5 Latent Büyütme",
     "inputs": {
       "crop": {
         "name": "kırp"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Boş Latent Ses",
+    "display_name": "Boş LTXV Latent Ses",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Yalnızca MoGe-3: tahmin edilen derinlik üzerinde seyrek hacimsel iyileştirme geçişleri. Daha fazla geçiş, yaklaşık doğrusal bir maliyetle ince ayrıntıları ve kenarları keskinleştirir. 0 iyileştirmeyi devre dışı bırakır. MoGe-1 / MoGe-2 tarafından yok sayılır."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = en hızlı, 9 = en detaylı."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Yalnızca MoGe-3: tahmin edilen derinlik üzerinde seyrek hacimsel iyileştirme geçişleri. Daha fazla geçiş, yaklaşık doğrusal bir maliyetle ince ayrıntıları ve kenarları keskinleştirir. 0 iyileştirmeyi devre dışı bırakır. MoGe-1 / MoGe-2 tarafından yok sayılır."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D Koşullandırma",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV önbellek aygıtını ve nicelemeyi ayarlamaya olanak tanır; varsayılan olarak model auto seçeneğini kullanır. Bellek yetersiz olduğunda niceleme, düzenleme iş akışlarını potansiyel olarak hızlandırır.",
+    "display_name": "Qwen Image 2.1 Önbellek",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto, boş VRAM'i, ardından RAM'i kullanır. cpu (RAM), hesaplamanın arka planında önceden getirilir ve az hız kaybına neden olur. off, öneki her adımda yeniden hesaplar; bu daha yavaştır ancak önbelleğin etkisini elemenin tek yoludur."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Depolama hassasiyeti. default kayıpsızdır. int8, yaklaşık bf16 doğruluğunda önbelleği yarıya indirir; int4 dörtte birine indirir ancak adım başına hatayı yaklaşık iki katına çıkarır."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StabilKaskad_BoşGizliGörüntü",
+    "display_name": "Boş Stable Cascade Latent Görüntü",
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
@@ -22794,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StabilKaskad_AşamaC_VAEKodlama",
+    "display_name": "Stable Cascade Aşama C VAE Kodlama",
     "inputs": {
       "compression": {
         "name": "sıkıştırma"
@@ -23756,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Qwen Image 2.1 Metin Kodlama",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Metin kodlayıcısının gördüğü ve diziye VAE latent'leri olarak eklenen referans görüntüleri."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Referans görüntüleri, en-boy oranı korunarak 32'nin katlarıyla yaklaşık resolution x resolution piksele yeniden boyutlandırılır. 0, her referansı 32'nin katına yuvarlanmış kendi boyutunda tutar."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Örneklemeyle eşleşmesi için ilk referans görüntüsünün boyutunda boş latent; başka herhangi bir boyut düzenlemeyi kaydırır."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Qwen Image Edit Metin Kodlama",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Qwen Image Edit Plus Metin Kodlama",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23924,10 @@
       "max_length": {
         "name": "maks_uzunluk"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmini başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisizdir. auto taslak derinliğini uyarlar; 2-5 bunu sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktıdan farklıdır."
+      },
       "prompt": {
         "name": "istem"
       },
@@ -23916,6 +23989,10 @@
       },
       "max_length": {
         "name": "maksimum_uzunluk"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Kontrol noktasının çoklu belirteç tahmin başlığıyla spekülatif kod çözme. MTP ağırlıkları olmadan etkisi yoktur. auto taslak derinliğini uyarlar; 2-5 sabitler. Örneklenen çıktı doğru dağılımı korur ancak aynı seed için MTP olmayan çıktıdan farklıdır."
       },
       "prompt": {
         "name": "istem"
@@ -24432,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 Koşullandırma",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 Şekil Aşaması",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 Doku Aşaması",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEKodÇözmeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE Kod Çözme",
     "inputs": {
       "num_chunks": {
         "name": "parça_sayısı"
@@ -26470,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE Şekil Kod Çözme",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE Yapı Kod Çözme",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE Doku Kod Çözme",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29466,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "ABC oluşturucuyu bağlayın veya düzenlenmiş bir partisyon sağlayın. Kapalı modu otomatik olarak kullanmak için boş bırakın."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Stil ve şarkı sözleri için otoregresif yönlendirme. 1.0, ABC iş akışıyla uyumlu şekilde CFG'yi devre dışı bırakır. Özgün kapalı mod yönlendirmesiyle eşleşmek için 1.01 kullanın."
       },
       "clip": {
         "name": "clip"

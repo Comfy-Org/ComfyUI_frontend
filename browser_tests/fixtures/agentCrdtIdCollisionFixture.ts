@@ -209,7 +209,7 @@ class IdCollisionHarness {
       objectInfo: 'server'
     })
     await this.page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton })
       .click()
     await expect(this.panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()
