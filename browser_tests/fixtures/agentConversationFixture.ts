@@ -302,7 +302,10 @@ class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  async replayResponse(
+    turn = 0,
+    beforeGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
     const entries = this.conversation.turns[turn].response.entries()
     for (const [index, entry] of entries) {
@@ -319,6 +322,7 @@ class AgentConversationHarness {
         this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
         await this.hostSocket.waitForSubscribe()
+        await beforeGraphOps?.()
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
@@ -330,11 +334,11 @@ class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(): Promise<void> {
+  async runTurns(beforeGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn)
+      await this.replayResponse(turn, beforeGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
