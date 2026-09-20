@@ -408,61 +408,82 @@ function unbaselinedDrift(
   ]
 }
 
-export function reportCheck(states: readonly LocaleFileState[]): number {
-  let pendingTotal = 0
-  let strayTotal = 0
-  const auditErrors: string[] = []
-  // Drift outside the manifest's recorded baseline. Reporting alone let a
-  // rename ship with every non-English locale silently falling back to
-  // English, so unbaselined keys fail the check.
-  const driftErrors: string[] = []
+interface LocaleCheckFindings {
+  pending: number
+  stray: number
+  auditErrors: string[]
+  driftErrors: string[]
+}
 
-  for (const state of states) {
-    const label = `${state.locale.code}/${state.plan.filename}`
-    if (state.pendingLeaves.length > 0) {
-      pendingTotal += state.pendingLeaves.length
-      const examples = state.pendingLeaves
-        .slice(0, 5)
-        .map((leaf) => leaf.path.join('.'))
-        .join(', ')
-      print(
-        `${label}: ${state.pendingLeaves.length} strings need translation (${examples}${state.pendingLeaves.length > 5 ? ', …' : ''})`
-      )
-    }
-    if (state.strayPaths.length > 0) {
-      strayTotal += state.strayPaths.length
-      print(
-        `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
-      )
-    }
-    driftErrors.push(
+/**
+ * Report one locale file's state and collect everything that should fail the
+ * check. `driftErrors` covers keys outside the manifest baseline: reporting
+ * alone let a rename ship with every non-English locale silently falling back
+ * to English.
+ */
+function inspectLocaleFile(state: LocaleFileState): LocaleCheckFindings {
+  const label = `${state.locale.code}/${state.plan.filename}`
+  const { pendingLeaves, strayPaths } = state
+
+  if (pendingLeaves.length > 0) {
+    const examples = pendingLeaves
+      .slice(0, 5)
+      .map((leaf) => leaf.path.join('.'))
+      .join(', ')
+    print(
+      `${label}: ${pendingLeaves.length} strings need translation (${examples}${pendingLeaves.length > 5 ? ', …' : ''})`
+    )
+  }
+  if (strayPaths.length > 0) {
+    print(
+      `${label}: ${strayPaths.length} keys no longer exist in the English source and will be pruned`
+    )
+  }
+
+  // Keys queued because the English source changed are skipped (comparing an
+  // old translation against new English is meaningless), as are baseline
+  // violations recorded in the manifest; a key newly corrupted beyond those
+  // must fail. Degraded plans (recorded source unavailable) cannot tell
+  // staleness from corruption, so they skip the audit.
+  const auditErrors = state.plan.degraded
+    ? []
+    : [
+        ...auditProtectedLiterals(
+          state.plan.source,
+          state.existing,
+          new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
+        )
+      ].map((error) => `${label}: ${error}`)
+
+  return {
+    pending: pendingLeaves.length,
+    stray: strayPaths.length,
+    auditErrors,
+    driftErrors: [
       ...unbaselinedDrift(
         label,
-        state.pendingLeaves.map((leaf) => leaf.path),
+        pendingLeaves.map((leaf) => leaf.path),
         state.plan.knownPendingKeys,
         'are missing a translation'
       ),
       ...unbaselinedDrift(
         label,
-        state.strayPaths,
+        strayPaths,
         state.plan.knownPendingKeys,
         'no longer exist in the English source'
       )
-    )
-    // Skip keys queued because the English source changed (comparing an old
-    // translation against new English is meaningless) and baseline violations
-    // recorded in the manifest; a key newly corrupted beyond those must fail
-    // the check. Degraded plans (recorded source unavailable) cannot tell
-    // staleness from corruption, so they skip the audit.
-    if (state.plan.degraded) continue
-    for (const error of auditProtectedLiterals(
-      state.plan.source,
-      state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
-    )) {
-      auditErrors.push(`${label}: ${error}`)
-    }
+    ]
   }
+}
+
+export function reportCheck(states: readonly LocaleFileState[]): number {
+  const findings = states.map(inspectLocaleFile)
+  const sum = (pick: (found: LocaleCheckFindings) => number): number =>
+    findings.reduce((total, found) => total + pick(found), 0)
+  const pendingTotal = sum((found) => found.pending)
+  const strayTotal = sum((found) => found.stray)
+  const auditErrors = findings.flatMap((found) => found.auditErrors)
+  const driftErrors = findings.flatMap((found) => found.driftErrors)
 
   for (const error of auditErrors) print(error)
   for (const error of driftErrors) print(error)
