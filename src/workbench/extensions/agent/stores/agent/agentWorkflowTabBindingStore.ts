@@ -18,6 +18,11 @@ interface PersistedBinding {
 
 type PersistedBindings = Record<string, PersistedBinding>
 
+interface OpenTab {
+  tab: ComfyWorkflow
+  path: string
+}
+
 function isPersistedBinding(value: unknown): value is PersistedBinding {
   if (typeof value !== 'object' || value === null) return false
   const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
@@ -147,32 +152,34 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       }
     }
 
+    function releaseClosedTab({ tab, path }: OpenTab): void {
+      const workflowId = recordIdFor(path)
+      if (workflowId === undefined) return
+      if (refusedInstances.get(workflowId) === toRaw(tab))
+        refusedInstances.delete(workflowId)
+      if (isVerifiedOwner(workflowId, tab)) unbind(path)
+    }
+
+    function adoptOpenTab({ tab, path }: OpenTab): void {
+      const workflowId = recordIdFor(path)
+      if (workflowId === undefined || boundInstances.has(workflowId)) return
+      const record = tabByWorkflow.value[workflowId]
+      if (!claimable(workflowId, record, tab)) {
+        refusedInstances.set(workflowId, toRaw(tab))
+        return
+      }
+      boundInstances.set(workflowId, toRaw(tab))
+      tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
+    }
+
     watch(
-      () => workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
+      (): OpenTab[] =>
+        workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
       (open, previous = []) => {
-        for (const { tab, path } of previous) {
-          if (open.some((entry) => entry.tab === tab)) continue
-          const workflowId = recordIdFor(path)
-          if (workflowId === undefined) continue
-          if (refusedInstances.get(workflowId) === toRaw(tab))
-            refusedInstances.delete(workflowId)
-          if (isVerifiedOwner(workflowId, tab)) unbind(path)
-        }
-        for (const { tab, path } of open) {
-          const workflowId = recordIdFor(path)
-          if (workflowId === undefined || boundInstances.has(workflowId))
-            continue
-          const record = tabByWorkflow.value[workflowId]
-          if (!claimable(workflowId, record, tab)) {
-            refusedInstances.set(workflowId, toRaw(tab))
-            continue
-          }
-          boundInstances.set(workflowId, toRaw(tab))
-          tabByWorkflow.value[workflowId] = {
-            ...record,
-            confirmedAt: Date.now()
-          }
-        }
+        previous
+          .filter(({ tab }) => !open.some((entry) => entry.tab === tab))
+          .forEach(releaseClosedTab)
+        open.forEach(adoptOpenTab)
       },
       { immediate: true }
     )

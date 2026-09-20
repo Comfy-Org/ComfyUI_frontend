@@ -299,6 +299,43 @@ describe('agentWorkflowTabBindingStore', () => {
     )
   })
 
+  it('starts empty when the legacy key does not hold JSON', async () => {
+    localStorage.setItem(LEGACY_KEY, '{not json')
+    const path = 'workflows/saved.json'
+    const workflows = useWorkflowStore()
+    workflows.attachWorkflow(
+      new ComfyWorkflow({ path, modified: 1, size: 1 }),
+      0
+    )
+
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(bindings.workflowIdFor(path)).toBeUndefined()
+    expect(storedBindings()).toEqual({})
+  })
+
+  it('lets a saved tab whose stored content is not JSON claim its binding', async () => {
+    const path = 'workflows/saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const saved = new ComfyWorkflow({ path, modified: 1, size: 1 })
+    saved.originalContent = '{not json'
+    workflows.attachWorkflow(saved, 0)
+
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    expect(bindings.matchesWorkflow('wf-saved', saved)).toBe(true)
+  })
+
   it('bind records the tab graph id and a fresh confirmedAt', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     onTestFinished(() => {
