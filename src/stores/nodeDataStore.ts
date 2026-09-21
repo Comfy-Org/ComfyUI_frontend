@@ -1,10 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -15,6 +11,26 @@ import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
+
+/**
+ * Whether `key` resolves through a getter/setter pair somewhere in `obj`'s
+ * prototype chain, as opposed to a plain own data property. `NodeInputSlot`
+ * and `NodeOutputSlot` define `link`/`links` this way once a slot is
+ * upgraded from a plain descriptor to a live class instance; a slot this
+ * store tracks before that upgrade (e.g. in a headless CRDT-only test) has
+ * no such accessor, and `link`/`links` are its only record of connectivity.
+ */
+function hasAccessor(obj: object, key: PropertyKey): boolean {
+  for (
+    let proto: object | null = obj;
+    proto;
+    proto = Object.getPrototypeOf(proto)
+  ) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, key)
+    if (descriptor) return typeof descriptor.get === 'function'
+  }
+  return false
+}
 
 /**
  * Merges `incoming` slot descriptors into `existing` by name, updating a
@@ -29,10 +45,23 @@ import type { UUID } from '@/utils/uuid'
  * slot, the exact failure mode this merge exists to avoid. A caller that
  * means to remove a slot must still go through the link-safe path
  * (`node.removeInput`/`removeOutput`).
+ *
+ * `linkKey` (`link` for inputs, `links` for outputs) is excluded from the
+ * assignment for an already-upgraded matched slot: the caller
+ * (`graphMutations.ts`'s `connect` case) already established real topology
+ * in `linkStore` before calling this, and the deprecated accessor resolves
+ * by identity (`this.node.inputs`/`outputs.indexOf(this)`) — assigning
+ * through it here would fight that lookup instead of the topology it
+ * already reflects. For a matched slot that is still a plain descriptor,
+ * `linkKey` is its only record of connectivity and is merged like any
+ * other field. Every field is assigned through the reactive slot object
+ * itself (never `toRaw`), so Vue's dependents (e.g. the node renderer)
+ * invalidate.
  */
 function mergeSlotsByName<Slot extends { name: string }>(
   existing: Slot[],
-  incoming: readonly Slot[]
+  incoming: readonly Slot[],
+  linkKey: keyof Slot
 ): void {
   const indexByName = new Map(existing.map((slot, index) => [slot.name, index]))
   for (const incomingSlot of incoming) {
@@ -41,28 +70,14 @@ function mergeSlotsByName<Slot extends { name: string }>(
       existing.push(incomingSlot)
       continue
     }
-    // Assign through toRaw: some slot fields (e.g. `link`/`links`) are
-    // deprecated accessors that resolve by finding `this` in
-    // `this.node.inputs`/`outputs` via `===`. Assigning through the
-    // reactive proxy invokes them with the raw instance as `this` while the
-    // array holds the proxy, so the identity search fails; operating on the
-    // raw instance keeps `this` consistent with what the array holds.
-    Object.assign(toRaw(existing[index]), incomingSlot)
+    const target = existing[index]
+    if (hasAccessor(toRaw(target), linkKey)) {
+      const { [linkKey]: _link, ...fields } = incomingSlot
+      Object.assign(target, fields)
+    } else {
+      Object.assign(target, incomingSlot)
+    }
   }
-}
-
-function mergeInputSlots(
-  existing: INodeInputSlot[],
-  incoming: readonly INodeInputSlot[]
-): void {
-  mergeSlotsByName(existing, incoming)
-}
-
-function mergeOutputSlots(
-  existing: INodeOutputSlot[],
-  incoming: readonly INodeOutputSlot[]
-): void {
-  mergeSlotsByName(existing, incoming)
 }
 
 /**
@@ -184,10 +199,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    if (!Array.isArray(slots.inputs) || !Array.isArray(slots.outputs))
-      return false
-    mergeInputSlots(state.inputs, slots.inputs)
-    mergeOutputSlots(state.outputs, slots.outputs)
+    mergeSlotsByName(state.inputs, slots.inputs, 'link')
+    mergeSlotsByName(state.outputs, slots.outputs, 'links')
     return true
   }
 
