@@ -6,6 +6,7 @@ import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -18,7 +19,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export interface SubscriptionConfig {
   status: BillingStatusResponse
   balance: BalanceResponse
-  features: Record<string, unknown>
+  features: RemoteConfig
 }
 
 function emptyConfig(): SubscriptionConfig {
@@ -67,6 +68,7 @@ export function withFreeTierEnabled(): SubscriptionOperator {
       free_tier_job_allowance_enabled: true,
       free_tier_balance: {
         allowance: 100,
+        used: 0,
         remaining: 100
       }
     }
@@ -83,7 +85,7 @@ export function withUnsubscribed(): SubscriptionOperator {
 export class SubscriptionHelper {
   private statusResponse: BillingStatusResponse
   private balanceResponse: BalanceResponse
-  private featuresResponse: Record<string, unknown>
+  private featuresResponse: RemoteConfig
   private routeHandlers: Array<{
     pattern: string
     handler: (route: Route) => Promise<void>
