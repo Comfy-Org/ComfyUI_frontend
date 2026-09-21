@@ -9,6 +9,7 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -17,6 +18,11 @@ import { AgentCrdtProjection } from './agentCrdtProjection'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
+import { createPendingOpTracker } from './pendingOpTracker'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -96,10 +102,18 @@ function nodeIds(graph: LGraph) {
 function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
+  const pendingOps = createPendingOpTracker()
   const projection = new AgentCrdtProjection(
     remoteMutations(graphScopeOf(graph)),
     () => graph,
-    () => follower.doc
+    () => follower.doc,
+    (id) =>
+      pendingOps
+        .entries()
+        .some(
+          ({ shadow }) =>
+            shadow.op === 'add_node' && String(shadow.node_id) === id
+        )
   )
   let seq = 0
   /** Delivers one host frame; returns whether the adapter committed it. */
@@ -120,6 +134,8 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
 
   /** The host applies the ops and echoes the delta, as the relay fans it out. */
   const hostApplies = (ops: Op[]): boolean => {
+    pendingOps.onBatchMinted(ops)
+    pendingOps.onBatchTransmitted(ops)
     const before = Y.encodeStateVector(host)
     const { outcomes } = applyOps(host, ops, CATALOG)
     expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
@@ -230,9 +246,7 @@ describe('AgentCrdtProjection after a tab return', () => {
     }
   )
 
-  // The rejected echo of the accepted add arms a full reconcile; the next
-  // frame runs removeMissing against the doc, which never took the first node.
-  it.fails('keeps a node the doc never took when a later accepted add is echoed, without any tab return', () => {
+  it('keeps a node the doc never took when a later accepted add is echoed, without any tab return', () => {
     const { graph, source } = buildLiveGraph()
     const { hostApplies, destroy } = bindFollower(
       graph,
@@ -242,7 +256,7 @@ describe('AgentCrdtProjection after a tab return', () => {
     graph.add(rejectedByHost)
     const accepted = createRegisteredNode('TestSource')
     graph.add(accepted)
-    expect(hostApplies([addNodeOp(accepted, [20])])).toBe(false)
+    expect(hostApplies([addNodeOp(accepted, [20])])).toBe(true)
 
     const setWidget: Op = {
       op: 'set_widget',
@@ -256,12 +270,13 @@ describe('AgentCrdtProjection after a tab return', () => {
     }
     expect(hostApplies([setWidget])).toBe(true)
 
-    expect(nodeIds(graph).live).toEqual([
-      source.id,
-      rejectedByHost.id,
-      accepted.id
-    ])
+    expect(nodeIds(graph)).toEqual({
+      live: [source.id, rejectedByHost.id, accepted.id],
+      records: [source.id, rejectedByHost.id, accepted.id],
+      serialized: [source.id, rejectedByHost.id, accepted.id]
+    })
     expect(layout.deleteNodes).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
     destroy()
   })
 })
