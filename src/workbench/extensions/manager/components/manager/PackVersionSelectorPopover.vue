@@ -9,7 +9,7 @@
       v-if="isLoadingVersions || isQueueing"
       class="flex flex-col items-center py-4 text-center text-muted"
     >
-      <ProgressSpinner class="mb-2 size-8" />
+      <Spinner class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">
@@ -99,7 +99,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Listbox from 'primevue/listbox'
-import ProgressSpinner from 'primevue/progressspinner'
 import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -108,6 +107,7 @@ import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
