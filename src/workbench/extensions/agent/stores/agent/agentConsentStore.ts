@@ -1,3 +1,4 @@
+import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -14,7 +15,45 @@ class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'
 }
 
-export const useAgentConsentStore = defineStore('agentConsent', () => {
+const STANDALONE_IDENTITY = 'standalone'
+
+/**
+ * The local agent harness runs without a Comfy account or team workspace, so
+ * its consent is a per-device decision kept in local storage.
+ */
+function useStandaloneConsent() {
+  const stored = useLocalStorage(AGENT_CONSENT_SETTING_ID, false, {
+    writeDefaults: false
+  })
+  const identity = computed<string | null>(() => STANDALONE_IDENTITY)
+  const accepted = computed(() =>  stored.value)
+  const isChecking = computed(() => false)
+
+  async function ensureScope(): Promise<string | null> {
+    return STANDALONE_IDENTITY
+  }
+
+  async function load(): Promise<boolean> {
+    return accepted.value
+  }
+
+  async function accept(expectedIdentity?: string): Promise<boolean> {
+    if (expectedIdentity && expectedIdentity !== STANDALONE_IDENTITY)
+      return false
+    stored.value = true
+    return true
+  }
+
+  return { accepted, identity, isChecking, ensureScope, load, accept }
+}
+
+export const useAgentConsentStore = defineStore('agentConsent', () =>
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? useStandaloneConsent()
+    : useAccountConsent()
+)
+
+function useAccountConsent() {
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { resolvedUserInfo } = useCurrentUser()
@@ -174,4 +213,4 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   }
 
   return { accepted, identity, isChecking, ensureScope, load, accept }
-})
+}

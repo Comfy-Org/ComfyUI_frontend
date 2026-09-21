@@ -407,6 +407,15 @@ describe('AgentPanel extension flag gate', () => {
     expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
+  it('forces the panel on in the standalone agent harness without a flag', async () => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+
+    await loadEntryAndSetup()
+
+    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(agentStore.enabled).toBe(false)

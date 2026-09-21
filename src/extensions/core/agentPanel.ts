@@ -174,9 +174,12 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       import('posthog-js')
     ])
     const source = createPostHogFlagSource(posthog)
+    // The local agent harness has no cloud account, so no PostHog flag either.
+    const forceOn =
+      import.meta.env.MODE === 'development' ||
+      import.meta.env.VITE_AGENT_STANDALONE === 'true'
     const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+      agentPanelStore.enabled = forceOn || source.isEnabled()
       loadConsentIfEligible()
       if (!agentPanelStore.enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
@@ -189,7 +192,7 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       settle()
     })
     sync()
-    if (import.meta.env.MODE === 'development') settle()
+    if (forceOn) settle()
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()

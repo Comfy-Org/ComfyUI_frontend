@@ -195,9 +195,11 @@ export function useAgentConsent() {
     onAccept: () => void,
     onShown?: () => void
   ): Promise<void> {
-    const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser(onShown)
-      : await acceptAfterSignIn(onShown)
+    // The local agent harness keeps consent on this device; it needs no sign-in.
+    const decisionIdentity =
+      import.meta.env.VITE_AGENT_STANDALONE === 'true' || isLoggedIn.value
+        ? await requestConsentForCurrentUser(onShown)
+        : await acceptAfterSignIn(onShown)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||
