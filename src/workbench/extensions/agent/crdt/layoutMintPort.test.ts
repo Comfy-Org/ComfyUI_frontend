@@ -276,6 +276,82 @@ describe('attachLayoutMintPort', () => {
     })
   })
 
+  it('does not let an incidental same-root clearGraph reset the dedupe bucket (regression)', () => {
+    // A tab switch reconfigures the shared canvas graph in place: LGraph's
+    // own clear() fires a root-scoped clearGraph for the outgoing root
+    // before rebinding, so its graphId still equals the bound root here.
+    // Outside runIntentionalClear this is not a human clear - it must not
+    // forget the bound root's dedupe entries for nodes the doc still holds,
+    // or a return to that root re-mints them (id_collision).
+    const rootCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+    const incidentalClear = clearChange(LOCAL_ACTOR, 'root')
+
+    deliver(rootCreate)
+    deliver(incidentalClear)
+    deliver(rootCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+  })
+
+  it('does not share dedupe state between two graphs while the bound root graph id is unknown (regression)', () => {
+    // Both graphs mint their own node 1 while boundRootGraphId() cannot
+    // report which one is bound (e.g. a tab already bound before its
+    // changeTracker hydrates) - keying the bucket off the accessor would
+    // have both graphs share the same null-keyed bucket and wrongly
+    // suppress the second graph's genuine create.
+    currentRoot = null
+
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'doc-a',
+        ownerGraphId: 'doc-a'
+      }
+    })
+    deliver({
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'doc-b',
+        ownerGraphId: 'doc-b'
+      }
+    })
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(2)
+  })
+
+  it('does not let a subgraph-interior delete clear the root bucket for a colliding node id (regression)', () => {
+    // Layout ops are always root-scoped, so a subgraph-interior delete
+    // carries the root's own graphId with a different ownerGraphId. Node
+    // ids are not unique across a root and its subgraphs, so this must not
+    // forget the root's own dedupe entry for a numerically-colliding id.
+    const rootCreate = {
+      operation: {
+        ...createNodeChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'root'
+      }
+    }
+    const interiorDelete = {
+      operation: {
+        ...deleteChange('1').operation,
+        graphId: 'root',
+        ownerGraphId: 'subgraph'
+      }
+    }
+
+    deliver(rootCreate)
+    deliver(interiorDelete)
+    deliver(rootCreate)
+
+    expect(minted.filter((op) => op.op === 'add_node')).toHaveLength(1)
+  })
+
   it('a foreign clearGraph does not consume an active intentional-clear capture (regression)', () => {
     // A foreign clear (a local actor, so only its graphId is wrong - the
     // in-flight workflow-load case) reaching the store mid-capture must be

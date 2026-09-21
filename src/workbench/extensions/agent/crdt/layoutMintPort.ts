@@ -111,18 +111,18 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   // replay storm in agentCrdtProjection debug reports) without falsely
   // suppressing a genuine recreate after a real (possibly remote or
   // teardown) removal. Node ids are scoped to their root graph, so this is
-  // one set per bound root graph, keyed by the accessor's current value at
-  // the time of each op: a rebind to a different root starts that root's
-  // bookkeeping fresh without touching the root it left, so a later rebind
-  // back does not re-mint the root it returns to.
-  const mintedNodeIdsByRoot = new Map<RootGraphId | null, Set<string>>()
+  // one set per root graph, keyed by the operation's own graphId rather than
+  // the (possibly null, or momentarily stale) `boundRootGraphId()` accessor:
+  // a graph's bucket is then reachable only through that graph's own ops, so
+  // a rebind, a still-in-flight foreign load, or a document whose id has not
+  // hydrated yet can never share or evict another graph's bookkeeping.
+  const mintedNodeIdsByRoot = new Map<string | null, Set<string>>()
 
-  function mintedNodeIdsForBoundRoot(): Set<string> {
-    const root = deps.boundRootGraphId()
-    const existing = mintedNodeIdsByRoot.get(root)
+  function mintedNodeIdsForRoot(graphId: string | null): Set<string> {
+    const existing = mintedNodeIdsByRoot.get(graphId)
     if (existing) return existing
     const created = new Set<string>()
-    mintedNodeIdsByRoot.set(root, created)
+    mintedNodeIdsByRoot.set(graphId, created)
     return created
   }
 
@@ -241,7 +241,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (reportOpForUnboundGraph(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const nodeIdKey = String(operation.nodeId)
-        const mintedNodeIds = mintedNodeIdsForBoundRoot()
+        const mintedNodeIds = mintedNodeIdsForRoot(operation.graphId ?? null)
         if (mintedNodeIds.has(nodeIdKey)) return
         const node = deps.source.serializeNode(nodeIdKey)
         if (!node) {
@@ -266,16 +266,19 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        // The document lost this id the moment a same-root deleteNode change
-        // fired, regardless of whether this port also gates the delete_node
-        // op for echo-suppression or teardown - the two questions are
-        // independent (see the leading comment on `mintedNodeIds`). A
-        // foreign-graph delete (a workflow load still in flight, sharing a
-        // node id with the bound document) must not touch this bookkeeping:
-        // it names no id the bound document actually lost.
+        // The document lost this id the moment a same-graph, root-owned
+        // deleteNode change fired, regardless of whether this port also
+        // gates the delete_node op for echo-suppression or teardown - the
+        // two questions are independent (see the leading comment on
+        // `mintedNodeIdsByRoot`). A subgraph-interior delete carries the
+        // root's graphId with a different ownerGraphId, so it must not
+        // forget an entry from the root's bucket for what is really a
+        // different node's namespace.
         if (operation.nodeId === undefined) return
-        if (foreignBoundRootGraphId(operation) === null) {
-          mintedNodeIdsForBoundRoot().delete(String(operation.nodeId))
+        if (operation.ownerGraphId === operation.graphId) {
+          mintedNodeIdsByRoot
+            .get(operation.graphId ?? null)
+            ?.delete(String(operation.nodeId))
         }
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
@@ -293,7 +296,15 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (reportOpForUnboundGraph(operation, 'clear')) return
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        mintedNodeIdsByRoot.delete(deps.boundRootGraphId())
+        // Only an intentional (human-confirmed) clear may forget this
+        // graph's dedupe bucket: an incidental clearGraph outside that
+        // bracket - a tab switch reconfiguring the shared canvas graph in
+        // place - mints no doc-level clear and must leave the bucket alone
+        // for nodes that are still in the doc, or a later replay re-mints
+        // them (id_collision).
+        if (captured !== null) {
+          mintedNodeIdsByRoot.delete(operation.graphId ?? null)
+        }
         if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
