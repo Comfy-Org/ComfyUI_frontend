@@ -1,10 +1,11 @@
-import { expect, mergeTests, type Page } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
   AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
   readPersistedAgentWorkflowTabPath
-} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStorage'
 import {
   agentTest,
   bootAgentApp,
