@@ -109,14 +109,12 @@ export function useTemplateUrlLoader() {
     try {
       await templateWorkflows.loadTemplates()
 
-      const success = await templateWorkflows.loadWorkflowTemplate(
+      const result = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
         sourceParam
       )
 
-      if (!success) {
-        return
-      }
+      if (result !== 'loaded') return
 
       if (modeParam === 'linear') {
         // Set linear mode after successful template load

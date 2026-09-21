@@ -269,7 +269,7 @@
                       default-position="right-2 bottom-2"
                     />
                     <Spinner
-                      v-if="loadingTemplate === template.name"
+                      v-if="loadingTemplateId === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
@@ -499,7 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
-  loadingTemplateId: loadingTemplate,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -892,17 +892,15 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
-  await loadWorkflowTemplate(
+async function onLoadWorkflow(template: TemplateInfo) {
+  const result = await loadWorkflowTemplate(
     template.name,
-    getEffectiveSourceModule(template),
-    {
-      onGraphLoadSettled: (loaded) => {
-        templateWasSelected.value = loaded
-        onClose()
-      }
-    }
+    getEffectiveSourceModule(template)
   )
+  if (result === 'not-started') return
+
+  templateWasSelected.value = result === 'loaded'
+  onClose()
 }
 
 const pageTitle = computed(() => {

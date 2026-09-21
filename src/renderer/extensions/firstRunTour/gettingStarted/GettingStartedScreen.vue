@@ -234,7 +234,8 @@ async function onSelectTemplate(id: string) {
   if (loadingTemplateId.value) return
   failedTemplateId.value = null
 
-  if (await loadWorkflowTemplate(id, 'default')) {
+  const result = await loadWorkflowTemplate(id, 'default')
+  if (result === 'loaded') {
     await dismissGettingStarted()
     try {
       await beginTour(id)

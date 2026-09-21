@@ -15,6 +15,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 
+type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
+
 function updateTemplateEducation(
   isPartnerNode: boolean | undefined,
   loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
@@ -34,12 +36,12 @@ export function useTemplateWorkflows() {
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
-  let loadController: AbortController | undefined
+  let ownedLoadController: AbortController | undefined
   const loadingTemplateId = computed(
     () => workflowTemplatesStore.loadingTemplateId
   )
   onScopeDispose(() => {
-    workflowTemplatesStore.cancelTemplateLoad(loadController)
+    workflowTemplatesStore.cancelTemplateLoad(ownedLoadController)
   })
 
   // Computed
@@ -126,15 +128,16 @@ export function useTemplateWorkflows() {
     const template = category?.templates.find(
       (template) => template.name === id
     )
-    if (template?.sourceModule) return template.sourceModule
-
-    showTemplateError(
-      t('templateWorkflows.error.templateNotFound', { templateName: id })
-    )
+    return template?.sourceModule
   }
 
   function showTemplateError(detail: string) {
     useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+  }
+
+  function reportTemplateError(error: unknown) {
+    reportError(error, { errorType: 'error_loading_template' })
+    showTemplateError(t('templateWorkflows.error.loading'))
   }
 
   async function loadTemplateData(
@@ -151,27 +154,51 @@ export function useTemplateWorkflows() {
     return { json, template }
   }
 
+  async function loadTemplateGraph(
+    { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
+    workflowName: string
+  ): Promise<TemplateLoadResult> {
+    try {
+      const loadedWorkflow = await app.loadGraphData(
+        json,
+        true,
+        true,
+        workflowName,
+        { openSource: 'template' }
+      )
+      if (loadedWorkflow === false) return 'graph-failed'
+
+      updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      return 'loaded'
+    } catch (error) {
+      reportTemplateError(error)
+      return 'graph-failed'
+    }
+  }
+
   async function loadWorkflowTemplate(
     id: string,
-    sourceModule: string,
-    {
-      onGraphLoadSettled
-    }: { onGraphLoadSettled?: (loaded: boolean) => void } = {}
-  ) {
+    sourceModule: string
+  ): Promise<TemplateLoadResult> {
     if (!isTemplatesLoaded.value) {
       showTemplateError(t('templateWorkflows.error.loading'))
-      return false
+      return 'not-started'
     }
     const controller = workflowTemplatesStore.startTemplateLoad(id)
-    if (!controller) return false
-    loadController = controller
+    if (!controller) return 'not-started'
+    ownedLoadController = controller
     try {
       const source = resolveTemplateSource(id, sourceModule)
-      if (!source) return false
+      if (!source) {
+        showTemplateError(
+          t('templateWorkflows.error.templateNotFound', { templateName: id })
+        )
+        return 'not-started'
+      }
       const data = await loadTemplateData(id, source, controller.signal)
       controller.signal.throwIfAborted()
       if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
-        return false
+        return 'not-started'
 
       const workflowName =
         source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
@@ -181,42 +208,24 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      let loaded = false
-      try {
-        const loadedWorkflow = await app.loadGraphData(
-          data.json,
-          true,
-          true,
-          workflowName,
-          { openSource: 'template' }
-        )
-        if (loadedWorkflow === false) return false
-
-        updateTemplateEducation(data.template?.isPartnerNode, loadedWorkflow)
-        loaded = true
-        return true
-      } finally {
-        onGraphLoadSettled?.(loaded)
-      }
+      return await loadTemplateGraph(data, workflowName)
     } catch (error) {
-      if (controller.signal.aborted) return false
-      reportError(error, { errorType: 'error_loading_template' })
-      showTemplateError(t('templateWorkflows.error.loading'))
-      return false
+      if (!controller.signal.aborted) reportTemplateError(error)
+      return 'not-started'
     } finally {
       workflowTemplatesStore.finishTemplateLoad(controller)
-      if (loadController === controller) loadController = undefined
+      if (ownedLoadController === controller) ownedLoadController = undefined
     }
   }
 
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (
+  async function fetchTemplateJson(
     id: string,
     sourceModule: string,
     signal: AbortSignal
-  ) => {
+  ) {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
