@@ -684,7 +684,7 @@ importers:
         specifier: 'catalog:'
         version: 4.15.1(vue@3.5.43(typescript@6.0.3))
       vue:
-        specifier: 3.5.43
+        specifier: 'catalog:'
         version: 3.5.43(typescript@6.0.3)
       vue-i18n:
         specifier: 'catalog:'
@@ -11750,7 +11750,7 @@ snapshots:
 
   '@mixpanel/rrweb-snapshot@2.0.0-alpha.18.5':
     dependencies:
-      postcss: 8.5.26
+      postcss: 8.5.28
 
   '@mixpanel/rrweb-types@2.0.0-alpha.18.5': {}
 
