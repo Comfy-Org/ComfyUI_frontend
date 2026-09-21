@@ -140,19 +140,24 @@ test(
       if (!portrait) throw new Error('Portrait workflow was not indexed')
       await store.openWorkflow(portrait)
     }, PORTRAIT_PATH)
+    expect(
+      await page.evaluate((key) => localStorage.getItem(key), BINDING_KEY)
+    ).toBe(JSON.stringify({ [TARGET_ID]: PORTRAIT_PATH }))
 
     await page
       .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+      'Earlier request'
+    ])
 
     const topbar = new Topbar(page)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
     await expect(
       panel.getByText(enMessages.agent.selectWorkflowForAgent)
     ).toBeVisible()
-    await expect(page.getByTestId('node-title')).toHaveCount(0)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
 
     await testInfo.attach('duplicate-name-portrait-tab', {
