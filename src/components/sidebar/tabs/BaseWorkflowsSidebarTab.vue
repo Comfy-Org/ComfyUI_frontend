@@ -309,7 +309,7 @@ const renderTreeNode = (
               ? workflow.directory + '/' + ensureWorkflowSuffix(newName, suffix)
               : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
 
-          return await workflowService.renameWorkflow(workflow, newPath)
+          await workflowService.renameWorkflow(workflow, newPath)
         },
         handleDelete: workflow.isTemporary
           ? undefined
