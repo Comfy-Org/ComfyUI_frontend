@@ -56,8 +56,6 @@ const UNTOUCHED_NODE_ID = '6'
 const ADD_THEN_SET_CASE = 'agent-rec-add-set-delete'
 const ADDED_NODE_ID = '2785690574723683'
 
-const TRANSPARENT = 'rgba(0, 0, 0, 0)'
-
 // Real product opt-in for the CRDT debug instrument (crdtDebugGate.ts), not
 // test-only furniture — the same keys `agentDebugPanel.spec.ts` sets. Turning
 // it on surfaces `useAgentCrdtFollower`'s own `status.outcomes` counters in
@@ -87,9 +85,11 @@ async function appliedFrameCount(page: Page): Promise<number> {
     (await outcomesCell.innerText()).split('/')[1] ?? '',
     10
   )
-  if (Number.isNaN(applied))
-    throw new Error('could not read the CRDT debug panel applied-frame count')
-  return applied
+  // Used as an expect.poll callback: a transient unparseable render (the
+  // panel cell not yet in its `x/y` shape) must let the poll retry rather
+  // than fail the test immediately, so this returns a sentinel instead of
+  // throwing.
+  return Number.isNaN(applied) ? -1 : applied
 }
 
 /**
@@ -112,10 +112,17 @@ async function reconcileByReturningToTab(
   const beforeSubscribes = agentConversation.subscribeCount()
   const beforeApplied = await appliedFrameCount(page)
   await topbar.openBlankTabAndReturn()
+  // >= rather than ===: an extra frame in the window between sampling the
+  // baseline and the return click (the blank workflow's own activation, or a
+  // catch-up split across multiple doc_update frames) would overshoot an
+  // exact +1, and toBe() can never recover from an overshoot — it would hang
+  // to the timeout instead of failing fast.
   await expect
     .poll(() => agentConversation.subscribeCount())
-    .toBe(beforeSubscribes + 1)
-  await expect.poll(() => appliedFrameCount(page)).toBe(beforeApplied + 1)
+    .toBeGreaterThanOrEqual(beforeSubscribes + 1)
+  await expect
+    .poll(() => appliedFrameCount(page))
+    .toBeGreaterThanOrEqual(beforeApplied + 1)
   await agentConversation.expectCanvasReplayed(throughTurn)
 }
 
@@ -142,6 +149,10 @@ test.describe(
 
       await agentConversation.runTurns()
 
+      const beforeClick = await wrapper.evaluate(
+        (el) => getComputedStyle(el).backgroundColor
+      )
+
       const coloredBackground =
         await test.step('user colors the node from the properties panel', async () => {
           await actionbar.propertiesButton.click()
@@ -149,11 +160,13 @@ test.describe(
           await panel.switchToTab('Settings')
           await panel.getColorSwatch('red').click()
 
-          const background = await wrapper.evaluate(
-            (el) => getComputedStyle(el).backgroundColor
-          )
-          expect(background).not.toBe(TRANSPARENT)
-          return background
+          // `node-inner-wrapper` always carries a surface background class,
+          // so it is never transparent; comparing against the pre-click
+          // background is what actually proves a color was applied, and the
+          // retrying `toHaveCSS` (unlike a one-shot `evaluate`) waits out the
+          // swatch click instead of racing it.
+          await expect(wrapper).not.toHaveCSS('background-color', beforeClick)
+          return wrapper.evaluate((el) => getComputedStyle(el).backgroundColor)
         })
 
       await testInfo.attach('node-colored-before-reconcile', {
@@ -196,6 +209,16 @@ test.describe(
       agentConversation,
       page
     }, testInfo) => {
+      // Known, intentionally unfixed repro: the workflow-tab reload wipes
+      // this node's reconcile baseline before the title fix ever runs — see
+      // the file-level comment and agentNodeMaterializer.test.ts's matching
+      // `it.fails` case for the mechanism. Declared before the reconcile
+      // step (which ends in `expectCanvasReplayed`, asserting the doc's own
+      // stale title) rather than only around the final assertion below, so a
+      // fix landing anywhere in this flow registers as the intended
+      // "expected failure now passes" signal instead of a hard failure at a
+      // misleading location.
+      test.fail()
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
@@ -238,11 +261,6 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Known, intentionally unfixed repro: the workflow-tab reload wipes
-      // this node's reconcile baseline before the fix above ever runs — see
-      // the file-level comment and agentNodeMaterializer.test.ts's matching
-      // `it.fails` case for the mechanism.
-      test.fail()
       await expect(titleLocator).toHaveText(CUSTOM_TITLE)
     })
   }
@@ -304,6 +322,14 @@ test.describe(
         }),
         contentType: 'image/png'
       })
+
+      // Pins the mechanism, not just the symptom: the remote write's own
+      // value ("blurry, low quality", the fixture's turn-1 set_widget) must
+      // actually have landed, or this could just as easily be documenting an
+      // unrelated regression — the second pressSequentially never arriving,
+      // or the field losing focus and going blank — instead of the
+      // overwrite this test is named for.
+      await expect(textField).toHaveValue(/blurry, low quality/)
 
       // Known bug: graphMutations.ts's
       // applyWidgetValues/setWidgetValue write straight into

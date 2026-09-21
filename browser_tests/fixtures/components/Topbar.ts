@@ -86,8 +86,11 @@ export class Topbar {
     await expect(this.allTabs()).toHaveCount(1)
     await this.newWorkflowButton.click()
     await expect(this.allTabs()).toHaveCount(2)
+    await expect(this.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+    await expect(this.page.getByTestId('node-title')).toHaveCount(0)
     await this.getTab(0).click()
     await expect(this.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(this.getTab(1)).not.toHaveClass(/p-togglebutton-checked/)
   }
 
   getActiveTab(): Locator {
