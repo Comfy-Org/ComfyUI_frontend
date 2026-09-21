@@ -5,8 +5,6 @@ import { formatSize } from '@/utils/formatUtil'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
-const MAX_ADVERTISED_ATTACHMENT_BYTES = 512 * 1024 * 1024
-const MULTIPART_ENVELOPE_BYTES = 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -26,20 +24,6 @@ export interface UseAttachmentOptions {
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
-}
-
-/**
- * The server advertises `max_upload_size` as an unvalidated flag value, and the
- * cap it enforces covers the whole multipart body rather than the file alone.
- */
-export function resolveAttachmentLimit(advertised: unknown): number {
-  const advertisedBytes =
-    typeof advertised === 'number' &&
-    Number.isFinite(advertised) &&
-    advertised > 0
-      ? Math.min(advertised, MAX_ADVERTISED_ATTACHMENT_BYTES)
-      : MAX_ATTACHMENT_BYTES
-  return Math.max(0, advertisedBytes - MULTIPART_ENVELOPE_BYTES)
 }
 
 // A fetch upload reports no transfer progress, so the deadline is sized from a

@@ -2,11 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
-import {
-  MAX_ATTACHMENT_BYTES,
-  resolveAttachmentLimit,
-  useAttachment
-} from './useAttachment'
+import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -594,29 +590,5 @@ describe('useAttachment', () => {
     ])
 
     expect(onUploaded).toHaveBeenCalledOnce()
-  })
-})
-
-describe('resolveAttachmentLimit', () => {
-  const MULTIPART_ENVELOPE_BYTES = 1024
-
-  it.for([undefined, null, 0, -1, Number.NaN, '100MB'])(
-    'falls back to 20 MiB minus request overhead for %s',
-    (advertised) => {
-      expect(resolveAttachmentLimit(advertised)).toBe(20 * 1024 * 1024 - 1024)
-    }
-  )
-
-  it('keeps a client ceiling below an implausible advertised value', () => {
-    expect(resolveAttachmentLimit(Number.MAX_SAFE_INTEGER)).toBe(
-      512 * 1024 * 1024 - MULTIPART_ENVELOPE_BYTES
-    )
-  })
-
-  it('leaves room for the multipart envelope the server also counts', () => {
-    const advertised = 100 * 1024 * 1024
-    expect(resolveAttachmentLimit(advertised)).toBe(
-      advertised - MULTIPART_ENVELOPE_BYTES
-    )
   })
 })
