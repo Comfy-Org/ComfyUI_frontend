@@ -1473,6 +1473,37 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('keeps a host-confirmed-applied delete pending past the expiry deadline, releasing only once the doc catches up', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    // The doc's own removal effect frame is merely slow, not absent - unlike
+    // the 'unknown' case, this delete is definitively applied, so it must
+    // outlive PENDING_DELETE_EXPIRY_MS rather than expire on the same timer.
+    let docHasNode = true
+    bridge().follower.doc.getMap = () => ({
+      toJSON: () => (docHasNode ? { '1': {} } : {})
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.calls.at(-1)![2][0].op_id
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    docHasNode = false
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    unmount()
+  })
+
   it("never lets workflow A's pending delete suppress workflow B's unrelated node sharing the same id", async () => {
     vi.useFakeTimers()
     const { enqueue, workflowId, unmount } = mountWithHumanOps()
