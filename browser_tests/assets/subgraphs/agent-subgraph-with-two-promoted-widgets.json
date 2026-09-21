@@ -49,7 +49,7 @@
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": ["", 0]
+      "widgets_values": ["a photo of a pier", 0]
     }
   ],
   "links": [],
@@ -187,7 +187,7 @@
             "properties": {
               "Node name for S&R": "CLIPTextEncode"
             },
-            "widgets_values": [""]
+            "widgets_values": ["a photo of a pier"]
           },
           {
             "id": 11,
