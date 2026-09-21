@@ -19,14 +19,17 @@ export function useCanvasPickingPolicySync() {
 
   function releasePin() {
     if (!pinned) return
-    pinned.canvas.selectOnly = pinned.selectOnlyBeforePick
+    if (pinned.canvas.selectOnly) {
+      pinned.canvas.selectOnly = pinned.selectOnlyBeforePick
+    }
     pinned = undefined
   }
 
   function pinSelectOnly(canvas: LGraphCanvas) {
-    if (pinned?.canvas === canvas) return
-    releasePin()
-    pinned = { canvas, selectOnlyBeforePick: canvas.selectOnly }
+    if (pinned?.canvas !== canvas) {
+      releasePin()
+      pinned = { canvas, selectOnlyBeforePick: canvas.selectOnly }
+    }
     canvas.selectOnly = true
   }
 

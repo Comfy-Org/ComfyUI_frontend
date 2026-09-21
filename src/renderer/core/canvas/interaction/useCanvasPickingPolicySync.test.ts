@@ -152,6 +152,45 @@ describe('useCanvasPickingPolicySync', () => {
     expect(second.selectOnly).toBe(true)
   })
 
+  it('restores the pre-pick value when two live instances pin the same canvas', () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = createCanvas(vi.fn(), false)
+    const secondScope = effectScope()
+    scope.run(useCanvasPickingPolicySync)
+    secondScope.run(useCanvasPickingPolicySync)
+
+    useAgentNodeSelectionStore().isActive = true
+    useAgentNodeSelectionStore().isActive = false
+    secondScope.stop()
+
+    expect(canvasStore.canvas.selectOnly).toBe(false)
+  })
+
+  it('leaves selectOnly alone on exit once another writer cleared it mid-pick', () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = createCanvas(vi.fn(), true)
+    scope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    canvasStore.canvas.selectOnly = false
+    useAgentNodeSelectionStore().isActive = false
+
+    expect(canvasStore.canvas.selectOnly).toBe(false)
+  })
+
+  it('reasserts the pin when the projection re-runs mid-pick', () => {
+    const canvasStore = useCanvasStore()
+    const settingStore = useSettingStore()
+    canvasStore.canvas = createCanvas()
+    scope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    canvasStore.canvas.selectOnly = false
+    settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
+
+    expect(canvasStore.canvas.selectOnly).toBe(true)
+  })
+
   it('restores selectOnly when the scope stops mid-pick', () => {
     const canvasStore = useCanvasStore()
     canvasStore.canvas = createCanvas()
