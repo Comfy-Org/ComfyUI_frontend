@@ -142,7 +142,6 @@
             !currentImageIsHdr &&
             !isTransientUrl(currentImageUrl)
           "
-          data-testid="open-lightbox-button"
           :class="actionButtonClass"
           :title="$t('g.openInLightbox')"
           :aria-label="$t('g.openInLightbox')"

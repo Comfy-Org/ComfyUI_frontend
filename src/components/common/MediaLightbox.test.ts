@@ -130,6 +130,20 @@ describe('MediaLightbox', () => {
     expect(screen.getByLabelText('Next')).toBeInTheDocument()
   })
 
+  it('navigates and wraps from the buttons', async () => {
+    const { user, onUpdateActiveIndex, rerender } = renderGallery({
+      activeIndex: 2
+    })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Next'))
+    expect(onUpdateActiveIndex).toHaveBeenLastCalledWith(0)
+
+    await rerender({ activeIndex: 0 })
+    await user.click(screen.getByLabelText('Previous'))
+    expect(onUpdateActiveIndex).toHaveBeenLastCalledWith(2)
+  })
+
   it('hides navigation buttons for single item', async () => {
     renderGallery({
       items: [mockGalleryItems[0]]
@@ -174,6 +188,33 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+  })
+
+  it('closes when a backdrop press and release stay on the backdrop', async () => {
+    const { user, onUpdateActiveIndex } = renderGallery()
+    await nextTick()
+
+    await user.click(screen.getByRole('dialog', { name: 'Gallery' }))
+
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+  })
+
+  it('stays open when a press starts on the media', async () => {
+    const { user, onUpdateActiveIndex } = renderGallery()
+    await nextTick()
+
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: screen.getByRole('img', { name: 'image1.jpg' })
+      },
+      {
+        keys: '[/MouseLeft]',
+        target: screen.getByRole('dialog', { name: 'Gallery' })
+      }
+    ])
+
+    expect(onUpdateActiveIndex).not.toHaveBeenCalledWith(null)
   })
 
   it('returns focus to the opener after navigating and closing', async () => {

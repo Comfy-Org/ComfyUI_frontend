@@ -338,7 +338,9 @@ describe(usePromotedPreviews, () => {
     const outerHostLocator = getPreviewExposureHostLocator(
       outerSetup.subgraphNode
     )
-    if (!innerHostLocator || !outerHostLocator) return
+    if (!innerHostLocator || !outerHostLocator) {
+      throw new Error('Expected preview exposure locators for both hosts')
+    }
     store.addExposure(outerSetup.subgraphNode.rootGraph.id, innerHostLocator, {
       sourceNodeId: String(leafNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET

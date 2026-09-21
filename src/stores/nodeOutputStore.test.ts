@@ -285,6 +285,10 @@ describe('nodeOutputStore getNodeImages', () => {
     const images = store.getNodeImages(node)
     expect(images).toHaveLength(2)
     expect(images?.[0]).toEqual({ url: expect.any(String) })
+    expect(images?.[1]).toEqual({
+      url: expect.any(String),
+      result: { filename: 'b.png' }
+    })
   })
 
   it('omits records while live previews are showing', () => {
