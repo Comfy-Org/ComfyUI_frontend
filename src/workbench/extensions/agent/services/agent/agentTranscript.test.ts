@@ -203,6 +203,113 @@ describe('normalizeAgentTranscript', () => {
     }
   )
 
+  it('restores persisted tool calls as ToolPart entries ahead of the reply text', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'ok',
+          duration_ms: 420
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true,
+        durationMs: 420
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('omits tool parts entirely when a message carries no tool_calls', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('restores multiple tool calls per message in order', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'ok' },
+        { id: 'call-2', tool_name: 'add_node', status: 'error' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-2',
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('reads a still in-flight tool call as streaming with no ok value', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.content = {
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'running' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'streaming'
+      }
+    ])
+  })
+
+  it.for([
+    { tool_calls: 'not-an-array' },
+    { tool_calls: [null, 17, 'a-string'] },
+    { tool_calls: [{ tool_name: 'no_id', status: 'ok' }] },
+    { tool_calls: [{ id: 'call-1', status: 'ok' }] },
+    { tool_calls: [] }
+  ])('ignores malformed tool_calls metadata: $tool_calls', (content) => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = { text: 'Done', ...content }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('restores available and unavailable references without changing the latest workflow target', () => {
     const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
     first.workflow_id = 'wf-target-a'

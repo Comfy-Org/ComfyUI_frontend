@@ -1,7 +1,7 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
-import type { AssistantMessage } from './agentMessageParts'
+import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
 /**
@@ -100,6 +100,57 @@ function parseUserWorkflowReferences(
     : undefined
 }
 
+/**
+ * A persisted tool-call status is `pending`/`running` while it was still in
+ * flight when the turn ended, `ok` on success, or `error` on failure. Only
+ * `pending`/`running` reads as a live-looking, still-streaming row; a turn
+ * that finished always sees `ok`/`error` for every call it made.
+ */
+function toolCallPartState(status: unknown): ToolPart['state'] {
+  return status === 'pending' || status === 'running' ? 'streaming' : 'done'
+}
+
+function toolCallOk(status: unknown): boolean | undefined {
+  if (status === 'ok') return true
+  if (status === 'error') return false
+  return undefined
+}
+
+/**
+ * A persisted assistant row's `tool_calls` are `ToolCallSummary` objects
+ * (`id`, `tool_name`, `status`, plus omitted-when-empty detail fields this UI
+ * does not render). They map onto the same `ToolPart` the live WebSocket path
+ * builds from `agent_tool_call` events, so a reloaded transcript renders
+ * through the identical work-summary UI as a live turn.
+ */
+function parseToolCalls(
+  content: Record<string, unknown> | undefined
+): ToolPart[] | undefined {
+  const raw = content?.tool_calls
+  if (!Array.isArray(raw)) return undefined
+  const parts = (raw as unknown[]).flatMap((entry): ToolPart[] => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const {
+      id,
+      tool_name: toolName,
+      status,
+      duration_ms: durationMs
+    } = entry as Record<string, unknown>
+    if (typeof id !== 'string' || typeof toolName !== 'string') return []
+    return [
+      {
+        type: 'tool',
+        callId: id,
+        name: toolName,
+        state: toolCallPartState(status),
+        ...(toolCallOk(status) !== undefined ? { ok: toolCallOk(status) } : {}),
+        ...(typeof durationMs === 'number' ? { durationMs } : {})
+      }
+    ]
+  })
+  return parts.length > 0 ? parts : undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -138,6 +189,8 @@ export function normalizeAgentTranscript(
     if (row.role === 'assistant') {
       const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
       message.streaming = false
+      const toolCalls = parseToolCalls(row.content)
+      if (toolCalls) message.parts = [...message.parts, ...toolCalls]
       if (text)
         message.parts = [
           ...message.parts,
