@@ -34,6 +34,7 @@ case "${1:-}" in
     [[ -n "$mount_source" ]]
     [[ "$mount_source" != "$SOURCE_DEVTOOLS" ]]
     [[ -z "$(find "$mount_source" \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) -print -quit)" ]]
+    [[ "$(cat "$mount_source/fixture.txt")" == fixture ]]
     printf '%s\n' "$mount_source" > "$CAPTURE_MOUNT"
     exit "${DOCKER_RUN_STATUS:-0}"
     ;;
