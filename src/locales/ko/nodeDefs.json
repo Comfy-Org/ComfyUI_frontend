@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "텍스트에서 Markdown 코드 블록을 포함해 첫 번째 유효한 JSON 객체의 키 값을 추출합니다.",
     "display_name": "JSON에서 문자열 추출",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ultra 패스의 해상도입니다. 2k는 2048³, 4k는 가장 세밀한 표면 디테일을 위해 4096³로 실행됩니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "더 정교한 표면 디테일과 높은 충실도의 형상을 위해 2048³에서 추가 정제 패스를 실행합니다."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ultra 패스의 해상도입니다. 2k는 2048³, 4k는 가장 세밀한 표면 디테일을 위해 4096³로 실행됩니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV 캐시 장치와 양자화를 설정할 수 있습니다. 기본적으로 모델은 auto 옵션을 사용합니다. 메모리가 부족한 경우 양자화는 편집 워크플로를 잠재적으로 가속할 수 있습니다.",
+    "display_name": "Qwen Image 2.1 캐시",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto는 여유 VRAM을 사용한 후 RAM을 사용합니다. cpu (RAM)는 연산 중에 미리 가져오며 속도 저하가 거의 없습니다. off는 매 단계마다 접두사를 다시 계산하므로 더 느리지만, 캐시를 배제하는 유일한 방법입니다."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "저장 정밀도입니다. default는 무손실입니다. int8은 bf16 정도의 정확도로 캐시 크기를 절반으로 줄이며, int4는 4분의 1로 줄이지만 단계당 오차는 대략 두 배가 됩니다."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "텍스트 인코딩 Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "텍스트 인코더가 참조하고 VAE latent로 시퀀스에 삽입되는 참조 이미지입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "참조 이미지는 종횡비를 유지하면서 32의 배수로, 약 resolution x resolution 픽셀 크기로 조정됩니다. 0은 각 참조를 32의 배수로 반올림한 원래 크기로 유지합니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "다른 크기는 편집을 이동시키므로, 샘플링과 일치하도록 첫 번째 참조 이미지 크기의 빈 latent입니다."
       }
     }
   },

@@ -44,10 +44,15 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn(
+    (_workflowId: string, _tab: string, _ops: Array<{ op_id: string }>) => true
+  )
 }))
 
 const adapterState = vi.hoisted(() => ({
+  intent: null as {
+    pendingDeletes(workflowId: string): ReadonlySet<string>
+  } | null,
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
@@ -112,6 +117,15 @@ vi.mock('./docFrameClient', () => ({
 
 vi.mock('./ecsFollowerAdapter', () => ({
   EcsFollowerAdapter: class {
+    constructor(
+      _mutations: unknown,
+      intent: {
+        pendingDeletes(workflowId: string): ReadonlySet<string>
+      }
+    ) {
+      adapterState.intent = intent
+    }
+
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
@@ -144,7 +158,11 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  SUBSCRIBE_ACK_TIMEOUT_MS,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
@@ -1139,6 +1157,222 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  describe('tab suspension of the human write leg', () => {
+    type Enqueue = ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+
+    function mountWriter(initial: string): {
+      unmount: () => void
+      workflowId: Ref<string | null>
+      isTargetActive: Ref<boolean>
+      enqueue: Enqueue
+    } {
+      const workflowId = ref<string | null>(initial)
+      const isTargetActive = ref(true)
+      let enqueue!: Enqueue
+      const host = defineComponent({
+        setup() {
+          const { enqueueHumanOperations } = useAgentCrdtFollower(
+            workflowId,
+            graphMutations,
+            () => null,
+            isTargetActive
+          )
+          enqueue = enqueueHumanOperations
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      // Mirror the real bridge: reconcile() sets send reality synchronously
+      // when a subscribe leaves the transport and clears it on unsubscribe.
+      bridge().subscribe.mockImplementation((next: string) => {
+        bridge().subscribedWorkflowId = next
+      })
+      bridge().unsubscribe.mockImplementation(() => {
+        bridge().subscribedWorkflowId = null
+      })
+      return { unmount, workflowId, isTargetActive, enqueue }
+    }
+
+    function deleteNode(nodeId: string) {
+      return { op: 'delete_node' as const, node_id: nodeId, removed_links: [] }
+    }
+
+    async function settledStates(): Promise<string[]> {
+      const { recordDevEvent } = await import('./devPanelLog')
+      return vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+        .map(([, detail]) => (detail as { state: string }).state)
+    }
+
+    function ackSent(index: number): void {
+      const [workflowId, , ops] = clientState.sendOps.mock.calls[index]
+      dispatchFrame('doc_ops_result', {
+        workflowId,
+        ok: true,
+        applied: ops.map((op) => op.op_id),
+        skipped: []
+      })
+    }
+
+    beforeEach(async () => {
+      vi.useFakeTimers()
+      clientState.sendOps.mockClear()
+      const { recordDevEvent } = await import('./devPanelLog')
+      vi.mocked(recordDevEvent).mockClear()
+    })
+
+    it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      expect(bridge().unsubscribe).toHaveBeenCalled()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('sends the held batch to the same workflow when its tab becomes active again', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('a rebind to another workflow while its tab is not active settles the held batch undeliverable at once', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('a rebind to another workflow fired together with the inactive edge aborts instead of holding', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+
+      workflowId.value = 'wf-2'
+      isTargetActive.value = false
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+      unmount()
+    })
+
+    it('a real detach while the tab is inactive settles the held batch undeliverable', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = null
+      await nextTick()
+
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+
+      bridge().subscribedWorkflowId = 'wf-1'
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      unmount()
+    })
+
+    it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const intent = adapterState.intent!
+      let docNodes: Record<string, unknown> = { '1': {} }
+      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+
+      enqueue([deleteNode('1')])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      expect([...intent.pendingDeletes('wf-2')]).toEqual([])
+
+      ackSent(0)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      docNodes = {}
+      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+      unmount()
+    })
+
+    it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+  })
+
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
     vi.useFakeTimers()
     const { unmount } = mountFollower('wf-1')
@@ -1193,6 +1427,86 @@ describe('useAgentCrdtFollower', () => {
     const reconnectResubscribes = bridge().resubscribe.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
+    unmount()
+  })
+
+  it('retries a subscribe the bridge sent but nobody acknowledged', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('unmounting before the ack timeout leaves the retry unsent', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    unmount()
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
+
+  it('a reconnect mid-budget gives the silent subscribe a fresh budget', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    unmount()
+  })
+
+  it('reports the follower disconnected once the silent-subscribe budget is spent', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(1000)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    expect(status().connected).toBe(true)
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(status().connected).toBe(false)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'failure_confirming_agent_doc_subscribe',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    bridge().reconcile.mockClear()
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(30_000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
     unmount()
   })
 

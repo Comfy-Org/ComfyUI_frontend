@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrahiert den Wert eines Schlüssels aus dem ersten gültigen JSON-Objekt im Text, einschließlich Markdown-Codeblöcken.",
     "display_name": "Text aus JSON extrahieren",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf mit 2048³ aus, um eine detailgetreuere Geometrie mit feineren Oberflächendetails zu erhalten."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Ermöglicht das Festlegen von Gerät und Quantisierung für den KV-Cache; standardmäßig verwendet das Modell die Option auto. Quantisierung kann Edit-Workflows bei Speichermangel beschleunigen.",
+    "display_name": "Qwen Image 2.1 Cache",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto verwendet freien VRAM, dann RAM. cpu (RAM) wird parallel zur Berechnung vorgeladen und kostet kaum Geschwindigkeit. off berechnet das Präfix bei jedem Schritt neu; dies ist langsamer, aber die einzige Möglichkeit, den Cache auszuschließen."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Speicherpräzision. default ist verlustfrei. int8 halbiert den Cache bei ungefähr bf16-Genauigkeit, int4 viertelt ihn, verdoppelt jedoch ungefähr den Fehler pro Schritt."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Text Encode Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Referenzbilder, die vom Text-Encoder gesehen und als VAE-latents in die Sequenz eingefügt werden."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Referenzbilder werden unter Beibehaltung des Seitenverhältnisses auf etwa resolution x resolution Pixel in Vielfachen von 32 skaliert. 0 behält jede Referenz in ihrer eigenen Größe bei, gerundet auf ein Vielfaches von 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Leerer latent in der Größe des ersten Referenzbildes, damit er zum Sampling passt, da jede andere Größe die Bearbeitung verschiebt."
       }
     }
   },

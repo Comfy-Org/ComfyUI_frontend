@@ -72,6 +72,22 @@ export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
+  /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
+  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
+  /**
+   * The bound workflow's tab went inactive: the subscription is paused, not
+   * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
+   * of sent or settled, so it neither reaches an unsubscribed doc nor dies
+   * `undeliverable`. A batch already sent keeps its result timer, so a late
+   * result still settles it. Idempotent.
+   */
+  suspend(): void
+  /**
+   * Re-transmit the parked batch, if any. The transmit-time binding check
+   * still runs, so a batch whose workflow is no longer bound settles
+   * `undeliverable` exactly as it would have. Idempotent.
+   */
+  resume(): void
   /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch NOW
    * ('unconfirmed' once transmitted, 'undeliverable' otherwise) if its
@@ -97,6 +113,7 @@ interface InFlight {
   opIds: Set<string>
   transmitted: boolean
   resent: boolean
+  parked: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -104,6 +121,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
+  let suspended = false
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -122,6 +140,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
+    if (suspended) {
+      batch.parked = true
+      return
+    }
     // A lost subscription is not a transport that recovers in 500 ms: settle
     // now rather than spend the retry budget while later batches wait behind.
     if (deps.workflowId() !== batch.workflowId) {
@@ -180,6 +202,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       transmitted: false,
       resent: false,
+      parked: false,
       timer: null
     }
     transmit(inFlight, 0)
@@ -230,6 +253,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
+    },
+    pendingOps() {
+      const batches = inFlight
+        ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
+        : []
+      return [...batches, ...queue]
+    },
+    suspend() {
+      suspended = true
+    },
+    resume() {
+      suspended = false
+      if (inFlight?.parked) {
+        inFlight.parked = false
+        transmit(inFlight, 0)
+      }
     },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
