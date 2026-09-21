@@ -13,7 +13,10 @@ test.describe(
   'Agent saved-workflow reattachment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: 'agent-rec-set-widget-existing' })
+    test.use({
+      conversationCase: 'agent-rec-set-widget-existing',
+      humanOpsHost: 'apply'
+    })
 
     test.beforeEach(async ({ page }) => {
       const folders: ModelFolderInfo[] = []
