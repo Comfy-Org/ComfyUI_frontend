@@ -37,7 +37,7 @@ import type {
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
   agentHumanAddBlueprint,
-  agentHumanAddNestedBlueprint
+  agentNestedSubgraphDefinitions
 } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
@@ -748,8 +748,8 @@ export class AgentConversationHarness {
    * @returns the outer definition id the follower should register.
    */
   pushNestedDefinition(): string {
-    const blueprint = agentHumanAddNestedBlueprint()
-    const outer = blueprint.definitions.subgraphs[0]
+    const fixture = agentNestedSubgraphDefinitions()
+    const outer = fixture.definitions.subgraphs[0]
     const inner = outer.definitions!.subgraphs[0]
     const { frame, outerId } = this.host.seedNestedDefinition(
       { ...outer, definitions: undefined },

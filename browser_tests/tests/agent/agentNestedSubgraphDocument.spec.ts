@@ -33,7 +33,7 @@ const CASE = 'agent-rec-text-only-answer'
  * with unit cover only.
  */
 test.describe(
-  'Nested subgraph definition arriving from the document',
+  'Nested subgraph definitions arriving from the document',
   { tag: ['@cloud', '@agent'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
