@@ -1296,7 +1296,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('sends minted human operations through the doc client', () => {
+  it('sends minted human operations through the doc client', async () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1320,6 +1320,7 @@ describe('useAgentCrdtFollower', () => {
         removed_links: []
       }
     ])
+    await Promise.resolve()
 
     expect(clientState.sendOps).toHaveBeenCalledWith(
       'wf-1',
@@ -1349,6 +1350,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // The real bridge clears its send reality on doc_subscribed{ok:false}
@@ -1386,6 +1388,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // Mirror the real bridge's onDocSubscribed: it clears send reality
@@ -1429,6 +1432,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     workflowId.value = 'wf-2'
@@ -1529,6 +1533,18 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a doc_reset cancels an admitted human edit before its deferred flush', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(await settledHumanOpStates()).toEqual(['undeliverable'])
+    unmount()
+  })
+
   it('unbinding settles queued human batches and sends nothing more', async () => {
     vi.useFakeTimers()
     const { enqueue, workflowId, unmount } = mountWithHumanOps()
@@ -1625,6 +1641,7 @@ describe('useAgentCrdtFollower', () => {
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
@@ -1641,6 +1658,7 @@ describe('useAgentCrdtFollower', () => {
     it('sends the held batch to the same workflow when its tab becomes active again', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1663,6 +1681,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1680,6 +1699,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
 
       workflowId.value = 'wf-2'
@@ -1695,6 +1715,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1710,6 +1731,7 @@ describe('useAgentCrdtFollower', () => {
     it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1743,6 +1765,7 @@ describe('useAgentCrdtFollower', () => {
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
       expect([...intent.pendingDeletes('wf-2')]).toEqual([])
 
+      await Promise.resolve()
       ackSent(0)
       expect(await settledStates()).toEqual(['acknowledged'])
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
@@ -1755,6 +1778,7 @@ describe('useAgentCrdtFollower', () => {
     it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()

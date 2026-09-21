@@ -99,6 +99,7 @@ describe('createOpCoalescer over the op sender', () => {
 
   it('sends nothing and settles nothing when detached before the flush', async () => {
     for (let id = 1; id <= 8; id++) coalescer.enqueue([deleteNode(id)])
+    sender.detach()
     coalescer.detach()
 
     await flushMicrotasks()

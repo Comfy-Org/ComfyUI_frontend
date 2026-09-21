@@ -29,7 +29,7 @@ export function createOpCoalescer(
       admit(operations)
       if (flushScheduled) return
       flushScheduled = true
-      queueMicrotask(flushAdmitted)
+      void Promise.resolve().then(flushAdmitted)
     },
     detach() {
       detached = true
