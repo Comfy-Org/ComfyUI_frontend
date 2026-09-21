@@ -37,8 +37,16 @@ export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
  * `mint_id()`), so bit 40 is always set. Forcing it CLEAR here, with bit 41
  * forced SET, partitions the two actors' ranges by construction (KA-5) — not
  * by odds — regardless of what `observeNodeId` has observed.
+ *
+ * Source of the `2**40 | random52bits` premise:
+ * https://github.com/Comfy-Org/comfy-cli/blob/aec5220c4573fdc3ea89794572305d12a4d24e70/comfy_cli/workflow_ops.py#L65-L72
+ * (`Comfy-Org/comfy-cli`'s `comfy_cli/workflow_ops.py:65-72`: `_ID_FLOOR = 1 << 40`,
+ * `mint_id() -> _ID_FLOOR | random.getrandbits(52)`). If that reservation bit
+ * ever changes there, this partition silently stops holding — see the
+ * runtime guard in `agentNodeMaterializer.ts`, which surfaces a bit-40-clear
+ * remote id via `reportError()` instead of failing silently.
  */
-const AGENT_RESERVED_BIT = 1n << 40n
+export const AGENT_RESERVED_BIT = 1n << 40n
 const CRDT_DISJOINT_FLOOR = 1n << 41n
 const CRDT_RANDOM_BIT_COUNT = 52
 
@@ -46,6 +54,18 @@ function mintCrdtDisjointNodeId(): NodeId {
   const random = BigInt(Math.floor(Math.random() * 2 ** CRDT_RANDOM_BIT_COUNT))
   const id = (random & ~AGENT_RESERVED_BIT) | CRDT_DISJOINT_FLOOR
   return toNodeId(Number(id))
+}
+
+/**
+ * Whether `id` is shaped like one of the two valid mints for a CRDT-bound
+ * graph: the agent's (`AGENT_RESERVED_BIT` set) or this app's own disjoint
+ * mint (`CRDT_DISJOINT_FLOOR` set). A remote id matching neither means the
+ * reserved-bit premise this partition rests on (see `AGENT_RESERVED_BIT`'s
+ * doc comment) no longer holds for whatever minted it.
+ */
+export function matchesReservedBitConvention(id: NodeId): boolean {
+  const big = BigInt(id)
+  return (big & AGENT_RESERVED_BIT) !== 0n || (big & CRDT_DISJOINT_FLOOR) !== 0n
 }
 
 export function mintNodeId(

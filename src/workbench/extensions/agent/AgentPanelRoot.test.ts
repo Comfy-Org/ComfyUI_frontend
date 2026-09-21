@@ -100,7 +100,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    _nodes: [] as unknown[],
+    _nodes_by_id: {} as Record<string, unknown>,
     arrange: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    setDirtyCanvas: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -111,10 +116,12 @@ const appMock = vi.hoisted(() => {
           String(node.id) === String(id)
       ) ?? null
   }
+  Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
+    isGraphReady: false,
     canvas: undefined as
       | {
           graph: {
@@ -258,6 +265,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -322,7 +330,9 @@ beforeEach(() => {
   workflowStore.activeWorkflow = null
   canvasStore.selectedItems = []
   canvasStore.currentGraph = null
+  canvasStore.canvas = null
   appMock.graph.nodes = []
+  appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map() })
   appMock.canvas = undefined
@@ -6589,5 +6599,30 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('rebinds CRDT mint eligibility to the current root graph when the graph itself changes, not only when panel/workflow flags do (PM-1251)', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    const bindingStore = useAgentCrdtGraphBindingStore()
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    canvasStore.canvas = fromPartial({})
+    await nextTick()
+    expect(bindingStore.isBound(toRootGraphId('graph-a'))).toBe(true)
+
+    // A workflow switch tears the canvas down and rebuilds it against a new
+    // root graph, without ever touching agentPanelStore.enabled or
+    // isBoundWorkflowActive - the two deps the pre-fix getter relied on.
+    Object.assign(appMock.rootGraph, { id: 'graph-b' })
+    canvasStore.canvas = null
+    await nextTick()
+    canvasStore.canvas = fromPartial({})
+    await nextTick()
+
+    expect(bindingStore.isBound(toRootGraphId('graph-a'))).toBe(false)
+    expect(bindingStore.isBound(toRootGraphId('graph-b'))).toBe(true)
   })
 })

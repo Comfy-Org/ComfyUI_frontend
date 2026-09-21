@@ -631,7 +631,10 @@ const {
 let boundCrdtRootGraphId: RootGraphId | null = null
 watch(
   () =>
-    agentPanelStore.enabled && isBoundWorkflowActive.value && app.isGraphReady
+    agentPanelStore.enabled &&
+    isBoundWorkflowActive.value &&
+    canvasStore.canvas &&
+    app.isGraphReady
       ? toRootGraphId(app.rootGraph.id)
       : null,
   (next) => {

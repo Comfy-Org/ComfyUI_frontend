@@ -1,4 +1,8 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  AGENT_RESERVED_BIT,
+  matchesReservedBitConvention
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -10,6 +14,7 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
+import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -272,6 +277,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  reportReservedBitViolation(graph, scope, state.id)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -363,6 +369,34 @@ function materialize(
     })
   }
   return true
+}
+
+/**
+ * PM-1251's disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
+ * rests on comfy-cli's `mint_id()` always setting bit 40 — a premise this
+ * repo cannot verify and comfy-cli could change without notice. Surface a
+ * remote id that violates it (on a CRDT-bound graph, at the size only a
+ * modern mint produces) as telemetry instead of leaving the partition to
+ * silently stop holding.
+ */
+function reportReservedBitViolation(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  nodeId: NodeId
+): void {
+  if (!useAgentCrdtGraphBindingStore().isBound(scope.rootGraphId)) return
+  if (BigInt(nodeId) < AGENT_RESERVED_BIT) return
+  if (matchesReservedBitConvention(nodeId)) return
+  reportError(
+    new Error(
+      `Remote node id ${String(nodeId)} on a CRDT-bound graph matches neither the agent's nor this app's reserved-bit mint convention`
+    ),
+    {
+      errorType: 'agent_node_id_reserved_bit_violation',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, nodeId: String(nodeId) }
+    }
+  )
 }
 
 function replayUpdatedWidgetCallbacks(

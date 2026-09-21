@@ -9,10 +9,10 @@ import {
  * PM-1251 repro. Root cause (full RCA in the linked Slack thread / Linear
  * ticket): the frontend (`idAllocation.ts`'s local `++lastNodeId` counter,
  * used by both `LGraph.add` and the duplicate/paste path in
- * `LGraphCanvas.ts`) and the server-side agent independently mint node ids
+ * `LGraphCanvas.ts`) and the server-side agent independently minted node ids
  * for the SAME bound CRDT doc, with no shared reservation between them. When
- * both mint before observing the other's write, their `add_node` ops
- * collide on the applier's `["node", id]` register in `comfy-multi-player`,
+ * both minted before observing the other's write, their `add_node` ops
+ * collided on the applier's `["node", id]` register in `comfy-multi-player`,
  * which resolves the collision as pure last-write-wins over
  * `(base_version, actor, op_id)` and drops the loser as `"lww-dropped"` —
  * without surfacing an error to either actor. One mechanism, three symptoms:
@@ -21,6 +21,16 @@ import {
  *   2. a phantom node (here a blank Save Image) appears in its place
  *   3. the agent's own canonical graph read disagrees with the still-visible
  *      canvas, because the drop is never surfaced or reconciled
+ *
+ * This PR fixes the id-allocation half: a graph bound to the agent's CRDT
+ * doc now mints in `'crdt-disjoint'` mode (`idAllocation.ts`), which makes a
+ * NATURAL collision on a frontend-minted id impossible by construction — see
+ * `AgentPanelRoot.vue`'s CRDT-binding watch and `LGraph.test.ts`. What these
+ * two specs pin is the REMAINING half of the same PM-1251 ticket: two writes
+ * that land on the same node id — however that id was arrived at — still
+ * resolve via silent last-write-wins with no error surfaced to either actor
+ * (see `mintAgentCollision`'s doc comment in the fixture, which forces that
+ * collision deliberately now that a natural one can't happen).
  *
  * `agentCrdtIdCollisionFixture` drives the real duplicate-via-context-menu
  * path so the id is genuinely minted by `idAllocation.ts` and the outbound
@@ -31,8 +41,9 @@ import {
  * doc for why this repro cannot be built on `agentConversationFixture`.
  *
  * Both tests are `test.fail()`: they assert the CORRECT/fixed behavior,
- * which the bug currently breaks. Flip `test.fail()` away once PM-1251 (or
- * PM-1250) ships a fix — the assertions below should not otherwise change.
+ * which the still-open silent-LWW-drop half of PM-1251 currently breaks.
+ * Flip `test.fail()` away once PM-1251's remaining half ships a fix — the
+ * assertions below should not otherwise change.
  *
  * Both share `driveCollision` (in the fixture) for setup: duplicate the
  * seed node for real, then force the agent's write to collide on that same

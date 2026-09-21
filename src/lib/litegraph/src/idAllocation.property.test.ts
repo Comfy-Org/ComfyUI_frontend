@@ -1,7 +1,11 @@
 import * as fc from 'fast-check'
 import { describe, it } from 'vitest'
 
-import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
+import {
+  AGENT_RESERVED_BIT,
+  createLGraphState,
+  mintNodeId
+} from '@/lib/litegraph/src/idAllocation'
 
 /**
  * PM-1251's root cause at the unit level: `idAllocation.ts`'s node-id
@@ -69,11 +73,17 @@ describe('idAllocation has no collision avoidance against a concurrent external 
  * the agent's bit 40 always set), not by low collision odds.
  */
 describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agent-style mint", () => {
-  /** Mirrors comfy-cli's `mint_id()`: `2**40 | random52`, bit 40 always set. */
+  /**
+   * Mirrors comfy-cli's `mint_id()`: `2**40 | random52`, bit 40 always set.
+   * Imports the production `AGENT_RESERVED_BIT` rather than respelling the
+   * literal, so this can't independently drift from the constant it's
+   * meant to track (it still can't verify comfy-cli's actual mint - see
+   * `idAllocation.ts`'s doc comment on `AGENT_RESERVED_BIT`).
+   */
   const agentMintedId = (): fc.Arbitrary<bigint> =>
     fc
       .bigInt({ min: 0n, max: (1n << 52n) - 1n })
-      .map((random) => (1n << 40n) | random)
+      .map((random) => AGENT_RESERVED_BIT | random)
 
   it('never lands on an id a simulated agent mint claims', () => {
     fc.assert(

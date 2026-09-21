@@ -20,7 +20,12 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
-import type { AgentRunMode, WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  AgentTurnAccepted,
+  JobsListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 import type {
   ApplyOutcome,
   Op,
@@ -367,18 +372,27 @@ export class IdCollisionHarness {
     // than papering over it with a fixed wait.
     for (let attempt = 0; attempt < 6; attempt++) {
       const before = await this.vueNodes.nodes.count()
+      const idsBefore = new Set(
+        await this.page.evaluate(() =>
+          window.app!.graph.nodes.map((node) => String(node.id))
+        )
+      )
       await this.contextMenu.openForVueNode(header)
       await this.contextMenu.clickMenuItemExact('Duplicate')
       await expect(this.vueNodes.nodes).toHaveCount(before + 1)
 
+      // `'crdt-disjoint'` mint ids are unordered random values, not a
+      // sequential counter, so the new node can't be found by numeric
+      // magnitude (the highest id may be a stale orphan from a prior
+      // attempt) - only by which id wasn't there before.
       const nodeId = await this.page.evaluate(
-        (seedId) =>
-          window
+        (idsBeforeArray) => {
+          const before = new Set(idsBeforeArray)
+          return window
             .app!.graph.nodes.map((node) => String(node.id))
-            .filter((id) => id !== seedId)
-            .sort((a, b) => Number(a) - Number(b))
-            .at(-1),
-        SEED_NODE_ID
+            .find((id) => !before.has(id))
+        },
+        [...idsBefore]
       )
       if (!nodeId) throw new Error('duplicate produced no new node id')
       const op = await this.pollForOutboundAddNode(nodeId, 2_000)
@@ -506,25 +520,27 @@ export class IdCollisionHarness {
       if (route.request().method() !== 'POST')
         return route.fulfill(jsonRoute([]))
       // The ack's `workflow_id` is what `useAgentSession` binds for CRDT
-      // purposes (`bindWorkflow(ack.workflow_id)`).
+      // purposes (`bindWorkflow(ack.workflow_id)`). `workflow_id` is an
+      // extra beyond the generated `AgentTurnAccepted`, handled deliberately
+      // elsewhere via `zAgentTurnAccepted...passthrough()`.
+      const accepted = {
+        thread_id: THREAD_ID,
+        message_id: MESSAGE_ID,
+        workflow_id: WORKFLOW_ID
+      } satisfies AgentTurnAccepted & { workflow_id: string }
       return route.fulfill({
         status: 202,
         contentType: 'application/json',
-        body: JSON.stringify({
-          thread_id: THREAD_ID,
-          message_id: MESSAGE_ID,
-          workflow_id: WORKFLOW_ID
-        })
+        body: JSON.stringify(accepted)
       })
     })
-    await page.route('**/api/workflows**', (route) =>
-      route.fulfill(
-        jsonRoute({
-          data: [],
-          pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-        })
-      )
-    )
+    await page.route('**/api/workflows**', (route) => {
+      const workflows: WorkflowListResponse = {
+        data: [],
+        pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+      }
+      return route.fulfill(jsonRoute(workflows))
+    })
     // Best-effort background calls the panel makes on mount; none are under
     // test here, but an unmocked one 502s through Vite's dev proxy (there is
     // no real backend behind DEV_SERVER_COMFYUI_URL in this repro) and the
@@ -533,14 +549,13 @@ export class IdCollisionHarness {
     await page.route('**/api/agent/run-mode', (route) =>
       route.fulfill(jsonRoute(runMode))
     )
-    await page.route('**/api/jobs**', (route) =>
-      route.fulfill(
-        jsonRoute({
-          jobs: [],
-          pagination: { offset: 0, limit: 0, total: 0, has_more: false }
-        })
-      )
-    )
+    await page.route('**/api/jobs**', (route) => {
+      const jobs: JobsListResponse = {
+        jobs: [],
+        pagination: { offset: 0, limit: 0, total: 0, has_more: false }
+      }
+      return route.fulfill(jsonRoute(jobs))
+    })
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
     )
