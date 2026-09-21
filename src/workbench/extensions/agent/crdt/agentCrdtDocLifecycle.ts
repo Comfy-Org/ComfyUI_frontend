@@ -242,14 +242,11 @@ export class AgentCrdtDocLifecycle {
       { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
-    reportError(
-      new Error('agent doc subscription could not be confirmed'),
-      {
-        errorType: 'failure_confirming_agent_doc_subscribe',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      }
-    )
+    reportError(new Error('agent doc subscription could not be confirmed'), {
+      errorType: 'failure_confirming_agent_doc_subscribe',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
     this.onGaveUp()
   }
 
