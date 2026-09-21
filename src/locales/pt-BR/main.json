@@ -36,7 +36,6 @@
     "copy": "Copiar",
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
-    "credits": "créditos",
     "delete": "Excluir",
     "diagnosticReport": {
       "clipboardFailed": "Falha ao acessar a área de transferência. Selecione e copie o relatório abaixo ou tente novamente.",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "O agente pode modificar seu fluxo de trabalho. Verifique as permissões de execução antes de permitir que ele o execute.",
     "runPermissions": "Permissões de execução",
     "runPermissionsDescription": "Escolha quando o agente precisa do seu consentimento",
-    "saveChanges": "Salvar alterações",
     "searchWorkflows": "Pesquisar fluxos de trabalho",
     "selectWorkflowToGenerate": "Selecione um fluxo de trabalho para gerar",
     "send": "Enviar",

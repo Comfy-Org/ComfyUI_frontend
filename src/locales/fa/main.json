@@ -36,7 +36,6 @@
     "copy": "کپی",
     "copyMarkdown": "کپی به‌صورت مارک‌داون",
     "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
-    "credits": "اعتبار",
     "delete": "حذف",
     "diagnosticReport": {
       "clipboardFailed": "دسترسی به کلیپ‌بورد ناموفق بود. گزارش زیر را انتخاب و کپی کنید، یا دوباره تلاش کنید.",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. پیش از اجازه دادن به آن برای اجرا، مجوزهای اجرا را بررسی کنید.",
     "runPermissions": "مجوزهای اجرا",
     "runPermissionsDescription": "زمان نیاز agent به رضایت شما را انتخاب کنید",
-    "saveChanges": "ذخیره تغییرات",
     "searchWorkflows": "جست‌وجوی workflowها",
     "selectWorkflowToGenerate": "یک workflow برای تولید انتخاب کنید",
     "send": "ارسال",

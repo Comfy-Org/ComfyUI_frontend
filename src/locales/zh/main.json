@@ -36,7 +36,6 @@
     "copy": "复制",
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
-    "credits": "积分",
     "delete": "删除",
     "diagnosticReport": {
       "clipboardFailed": "无法访问剪贴板。请在下方选择并复制报告，或重试。",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "代理可以修改您的工作流。允许其执行前，请检查运行权限。",
     "runPermissions": "运行权限",
     "runPermissionsDescription": "选择代理何时需要您的同意",
-    "saveChanges": "保存更改",
     "searchWorkflows": "搜索工作流",
     "selectWorkflowToGenerate": "选择要生成内容的工作流",
     "send": "发送",

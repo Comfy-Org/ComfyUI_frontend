@@ -36,7 +36,6 @@
     "copy": "העתק",
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
-    "credits": "זיכויים",
     "delete": "מחק",
     "diagnosticReport": {
       "clipboardFailed": "הגישה ללוח הגזירים נכשלה. בחר והעתק את הדוח שלהלן, או נסה שוב.",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלך. בדוק את הרשאות ההפעלה לפני שתאפשר לו לבצע אותו.",
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
-    "saveChanges": "שמור שינויים",
     "searchWorkflows": "חפש תהליכי עבודה",
     "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
     "send": "שלח",

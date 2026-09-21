@@ -36,7 +36,6 @@
     "copy": "نسخ",
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
-    "credits": "الرصيد",
     "delete": "حذف",
     "diagnosticReport": {
       "clipboardFailed": "فشل الوصول إلى الحافظة. حدّد التقرير أدناه وانسخه، أو أعد المحاولة.",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "يمكن للوكيل تعديل سير العمل الخاص بك. تحقّق من أذونات التشغيل قبل السماح له بالتنفيذ.",
     "runPermissions": "أذونات التشغيل",
     "runPermissionsDescription": "اختر متى يحتاج الوكيل إلى موافقتك",
-    "saveChanges": "حفظ التغييرات",
     "searchWorkflows": "ابحث في سير العمل",
     "selectWorkflowToGenerate": "اختر سير عمل للإنشاء فيه",
     "send": "إرسال",

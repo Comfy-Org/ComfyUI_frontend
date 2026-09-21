@@ -36,7 +36,6 @@
     "copy": "複製",
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
-    "credits": "點數",
     "delete": "刪除",
     "diagnosticReport": {
       "clipboardFailed": "無法存取剪貼簿。請選取並複製下方報告，或重試。",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "代理程式可以修改您的工作流程。請先確認「執行」權限，再允許其執行。",
     "runPermissions": "執行權限",
     "runPermissionsDescription": "選擇代理何時需要您的同意",
-    "saveChanges": "儲存變更",
     "searchWorkflows": "搜尋工作流程",
     "selectWorkflowToGenerate": "選擇要在其中生成的工作流程",
     "send": "傳送",

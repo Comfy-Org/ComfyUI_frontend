@@ -36,7 +36,6 @@
     "copy": "Kopyala",
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
-    "credits": "kredi",
     "delete": "Sil",
     "diagnosticReport": {
       "clipboardFailed": "Pano erişimi başarısız oldu. Aşağıdaki raporu seçip kopyalayın veya yeniden deneyin.",
@@ -109,7 +108,6 @@
     "runNoticeExpanded": "Aracı iş akışınızı değiştirebilir. Yürütmesine izin vermeden önce Çalıştırma izinlerini kontrol edin.",
     "runPermissions": "Çalıştırma izinleri",
     "runPermissionsDescription": "Aracının ne zaman onayınıza ihtiyaç duyacağını seçin",
-    "saveChanges": "Değişiklikleri kaydet",
     "searchWorkflows": "İş akışlarını ara",
     "selectWorkflowToGenerate": "Oluşturma yapılacak iş akışını seçin",
     "send": "Gönder",
