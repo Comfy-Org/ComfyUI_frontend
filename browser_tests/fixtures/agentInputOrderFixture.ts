@@ -11,10 +11,7 @@ import type {
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import {
-  agentTest,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import {
   catalog,
   messageId,

@@ -35,14 +35,18 @@ test.describe(
       const target = nodes.getNodeLocator('2')
       await expect(source).toBeVisible()
       await expect(target).toBeVisible()
-      await expect(source.getByRole('spinbutton', { name: 'width', exact: true }))
-        .toHaveValue('832')
-      await expect(source.getByRole('spinbutton', { name: 'height', exact: true }))
-        .toHaveValue('448')
-      await expect(source.getByRole('spinbutton', { name: 'length', exact: true }))
-        .toHaveValue('37')
-      await expect(source.getByRole('textbox', { name: 'prompt', exact: true }))
-        .toHaveValue('Keep the reference framing')
+      await expect(
+        source.getByRole('spinbutton', { name: 'width', exact: true })
+      ).toHaveValue('832')
+      await expect(
+        source.getByRole('spinbutton', { name: 'height', exact: true })
+      ).toHaveValue('448')
+      await expect(
+        source.getByRole('spinbutton', { name: 'length', exact: true })
+      ).toHaveValue('37')
+      await expect(
+        source.getByRole('textbox', { name: 'prompt', exact: true })
+      ).toHaveValue('Keep the reference framing')
       await expect(
         target.getByRole('combobox', { name: 'ref_image_size', exact: true })
       ).toHaveText('max')

@@ -107,7 +107,12 @@ export const seed: WorkflowJSON = {
         { name: 'ref_images.ref_image_0', type: 'IMAGE', link: 278 },
         { name: 'ref_images.ref_image_1', type: 'IMAGE', link: 282 },
         { name: 'ref_images.ref_image_2', type: 'IMAGE', link: null },
-        { name: 'prompt', type: 'STRING', widget: { name: 'prompt' }, link: 279 },
+        {
+          name: 'prompt',
+          type: 'STRING',
+          widget: { name: 'prompt' },
+          link: 279
+        },
         { name: 'width', type: 'INT', widget: { name: 'width' }, link: 276 },
         { name: 'height', type: 'INT', widget: { name: 'height' }, link: 277 },
         { name: 'length', type: 'INT', widget: { name: 'length' }, link: 275 }
