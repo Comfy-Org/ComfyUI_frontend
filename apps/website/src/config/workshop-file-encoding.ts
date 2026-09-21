@@ -1,10 +1,10 @@
 import { WorkshopRouterError } from './workshop-router-errors'
 
-export async function workshopFileBase64(
-  file: File,
+export async function readWorkshopFile(
+  file: Blob,
   signal: AbortSignal,
   fieldName: string
-): Promise<string> {
+): Promise<ArrayBuffer> {
   signal.throwIfAborted()
   let buffer: ArrayBuffer
   try {
@@ -21,6 +21,15 @@ export async function workshopFileBase64(
     )
   }
   signal.throwIfAborted()
+  return buffer
+}
+
+export async function workshopFileBase64(
+  file: File,
+  signal: AbortSignal,
+  fieldName: string
+): Promise<string> {
+  const buffer = await readWorkshopFile(file, signal, fieldName)
   const bytes = new Uint8Array(buffer)
   let binary = ''
   for (let offset = 0; offset < bytes.length; offset += 8192)

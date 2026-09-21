@@ -152,6 +152,33 @@ describe('Workshop failure analytics', () => {
     })
   })
 
+  it.for<{ label: string; properties: PropertyDescriptorMap }>([
+    { label: 'missing', properties: {} },
+    {
+      label: 'non-string',
+      properties: { stack: { value: { private: 'customer detail' } } }
+    }
+  ])(
+    'retains exception type without leaking a $label stack',
+    ({ properties }) => {
+      const cause = new TypeError('Private message')
+      delete cause.stack
+      Object.defineProperties(cause, properties)
+
+      expect(
+        workshopFailureAnalytics(
+          new WorkshopRouterError('client', null, {}, undefined, undefined, {
+            cause
+          })
+        )
+      ).toEqual({
+        reason: 'client',
+        request_id: undefined,
+        exception_name: 'TypeError'
+      })
+    }
+  )
+
   it('retains the first Firefox or Safari frame when the stack has no message line', () => {
     const cause = new TypeError('Private message')
     cause.stack =
