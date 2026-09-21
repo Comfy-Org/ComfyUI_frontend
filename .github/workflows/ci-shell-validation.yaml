@@ -25,5 +25,8 @@ jobs:
       - name: Run shellcheck
         run: bash ./scripts/cicd/check-shell.sh
 
+      - name: Test ComfyUI E2E launcher lifecycle
+        run: bash ./scripts/start-comfyui-e2e.test.sh
+
       - name: Check ComfyUI container versions
         run: ./scripts/cicd/check-comfyui-container-version.sh

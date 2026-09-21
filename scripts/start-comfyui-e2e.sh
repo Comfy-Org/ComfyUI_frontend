@@ -29,18 +29,13 @@ elif ! docker info >/dev/null 2>&1; then
 fi
 
 docker_config="$(mktemp -d)"
-# The image runs as `pwuser` (uid 1001), so a checkout created under a 0007
-# umask (files 0660, dirs 0770) is unreadable inside the container. ComfyUI
-# then logs `IMPORT FAILED` for devtools and keeps serving, so the backend
-# looks healthy while `/api/devtools/*` 404s or 405s and every browser test
-# dies at the `ComfyPage` fixture with a message naming neither devtools nor
-# permissions. Mount a world-readable copy instead of the working tree.
-devtools_stage="$(mktemp -d)"
+devtools_stage=""
 cleanup() {
   "${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
   rm -rf "$docker_config" "$devtools_stage"
 }
 trap cleanup EXIT
+devtools_stage="$(mktemp -d)"
 
 cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
 chmod -R a+rX "$devtools_stage"

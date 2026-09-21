@@ -1,39 +1,23 @@
 import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from '@e2e/utils/backupUtils'
+import { isLocalUrl, resolveSetupBackendUrl } from '@e2e/utils/e2eConfig'
 
 dotenvConfig()
 
-const apiUrl =
-  process.env.PLAYWRIGHT_SETUP_API_URL ||
-  process.env.PLAYWRIGHT_TEST_URL ||
-  'http://localhost:8188'
-const localBackendHostname =
-  /^(?:localhost|\[::1\]|0\.0\.0\.0|127(?:\.\d{1,3}){3})$/
+type GlobalSetupDependencies = {
+  env: NodeJS.ProcessEnv
+  fetch: typeof fetch
+  backup: typeof backupPath
+}
 
-/**
- * Fail before the first test when ComfyUI is up but devtools did not import.
- *
- * ComfyUI logs `IMPORT FAILED` for an unloadable custom node and keeps
- * serving, so the backend answers 200 and looks healthy while every
- * `/api/devtools/*` route is missing. The first thing that notices is
- * `ComfyPage.setupSettings`, which reports the HTTP status of an endpoint it
- * does not name — most recently a 405 that read as an auth problem and cost
- * two lanes a diagnosis each before it turned out to be a read-only mount the
- * container's `pwuser` could not read.
- *
- * Use the same base URL as `ComfyPage`, but probe a read-only devtools route so
- * setup validation cannot overwrite user settings.
- *
- * `null` when the route is present or the backend is unreachable — an
- * unreachable backend is a different failure with its own clear message, so it
- * is left to the fixture rather than guessed at here. Otherwise the status that
- * says the route is absent: 404 or 405. Any other status means devtools
- * answered.
- */
-async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
+async function missingDevtoolsStatus(
+  endpoint: string,
+  fetchRequest: typeof fetch
+): Promise<number | null> {
   try {
-    const { status } = await fetch(endpoint, {
+    const { status } = await fetchRequest(endpoint, {
+      method: 'GET',
       signal: AbortSignal.timeout(5_000)
     })
     return status === 404 || status === 405 ? status : null
@@ -42,13 +26,16 @@ async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
   }
 }
 
-async function assertLocalDevtoolsInstalled(): Promise<void> {
-  const hostname = new URL(apiUrl).hostname
-  if (!localBackendHostname.test(hostname)) return
+async function assertLocalDevtoolsInstalled(
+  env: NodeJS.ProcessEnv,
+  fetchRequest: typeof fetch
+): Promise<void> {
+  const apiUrl = resolveSetupBackendUrl(env)
+  if (!isLocalUrl(apiUrl)) return
 
   const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
 
-  const status = await missingDevtoolsStatus(endpoint)
+  const status = await missingDevtoolsStatus(endpoint, fetchRequest)
   if (status === null) return
 
   throw new Error(
@@ -68,13 +55,17 @@ async function assertLocalDevtoolsInstalled(): Promise<void> {
   )
 }
 
-export default async function globalSetup() {
-  await assertLocalDevtoolsInstalled()
+export async function runGlobalSetup({
+  env,
+  fetch: fetchRequest,
+  backup
+}: GlobalSetupDependencies): Promise<void> {
+  await assertLocalDevtoolsInstalled(env, fetchRequest)
 
-  if (!process.env.CI) {
-    if (process.env.TEST_COMFYUI_DIR) {
-      backupPath([process.env.TEST_COMFYUI_DIR, 'user'])
-      backupPath([process.env.TEST_COMFYUI_DIR, 'models'], {
+  if (!env.CI) {
+    if (env.TEST_COMFYUI_DIR) {
+      backup([env.TEST_COMFYUI_DIR, 'user'])
+      backup([env.TEST_COMFYUI_DIR, 'models'], {
         renameAndReplaceWithScaffolding: true
       })
     } else {
@@ -83,4 +74,8 @@ export default async function globalSetup() {
       )
     }
   }
+}
+
+export default async function globalSetup() {
+  await runGlobalSetup({ env: process.env, fetch, backup: backupPath })
 }
