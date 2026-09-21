@@ -1,5 +1,3 @@
-import { isIP } from 'node:net'
-
 import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from '@e2e/utils/backupUtils'
@@ -10,6 +8,8 @@ const apiUrl =
   process.env.PLAYWRIGHT_SETUP_API_URL ||
   process.env.PLAYWRIGHT_TEST_URL ||
   'http://localhost:8188'
+const localBackendHostname =
+  /^(?:localhost|\[::1\]|0\.0\.0\.0|127(?:\.\d{1,3}){3})$/
 
 /**
  * Fail before the first test when ComfyUI is up but devtools did not import.
@@ -44,10 +44,7 @@ async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
 
 async function assertLocalDevtoolsInstalled(): Promise<void> {
   const hostname = new URL(apiUrl).hostname
-  const isIpv4Loopback = isIP(hostname) === 4 && hostname.startsWith('127.')
-  if (hostname !== 'localhost' && hostname !== '[::1]' && !isIpv4Loopback) {
-    return
-  }
+  if (!localBackendHostname.test(hostname)) return
 
   const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
 
