@@ -99,7 +99,7 @@ catalog:
   glob: ^13.0.6
   globals: ^17.7.0
   gsap: ^3.14.2
-  happy-dom: 20.9.0
+  happy-dom: 20.14.5
   husky: ^9.1.7
   jsdom: ^29.1.1
   jsonata: ^2.1.0
@@ -161,7 +161,6 @@ catalog:
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
   vue-tsc: ^3.3.11
-  vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
   yjs: ^13.6.27
@@ -209,4 +208,4 @@ overrides:
 # Transitional - drop once 0.2.0 is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
-  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1'
+  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1 || 0.3.0'

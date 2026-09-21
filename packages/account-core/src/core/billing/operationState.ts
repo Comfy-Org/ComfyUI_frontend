@@ -44,6 +44,19 @@ export type BillingAuthenticationState = NonNullable<
 >
 export type BillingOperationServerPhase = NonNullable<BillingOpStatus['phase']>
 
+/**
+ * The phases the contract defines as blocked on the customer. Neither advances
+ * on its own, so an operation reporting one waits on them even before it has a
+ * link to offer.
+ */
+export function isBlockedOnCustomerPhase(
+  phase: BillingOperationServerPhase | null | undefined
+): boolean {
+  return (
+    phase === 'awaiting_payment_method' || phase === 'awaiting_invoice_payment'
+  )
+}
+
 export type BillingPresentationState =
   | { readonly presentation: 'embedded'; readonly hostedDestination?: never }
   | {
@@ -275,6 +288,7 @@ function reducePending(
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||
+      isBlockedOnCustomerPhase(status.phase) ||
       status.authentication_state === 'requires_action'
   }
 }

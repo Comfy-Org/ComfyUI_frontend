@@ -11,6 +11,9 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
+vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
@@ -39,12 +42,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ topup: mockContextTopup })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })
@@ -58,6 +56,7 @@ vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
 let harness: ReturnType<typeof fakeBillingSdk>
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true
@@ -152,6 +151,32 @@ describe('useTopupOperation', () => {
     })
     expect(mockContextTopup).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { rail: 'legacy', flagOn: false, registers: true },
+    { rail: 'SDK', flagOn: true, registers: false }
+  ])(
+    'registers exactly one poller per pending top-up on the $rail rail',
+    ({ flagOn, registers }) => {
+      flagState.billingSdkTopupEnabled = flagOn
+      const store = useBillingOperationStore()
+
+      // Not awaited: the legacy registration settles only when the operation
+      // does, which is the reason the dialog holds it as a promise.
+      void useTopupOperation()
+        .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
+        .catch(() => {})
+
+      expect(store.startOperation).toHaveBeenCalledTimes(registers ? 1 : 0)
+      if (registers) {
+        expect(store.startOperation).toHaveBeenCalledWith(
+          'op-pending',
+          'topup',
+          { attemptStartedAt: 1000, autoHandleRequiresAction: true }
+        )
+      }
+    }
+  )
 
   it('surfaces an SDK refusal as a workspace error', async () => {
     flagState.billingSdkTopupEnabled = true

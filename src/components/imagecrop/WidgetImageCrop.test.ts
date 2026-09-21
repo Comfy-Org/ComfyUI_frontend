@@ -84,12 +84,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
 const Passthrough = defineComponent({
   template: '<div><slot /></div>'
 })
@@ -144,7 +138,6 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
         Select: Passthrough,
         SelectContent: Passthrough,
         SelectTrigger: Passthrough,

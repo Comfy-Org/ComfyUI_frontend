@@ -121,8 +121,8 @@ Load specific validation rules:
 ### Step 2.5: Load Local Guidelines
 
 Check for and load:
-1. `CLAUDE.md` in the repository root
-2. `.github/CLAUDE.md`
+1. `AGENTS.md` in the repository root
+2. `.github/AGENTS.md`
 
 ## Phase 3: Deep Analysis Instructions
 

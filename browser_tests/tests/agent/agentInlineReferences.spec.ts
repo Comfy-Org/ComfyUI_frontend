@@ -24,7 +24,7 @@ test(
       buffer: Buffer.from(JSON.stringify(referenceWorkflow))
     })
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     const panel = page.locator('#agent-panel-root')
     const editor = panel.getByRole('textbox')

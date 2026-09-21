@@ -29,6 +29,51 @@ function imageAndMask(): WorkshopMediaBinding[] {
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
   if (['wan/wan3.0-video', 'wan/wan3.0-video-prime'].includes(contract.id))
     return { ...contract, rehostUrlInputs: true }
+  if (contract.id === 'byteplus/seedream-5-0-pro-260628') {
+    const slug = 'byteplus--seedream-5-pro-layer-separation--edit-images'
+    const edit =
+      contract.creatorVariants?.['byteplus--seedream-5-pro--edit-images']
+    if (!edit) throw new Error('Missing Seedream 5 Pro edit form')
+    const sizes = ['auto', '1K', '1.5K', '2K']
+    const inputProperties = z
+      .record(z.string(), z.json())
+      .parse(contract.inputSchema.properties)
+    const inputSize = z.record(z.string(), z.json()).parse(inputProperties.size)
+    const inputSizeOptions = z.array(z.string()).parse(inputSize.enum)
+    const editProperties = z
+      .record(z.string(), z.json())
+      .parse(edit.parameters.properties)
+    const editSize = z.record(z.string(), z.json()).parse(editProperties.size)
+    return {
+      ...contract,
+      inputSchema: {
+        ...contract.inputSchema,
+        properties: {
+          ...inputProperties,
+          size: {
+            ...inputSize,
+            enum: [...new Set([...inputSizeOptions, ...sizes])]
+          }
+        }
+      },
+      creatorVariants: {
+        ...contract.creatorVariants,
+        [slug]: {
+          ...edit,
+          parameters: {
+            ...edit.parameters,
+            properties: {
+              ...editProperties,
+              size: { ...editSize, enum: sizes, default: 'auto' }
+            }
+          },
+          files: edit.files.map((file) =>
+            file.name === 'images' ? { ...file, maxItems: 1 } : file
+          )
+        }
+      }
+    }
+  }
   if (['luma/photon-1', 'luma/photon-flash-1'].includes(contract.id)) {
     const output = contract.output
     if (output.format === 'binary' || !output.schema)
