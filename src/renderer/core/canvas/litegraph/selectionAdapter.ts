@@ -23,14 +23,14 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
-export function selectableKeyOf(
-  item:
-    | LGraphNode
-    | LGraphGroup
-    | Reroute
-    | SubgraphInputNode
-    | SubgraphOutputNode
-): SelectableKey
+type SelectableItem =
+  | LGraphNode
+  | LGraphGroup
+  | Reroute
+  | SubgraphInputNode
+  | SubgraphOutputNode
+
+export function selectableKeyOf(item: SelectableItem): SelectableKey
 export function selectableKeyOf(item: Positionable): SelectableKey | undefined
 export function selectableKeyOf(item: Positionable): SelectableKey | undefined {
   if (item instanceof LGraphNode) return toSelectableKey('node', item.id)
