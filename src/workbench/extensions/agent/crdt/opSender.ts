@@ -42,7 +42,8 @@ export interface OpSenderDeps {
    * The bound workflow id, or null when no doc is bound. Read at mint time to
    * address the batch and re-read before EVERY send and resend: a batch whose
    * workflow is no longer bound (subscription refused, tab moved to another
-   * doc) is never carried or re-addressed and settles 'undeliverable' at once.
+   * doc) is never carried or re-addressed and settles at once, 'unconfirmed'
+   * if the transport already carried it and 'undeliverable' otherwise.
    */
   workflowId(): string | null
   tab: string
@@ -53,8 +54,10 @@ export interface OpSenderDeps {
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
-   * 'undeliverable' means the transport never carried it within the retry
-   * budget or no doc was bound.
+   * 'unconfirmed' means the transport carried it at least once but its doc
+   * was unbound before any result arrived, so the host may or may not have
+   * applied it; 'undeliverable' means the transport never carried it within
+   * the retry budget or no doc was bound.
    */
   onBatchSettled(outcome: BatchOutcome): void
 }
@@ -62,17 +65,35 @@ export interface OpSenderDeps {
 export type BatchOutcome =
   | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
   | { state: 'unacknowledged'; ops: Op[] }
+  | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
+  /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
+  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
   /**
-   * Eager abort seam (FE #16637 residual): settle the in-flight batch
-   * undeliverable NOW if its mint-time workflow no longer matches
-   * `deps.workflowId()`, instead of waiting out the 10 s result-silence
-   * window before the next transmit re-reads it. A caller with an earlier
+   * The bound workflow's tab went inactive: the subscription is paused, not
+   * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
+   * of sent or settled, so it neither reaches an unsubscribed doc nor dies
+   * `undeliverable`. A batch already sent keeps its result timer, so a late
+   * result still settles it. Idempotent.
+   */
+  suspend(): void
+  /**
+   * Re-transmit the parked batch, if any. The transmit-time binding check
+   * still runs, so a batch whose workflow is no longer bound settles
+   * `undeliverable` exactly as it would have. Idempotent.
+   */
+  resume(): void
+  /**
+   * Eager abort seam (FE #16637 residual): settle the in-flight batch NOW
+   * ('unconfirmed' once transmitted, 'undeliverable' otherwise) if its
+   * mint-time workflow no longer matches `deps.workflowId()`, instead of
+   * waiting out the 10 s result-silence window before the next transmit
+   * re-reads it. A caller with an earlier
    * signal that the subscription is gone (e.g. `doc_subscribed {ok:false}`)
    * should call this immediately; a no-op otherwise (still bound, or the
    * unbind already resolved through the normal transmit-time check).
@@ -90,7 +111,9 @@ interface InFlight {
   workflowId: string
   ops: Op[]
   opIds: Set<string>
+  transmitted: boolean
   resent: boolean
+  parked: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -98,6 +121,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
+  let suspended = false
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -116,10 +140,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
+    if (suspended) {
+      batch.parked = true
+      return
+    }
     // A lost subscription is not a transport that recovers in 500 ms: settle
     // now rather than spend the retry budget while later batches wait behind.
     if (deps.workflowId() !== batch.workflowId) {
-      settleUndeliverable(batch)
+      settleUnbound(batch)
       return
     }
     if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
@@ -132,17 +160,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           SEND_RETRY_INTERVAL_MS
         )
       } else {
-        settleUndeliverable(batch)
+        settleUnbound(batch)
       }
       return
     }
+    batch.transmitted = true
     armResultTimeout(batch)
   }
 
-  function settleUndeliverable(batch: InFlight): void {
-    if (inFlight === batch) {
-      settle({ state: 'undeliverable', ops: batch.ops })
-    }
+  function settleUnbound(batch: InFlight): void {
+    if (inFlight !== batch) return
+    settle({
+      state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
+      ops: batch.ops
+    })
   }
 
   function armResultTimeout(batch: InFlight): void {
@@ -169,7 +200,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       workflowId: queued.workflowId,
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
+      transmitted: false,
       resent: false,
+      parked: false,
       timer: null
     }
     transmit(inFlight, 0)
@@ -221,9 +254,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pending() {
       return queue.length + (inFlight ? 1 : 0)
     },
+    pendingOps() {
+      const batches = inFlight
+        ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
+        : []
+      return [...batches, ...queue]
+    },
+    suspend() {
+      suspended = true
+    },
+    resume() {
+      suspended = false
+      if (inFlight?.parked) {
+        inFlight.parked = false
+        transmit(inFlight, 0)
+      }
+    },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
-        settleUndeliverable(inFlight)
+        settleUnbound(inFlight)
       }
     },
     detach() {

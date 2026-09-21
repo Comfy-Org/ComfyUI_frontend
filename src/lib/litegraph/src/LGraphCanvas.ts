@@ -4212,6 +4212,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Nodes
+    const dx = position[0] - offsetX
+    const dy = position[1] - offsetY
     const targetSlotByLink = new Map<LinkId, number>()
     for (const info of parsed.nodes) {
       const node = LiteGraph.createNode(info.type)
@@ -4224,6 +4226,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       info.id = -1
 
       const linkByInputName = detachSerialisedLinks(info)
+      // `add` snapshots the position into the layout store; configure runs after.
+      node.pos = [info.pos[0] + dx, info.pos[1] + dy]
       graph.add(node)
       node.configure(info)
 
@@ -4322,8 +4326,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Children of pasted groups are in `created` already, so skip them here.
-    const dx = position[0] - offsetX
-    const dy = position[1] - offsetY
     for (const item of created) {
       // Repositioning a paste is not a user drag, so it ignores the pin.
       if (item instanceof LGraphNode)
