@@ -279,6 +279,37 @@ describe('LGraphCanvas selection', () => {
       }
     )
 
+    it('publishes retained legacy selection before bulk deselection hooks', () => {
+      const target = addNode(graph, 'Target', 500, 40)
+      a.addOutput('out', 'number')
+      b.addOutput('out', 'number')
+      target.addInput('first', 'number')
+      target.addInput('second', 'number')
+      a.connect(0, target, 0)
+      const retainedLink = b.connect(0, target, 1)
+      assert.exists(retainedLink)
+      canvas.selectItems([a, b])
+      a.onDeselected = vi.fn(() => {
+        expect({
+          keys: useSelectionStore().selectedKeys(graphScopeOf(graph)),
+          items: [...canvas.selectedItems],
+          nodes: canvas.selected_nodes,
+          flags: [a.selected, b.selected],
+          links: canvas.highlighted_links
+        }).toEqual({
+          keys: [`node:${b.id}`],
+          items: [b],
+          nodes: { [b.id]: b },
+          flags: [false, true],
+          links: { [retainedLink.id]: true }
+        })
+      })
+
+      canvas.deselectAll(b)
+
+      expect(a.onDeselected).toHaveBeenCalledOnce()
+    })
+
     it('keeps selection made by a synchronous deselection hook', () => {
       canvas.select(a)
       a.onDeselected = () => canvas.select(b)
