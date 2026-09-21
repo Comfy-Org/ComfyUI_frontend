@@ -35,7 +35,7 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
-import type { OpsResultView } from './opSender'
+import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -100,6 +100,22 @@ function updateNodeIds(update: Uint8Array): NodeId[] {
   } catch {
     return []
   }
+}
+
+/**
+ * Whether a settled delete_node op (by its wire `opId`) must keep
+ * suppressing its node from the reconcile: 'acknowledged' only if the
+ * host's own result named it as applied (not skipped - a host rejection
+ * means the node legitimately still exists there); 'unconfirmed' or
+ * 'unacknowledged' unconditionally, since the batch left the transport at
+ * least once and the host may have applied it without a confirming result.
+ * 'undeliverable' never carried the batch at all, so nothing here says
+ * otherwise - see ADR CRDT-WRITE-0035.
+ */
+function retainsDeleteIntent(outcome: BatchOutcome, opId: string): boolean {
+  if (outcome.state === 'acknowledged')
+    return outcome.result.applied.includes(opId)
+  return outcome.state === 'unconfirmed' || outcome.state === 'unacknowledged'
 }
 
 function emitPendingMaterializations(
@@ -347,19 +363,9 @@ function startAgentCrdtFollower(
     onBatchSettled: (outcome) => {
       if (outcome.workflowId !== null) {
         const deletes = confirmedDeletesFor(outcome.workflowId)
-        if (outcome.state === 'acknowledged') {
-          const applied = new Set(outcome.result.applied)
-          for (const op of outcome.ops) {
-            if (op.op === 'delete_node' && applied.has(op.op_id))
-              deletes.add(String(op.node_id))
-          }
-        } else if (
-          outcome.state === 'unconfirmed' ||
-          outcome.state === 'unacknowledged'
-        ) {
-          for (const op of outcome.ops) {
-            if (op.op === 'delete_node') deletes.add(String(op.node_id))
-          }
+        for (const op of outcome.ops) {
+          if (op.op === 'delete_node' && retainsDeleteIntent(outcome, op.op_id))
+            deletes.add(String(op.node_id))
         }
       }
       recordDevEvent('human_ops_settled', outcome)
