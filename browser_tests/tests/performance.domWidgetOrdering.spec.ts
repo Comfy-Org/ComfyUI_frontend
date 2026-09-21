@@ -3,6 +3,20 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
 
+interface DomWidgetOrderPerfState {
+  counter: { enabled: boolean; indexOfCalls: number }
+  interactions: number
+  nodeCount: number
+  widgetCount: number
+  widgetNodeIndexes: number[]
+}
+
+declare global {
+  interface Window {
+    __domWidgetOrderPerfState?: DomWidgetOrderPerfState
+  }
+}
+
 const INTERACTIONS = 120
 
 const workloadCells = [
@@ -71,19 +85,13 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
             )
           }
 
-          const counter = { enabled: false, indexOfCalls: 0 }
-          const state = {
-            counter,
+          window.__domWidgetOrderPerfState = {
+            counter: { enabled: false, indexOfCalls: 0 },
             interactions,
             nodeCount,
             widgetCount,
             widgetNodeIndexes
           }
-          ;(
-            window as typeof window & {
-              __domWidgetOrderPerfState?: typeof state
-            }
-          ).__domWidgetOrderPerfState = state
 
           app.canvas.setDirty(true, true)
           return { interactions, nodeCount, widgetCount }
@@ -111,13 +119,7 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
       // race with post-load graph replacement on the first test in a worker.
       await comfyPage.page.evaluate(() => {
         const app = window.app
-        const state = (
-          window as typeof window & {
-            __domWidgetOrderPerfState?: {
-              counter: { enabled: boolean; indexOfCalls: number }
-            }
-          }
-        ).__domWidgetOrderPerfState
+        const state = window.__domWidgetOrderPerfState
         if (!app?.graph || !state) {
           throw new Error('DOM widget performance state is unavailable')
         }
@@ -133,15 +135,7 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
       await comfyPage.perf.startMeasuring()
       await comfyPage.page.evaluate(() => {
         const app = window.app
-        const state = (
-          window as typeof window & {
-            __domWidgetOrderPerfState?: {
-              counter: { enabled: boolean; indexOfCalls: number }
-              interactions: number
-              widgetNodeIndexes: number[]
-            }
-          }
-        ).__domWidgetOrderPerfState
+        const state = window.__domWidgetOrderPerfState
         if (!app?.graph || !state) {
           throw new Error('DOM widget performance state is unavailable')
         }
@@ -175,13 +169,7 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
       recordMeasurement(measurement)
 
       const indexOfCalls = await comfyPage.page.evaluate(() => {
-        const state = (
-          window as typeof window & {
-            __domWidgetOrderPerfState?: {
-              counter: { indexOfCalls: number }
-            }
-          }
-        ).__domWidgetOrderPerfState
+        const state = window.__domWidgetOrderPerfState
         if (!state)
           throw new Error('DOM widget performance state is unavailable')
         return state.counter.indexOfCalls
