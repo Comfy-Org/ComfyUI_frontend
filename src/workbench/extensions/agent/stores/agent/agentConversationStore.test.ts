@@ -1,9 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
@@ -34,6 +33,17 @@ const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const askResolved = (id: string, askId: string): AgentChatEvent =>
+  chat({
+    type: 'agent_ask_resolved',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
   })
 
 const T1 = 't1' as TurnId
@@ -76,10 +86,6 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   )
 
 describe('useAgentConversationStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()
@@ -214,6 +220,64 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('restores a pending run approval as the live turn and continues after it resolves', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: {
+              workflow_id: 'workflow-1',
+              workflow_name: 'Portrait workflow'
+            },
+            prompt: 'Run workflow “Portrait workflow”?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    expect(store.isStreaming).toBe(true)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    store.ingest(delta('assistant-message-1', 'Running now.'))
+
+    expect(
+      store.messages[0].parts.some(
+        (part) => (part as { type: string }).type === 'runApproval'
+      )
+    ).toBe(false)
+    expect(partTexts(store)).toContain('Running now.')
+    expect(store.isStreaming).toBe(true)
+
+    store.ingest(done('assistant-message-1'))
+    expect(store.isStreaming).toBe(false)
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')
@@ -260,6 +324,29 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBe('th-7')
     store.reset()
     expect(store.threadId).toBeNull()
+  })
+
+  it('snapshots local workflow references on the submitted turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    Reflect.apply(store.recordUser, store, [
+      T1,
+      'compare these',
+      undefined,
+      undefined,
+      [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
   })
 
   it('revokes transcript blob previews on reset and on hydrate', () => {
@@ -362,6 +449,24 @@ describe('useAgentConversationStore', () => {
       'turn-b'
     ])
     expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
+  })
+
+  it('hydrates persisted workflow reference chips on their original user turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'Compare these')
+    user.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference workflow' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
+    })
   })
 
   it('keeps hydrated turn identity stable when persisted row ids change', () => {

@@ -116,13 +116,10 @@ export function assertSchemaVersionAgainst(doc: Y.Doc, context: string, expected
  *
  * WHY AN OLDER DOCUMENT IS REFUSED RATHER THAN MIGRATED IN PLACE. `project()`
  * is a pure read: it takes a `Y.Doc` and returns JSON, and it is a read ANY
- * replica may call — a browser follower included. Stated precisely, because
- * the looser version is false today: no follower calls it. The frontend does
- * not depend on this package at all (`@comfyorg/comfy-multi-player` is absent
- * from its `package.json` on every branch), and ADR-004 records that the
- * follower deliberately consumes only the doc-layout helpers, since it holds
- * no catalog for the document it renders. That is exactly why the rule is
- * written as a rule: `follower-boundary.md` says to treat an API that permits
+ * replica may call — a browser follower included. The frontend consumes this
+ * package, while ADR-004 keeps its follower on the doc-layout helpers because
+ * the follower holds no catalog for the document it renders. That is exactly
+ * why the rule is written as a rule: `follower-boundary.md` says to treat an API that permits
  * unrestricted document mutation across this boundary as a blocking violation
  * "even if current callers behave correctly". Migrating inside a read would
  * make a read WRITE the shared document. The direct rule that breaks is

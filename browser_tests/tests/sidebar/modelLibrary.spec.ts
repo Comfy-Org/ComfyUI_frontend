@@ -19,6 +19,7 @@ const MOCK_FOLDERS: Record<string, string[]> = {
 test.describe('Model library sidebar - tab', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -52,6 +53,7 @@ test.describe('Model library sidebar - folders', () => {
   // call during initialization hits the mock and populates the store.
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -101,6 +103,7 @@ test.describe('Model library sidebar - folders', () => {
 test.describe('Model library sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -164,6 +167,7 @@ test.describe('Model library sidebar - refresh', () => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({
       checkpoints: ['model_a.safetensors']
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -193,6 +197,7 @@ test.describe('Model library sidebar - refresh', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -224,6 +229,7 @@ test.describe('Model library sidebar - empty state', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({})
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -237,6 +243,7 @@ test.describe('Model library sidebar - empty state', () => {
   test.describe('Model library sidebar - add node', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup()
       await comfyPage.nodeOps.clearGraph()
     })

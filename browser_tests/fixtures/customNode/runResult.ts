@@ -95,7 +95,7 @@ function outputsFrom(
 export function classifyRun(input: {
   events: PromptEvent[]
   expectedNodeIds: string[]
-  proofOutputNodeByExpectedNode?: Record<string, string>
+  proofOutputNodeByExpectedNode?: Partial<Record<string, string>>
   graphNodeIds?: string[]
   timedOut?: boolean
 }): RunResult {

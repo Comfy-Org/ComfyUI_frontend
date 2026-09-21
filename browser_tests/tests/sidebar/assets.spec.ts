@@ -1,16 +1,23 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
+import {
+  withOutputAssets,
+  withPagination
+} from '@e2e/fixtures/helpers/AssetHelper'
 import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture)
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -148,6 +155,7 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 test.describe('Assets sidebar - empty states', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockEmptyState()
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -188,6 +196,7 @@ test.describe('Assets sidebar - tab navigation', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -237,6 +246,7 @@ test.describe('Assets sidebar - grid view display', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -298,6 +308,7 @@ test.describe('Assets sidebar - view mode', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -407,6 +418,7 @@ test.describe('Assets sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -464,6 +476,7 @@ test.describe('Assets sidebar - selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -540,6 +553,7 @@ test.describe('Assets sidebar - context menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -734,6 +748,7 @@ test.describe('Assets sidebar - bulk actions', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -930,15 +945,12 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
   test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
     const manyJobs = createMockJobs(250)
     await comfyPage.assets.mockOutputHistory(manyJobs)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     // Queue polling also calls /jobs, so wait for completed history only.
@@ -957,6 +969,31 @@ test.describe('Assets sidebar - pagination', () => {
     expect(url.searchParams.get('offset')).toBe('0')
     expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
+
+  test.describe('Assets enabled', () => {
+    test.use({
+      modelLibraryOptions: {
+        operators: [withOutputAssets(30), withPagination({ limit: 1 })]
+      },
+      initialLocalStorage: { 'unified-sidebar': '[43, 57]' }
+    })
+
+    test('Pages assets to fill view', async ({ assetApi: _, comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
+      const listRequests: URL[] = []
+      comfyPage.page.on('request', (req) => {
+        if (req.method() !== 'GET') return
+        const url = new URL(req.url())
+        if (url.pathname.endsWith('/api/assets')) listRequests.push(url)
+      })
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await expect.poll(() => tab.assetCards.count()).toBeGreaterThan(3)
+      expect(listRequests.length).toBeGreaterThan(3)
+    })
+  })
 })
 
 // ==========================================================================
@@ -967,6 +1004,7 @@ test.describe('Assets sidebar - settings menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -1110,6 +1148,7 @@ test.describe('Assets sidebar - media type filter', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -1182,7 +1221,6 @@ test.describe('Assets sidebar - drag and drop', () => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    if (!loadImage) throw new Error('Load Image node not found')
     await loadImage.centerOnNode()
 
     const { assetsTab } = comfyPage.menu

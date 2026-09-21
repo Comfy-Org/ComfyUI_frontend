@@ -15,11 +15,9 @@ const ctas = platformCtas(locale)
   <HeroSplit01
     :locale="locale"
     compact
-    :badge-text="t('platform.products.builder.title', locale).toUpperCase()"
-    :badge-show-logo="false"
-    :title="t('platform.products.builder.title', locale)"
-    title-class="sr-only"
-    :subtitle="t('platform.products.builder.description', locale)"
+    :title="t('platform.builderHero.heading', locale)"
+    title-class="text-primary-comfy-yellow text-3xl/tight font-bold tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
+    :subtitle="t('platform.builderHero.subtitle', locale)"
     :primary-cta="{
       label: ctas.getStarted.label,
       href: externalLinks.platformBuilds,

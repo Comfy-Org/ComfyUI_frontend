@@ -28,6 +28,7 @@ import type {
   ResubscribeRequest,
   ResubscribeResponse,
   SavedPaymentMethod,
+  ScheduledPlanChange,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -114,6 +115,7 @@ export type BillingSubscriptionStatus = NonNullable<
 
 export type { BillingStatus }
 export type { BillingStatusResponse }
+export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }
 export type { BillingCapabilitiesResponse }
@@ -125,6 +127,9 @@ export type BillingAuthenticationState = NonNullable<
 >
 export type BillingDeclineReason = NonNullable<
   BillingOpStatusResponse['decline_reason']
+>
+export type BillingOperationPhase = NonNullable<
+  BillingOpStatusResponse['phase']
 >
 
 interface GetBillingEventsParams {

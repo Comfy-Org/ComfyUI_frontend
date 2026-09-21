@@ -181,6 +181,7 @@ const rb = readGraphThenDerive(doc);
 const ok =
   ra.nodes.size === rb.nodes.size &&
   ra.links.size === rb.links.size &&
-  JSON.stringify([...ra.nodes.values()]) === JSON.stringify([...rb.nodes.values()]);
+  JSON.stringify([...ra.nodes.values()]) === JSON.stringify([...rb.nodes.values()]) &&
+  JSON.stringify([...ra.links.values()]) === JSON.stringify([...rb.links.values()]);
 console.log(`\n  readers agree: ${ok} (${ra.nodes.size} nodes, ${ra.links.size} links)`);
 if (!ok) process.exit(1);

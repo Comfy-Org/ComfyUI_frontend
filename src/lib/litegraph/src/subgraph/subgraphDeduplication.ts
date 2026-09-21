@@ -77,14 +77,43 @@ export function normalizeSubgraphDefinitions(
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
 
+interface NestedSubgraphDefinitions<Subgraph> {
+  definitions?: { subgraphs?: Subgraph[] }
+}
+
+/**
+ * Flattens every subgraph definition reachable from `subgraphs` into one
+ * array, descending into each definition's own nested
+ * `definitions.subgraphs` (a subgraph-within-subgraph definition) at any
+ * depth. Each definition's own nested list is cleared once its contents are
+ * hoisted, since callers operate on the returned flat list.
+ */
+function flattenSubgraphDefinitions<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph>
+>(subgraphs: Subgraph[]): Subgraph[] {
+  const flattened: Subgraph[] = []
+  for (const subgraph of subgraphs) {
+    flattened.push(subgraph)
+    const nested = subgraph.definitions?.subgraphs
+    if (nested?.length) {
+      flattened.push(...flattenSubgraphDefinitions(nested))
+      subgraph.definitions!.subgraphs = undefined
+    }
+  }
+  return flattened
+}
+
 export function normalizeSubgraphDefinitionIds<
-  Subgraph extends { id: string; nodes?: { type: string }[] },
+  Subgraph extends NestedSubgraphDefinitions<Subgraph> & {
+    id: string
+    nodes?: { type: string }[]
+  },
   Node extends { type: string }
 >(
   subgraphs: Subgraph[],
   rootNodes?: Node[]
 ): DeduplicationResult<Subgraph, Node> {
-  const clonedSubgraphs = structuredClone(subgraphs)
+  const clonedSubgraphs = flattenSubgraphDefinitions(structuredClone(subgraphs))
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
   const ids = new Set(clonedSubgraphs.map(({ id }) => id))
   const remapped = new Map<string, string>()
@@ -292,7 +321,7 @@ function findNextAvailableId(
   usedIds: Set<number>,
   advance: () => number
 ): number {
-  while (true) {
+  for (;;) {
     const nextId = advance()
     if (nextId > MAX_ID) {
       throw new Error('Node ID space exhausted')
@@ -447,8 +476,8 @@ function remapRerouteIds(
   )
 }
 
-function remapNumericIds<T extends { id: number }>(
-  items: T[],
+function remapNumericIds(
+  items: { id: number }[],
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,

@@ -14,6 +14,7 @@ const importer = resolve(
   'src/workbench/extensions/agent/crdt/schemaGuard.ts'
 )
 const hmrPort = 6216
+let watchedFile: string | undefined
 let resolveHotUpdate: ((moduleIds: string[]) => void) | undefined
 const hotUpdate = new Promise<string[]>((resolveUpdate) => {
   resolveHotUpdate = resolveUpdate
@@ -27,7 +28,10 @@ const server = await createServer({
     {
       name: 'comfy-multi-player-hmr-proof',
       handleHotUpdate(context) {
-        if (normalizePath(context.file) === normalizePath(packageEntry)) {
+        if (
+          watchedFile !== undefined &&
+          normalizePath(context.file) === normalizePath(watchedFile)
+        ) {
           resolveHotUpdate?.(
             context.modules
               .map((module) => module.id)
@@ -37,11 +41,20 @@ const server = await createServer({
       }
     }
   ],
+  // Mirrors the `@` alias in `vite.config.mts`. The guard runs with
+  // `configFile: false` for isolation, so the importer's own non-package
+  // imports (`@/base/assert`) would otherwise fail to resolve and the
+  // importer-edge assertion below could never run. Only the importer's direct
+  // imports are resolved here, so this one entry is sufficient; an importer
+  // that grows an import behind another alias fails the guard loudly rather
+  // than silently skipping the edge check.
+  resolve: { alias: { '@': '/src' } },
   server: { hmr: true, port: hmrPort, strictPort: true },
   optimizeDeps: { noDiscovery: true }
 })
 
 let originalSource: string | undefined
+let probeTarget: string | undefined
 try {
   await server.listen()
 
@@ -63,6 +76,41 @@ try {
       `Vite resolved @comfyorg/comfy-multi-player to ${actualEntry}; expected workspace source ${expectedEntry}`
     )
   }
+  watchedFile = expectedEntry
+
+  // Transform the real frontend importer, not just the package entry: a
+  // registered package entry only proves Vite knows the file, while the
+  // property under test is that `schemaGuard.ts` reaches the workspace source,
+  // so an HMR update of that source invalidates frontend modules.
+  const importerUrl = `/@fs/${normalizePath(importer)}`
+  const transformedImporter = await server.transformRequest(importerUrl)
+  if (!transformedImporter) {
+    throw new Error(`Vite did not transform frontend importer ${importer}`)
+  }
+
+  const importerModules = server.moduleGraph.getModulesByFile(importer)
+  const importerModule = importerModules && [...importerModules][0]
+  if (!importerModule) {
+    throw new Error(
+      `Vite did not register frontend importer ${importer} in its module graph`
+    )
+  }
+
+  const importedFiles = await Promise.all(
+    [...importerModule.importedModules].map(async (module) =>
+      module.file ? realpath(module.file).catch(() => module.file) : null
+    )
+  )
+  if (
+    !importedFiles.some(
+      (file) =>
+        file !== null && normalizePath(file) === normalizePath(expectedEntry)
+    )
+  ) {
+    throw new Error(
+      `Frontend importer ${importer} does not import workspace source ${expectedEntry}; imports: ${importedFiles.filter((file) => file !== null).join(', ')}`
+    )
+  }
 
   const moduleUrl = `/@fs/${normalizePath(expectedEntry)}`
   const transformed = await server.transformRequest(moduleUrl)
@@ -77,6 +125,7 @@ try {
     )
   }
 
+  probeTarget = expectedEntry
   originalSource = await readFile(expectedEntry, 'utf8')
   await writeFile(
     expectedEntry,
@@ -99,7 +148,11 @@ try {
     }
   )
   if (
-    !updatedModules.some((id) => id.replace(/[?#].*$/, '') === expectedEntry)
+    !updatedModules.some(
+      (id) =>
+        normalizePath(id.replace(/[?#].*$/, '')) ===
+        normalizePath(expectedEntry)
+    )
   ) {
     throw new Error(
       `Vite HMR update did not include workspace source: ${updatedModules.join(', ')}`
@@ -109,6 +162,8 @@ try {
   process.stdout.write(
     [
       `resolved=${normalizePath(actualEntry)}`,
+      `importer=${normalizePath(importer)}`,
+      `importer_imports_workspace_source=verified`,
       `module_graph_entries=${watchedModules.size}`,
       `hmr_port=${hmrPort}`,
       `hmr_module=${normalizePath(expectedEntry)}`,
@@ -116,8 +171,11 @@ try {
     ].join('\n') + '\n'
   )
 } finally {
-  if (originalSource !== undefined) {
-    await writeFile(packageEntry, originalSource)
+  if (originalSource !== undefined && probeTarget !== undefined) {
+    // Restore the path the probe actually wrote (the resolved entry), not the
+    // unresolved `packageEntry`, so a symlinked checkout cannot leave the probe
+    // comment behind in the real source file.
+    await writeFile(probeTarget, originalSource)
   }
   await server.close()
 }

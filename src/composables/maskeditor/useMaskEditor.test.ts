@@ -1,22 +1,23 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-const mockDialogStore = vi.hoisted(() => ({
-  showDialog: vi.fn()
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => mockDialogStore
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/dialog/TopBarHeader.vue'),
+  () => ({
+    default: { name: 'TopBarHeaderStub' }
+  })
+)
 
-vi.mock('@/components/maskeditor/dialog/TopBarHeader.vue', () => ({
-  default: { name: 'TopBarHeaderStub' }
-}))
-
-vi.mock('@/components/maskeditor/MaskEditorContent.vue', () => ({
-  default: { name: 'MaskEditorContentStub' }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/MaskEditorContent.vue'),
+  () => ({
+    default: { name: 'MaskEditorContentStub' }
+  })
+)
 
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
@@ -36,6 +37,7 @@ describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    mockDialogStore = useDialogStore()
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -91,7 +93,7 @@ describe('useMaskEditor', () => {
     })
 
     it('should log and bail when node is null', () => {
-      useMaskEditor().openMaskEditor(null as unknown as LGraphNode)
+      useMaskEditor().openMaskEditor(null)
 
       expect(errorSpy).toHaveBeenCalledWith('[MaskEditor] No node provided')
       expect(mockDialogStore.showDialog).not.toHaveBeenCalled()

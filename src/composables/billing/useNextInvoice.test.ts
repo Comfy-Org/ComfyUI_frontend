@@ -17,6 +17,7 @@ function makeSubscription(
     tier: 'STANDARD',
     duration: 'MONTHLY',
     planSlug: 'standard-monthly',
+    scheduledChange: null,
     renewalDate: '2026-08-01T00:00:00Z',
     endDate: null,
     isCancelled: false,

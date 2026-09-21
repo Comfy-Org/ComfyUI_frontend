@@ -32,7 +32,7 @@ function shape(schema: Schema): string {
 }
 
 function projectedContract() {
-  const defs = AGENT_EVENT_JSON_SCHEMA.$defs as Record<string, Schema>;
+  const defs = AGENT_EVENT_JSON_SCHEMA.definitions as Record<string, Schema>;
   return Object.fromEntries(Object.entries(defs).map(([event, envelope]) => {
     const data = envelope.properties?.data;
     if (!data?.properties) throw new Error(`${event}: missing data object schema`);

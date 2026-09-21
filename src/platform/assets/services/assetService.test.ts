@@ -1,5 +1,9 @@
+import type { ComfyApp } from '@/scripts/app'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   AssetItem,
   AssetResponse
@@ -11,66 +15,27 @@ import {
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
-}))
-
-vi.mock('@/stores/modelToNodeStore', () => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  return {
-    useModelToNodeStore: vi.fn(() => ({
-      getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn(
-        (nodeType: string) => nodeTypeCategories[nodeType]
-      )
-    }))
-  }
-})
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputAssets }
-  })
-}))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
     addCustomEventListener: vi.fn(),
     removeCustomEventListener: vi.fn()
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
+  t: (key: string) => key,
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -122,63 +87,75 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-describe(assetService.shouldUseAssetBrowser, () => {
+beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+  const registeredNodeTypes: Record<string, string> = {
+    CheckpointLoaderSimple: 'ckpt_name',
+    LoraLoader: 'lora_name'
+  }
+  const nodeTypeCategories: Record<string, string> = {
+    CheckpointLoaderSimple: 'checkpoints',
+    LoraLoader: 'loras'
+  }
+  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
+    () => registeredNodeTypes
+  )
+  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
+    (nodeType: string) => nodeTypeCategories[nodeType]
+  )
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
+    mockInvalidateInputAssets
+  )
+})
+
+describe(assetService.shouldUseWidgetAssetPicker, () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(false)
   })
 
   it('returns false when not on cloud', () => {
     mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
-    ).toBe(false)
-  })
-
-  it('returns false when asset API setting is disabled', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(false)
-
-    expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
+      assetService.shouldUseWidgetAssetPicker(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
     ).toBe(false)
   })
 
   it('returns false when node type is not eligible', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('UnknownNode', 'some_input')
+      assetService.shouldUseWidgetAssetPicker('UnknownNode', 'some_input')
     ).toBe(false)
   })
 
-  it('returns true when cloud, setting enabled, and node is eligible', () => {
+  it('returns true when on cloud and node is eligible', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
+      assetService.shouldUseWidgetAssetPicker(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
     ).toBe(true)
   })
 
   it('returns false when nodeType is undefined', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
-    expect(assetService.shouldUseAssetBrowser(undefined, 'ckpt_name')).toBe(
-      false
-    )
+    expect(
+      assetService.shouldUseWidgetAssetPicker(undefined, 'ckpt_name')
+    ).toBe(false)
   })
 
   it('returns false when widget name does not match registered input', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser(
+      assetService.shouldUseWidgetAssetPicker(
         'CheckpointLoaderSimple',
         'wrong_input'
       )
@@ -413,7 +390,7 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -462,7 +439,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -482,7 +459,7 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -496,7 +473,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -615,7 +592,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -632,7 +609,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -1178,4 +1155,9 @@ describe(assetService.getAssetsForNodeType, () => {
     expect(assets).toEqual([])
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

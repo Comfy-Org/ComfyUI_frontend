@@ -1,7 +1,10 @@
 import type { ApplyResult } from "../src/types.js";
 
 export function rejectedOutcome(result: ApplyResult) {
-  return result.outcomes.find((outcome) => outcome.outcome === "rejected");
+  return result.outcomes.find(
+    (outcome): outcome is Extract<ApplyResult["outcomes"][number], { outcome: "rejected" }> =>
+      outcome.outcome === "rejected" && outcome.reason.code !== "batch_aborted",
+  );
 }
 
 export function rejectedOutcomeWithIndex(result: ApplyResult) {

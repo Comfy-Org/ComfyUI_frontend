@@ -1,6 +1,6 @@
 import type { NodeReplacementResponse } from './types'
+import type { ComfyApp } from '@/scripts/app'
 
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
@@ -9,35 +9,20 @@ import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
-
-vi.mock('./nodeReplacementService', () => ({
+vi.mock(import('./nodeReplacementService'), () => ({
   fetchNodeReplacements: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getServerFeature: vi.fn()
   }
 }))
 
-function mockSettingStore(enabled: boolean) {
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.NodeReplacement.Enabled') {
-        return enabled
-      }
-      return false
-    }),
-    load: vi.fn().mockResolvedValue(undefined)
-  })
-}
-
 function createStore(settingEnabled = true, serverFeatureEnabled = true) {
-  setActivePinia(createPinia())
-  mockSettingStore(settingEnabled)
+  useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] =
+    settingEnabled
+  vi.mocked(useSettingStore().load).mockResolvedValue(undefined)
   vi.mocked(api.getServerFeature).mockImplementation(
     (flag: string, defaultValue?: unknown) => {
       if (flag === ServerFeatureFlag.NODE_REPLACEMENTS) {
@@ -269,4 +254,9 @@ describe('useNodeReplacementStore', () => {
       expect(fetchNodeReplacements).toHaveBeenCalledOnce()
     })
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

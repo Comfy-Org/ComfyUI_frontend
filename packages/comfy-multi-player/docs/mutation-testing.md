@@ -106,10 +106,10 @@ The triple **84.38% / 88.01% / 74.59%** was previously cited here as the proof o
 ## Running it
 
 ```sh
-npm ci
-npm run build
-npm run test:mutation
-npm run check:mutation-report
+pnpm install --frozen-lockfile
+pnpm --filter @comfyorg/comfy-multi-player run build
+pnpm --filter @comfyorg/comfy-multi-player run test:mutation
+pnpm --filter @comfyorg/comfy-multi-player run check:mutation-report
 ```
 
 Node 22 or newer.
@@ -126,7 +126,7 @@ INCONCLUSIVE is not a pass. Re-run on a quieter machine; do not record the score
 
 Stryker writes local HTML and JSON reports plus the incremental report under
 `reports/`; generated reports and `.stryker-tmp/` are ignored by git.
-`.github/workflows/mutation.yml` runs nightly and by manual
+`.github/workflows/mutation-comfy-multi-player.yaml` runs nightly and by manual
 `workflow_dispatch`, not on every pull request; it caches the incremental report
 and uploads `reports/mutation/` as a build artifact so a failing run leaves
 something to read.

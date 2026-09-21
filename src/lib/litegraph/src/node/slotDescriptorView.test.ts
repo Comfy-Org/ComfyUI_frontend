@@ -55,9 +55,25 @@ describe('slot identity', () => {
 
     node.inputs = [input]
 
-    expect(node._state.inputs).not.toBe(node.inputs)
+    expect(node._state.inputs).toBe(node.inputs)
     expect(node.inputs[0]).toBeInstanceOf(NodeInputSlot)
     expect(node._state.inputs[0]).toBe(node.inputs[0])
+  })
+
+  it('upgrades extension-assigned outputs when they are written', () => {
+    const node = new LGraphNode('Node')
+    const output = {
+      name: 'output',
+      type: 'INT',
+      links: [],
+      boundingRect: new Float64Array(4)
+    }
+
+    node.outputs = [output]
+
+    expect(node._state.outputs).toBe(node.outputs)
+    expect(node.outputs[0]).toBeInstanceOf(NodeOutputSlot)
+    expect(node._state.outputs[0]).toBe(node.outputs[0])
   })
 
   it('preserves native indexOf behavior for arbitrary values', () => {

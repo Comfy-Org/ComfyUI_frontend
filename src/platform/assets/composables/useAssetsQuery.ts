@@ -63,7 +63,7 @@ function assetsQueryInternal(
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
       const seenHeadCursors = new Set<string | undefined>()
-      while (true) {
+      for (;;) {
         if (seenHeadCursors.has(headCursor)) break
         seenHeadCursors.add(headCursor)
 

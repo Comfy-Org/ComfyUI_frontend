@@ -32,6 +32,7 @@ import {
   type WorkflowJSON,
   type WorkflowNode,
 } from "../src/index.js";
+import { noOpIds, rejectedOutcome } from "./apply-result-helpers.js";
 import { canonicalize, loadCatalog, loadLwwVectors, loadSession, sessionFiles } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -47,19 +48,8 @@ function envelope(actor: string, baseVersion: number) {
   return { op_id: testOpId(), actor, base_version: baseVersion, stamp: [baseVersion, actor] as [number, string] };
 }
 
-function rejectedOutcome(result: ReturnType<typeof applyOps>) {
-  return result.outcomes.find(
-    (outcome): outcome is Extract<(typeof result.outcomes)[number], { outcome: "rejected" }> =>
-      outcome.outcome === "rejected" && outcome.reason.code !== "batch_aborted",
-  );
-}
-
 function processedOpIds(result: ReturnType<typeof applyOps>): string[] {
   return result.outcomes.filter((outcome) => outcome.outcome !== "rejected").map((outcome) => outcome.op_id);
-}
-
-function noOpIds(result: ReturnType<typeof applyOps>): string[] {
-  return result.outcomes.filter((outcome) => outcome.outcome === "no-op").map((outcome) => outcome.op_id);
 }
 
 describe("idempotency (byte-identical re-apply)", () => {

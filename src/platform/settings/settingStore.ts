@@ -166,7 +166,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to check.
    * @returns Whether the setting exists.
    */
-  function exists<K extends keyof Settings>(key: K) {
+  function exists(key: keyof Settings) {
     return settingValues.value[key] !== undefined
   }
 
@@ -284,12 +284,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
-    if (versionedDefault) {
-      return versionedDefault
-    }
-
-    const defaultValue = param.defaultValue
-    return resolveDefaultValue(defaultValue)
+    return versionedDefault ?? resolveDefaultValue(param.defaultValue)
   }
 
   function getVersionedDefaultValue<
@@ -335,9 +330,6 @@ export const useSettingStore = defineStore('setting', () => {
    * @param setting - The setting to register.
    */
   function addSetting(setting: SettingParams) {
-    if (!setting.id) {
-      throw new Error('Settings must have an ID')
-    }
     if (setting.id in settingsById.value) {
       // Setting already registered - skip to allow component remounting
       // TODO: Add store reset methods to bootstrapStore and settingStore, then

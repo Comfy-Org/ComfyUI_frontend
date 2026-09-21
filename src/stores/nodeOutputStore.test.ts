@@ -15,7 +15,7 @@ import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn(),
   resolveNode: (...args: unknown[]) => mockResolveNode(...args)
@@ -23,9 +23,10 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 const mockGetNodeById = vi.fn()
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    getRandParam: vi.fn(() => ''),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -49,15 +50,8 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -138,6 +132,31 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
       )
     ).toEqual(['blob:second'])
+  })
+
+  it('projects execution output into canonical state and view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    const output = createMockOutputs([
+      {
+        filename: 'execution-result.png',
+        subfolder: 'daily outputs',
+        type: 'output'
+      }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, output)
+
+    expect(store.nodeOutputs[String(node.id)]).toEqual(output)
+    expect(app.nodeOutputs[String(node.id)]).toEqual(output)
+
+    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    const previewUrl = new URL(url, window.location.origin)
+    expect(previewUrl.pathname).toBe('/api/view')
+    expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('daily outputs')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('owns preview arrays after setting them', () => {

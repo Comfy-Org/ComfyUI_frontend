@@ -174,7 +174,13 @@ function schemeStamp(item: LogicalOp, scheme: Scheme, order: LogicalOp[]): [numb
 function canonicalProjection(doc: Y.Doc): WorkflowJSON {
   const value = structuredClone(project(doc, catalog));
   value.nodes.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  value.links.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  // `WorkflowJSON.links` is `unknown[]`; the projection emits litegraph link
+  // arrays whose first element is the link id. The assertion is type-only and
+  // erased at runtime, so the ordering is byte-identical to before this file
+  // was brought under `tsc`.
+  value.links.sort((a, b) =>
+    String((a as unknown[])[0]).localeCompare(String((b as unknown[])[0])),
+  );
   return value;
 }
 

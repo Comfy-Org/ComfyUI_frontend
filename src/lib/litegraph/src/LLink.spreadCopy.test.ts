@@ -1,7 +1,5 @@
 // oxlint-disable no-misused-spread -- spreading an LLink is what these tests reproduce
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -46,10 +44,6 @@ function insertionScenario(consumerCount: number) {
 }
 
 describe('plain-object copies of LLink (uncovered)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('carries topology onto a spread copy of a link', () => {
     const { graph, link } = connectedPair(toRerouteId(7))
     const stored = graph.links[link.id]

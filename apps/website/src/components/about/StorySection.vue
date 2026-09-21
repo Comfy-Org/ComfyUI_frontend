@@ -16,15 +16,15 @@ const investors = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto text-center">
       <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ t('about.story.label', locale) }}
       </span>
       <h2
-        class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
+        class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('about.story.headingBefore', locale)
         }}<span class="text-primary-comfy-yellow">{{
@@ -32,7 +32,7 @@ const investors = [
         }}</span
         >{{ t('about.story.headingAfter', locale) }}
       </h2>
-      <p class="text-primary-warm-white mt-8 text-base/relaxed lg:text-lg">
+      <p class="mt-8 text-base/relaxed text-primary-warm-white lg:text-lg">
         {{ t('about.story.body', locale) }}
       </p>
     </div>
@@ -46,7 +46,7 @@ const investors = [
         <div class="relative z-10 flex h-9 items-center">
           <img src="/icons/node-left.svg" alt="" class="h-full w-auto" />
           <span
-            class="bg-primary-comfy-yellow text-primary-comfy-ink flex h-full items-center px-2 text-sm font-bold tracking-wider"
+            class="flex h-full items-center bg-primary-comfy-yellow px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
           >
             OUR
           </span>
@@ -60,7 +60,7 @@ const investors = [
         <!-- INVESTORS badge (taller) -->
         <div class="relative z-10 flex h-12 items-center">
           <span
-            class="bg-primary-comfy-yellow text-primary-comfy-ink flex h-full items-center px-3 text-lg font-bold tracking-wider"
+            class="flex h-full items-center bg-primary-comfy-yellow px-3 text-lg font-bold tracking-wider text-primary-comfy-ink"
           >
             INVESTORS
           </span>
@@ -68,7 +68,7 @@ const investors = [
         </div>
       </div>
       <p
-        class="text-primary-warm-white mt-6 max-w-3xl text-sm/relaxed lg:text-base"
+        class="mt-6 max-w-3xl text-sm/relaxed text-primary-warm-white lg:text-base"
       >
         {{ t('about.story.investorsBody', locale) }}
       </p>
@@ -89,13 +89,13 @@ const investors = [
 
     <!-- Quote card -->
     <div
-      class="bg-primary-comfy-yellow mx-auto mt-12 max-w-5xl rounded-4xl p-10 lg:p-16"
+      class="mx-auto mt-12 max-w-5xl rounded-4xl bg-primary-comfy-yellow p-10 lg:p-16"
     >
-      <p class="text-primary-comfy-ink text-xl/relaxed font-medium lg:text-3xl">
+      <p class="text-xl/relaxed font-medium text-primary-comfy-ink lg:text-3xl">
         {{ t('about.quote.text', locale) }}
       </p>
       <p
-        class="text-primary-comfy-ink/70 mt-8 text-sm font-semibold lg:text-base"
+        class="mt-8 text-sm font-semibold text-primary-comfy-ink/70 lg:text-base"
       >
         {{ t('about.quote.attribution', locale) }}
       </p>

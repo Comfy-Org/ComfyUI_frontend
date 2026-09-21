@@ -9,11 +9,13 @@
 import * as Y from "yjs";
 import { definitionsMap, nodesMap } from "./doc.js";
 import { readSchemaVersion } from "./schema-version.js";
+import { compareStampKeys } from "./stamps.js";
 import {
   LEGACY_NODE_INCARNATION,
   NODE_INCARNATION_KEY,
   SCHEMA_VERSION,
   SchemaVersionError,
+  type StampKey,
 } from "./types.js";
 
 function migrateNodeMap(node: unknown): void {
@@ -29,7 +31,7 @@ function migrateStampKey(key: string): string | null {
     return null;
   }
   if (!Array.isArray(parsed) || parsed[0] !== "widget" || parsed.length !== 3) return null;
-  return JSON.stringify([parsed[0], parsed[1], LEGACY_NODE_INCARNATION, parsed[2]]);
+  return JSON.stringify([parsed[0], String(parsed[1]), LEGACY_NODE_INCARNATION, parsed[2]]);
 }
 
 /** Apply the v1 → v2 compatibility translation in one host-owned transaction. */
@@ -45,9 +47,10 @@ function migrateV1ToV2(doc: Y.Doc): void {
     const stamps = doc.getMap<unknown>("__stamps");
     for (const oldKey of [...stamps.keys()]) {
       const newKey = migrateStampKey(oldKey);
-      if (newKey === null || stamps.has(newKey)) continue;
-      const value = stamps.get(oldKey);
-      stamps.set(newKey, value);
+      if (newKey === null) continue;
+      const value = stamps.get(oldKey) as StampKey;
+      const prior = stamps.get(newKey) as StampKey | undefined;
+      if (prior === undefined || compareStampKeys(value, prior) > 0) stamps.set(newKey, value);
       stamps.delete(oldKey);
     }
 

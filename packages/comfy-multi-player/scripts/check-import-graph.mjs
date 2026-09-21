@@ -85,6 +85,19 @@ try {
   process.exit(2);
 }
 
+if (
+  typeof report !== "object" ||
+  report === null ||
+  typeof report.summary !== "object" ||
+  report.summary === null ||
+  typeof report.summary.totalCruised !== "number" ||
+  typeof report.summary.totalDependenciesCruised !== "number" ||
+  !Array.isArray(report.summary.violations)
+) {
+  console.error("import-graph check INCONCLUSIVE: dependency-cruiser report has no valid summary");
+  process.exit(2);
+}
+
 const { totalCruised, totalDependenciesCruised, violations } = report.summary;
 
 // --------------------------------------------------------------------------

@@ -4,10 +4,10 @@ import { computed } from 'vue'
 
 import { zAgentRunMode } from '../../schemas/agentApiSchema'
 import type {
-  AgentRunMode,
-  AgentRunModePreference
+  AgentRunModePreference,
+  AgentRunModeValue
 } from '../../schemas/agentApiSchema'
-export type { AgentRunMode } from '../../schemas/agentApiSchema'
+export type { AgentRunModeValue } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
   createAgentRestClient
@@ -87,6 +87,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const mode = computed(() => preference.value.mode)
   const creditLimit = computed(() => preference.value.credit_limit)
   let saveRevision = 0
+  let appliedSaveRevision = 0
 
   function apply(nextPreference: AgentRunModePreference): void {
     preference.value = nextPreference
@@ -112,20 +113,24 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   }
 
   async function save(
-    nextMode: AgentRunMode,
+    nextMode: AgentRunModeValue,
     nextLimit: number | null
   ): Promise<void> {
     const next = zAgentRunMode.parse({
       mode: nextMode,
       credit_limit: nextLimit
     })
-    saveRevision++
-    try {
-      const savedPreference = await api.putRunMode(next)
+    const revision = ++saveRevision
+    const applySaved = (savedPreference: AgentRunModePreference) => {
+      if (revision <= appliedSaveRevision) return
+      appliedSaveRevision = revision
       apply(savedPreference)
+    }
+    try {
+      applySaved(await api.putRunMode(next))
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
-      apply(next)
+      applySaved(next)
     }
   }
 

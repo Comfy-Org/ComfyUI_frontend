@@ -1,125 +1,36 @@
-import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
+import {
+  computed,
+  effectScope,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { MaterializableGraph } from './agentNodeMaterializer'
+import { AgentCrdtDocLifecycle, STALE_AFTER_MS } from './agentCrdtDocLifecycle'
+import { AgentCrdtProjection } from './agentCrdtProjection'
+import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
-import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import type { DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount loses the binding until the NEXT turn ack. Persist it per-tab
-// in sessionStorage so an in-page remount can rebind immediately. A full page
-// reload deliberately does NOT rebind (see the nonce below): it mints a new
-// nonce, refuses the pre-reload record, and waits for the next turn ack.
-//
-// FEC-5: a bare `docId` string has no owner and no lifetime, so it survives
-// (a) a workflow switch in the same browser tab - the NEXT panel mount rebinds
-// to whichever workflow last confirmed a subscribe, not necessarily the one
-// about to become active - and (b) a browser-tab duplication, which clones
-// sessionStorage verbatim into a second tab that never subscribed to that doc
-// at all. Neither case can be caught by re-checking `workflowId`, because the
-// whole reason a rebind is attempted is that the caller does NOT yet know
-// which workflow it's asking about. Instead the persisted record carries (1)
-// a per-page-load session nonce, so a value only ever rebinds within the
-// SAME top-level navigation that wrote it - a duplicated tab gets a fresh
-// nonce and its inherited record is refused - and (2) a short expiry that
-// slides while the doc keeps delivering frames, so a tab left idle past the
-// window a doc realistically stays relevant is refused rather than trusted
-// indefinitely. (1) closes case (b). Case (a) happens inside one page load,
-// so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
-// `fec-docid-1` reproducer tracks the remaining same-tab window.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
-const DOC_ID_TTL_MS = 5 * 60 * 1000
-// Re-stamp the expiry on doc traffic at most this often, so a busy channel
-// does not turn every frame into a sessionStorage write.
-const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
-
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
-
-interface PersistedDocIdRecord {
-  docId: string
-  nonce: string
-  expiresAt: number
-}
-
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
-function persistDocId(docId: string): void {
-  try {
-    const record: PersistedDocIdRecord = {
-      docId,
-      nonce: pageSessionNonce,
-      expiresAt: Date.now() + DOC_ID_TTL_MS
-    }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
-  } catch {
-    // Quota / privacy mode: persistence is best-effort.
-  }
-}
-
-// Returns the persisted doc id ONLY when it was written by this same page
-// load and has not expired.
-function readPersistedDocId(): string | null {
-  try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
-    if (!raw) return null
-    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
-    if (
-      typeof record.docId !== 'string' ||
-      typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number'
-    ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
-      return null
-    }
-    if (record.nonce !== pageSessionNonce) return null
-    if (Date.now() >= record.expiresAt) return null
-    return record.docId
-  } catch {
-    return null
-  }
-}
-
-function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
-}
-
-/**
- * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
- * delivers NO doc-scoped frame for this long gets ONE active probe - a
- * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
- * exactly the observed recovery on a stale one. A stale channel and an idle
- * workflow look identical passively, so expiry probes instead of alarming.
- */
-export const STALE_AFTER_MS = 30_000
+export { apiTransport, STALE_AFTER_MS }
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -138,7 +49,7 @@ export const STALE_AFTER_MS = 30_000
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
-export interface AgentCrdtOutcomeCounters {
+interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
@@ -170,20 +81,19 @@ export interface AgentCrdtStatus {
   outcomes: AgentCrdtOutcomeCounters
 }
 
-export const apiTransport: DocFrameTransport = {
-  send(frame) {
-    // Never throws: a closed socket is a recoverable state, not an error. See
-    // DocFrameTransport.send — throwing here aborted both the immediate
-    // subscribe watcher and the unmount hook.
-    if (api.socket?.readyState !== WebSocket.OPEN) return false
-    api.socket.send(frame)
-    return true
-  },
-  addEventListener(type, listener) {
-    api.addCustomEventListener(type, listener)
-  },
-  removeEventListener(type, listener) {
-    api.removeCustomEventListener(type, listener)
+// Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
+// logError, which re-throws in dev/test builds (this app registers no
+// app.config.errorHandler) and aborts the rest of unmountComponent - leaving
+// this composable's watch alive to rebind against destroyed objects.
+function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
+  for (const cleanup of cleanups) {
+    try {
+      cleanup()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_tearing_down_agent_crdt_follower'
+      })
+    }
   }
 }
 
@@ -191,7 +101,77 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  /**
+   * Live graph that receives node adapters for store-only records. Reactive
+   * reads inside the getter are tracked, so a `null` → graph flip triggers a
+   * reconcile without waiting for the next remote frame.
+   */
+  getGraph: () => MaterializableGraph | null = () => null
+) {
+  const productGate = useAgentPanelStore()
+  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
+  const disabledStatus: AgentCrdtStatus = {
+    enabled: false,
+    connected: false,
+    workflowId: null,
+    updatesApplied: 0,
+    lastFrameType: null,
+    outcomes: {
+      received: 0,
+      applied: 0,
+      skipped: 0,
+      errored: 0,
+      gap: 0,
+      reset: 0,
+      dropped: 0
+    }
+  }
+  const status = computed(() => follower.value?.status.value ?? disabledStatus)
+
+  watch(
+    () => productGate.enabled,
+    (enabled, _previous, onCleanup) => {
+      if (!enabled) return
+      const scope = effectScope()
+      onCleanup(() => {
+        follower.value = undefined
+        scope.stop()
+      })
+      follower.value = scope.run(() =>
+        startAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          userId,
+          isTargetActive,
+          getGraph
+        )
+      )
+    },
+    { immediate: true, flush: 'sync' }
+  )
+
+  return {
+    status: readonly(status),
+    debugSnapshot: (): CrdtDebugSnapshot =>
+      follower.value?.debugSnapshot() ??
+      readCrdtSnapshot(null, {
+        status: status.value,
+        tabId: null,
+        lastSeq: null,
+        schemaError: null
+      }),
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      follower.value?.enqueueHumanOperations(operations)
+  }
+}
+
+function startAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  graphMutations: MutationsForTarget,
+  userId: () => string | null,
+  isTargetActive: Ref<boolean>,
+  getGraph: () => MaterializableGraph | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -207,31 +187,17 @@ export function useAgentCrdtFollower(
     dropped: 0
   })
 
-  // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
-  // Wraps locally instead of modifying the exported apiTransport, whose
-  // never-throw contract is covered by tests.
-  const transport: DocFrameTransport = {
-    send(frame) {
-      const delivered = apiTransport.send(frame)
-      let parsed: unknown = frame
-      try {
-        parsed = JSON.parse(frame)
-      } catch {
-        // Leave the raw string.
-      }
-      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
-      return delivered
-    },
-    addEventListener(type, listener) {
-      apiTransport.addEventListener(type, listener)
-    },
-    removeEventListener(type, listener) {
-      apiTransport.removeEventListener(type, listener)
-    }
-  }
-  const client = new DocFrameClient(transport)
+  const client = new DocFrameClient(createLoggedTransport())
   const bridge = new LayoutFollowerBridge(client)
-  const adapter = new EcsFollowerAdapter(graphMutations)
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc
+  )
+  const lifecycle = new AgentCrdtDocLifecycle(
+    () => subscribedWorkflowId.value,
+    () => bridge.resubscribe()
+  )
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -240,6 +206,7 @@ export function useAgentCrdtFollower(
         if (!(event instanceof CustomEvent)) return
         const detail = event.detail as OpsResultView & { failed?: unknown }
         listener({
+          workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
@@ -275,85 +242,6 @@ export function useAgentCrdtFollower(
     }
   }
 
-  // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
-  // the subscribe raced the doc-host before the turn ack minted the doc. The
-  // bridge's transport-level reconcile can never repair it: the frame WAS
-  // delivered, so intent already equals reality. Retry the subscribe itself
-  // with bounded exponential backoff while the desired doc is unchanged.
-  const SUBSCRIBE_RETRY_BASE_MS = 500
-  const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
-  let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
-  let subscribeRetryAttempt = 0
-
-  // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
-  // healthy by definition), slid forward by every doc-scoped frame, cancelled
-  // by the same lifecycle exits as the subscribe retry. The probe is
-  // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
-  // reality - and a stale channel's intent DOES equal reality).
-  let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
-
-  // FEC-5: `Date.now()` of the last persisted-record write by this instance.
-  // A confirmed subscribe always writes; doc-scoped frames re-stamp the expiry
-  // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
-  // delivering frames keeps its rebind window instead of lapsing mid-session.
-  let lastPersistedAt = 0
-  const persistConfirmedDocId = (docId: string): void => {
-    persistDocId(docId)
-    lastPersistedAt = Date.now()
-  }
-  const refreshPersistedDocId = (): void => {
-    const docId = subscribedWorkflowId.value
-    if (docId === null) return
-    if (Date.now() - lastPersistedAt < DOC_ID_REFRESH_INTERVAL_MS) return
-    persistConfirmedDocId(docId)
-  }
-
-  const clearStaleProbe = (): void => {
-    if (staleProbeTimer !== null) {
-      clearTimeout(staleProbeTimer)
-      staleProbeTimer = null
-    }
-  }
-
-  const armStaleProbe = (): void => {
-    clearStaleProbe()
-    staleProbeTimer = setTimeout(() => {
-      staleProbeTimer = null
-      recordDevEvent('stale_probe', {
-        workflowId: subscribedWorkflowId.value
-      })
-      bridge.resubscribe()
-      armStaleProbe()
-    }, STALE_AFTER_MS)
-  }
-
-  const clearSubscribeRetry = (): void => {
-    if (subscribeRetryTimer !== null) {
-      clearTimeout(subscribeRetryTimer)
-      subscribeRetryTimer = null
-    }
-    subscribeRetryAttempt = 0
-  }
-
-  const scheduleSubscribeRetry = (): void => {
-    if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
-    const target = subscribedWorkflowId.value
-    if (target === null) return
-    const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
-    subscribeRetryAttempt += 1
-    subscribeRetryTimer = setTimeout(() => {
-      subscribeRetryTimer = null
-      // The desired doc changed while we waited — the watch owns that path.
-      if (subscribedWorkflowId.value !== target) return
-      recordDevEvent('subscribe_retry', {
-        attempt: subscribeRetryAttempt,
-        workflowId: target
-      })
-      bridge.resubscribe()
-    }, delay)
-  }
-
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -362,15 +250,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      clearSubscribeRetry()
-      armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
-        persistConfirmedDocId(subscribedWorkflowId.value)
+      lifecycle.onSubscribeConfirmed()
     } else {
-      clearStaleProbe()
-      scheduleSubscribeRetry()
+      lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -394,14 +276,14 @@ export function useAgentCrdtFollower(
       }
       return
     }
-    if (staleProbeTimer !== null) armStaleProbe()
-    refreshPersistedDocId()
+    lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const applied = adapter.applyFrame(update)
+    const applied = projection.applyFrame(update)
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+    if (applied) projection.reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -416,14 +298,16 @@ export function useAgentCrdtFollower(
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
-    if (staleProbeTimer !== null) {
-      armStaleProbe()
-      refreshPersistedDocId()
-    }
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (
+      !isTargetActive.value ||
+      detail?.workflowId !== subscribedWorkflowId.value
+    )
+      return
+    lifecycle.onDocumentResult()
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
-    }
+    recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -434,9 +318,6 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
-    // The bridge already replaced its doc for this lineage break, whether or
-    // not this target is active, so count it before the filter like the other
-    // bridge-decided outcomes (gap, dropped, errored).
     outcomes.value = { ...outcomes.value, reset: outcomes.value.reset + 1 }
     if (
       !isTargetActive.value ||
@@ -445,15 +326,14 @@ export function useAgentCrdtFollower(
       return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail?.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
+      actor: detail.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined)
-      adapter.clearForReset(detail.workflowId, context)
+    projection.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
-    clearStaleProbe()
+    lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -475,12 +355,12 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      adapter.clearForReset(workflowId, {
+      projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
-      adapter.bind(workflowId, bridge.follower)
+      projection.bind(workflowId, bridge.follower)
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -489,23 +369,19 @@ export function useAgentCrdtFollower(
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
     lastFrameType.value = event.type
-    clearStaleProbe()
+    lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
     if (detail?.workflowId !== undefined)
-      adapter.discardPending(detail.workflowId)
+      projection.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
-  // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
-  // event, so `gap` can only be counted from the bridge's own `doc_gap`
-  // signal, not inferred inside `onUpdate`.
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
@@ -513,9 +389,6 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  // s5-metrics-1: a stale/duplicate frame is discarded inside the bridge
-  // before it becomes a `doc_update` event, so `dropped` is likewise counted
-  // from the bridge's own `doc_stale` signal.
   const onStale: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
     recordDevEvent(
@@ -525,7 +398,7 @@ export function useAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
-    clearStaleProbe()
+    lifecycle.clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -540,9 +413,11 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing.
+   * nothing unless a refused subscribe has a scheduled retry. In that case,
+   * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
+    if (lifecycle.hasPendingSubscribeRetry()) return
     bridge.reconcile()
   }
 
@@ -562,6 +437,17 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // Readiness only. The other ordering -- graph ready first, target activated
+  // second -- cannot be caught here: `getGraph` does not change when activity
+  // flips, and even if this watcher also took `isTargetActive` as a source it
+  // was created before the binding watcher below, so it would run first and
+  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
+  // the bind site instead, once the binding actually exists.
+  watch(getGraph, (graph) => {
+    if (graph && boundWorkflowId !== null && isTargetActive.value) {
+      projection.reconcileLiveGraph(boundWorkflowId)
+    }
+  })
   // Drive the bridge's intent, then give the sender the same eager signal the
   // refusal branch gets: `reconcile()` clears send reality synchronously when
   // the desired doc changes, and a batch minted for the old doc would
@@ -573,15 +459,21 @@ export function useAgentCrdtFollower(
   }
   watch(
     [workflowId, isTargetActive],
-    ([next, active]) => {
-      clearSubscribeRetry()
-      clearStaleProbe()
+    (
+      [next, active],
+      previous: [string | null | undefined, boolean | undefined] | undefined
+    ) => {
+      // Only the inactive->active edge, and never the `immediate` first run
+      // (`previous` is undefined there), so a plain mount or retarget keeps its
+      // existing "reconcile on frame or on graph readiness" behaviour.
+      const justActivated = active && previous?.[1] === false
+      lifecycle.clearForRetarget()
       connected.value = false
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
-          adapter.unbind(boundWorkflowId)
+          projection.unbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -589,22 +481,23 @@ export function useAgentCrdtFollower(
         return
       }
       if (next === null) {
-        const persisted = initialBind ? readPersistedDocId() : null
+        const persisted = initialBind ? lifecycle.readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-            adapter.bind(persisted, bridge.follower)
+            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+            projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
           subscribedWorkflowId.value = persisted
           retarget(persisted)
+          if (justActivated) projection.reconcileLiveGraph(persisted)
           return
         }
-        clearPersistedDocId()
+        lifecycle.clearPersistedDocId()
         if (boundWorkflowId !== null) {
-          adapter.unbind(boundWorkflowId)
+          projection.unbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -613,38 +506,37 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-        adapter.bind(next, bridge.follower)
+        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+        projection.bind(next, bridge.follower)
         boundWorkflowId = next
       }
       subscribedWorkflowId.value = next
       retarget(next)
+      if (justActivated) projection.reconcileLiveGraph(next)
     },
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
-    try {
-      clearSubscribeRetry()
-      clearStaleProbe()
-      api.removeEventListener('reconnected', onReconnected)
-      api.removeEventListener('status', onSocketActivity)
-      bridge.removeEventListener('doc_subscribed', onSubscribed)
-      bridge.removeEventListener('doc_update', onUpdate)
-      bridge.removeEventListener('doc_ops_result', onOpsResult)
-      bridge.removeEventListener('doc_reset', onDocReset)
-      bridge.removeEventListener('follower_replaced', onFollowerReplaced)
-      bridge.removeEventListener('schema_error', onSchemaError)
-      bridge.removeEventListener('doc_gap', onGap)
-      bridge.removeEventListener('doc_stale', onStale)
-      sender.detach()
-      adapter.destroy()
-      bridge.destroy()
-    } finally {
-      client.destroy()
-    }
+    runFollowerTeardown([
+      () => lifecycle.destroy(),
+      () => api.removeEventListener('reconnected', onReconnected),
+      () => api.removeEventListener('status', onSocketActivity),
+      () => bridge.removeEventListener('doc_subscribed', onSubscribed),
+      () => bridge.removeEventListener('doc_update', onUpdate),
+      () => bridge.removeEventListener('doc_ops_result', onOpsResult),
+      () => bridge.removeEventListener('doc_reset', onDocReset),
+      () => bridge.removeEventListener('follower_replaced', onFollowerReplaced),
+      () => bridge.removeEventListener('schema_error', onSchemaError),
+      () => bridge.removeEventListener('doc_gap', onGap),
+      () => bridge.removeEventListener('doc_stale', onStale),
+      () => sender.detach(),
+      () => projection.destroy(),
+      () => bridge.destroy(),
+      () => client.destroy()
+    ])
   })
 
   const status = computed<AgentCrdtStatus>(() => ({
