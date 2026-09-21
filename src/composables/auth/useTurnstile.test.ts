@@ -6,9 +6,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: {} }
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { getServerFeature: vi.fn() }
 }))
@@ -24,7 +22,7 @@ const mockedGetServerFeature = vi.mocked(api.getServerFeature)
 const mockedSiteKey = vi.mocked(getTurnstileSiteKey)
 
 // The resolution rules themselves (normalizeTurnstileMode, isTurnstileEnabled,
-// useTurnstileGate) live in @comfyorg/account and are tested there; this
+// useTurnstileGate) live in @comfyorg/account-core and are tested there; this
 // suite covers their binding to this app's config sources.
 describe('useTurnstile', () => {
   beforeEach(() => {

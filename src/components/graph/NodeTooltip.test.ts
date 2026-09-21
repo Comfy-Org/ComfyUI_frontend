@@ -10,7 +10,7 @@ import {
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

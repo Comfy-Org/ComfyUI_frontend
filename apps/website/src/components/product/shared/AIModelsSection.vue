@@ -24,17 +24,17 @@ const cardClass =
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-16 lg:px-20 lg:py-40"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-16 lg:px-20 lg:py-40"
   >
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center">
       <p
-        class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase"
+        class="text-center text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ t('cloud.aiModels.label', locale) }}
       </p>
 
       <h2
-        class="text-3.5xl/tight mt-8 max-w-4xl text-center font-light text-primary-comfy-canvas lg:text-5xl"
+        class="mt-8 max-w-4xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('cloud.aiModels.heading', locale) }}
       </h2>

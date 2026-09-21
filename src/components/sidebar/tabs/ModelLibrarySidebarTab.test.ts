@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -32,8 +33,7 @@ const {
   captureExpandedKeys,
   getExpandedKeys,
   mockStartDrag,
-  mockToggleNodeOnEvent,
-  featureFlagState
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
   let capturedExpandedKeys: Record<string, boolean> = {}
@@ -50,8 +50,7 @@ const {
     },
     getExpandedKeys: () => capturedExpandedKeys,
     mockStartDrag: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    featureFlagState: { assetsEnabled: false }
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
@@ -68,16 +67,7 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return featureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -175,7 +165,6 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
-    featureFlagState.assetsEnabled = false
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
   })
@@ -434,7 +423,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      featureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
       )
@@ -453,7 +442,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      featureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       renderComponent()
       await nextTick()
 

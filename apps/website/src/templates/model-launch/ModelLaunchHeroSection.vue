@@ -7,10 +7,12 @@ import { computed } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
 
+import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
+import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
 const {
   headingTag = 'h1',
@@ -43,16 +45,73 @@ const showMobileVideo = computed(
 // 'overlay' is the announcement treatment: media, scrim and content stacked in
 // one grid cell. The launch layouts instead reorder the same three blocks.
 const isOverlay = hero.layout === 'overlay'
+const isLogoMask = isOverlay && !hero.videoSrc && Boolean(hero.logoMaskImageSrc)
 const OVERLAY_CELL = 'col-start-1 row-start-1'
 const isContentFirst = hero.layout === 'content-first'
 </script>
 
 <template>
   <section
-    v-if="isOverlay"
-    class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16"
+    v-if="isLogoMask && hero.logoMaskImageSrc"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 py-12 text-center lg:px-20 lg:py-16"
   >
-    <div class="rounded-4.5xl grid overflow-hidden">
+    <ModelLaunchHeroLogoMask
+      :image-src="hero.logoMaskImageSrc"
+      class="mb-2 w-full max-w-4xl"
+    />
+
+    <ProductHeroBadge
+      v-if="hero.eyebrowKey"
+      :text="t(hero.eyebrowKey, locale).toUpperCase()"
+      :show-logo="false"
+      compact
+      class="mb-6"
+    />
+
+    <component
+      :is="headingTag"
+      class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+    >
+      {{ t(hero.titleKey, locale)
+      }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
+        t(hero.titleRestKey, locale)
+      }}</span>
+    </component>
+
+    <p
+      v-if="hero.descriptionKey"
+      class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
+    >
+      {{ t(hero.descriptionKey, locale) }}
+    </p>
+
+    <ModelLaunchHeroCtaButtons
+      :primary-cta="hero.primaryCta"
+      primary-variant="solid"
+      :secondary-cta="hero.secondaryCta"
+      :locale
+    />
+
+    <div
+      v-if="hero.badgeKeys?.length"
+      class="mt-6 flex flex-wrap items-center justify-center gap-3"
+    >
+      <Badge
+        v-for="badgeKey in hero.badgeKeys"
+        :key="badgeKey"
+        data-testid="model-launch-hero-badge"
+        variant="subtle"
+      >
+        {{ t(badgeKey, locale) }}
+      </Badge>
+    </div>
+  </section>
+
+  <section
+    v-else-if="isOverlay"
+    class="mx-auto max-w-9xl px-6 py-12 lg:px-20 lg:py-16"
+  >
+    <div class="grid overflow-hidden rounded-4.5xl">
       <img
         v-if="!hero.videoSrc && hero.placeholderImageSrc"
         :src="hero.placeholderImageSrc"
@@ -161,7 +220,7 @@ const isContentFirst = hero.layout === 'content-first'
 
   <section
     v-else
-    class="max-w-9xl mx-auto flex flex-col px-6 py-12 lg:px-20 lg:py-16"
+    class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
       v-if="hero.videoSrc"
@@ -198,7 +257,7 @@ const isContentFirst = hero.layout === 'content-first'
       <div
         v-if="hero.logoSrc"
         aria-hidden="true"
-        class="bg-transparency-white-t4 pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
+        class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-transparency-white-t4 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
       >
         <span
           class="inline-block size-6 bg-current text-primary-warm-white lg:size-8.75"
@@ -267,7 +326,7 @@ const isContentFirst = hero.layout === 'content-first'
       rel="noopener"
       :class="
         cn(
-          'bg-transparency-white-t4 hover:border-primary-comfy-yellow/40 hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 p-6 text-left transition-colors sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
+          'hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 bg-transparency-white-t4 p-6 text-left transition-colors hover:border-primary-comfy-yellow/40 sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
           isContentFirst ? 'order-2 mb-10' : 'order-3 mt-10'
         )
       "
@@ -276,10 +335,10 @@ const isContentFirst = hero.layout === 'content-first'
         {{ t(hero.promptBar.sampleKey, locale) }}
       </span>
       <span
-        class="text-primary-comfy-yellow flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider uppercase"
+        class="flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
       >
         <span
-          class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-full text-primary-comfy-ink"
+          class="flex size-8 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
         >
           <ChevronRight class="size-5" :stroke-width="2" />
         </span>
