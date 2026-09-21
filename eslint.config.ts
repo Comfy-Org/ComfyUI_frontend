@@ -24,6 +24,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { noEs2023ArrayWith } from './tools/eslint-plugins/noEs2023ArrayWith'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
@@ -366,24 +367,30 @@ export default defineConfig([
   {
     files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
     ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    plugins: {
+      'es2022-compat': {
+        rules: { 'no-array-with': noEs2023ArrayWith }
+      }
+    },
     rules: {
+      'es2022-compat/no-array-with': 'error',
       'no-restricted-syntax': [
         'error',
         {
           selector:
-            "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced|with)$/]",
+            "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced)$/]",
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },
         {
           selector:
-            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/^(toReversed|toSorted|toSpliced|with)$/]",
+            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/^(toReversed|toSorted|toSpliced)$/]",
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },
         {
           selector:
-            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked=/^(toReversed|toSorted|toSpliced|with)$/])",
+            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked=/^(toReversed|toSorted|toSpliced)$/])",
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         }
