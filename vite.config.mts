@@ -12,6 +12,7 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { existsSync } from 'fs'
 import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
@@ -90,11 +91,29 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
 // ~90%+ today, so folding it into the general 60-70% floor would mask a real
 // regression here. Thresholds are set a few points under the last measured
 // run (93.38/80.25/90.09/93.68 stmts/branches/funcs/lines) so the gate
-// catches a real drop without flaking on normal churn. The aggregate already
-// absorbs crdt/CrdtDevPanel.vue's low score (it is the dev-only CRDT
-// inspector panel, intentionally minimal per CLAUDE.md's "Dev-panel
-// exception") — no separate exclude needed, the floor has margin either way.
-const AGENT_PANEL_COVERAGE_GLOB = 'src/workbench/extensions/agent/**/*.{ts,vue}'
+// catches a real drop without flaking on normal churn.
+//
+// `crdt/CrdtDevPanel.vue` stays inside the measured bucket rather than being
+// excluded. It is a dev-only inspector and scores low, but the aggregate has
+// enough margin to absorb it, and keeping it in means a future rewrite of that
+// panel still has to carry coverage. That is a decision taken here, not an
+// existing policy: an earlier version of this comment cited a "Dev-panel
+// exception" in CLAUDE.md, and no such rule exists — CLAUDE.md is a one-line
+// `@AGENTS.md` include.
+const AGENT_PANEL_COVERAGE_ROOT = 'src/workbench/extensions/agent'
+const AGENT_PANEL_COVERAGE_GLOB = `${AGENT_PANEL_COVERAGE_ROOT}/**/*.{ts,vue}`
+
+// The bucket is keyed by a path glob, so a rename or move of the directory
+// would leave it matching zero files: the coverage map for the bucket comes
+// back empty, no threshold is violated, and the gate silently stops gating.
+// Fail at config load instead, so the rename is caught by whoever performs it.
+if (!existsSync(resolve(import.meta.dirname, AGENT_PANEL_COVERAGE_ROOT))) {
+  throw new Error(
+    `Agent coverage bucket root '${AGENT_PANEL_COVERAGE_ROOT}' does not exist. ` +
+      'If the directory moved, update AGENT_PANEL_COVERAGE_ROOT — otherwise the ' +
+      'coverage floor for the agent surface silently passes on zero files.'
+  )
+}
 
 const AGENT_PANEL_COVERAGE_THRESHOLDS = {
   statements: 88,
