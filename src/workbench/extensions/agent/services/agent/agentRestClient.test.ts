@@ -395,10 +395,10 @@ describe('error mapping', () => {
       .getMessages('t1')
       .catch((e: unknown) => e)
 
-    const apiError = error as AgentApiError
-    expect(apiError.message).toBe('Bad Gateway')
-    expect(apiError.status).toBe(502)
-    expect(apiError.body).toBeUndefined()
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.message).toBe('Bad Gateway')
+    expect(error.status).toBe(502)
+    expect(error.body).toBeUndefined()
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
@@ -413,9 +413,6 @@ describe('error mapping', () => {
   })
 })
 
-// FE-2461: the helper declares `number | undefined`, so every input class has to
-// leave it as a whole non-negative number of seconds or as `undefined`. A caller
-// repairing a `NaN` afterwards is the contract leaking, not a fix.
 describe('Retry-After contract', () => {
   it.for([
     { label: 'absent header', header: null, expected: undefined },
@@ -453,14 +450,10 @@ describe('Retry-After contract', () => {
     expect(await retryAfterSeconds(header)).toBe(expected)
   })
 
-  // RFC 9110 defines HTTP-date as exactly three formats, and a recipient must
-  // accept all three. The obsolete two carry no numeric zone, so a parser that
-  // only recognized IMF-fixdate would silently drop a legitimate deadline.
   it.for([
-    { label: 'IMF-fixdate', header: 'Wed, 21 Oct 2026 07:28:00 GMT' },
-    { label: 'obsolete RFC 850', header: 'Wednesday, 21-Oct-26 07:28:00 GMT' },
-    { label: 'obsolete asctime', header: 'Wed Oct 21 07:28:00 2026' }
-  ])('accepts the $label form of HTTP-date', async ({ header }) => {
+    { label: 'RFC 850', header: 'Wednesday, 21-Oct-26 07:28:00 GMT' },
+    { label: 'asctime', header: 'Wed Oct 21 07:28:00 2026' }
+  ])('accepts the obsolete $label form of HTTP-date', async ({ header }) => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
     expect(await retryAfterSeconds(header)).toBe(30)
@@ -472,9 +465,6 @@ describe('Retry-After contract', () => {
     expect(await retryAfterSeconds('Sun Nov  6 08:49:37 1994')).toBe(30)
   })
 
-  // FE-2461 follow-up: `Date.parse` accepts far more than HTTP-date, so an
-  // ISO-8601 timestamp used to be honoured as a deadline. It is not one of the
-  // three permitted formats, so it has to read as no deadline at all.
   it.for([
     { label: 'zoneless ISO-8601 timestamp', header: '2099-12-31T00:00:00' },
     { label: 'ISO-8601 timestamp in UTC', header: '2099-12-31T00:00:00Z' },
@@ -497,10 +487,6 @@ describe('Retry-After contract', () => {
     }
   )
 
-  // `Date.parse` handles these pre-ISO formats by implementation-defined
-  // heuristics: V8 rolls an impossible day forward, reads `24:00:00` as the
-  // next day, and truncates a leap second. A well-shaped value that names no
-  // real instant has to read as no deadline instead.
   it.for([
     {
       label: 'February 29 outside a leap year',
@@ -549,18 +535,12 @@ describe('Retry-After contract', () => {
     expect(await retryAfterSeconds('Wed, 21 Oct 2026 23:59:60 GMT')).toBe(30)
   })
 
-  // RFC 9110 asks recipients to be robust, and the weekday carries no
-  // information the date does not, so a server that computes it wrong should
-  // not lose its deadline.
   it('ignores a day-name that disagrees with the date', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
     expect(await retryAfterSeconds('Mon, 21 Oct 2026 07:28:00 GMT')).toBe(30)
   })
 
-  // RFC 9110 resolves an RFC 850 two-digit year against a rolling 50-year
-  // window, not the fixed pivot `Date.parse` uses: in 2026, `-60` is 2060, and
-  // reading it as 1960 would clamp a real deadline to an immediate retry.
   it('resolves an RFC 850 two-digit year against the rolling 50-year window', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 

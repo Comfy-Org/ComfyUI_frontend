@@ -119,22 +119,18 @@ const MONTHS = [
 const MONTH = MONTHS.join('|')
 const TIME_OF_DAY = '(\\d{2}):(\\d{2}):(\\d{2})'
 
-/** `Sun, 06 Nov 1994 08:49:37 GMT` - the preferred RFC 9110 IMF-fixdate. */
 const IMF_FIXDATE = new RegExp(
   `^(?:${DAY_NAME}), (\\d{2}) (${MONTH}) (\\d{4}) ${TIME_OF_DAY} GMT$`
 )
-/** `Sunday, 06-Nov-94 08:49:37 GMT` - the obsolete RFC 850 format. */
 const RFC850_DATE = new RegExp(
   `^(?:${DAY_NAME_LONG}), (\\d{2})-(${MONTH})-(\\d{2}) ${TIME_OF_DAY} GMT$`
 )
-/** `Sun Nov  6 08:49:37 1994` - the obsolete asctime format, day space-padded. */
 const ASCTIME_DATE = new RegExp(
   `^(?:${DAY_NAME}) (${MONTH}) (\\d{2}| \\d) ${TIME_OF_DAY} (\\d{4})$`
 )
 
 interface HttpDateFields {
   year: number
-  /** 1-12, as the grammar writes it. */
   month: number
   day: number
   hour: number
@@ -277,9 +273,10 @@ function httpDateFields(value: string): HttpDateFields | undefined {
  * `2099-12-31T00:00:00` among them - and whose handling of these pre-ISO
  * formats is implementation-defined: V8 rolls `29 Feb 2023` forward to March 1,
  * reads `24:00:00` as the next day, and applies a fixed two-digit-year pivot
- * rather than the rolling one RFC 9110 mandates. Every field is validated, and
- * all three formats name a UTC instant (asctime carries no zone but is defined
- * as UTC), so the result no longer varies with the engine or the host zone.
+ * rather than the rolling one RFC 9110 mandates. Calendar and time fields are
+ * validated, and all three formats name a UTC instant (asctime carries no zone
+ * but is defined as UTC), so the result no longer varies with the engine or the
+ * host zone.
  *
  * Deliberately lenient about `day-name`: RFC 9110 asks recipients to be robust,
  * so a weekday that disagrees with the date is ignored rather than rejected.
@@ -295,17 +292,9 @@ function parseHttpDate(value: string): number | undefined {
   return namesRealCalendarDate(fields, instant) ? instant : undefined
 }
 
-/**
- * A `Retry-After` delay in whole seconds, or `undefined` when the header is
- * absent or cannot be read as one. Every return honours that contract, so a
- * caller never has to repair the result: a malformed HTTP-date leaves here as
- * `undefined` rather than as the `NaN` a bare `Date.parse` would produce.
- */
 function parseRetryAfter(header: string | null): number | undefined {
   if (header === null) return undefined
   if (/^\d+$/.test(header)) return asDelaySeconds(Number(header))
-  // Finite numeric strings outside the delta-seconds grammar, including
-  // fractional, signed, and exponent forms, never reach the date branch.
   if (Number.isFinite(Number(header))) return undefined
   const deadline = parseHttpDate(header)
   if (deadline === undefined) return undefined

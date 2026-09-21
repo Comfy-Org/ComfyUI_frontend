@@ -16,8 +16,8 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
-  private readonly composer: Locator
-  private readonly sendButton: Locator
+  public readonly composer: Locator
+  public readonly sendButton: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
