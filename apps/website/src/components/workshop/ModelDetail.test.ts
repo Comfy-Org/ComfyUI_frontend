@@ -5,69 +5,38 @@ import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type {
-  AccountCredential,
-  SessionFailure
-} from '@comfyorg/account-core/session'
+import type { AccountCredential } from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router'
+import { runWorkshopRouter } from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import type { useWorkshopCredits } from '../../config/workshop-credits'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import * as draftStorage from '../../config/workshop-draft-storage'
 import {
   cancelWorkshopRun,
   workshopRunInFlight
 } from '../../config/workshop-run-state'
-import { captureWorkshopEvent } from '../../scripts/posthog'
+import {
+  captureWorkshopEvent,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
+} from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
 
-const auth = vi.hoisted(() => ({
-  session: { value: undefined as AccountCredential | undefined },
-  settled: { value: true },
-  enabled: { value: true },
-  workshopEnabled: { value: true },
-  workshopEnabledSettled: { value: true },
-  ensureFresh: vi.fn()
-}))
+vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('../../scripts/posthog'))
 
-const credits = vi.hoisted(() => {
-  function initialBalance(): ReturnType<
-    typeof useWorkshopCredits
-  >['balance']['value'] {
-    return { status: 'unknown' }
-  }
-  return { balance: { value: initialBalance() } }
-})
-
-vi.mock(import('../../config/workshop-session-state'), () => ({
-  useWorkshopSession: () => ({
-    user: computed(() => null),
-    session: computed(() => auth.session.value),
-    sessionFailure: computed<SessionFailure | undefined>(() => undefined),
-    settled: computed(() => auth.settled.value),
-    signedIn: computed(() => auth.session.value !== undefined),
-    ensureFresh: auth.ensureFresh,
-    remint: auth.ensureFresh,
-    signOut: vi.fn().mockResolvedValue(undefined)
-  })
-}))
-
-vi.mock(import('../../scripts/posthog'), () => ({
-  captureWorkshopEvent: vi.fn(),
-  useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
-  useWorkshopEnabledSettled: () =>
-    computed(() => auth.workshopEnabledSettled.value),
-  useWorkshopAuthFlag: () => computed(() => auth.enabled.value)
-}))
-
-vi.mock(import('../../config/workshop-router'), () => ({
+vi.mock(import('../../config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
@@ -75,16 +44,20 @@ vi.mock(import('../../config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
 }))
 
-vi.mock(import('../../config/workshop-credits'), () => ({
-  clearTopUpWatch: vi.fn(),
-  refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
-  useTopUpWatch: () => computed(() => ({ status: 'idle' as const })),
-  useWorkshopCredits: () => ({
-    balance: computed(() => credits.balance.value),
-    session: computed(() => auth.session.value)
-  }),
-  watchForTopUp: vi.fn()
-}))
+vi.mock(import('../../config/workshop-credits'))
+
+const auth = {
+  session: ref<AccountCredential>(),
+  settled: ref(true),
+  enabled: ref(true),
+  workshopEnabled: ref(true),
+  workshopEnabledSettled: ref(true)
+}
+const credits = {
+  balance: ref<ReturnType<typeof useWorkshopCredits>['balance']['value']>({
+    status: 'unknown'
+  })
+}
 
 const credential: AccountCredential = {
   token: 'workspace-jwt',
@@ -212,23 +185,40 @@ const user = () =>
 
 describe('ModelDetail', () => {
   beforeEach(() => {
-    auth.session = ref<AccountCredential>()
-    auth.settled = ref(true)
-    auth.enabled = ref(true)
-    auth.workshopEnabled = ref(true)
-    auth.workshopEnabledSettled = ref(true)
-    credits.balance = ref<
-      ReturnType<typeof useWorkshopCredits>['balance']['value']
-    >({ status: 'unknown' })
+    vi.mocked(useWorkshopEnabled).mockReturnValue(
+      computed(() => auth.workshopEnabled.value)
+    )
+    vi.mocked(useWorkshopEnabledSettled).mockReturnValue(
+      computed(() => auth.workshopEnabledSettled.value)
+    )
+    vi.mocked(useWorkshopAuthFlag).mockReturnValue(
+      computed(() => auth.enabled.value)
+    )
+    const session = useWorkshopSession()
+    session.session = computed(() => auth.session.value)
+    session.settled = computed(() => auth.settled.value)
+    const balance = useWorkshopCredits()
+    balance.balance = computed(() => credits.balance.value)
+    balance.session = session.session
+    auth.session.value = undefined
+    auth.settled.value = true
+    auth.enabled.value = true
+    auth.workshopEnabled.value = true
+    auth.workshopEnabledSettled.value = true
+    credits.balance.value = { status: 'unknown' }
     localStorage.clear()
     sessionStorage.clear()
     vi.useFakeTimers()
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(runWorkshopRouter).mockReset()
-    vi.mocked(refreshWorkshopCredits).mockClear()
-    auth.ensureFresh
-      .mockReset()
-      .mockResolvedValue({ status: 'ok', session: credential })
+    vi.mocked(session.ensureFresh).mockResolvedValue({
+      status: 'ok',
+      session: credential
+    })
+    vi.mocked(session.remint).mockResolvedValue({
+      status: 'ok',
+      session: credential
+    })
   })
 
   it('links a documented provider in a new tab', () => {
@@ -591,7 +581,7 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('reuses uploaded URLs and the retry key after a failed paid request', async () => {
+  it('reuses uploaded URLs and the retry key after a request whose outcome is unknown', async () => {
     auth.session.value = credential
     const uploads = vi.fn<typeof fetch>(async (_, init) =>
       init?.method === 'POST'
@@ -603,7 +593,7 @@ describe('ModelDetail', () => {
     )
     vi.stubGlobal('fetch', uploads)
     vi.mocked(runWorkshopRouter).mockRejectedValue(
-      new WorkshopRouterError('provider')
+      new WorkshopRouterError('network')
     )
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
@@ -723,14 +713,14 @@ describe('ModelDetail', () => {
       expect(button.matches(':disabled')).toBe(true)
       await user().click(button)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
-      expect(auth.ensureFresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
       expect(screen.queryByRole('button', { name: 'Native JSON' })).toBeNull()
     }
   )
 
   it('runs the real Router adapter with edited Advanced values and a fresh workspace session', async () => {
     auth.session.value = credential
-    auth.ensureFresh.mockResolvedValue({
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
       status: 'ok',
       session: { ...credential, token: 'fresh-workspace-jwt' }
     })
@@ -751,7 +741,7 @@ describe('ModelDetail', () => {
       token: 'fresh-workspace-jwt',
       body: { prompt: 'A red teapot', seed: 123456 }
     })
-    expect(auth.ensureFresh).toHaveBeenCalled()
+    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
     )
@@ -861,7 +851,7 @@ describe('ModelDetail', () => {
       workspace: { id: 'team-1', name: 'Studio', type: 'team' }
     }
     credits.balance.value = { status: 'ok', credits: 0 }
-    auth.ensureFresh.mockImplementation(async () => {
+    vi.mocked(useWorkshopSession().remint).mockImplementation(async () => {
       auth.session.value = credential
       return { status: 'ok', session: credential }
     })
@@ -882,9 +872,12 @@ describe('ModelDetail', () => {
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
-    expect(auth.ensureFresh).toHaveBeenCalledWith(undefined, {
-      preserveCredentialOnTransientFailure: true
-    })
+    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
+      undefined,
+      {
+        preserveCredentialOnTransientFailure: true
+      }
+    )
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
@@ -900,7 +893,7 @@ describe('ModelDetail', () => {
       workspace: { id: 'team-1', name: 'Studio', type: 'team' }
     }
     credits.balance.value = { status: 'ok', credits: 0 }
-    auth.ensureFresh.mockResolvedValue({
+    vi.mocked(useWorkshopSession().remint).mockResolvedValue({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED'
     })
@@ -919,7 +912,7 @@ describe('ModelDetail', () => {
 
   it('does not offer an owner-only purchase after a member receives an insufficient-credit response', async () => {
     auth.session.value = { ...credential, role: 'member' }
-    auth.ensureFresh.mockResolvedValue({
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
       status: 'ok',
       session: auth.session.value
     })
@@ -948,6 +941,25 @@ describe('ModelDetail', () => {
     mountDetail()
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
     expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
+  })
+
+  it('starts a new generation, not the cancelled one, when an unchanged run follows a cancel', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(screen.getByTestId('field-prompt'), 'A teapot')
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+    await visitor.click(screen.getByTestId('run-button'))
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(2))
+    const [cancelled, next] = vi
+      .mocked(runWorkshopRouter)
+      .mock.calls.map(([options]) => options.idempotencyKey)
+    expect(next).not.toBe(cancelled)
+    pending.resolve(routerResult)
   })
 
   it('keeps cancellation available if the balance becomes zero during a run', async () => {
@@ -1170,35 +1182,41 @@ describe('ModelDetail', () => {
     expect(go).toHaveBeenCalledWith(1)
   })
 
-  it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {
-    auth.session.value = credential
-    vi.mocked(runWorkshopRouter)
-      .mockRejectedValueOnce(new WorkshopRouterError('provider'))
-      .mockResolvedValue(routerResult)
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
+  it.for([
+    ['network', true],
+    ['provider', false]
+  ] as const)(
+    'after a %s failure an unchanged retry keeps its key: %s, and a run after success always gets a new key',
+    async ([reason, keepsKey]) => {
+      auth.session.value = credential
+      vi.mocked(runWorkshopRouter)
+        .mockRejectedValueOnce(new WorkshopRouterError(reason))
+        .mockResolvedValue(routerResult)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('failed')
+      )
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('succeeded')
+      )
+      const [first, retry] = vi
+        .mocked(runWorkshopRouter)
+        .mock.calls.map(([options]) => options.idempotencyKey)
+      expect(retry === first).toBe(keepsKey)
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(3))
       expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('failed')
-    )
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
-      expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('succeeded')
-    )
-    const first = vi.mocked(runWorkshopRouter).mock.calls[0][0].idempotencyKey
-    expect(vi.mocked(runWorkshopRouter).mock.calls[1][0].idempotencyKey).toBe(
-      first
-    )
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(3))
-    expect(
-      vi.mocked(runWorkshopRouter).mock.calls[2][0].idempotencyKey
-    ).not.toBe(first)
-  })
+        vi.mocked(runWorkshopRouter).mock.calls[2][0].idempotencyKey
+      ).not.toBe(retry)
+    }
+  )
 
   it('does not submit with a missing required field', async () => {
     auth.session.value = credential
@@ -1460,7 +1478,7 @@ describe('ModelDetail', () => {
 
   it('refuses a refreshed credential for a different workspace', async () => {
     auth.session.value = credential
-    auth.ensureFresh.mockResolvedValue({
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
       status: 'ok',
       session: {
         ...credential,

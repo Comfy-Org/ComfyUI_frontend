@@ -561,7 +561,8 @@
       "body3": "我们是一支建设者团队。我们互相提高标准、快速迭代，并深切关心与我们一同成长的开源社区。",
       "body4": "如果你想塑造创意的未来，来和我们一起构建。",
       "heading": "构建生成式 AI 的\n“操作系统”",
-      "label": "招聘"
+      "label": "招聘",
+      "videoLabel": "Comfy 招聘视频"
     },
     "roles": {
       "empty": "目前暂无开放职位，请稍后再来查看。",
@@ -2095,7 +2096,7 @@
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
-    "qwenImage21": "Qwen Image 2.1",
+    "qwenImage21": "Qwen-Image 2.1",
     "resources": "资源",
     "sales": "销售",
     "seedance": "Seedance 2.5",
@@ -3670,37 +3671,37 @@
         "updated": "2026 年 9 月发布预告"
       },
       "hero": {
-        "description": "隆重推出 Qwen Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。",
+        "description": "隆重推出 Qwen-Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。",
         "eyebrow": "即将上线",
         "primaryCta": "获取通知"
       },
       "meta": {
-        "description": "Qwen Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。",
-        "title": "Comfy 上的 Qwen Image 2.1：即将上线"
+        "description": "Qwen-Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。",
+        "title": "Comfy 上的 Qwen-Image 2.1：即将上线"
       }
     },
     "breadcrumb": {
-      "model": "Qwen Image 2.1",
+      "model": "Qwen-Image 2.1",
       "updated": "更新于 2026 年 9 月"
     },
     "faq": {
       "heading": "问答"
     },
     "gallery": {
-      "heading": "由 Qwen Image 2.1 创作"
+      "heading": "由 Qwen-Image 2.1 创作"
     },
     "hero": {
-      "description": "生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。",
-      "primaryCta": "运行 Qwen Image 2.1",
+      "description": "生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。",
+      "primaryCta": "运行 Qwen-Image 2.1",
       "secondaryCta": "查看教程",
       "tagImageEditing": "图像编辑",
-      "tagOpenSource": "开源",
+      "tagOpenWeights": "开源权重",
       "tagTextToImage": "文生图",
-      "title": "Qwen Image 2.1 已上线"
+      "title": "Qwen-Image 2.1 已上线"
     },
     "meta": {
-      "description": "在 ComfyUI 中运行 Qwen Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。",
-      "title": "Comfy 上的 Qwen Image 2.1：开源权重图像生成与编辑"
+      "description": "在 ComfyUI 中运行 Qwen-Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。",
+      "title": "Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑"
     },
     "pricing": {
       "banner": {
@@ -4333,9 +4334,12 @@
       "auto": "自动",
       "chooseValue": "选择{label}",
       "defaultValue": "默认值：{value}",
+      "exactValue": "{label}数值",
       "duration": "时长（秒）",
       "file": "文件",
       "filesUnchanged": "已选文件保持不变。",
+      "frameRatioMismatch": "视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。",
+      "frameRatioMismatchTitle": "两帧比例不同",
       "format": "格式",
       "help": "关于{label}",
       "image": "参考图",
@@ -4357,7 +4361,6 @@
       "selectOrDropFiles": "选择或拖入最多 {count} 个文件",
       "selectOrDropImage": "选择或拖入一张图片",
       "selectOrDropImages": "选择或拖入最多 {count} 张图片",
-      "selectOrDropReplacement": "选择或拖入以替换",
       "tooManyFiles": "最多选择 {count} 个文件。",
       "tooManyImages": "最多选择 {count} 张图片。",
       "upload": "上传",

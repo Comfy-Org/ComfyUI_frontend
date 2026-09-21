@@ -45,7 +45,10 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
@@ -69,6 +72,7 @@ import {
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
@@ -90,6 +94,7 @@ const {
 
 const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
+const frameRatio = frameRatioRule(model.slug)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -388,6 +393,7 @@ function cancelRun() {
       }
     })
     activeRun = undefined
+    pendingRequest = undefined
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
@@ -550,6 +556,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     error instanceof WorkshopRouterError
       ? error
       : new WorkshopRouterError('client')
+  if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -757,6 +764,7 @@ function useInCode() {
             v-model="values"
             :schema
             :errors
+            :frame-ratio
             :locale
             :disabled="isRunning || draftPending"
             :file-uploads-disabled="!mounted"

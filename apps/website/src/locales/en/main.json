@@ -347,7 +347,8 @@
       "selectOrDropImages": "Select or drop up to {count} images",
       "selectOrDropFile": "Select or drop a file",
       "selectOrDropFiles": "Select or drop up to {count} files",
-      "selectOrDropReplacement": "Select or drop to replace",
+      "frameRatioMismatchTitle": "The frames are different shapes",
+      "frameRatioMismatch": "The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.",
       "file": "File",
       "replaceFile": "Replace {name}",
       "removeNamedFile": "Remove {name}",
@@ -365,6 +366,7 @@
       "seconds": "{value} seconds",
       "chooseValue": "Choose {label}",
       "defaultValue": "Default: {value}",
+      "exactValue": "{label} value",
       "off": "Off"
     },
     "run": {
@@ -1641,7 +1643,8 @@
       "body1": "We're building the world's leading visual AI platform — open, modular, and designed for those who want control, quality and scale in their creative process.",
       "body2": "From solo creators to enterprise teams, millions of people rely on ComfyUI to push the boundaries of what creative AI can do.",
       "body3": "We're a team of builders. We raise the bar for each other, move fast, and care deeply about the open-source community that's grown alongside us.",
-      "body4": "If you want to shape the future of creativity, come build with us."
+      "body4": "If you want to shape the future of creativity, come build with us.",
+      "videoLabel": "Comfy recruiting video"
     },
     "whyJoin": {
       "reason1": "Want to build tools that empower others to create.",
@@ -2347,7 +2350,7 @@
     "geminiOmni": "Gemini Omni 1.1 Flash",
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
-    "qwenImage21": "Qwen Image 2.1",
+    "qwenImage21": "Qwen-Image 2.1",
     "cloudNodes": "Comfy Cloud Nodes"
   },
   "privacy": {
@@ -3922,24 +3925,24 @@
   },
   "qwenImage21": {
     "meta": {
-      "title": "Qwen Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
-      "description": "Run Qwen Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow."
+      "title": "Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
+      "description": "Run Qwen-Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow."
     },
     "breadcrumb": {
-      "model": "Qwen Image 2.1",
+      "model": "Qwen-Image 2.1",
       "updated": "Updated September 2026"
     },
     "hero": {
-      "title": "Qwen Image 2.1\nis here",
-      "description": "Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.",
-      "tagOpenSource": "Open Source",
+      "title": "Qwen-Image 2.1\nis here",
+      "description": "Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen-Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.",
+      "tagOpenWeights": "Open Weights",
       "tagTextToImage": "Text to Image",
       "tagImageEditing": "Image Editing",
-      "primaryCta": "RUN QWEN IMAGE 2.1",
+      "primaryCta": "RUN QWEN-IMAGE 2.1",
       "secondaryCta": "READ THE GUIDE"
     },
     "gallery": {
-      "heading": "Made with Qwen Image 2.1"
+      "heading": "Made with Qwen-Image 2.1"
     },
     "pricing": {
       "banner": {
@@ -3964,15 +3967,15 @@
     },
     "announcement": {
       "meta": {
-        "title": "Qwen Image 2.1 on Comfy: Coming Soon",
-        "description": "Qwen Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships."
+        "title": "Qwen-Image 2.1 on Comfy: Coming Soon",
+        "description": "Qwen-Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships."
       },
       "breadcrumb": {
         "updated": "Announced September 2026"
       },
       "hero": {
         "eyebrow": "Coming soon",
-        "description": "Introducing Qwen Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
+        "description": "Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
         "primaryCta": "GET NOTIFIED"
       }
     }

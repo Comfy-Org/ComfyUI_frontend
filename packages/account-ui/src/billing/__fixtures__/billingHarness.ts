@@ -19,6 +19,7 @@ import {
   PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -81,7 +82,6 @@ function fakeSession() {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-    attachIdentity: outsideBillingContract('attachIdentity'),
     dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
@@ -237,6 +237,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const statusReader = createBillingStatusReader(readerOptions)
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -252,6 +253,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     status: statusReader,
     plans,
     paymentMethods,
+    events,
     topup: createTopupCommand({
       transport,
       lifecycle,

@@ -569,6 +569,7 @@ export interface UiButtonClickMetadata {
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
 export type AgentPanelCloseSource =
@@ -576,7 +577,7 @@ export type AgentPanelCloseSource =
   | 'workflow_switch'
   | 'topbar_button'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button'
+  source: 'restored' | 'topbar_button' | 'automatic_consent'
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource

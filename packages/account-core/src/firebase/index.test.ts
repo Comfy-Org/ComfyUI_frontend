@@ -7,15 +7,26 @@ import type { FirebaseIdentityConfig } from './index.js'
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
+  const tokenListeners: Array<(user: unknown) => void> = []
+  const resolvedAuth: { currentUser: unknown } = { currentUser: null }
   return {
     unsubscribe,
     listeners,
+    tokenListeners,
+    resolvedAuth,
+    browserPopupRedirectResolver: { resolver: 'popup' },
+    getAuth: vi.fn(() => resolvedAuth),
+    initializeAuth: vi.fn(() => resolvedAuth),
     onAuthStateChanged: vi.fn(
       (_auth: unknown, next: (user: unknown) => void) => {
         listeners.push(next)
         return unsubscribe
       }
     ),
+    onIdTokenChanged: vi.fn((_auth: unknown, next: (user: unknown) => void) => {
+      tokenListeners.push(next)
+      return unsubscribe
+    }),
     signInWithEmailAndPassword: vi.fn(() => new Promise(() => {})),
     createUserWithEmailAndPassword: vi.fn(() => new Promise(() => {})),
     sendPasswordResetEmail: vi.fn(() => new Promise(() => {})),
@@ -26,11 +37,12 @@ const sdk = vi.hoisted(() => {
 })
 
 const app = vi.hoisted(() => ({
-  initializeApp: vi.fn(() => ({ name: 'test-app' }))
+  existing: [] as Array<{ name: string; options?: unknown }>,
+  initializeApp: vi.fn((_options: unknown, name: string) => ({ name }))
 }))
 
 vi.mock<unknown>(import('firebase/app'), () => ({
-  getApps: () => [],
+  getApps: () => app.existing,
   initializeApp: app.initializeApp
 }))
 
@@ -43,9 +55,11 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
     addScope() {}
     setCustomParameters() {}
   },
-  getAuth: () => ({}),
-  initializeAuth: () => ({}),
+  browserPopupRedirectResolver: sdk.browserPopupRedirectResolver,
+  getAuth: sdk.getAuth,
+  initializeAuth: sdk.initializeAuth,
   onAuthStateChanged: sdk.onAuthStateChanged,
+  onIdTokenChanged: sdk.onIdTokenChanged,
   signInWithPopup: sdk.signInWithPopup,
   signInWithEmailAndPassword: sdk.signInWithEmailAndPassword,
   createUserWithEmailAndPassword: sdk.createUserWithEmailAndPassword,
@@ -60,6 +74,10 @@ async function makeIdentity() {
 }
 
 const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
+
+const localStore = { type: 'LOCAL', store: 'localStorage' } as const
+const indexedDbStore = { type: 'LOCAL', store: 'indexedDB' } as const
+const sessionStore = { type: 'SESSION', store: 'sessionStorage' } as const
 
 async function makeHostBoundIdentity() {
   const { createFirebaseIdentity } = await import('./index.js')
@@ -89,8 +107,156 @@ function deferred<T>(): Deferred<T> {
 
 beforeEach(() => {
   sdk.listeners.length = 0
+  sdk.tokenListeners.length = 0
+  sdk.resolvedAuth.currentUser = null
+  app.existing.length = 0
   app.initializeApp.mockClear()
   vi.useFakeTimers()
+})
+
+describe('createFirebaseIdentity over package-initialized Firebase', () => {
+  it('initializes the app under the explicit default name, so a persisted session keyed by [DEFAULT] is restored', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]'
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).toHaveBeenCalledWith(
+      { apiKey: 'test' },
+      '[DEFAULT]'
+    )
+  })
+
+  it('reuses an app another entry already created under that name', async () => {
+    const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
+    app.existing.push(existingApp)
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]'
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.getAuth).toHaveBeenCalledWith(existingApp)
+  })
+
+  it("applies the host persistence to an app another script already created, so its Auth is not left on platform defaults or silently on that script's dependencies", async () => {
+    const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
+    app.existing.push(existingApp)
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      appName: '[DEFAULT]',
+      persistence: [localStore, indexedDbStore]
+    })
+
+    identity.onUserChanged(() => {})
+
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).toHaveBeenCalledWith(existingApp, {
+      persistence: [localStore, indexedDbStore],
+      popupRedirectResolver: sdk.browserPopupRedirectResolver
+    })
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it('runs the host config thunk before reusing an existing app, so a resolve before remote config loads still fails closed', async () => {
+    app.existing.push({ name: '[DEFAULT]', options: { apiKey: 'test' } })
+    const options = vi.fn(() => {
+      throw new Error('remote config not loaded')
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({ options, appName: '[DEFAULT]' })
+
+    expect(() => identity.initialize()).toThrow('remote config not loaded')
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it('throws instead of binding Auth to an existing app from a different project', async () => {
+    app.existing.push({
+      name: '[DEFAULT]',
+      options: { apiKey: 'other', projectId: 'other-project' }
+    })
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test', projectId: 'this-project' },
+      appName: '[DEFAULT]'
+    })
+
+    expect(() => identity.initialize()).toThrow(/different project/)
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+    expect(sdk.initializeAuth).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { shape: 'a single persistence', persistence: localStore },
+    {
+      shape: 'an ordered hierarchy',
+      persistence: [localStore, indexedDbStore, sessionStore]
+    }
+  ])(
+    'initializes Auth with $shape as the host listed it plus the popup resolver, since initializeAuth wires none and popup sign-in would throw auth/argument-error',
+    async ({ persistence }) => {
+      const { createFirebaseIdentity } = await import('./index.js')
+      const identity = createFirebaseIdentity({
+        options: { apiKey: 'test' },
+        persistence
+      })
+
+      identity.onUserChanged(() => {})
+
+      expect(sdk.initializeAuth).toHaveBeenCalledWith(
+        { name: 'comfy-account' },
+        {
+          persistence,
+          popupRedirectResolver: sdk.browserPopupRedirectResolver
+        }
+      )
+      expect(sdk.getAuth).not.toHaveBeenCalled()
+    }
+  )
+
+  it('stays on getAuth when the host chooses no persistence', async () => {
+    const identity = await makeIdentity()
+
+    identity.onUserChanged(() => {})
+
+    expect(sdk.getAuth).toHaveBeenCalledWith({ name: 'comfy-account' })
+    expect(sdk.initializeAuth).not.toHaveBeenCalled()
+  })
+
+  it('reads an options thunk only when the app first resolves, and once', async () => {
+    const options = vi.fn(() => ({ apiKey: 'from-thunk' }))
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({ options })
+
+    expect(options).not.toHaveBeenCalled()
+
+    identity.initialize()
+    identity.initialize()
+    identity.onUserChanged(() => {})
+
+    expect(options).toHaveBeenCalledOnce()
+    expect(app.initializeApp).toHaveBeenCalledWith(
+      { apiKey: 'from-thunk' },
+      'comfy-account'
+    )
+  })
+
+  it('resolves once no matter how often initialize() is called', async () => {
+    const identity = await makeIdentity()
+
+    identity.initialize()
+    identity.initialize()
+
+    expect(app.initializeApp).toHaveBeenCalledOnce()
+    expect(sdk.getAuth).toHaveBeenCalledOnce()
+  })
 })
 
 describe('createFirebaseIdentity over a host-owned Auth', () => {
@@ -341,4 +507,52 @@ describe('identity listener', () => {
 
     expect(sdk.unsubscribe).toHaveBeenCalledOnce()
   })
+
+  it('delivers every ID token change, refreshes for the same user included', async () => {
+    const identity = await makeIdentity()
+    const seen: Array<User | null> = []
+    identity.onTokenChanged((user) => seen.push(user))
+
+    sdk.tokenListeners.forEach((next) => next(testUser))
+    sdk.tokenListeners.forEach((next) => next(testUser))
+    sdk.tokenListeners.forEach((next) => next(null))
+
+    expect(seen).toEqual([testUser, testUser, null])
+  })
+
+  it('detaches the token listener on unsubscribe', async () => {
+    const identity = await makeIdentity()
+    const unsubscribe = identity.onTokenChanged(() => undefined)
+
+    unsubscribe()
+
+    expect(sdk.unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('reports no user before Auth is resolved, without resolving it', async () => {
+    sdk.resolvedAuth.currentUser = testUser
+    const identity = await makeIdentity()
+
+    expect(
+      identity.currentUser(),
+      'a read-only query must not initialize the app: a host reads it before its config is loaded'
+    ).toBeNull()
+    expect(app.initializeApp).not.toHaveBeenCalled()
+    expect(sdk.getAuth).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    ['nobody signed in', null],
+    ['a signed-in user', testUser]
+  ] as const)(
+    'reads %s from the Auth instance once initialize() resolved it',
+    async ([, user]) => {
+      sdk.resolvedAuth.currentUser = user
+      const identity = await makeIdentity()
+
+      identity.initialize()
+
+      expect(identity.currentUser()).toBe(user)
+    }
+  )
 })

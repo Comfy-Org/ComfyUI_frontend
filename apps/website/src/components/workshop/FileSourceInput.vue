@@ -15,12 +15,15 @@ const {
   field,
   describedBy,
   invalid = false,
+  attention = false,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   field: Extract<FieldSchema, { kind: 'file' }>
   describedBy?: string
   invalid?: boolean
+  /** Marks the chosen file a warning is about, without rejecting it. */
+  attention?: boolean
   disabled?: boolean
   locale?: Locale
 }>()
@@ -38,6 +41,13 @@ const imageOnly = computed(
     field.accept.every((type) => type.startsWith('image/'))
 )
 const limit = computed(() => (field.multiple ? field.maxItems : 1))
+
+// A full field has nothing left to take, and a drop zone under the files it
+// already holds reads as an upload still waiting to happen. Dropping onto the
+// files themselves still works: the zone is the whole group, not the label.
+const atCapacity = computed(
+  () => limit.value !== undefined && selectedFiles.value.length >= limit.value
+)
 const uploadLimit = computed(() =>
   formatWorkshopUploadLimit(field.maxBytes, locale)
 )
@@ -57,8 +67,8 @@ const description = computed(
       .join(' ') || undefined
 )
 
-// A field that takes one file replaces what it holds, so plural copy would
-// promise a second slot that does not exist.
+// A field that takes one file would be at capacity the moment it holds one, so
+// the singular copy only ever greets an empty field.
 const prompt = computed(() => {
   const allowed = field.multiple ? field.maxItems : undefined
   if (allowed !== undefined && allowed > 1)
@@ -69,8 +79,6 @@ const prompt = computed(() => {
       locale,
       { count: allowed }
     )
-  if (selectedFiles.value.length > 0)
-    return t('workshop.field.selectOrDropReplacement', locale)
   return t(
     imageOnly.value
       ? 'workshop.field.selectOrDropImage'
@@ -187,6 +195,7 @@ function remove(index: number) {
         v-for="(file, index) in selectedFiles"
         :key="index"
         :file
+        :attention
         :disabled
         :locale
         @replace="replace(index)"
@@ -194,6 +203,7 @@ function remove(index: number) {
       />
     </ul>
     <label
+      v-if="!atCapacity"
       :for="`field-${field.name}`"
       :class="
         cn(
