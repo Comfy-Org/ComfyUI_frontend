@@ -6,7 +6,7 @@
  */
 import type { GraphOperation } from './graphOperations'
 
-export interface OpCoalescer {
+interface OpCoalescer {
   enqueue(operations: GraphOperation[]): void
   detach(): void
 }

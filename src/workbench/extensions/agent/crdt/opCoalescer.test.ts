@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
 import { createOpCoalescer } from './opCoalescer'
-import type { OpCoalescer } from './opCoalescer'
 import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpSender, OpsResultView } from './opSender'
@@ -26,7 +25,7 @@ describe('createOpCoalescer over the op sender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let boundWorkflow: string | null
   let sender: OpSender
-  let coalescer: OpCoalescer
+  let coalescer: ReturnType<typeof createOpCoalescer>
 
   function ackInFlight(): void {
     resultListener?.({
