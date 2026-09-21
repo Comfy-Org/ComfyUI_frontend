@@ -7,7 +7,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
+export const AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY =
+  'Comfy.Agent.WorkflowTabBindings.v2'
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 interface PersistedBinding {
@@ -64,6 +65,22 @@ function liveBindings(
   )
 }
 
+export function readPersistedAgentWorkflowTabPath(
+  raw: string | null,
+  workflowId: string,
+  now = Date.now()
+): string | undefined {
+  if (raw === null) return undefined
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return undefined
+    return liveBindings(parsed as Record<string, unknown>, now)[workflowId]
+      ?.tabPath
+  } catch {
+    return undefined
+  }
+}
+
 function graphIdOf(tab: ComfyWorkflow): string | undefined {
   const activeId = tab.activeState?.id
   if (activeId !== undefined) return activeId
@@ -85,8 +102,12 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     const now = Date.now()
-    const hasStoredBindings = localStorage.getItem(STORAGE_KEY) !== null
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(STORAGE_KEY, {})
+    const hasStoredBindings =
+      localStorage.getItem(AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY) !== null
+    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+      AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
+      {}
+    )
     tabByWorkflow.value = liveBindings(
       hasStoredBindings ? tabByWorkflow.value : readLegacyBindings(now),
       now

@@ -6,7 +6,6 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -117,28 +116,6 @@ export async function getAgentActiveWorkflowPath(
       (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
         ?.path
   )
-}
-
-export async function getAgentBoundWorkflowPath(
-  page: Page,
-  workflowId: string
-): Promise<string | undefined> {
-  return await page.evaluate((workflowId) => {
-    const root = document.getElementById('vue-app') as (HTMLElement & {
-      __vue_app__?: {
-        config: {
-          globalProperties: {
-            $pinia?: { _s: Map<string, unknown> }
-          }
-        }
-      }
-    }) | null
-    const pinia = root?.__vue_app__?.config.globalProperties.$pinia
-    const store = pinia?._s.get('agentWorkflowTabBinding') as
-      | ReturnType<typeof useAgentWorkflowTabBindingStore>
-      | undefined
-    return store?.tabPathFor(workflowId)
-  }, workflowId)
 }
 
 export async function bootAgentApp(

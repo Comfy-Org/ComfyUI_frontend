@@ -2,10 +2,13 @@ import { expect, mergeTests, type Page } from '@playwright/test'
 
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
+  AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
+  readPersistedAgentWorkflowTabPath
+} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import {
   agentTest,
   bootAgentApp,
   getAgentActiveWorkflowPath,
-  getAgentBoundWorkflowPath,
   pushAgentEvent
 } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -112,7 +115,11 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     const recordBeforeReload = await readPersistedDocIdentity(page)
     expect(recordBeforeReload).toMatchObject({ docId: workflowId })
 
-    const boundPath = await getAgentBoundWorkflowPath(page, workflowId)
+    const rawBindings = await page.evaluate(
+      (key) => localStorage.getItem(key),
+      AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY
+    )
+    const boundPath = readPersistedAgentWorkflowTabPath(rawBindings, workflowId)
     expect(boundPath).toBeTruthy()
     await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
     expect(
