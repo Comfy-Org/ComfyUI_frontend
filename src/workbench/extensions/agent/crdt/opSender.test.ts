@@ -434,6 +434,32 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('detach settles every outstanding batch instead of dropping it silently', () => {
+    // #1 transmits and is left awaiting a result; #2 sits queued behind it;
+    // #3 is only admitted, still open, never sealed into a wire batch. A
+    // human op abandoned in any of these three states must be reported to
+    // `onBatchSettled` on detach - otherwise the caller (and the CRDT
+    // follower's pending-delete tracking) has no record the op never
+    // reached the host, and a later reconcile can silently undo it.
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.admit([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+  })
+
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])

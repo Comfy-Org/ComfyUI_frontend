@@ -121,6 +121,16 @@ export interface OpSender {
    * re-addressing them to the new lineage would apply them twice.
    */
   abortAll(): void
+  /**
+   * Tears the sender down for good: settles every outstanding batch exactly
+   * as {@link abortAll} does (the in-flight one 'unconfirmed' once
+   * transmitted, 'undeliverable' otherwise; every queued and open batch
+   * 'undeliverable'), then stops sending. A caller that unmounts mid-batch
+   * - the CRDT follower's own `onScopeDispose` - must not lose track of a
+   * human-authored op silently: an unreported drop here is indistinguishable
+   * from success to `onBatchSettled`'s listener, and a delete the host never
+   * received can resurrect its node on the next reconcile.
+   */
   detach(): void
 }
 
@@ -332,10 +342,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     detach() {
       detached = true
-      if (inFlight?.timer) clearTimeout(inFlight.timer)
-      inFlight = null
-      queue.length = 0
+      const queued = queue.splice(0)
+      const admitted = open
       open = null
+      if (inFlight) settleUnbound(inFlight)
+      for (const batch of queued)
+        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
+      if (admitted)
+        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
       unsubscribe()
     }
   }
