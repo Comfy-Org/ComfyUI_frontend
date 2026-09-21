@@ -232,6 +232,9 @@ freeTierDisabledTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeHidden()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.queueButton)
+        ).toBeHidden()
       }
     )
   }
