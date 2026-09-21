@@ -218,29 +218,26 @@ function onCustomFloatCreated(this: LGraphNode) {
       valueWidget.callback?.(valueWidget.value)
     }
   })
+  const defaultPrecision = valueWidget.options.precision ?? 1
+  const precision = () => {
+    const configured = this.properties.precision
+    return typeof configured === 'number' ? configured : defaultPrecision
+  }
+  const lastDecimalPlace = () => 10 ** -precision()
+
   Object.defineProperty(valueWidget.options, 'precision', {
-    get: () => this.properties.precision ?? 1,
+    get: precision,
     set: (v) => {
       this.properties.precision = v
       valueWidget.callback?.(valueWidget.value)
     }
   })
   Object.defineProperty(valueWidget.options, 'step2', {
-    get: () => {
-      if (this.properties.step) return this.properties.step
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 5 * 10 ** -precision : 1
-    },
+    get: () => this.properties.step || lastDecimalPlace(),
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
-    get: () => {
-      if (this.properties.round) return this.properties.round
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 10 ** -precision : 0.1
-    },
+    get: () => this.properties.round || lastDecimalPlace(),
     set: (v) => {
       this.properties.round = v
       valueWidget.callback?.(valueWidget.value)
