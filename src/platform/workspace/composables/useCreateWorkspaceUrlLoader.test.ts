@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,7 +11,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -19,7 +20,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -28,15 +29,7 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-const mockShowTeamWorkspacesDialog = vi.hoisted(() =>
-  vi.fn(async () => undefined)
-)
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 describe('useCreateWorkspaceUrlLoader', () => {
   beforeEach(() => {
@@ -51,7 +44,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
@@ -61,7 +54,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledOnce()
+      expect(useDialogService().showTeamWorkspacesDialog).toHaveBeenCalledOnce()
     })
 
     it('restores preserved query and opens dialog', async () => {
@@ -79,7 +72,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith({
         query: { create_workspace: '1' }
       })
-      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledOnce()
+      expect(useDialogService().showTeamWorkspacesDialog).toHaveBeenCalledOnce()
     })
 
     it('cleans up URL after processing', async () => {
@@ -110,7 +103,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
     })
 
     it('ignores non-string param', async () => {
@@ -121,7 +114,7 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(mockShowTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
     })
   })
 })

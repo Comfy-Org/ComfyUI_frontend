@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -35,8 +33,6 @@ function createConnectedGraph(targetCount: number) {
 }
 
 describe('slotLinks', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('reports presence, ids, and resolved links for an output slot', () => {
     const { graph, source } = createConnectedGraph(2)
 

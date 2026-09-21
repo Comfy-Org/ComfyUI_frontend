@@ -17,33 +17,18 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('keeps a locked field on a custom-colored node the same on hover instead of turning generic gray', async ({
+    test('suppresses a field connected to an upstream node', async ({
       comfyPage
     }) => {
-      const targetNode = comfyPage.vueNodes.getNodeByTitle(
-        'Locked Widget Target'
-      )
       const lockedInput = comfyPage.vueNodes.getWidgetByName(
         'Locked Widget Target',
         'text'
       )
-      // proxy check: covers both link-locked and hardcoded read_only cases
-      await expect(lockedInput).toHaveAttribute('readonly', '')
-
-      // Hovering the locked field must not replace its (node-color-tinted)
-      // background with the app's opaque generic hover gray, so the node's
-      // custom color should still show through in the screenshot.
-      //
-      // The native `disabled` attribute on the locked textarea makes it
-      // `pointer-events: none` (see Textarea.vue's `disabled:pointer-events-none`
-      // class), so the browser never delivers pointer events to it directly —
-      // hovering must instead target its parent, which is the actual element
-      // carrying the hover background class this test is verifying.
-      await lockedInput.locator('..').hover()
-      await comfyPage.expectScreenshot(
-        targetNode,
-        'locked-widget-hover-color.png'
-      )
+      // The connected field is suppressed: only the standalone socket row
+      // carries the accessible name, with no editable control.
+      await expect(lockedInput).toHaveCount(1)
+      await expect(lockedInput.getByTestId('slot-dot')).toBeVisible()
+      await expect(lockedInput.locator('textarea, input')).toHaveCount(0)
     })
 
     test('editable field on the same node still shows the generic hover background', async ({

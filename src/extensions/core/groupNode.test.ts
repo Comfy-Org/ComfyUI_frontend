@@ -1,44 +1,42 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia, setActivePinia } from 'pinia'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
-import type { GroupNodeWorkflowData } from './groupNode'
+import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
 const extensionState = vi.hoisted(() => ({
   ext: undefined as ComfyExtension | undefined,
   configuringGraph: false,
   rootGraph: {
-    extra: {} as Record<string, unknown>,
+    extra: {},
     nodes: [] as { id: string | number }[]
   },
   registerNodeDef:
     vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     get configuringGraph() {
       return extensionState.configuringGraph
     },
-    rootGraph: extensionState.rootGraph,
+    rootGraph: fromAny(extensionState.rootGraph),
     registerNodeDef: extensionState.registerNodeDef,
     registerExtension: (ext: ComfyExtension) => {
       extensionState.ext = ext
     }
-  }
+  })
 }))
 
 import {
@@ -82,7 +80,7 @@ describe('replaceLegacySeparators', () => {
 
 describe('GroupNodeConfig.getLinks', () => {
   function configFrom(
-    links: SerialisedLLinkArray[],
+    links: GroupNodeLink[],
     external: (number | string)[][] = []
   ) {
     const nodeData: GroupNodeWorkflowData = {
@@ -100,43 +98,40 @@ describe('GroupNodeConfig.getLinks', () => {
   }
 
   it('indexes outgoing links by [origin index][origin slot]', () => {
-    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const model = [1, 0, 4, 0, 4, 'MODEL'] satisfies SerialisedLLinkArray
+    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
+    const model = [1, 0, 4, 0, 4, 'MODEL'] satisfies GroupNodeLink
     const config = configFrom([clip, model])
 
-    expect(config.linksFrom[1][1]).toEqual([clip])
-    expect(config.linksFrom[1][0]).toEqual([model])
+    expect(config.linksFrom).toEqual({ 1: { 1: [clip], 0: [model] } })
   })
 
   it('indexes incoming links by [target index][target slot]', () => {
-    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const cond = [2, 0, 4, 1, 6, 'CONDITIONING'] satisfies SerialisedLLinkArray
+    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
+    const cond = [2, 0, 4, 1, 6, 'CONDITIONING'] satisfies GroupNodeLink
     const config = configFrom([clip, cond])
 
-    expect(config.linksTo[2][0]).toEqual(clip)
-    expect(config.linksTo[4][1]).toEqual(cond)
+    expect(config.linksTo).toEqual({ 2: { 0: clip }, 4: { 1: cond } })
   })
 
   it('accumulates multiple fan-out links from the same origin slot', () => {
-    const toPos = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const toNeg = [1, 1, 3, 0, 5, 'CLIP'] satisfies SerialisedLLinkArray
+    const toPos = [1, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
+    const toNeg = [1, 1, 3, 0, 5, 'CLIP'] satisfies GroupNodeLink
     const config = configFrom([toPos, toNeg])
 
-    expect(config.linksFrom[1][1]).toEqual([toPos, toNeg])
+    expect(config.linksFrom).toEqual({ 1: { 1: [toPos, toNeg] } })
   })
 
   it('skips links that have a null endpoint', () => {
-    const valid = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const broken = [null, 1, 2, 0, 4, 'CLIP'] as unknown as SerialisedLLinkArray
+    const valid = [1, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
+    const broken = [null, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
     const config = configFrom([valid, broken])
 
-    expect(config.linksFrom[1][1]).toEqual([valid])
-    expect(Object.keys(config.linksFrom)).toEqual(['1'])
+    expect(config.linksFrom).toEqual({ 1: { 1: [valid] } })
   })
 
   it('maps external links by [node index][slot] to their type', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
-    expect(config.externalFrom[0][1]).toBe('IMAGE')
+    expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
   })
 })
 
@@ -162,6 +157,33 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})
+
+describe('GroupNodeConfig.processConvertedWidgets', () => {
+  it('orders converted widgets by numeric slot index, not lexically', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+
+    config.processConvertedWidgets(
+      { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
+      { index: 0, type: 'KSampler' },
+      [],
+      new Map([
+        [10, 'cfg'],
+        [2, 'steps'],
+        [1, 'seed']
+      ]),
+      {},
+      inputMap,
+      {}
+    )
+
+    expect(inputMap).toEqual({ seed: 0, steps: 1, cfg: 2 })
   })
 })
 
@@ -240,8 +262,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    const previousPinia = getActivePinia()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     extensionState.registerNodeDef.mockImplementation(
       async (typeName, nodeDef) => {
         class PreviousGroupNode extends LGraphNode {
@@ -282,7 +302,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       ])
     } finally {
       extensionState.registerNodeDef.mockReset()
-      setActivePinia(previousPinia)
     }
   })
 
@@ -382,19 +401,12 @@ describe('group node extension beforeConfigureGraph', () => {
         expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
       ])
 
-      const previousPinia = getActivePinia()
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      try {
-        const store = useMissingNodesErrorStore()
-        store.setMissingNodeTypes(missingNodeTypes)
-        store.removeMissingNodesByNodeId('7')
-
-        expect(store.missingNodesError?.nodeTypes).toStrictEqual([
-          expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
-        ])
-      } finally {
-        setActivePinia(previousPinia)
-      }
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes(missingNodeTypes)
+      store.removeMissingNodesByNodeId('7')
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
+      ])
     } finally {
       extensionState.rootGraph.nodes = []
     }

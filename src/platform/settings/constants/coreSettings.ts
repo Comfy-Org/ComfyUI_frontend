@@ -292,13 +292,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingModelsWarning',
-    name: 'Show missing models warning',
-    type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
-    experimental: true
-  },
-  {
     id: 'Comfy.Workflow.WarnBlueprintOverwrite',
     name: 'Require confirmation to overwrite an existing subgraph blueprint',
     type: 'boolean',
@@ -1212,19 +1205,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
-    type: 'hidden',
-    tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
-    experimental: true
-  },
-  {
     id: 'Comfy.ModelLibrary.UseAssetBrowser',
     name: 'Use the asset browser for the model library',
     type: 'hidden',
     tooltip:
-      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
+      'When the backend supports assets, the model library opens the asset browser instead of the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },
@@ -1295,7 +1280,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
-    category: ['Comfy', 'Error System'],
+    category: ['Comfy', 'Error System', 'IssuesTab'],
     name: 'Show issues tab in side panel',
     tooltip:
       'When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup.',
@@ -1303,6 +1288,39 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    category: ['Comfy', 'Error System', 'MissingNodes'],
+    sortOrder: -1,
+    name: 'Show missing nodes in the issues tab',
+    tooltip:
+      'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.ErrorSystem.ShowMissingModels',
+    category: ['Comfy', 'Error System', 'MissingModels'],
+    sortOrder: -2,
+    name: 'Show missing models in the issues tab',
+    tooltip:
+      'When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingMediaWarning',
+    category: ['Comfy', 'Error System', 'MissingMedia'],
+    sortOrder: -3,
+    name: 'Show missing media in the issues tab',
+    tooltip:
+      'When disabled, input images, videos and audio that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
   },
   {
     id: 'LiteGraph.Group.SelectChildrenOnClick',

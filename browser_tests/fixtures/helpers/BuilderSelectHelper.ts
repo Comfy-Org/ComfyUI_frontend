@@ -114,10 +114,9 @@ export class BuilderSelectHelper {
    */
   async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    const nodeRef = (
-      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-    )[0]
-    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    if (nodeRefs.length === 0) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRef = nodeRefs[0]
     await nodeRef.centerOnNode()
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
@@ -163,10 +162,9 @@ export class BuilderSelectHelper {
    */
   async selectOutputNode(nodeTitle: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    const nodeRef = (
-      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-    )[0]
-    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    if (nodeRefs.length === 0) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRef = nodeRefs[0]
     await nodeRef.centerOnNode()
     const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
       String(nodeRef.id)

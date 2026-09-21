@@ -168,7 +168,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       const onPageError = (err: Error) => {
         if (
           err.name === 'NullGraphError' ||
-          isNullGraphErrorText(err.message ?? '')
+          isNullGraphErrorText(err.message)
         ) {
           captured.push(`pageerror ${err.name}: ${err.message}`)
         }
@@ -234,8 +234,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       }
     }
 
+    test.use({ initialSettings: { 'Comfy.RightSidePanel.IsOpen': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', true)
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )

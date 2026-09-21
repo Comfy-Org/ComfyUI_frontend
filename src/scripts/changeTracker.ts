@@ -8,7 +8,7 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -25,6 +25,10 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
+function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
+  return nodes.map((node) => _.omit(node, ['order']))
+}
+
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
@@ -32,7 +36,7 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled === true && app.ui.autoQueueMode === 'change')
+    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
   )
 }
 
@@ -425,7 +429,7 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified(previousState)
-      this.squashState()
+      void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {
@@ -683,13 +687,17 @@ export class ChangeTracker {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      // Compare nodes ignoring order
+      // Compare nodes ignoring array position and execution order
       if (
-        !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
-          if (Array.isArray(arrA) && Array.isArray(arrB)) {
-            return _.isEqual(new Set(arrA), new Set(arrB))
+        !_.isEqualWith(
+          withoutExecutionOrder(a.nodes),
+          withoutExecutionOrder(b.nodes),
+          (arrA, arrB) => {
+            if (Array.isArray(arrA) && Array.isArray(arrB)) {
+              return _.isEqual(new Set(arrA), new Set(arrB))
+            }
           }
-        })
+        )
       ) {
         return false
       }

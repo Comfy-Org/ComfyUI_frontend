@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -8,7 +9,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory
 const CHAT_OPTIONS_LABEL = enMessages.agent.chatOptions
 const RENAME_LABEL = enMessages.g.rename
@@ -25,24 +26,30 @@ const PANEL_MOUNT_TIMEOUT = 30_000
 // route is the app's own load path, so the row under test is rendered by the
 // real component from real store state - nothing is injected into the DOM and
 // no state is faked past the UI.
-// Shape verified against zAgentThreadSummary (agentApiSchema.ts): id and title
-// required, updated_at optional, passthrough for extras.
 const SEEDED_THREAD_ID = 'thread-rename-focus'
 const SEEDED_TITLE = 'Seeded session'
+const SEEDED_AT = new Date(0).toISOString()
 
 async function seedOneThread(page: Parameters<typeof bootAgentApp>[0]) {
+  const response = {
+    pagination: { has_more: false, limit: 1, offset: 0, total: 1 },
+    threads: [
+      {
+        created_at: SEEDED_AT,
+        id: SEEDED_THREAD_ID,
+        last_message_at: SEEDED_AT,
+        message_count: 1,
+        preview: SEEDED_TITLE,
+        status: 'active',
+        title: SEEDED_TITLE,
+        updated_at: SEEDED_AT,
+        workflow_id: ''
+      }
+    ]
+  } satisfies AgentThreadListResponse
+
   await page.route('**/agent/threads', (route) =>
-    route.fulfill(
-      jsonRoute({
-        threads: [
-          {
-            id: SEEDED_THREAD_ID,
-            title: SEEDED_TITLE,
-            updated_at: new Date(0).toISOString()
-          }
-        ]
-      })
-    )
+    route.fulfill(jsonRoute(response))
   )
 }
 
@@ -54,7 +61,10 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     await seedOneThread(page)
     await bootAgentApp(page, agentFlagEnabled)
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

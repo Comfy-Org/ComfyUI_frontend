@@ -350,7 +350,7 @@ export function assertCoreEntry(entry: CoreManifestEntry, index: number): void {
   const missing = sharedIssues(entry)
   // CI clones from repo, so an empty value must fail here, not mid-clone.
   if (!isNonEmptyString(entry.repo)) missing.push('repo')
-  if (!/^[0-9a-f]{40}$/.test(entry.pin ?? ''))
+  if (!/^[0-9a-f]{40}$/.test(entry.pin))
     missing.push('pin (full 40-char commit SHA required)')
   missing.push(...calibrationIssues(entry))
   if (!Array.isArray(entry.requiresModels)) missing.push('requiresModels')
@@ -422,7 +422,7 @@ interface LocalExpectation {
   reason: string
 }
 
-function loadLocalExpectations(): Record<string, LocalExpectation> {
+function loadLocalExpectations(): Partial<Record<string, LocalExpectation>> {
   if (customNodesBackend() !== 'local' || customNodesManifest() !== 'cloud')
     return {}
   const path = dataPath('cloud/localExpectations.json')
@@ -498,8 +498,7 @@ export function staleLocalExpectations(): string[] {
   return loadFullManifest()
     .filter(
       (entry) =>
-        local[entry.pack] !== undefined &&
-        local[entry.pack].expectedNodeCount === entry.expectedNodeCount
+        local[entry.pack]?.expectedNodeCount === entry.expectedNodeCount
     )
     .map((entry) => entry.pack)
 }

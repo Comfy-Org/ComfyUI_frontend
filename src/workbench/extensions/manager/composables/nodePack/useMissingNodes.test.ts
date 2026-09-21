@@ -1,61 +1,41 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick, ref } from 'vue'
 
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useMissingNodes as useSharedMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    createSharedComposable: <Fn extends (...args: unknown[]) => unknown>(
-      fn: Fn
-    ) => fn
-  }
-})
+function useMissingNodes() {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(useSharedMissingNodes)!
+}
 
-// Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'),
+
   () => ({
     useWorkflowPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: vi.fn()
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    activeWorkflow: null
-  }))
-}))
-
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
 const mockUseWorkflowPacks = vi.mocked(useWorkflowPacks)
-const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
-const mockUseNodeDefStore = vi.mocked(useNodeDefStore)
 const mockCollectAllNodes = vi.mocked(collectAllNodes)
 
 describe('useMissingNodes', () => {
@@ -78,17 +58,12 @@ describe('useMissingNodes', () => {
   ]
 
   const mockStartFetchWorkflowPacks = vi.fn()
-  const mockIsPackInstalled = vi.fn()
 
   beforeEach(() => {
     // Default setup: pack-3 is installed, others are not
-    mockIsPackInstalled.mockImplementation((id: string) => id === 'pack-3')
-
-    mockUseComfyManagerStore.mockReturnValue({
-      isPackInstalled: mockIsPackInstalled
-    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
-      typeof useComfyManagerStore
-    >)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+      (id) => id === 'pack-3'
+    )
 
     mockUseWorkflowPacks.mockReturnValue({
       workflowPacks: ref([]),
@@ -99,13 +74,6 @@ describe('useMissingNodes', () => {
       isReady: ref(false),
       filterWorkflowPack: vi.fn()
     })
-
-    // Reset node def store mock
-    mockUseNodeDefStore.mockReturnValue({
-      nodeDefsByName: {}
-    } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-      typeof useNodeDefStore
-    >)
 
     // Reset app.rootGraph.nodes
     mockApp.rootGraph = { nodes: [] }
@@ -149,7 +117,7 @@ describe('useMissingNodes', () => {
       })
 
       // Mock all packs as installed
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { missingNodePacks } = useMissingNodes()
 
@@ -168,7 +136,7 @@ describe('useMissingNodes', () => {
       })
 
       // Mock no packs as installed
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { missingNodePacks } = useMissingNodes()
 
@@ -402,13 +370,9 @@ describe('useMissingNodes', () => {
       const namedNode = {
         name: 'RegisteredNode'
       } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {
-          RegisteredNode: namedNode
-        }
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {
+        RegisteredNode: namedNode
+      }
 
       const { missingCoreNodes } = useMissingNodes()
 
@@ -426,11 +390,7 @@ describe('useMissingNodes', () => {
       // Mock collectAllNodes to return these nodes
       mockCollectAllNodes.mockReturnValue([node120, node130, nodeNoVer])
 
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {}
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {}
 
       const { missingCoreNodes } = useMissingNodes()
 
@@ -446,11 +406,7 @@ describe('useMissingNodes', () => {
       // Mock collectAllNodes to return only the filtered nodes (core nodes only)
       mockCollectAllNodes.mockReturnValue([coreNode])
 
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {}
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {}
 
       const { missingCoreNodes } = useMissingNodes()
 
@@ -463,18 +419,14 @@ describe('useMissingNodes', () => {
       // Mock collectAllNodes to return empty array (no missing nodes after filtering)
       mockCollectAllNodes.mockReturnValue([])
 
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {
-          RegisteredNode1: {
-            name: 'RegisteredNode1'
-          } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl,
-          RegisteredNode2: {
-            name: 'RegisteredNode2'
-          } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
-        }
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {
+        RegisteredNode1: {
+          name: 'RegisteredNode1'
+        } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl,
+        RegisteredNode2: {
+          name: 'RegisteredNode2'
+        } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
+      }
 
       const { missingCoreNodes } = useMissingNodes()
 
@@ -523,11 +475,7 @@ describe('useMissingNodes', () => {
       ])
 
       // Mock none of the nodes as registered
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {}
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {}
 
       const { missingCoreNodes } = useMissingNodes()
 
@@ -563,15 +511,11 @@ describe('useMissingNodes', () => {
       const mockGraph = { nodes: [], subgraphs: new Map() }
       mockApp.rootGraph = mockGraph
 
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {
-          RegisteredCore: {
-            name: 'RegisteredCore'
-          } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
-        }
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {
+        RegisteredCore: {
+          name: 'RegisteredCore'
+        } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
+      }
 
       let capturedFilterFunction: ((node: LGraphNode) => boolean) | undefined
 
@@ -611,7 +555,10 @@ describe('useMissingNodes', () => {
         const allNodes: LGraphNode[] = []
 
         for (const node of graph.nodes) {
-          if (node.isSubgraphNode?.() && node.subgraph) {
+          if (
+            typeof node.isSubgraphNode === 'function' &&
+            node.isSubgraphNode()
+          ) {
             for (const subNode of node.subgraph.nodes) {
               if (!filter || filter(subNode)) {
                 allNodes.push(subNode)
@@ -660,15 +607,11 @@ describe('useMissingNodes', () => {
 
       mockApp.rootGraph = mockMainGraph
 
-      mockUseNodeDefStore.mockReturnValue({
-        nodeDefsByName: {
-          SubgraphRegistered: {
-            name: 'SubgraphRegistered'
-          } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
-        }
-      } as Partial<ReturnType<typeof useNodeDefStore>> as ReturnType<
-        typeof useNodeDefStore
-      >)
+      useNodeDefStore().nodeDefsByName = {
+        SubgraphRegistered: {
+          name: 'SubgraphRegistered'
+        } as Partial<ComfyNodeDefImpl> as ComfyNodeDefImpl
+      }
 
       const { missingCoreNodes } = useMissingNodes()
 
