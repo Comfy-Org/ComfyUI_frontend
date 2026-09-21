@@ -1,8 +1,11 @@
+import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Explicit reattachment after navigation, not automatic restoration of the old
 // page-session binding. See https://github.com/Comfy-Org/ComfyUI_frontend/pull/16849
@@ -11,6 +14,24 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: 'agent-rec-set-widget-existing' })
+
+    test.beforeEach(async ({ page }) => {
+      const folders: ModelFolderInfo[] = []
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute(folders))
+      )
+      const jobs: JobsListResponse = {
+        jobs: [],
+        pagination: { offset: 0, limit: 200, total: 0, has_more: false }
+      }
+      await page.route('**/api/jobs?*', (route) =>
+        route.fulfill(jsonRoute(jobs))
+      )
+      const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(runMode))
+      )
+    })
 
     test('reloads a saved workflow and receives a fresh host edit after a new turn', async ({
       agentConversation,

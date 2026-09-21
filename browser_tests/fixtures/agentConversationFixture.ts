@@ -3,12 +3,7 @@ import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type {
-  AgentRunMode,
-  JobsListResponse,
-  WorkflowListResponse
-} from '@comfyorg/ingest-types'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
@@ -653,19 +648,6 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    const folders: ModelFolderInfo[] = []
-    await page.route('**/api/experiment/models', (route) =>
-      route.fulfill(jsonRoute(folders))
-    )
-    const jobs: JobsListResponse = {
-      jobs: [],
-      pagination: { offset: 0, limit: 200, total: 0, has_more: false }
-    }
-    await page.route('**/api/jobs?*', (route) => route.fulfill(jsonRoute(jobs)))
-    const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
-    await page.route('**/api/agent/run-mode', (route) =>
-      route.fulfill(jsonRoute(runMode))
-    )
     await page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute({ threads: [] }))
     )
