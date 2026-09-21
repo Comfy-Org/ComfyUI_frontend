@@ -88,26 +88,34 @@ const ctaButtons = [
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
-    <a
-      :href="routes.home"
-      class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
-      aria-label="Comfy home"
-    >
-      <img
-        src="/icons/logomark.svg"
-        alt="Comfy"
-        class="col-span-full row-span-full h-8"
+    <div class="flex shrink-0 items-center gap-3">
+      <HeaderMainMobile
+        :locale
+        :workshop-in-build="showWorkshop"
+        :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
       />
-      <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+      <a
+        :href="routes.home"
+        class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
+        aria-label="Comfy home"
       >
         <img
-          src="/icons/logo.svg"
+          src="/icons/logomark.svg"
           alt="Comfy"
-          class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          class="col-span-full row-span-full h-8"
         />
-      </div>
-    </a>
+        <div
+          class="relative col-span-full row-span-full h-10 overflow-clip transition-[width] 2xl:w-36"
+          :class="showWorkshop ? 'w-36 xl:w-0' : 'w-36 lg:w-0'"
+        >
+          <img
+            src="/icons/logo.svg"
+            alt="Comfy"
+            class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          />
+        </div>
+      </a>
+    </div>
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop
@@ -120,8 +128,7 @@ const ctaButtons = [
       class="flex shrink-0 items-center gap-2"
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderAccount v-if="showAccount" :locale="locale" compact />
     </div>
 
     <!-- Desktop CTA buttons -->

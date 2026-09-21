@@ -100,6 +100,30 @@ describe('HeaderMain workshop gating', () => {
     ).toBeTruthy()
   })
 
+  it('opens the bar with the menu trigger, then the logo, and closes it with the account', async () => {
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
+
+    const menu = await screen.findByRole('button', { name: 'Toggle menu' })
+    const home = screen.getByRole('link', { name: 'Comfy home' })
+    const account = screen.getByTestId('mobile-nav-cta')
+
+    const precedes = (first: Element, second: Element) =>
+      Boolean(
+        first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING
+      )
+
+    expect(
+      precedes(menu, home),
+      'the menu trigger holds the leading edge, so the logo sits beside it rather than against the frame'
+    ).toBe(true)
+    expect(
+      precedes(home, account),
+      'the account stays on the trailing edge, where the desktop row also keeps it'
+    ).toBe(true)
+  })
+
   it('owns one credits dialog for both account placements and page requests', async () => {
     flag.value = true
     visibility.value = true
