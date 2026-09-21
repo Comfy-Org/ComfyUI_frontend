@@ -2356,6 +2356,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -2376,8 +2386,80 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+    ])
+  })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
     ])
   })
 })
@@ -5365,6 +5447,61 @@ describe('AgentPanelRoot workflow binding', () => {
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('a new chat after clearing the canvas keeps the saved target and posts the cleared canvas as its first draft', async () => {
+    const tab = makeTab('wf-42')
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: [{ id: 1, type: 'LoadImage' }]
+    })
+    const posted: { threadId: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          posted.push({
+            threadId: url.split('/threads/')[1].split('/')[0],
+            body: JSON.parse(String(init.body))
+          })
+          return json(202, ack('wf-42', `m-${posted.length}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-42', name: 'current' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('build a duck')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    expect(posted[0]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [{ id: 1 }] } } }
+    })
+
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42', nodes: [] })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    await sendFromComposer('start over')
+
+    expect(posted[1]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [] } } }
+    })
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
   })
 
   it('does not bind an unsaved tab to a workflow that already has an open tab', async () => {

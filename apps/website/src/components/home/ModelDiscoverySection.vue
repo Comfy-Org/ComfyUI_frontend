@@ -61,7 +61,9 @@ const cardClass =
         :aria-label="t('modelDiscovery.rowLabel', locale)"
         role="region"
       >
-        <div class="overflow-hidden">
+        <div
+          class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
+        >
           <div class="group flex w-max gap-3">
             <div
               v-for="copy in 2"
