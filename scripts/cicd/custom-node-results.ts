@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { isMainModule } from '../isMainModule'
 
 interface ResultStats {
   expected: number
@@ -113,7 +113,7 @@ function collectTests(value: unknown): TestResult[] {
     if (typeof entry.title !== 'string' || !Array.isArray(entry.tests)) return
     for (const test of entry.tests)
       if (isRecord(test) && typeof test.status === 'string')
-        tests.push({ suiteTitle: entry.title as string, status: test.status })
+        tests.push({ suiteTitle: entry.title, status: test.status })
   })
   return tests
 }
@@ -311,11 +311,7 @@ export function main(): void {
   writeFileSync('tier-isolation-proof-evidence.txt', `${lines.join('\n')}\n`)
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-
-if (invokedDirectly) {
+if (isMainModule(import.meta.url)) {
   try {
     main()
   } catch (error) {

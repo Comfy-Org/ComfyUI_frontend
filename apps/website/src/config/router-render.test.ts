@@ -4,7 +4,7 @@ import type { RouterRenderOptions } from './router-render'
 import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { releaseRouterOutputs } from './workshop-response'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 
 function router_render(
   slug: string,
@@ -31,6 +31,31 @@ function queueNotEnabled() {
 }
 
 describe('shared Router rendering', () => {
+  it('preserves unexpected preparation errors without dispatching a generation', async () => {
+    const cause = new TypeError('Unexpected encoder failure')
+    vi.spyOn(globalThis, 'btoa').mockImplementation(() => {
+      throw cause
+    })
+    const fetch = vi.fn<typeof globalThis.fetch>()
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(
+      router_render(
+        'vertexai--gemini-3-pro-image--edit-images',
+        {
+          prompt: 'Edit',
+          reference_images: [new Blob([png], { type: 'image/png' })]
+        },
+        { token: 'test-key' }
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'input_preparation',
+      cause
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('reuses uploaded bytes and the same request body for an explicit retry', async () => {
     const source = new Blob([png], { type: 'image/png' })
     let grants = 0
