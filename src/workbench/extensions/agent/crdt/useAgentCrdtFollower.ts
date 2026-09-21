@@ -488,9 +488,20 @@ function startAgentCrdtFollower(
     }
     try {
       projection.clearForReset(detail.workflowId, context)
-    } finally {
-      sender.abortAll()
+    } catch (error) {
+      // A third-party onRemoved() hook must not cost the rest of the reset.
+      reportError(error, {
+        errorType: 'agent_doc_reset_reconcile_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'recovered'
+        },
+        level: 'error'
+      })
     }
+    sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
