@@ -22,6 +22,7 @@ const THREAD_KEY = 'Comfy.Agent.ThreadId'
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const TARGET_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'
+const TURN_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
 
 // Regression source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/17518#discussion_r4017443654
 test(
@@ -97,16 +98,27 @@ test(
       )
     })
 
-    const history: AgentMessage[] = []
+    const history: AgentMessage[] = [
+      {
+        id: 'user-1',
+        thread_id: THREAD_ID,
+        turn_id: TURN_ID,
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        workflow_id: TARGET_ID,
+        content: { text: 'Earlier request' }
+      }
+    ]
     const threads: AgentThreadListResponse = {
       threads: [
         {
           id: THREAD_ID,
           title: 'Duplicate target',
-          preview: '',
+          preview: 'Earlier request',
           workflow_id: TARGET_ID,
           status: 'active',
-          message_count: 0,
+          message_count: 1,
           created_at: '2026-09-19T00:00:00Z',
           updated_at: '2026-09-19T00:00:00Z',
           last_message_at: '2026-09-19T00:00:00Z'
