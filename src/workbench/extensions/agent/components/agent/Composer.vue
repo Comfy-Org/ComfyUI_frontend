@@ -263,11 +263,27 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // it fires while focus is inside this composer, or nowhere in particular
 // (the Safari/Firefox click case), but stays out of the way once focus has
 // genuinely moved elsewhere on the page (see the "once focus has left the
-// composer entirely" test). It's registered on the bubble phase (matching
-// the window-level listener in GraphView.vue it needs to run ahead of), so
-// any more specific handler closer to the target - the mention list or the
-// editor-scoped handler above, both of which call stopPropagation - still
-// gets first refusal and this one never sees the event.
+// composer entirely" test).
+//
+// There's no central registry that arbitrates which Escape handler "wins" -
+// this app establishes Escape ownership the same way everywhere: listener
+// phase (capture runs before bubble) plus an explicit stopPropagation() /
+// stopImmediatePropagation() from whichever handler is more specific. See
+// useKeybindingService's own bailouts for `[role="menu"]` targets and open
+// dialogs (src/platform/keybindings/keybindingService.ts), the mention
+// picker's Escape-to-close (useAgentMentionPicker.ts's onComposerKeydown),
+// select's stopEscapeToDocument (src/components/ui/select/select.variants.ts),
+// and the capture-phase document listeners in OnboardingCoach.vue and
+// TourSpotlight.vue that let a full-screen overlay pre-empt everything else.
+// This listener follows the same convention: it's registered on the bubble
+// phase, not capture, because it only needs to run ahead of GraphView's
+// window-level listener (src/views/GraphView.vue, `useKeybindingService().
+// keybindHandler` on `window`) - not ahead of the composer's own more
+// specific handlers. Those still get first refusal and call
+// stopPropagation() themselves: the mention list closing itself, and the
+// editor-scoped handler above for a still-focused editor. This one only
+// ever sees the event when none of those more specific handlers claimed it
+// first.
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   if (
     event.key !== 'Escape' ||
