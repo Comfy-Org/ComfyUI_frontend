@@ -85,6 +85,12 @@ const failureKey: Record<RunFailure, TranslationKey> = {
   timeout: 'workshop.error.timeout'
 }
 
+const hasUnreadableFile = computed(
+  () =>
+    state.status === 'failed' &&
+    Object.values(state.fieldErrors).includes('fileUnreadable')
+)
+
 const statusMessage = computed(() => {
   if (
     state.status === 'failed' &&
@@ -111,6 +117,7 @@ const statusMessage = computed(() => {
 function failureTranslationKey(
   failure: Extract<RunState, { status: 'failed' }>
 ): TranslationKey {
+  if (hasUnreadableFile.value) return 'workshop.error.fileUnreadable'
   if (
     failure.reason === 'validation' &&
     !Object.keys(failure.fieldErrors).length
@@ -365,7 +372,9 @@ const earlierClass = (active: boolean) =>
         {{ t('nav.buyCredits', locale) }}
       </Button>
       <Button
-        v-else-if="!['validation', 'policy'].includes(state.reason)"
+        v-else-if="
+          !hasUnreadableFile && !['validation', 'policy'].includes(state.reason)
+        "
         variant="outline"
         size="sm"
         @click="emit('retry')"

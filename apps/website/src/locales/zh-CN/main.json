@@ -4295,6 +4295,7 @@
     "error": {
       "checkoutFailed": "无法启动结账，请重试。",
       "client": "页面未能完成此请求。请保持输入不变，若问题持续请联系支持。",
+      "fileUnreadable": "页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。",
       "concurrency": "此工作区已达到同时运行数量上限。请等待正在进行的运行完成后重试。",
       "conflict": "Comfy 暂时无法返回此请求的结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。",
       "creditsTitle": "积分不足",
@@ -4392,6 +4393,7 @@
       "badOption": "请选择列表中的选项",
       "badType": "不支持的文件类型",
       "draftRestoreFailed": "部分已保存的输入无法恢复。请检查输入并重新选择文件。",
+      "fileUnreadable": "无法再读取此文件。请重新选择。",
       "nativeJson": "原生 JSON",
       "outOfRange": "数值超出允许范围",
       "rejected": "此值不符合模型的要求",
