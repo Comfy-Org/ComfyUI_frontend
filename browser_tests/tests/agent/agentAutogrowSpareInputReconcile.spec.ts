@@ -326,6 +326,9 @@ test.describe(
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()
+        await expect
+          .poll(() => subscribedTo, { timeout: 20_000 })
+          .toBe(WORKFLOW_ID)
         socketSend!({
           type: 'agent_message_done',
           data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
@@ -333,9 +336,6 @@ test.describe(
         await expect(
           panel.getByRole('button', { name: enMessages.agent.stop })
         ).toHaveCount(0)
-        await expect
-          .poll(() => subscribedTo, { timeout: 20_000 })
-          .toBe(WORKFLOW_ID)
       })
 
       await test.step('the wired node offers a free image slot beforehand', async () => {
