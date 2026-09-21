@@ -470,6 +470,59 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
   })
 
+  it('a late anonymous result from a batch aborted in flight never acknowledges its successor', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortAll()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    expect(sent).toHaveLength(2)
+    expect(
+      sent[1].ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    ).toEqual([2])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(2)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+    expect(sent).toHaveLength(3)
+    expect(
+      sent[2].ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    ).toEqual([3])
+  })
+
+  it('a late identified result from a batch aborted in flight retires its credit and leaves the successor to its own result', () => {
+    sender.enqueue([addNode(1)])
+    const abortedOpIds = sent[0].ops.map((op) => op.op_id)
+
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: abortedOpIds, skipped: [] })
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
