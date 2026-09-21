@@ -49,6 +49,21 @@ const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
  */
 export const STALE_AFTER_MS = 30_000
 
+/**
+ * PM-1405 RCA: a confirmed subscribe (`doc_subscribed: {ok: true}`) is not
+ * itself the catch-up - the host sends the ack and the catch-up
+ * `doc_update` as two separate frames, and the second can be acked-but-never
+ * sent (an observed real anomaly, not a hypothetical). Relying on the
+ * passive {@link STALE_AFTER_MS} heartbeat alone to notice leaves the canvas
+ * with nothing to show for up to 30 real seconds. Probe again this much
+ * sooner, once per catch-up-gap episode, right after the first confirmed
+ * subscribe: a resubscribe is a no-op on a doc that had nothing to catch up
+ * on, and the active repair on one whose catch-up went missing. A backend
+ * that keeps acknowledging the resubscribe without ever minting content is a
+ * valid state too, so this fast probe fires at most once per gap - see
+ * `usedCatchUpGrace`.
+ */
+export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
 export class AgentCrdtDocLifecycle {
   private subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   private subscribeRetryAttempt = 0
@@ -56,7 +71,11 @@ export class AgentCrdtDocLifecycle {
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
   // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
-  // reality - and a stale channel's intent DOES equal reality).
+  // reality - and a stale channel's intent DOES equal reality). Within one
+  // catch-up-gap episode (see `usedCatchUpGrace`), only the first confirmed
+  // subscribe arms SUBSCRIBE_CATCHUP_GRACE_MS instead of the full budget;
+  // every later confirm in the same episode, and every re-arm on live
+  // traffic or on the probe firing, uses the full budget.
   private staleProbeTimer: ReturnType<typeof setTimeout> | null = null
   // Armed by every subscribe frame that leaves the transport, disarmed by its
   // answer (confirm or refusal). Expiry is the third outcome the bridge cannot
@@ -72,6 +91,10 @@ export class AgentCrdtDocLifecycle {
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
   // delivering frames keeps its rebind window instead of lapsing mid-session.
   private lastPersistedAt = 0
+  // PM-1405: caps the fast catch-up probe to one shot per gap episode. Set on
+  // the first confirmed subscribe of an episode, cleared when real content
+  // arrives (the episode is over) or the episode restarts (bind/reconnect).
+  private usedCatchUpGrace = false
 
   constructor(
     private readonly workflowId: () => string | null,
@@ -91,7 +114,12 @@ export class AgentCrdtDocLifecycle {
     this.clearAckTimer()
     this.gaveUp = false
     this.clearSubscribeRetry()
-    this.armStaleProbe()
+    if (this.usedCatchUpGrace) {
+      this.armStaleProbe()
+    } else {
+      this.usedCatchUpGrace = true
+      this.armStaleProbe(SUBSCRIBE_CATCHUP_GRACE_MS)
+    }
     const workflowId = this.workflowId()
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
@@ -131,11 +159,13 @@ export class AgentCrdtDocLifecycle {
   }
 
   onDocumentUpdate(): void {
+    this.usedCatchUpGrace = false
     if (this.staleProbeTimer !== null) this.armStaleProbe()
     this.refreshPersistedDocId()
   }
 
   onDocumentResult(): void {
+    this.usedCatchUpGrace = false
     if (this.staleProbeTimer === null) return
     this.armStaleProbe()
     this.refreshPersistedDocId()
@@ -157,6 +187,7 @@ export class AgentCrdtDocLifecycle {
     this.clearSubscribeRetry()
     this.clearStaleProbe()
     this.gaveUp = false
+    this.usedCatchUpGrace = false
   }
 
   destroy(): void {
@@ -175,17 +206,20 @@ export class AgentCrdtDocLifecycle {
     this.persistConfirmedDocId(workflowId)
   }
 
-  private armStaleProbe(): void {
+  private armStaleProbe(delayMs: number = STALE_AFTER_MS): void {
     this.clearStaleProbe()
+    const isCatchUpProbe = delayMs !== STALE_AFTER_MS
     this.staleProbeTimer = setTimeout(() => {
       this.staleProbeTimer = null
       if (this.gaveUp) return
       this.armStaleProbe()
       // A probe that is still awaiting its own answer is the ack timer's job.
       if (this.ackTimer !== null) return
-      recordDevEvent('stale_probe', { workflowId: this.workflowId() })
+      recordDevEvent(isCatchUpProbe ? 'catchup_probe' : 'stale_probe', {
+        workflowId: this.workflowId()
+      })
       this.resubscribe()
-    }, STALE_AFTER_MS)
+    }, delayMs)
   }
 
   private clearAckTimer(): void {
