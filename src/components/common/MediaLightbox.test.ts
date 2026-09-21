@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -135,11 +135,11 @@ describe('MediaLightbox', () => {
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
-    const { rerender, container } = renderGallery({ activeIndex: -1 })
+    const { rerender } = renderGallery({ activeIndex: -1 })
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    expect(container.querySelector('[data-mask]')).not.toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    expect(
+      screen.queryByRole('dialog', { name: 'Gallery' })
+    ).not.toBeInTheDocument()
 
     await rerender({
       allGalleryItems: mockGalleryItems,
@@ -147,9 +147,7 @@ describe('MediaLightbox', () => {
     })
     await nextTick()
 
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    expect(container.querySelector('[data-mask]')).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    expect(screen.getByRole('dialog', { name: 'Gallery' })).toBeInTheDocument()
   })
 
   it('emits update:activeIndex with -1 when close button clicked', async () => {
@@ -224,57 +222,47 @@ describe('MediaLightbox', () => {
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
-  /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowRight'
-      })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(1)
     })
 
     it('navigates to previous item on ArrowLeft', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(0)
     })
 
     it('wraps to last item on ArrowLeft from first', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
     it('closes gallery on Escape', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'Escape'
-      })
+      await user.keyboard('{Escape}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
     })
   })
-  /* eslint-enable testing-library/prefer-user-event */
 
   /* eslint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {
