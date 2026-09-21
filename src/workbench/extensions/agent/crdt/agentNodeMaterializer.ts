@@ -1,5 +1,6 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
@@ -351,8 +352,16 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
+    const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
     node.configure(withNamedWidgetValues(serialised, widgets))
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
+    // configure() and any widget-driven restructuring (autogrow growth) can
+    // reorder live inputs relative to the saved document. Re-point each
+    // saved link at the input with the same name, however many autogrow
+    // groups reordered and whatever order they reordered in.
+    realignInputLinkSlots(graph.rootGraph, [
+      [node.id, { id: node.id, inputs: savedInputs }]
+    ])
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
