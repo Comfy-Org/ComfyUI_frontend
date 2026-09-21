@@ -228,8 +228,8 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   const readMarker = () =>
     page.evaluate(
       ({ id, widget }) =>
-        window.app!.graph
-          .getNodeById(id)
+        window
+          .app!.graph.getNodeById(id)
           ?.widgets?.find(({ name }) => name === widget)?.value,
       { id: toNodeId(SOURCE_NODE_ID), widget: MARKER_WIDGET }
     )
