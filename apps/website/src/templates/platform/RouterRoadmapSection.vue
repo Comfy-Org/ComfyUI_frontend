@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ChevronDown } from '@lucide/vue'
-import { ref } from 'vue'
+import { Minus, Plus } from '@lucide/vue'
+import { useMediaQuery, useResizeObserver } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import Button from '../../components/ui/button/Button.vue'
@@ -42,13 +44,60 @@ const cards: readonly {
 
 const expandedIds = ref<readonly RouterRoadmapCardId[]>([])
 
+function isExpanded(id: RouterRoadmapCardId): boolean {
+  return expandedIds.value.includes(id)
+}
+
 function toggle(id: RouterRoadmapCardId): void {
-  if (expandedIds.value.includes(id)) {
+  if (isExpanded(id)) {
     expandedIds.value = expandedIds.value.filter((other) => other !== id)
     return
   }
   expandedIds.value = [...expandedIds.value, id]
   captureRouterRoadmapCardExpanded(id)
+}
+
+// From md up the three cards share a row, and a card must only ever match its
+// neighbours in the same state: collapsed cards line up with each other and
+// expanded cards with each other, while a card that is left alone keeps its
+// height. A shared grid track would stretch the untouched cards, so each panel
+// is padded instead — to the tallest collapsed card below its copy, and to the
+// tallest details copy when open.
+const grid = useTemplateRef<HTMLElement>('grid')
+const sharesRow = useMediaQuery('(width >= 48rem)')
+const fills = ref<readonly number[]>([])
+const detailsHeight = ref(0)
+
+function measure(): void {
+  const el = grid.value
+  if (!el || !sharesRow.value) {
+    fills.value = []
+    detailsHeight.value = 0
+    return
+  }
+  const panels = [...el.querySelectorAll<HTMLElement>('[data-details]')]
+  const collapsed = panels.map(
+    (panel) => (panel.parentElement?.offsetHeight ?? 0) - panel.offsetHeight
+  )
+  const tallest = Math.max(0, ...collapsed)
+  fills.value = collapsed.map((height) => tallest - height)
+  detailsHeight.value = Math.max(
+    0,
+    ...[...el.querySelectorAll<HTMLElement>('[data-details-text]')].map(
+      (text) => text.offsetHeight
+    )
+  )
+}
+
+useResizeObserver(grid, measure)
+watch(sharesRow, measure)
+
+function panelStyle(index: number, expanded: boolean): CSSProperties {
+  const fill = fills.value[index] ?? 0
+  return {
+    minHeight: `${fill + (expanded ? detailsHeight.value : 0)}px`,
+    visibility: expanded ? 'visible' : 'hidden'
+  }
 }
 </script>
 
@@ -61,15 +110,20 @@ function toggle(id: RouterRoadmapCardId): void {
     >
       {{ t('platform.router.roadmap.heading', locale) }}
       <template #subtitle>
-        <p class="mx-auto mt-4 max-w-2xl text-sm text-primary-comfy-canvas/70">
+        <p
+          class="mx-auto mt-4 max-w-2xl text-sm text-pretty text-primary-comfy-canvas/70"
+        >
           {{ t('platform.router.roadmap.subtitle', locale) }}
         </p>
       </template>
     </SectionHeader>
 
-    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
+    <div
+      ref="grid"
+      class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start"
+    >
       <FeatureCard
-        v-for="card in cards"
+        v-for="(card, index) in cards"
         :key="card.id"
         :title="card.title"
         :description="card.description"
@@ -137,72 +191,83 @@ function toggle(id: RouterRoadmapCardId): void {
               />
             </svg>
             <svg v-else viewBox="0 0 300 160" class="size-full" fill="none">
+              <path
+                d="M96 35c55 0 55 45 110 45M96 80h110M96 125c55 0 55-45 110-45"
+                stroke="#6858a8"
+                stroke-width="3"
+              />
               <rect
                 x="28"
-                y="28"
-                width="74"
-                height="104"
-                rx="16"
+                y="20"
+                width="68"
+                height="30"
+                rx="10"
                 fill="#4b3e78"
               />
               <rect
-                x="113"
-                y="28"
-                width="74"
-                height="104"
-                rx="16"
-                fill="#322844"
-              />
-              <rect
-                x="198"
-                y="28"
-                width="74"
-                height="104"
-                rx="16"
+                x="28"
+                y="65"
+                width="68"
+                height="30"
+                rx="10"
                 fill="#4b3e78"
               />
-              <path
-                d="m48 104 18-23 16 15 20-27v63H28v-12l20-16Z"
+              <rect
+                x="28"
+                y="110"
+                width="68"
+                height="30"
+                rx="10"
+                fill="#4b3e78"
+              />
+              <rect
+                x="206"
+                y="56"
+                width="66"
+                height="48"
+                rx="14"
                 fill="#efff45"
-              />
-              <circle cx="150" cy="80" r="18" fill="#efff45" />
-              <path d="m143 68 20 12-20 12V68Z" fill="#1d1723" />
-              <path
-                d="M215 105c0-20 14-36 31-36s26 16 26 36"
-                stroke="#efff45"
-                stroke-width="8"
               />
             </svg>
           </div>
         </template>
-        <p
-          v-if="expandedIds.includes(card.id)"
-          class="mt-3 text-xs/relaxed font-light text-primary-comfy-canvas"
+        <div
+          :id="`router-roadmap-${card.id}-details`"
+          data-details
+          :style="panelStyle(index, isExpanded(card.id))"
+          :class="
+            cn(
+              'grid transition-[grid-template-rows,min-height,visibility] duration-300 ease-out motion-reduce:transition-none',
+              isExpanded(card.id) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+            )
+          "
         >
-          {{ card.details }}
-        </p>
+          <p
+            class="min-h-0 overflow-hidden text-xs/relaxed font-light text-pretty text-primary-comfy-canvas"
+          >
+            <span data-details-text class="block pt-3">{{ card.details }}</span>
+          </p>
+        </div>
         <button
           type="button"
-          :aria-expanded="expandedIds.includes(card.id)"
-          class="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-primary-comfy-yellow after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary-comfy-yellow/50"
+          :aria-expanded="isExpanded(card.id)"
+          :aria-controls="`router-roadmap-${card.id}-details`"
+          :class="
+            cn(
+              'mt-4 inline-flex cursor-pointer items-center gap-1 text-xs font-medium transition-colors after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary-comfy-yellow/50',
+              isExpanded(card.id)
+                ? 'text-primary-comfy-yellow'
+                : 'text-primary-comfy-canvas/70 hover:text-primary-warm-white'
+            )
+          "
           @click="toggle(card.id)"
         >
-          {{
-            t(
-              expandedIds.includes(card.id)
-                ? 'platform.router.roadmap.readLess'
-                : 'platform.router.roadmap.readMore',
-              locale
-            )
-          }}
-          <ChevronDown
+          {{ t(isExpanded(card.id) ? 'ui.readLess' : 'ui.readMore', locale) }}
+          <span class="sr-only">{{ card.title }}</span>
+          <component
+            :is="isExpanded(card.id) ? Minus : Plus"
             aria-hidden="true"
-            :class="
-              cn(
-                'size-4 transition-transform',
-                expandedIds.includes(card.id) && 'rotate-180'
-              )
-            "
+            class="size-4"
           />
         </button>
       </FeatureCard>

@@ -5,9 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { captureRouterRoadmapCardExpanded } from '../../scripts/posthog'
 import RouterRoadmapSection from './RouterRoadmapSection.vue'
 
-vi.mock(import('../../scripts/posthog'), () => ({
-  captureRouterRoadmapCardExpanded: vi.fn()
-}))
+vi.mock(import('../../scripts/posthog'))
 
 describe('RouterRoadmapSection', () => {
   it('links to the Router documentation with one section-level call to action', () => {
@@ -16,22 +14,49 @@ describe('RouterRoadmapSection', () => {
     expect(screen.getAllByRole('link', { name: 'LEARN MORE' })).toHaveLength(1)
   })
 
-  it('expands a card into its details and reports the expansion once', async () => {
+  it('expands one card on its own and reports the expansion once', async () => {
     render(RouterRoadmapSection, { props: { locale: 'en' } })
-    const [readMore] = screen.getAllByRole('button', { name: /read more/i })
+    const workflows = screen.getByRole('button', {
+      name: /read more.*comfy workflows/i
+    })
+    const strategies = screen.getByRole('button', {
+      name: /read more.*routing strategies/i
+    })
 
-    await userEvent.click(readMore)
+    await userEvent.click(workflows)
 
-    expect(readMore.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByText(/Workflows run today/)).toBeTruthy()
+    expect(workflows.getAttribute('aria-expanded')).toBe('true')
+    expect(strategies.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByText(/Workflows run today/)).toBeVisible()
+    expect(screen.getByText(/Name the outcome you want/)).not.toBeVisible()
     expect(captureRouterRoadmapCardExpanded).toHaveBeenCalledExactlyOnceWith(
       'workflow'
     )
 
-    await userEvent.click(readMore)
+    await userEvent.click(
+      screen.getByRole('button', { name: /read less.*comfy workflows/i })
+    )
 
-    expect(readMore.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByText(/Workflows run today/)).toBeNull()
+    expect(workflows.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByText(/Workflows run today/)).not.toBeVisible()
     expect(captureRouterRoadmapCardExpanded).toHaveBeenCalledTimes(1)
+  })
+
+  it('names the panel each toggle controls', () => {
+    render(RouterRoadmapSection, { props: { locale: 'en' } })
+    const cards = [
+      { title: /comfy workflows/i, details: /Workflows run today/ },
+      { title: /routing strategies/i, details: /Name the outcome you want/ },
+      { title: /route by use case/i, details: /Describe the task instead/ }
+    ]
+
+    for (const card of cards) {
+      const button = screen.getByRole('button', { name: card.title })
+      expect(
+        screen.getByText(card.details, {
+          selector: `#${button.getAttribute('aria-controls')} *`
+        })
+      ).toBeTruthy()
+    }
   })
 })
