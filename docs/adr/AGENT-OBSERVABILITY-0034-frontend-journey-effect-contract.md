@@ -9,7 +9,7 @@ Proposed
 ## Context
 
 The existing `app:agent_workflow_applied` event describes opening or switching an editor tab. It
-does not prove that an authoritative semantic operation reached the follower projection. Backend
+does not prove that an authoritative semantic operation reached the frontend graph. Backend
 acceptance, frontend semantic effect, pixels, persistence, and reload recovery are different
 boundaries and need separate evidence.
 
@@ -21,34 +21,38 @@ change any of those owners or treat a raw Yjs update as an observability primiti
 
 Define the frontend-owned observation seam before defining an executable event. The first emitter
 will expose only `frontend_semantic_effect.observed`: an authoritative document delta was accepted
-into the follower projection and live-graph reconciliation returned. It does not attest pixels,
-accessibility state, persistence, or reload.
+and its semantic graph mutation completed through the frontend command path. It does not attest
+pixels, accessibility state, persistence, or reload.
 
-| Fact                     | Owner                        | Version-one success signal                               |
-| ------------------------ | ---------------------------- | -------------------------------------------------------- |
-| Backend acceptance       | Merge authority              | Outside this frontend contract                           |
-| Frontend semantic effect | Frontend follower            | Projection commits and live-graph reconciliation returns |
-| Pixels and accessibility | Renderer / black-box harness | Outside this contract                                    |
-| Persistence              | Persistence owner            | Outside this contract                                    |
-| Reload recovery          | Black-box harness            | Outside this contract                                    |
+| Fact                     | Owner                        | Version-one success signal                         |
+| ------------------------ | ---------------------------- | -------------------------------------------------- |
+| Backend acceptance       | Merge authority              | Outside this frontend contract                     |
+| Frontend semantic effect | Frontend follower            | Semantic graph mutation completes through commands |
+| Pixels and accessibility | Renderer / black-box harness | Outside this contract                              |
+| Persistence              | Persistence owner            | Outside this contract                              |
+| Reload recovery          | Black-box harness            | Outside this contract                              |
 
 ```mermaid
 flowchart LR
   A[Backend acceptance] --> B[Authoritative document delta]
-  B --> C[Frontend projection]
-  C --> D[Live-graph reconciliation]
+  B --> C[Frontend command path]
+  C --> D[Semantic graph mutation completes]
   D --> E[Frontend semantic effect observed]
   E -. does not prove .-> F[Pixels and accessibility]
   E -. does not prove .-> G[Persistence]
   G -. does not prove .-> H[Reload recovery]
 ```
 
+The current follower reaches that effect through a store-first projection followed by live-graph
+reconciliation. That sequence is a transitional implementation detail, not part of the event's
+durable meaning; replacing it with a unified semantic mutation path does not change this contract.
+
 Host-side `applied`, `skipped`, and `failed` results retain their generated `DocOpsResultData`
 meaning. Follower-side inactive-target and projection results are not remapped onto those names.
 `superseded`, `reverted`, and any other terminal outcomes remain undefined until an authoritative
 owner, source field, precedence rule, and terminality rule exist.
 
-The emitter and its schema land together in a later slice, beside the follower seam and its
+The emitter and its schema land together in a later slice, beside the semantic mutation seam and its
 mandatory black-box Agent harness case. That slice must define its fields and validation against
 the authoritative producer contracts and the sink's concrete query needs. The executable schema
 must be versioned, and readers must reject unsupported versions. Sink adapters, added separately,
@@ -90,7 +94,7 @@ Alternatives rejected:
 
 ```mermaid
 flowchart TD
-  A[Self-contained frontend ADR] --> B[Observed emitter at follower success seam]
+  A[Self-contained frontend ADR] --> B[Observed emitter at semantic mutation seam]
   B --> C[Sink adapter and query contract]
   C --> D[Ingestion and deployment evidence]
   B --> E[Visible-effect black-box harness]
