@@ -371,21 +371,44 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
-    // Advance exactly to each backoff boundary: the retry fires, and the
-    // 15 s ack timeout it arms is cleared by the next refusal before it can
-    // add an ack-path resubscribe. The ladder itself is pinned above.
+    // Advance to each backoff boundary in two steps so both sides are
+    // checked: the retry fires exactly at the boundary, and the 15 s ack
+    // timeout it arms is cleared by the next refusal before it can add an
+    // ack-path resubscribe.
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(500)
+    vi.advanceTimersByTime(499)
+    expect(resubscribe).toHaveBeenCalledTimes(0)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(1_000)
+    vi.advanceTimersByTime(999)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(2_000)
+    vi.advanceTimersByTime(1_999)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(3)
+
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(4_000)
+    vi.advanceTimersByTime(3_999)
+    expect(resubscribe).toHaveBeenCalledTimes(3)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(8_000)
+    vi.advanceTimersByTime(7_999)
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(5)
+
     lifecycle.onSubscribeRefused()
-    vi.advanceTimersByTime(16_000)
+    vi.advanceTimersByTime(15_999)
+    expect(resubscribe).toHaveBeenCalledTimes(5)
+    vi.advanceTimersByTime(1)
     expect(resubscribe).toHaveBeenCalledTimes(6)
 
     lifecycle.onSubscribeRefused()
