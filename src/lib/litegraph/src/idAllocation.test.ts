@@ -26,6 +26,18 @@ describe('idAllocation', () => {
     expect([mintRerouteId(state), mintRerouteId(state)]).toEqual([1, 2])
   })
 
+  it("mints from a disjoint range in 'crdt-disjoint' mode, ignoring lastNodeId", () => {
+    const state = createLGraphState()
+    state.lastNodeId = 5
+
+    const id = BigInt(mintNodeId(state, 'crdt-disjoint'))
+
+    expect(state.lastNodeId).toBe(5)
+    // Bit 40 clear (never the agent's `2**40 | random52` range), bit 41 set.
+    expect((id >> 40n) & 1n).toBe(0n)
+    expect((id >> 41n) & 1n).toBe(1n)
+  })
+
   it('observes higher ids and ignores lower ids', () => {
     const state = createLGraphState()
 

@@ -30,6 +30,7 @@ import {
   getDroppedAsset,
   hasVideoType
 } from '@/utils/eventUtils'
+import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -55,6 +56,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -167,6 +169,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
+const agentCrdtGraphBindingStore = useAgentCrdtGraphBindingStore()
 const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
@@ -621,6 +624,26 @@ const {
     onReset: graphActivity.resetWorkflow
   }
 )
+// Tells `LGraph.add()` (a plain, framework-agnostic module) when a mint on
+// this root graph can collide with the agent's own concurrent mint (PM-1251),
+// so it can draw from a disjoint range instead. Mirrors `isDocBound` above,
+// the same signal `mintPortWiring` already uses for a related mint concern.
+let boundCrdtRootGraphId: RootGraphId | null = null
+watch(
+  () =>
+    agentPanelStore.enabled && isBoundWorkflowActive.value && app.isGraphReady
+      ? toRootGraphId(app.rootGraph.id)
+      : null,
+  (next) => {
+    if (boundCrdtRootGraphId !== null && boundCrdtRootGraphId !== next) {
+      agentCrdtGraphBindingStore.setBound(boundCrdtRootGraphId, false)
+    }
+    if (next !== null) agentCrdtGraphBindingStore.setBound(next, true)
+    boundCrdtRootGraphId = next
+  },
+  { immediate: true }
+)
+
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
@@ -832,6 +855,9 @@ onBeforeUnmount(() => {
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()
+  if (boundCrdtRootGraphId !== null) {
+    agentCrdtGraphBindingStore.setBound(boundCrdtRootGraphId, false)
+  }
 })
 
 const history = useAgentChatHistoryStore()

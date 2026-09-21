@@ -54,9 +54,10 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import type { LGraphState } from './idAllocation'
+import type { LGraphState, NodeIdMintMode } from './idAllocation'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
+import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -263,6 +264,20 @@ function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
 
 function runtimeOptional<T>(value: T): T | undefined {
   return value
+}
+
+/**
+ * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
+ * `'crdt-disjoint'` only for a mint landing directly on a root graph the
+ * agent panel has bound to its collaborative doc (PM-1251) — subgraph-owned
+ * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
+ * plain sequential ids.
+ */
+function nodeIdMintModeFor(graph: LGraph): NodeIdMintMode {
+  return graph.isRootGraph &&
+    useAgentCrdtGraphBindingStore().isBound(toRootGraphId(graph.id))
+    ? 'crdt-disjoint'
+    : 'sequential'
 }
 
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
@@ -1374,7 +1389,8 @@ export class LGraph
 
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
-      node.id = mintNodeId(state)
+      const mintMode = nodeIdMintModeFor(this)
+      node.id = mintNodeId(state, mintMode)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1387,7 +1403,9 @@ export class LGraph
     normalizeWidgetsView(node)
     node.graph = this
 
-    attachNodeToStores(this, node, () => mintNodeId(state))
+    attachNodeToStores(this, node, () =>
+      mintNodeId(state, nodeIdMintModeFor(this))
+    )
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node

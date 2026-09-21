@@ -1,5 +1,5 @@
 import { toGroupId } from '@/types/groupId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
@@ -25,6 +25,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -479,6 +480,46 @@ describe('LGraph', () => {
     const yPos2 = node.getInputPos(0)[1]
     expect(reroute.pos[1]).toBe(yPos2)
     expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos2)
+  })
+})
+
+describe('CRDT-bound node id minting (PM-1251)', () => {
+  it('mints a plain sequential id when the root graph is not agent-bound', () => {
+    const graph = new LGraph()
+    const node = new DummyNode()
+
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('mints a disjoint id, never advancing lastNodeId, once the root graph is agent-bound', () => {
+    const graph = new LGraph()
+    const bindingStore = useAgentCrdtGraphBindingStore()
+    const rootGraphId = toRootGraphId(graph.id)
+    bindingStore.setBound(rootGraphId, true)
+
+    const node = new DummyNode()
+    graph.add(node)
+    bindingStore.setBound(rootGraphId, false)
+
+    const mintedId = BigInt(node.id)
+    expect((mintedId >> 40n) & 1n).toBe(0n)
+    expect((mintedId >> 41n) & 1n).toBe(1n)
+    expect(graph.state.lastNodeId).toBe(0)
+  })
+
+  it('leaves a subgraph-interior mint sequential even when its root graph is agent-bound', () => {
+    const subgraph = createTestSubgraph()
+    const bindingStore = useAgentCrdtGraphBindingStore()
+    const rootGraphId = toRootGraphId(subgraph.rootGraph.id)
+    bindingStore.setBound(rootGraphId, true)
+
+    const node = new DummyNode()
+    subgraph.add(node)
+    bindingStore.setBound(rootGraphId, false)
+
+    expect(node.id).toBe(toNodeId(1))
   })
 })
 

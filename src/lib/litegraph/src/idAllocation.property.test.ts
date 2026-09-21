@@ -17,11 +17,12 @@ import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
  * plumbing the Playwright repro (`agentNodeIdCollision.spec.ts`) exercises
  * end to end: whenever two actors' counters share the same last-observed
  * value and each mints once before observing the other's mint, they produce
- * the IDENTICAL id. It is expected to currently PASS — that is the proof.
- * A fix that gives mintNodeId real collision avoidance (e.g. an actor-scoped
- * namespace, or a mint-time reservation round trip) should make this
- * property's premise stop holding, at which point it should be replaced
- * with a property asserting the new invariant, not deleted outright.
+ * the IDENTICAL id. This still holds for the DEFAULT `'sequential'` mode,
+ * which plain local (non-agent) graphs keep unchanged — the fix below is
+ * mode-scoped, not a change to `mintNodeId`'s default behaviour. A graph
+ * bound to the agent's collaborative doc now mints in `'crdt-disjoint'` mode
+ * instead (see the property below), which is where this gap is actually
+ * closed for the real production path.
  */
 describe('idAllocation has no collision avoidance against a concurrent external mint (PM-1251)', () => {
   it('mints the same id a same-baseline independent actor already claimed', () => {
@@ -65,6 +66,57 @@ describe('idAllocation has no collision avoidance against a concurrent external 
           )
 
           return frontendIds.every((id, index) => id === agentIds[index])
+        }
+      )
+    )
+  })
+})
+
+/**
+ * `'crdt-disjoint'` mode is the fix for the gap above: a graph bound to the
+ * agent's collaborative doc mints from it instead of the default
+ * `'sequential'` counter, so a local mint can never land on an id the agent
+ * independently mints for the same doc — by construction (bit 40 clear vs.
+ * the agent's bit 40 always set), not by low collision odds.
+ */
+describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agent-style mint", () => {
+  /** Mirrors comfy-cli's `mint_id()`: `2**40 | random52`, bit 40 always set. */
+  const agentMintedId = (): fc.Arbitrary<bigint> =>
+    fc
+      .bigInt({ min: 0n, max: (1n << 52n) - 1n })
+      .map((random) => (1n << 40n) | random)
+
+  it('never lands on an id a simulated agent mint claims', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 1_000_000 }),
+        agentMintedId(),
+        (lastObservedId, agentId) => {
+          // An arbitrary prior high-water mark — irrelevant here since this
+          // mode never reads `lastNodeId`, unlike 'sequential' above.
+          const frontend = createLGraphState()
+          frontend.lastNodeId = lastObservedId
+
+          const frontendMintedId = BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+
+          return frontendMintedId !== agentId
+        }
+      )
+    )
+  })
+
+  it('keeps every id in a run of local mints disjoint from a batch of agent-style mints', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 20 }),
+        fc.array(agentMintedId(), { minLength: 1, maxLength: 20 }),
+        (mintCount, agentIds) => {
+          const frontend = createLGraphState()
+          const frontendIds = Array.from({ length: mintCount }, () =>
+            BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          )
+          const agentIdSet = new Set(agentIds)
+          return frontendIds.every((id) => !agentIdSet.has(id))
         }
       )
     )

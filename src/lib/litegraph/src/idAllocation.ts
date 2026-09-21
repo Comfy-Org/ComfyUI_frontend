@@ -24,8 +24,37 @@ export function createLGraphState(): LGraphState {
   }
 }
 
-export function mintNodeId(state: LGraphState): NodeId {
-  return toNodeId(++state.lastNodeId)
+/**
+ * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
+ * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
+ * doc, where a local mint can otherwise land on an id the agent independently
+ * mints for the same doc (PM-1251) — see {@link mintCrdtDisjointNodeId}.
+ */
+export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
+
+/**
+ * The agent mints node ids as `2**40 | random52bits` (comfy-cli's
+ * `mint_id()`), so bit 40 is always set. Forcing it CLEAR here, with bit 41
+ * forced SET, partitions the two actors' ranges by construction (KA-5) — not
+ * by odds — regardless of what `observeNodeId` has observed.
+ */
+const AGENT_RESERVED_BIT = 1n << 40n
+const CRDT_DISJOINT_FLOOR = 1n << 41n
+const CRDT_RANDOM_BIT_COUNT = 52
+
+function mintCrdtDisjointNodeId(): NodeId {
+  const random = BigInt(Math.floor(Math.random() * 2 ** CRDT_RANDOM_BIT_COUNT))
+  const id = (random & ~AGENT_RESERVED_BIT) | CRDT_DISJOINT_FLOOR
+  return toNodeId(Number(id))
+}
+
+export function mintNodeId(
+  state: LGraphState,
+  mode: NodeIdMintMode = 'sequential'
+): NodeId {
+  return mode === 'crdt-disjoint'
+    ? mintCrdtDisjointNodeId()
+    : toNodeId(++state.lastNodeId)
 }
 
 export function mintGroupId(state: LGraphState): GroupId {
