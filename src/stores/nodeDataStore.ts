@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -11,6 +15,55 @@ import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
+
+/**
+ * Merges `incoming` slot descriptors into `existing` by name, updating a
+ * matched slot's fields in place (preserving its object identity, e.g. a
+ * SubgraphNode host's promoted-widget binding) and appending anything
+ * genuinely new. `existing` is never reordered or shortened: a live node's
+ * `inputs`/`outputs` ARE these arrays (`LGraphNode` binds
+ * `_inputs = _state.inputs` once, at construction), so removing or moving
+ * an entry here would also move it on the canvas while `linkStore`'s
+ * index-keyed topology, and `LLink.target_slot`/`origin_slot`, keep
+ * pointing at the old position — misattributing a live link to a different
+ * slot, the exact failure mode this merge exists to avoid. A caller that
+ * means to remove a slot must still go through the link-safe path
+ * (`node.removeInput`/`removeOutput`).
+ */
+function mergeSlotsByName<Slot extends { name: string }>(
+  existing: Slot[],
+  incoming: readonly Slot[]
+): void {
+  const indexByName = new Map(existing.map((slot, index) => [slot.name, index]))
+  for (const incomingSlot of incoming) {
+    const index = indexByName.get(incomingSlot.name)
+    if (index === undefined) {
+      existing.push(incomingSlot)
+      continue
+    }
+    // Assign through toRaw: some slot fields (e.g. `link`/`links`) are
+    // deprecated accessors that resolve by finding `this` in
+    // `this.node.inputs`/`outputs` via `===`. Assigning through the
+    // reactive proxy invokes them with the raw instance as `this` while the
+    // array holds the proxy, so the identity search fails; operating on the
+    // raw instance keeps `this` consistent with what the array holds.
+    Object.assign(toRaw(existing[index]), incomingSlot)
+  }
+}
+
+function mergeInputSlots(
+  existing: INodeInputSlot[],
+  incoming: readonly INodeInputSlot[]
+): void {
+  mergeSlotsByName(existing, incoming)
+}
+
+function mergeOutputSlots(
+  existing: INodeOutputSlot[],
+  incoming: readonly INodeOutputSlot[]
+): void {
+  mergeSlotsByName(existing, incoming)
+}
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
@@ -131,15 +184,10 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    // Splice in place, never reassign: a live node's `inputs`/`outputs` ARE
-    // these arrays (`LGraphNode` binds `_inputs = _state.inputs` once at
-    // construction). Replacing them detaches the canvas node's slots from
-    // the store, so a hand-made connection made afterwards (e.g. growing an
-    // autogrow port) never reaches this state, and LGraph.serialize() then
-    // attributes its link to whatever input sits at the same index in the
-    // stale array.
-    state.inputs.splice(0, state.inputs.length, ...slots.inputs)
-    state.outputs.splice(0, state.outputs.length, ...slots.outputs)
+    if (!Array.isArray(slots.inputs) || !Array.isArray(slots.outputs))
+      return false
+    mergeInputSlots(state.inputs, slots.inputs)
+    mergeOutputSlots(state.outputs, slots.outputs)
     return true
   }
 

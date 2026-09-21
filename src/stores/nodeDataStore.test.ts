@@ -357,6 +357,95 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(linkedInput?.name).toBe('videos.video1')
   })
 
+  it('never removes or reorders a live slot missing from an agent slot sync', () => {
+    // A 'connect' mutation's snapshot of a node's inputs can be shorter than
+    // (or order its shared names differently from) what the live canvas
+    // already has — e.g. the CRDT document does not yet know about a slot
+    // the user grew by hand. Applying that snapshot must not delete the
+    // extra live slot or orphan its link.
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'IMAGE')
+    graph.add(source)
+
+    const node = new LGraphNode('test')
+    node.addInput('a', 'IMAGE')
+    node.addInput('b', 'IMAGE')
+    graph.add(node)
+    source.connect(0, node, 1)
+    expect(node.isInputConnected(1)).toBe(true)
+
+    const scope = graphScope(graph.id, graph.id)
+    const shorterAndReordered = [
+      { ...node.inputs[0], name: 'a', type: 'IMAGE' }
+    ]
+    useNodeDataStore().updateNodeSlots(scope, node.id, {
+      inputs: shorterAndReordered,
+      outputs: [...node.outputs]
+    })
+
+    expect(node.inputs.map((i) => i.name)).toEqual(['a', 'b'])
+    expect(node.isInputConnected(1)).toBe(true)
+  })
+
+  it('merges matched slot fields onto the existing object instead of replacing it', () => {
+    // A slot object can carry runtime state bound by identity (e.g. a
+    // SubgraphNode host's promoted-widget binding). Replacing the object
+    // wholesale on every sync would silently drop that binding.
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'IMAGE')
+    graph.add(node)
+    const original = node.inputs[0]
+    const marker = {}
+    ;(original as unknown as { _hostBinding: object })._hostBinding = marker
+
+    const scope = graphScope(graph.id, graph.id)
+    useNodeDataStore().updateNodeSlots(scope, node.id, {
+      inputs: [
+        {
+          name: 'a',
+          type: 'IMAGE',
+          label: 'renamed',
+          boundingRect: [0, 0, 0, 0]
+        }
+      ],
+      outputs: [...node.outputs]
+    })
+
+    expect(node.inputs[0]).toBe(original)
+    expect(
+      (node.inputs[0] as unknown as { _hostBinding: object })._hostBinding
+    ).toBe(marker)
+    expect(node.inputs[0].label).toBe('renamed')
+  })
+
+  it('applies neither slot array when either is malformed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'IMAGE')
+    node.addOutput('x', 'IMAGE')
+    graph.add(node)
+    const scope = graphScope(graph.id, graph.id)
+
+    const applied = useNodeDataStore().updateNodeSlots(scope, node.id, {
+      inputs: [
+        {
+          name: 'a',
+          type: 'IMAGE',
+          label: 'renamed',
+          boundingRect: [0, 0, 0, 0]
+        }
+      ],
+      // @ts-expect-error deliberately malformed to prove validation
+      outputs: 'not-an-array'
+    })
+
+    expect(applied).toBe(false)
+    expect(node.inputs[0].label).toBeUndefined()
+    expect(node.outputs.map((o) => o.name)).toEqual(['x'])
+  })
+
   it('moves registered state to a same-id replacement without changing store membership', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')
