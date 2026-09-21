@@ -29,6 +29,14 @@ interface FieldOptions extends Rule {
   required?: boolean
 }
 
+function soleOption(options: unknown) {
+  if (!Array.isArray(options) || options.length !== 1) return undefined
+  const parsed = z
+    .union([z.string(), z.number(), z.boolean()])
+    .safeParse(options[0])
+  return parsed.success ? parsed.data : undefined
+}
+
 export function createCreatorFields(
   id: string,
   curated: ReturnType<typeof curateWorkshopInputs>
@@ -45,8 +53,12 @@ export function createCreatorFields(
   function add(name: string, schema: Schema, options: FieldOptions = {}) {
     const { required: isRequired = false, ...rule } = options
     const { description, ...input } = schema
+    const sole = soleOption(input.enum)
     properties[name] = input
-    rules[name] = rule
+    rules[name] =
+      sole === undefined || rule.fixed !== undefined
+        ? rule
+        : { ...rule, fixed: sole }
     if (isRequired) required.add(name)
   }
 

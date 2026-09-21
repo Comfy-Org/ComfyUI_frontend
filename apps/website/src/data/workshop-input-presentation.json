@@ -1403,9 +1403,7 @@
         "help": "Provide one image URL or base64 image."
       },
       "size": {
-        "help": "Use adaptive sizing to follow the input image.",
-        "options": ["adaptive"],
-        "default": "adaptive"
+        "fixed": "adaptive"
       }
     },
     "byteplus/seedream-3-0-t2i-250415": {
@@ -2150,6 +2148,26 @@
         "help": "Describe what happens next in the extended video."
       }
     },
+    "krea/krea-2": {
+      "resolution": {
+        "fixed": "1K"
+      }
+    },
+    "krea/krea-2-large": {
+      "resolution": {
+        "fixed": "1K"
+      }
+    },
+    "krea/krea-2-medium": {
+      "resolution": {
+        "fixed": "1K"
+      }
+    },
+    "krea/krea-2-medium-turbo": {
+      "resolution": {
+        "fixed": "1K"
+      }
+    },
     "ltx/ltx-2-5-fast": {
       "resolution": {
         "default": "1280x720"
@@ -2164,11 +2182,17 @@
     "luma/photon-1": {
       "style_ref": {
         "help": "Provide style image URLs with optional influence weights."
+      },
+      "generation_type": {
+        "fixed": "image"
       }
     },
     "luma/photon-flash-1": {
       "style_ref": {
         "help": "Provide style image URLs with optional influence weights."
+      },
+      "generation_type": {
+        "fixed": "image"
       }
     },
     "luma/ray-2": {
@@ -2183,6 +2207,9 @@
       },
       "keyframes": {
         "help": "Set frame0 or frame1 to an image URL or a completed generation reference."
+      },
+      "generation_type": {
+        "fixed": "video"
       }
     },
     "luma/ray-flash-2": {
@@ -2197,6 +2224,9 @@
       },
       "keyframes": {
         "help": "Set frame0 or frame1 to an image URL or a completed generation reference."
+      },
+      "generation_type": {
+        "fixed": "video"
       }
     },
     "luma_2/uni-1": {
