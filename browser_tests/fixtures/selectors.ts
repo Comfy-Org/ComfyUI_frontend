@@ -130,7 +130,8 @@ export const TestIds = {
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
