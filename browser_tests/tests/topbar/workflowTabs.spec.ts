@@ -377,9 +377,13 @@ test.describe('Workflow tabs', () => {
       await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
-      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+      const dialog = comfyPage.page.getByRole('dialog', {
+        name: 'Save Changes?',
+        exact: true
+      })
+      await expect(dialog).toBeVisible()
       await comfyPage.page.keyboard.press('Escape')
-      await expect(comfyPage.page.getByRole('dialog')).toBeHidden()
+      await expect(dialog).toBeHidden()
 
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
     })
