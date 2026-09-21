@@ -66,9 +66,11 @@ export async function expectAssets(
           }
           if (element instanceof HTMLVideoElement) {
             return {
-              filename: new URL(element.currentSrc).searchParams.get(
-                'filename'
-              ),
+              filename: element.currentSrc
+                ? new URL(element.currentSrc, location.href).searchParams.get(
+                    'filename'
+                  )
+                : null,
               kind: 'video',
               width: element.videoWidth,
               height: element.videoHeight
