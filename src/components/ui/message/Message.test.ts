@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Message from './Message.vue'
@@ -55,5 +56,34 @@ describe('Message', () => {
 
     expect(screen.queryByText('Helpful information')).not.toBeInTheDocument()
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('lets the parent show a message again after dismissal', async () => {
+    const user = userEvent.setup()
+    const visible = ref(false)
+    render(
+      {
+        components: { Message },
+        setup: () => ({ visible }),
+        template:
+          '<Message v-model:visible="visible" closable>Helpful information</Message>'
+      },
+      { global: { plugins: [i18n] } }
+    )
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    visible.value = true
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Helpful information'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(visible.value).toBe(false)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    visible.value = true
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Helpful information'
+    )
   })
 })

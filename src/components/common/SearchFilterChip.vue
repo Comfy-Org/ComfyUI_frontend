@@ -1,5 +1,10 @@
 <template>
-  <Badge variant="chip" removable @remove="emit('remove', $event)">
+  <Badge
+    variant="chip"
+    removable
+    :remove-label="$t('g.removeFilter', { label: `${badge}: ${text}` })"
+    @remove="emit('remove', $event)"
+  >
     <Badge variant="badge" :class="semanticBadgeClass">
       {{ badge }}
     </Badge>

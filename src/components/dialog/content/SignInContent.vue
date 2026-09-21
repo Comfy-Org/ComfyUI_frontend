@@ -126,7 +126,11 @@
             </a>
           </small>
         </template>
-        <Message v-if="authActions.accessError.value" severity="info" closable>
+        <Message
+          v-model:visible="authActions.accessError.value"
+          severity="info"
+          closable
+        >
           <template #icon>
             <i class="pi pi-info-circle" />
           </template>

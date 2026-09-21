@@ -12,11 +12,13 @@ const {
   variant,
   severity,
   removable = false,
+  removeLabel,
   class: customClass = ''
 } = defineProps<{
   variant?: BadgeVariants['variant']
   severity?: BadgeVariants['severity']
   removable?: boolean
+  removeLabel?: string
   class?: HTMLAttributes['class']
 }>()
 
@@ -33,7 +35,7 @@ const emit = defineEmits<{ remove: [event: MouseEvent] }>()
       variant="textonly"
       size="icon-sm"
       class="-mr-1 rounded-full text-current"
-      :aria-label="$t('g.remove')"
+      :aria-label="removeLabel ?? $t('g.remove')"
       @click="emit('remove', $event)"
     >
       <i class="icon-[lucide--x] size-3" aria-hidden="true" />

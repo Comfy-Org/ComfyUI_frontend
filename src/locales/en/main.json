@@ -23,6 +23,7 @@
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
     "remove": "Remove",
+    "removeFilter": "Remove {label} filter",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",

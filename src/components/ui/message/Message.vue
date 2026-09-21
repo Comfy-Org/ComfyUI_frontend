@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -20,7 +19,7 @@ const {
 }>()
 
 const emit = defineEmits<{ close: [event: MouseEvent] }>()
-const visible = ref(true)
+const visible = defineModel<boolean>('visible', { default: true })
 
 function close(event: MouseEvent) {
   visible.value = false
