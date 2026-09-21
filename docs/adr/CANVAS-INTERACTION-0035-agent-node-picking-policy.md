@@ -136,37 +136,49 @@ agent store owns the fact; everything else is a projection of it.
    already forces accumulation and blocks node drag, and writing them would
    overwrite extension-set values.
 
-5. **Guards at each mutation site.** Guards read the store or the policy;
-   `isSelectOnly()` remains for existing call sites and is equivalent once
-   `selectOnly` is a pure projection of `isActive`. Every graph-mutating
-   command in `useCoreCommands.ts` returns early while picking: the four
-   `Comfy.Canvas.ToggleSelectedNodes` commands (`Mute`, `Bypass`, `Pin`,
-   `Collapse`), `Comfy.Canvas.ToggleSelected.Pin`, `Comfy.Canvas.Resize`,
-   the four `Comfy.Canvas.MoveSelectedNodes` commands,
+5. **One gate for commands, guards at every other mutation site.** Every
+   graph-mutating core command declares `mutatesGraph` on `ComfyCommand`,
+   either `true` or a predicate evaluated at dispatch, and
+   `commandStore.execute` refuses a command whose capability holds while
+   `canvasStore.canvas.selectOnly` is `true`, so menus, keybindings and the
+   selection toolbox share one check and a command body carries no policy of
+   its own. The command store loads the canvas store lazily inside that
+   check, so its module graph stays independent of the canvas. The declared
+   set is the four `Comfy.Canvas.ToggleSelectedNodes` commands (`Mute`,
+   `Bypass`, `Pin`, `Collapse`), `Comfy.Canvas.ToggleSelected.Pin`,
+   `Comfy.Canvas.Resize`, the four `Comfy.Canvas.MoveSelectedNodes`
+   commands, `Comfy.Canvas.DeleteSelectedItems`,
    `Comfy.Canvas.PasteFromClipboard[WithConnect]`,
    `Comfy.Graph.GroupSelectedNodes`, `Comfy.Graph.ConvertToSubgraph`,
    `Comfy.Graph.UnpackSubgraph`, `Comfy.Graph.FitGroupToContents`,
-   `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.Undo`, `Comfy.Redo` and
-   `Comfy.ClearWorkflow` (`DeleteSelectedItems` already does). `Comfy.Undo`
-   and `Comfy.Redo` keep their guard below the `global-mask-editor` branch,
-   so the mask editor's own history still undoes while picking. The two
-   non-command keyboard paths get the same guard: the `usePaste.ts` handler
-   returns, and the `ChangeTracker` keydown listener snapshots `selectOnly`
-   before deferring to the animation frame so `undoRedo` decides with the
-   value at keypress and returns `true` so the event is consumed. In the
-   classic canvas `_processPrimaryButton` adds `!this.selectOnly` to the
-   alt-click clone condition and skips the subgraph IO node, reroute and
-   link-segment handling, the group and empty-canvas double-click actions,
-   the group title-bar drag callbacks (`_processDraggedItems` snaps
-   `selectedItems` on shift or `alwaysSnapToGrid`, which would move the
-   picked nodes) and `_processNodeClick`'s `bringToFront` while select-only;
-   node clicks, empty-canvas clicks, panning and the selection rectangle are
-   unchanged. The two file-drop paths return while select-only: the document
+   `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.ClearWorkflow`, `Comfy.Undo`
+   and `Comfy.Redo`; `useCoreCommands.selectOnly.test.ts` pins that
+   inventory. `Comfy.Undo` and `Comfy.Redo` declare the predicate
+   `!dialogStore.isDialogOpen('global-mask-editor')`: with the mask editor
+   open they run its own history, which must keep working during picking,
+   and only their workflow-tracker branch is a graph mutation. A command
+   without the capability, which today means every extension command, is
+   not gated.
+
+   Guards outside the command store read the store or the policy;
+   `isSelectOnly()` remains for existing call sites and is equivalent once
+   `selectOnly` is a pure projection of `isActive`. The two non-command
+   keyboard paths get the same guard: the `usePaste.ts` handler returns, and
+   the `ChangeTracker` keydown listener snapshots `selectOnly` before
+   deferring to the animation frame so `undoRedo` decides with the value at
+   keypress and returns `true` so the event is consumed. In the classic
+   canvas `_processPrimaryButton` adds `!this.selectOnly` to the alt-click
+   clone condition and skips the subgraph IO node, reroute and link-segment
+   handling, the group and empty-canvas double-click actions, the group
+   title-bar drag callbacks (`_processDraggedItems` snaps `selectedItems` on
+   shift or `alwaysSnapToGrid`, which would move the picked nodes) and
+   `_processNodeClick`'s `bringToFront` while select-only; node clicks,
+   empty-canvas clicks, panning and the selection rectangle are unchanged.
+   The two file-drop paths return while select-only: the document
    `drop` listener in `app.ts` after `preventDefault()` (the browser must not
    navigate to the file) and `useCanvasDrop.ts` `onDrop` for sidebar node,
-   model and workflow drags. These are condition edits, not new members. A
-   `mutatesGraph` flag on `ComfyCommand`, checked once in the command store,
-   is deferred (below).
+   model and workflow drags. These are condition edits, not new members.
+
 6. **Chrome keeps reading the store.** Action bars, sidebar, splitter panels,
    selection toolbox, toasts, banner and the queue and error overlays in
    `TopMenuSection.vue` keep gating on `isActive` or `isActionBarsHidden`.
@@ -204,7 +216,8 @@ agent store owns the fact; everything else is a projection of it.
 
 ### Deferred decisions
 
-- `mutatesGraph` command metadata replacing per-site guards.
+- Whether extension commands should declare `mutatesGraph`, and whether
+  the capability should also gate `read_only`.
 - Whether the minimap follows the same derivation or keeps flipping the
   user's setting.
 - Whether picking should lock `GraphCanvasMenu`'s lock button, which can flip
@@ -261,15 +274,17 @@ agent store owns the fact; everything else is a projection of it.
   blocked while picking in both renderers; click-to-select, space-bar pan,
   zoom and lock behave as they do today.
 - `selectOnly` cannot be observed as anything but `true` while picking, so
-  the per-site guards hold without each site having to know about owners,
-  scopes or extension writers.
-- The policy is table-testable without a canvas or DOM, and the enumerated
-  guard list is finite and reviewable.
+  the command gate and the per-site guards hold without each site having to
+  know about owners, scopes or extension writers.
+- The policy is table-testable without a canvas or DOM, the command
+  inventory is one asserted list, and the remaining guard list is finite
+  and reviewable.
 
 ### Negative
 
-- Guards remain per-site until command metadata exists; a new mutating
-  command or keyboard path must opt in.
+- A new mutating core command declares `mutatesGraph`; the classic canvas,
+  paste, drop and history paths keep per-site guards, so a new keyboard or
+  pointer mutation path must still opt in.
 - An extension that sets `canvas.selectOnly` itself reads `true` while
   picking and sees its own write take effect only once picking ends. No
   first-party writer outside the sync exists; the extension corpus has not

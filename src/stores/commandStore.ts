@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 export interface ComfyCommand {
@@ -20,7 +19,20 @@ export interface ComfyCommand {
   source?: string
   active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
+  /** Refused by `execute()` while the canvas is select-only (agent node picking). */
   mutatesGraph?: boolean | (() => boolean)
+}
+
+async function isRefusedWhileSelectOnly(
+  command: ComfyCommand
+): Promise<boolean> {
+  const mutatesGraph =
+    typeof command.mutatesGraph === 'function'
+      ? command.mutatesGraph()
+      : command.mutatesGraph
+  if (!mutatesGraph) return false
+  const { useCanvasStore } = await import('@/renderer/core/canvas/canvasStore')
+  return useCanvasStore().canvas?.selectOnly === true
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -108,11 +120,7 @@ export const useCommandStore = defineStore('command', () => {
       throw new Error(`Command ${commandId} not found`)
     }
     const command = getCommand(commandId)
-    const mutatesGraph =
-      typeof command.mutatesGraph === 'function'
-        ? command.mutatesGraph()
-        : command.mutatesGraph
-    if (mutatesGraph && useCanvasStore().canvas?.selectOnly) return
+    if (await isRefusedWhileSelectOnly(command)) return
     await wrapWithErrorHandlingAsync(
       () => command.function(options?.metadata),
       options?.errorHandler
