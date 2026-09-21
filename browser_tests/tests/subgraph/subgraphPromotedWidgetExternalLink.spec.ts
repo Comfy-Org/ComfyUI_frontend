@@ -11,12 +11,10 @@ const HOST_ID = '1'
 const PRIMITIVE_INT_ID = '2'
 const PRIMITIVE_STRING_ID = '3'
 const PLAIN_LATENT_ID = '4'
-const PLAIN_TEXT_ENCODE_ID = '5'
 const HOST_TEXT_INPUT = 0
 const HOST_WIDTH_INPUT = 1
 const PLAIN_WIDTH_INPUT = 0
 const PLAIN_BATCH_SIZE_INPUT = 2
-const PLAIN_TEXT_INPUT = 1
 const ENDPOINT_TOLERANCE_PX = 2
 /** Canvas pixel below every node in the asset; clicking it also lets the change tracker capture the drag-connect. */
 const EMPTY_CANVAS_POSITION = { x: 640, y: 690 }
@@ -149,30 +147,6 @@ test.describe(
       await expect(textarea).toBeDisabled()
       await expect(
         comfyPage.vueNodes.getInputSlotConnectionDot(HOST_ID, HOST_TEXT_INPUT)
-      ).toBeVisible()
-    })
-
-    // cloud/1.54 still renders the disabled textarea for a connected plain
-    // input. Hiding it comes from #17576 (WidgetGrid retains labels for
-    // connected inputs), which is not on this release line yet. Re-enable
-    // once #17576 is backported to cloud/1.54.
-    test.fixme('hides the text control after a String is wired into a plain CLIPTextEncode', async ({
-      comfyPage
-    }) => {
-      const node = comfyPage.vueNodes.getNodeLocator(PLAIN_TEXT_ENCODE_ID)
-      const textarea = node.getByRole('textbox', { name: 'text', exact: true })
-      await expect(textarea).toBeVisible()
-
-      await wireFirstOutputInto(
-        comfyPage,
-        PRIMITIVE_STRING_ID,
-        PLAIN_TEXT_ENCODE_ID,
-        PLAIN_TEXT_INPUT
-      )
-
-      await expect(textarea).toHaveCount(0)
-      await expect(
-        node.locator('.lg-slot--input[aria-label="text"]')
       ).toBeVisible()
     })
 
