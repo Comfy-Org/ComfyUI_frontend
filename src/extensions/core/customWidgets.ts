@@ -85,7 +85,7 @@ function onCustomComboCreated(this: LGraphNode) {
     )
     if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
-    comboWidget.value = values[0] ?? ''
+    comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
   }
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
@@ -100,7 +100,6 @@ function onCustomComboCreated(this: LGraphNode) {
     const newCount = node.widgets.length - 1
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
-    if (!widget) return
     let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
@@ -252,17 +251,17 @@ function onCustomFloatCreated(this: LGraphNode) {
 app.registerExtension({
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
-    if (nodeData?.name === 'CustomCombo')
+    if (nodeData.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
       )
-    else if (nodeData?.name === 'PrimitiveInt')
+    else if (nodeData.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomIntCreated
       )
-    else if (nodeData?.name === 'PrimitiveFloat')
+    else if (nodeData.name === 'PrimitiveFloat')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated

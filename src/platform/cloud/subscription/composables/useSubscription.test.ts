@@ -6,6 +6,8 @@ import { computed, effectScope } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
@@ -135,10 +137,76 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingStatus: mockGetBillingStatus
-  }
+  },
+  // What a failed rail read throws; only its message reaches the wrapper.
+  WorkspaceApiError: class extends Error {}
 }))
 
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as Pick<BillingReadRail, 'readStatus'> | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
+
 vi.mock(import('@/services/dialogService'))
+
+const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
+
+const buildStatus = (
+  overrides: Partial<BillingStatusResponse> = {}
+): BillingStatusResponse => ({
+  is_active: true,
+  has_funds: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scheduled_change: null,
+  team_credit_stop: null,
+  ...overrides
+})
+
+/**
+ * The two clients the status read can go through, so the rows below pin one
+ * behaviour on both rather than one path's behaviour twice.
+ */
+const statusReadPaths = [
+  {
+    reader: 'the workspace client',
+    select: () => {
+      railState.rail = null
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockGetBillingStatus.mockResolvedValue(status)
+    },
+    fail: () => {
+      mockGetBillingStatus.mockRejectedValue(
+        new Error('Subscription not found')
+      )
+    },
+    failure: 'Subscription not found',
+    idleReader: () => mockReadStatus
+  },
+  {
+    reader: 'the SDK reader',
+    select: () => {
+      railState.rail = { readStatus: mockReadStatus }
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: status })
+    },
+    fail: () => {
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+    },
+    failure: 'ACCESS_DENIED',
+    idleReader: () => mockGetBillingStatus
+  }
+]
 
 // Mock fetch
 global.fetch = vi.fn()
@@ -171,6 +239,7 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     mockLocalStorage.__reset()
+    railState.rail = null
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
     Object.assign(useAuthStore(), { isInitialized: true })
@@ -291,50 +360,60 @@ describe('useSubscription', () => {
   })
 
   describe('fetchStatus', () => {
-    it('should fetch subscription status successfully', async () => {
-      const mockStatus = {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16',
-        team_credit_stop: null
+    it.for(statusReadPaths)(
+      'publishes a status read through $reader and updates the workspace billing rail',
+      async (path) => {
+        const status = buildStatus({
+          renewal_date: '2025-11-16',
+          billing_rail: 'stripe'
+        })
+        path.select()
+        path.resolve(status)
+
+        useCurrentUser().isLoggedIn = computed(() => true)
+        const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+
+        await fetchStatus()
+
+        expect(subscriptionStatus.value).toEqual(status)
+        expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+          'workspace-123',
+          'stripe'
+        )
+        // One transport per read: the rail a read is on is the only client it
+        // asks, or the panels read one thing and the rail settled another.
+        expect(path.idleReader()).not.toHaveBeenCalled()
       }
+    )
 
-      mockGetBillingStatus.mockResolvedValue(mockStatus)
+    it.for(statusReadPaths)(
+      'reports a failed read through $reader in the same message',
+      async (path) => {
+        path.select()
+        path.fail()
 
-      useCurrentUser().isLoggedIn = computed(() => true)
-      const { fetchStatus } = useSubscriptionWithScope()
+        const { fetchStatus } = useSubscriptionWithScope()
 
+        await expect(fetchStatus()).rejects.toThrow(
+          `Failed to fetch subscription status: ${path.failure}`
+        )
+      }
+    )
+
+    it('keeps the published status when a rail read is superseded', async () => {
+      const published = buildStatus({ renewal_date: '2025-11-16' })
+      mockGetBillingStatus.mockResolvedValue(published)
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       await fetchStatus()
 
-      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
-    })
-
-    it('should handle fetch errors gracefully', async () => {
-      mockGetBillingStatus.mockRejectedValue(
-        new Error('Subscription not found')
-      )
-
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await expect(fetchStatus()).rejects.toThrow(
-        'Failed to fetch subscription status: Subscription not found'
-      )
-    })
-
-    it('updates the active workspace billing rail from status', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true,
-        billing_rail: 'stripe'
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
       })
+      await expect(fetchStatus()).resolves.toBeNull()
 
-      const { fetchStatus } = useSubscriptionWithScope()
-      await fetchStatus()
-
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-123',
-        'stripe'
-      )
+      expect(subscriptionStatus.value).toEqual(published)
     })
 
     it('does not apply the previous account response after an identity switch', async () => {

@@ -211,6 +211,11 @@ export class LayoutFollowerBridge extends EventTarget {
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
+      this.dispatchEvent(
+        new CustomEvent('doc_subscribe_sent', {
+          detail: { workflowId: desired }
+        })
+      )
     }
   }
 
