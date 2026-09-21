@@ -339,7 +339,8 @@ const lastPanelStyle = computed(() => {
   pointer-events: auto;
 }
 
-:deep(.side-bar-panel + .p-splitter-gutter) {
+:deep(.side-bar-panel + .p-splitter-gutter),
+:deep(.p-splitter-gutter:has(+ .side-bar-panel)) {
   background-color: color-mix(
     in srgb,
     var(--interface-stroke) 50%,

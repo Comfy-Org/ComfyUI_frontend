@@ -410,6 +410,7 @@ onUpdated(checkOverflow)
 
 :deep(.p-togglebutton:hover) {
   background-color: var(--secondary-background-hover);
+  color: var(--base-foreground);
 }
 
 :deep(.workflow-tabs) {
