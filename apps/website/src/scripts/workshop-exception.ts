@@ -31,7 +31,7 @@ function applicationFrames(stack: string | undefined): string[] {
     .slice(0, 20)
     .flatMap((line) => {
       const match = line.match(
-        /^(?:\s+at (?:[^()\n]*\()?|[^@\n]*@)https?:\/\/[^/\s()]+(\/_astro\/[\w.-]{1,160}\.js)(?:[?#][^\s)]*)?:(\d{1,8}):(\d{1,8})\)?$/
+        /^(?:\s+at (?:[^()\n]*\()?|[^@\n]*@)https?:\/\/[^/\s()]+(\/_(?:website|astro)\/[\w.-]{1,160}\.js)(?:[?#][^\s)]*)?:(\d{1,8}):(\d{1,8})\)?$/
       )
       return match ? [`${match[1]}:${match[2]}:${match[3]}`] : []
     })

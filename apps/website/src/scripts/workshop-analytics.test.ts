@@ -70,7 +70,7 @@ describe('Workshop failure analytics', () => {
     const cause = new TypeError('Private prompt, filename.png and token=secret')
     cause.stack = [
       cause.toString(),
-      '    at read (https://comfy.org/_astro/ModelDetail.abc123.js:12:34)',
+      '    at read (https://comfy.org/_website/ModelDetail.abc123.js:12:34)',
       'render@https://preview.example/_astro/run.def456.js?token=secret:56:78',
       '    at https://storage.example/private-image.png?token=secret:1:2',
       '    at /Users/customer/private-image.png:1:2',
@@ -88,7 +88,7 @@ describe('Workshop failure analytics', () => {
       request_id: undefined,
       exception_name: 'TypeError',
       exception_frames: [
-        '/_astro/ModelDetail.abc123.js:12:34',
+        '/_website/ModelDetail.abc123.js:12:34',
         '/_astro/run.def456.js:56:78'
       ]
     })

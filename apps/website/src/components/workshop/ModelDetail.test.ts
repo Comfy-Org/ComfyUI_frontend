@@ -478,7 +478,7 @@ describe('ModelDetail', () => {
   it('captures unexpected client exceptions without the error message', async () => {
     auth.session.value = credential
     const cause = new TypeError('Private prompt and token=secret')
-    cause.stack = `${cause.toString()}\n    at https://comfy.org/_astro/run.abc.js:12:34`
+    cause.stack = `${cause.toString()}\n    at https://comfy.org/_website/run.abc.js:12:34`
     vi.mocked(runWorkshopRouter).mockRejectedValue(cause)
     mountDetail({ model: runnable })
     await user().type(
@@ -494,7 +494,7 @@ describe('ModelDetail', () => {
           status: 'failed',
           reason: 'client',
           exception_name: 'TypeError',
-          exception_frames: ['/_astro/run.abc.js:12:34']
+          exception_frames: ['/_website/run.abc.js:12:34']
         })
       })
     )
