@@ -9042,8 +9042,8 @@ Enterprise`
       '每新增一个供应商，就多一套 SDK、一个密钥、一套任务生命周期和一组错误处理。通过 Comfy Router 一次性搭建好这些，之后每加一个模型只需一行代码。'
   },
   'platform.router.section2.heading': {
-    en: 'Better availability. Better prices. Your choice.',
-    'zh-CN': '更高可用性。更优价格。由你选择。'
+    en: 'Better availability. Better prices. No subscription.',
+    'zh-CN': '更高可用性。更优价格。无需订阅。'
   },
   'platform.router.section2.body': {
     en: 'Run the same model on fal, Runware, or Wavespeed, and switch with one parameter when one is rate limited or another is cheaper. Comfy never switches the route for you, and every job reports the provider that ran it.',

@@ -12,7 +12,7 @@ describe('RouterCapabilitiesSection', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('img', {
-        name: 'Better availability. Better prices. Your choice.'
+        name: 'Better availability. Better prices. No subscription.'
       })
     ).toBeTruthy()
     expect(
