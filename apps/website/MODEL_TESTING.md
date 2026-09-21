@@ -1,5 +1,9 @@
 # Run the model-page generation tests
 
+Scheduled sweeps and real browser acceptance run in GitHub Actions under the
+**Workshop:** prefix. See [live acceptance](acceptance/README.md) for cadence,
+accounts, billing expectations, reports, and the remaining acceptance scope.
+
 The tester calls `router_render(slug, {})` with the same initial inputs,
 parameter mappings, media conversion, temporary uploads, Router client and
 response parser as the model pages. A pass requires downloading and decoding

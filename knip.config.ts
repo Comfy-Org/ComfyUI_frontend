@@ -59,6 +59,7 @@ const config: KnipConfig = {
     }
   },
   ignoreBinaries: [
+    'ffmpeg',
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],

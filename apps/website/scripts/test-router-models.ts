@@ -21,6 +21,7 @@ import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
 import { openRouterModelTransport } from './router-model-transport'
 import { selectRouterModels } from './router-model-selection'
+import { selectModelShard } from './router-model-shard'
 import { createRouterRenderHelpers } from './router-render'
 import { openRouterSvgRasterizer } from './router-model-svg'
 
@@ -31,6 +32,11 @@ pnpm --filter @comfyorg/website test:router-models [options]
   --execute                Make paid Router calls after preflight (default: dry)
   --slug SLUG              Test one authored page; repeat; disabled is allowed
   --modality KIND          Select image, video or audio pages
+  --exclude-modality KIND  Exclude one modality
+  --plan                   Print a free CI shard plan and exit without writing reports
+  --shard-index N          Zero-based shard index (default: 0)
+  --shard-total N          Number of shards (default: 1)
+  --max-cases N            Maximum paid cases in a shard (default: 1000)
   --concurrency N          Simultaneous cases, 1–128 (default: 16)
   --starts-per-second N    Pace new requests; fractions allowed (default: 2)
   --timeout-seconds N      Whole-case deadline (default: 2700)
@@ -106,6 +112,11 @@ async function main() {
       execute: { type: 'boolean', default: false },
       slug: { type: 'string', multiple: true },
       modality: { type: 'string' },
+      'exclude-modality': { type: 'string' },
+      plan: { type: 'boolean', default: false },
+      'shard-index': { type: 'string' },
+      'shard-total': { type: 'string' },
+      'max-cases': { type: 'string' },
       concurrency: { type: 'string' },
       'starts-per-second': { type: 'string' },
       'timeout-seconds': { type: 'string' },
@@ -133,10 +144,35 @@ async function main() {
     : fileURLToPath(
         new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
       )
-  const cases = selectRouterModels({
+  if (
+    values['exclude-modality'] !== undefined &&
+    !isMediaKind(values['exclude-modality'])
+  )
+    throw new Error('--exclude-modality must be image, video or audio')
+  const selectedModels = selectRouterModels({
     slugs: values.slug,
     modality: values.modality
-  })
+  }).filter((model) => model.modality !== values['exclude-modality'])
+  const maxCases = positiveInteger(values['max-cases'], 1000)
+  if (!selectedModels.length) throw new Error('No published models selected')
+  if (values.plan) {
+    if (values.execute) throw new Error('--plan cannot execute paid jobs')
+    const total = Math.ceil(selectedModels.length / maxCases)
+    process.stdout.write(
+      JSON.stringify({
+        total,
+        shards: Array.from({ length: total }, (_, index) => index),
+        selectedCount: selectedModels.length
+      }) + '\n'
+    )
+    return
+  }
+  const cases = selectModelShard(
+    selectedModels,
+    Number(values['shard-index'] ?? 0),
+    positiveInteger(values['shard-total'], 1),
+    maxCases
+  )
   if (values.report && !values.report.endsWith('.md'))
     throw new Error('--report must name a .md file')
   const markdownPath = values.report
@@ -166,7 +202,9 @@ async function main() {
   }
   const report = openRouterModelReport({ jsonPath, markdownPath })
   try {
-    for (const model of authoredWorkshopModels) {
+    for (const model of values['shard-total']
+      ? cases
+      : authoredWorkshopModels) {
       report.update({
         slug: model.slug,
         routerId: model.routerId,
