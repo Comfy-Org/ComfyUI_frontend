@@ -4,7 +4,58 @@ import { backupPath } from '@e2e/utils/backupUtils'
 
 dotenvConfig()
 
-export default function globalSetup() {
+/**
+ * Fail before the first test when ComfyUI is up but devtools did not import.
+ *
+ * ComfyUI logs `IMPORT FAILED` for an unloadable custom node and keeps
+ * serving, so the backend answers 200 and looks healthy while every
+ * `/api/devtools/*` route is missing. The first thing that notices is
+ * `ComfyPage.setupSettings`, which reports the HTTP status of an endpoint it
+ * does not name — most recently a 405 that read as an auth problem and cost
+ * two lanes a diagnosis each before it turned out to be a read-only mount the
+ * container's `pwuser` could not read.
+ *
+ * Same URL resolution as `ComfyPage`, so this checks the endpoint the fixture
+ * will actually call.
+ */
+async function assertDevtoolsInstalled(): Promise<void> {
+  const apiUrl =
+    process.env.PLAYWRIGHT_SETUP_API_URL ||
+    process.env.PLAYWRIGHT_TEST_URL ||
+    'http://localhost:8188'
+  const endpoint = `${apiUrl}/api/devtools/set_settings`
+
+  let status: number
+  try {
+    status = (await fetch(endpoint, { method: 'POST', body: '{}' })).status
+  } catch {
+    // Unreachable backend is a different failure with its own clear message;
+    // leave it to the fixture rather than guessing here.
+    return
+  }
+
+  // 404/405 mean the route is absent, i.e. devtools is not loaded. Anything
+  // else — including a 4xx about the payload — means the route exists.
+  if (status !== 404 && status !== 405) return
+
+  throw new Error(
+    [
+      `ComfyUI at ${apiUrl} is serving, but ${endpoint} returned ${status}.`,
+      '',
+      'ComfyUI_devtools is not loaded, so every browser test would fail at the',
+      'ComfyPage fixture with an HTTP error that names neither devtools nor the',
+      'real cause. Check the backend log for "IMPORT FAILED".',
+      '',
+      'Most often the devtools directory is unreadable inside the container:',
+      'the image runs as pwuser (uid 1001) and a checkout made under a 0007',
+      'umask is mode 0660. scripts/start-comfyui-e2e.sh stages a world-readable',
+      'copy for this reason; a hand-rolled `docker run` that bind-mounts',
+      'tools/devtools directly will hit it.'
+    ].join('\n')
+  )
+}
+
+export default async function globalSetup() {
   if (!process.env.CI) {
     if (process.env.TEST_COMFYUI_DIR) {
       backupPath([process.env.TEST_COMFYUI_DIR, 'user'])
@@ -17,4 +68,6 @@ export default function globalSetup() {
       )
     }
   }
+
+  await assertDevtoolsInstalled()
 }

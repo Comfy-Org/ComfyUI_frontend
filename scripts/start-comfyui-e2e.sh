@@ -29,11 +29,26 @@ elif ! docker info >/dev/null 2>&1; then
 fi
 
 docker_config="$(mktemp -d)"
+# The image runs as `pwuser` (uid 1001), so a checkout created under a 0007
+# umask (files 0660, dirs 0770) is unreadable inside the container. ComfyUI
+# then logs `IMPORT FAILED` for devtools and keeps serving, so the backend
+# looks healthy while `/api/devtools/*` 404s or 405s and every browser test
+# dies at the `ComfyPage` fixture with a message naming neither devtools nor
+# permissions. Mount a world-readable copy instead of the working tree.
+devtools_stage="$(mktemp -d)"
 cleanup() {
   "${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
-  rm -rf "$docker_config"
+  rm -rf "$docker_config" "$devtools_stage"
 }
 trap cleanup EXIT
+
+cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
+chmod -R a+rX "$devtools_stage"
+if [[ ! -r "$devtools_stage/__init__.py" ]]; then
+  echo 'Staged devtools are unreadable; the browser tests would fail at the' >&2
+  echo 'ComfyPage fixture with an unrelated HTTP error. Aborting.' >&2
+  exit 1
+fi
 
 if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
   token="${COMFY_CI_CONTAINER_TOKEN:-${GH_TOKEN:-}}"
@@ -76,7 +91,7 @@ fi
 "${docker[@]}" run --rm --name "$container" \
   --publish "127.0.0.1:$port:8188" \
   --mount \
-  "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
+  "type=bind,src=$devtools_stage,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
   "$image" \
   bash -lc \
   'cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0'
