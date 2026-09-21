@@ -346,6 +346,42 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
+  it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+
+    await rerender({ streaming: true })
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape once focus has left the composer entirely', async () => {
+    const onStop = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', [
+          h(Composer, { hasWorkflowTarget: true, streaming: true, onStop }),
+          h('button', { type: 'button' }, 'Elsewhere on the page')
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Elsewhere on the page' })
+    )
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
   it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
     const submitting = mount({ submitting: true })
     await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))

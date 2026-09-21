@@ -243,6 +243,28 @@ function onPrimaryAction(): void {
   else composer.submit()
 }
 
+// The prompt editor only forwards `keydown` while it (the ProseMirror
+// contenteditable) itself has focus, so pressing Escape after submitting
+// via Enter is caught there. Clicking Send with the mouse instead leaves
+// focus on the button, so that same Escape press never reaches the editor.
+// This container-level handler catches Escape from any focused element
+// still inside the composer - including the Send/Stop button - while
+// leaving focus (and the editor-scoped handler above) untouched. Escapes
+// the editor already handled call stopPropagation, so they never reach
+// here, and once focus leaves the composer entirely this listener isn't in
+// the event's bubble path either.
+function onContainerKeydown(event: KeyboardEvent): void {
+  if (
+    event.key === 'Escape' &&
+    running.value &&
+    !event.isComposing &&
+    !event.repeat
+  ) {
+    event.preventDefault()
+    emit('stop')
+  }
+}
+
 function insert(text: string): void {
   composer.insert(text)
   editorRef.value?.focus()
@@ -266,6 +288,7 @@ defineExpose({
   <div
     id="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
+    @keydown="onContainerKeydown"
   >
     <div
       v-if="mentionVisible"
