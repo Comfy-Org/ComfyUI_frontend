@@ -154,10 +154,7 @@ const options: {
             >
               <span
                 :class="
-                  cn(
-                    'text-agent-fg-muted mt-0.5 size-4 shrink-0',
-                    option.icon
-                  )
+                  cn('text-agent-fg-muted mt-0.5 size-4 shrink-0', option.icon)
                 "
               />
               <span class="min-w-0 flex-1">
