@@ -10,6 +10,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { computed, nextTick, ref } from 'vue'
+import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -21,6 +22,7 @@ import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -176,12 +178,15 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeHeader: true,
         NodeSlots: true,
         NodeWidgets: {
-          props: [
-            'nodeData',
-            'processedWidgets',
-            'nodeType',
-            'canSelectInputs'
-          ],
+          props: {
+            nodeData: Object as PropType<NodeState>,
+            processedWidgets: {
+              type: Array as PropType<ProcessedWidget[]>,
+              required: true
+            },
+            nodeType: { type: String, required: true },
+            canSelectInputs: { type: Boolean, required: true }
+          },
           template:
             '<div data-testid="node-widgets">{{ processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
