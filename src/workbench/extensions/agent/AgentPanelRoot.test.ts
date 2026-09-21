@@ -6434,13 +6434,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const selectionStore = useAgentNodeSelectionStore()
     selectionStore.saveNodeIds('workflows/current.json', ['9', '12'])
 
-    // A rename keeps the same workflow object and changes only its path, which
-    // is the one case `moveNodeIds` exists for. A switch replaces the object,
-    // and carrying the selection across would hand the newly opened workflow
-    // node ids that belong to the previous one. The agent's own selected
-    // target is deliberately left alone here so the later `selectedTarget`
-    // watcher does not fire and clear both entries, which would hide the
-    // difference.
+    // Keep the selected target unchanged so its watcher does not clear both entries.
     workflowStore.activeWorkflow = addTab('workflows/other.json')
     await nextTick()
 
