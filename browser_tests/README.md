@@ -559,16 +559,17 @@ Two tiers. **Project-routing tags are load-bearing** — `playwright.config.ts`
 selects which project/run a test lands in by grepping these, so a test only runs
 where its tags place it:
 
-| Tag           | Effect (per `playwright.config.ts`)                    |
-| ------------- | ------------------------------------------------------ |
-| `@mobile`     | Runs in the mobile-chrome (Pixel 5) project            |
-| `@mobile-ios` | Runs in the mobile-safari (iPhone 15 / WebKit) project |
-| `@2x`         | Runs in the 2x-scale project                           |
-| `@0.5x`       | Runs in the 0.5x-scale project                         |
-| `@perf`       | Runs in the perf project                               |
-| `@audit`      | Runs in the audit project                              |
-| `@cloud`      | Runs in the cloud project                              |
-| `@oss`        | Excluded from the cloud project                        |
+| Tag           | Effect (per `playwright.config.ts`)                          |
+| ------------- | ------------------------------------------------------------ |
+| `@mobile`     | Runs in the mobile-chrome (Pixel 5) project                  |
+| `@mobile-ios` | Runs in the mobile-safari (iPhone 15 / WebKit) project       |
+| `@2x`         | Runs in the 2x-scale project                                 |
+| `@0.5x`       | Runs in the 0.5x-scale project                               |
+| `@perf`       | Runs in the perf project                                     |
+| `@audit`      | Runs in the audit project                                    |
+| `@cloud`      | Runs in the cloud project                                    |
+| `@desktop`    | Runs against the desktop build with a mocked Electron bridge |
+| `@oss`        | Excluded from the cloud project                              |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
 iOS-shaped conditions (WKWebView bridge exposure, WebKit-only quirks). Playwright's
