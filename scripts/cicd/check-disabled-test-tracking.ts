@@ -26,6 +26,7 @@ type DisabledDeclaration = {
 }
 
 type TestDeclaration = DisabledDeclaration & {
+  context: string
   disabled: boolean
   title: string
 }
@@ -35,7 +36,7 @@ type ChangedFile = {
   path: string
 }
 
-const HUNK_PATTERN = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/
+const HUNK_PATTERN = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/
 const TEST_SOURCE_PATTERN = /\.(?:spec|test)\.[cm]?[jt]sx?$/
 const RESTORATION_INTENT_PATTERN =
   /(?:re-?enabl(?:e|ed|ing)?|restor(?:e|ed|es|ing|ation)|disabled[- ]test(?:[\s-]+follow-?up)?|test[\s-]+restoration)/i
@@ -126,6 +127,13 @@ function testDeclarations(source: string, path: string): TestDeclaration[] {
       )
 
       declarations.push({
+        context: node.arguments
+          .filter(
+            (candidate) =>
+              candidate !== title && (!modifier || candidate !== argument)
+          )
+          .map((candidate) => candidate.getText(sourceFile).replace(/\s+/g, ' '))
+          .join('|'),
         disabled: Boolean(
           modifier && node.arguments.length > 0 && isDisablingArgument(argument)
         ),
@@ -160,7 +168,8 @@ export function disabledDeclarations(
 
 function correspondingBaseDeclarations(
   base: TestDeclaration[],
-  head: TestDeclaration[]
+  head: TestDeclaration[],
+  projectBaseLine: (line: number) => number
 ): Map<number, TestDeclaration> {
   const costs = Array.from({ length: base.length + 1 }, (_, baseIndex) =>
     Array.from(
@@ -186,12 +195,35 @@ function correspondingBaseDeclarations(
   let baseIndex = base.length
   let headIndex = head.length
   while (baseIndex > 0 && headIndex > 0) {
+    const baseDeclaration = base[baseIndex - 1]
+    const headDeclaration = head[headIndex - 1]
     const substitution =
       costs[baseIndex - 1][headIndex - 1] +
-      (base[baseIndex - 1].title === head[headIndex - 1].title ? 0 : 1)
+      (baseDeclaration.title === headDeclaration.title ? 0 : 1)
+    const projectedLine = projectBaseLine(baseDeclaration.line)
+    const currentRank = [
+      baseDeclaration.context === headDeclaration.context ? 0 : 1,
+      Math.abs(projectedLine - headDeclaration.line)
+    ]
+    const earlierMatch = head
+      .slice(0, headIndex - 1)
+      .filter(({ title }) => title === baseDeclaration.title)
+      .some((candidate) => {
+        const candidateRank = [
+          baseDeclaration.context === candidate.context ? 0 : 1,
+          Math.abs(projectedLine - candidate.line)
+        ]
+        return (
+          candidateRank[0] < currentRank[0] ||
+          (candidateRank[0] === currentRank[0] &&
+            candidateRank[1] < currentRank[1])
+        )
+      })
     if (
       costs[baseIndex][headIndex] ===
-      costs[baseIndex][headIndex - 1] + 1
+        costs[baseIndex][headIndex - 1] + 1 &&
+      costs[baseIndex][headIndex] === substitution &&
+      earlierMatch
     ) {
       headIndex -= 1
     } else if (costs[baseIndex][headIndex] === substitution) {
@@ -209,6 +241,28 @@ function correspondingBaseDeclarations(
   return corresponding
 }
 
+function projectBaseLine(patch: string, baseLine: number): number {
+  let offset = 0
+
+  for (const rawLine of patch.split('\n')) {
+    const hunk = HUNK_PATTERN.exec(rawLine)
+    if (!hunk) continue
+
+    const baseStart = Number(hunk[1])
+    const baseCount = hunk[2] === undefined ? 1 : Number(hunk[2])
+    const targetStart = Number(hunk[3])
+    const targetCount = hunk[4] === undefined ? 1 : Number(hunk[4])
+    if (baseCount === 0 && baseLine <= baseStart) return baseLine + offset
+    if (baseLine < baseStart) return baseLine + offset
+    if (baseCount > 0 && baseLine < baseStart + baseCount) {
+      return targetStart + Math.min(baseLine - baseStart, targetCount - 1)
+    }
+    offset += targetCount - baseCount
+  }
+
+  return baseLine + offset
+}
+
 function addedTargetLines(patch: string): Set<number> {
   const added = new Set<number>()
   let targetLine: number | undefined
@@ -216,7 +270,7 @@ function addedTargetLines(patch: string): Set<number> {
   for (const rawLine of patch.split('\n')) {
     const hunk = HUNK_PATTERN.exec(rawLine)
     if (hunk) {
-      targetLine = Number(hunk[1])
+      targetLine = Number(hunk[3])
     } else if (targetLine !== undefined && rawLine.startsWith('+')) {
       added.add(targetLine)
       targetLine += 1
@@ -261,7 +315,8 @@ export function findViolations(
     const headDeclarations = testDeclarations(source, path)
     const correspondingBase = correspondingBaseDeclarations(
       testDeclarations(baseSource, path),
-      headDeclarations
+      headDeclarations,
+      (line) => projectBaseLine(patch, line)
     )
 
     for (const [index, declaration] of headDeclarations.entries()) {
