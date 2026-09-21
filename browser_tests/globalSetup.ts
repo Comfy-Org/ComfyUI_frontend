@@ -35,11 +35,7 @@ async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
   }
 }
 
-async function assertDevtoolsInstalled(): Promise<void> {
-  const apiUrl =
-    process.env.PLAYWRIGHT_SETUP_API_URL ||
-    process.env.PLAYWRIGHT_TEST_URL ||
-    'http://localhost:8188'
+async function assertDevtoolsInstalled(apiUrl: string): Promise<void> {
   const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
 
   const status = await missingDevtoolsStatus(endpoint)
@@ -63,7 +59,15 @@ async function assertDevtoolsInstalled(): Promise<void> {
 }
 
 export default async function globalSetup() {
-  await assertDevtoolsInstalled()
+  const apiUrl =
+    process.env.PLAYWRIGHT_SETUP_API_URL ||
+    process.env.PLAYWRIGHT_TEST_URL ||
+    'http://localhost:8188'
+  if (
+    ['localhost', '127.0.0.1', '[::1]'].includes(new URL(apiUrl).hostname)
+  ) {
+    await assertDevtoolsInstalled(apiUrl)
+  }
 
   if (!process.env.CI) {
     if (process.env.TEST_COMFYUI_DIR) {
