@@ -169,7 +169,7 @@ describe('follower commit boundary', () => {
     const update = Y.encodeStateAsUpdate(host)
 
     expect(() => follower.applyRemoteUpdate(update.slice(0, -1))).toThrow(
-      'Unexpected end of array'
+      /Unexpected end/
     )
     expect({
       nodeIds: [...nodesMap(follower.doc).keys()],

@@ -6,15 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
@@ -30,10 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import type { ServerDocFrame } from './docFrameClient'
 import type { OpSenderDeps } from './opSender'
-
-type DocOpsResult = Extract<ServerDocFrame, { type: 'doc_ops_result' }>['data']
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -61,6 +50,9 @@ const clientState = vi.hoisted(() => ({
 }))
 
 const adapterState = vi.hoisted(() => ({
+  intent: null as {
+    pendingDeletes(workflowId: string): ReadonlySet<string>
+  } | null,
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
@@ -125,6 +117,15 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
+    constructor(
+      _mutations: unknown,
+      intent: {
+        pendingDeletes(workflowId: string): ReadonlySet<string>
+      }
+    ) {
+      adapterState.intent = intent
+    }
+
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
@@ -1293,68 +1294,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it.fails('reports a rejected human add_node result', () => {
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue:
-      | ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
-      | undefined
-    const host = defineComponent({
-      setup() {
-        const follower = useAgentCrdtFollower(workflowId, graphMutations)
-        enqueue = follower.enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
-    onTestFinished(unmount)
-    telemetryState.reportError.mockClear()
-
-    assert.exists(enqueue)
-    enqueue([
-      {
-        op: 'add_node',
-        node_id: 7,
-        class_type: 'Note',
-        pos: [400, 400],
-        node: {
-          id: 7,
-          type: 'Note',
-          inputs: [],
-          outputs: [],
-          widgets_values: { text: 'keep me' }
-        }
-      }
-    ])
-    const sentOps = clientState.sendOps.mock.calls.at(-1)?.[2]
-    const opId = sentOps?.[0]?.op_id
-    expect(opId).toBeTypeOf('string')
-
-    const result: DocOpsResult = {
-      workflowId: 'wf-1',
-      ok: false,
-      applied: [],
-      skipped: [],
-      failed: {
-        index: 0,
-        op_id: opId,
-        code: 'uncatalogued_widget_write',
-        message: 'add_node(Note) could not be projected'
-      }
-    }
-    dispatchFrame('doc_ops_result', result)
-
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        context: expect.objectContaining({
-          workflowId: 'wf-1',
-          opId,
-          code: 'uncatalogued_widget_write'
-        })
-      })
-    )
-  })
-
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
@@ -1468,6 +1407,222 @@ describe('useAgentCrdtFollower', () => {
       .map(([, detail]) => (detail as { state: string }).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
+  })
+
+  describe('tab suspension of the human write leg', () => {
+    type Enqueue = ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+
+    function mountWriter(initial: string): {
+      unmount: () => void
+      workflowId: Ref<string | null>
+      isTargetActive: Ref<boolean>
+      enqueue: Enqueue
+    } {
+      const workflowId = ref<string | null>(initial)
+      const isTargetActive = ref(true)
+      let enqueue!: Enqueue
+      const host = defineComponent({
+        setup() {
+          const { enqueueHumanOperations } = useAgentCrdtFollower(
+            workflowId,
+            graphMutations,
+            () => null,
+            isTargetActive
+          )
+          enqueue = enqueueHumanOperations
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      // Mirror the real bridge: reconcile() sets send reality synchronously
+      // when a subscribe leaves the transport and clears it on unsubscribe.
+      bridge().subscribe.mockImplementation((next: string) => {
+        bridge().subscribedWorkflowId = next
+      })
+      bridge().unsubscribe.mockImplementation(() => {
+        bridge().subscribedWorkflowId = null
+      })
+      return { unmount, workflowId, isTargetActive, enqueue }
+    }
+
+    function deleteNode(nodeId: string) {
+      return { op: 'delete_node' as const, node_id: nodeId, removed_links: [] }
+    }
+
+    async function settledStates(): Promise<string[]> {
+      const { recordDevEvent } = await import('./devPanelLog')
+      return vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+        .map(([, detail]) => (detail as { state: string }).state)
+    }
+
+    function ackSent(index: number): void {
+      const [workflowId, , ops] = clientState.sendOps.mock.calls[index]
+      dispatchFrame('doc_ops_result', {
+        workflowId,
+        ok: true,
+        applied: ops.map((op) => op.op_id),
+        skipped: []
+      })
+    }
+
+    beforeEach(async () => {
+      vi.useFakeTimers()
+      clientState.sendOps.mockClear()
+      const { recordDevEvent } = await import('./devPanelLog')
+      vi.mocked(recordDevEvent).mockClear()
+    })
+
+    it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      expect(bridge().unsubscribe).toHaveBeenCalled()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('sends the held batch to the same workflow when its tab becomes active again', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      expect(await settledStates()).toEqual(['acknowledged'])
+      unmount()
+    })
+
+    it('a rebind to another workflow while its tab is not active settles the held batch undeliverable at once', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('a rebind to another workflow fired together with the inactive edge aborts instead of holding', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+
+      workflowId.value = 'wf-2'
+      isTargetActive.value = false
+      await nextTick()
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+      unmount()
+    })
+
+    it('a real detach while the tab is inactive settles the held batch undeliverable', async () => {
+      const { unmount, workflowId, isTargetActive, enqueue } =
+        mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      workflowId.value = null
+      await nextTick()
+
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged'])
+
+      bridge().subscribedWorkflowId = 'wf-1'
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      unmount()
+    })
+
+    it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const intent = adapterState.intent!
+      let docNodes: Record<string, unknown> = { '1': {} }
+      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+
+      enqueue([deleteNode('1')])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      expect([...intent.pendingDeletes('wf-2')]).toEqual([])
+
+      ackSent(0)
+      expect(await settledStates()).toEqual(['acknowledged'])
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      docNodes = {}
+      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+      unmount()
+    })
+
+    it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
   })
 
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {

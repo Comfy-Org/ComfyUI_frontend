@@ -2,6 +2,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const NULL = '\0'
@@ -19,14 +20,7 @@ function readVorbisCommentJson(header: string, key: string) {
 }
 
 export async function getOggMetadata(file: File) {
-  const reader = new FileReader()
-  const read_process = new Promise<ArrayBuffer | null>((r) => {
-    reader.onload = (event) => r((event?.target?.result as ArrayBuffer) ?? null)
-    reader.onerror = () => r(null)
-    reader.onabort = () => r(null)
-  })
-  reader.readAsArrayBuffer(file)
-  const arrayBuffer = await read_process
+  const arrayBuffer = await readFileAsArrayBuffer(file)
   if (!arrayBuffer) return { prompt: undefined, workflow: undefined }
   const signature = String.fromCharCode(...new Uint8Array(arrayBuffer, 0, 4))
   if (signature !== 'OggS') console.error('Invalid file signature.')
