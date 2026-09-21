@@ -53,7 +53,7 @@ run_launcher() {
     SOURCE_DEVTOOLS="$fixture/tools/devtools" \
     CAPTURE_MOUNT="$test_root/mount" \
     DOCKER_RUN_STATUS="$status" \
-    AMP_ORB= \
+    AMP_ORB='' \
     bash "$fixture/scripts/start-comfyui-e2e.sh"
 }
 
