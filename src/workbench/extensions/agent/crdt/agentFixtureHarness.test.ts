@@ -8,6 +8,7 @@ import type {
   RemoteMutationContext
 } from './agentFixtureHarness'
 import {
+  AgentFixtureError,
   parseAgentResponseFixture,
   replayAgentFixture
 } from './agentFixtureHarness'
@@ -68,13 +69,31 @@ describe('replayAgentFixture', () => {
     expect(adapter.emitLocalOp).not.toHaveBeenCalled()
   })
 
+  it('rejects a fixture with no scenario name', () => {
+    expect(() => parseAgentResponseFixture({ frames: [] })).toThrow(
+      AgentFixtureError
+    )
+    expect(() => parseAgentResponseFixture({ frames: [] })).toThrow(
+      'scenario must be a string'
+    )
+  })
+
   it('rejects an empty frame list', () => {
+    expect(() =>
+      parseAgentResponseFixture({ scenario: 'empty', frames: [] })
+    ).toThrow(AgentFixtureError)
     expect(() =>
       parseAgentResponseFixture({ scenario: 'empty', frames: [] })
     ).toThrow('frames must be non-empty')
   })
 
   it('rejects a frame with missing data', () => {
+    expect(() =>
+      parseAgentResponseFixture({
+        scenario: 'malformed',
+        frames: [{ type: 'draft_patch' }]
+      })
+    ).toThrow(AgentFixtureError)
     expect(() =>
       parseAgentResponseFixture({
         scenario: 'malformed',

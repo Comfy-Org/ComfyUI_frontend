@@ -22,17 +22,40 @@ export interface AgentResponseFixture {
   readonly frames: readonly DraftPatchFrame[]
 }
 
+/**
+ * Thrown by {@link parseAgentResponseFixture} when a fixture file does not
+ * describe a replayable agent response.
+ *
+ * A named subclass rather than a bare `Error`: `comfy/no-new-error-throw`
+ * (ADR `TELEMETRY-DIAGNOSTICS-0019`) forbids `throw new Error(...)` under
+ * `src/`, and the sibling read-time gate in this same directory
+ * (`FollowerSchemaError` in `schemaGuard.ts`) already carries that pattern.
+ * The diagnostics contract itself is deliberately NOT used here: `assert`
+ * throws only under DEV, and a malformed fixture must fail the test run in
+ * every environment.
+ */
+export class AgentFixtureError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AgentFixtureError'
+  }
+}
+
 export function parseAgentResponseFixture(
   value: unknown
 ): AgentResponseFixture {
   if (!isRecord(value) || typeof value.scenario !== 'string') {
-    throw new Error('Invalid agent response fixture: scenario must be a string')
+    throw new AgentFixtureError(
+      'Invalid agent response fixture: scenario must be a string'
+    )
   }
   if (!Array.isArray(value.frames) || value.frames.length === 0) {
-    throw new Error('Invalid agent response fixture: frames must be non-empty')
+    throw new AgentFixtureError(
+      'Invalid agent response fixture: frames must be non-empty'
+    )
   }
   if (!value.frames.every(isDraftPatchFrame)) {
-    throw new Error(
+    throw new AgentFixtureError(
       'Invalid agent response fixture: malformed draft_patch frame'
     )
   }
