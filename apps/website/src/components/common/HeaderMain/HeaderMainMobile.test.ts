@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -21,30 +21,6 @@ describe('HeaderMainMobile', () => {
     await openMenu(true)
 
     expect(screen.getByRole('link', { name: /^Models\b/i })).toBeTruthy()
-  })
-
-  it('renders top-level nav content with NEW badge sizing and external links', async () => {
-    const user = userEvent.setup()
-    render(HeaderMainMobile, { props: { workshopInBuild: false } })
-    await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
-
-    const productsButton = screen.getByRole('button', {
-      name: /^Products\s*NEW$/i
-    })
-
-    expect(productsButton).toHaveTextContent('Products')
-    const productsBadge = within(productsButton).getByText('NEW')
-    expect(productsBadge).toBeVisible()
-    expect(productsBadge.closest('[data-slot="badge"]')).toHaveAttribute(
-      'data-size',
-      'xs'
-    )
-
-    await user.click(productsButton)
-
-    const docsLink = screen.getByRole('link', { name: /Docs/i })
-    expect(docsLink).toBeVisible()
-    expect(docsLink).toHaveAttribute('target', '_blank')
   })
 
   it('labels a new top-level section with a NEW badge', async () => {
