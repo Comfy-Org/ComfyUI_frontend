@@ -37,7 +37,7 @@ Record flags:
 - `--backend <url>` connects to a custom backend and implies a custom distribution.
 - `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
 - `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
-- `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
+- `--pr <number>` verifies the checkout revision before recording and offers to switch safely. It fails closed when the PR cannot be verified, never switches a checkout with uncommitted changes, and only continues on another checkout when you explicitly choose that fallback.
 
 The distribution selector fetches and displays the currently deployed backend
 version for each cloud environment. `comfy-test check --distribution <id>`
