@@ -292,9 +292,15 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // Doc node ids whose human delete the host has applied but whose effect
-  // frame has not yet removed them from the doc. Kept pending for the
-  // reconcile so the result-to-effect window cannot resurrect them.
+  // Doc node ids whose human delete is pending or of unknown outcome: applied
+  // but its effect frame has not yet removed them from the doc
+  // ('acknowledged'), or its delivery to the host is itself unresolved
+  // ('unconfirmed' / 'undeliverable' / 'unacknowledged'). Kept pending for the
+  // reconcile so neither the result-to-effect window nor a delivery the sender
+  // could not confirm can resurrect them; a host-side rejection ('acknowledged'
+  // with the op in `skipped`, not `applied`) is the one outcome that does NOT
+  // add here, since the node legitimately still exists there. Self-cleans in
+  // `pendingHumanDeletes` once the host's own document agrees the node is gone.
   const confirmedDeletes = new Set<string>()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -327,6 +333,16 @@ function startAgentCrdtFollower(
         for (const op of outcome.ops) {
           if (op.op === 'delete_node' && applied.has(op.op_id))
             confirmedDeletes.add(String(op.node_id))
+        }
+      } else {
+        // 'unconfirmed' / 'undeliverable' / 'unacknowledged': the host's
+        // outcome for this delete is unknown, not negative - unlike a host
+        // rejection ('acknowledged' with the op in `skipped`), nothing here
+        // says the node still exists there. Treat it like an acknowledged
+        // delete so a reconcile run before redelivery or confirmation cannot
+        // resurrect the node the human just removed.
+        for (const op of outcome.ops) {
+          if (op.op === 'delete_node') confirmedDeletes.add(String(op.node_id))
         }
       }
       recordDevEvent('human_ops_settled', outcome)

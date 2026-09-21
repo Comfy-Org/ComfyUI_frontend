@@ -1,9 +1,15 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -38,6 +44,7 @@ describe('createOpSender', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(reportError).mockClear()
     sent = []
     settled = []
     resultListener = null
@@ -434,6 +441,27 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('an admission after detach settles undeliverable instead of vanishing', () => {
+    // Reachable in production: a re-entrant `enqueueHumanOperations` call from
+    // inside a settle listener, or a lingering caller that admits an edit
+    // after the CRDT follower has already torn down.
+    sender.detach()
+
+    sender.enqueue([addNode(1)])
+    sender.admit([addNode(2)])
+
+    expect(sent).toHaveLength(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2]])
+  })
+
   it('detach settles every outstanding batch instead of dropping it silently', () => {
     // #1 transmits and is left awaiting a result; #2 sits queued behind it;
     // #3 is only admitted, still open, never sealed into a wire batch. A
@@ -458,6 +486,57 @@ describe('createOpSender', () => {
         outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
       )
     ).toEqual([[1], [2], [3]])
+  })
+
+  it('detach settles every other batch and still unsubscribes when one listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    let unsubscribed = false
+    let threwOnce = false
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          unsubscribed = true
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (!threwOnce) {
+          threwOnce = true
+          throw new Error('listener boom')
+        }
+        localSettled.push(outcome)
+      }
+    })
+
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.admit([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    localSender.detach()
+
+    // The in-flight batch's settle (#1) is the one that throws and is lost
+    // to the caller; #2 and #3 still reach it, and the transport still
+    // unsubscribes despite the throw.
+    expect(localSettled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_op_sender_detach_settle_failed'
+      })
+    )
+    expect(unsubscribed).toBe(true)
   })
 
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
@@ -607,7 +686,7 @@ describe('createOpSender', () => {
       expect(sent[1].ops[0].op_id).toBe(sent[0].ops[0].op_id)
     })
 
-    it('detach drops a parked batch', () => {
+    it('detach settles a parked batch undeliverable instead of dropping it', () => {
       parkSecondBatch()
 
       sender.detach()
@@ -616,6 +695,10 @@ describe('createOpSender', () => {
 
       expect(sent).toHaveLength(1)
       expect(sender.pending()).toBe(0)
+      expect(settled.map((outcome) => outcome.state)).toEqual([
+        'acknowledged',
+        'undeliverable'
+      ])
     })
 
     it('suspend and resume are idempotent and leave an unsuspended sender sending', () => {
