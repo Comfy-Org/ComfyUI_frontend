@@ -15,26 +15,47 @@ import { parse } from 'yaml'
 
 const SCRIPT = join(import.meta.dirname, 'package-e2e-coverage.sh')
 
-interface WorkflowStep {
-  id?: string
-  if?: string
-  uses?: string
-  with?: { name?: string; path?: string }
+function readWorkflow(path: string): unknown {
+  return parse(readFileSync(path, 'utf8'))
 }
 
-interface WorkflowJob {
-  needs?: string[]
-  strategy?: { matrix?: { shardIndex?: number[]; shardTotal?: number[] } }
-  steps?: WorkflowStep[]
-  with?: { shard_total?: number; shards_succeeded?: string }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-interface E2eWorkflow {
-  jobs?: Record<string, WorkflowJob>
+/** Reads a nested field without asserting a shape the YAML never proved. */
+function field(source: unknown, ...path: string[]): unknown {
+  return path.reduce<unknown>(
+    (current, key) => (isRecord(current) ? current[key] : undefined),
+    source
+  )
 }
 
-const readWorkflow = (path: string) =>
-  parse(readFileSync(path, 'utf8')) as E2eWorkflow
+function jobSteps(workflow: unknown): unknown[] {
+  const jobs = field(workflow, 'jobs')
+  if (!isRecord(jobs)) return []
+  return Object.values(jobs).flatMap((job) => {
+    const steps = field(job, 'steps')
+    return Array.isArray(steps) ? steps : []
+  })
+}
+
+function isE2eCoverageUpload(step: unknown): boolean {
+  const uses = field(step, 'uses')
+  return (
+    typeof uses === 'string' &&
+    uses.startsWith('actions/upload-artifact@') &&
+    field(step, 'with', 'name') === 'e2e-coverage'
+  )
+}
+
+function uploadedCoveragePaths(file: string): string[] {
+  return jobSteps(readWorkflow(file))
+    .filter(isE2eCoverageUpload)
+    .flatMap((step) => String(field(step, 'with', 'path') ?? '').split('\n'))
+    .map((entry) => entry.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+}
 
 function coverage(sourcePrefix: string) {
   return Array.from(
@@ -115,10 +136,7 @@ exit 1
       mkdirSync(shard, { recursive: true })
       writeFileSync(join(shard, 'coverage.lcov'), contents)
     },
-    run(
-      expectedShards: string | number = 1,
-      shardsSucceeded: string | boolean = true
-    ) {
+    run(shardsSucceeded: string | boolean = true) {
       const result = spawnSync(
         'bash',
         [
@@ -126,7 +144,6 @@ exit 1
           shards,
           output,
           html,
-          String(expectedShards),
           String(shardsSucceeded),
           'abc1234def5678'
         ],
@@ -158,22 +175,19 @@ function readMetadata(outputDir: string): unknown {
 }
 
 describe('package-e2e-coverage.sh', () => {
-  it('marks a merge complete when every shard reported coverage', () => {
+  it('marks a merge complete when the shard matrix passed', () => {
     using fixture = coverageFixture()
     fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
     fixture.writeShard('e2e-coverage-shard-2', coverage('src'))
 
-    const result = fixture.run(2)
+    const result = fixture.run(true)
 
     expect(result.status).toBe(0)
     expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
-      'has-coverage=true\nshards-found=2\nshards-expected=2\ncomplete=true\n'
+      'has-coverage=true\ncomplete=true\n'
     )
     expect(readMetadata(fixture.output)).toEqual({
-      shardsFound: 2,
-      shardsExpected: 2,
       complete: true,
-      reason: '',
       sourceSha: 'abc1234def5678'
     })
     expect(result.output).not.toContain('::warning::')
@@ -181,25 +195,22 @@ describe('package-e2e-coverage.sh', () => {
 
   // Preserves #15342: a flaky shard must not discard every other shard's real
   // coverage. It stays published for Codecov and the PR comment, but flagged.
-  it('publishes a partial run with a whitespace path but flags it incomplete', () => {
+  it('publishes a run with a whitespace path but flags a red matrix', () => {
     using fixture = coverageFixture()
     fixture.writeShard('failed shard 1', coverage('src'))
 
-    const result = fixture.run(16)
+    const result = fixture.run(false)
 
     expect(result.status).toBe(0)
     expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
-      'has-coverage=true\nshards-found=1\nshards-expected=16\ncomplete=false\n'
+      'has-coverage=true\ncomplete=false\n'
     )
     expect(readMetadata(fixture.output)).toEqual({
-      shardsFound: 1,
-      shardsExpected: 16,
       complete: false,
-      reason: 'only 1 of 16 shards reported coverage',
       sourceSha: 'abc1234def5678'
     })
     expect(result.output).toContain(
-      '::warning::E2E coverage merge is not verified as whole — only 1 of 16 shards'
+      '::warning::E2E coverage is not verified as a whole merge'
     )
     expect(
       readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
@@ -207,35 +218,8 @@ describe('package-e2e-coverage.sh', () => {
 
     const summary = readFileSync(fixture.summary, 'utf8')
     expect(summary).toContain('failed shard 1')
-    expect(summary).toContain('**1 / 16** shards merged')
-    expect(summary).toContain('only 1 of 16 shards reported coverage')
+    expect(summary).toContain('the shard matrix did not pass')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(true)
-  })
-
-  // A shard that dies partway still uploads a tracefile via globalTeardown,
-  // so a full count alone cannot prove the merge is whole.
-  it('flags a full shard count incomplete when the matrix did not pass', () => {
-    using fixture = coverageFixture()
-    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
-    fixture.writeShard('e2e-coverage-shard-2', coverage('src'))
-
-    const result = fixture.run(2, false)
-
-    expect(result.status).toBe(0)
-    expect(readFileSync(fixture.githubOutput, 'utf8')).toContain(
-      'complete=false'
-    )
-    expect(readMetadata(fixture.output)).toEqual({
-      shardsFound: 2,
-      shardsExpected: 2,
-      complete: false,
-      reason:
-        'all 2 shards reported coverage but the matrix did not pass, so a shard may have stopped early',
-      sourceSha: 'abc1234def5678'
-    })
-    expect(result.output).toContain(
-      '::warning::E2E coverage merge is not verified as whole'
-    )
   })
 
   it('rejects a non-boolean shards-succeeded flag', () => {
@@ -253,7 +237,7 @@ describe('package-e2e-coverage.sh', () => {
   it('skips successfully when no shard artifacts exist', () => {
     using fixture = coverageFixture()
 
-    const result = fixture.run(16)
+    const result = fixture.run()
 
     expect(result.status).toBe(0)
     expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
@@ -266,41 +250,11 @@ describe('package-e2e-coverage.sh', () => {
     using fixture = coverageFixture()
     fixture.writeShard('served-bundle', coverage('assets'))
 
-    const result = fixture.run(1)
+    const result = fixture.run()
 
     expect(result.status).toBe(1)
     expect(result.output).toContain('Only 0 files under src/ or packages/')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(false)
-  })
-
-  it('rejects a non-numeric expected shard count', () => {
-    using fixture = coverageFixture()
-    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
-
-    const result = fixture.run('sixteen')
-
-    expect(result.status).toBe(1)
-    expect(result.output).toContain(
-      'expected-shards must be a positive integer'
-    )
-  })
-})
-
-// The packager cannot see the matrix that produced its shards, so the expected
-// count is passed in by hand. Nothing else stops the two from drifting.
-describe('shard total contract', () => {
-  it('passes the chromium matrix size to the coverage packager', () => {
-    const workflow = readWorkflow('.github/workflows/ci-tests-e2e.yaml')
-
-    const matrix =
-      workflow.jobs?.['playwright-tests-chromium-sharded']?.strategy?.matrix
-    const shardTotal = workflow.jobs?.['upload-e2e-coverage']?.with?.shard_total
-
-    expect(shardTotal).toBeTypeOf('number')
-    expect(matrix?.shardTotal).toEqual([shardTotal])
-    expect(matrix?.shardIndex).toEqual(
-      Array.from({ length: Number(shardTotal) }, (_, index) => index + 1)
-    )
   })
 })
 
@@ -312,26 +266,7 @@ describe('e2e-coverage artifact contract', () => {
     '.github/workflows/ci-tests-e2e-coverage-package.yaml',
     '.github/workflows/ci-tests-e2e-coverage.yaml'
   ])('uploads the coverage directory in %s', (file) => {
-    const uploads = Object.values(readWorkflow(file).jobs ?? {})
-      .flatMap((job) => job.steps ?? [])
-      .filter(
-        (step) =>
-          step.uses?.startsWith('actions/upload-artifact@') === true &&
-          step.with?.name === 'e2e-coverage'
-      )
-
-    expect(uploads).not.toHaveLength(0)
-    for (const upload of uploads) {
-      const paths = (upload.with?.path ?? '')
-        .split('\n')
-        .map((entry) => entry.trim())
-        .filter(Boolean)
-
-      expect(paths).not.toHaveLength(0)
-      for (const path of paths) {
-        expect(path.replace(/\/$/, '')).toBe('coverage/playwright')
-      }
-    }
+    expect(uploadedCoveragePaths(file)).toEqual(['coverage/playwright'])
   })
 })
 
@@ -340,32 +275,49 @@ describe('e2e-coverage artifact contract', () => {
 describe('completeness gate wiring', () => {
   const SHARDED = 'playwright-tests-chromium-sharded'
 
-  it('derives shards_succeeded from the sharded matrix verdict', () => {
-    const workflow = readWorkflow('.github/workflows/ci-tests-e2e.yaml')
-    const job = workflow.jobs?.['upload-e2e-coverage']
+  // The matrix can only stand in for completeness while a shard that produced
+  // no coverage fails here. Soften this and shards go missing silently again.
+  it('fails a shard whose coverage upload finds nothing', () => {
+    const upload = jobSteps(
+      readWorkflow('.github/workflows/ci-tests-e2e.yaml')
+    ).find(
+      (step) =>
+        field(step, 'with', 'name') ===
+        'e2e-coverage-shard-${{ matrix.shardIndex }}'
+    )
 
-    expect(job?.needs).toContain(SHARDED)
-    expect(job?.with?.shards_succeeded).toBe(
+    expect(field(upload, 'with', 'if-no-files-found')).toBe('error')
+  })
+
+  it('derives shards_succeeded from the sharded matrix verdict', () => {
+    const job = field(
+      readWorkflow('.github/workflows/ci-tests-e2e.yaml'),
+      'jobs',
+      'upload-e2e-coverage'
+    )
+
+    expect(field(job, 'needs')).toContain(SHARDED)
+    expect(field(job, 'with', 'shards_succeeded')).toBe(
       `\${{ needs.${SHARDED}.result == 'success' }}`
     )
   })
 
   it('gates the saved E2E baseline on a whole merge', () => {
-    const workflow = readWorkflow(
-      '.github/workflows/coverage-slack-notify.yaml'
+    const steps = jobSteps(
+      readWorkflow('.github/workflows/coverage-slack-notify.yaml')
     )
-    const steps = Object.values(workflow.jobs ?? {}).flatMap(
-      (job) => job.steps ?? []
-    )
-
-    expect(steps.some((step) => step.id === 'e2e-meta')).toBe(true)
-
     const save = steps.find(
       (step) =>
-        step.uses?.startsWith('actions/upload-artifact@') === true &&
-        step.with?.name === 'e2e-coverage-baseline'
+        field(step, 'with', 'name') === 'e2e-coverage-baseline' &&
+        String(field(step, 'uses')).startsWith('actions/upload-artifact@')
     )
-    expect(save?.if).toContain("steps.e2e-meta.outputs.complete == 'true'")
-    expect(save?.if).toContain('success()')
+
+    expect(steps.map((step) => field(step, 'id')).filter(Boolean)).toContain(
+      'e2e-meta'
+    )
+    expect(field(save, 'if')).toContain(
+      "steps.e2e-meta.outputs.complete == 'true'"
+    )
+    expect(field(save, 'if')).toContain('success()')
   })
 })

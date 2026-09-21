@@ -12,62 +12,31 @@ const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const MODULE = join(import.meta.dirname, 'coverage-metadata.ts')
 
 describe('parseCoverageMetadata', () => {
-  it('reads the shard accounting written by the packager', () => {
+  it('reads what the packager wrote', () => {
     expect(
-      parseCoverageMetadata(
-        '{"shardsFound":14,"shardsExpected":16,"complete":false}'
-      )
-    ).toEqual({
-      shardsFound: 14,
-      shardsExpected: 16,
-      complete: false,
-      reason: undefined
-    })
+      parseCoverageMetadata('{"complete":false,"sourceSha":"abc1234"}')
+    ).toEqual({ complete: false, sourceSha: 'abc1234' })
   })
 
-  // Only `complete` gates the trust decision, so it must survive counts that
-  // are absent or the wrong shape rather than being discarded with them.
-  it.for([
-    ['absent', '{"complete":false}'],
-    ['non-numeric', '{"complete":false,"shardsFound":"14"}']
-  ])(
-    'honours an explicit incomplete flag when counts are %s',
-    ([, content]) => {
-      expect(parseCoverageMetadata(content)?.complete).toBe(false)
-    }
-  )
-
-  it('omits fields it cannot read', () => {
+  it('omits a source sha it cannot read', () => {
     expect(parseCoverageMetadata('{"complete":true}')).toEqual({
       complete: true,
-      shardsFound: undefined,
-      shardsExpected: undefined,
-      reason: undefined
+      sourceSha: undefined
     })
   })
 
-  it('carries the reason an incomplete merge gives', () => {
+  it('ignores unrelated fields rather than rejecting the file', () => {
     expect(
-      parseCoverageMetadata('{"complete":false,"reason":"matrix did not pass"}')
-        ?.reason
-    ).toBe('matrix did not pass')
-  })
-
-  it('treats an empty reason as absent', () => {
-    expect(
-      parseCoverageMetadata('{"complete":true,"reason":""}')?.reason
-    ).toBeUndefined()
+      parseCoverageMetadata('{"complete":true,"shardsFound":14}')?.complete
+    ).toBe(true)
   })
 
   it.for([
     ['malformed JSON', '{'],
     ['a JSON scalar', '42'],
     ['null', 'null'],
-    ['a missing complete flag', '{"shardsFound":16,"shardsExpected":16}'],
-    [
-      'a non-boolean complete flag',
-      '{"shardsFound":16,"shardsExpected":16,"complete":"yes"}'
-    ]
+    ['a missing complete flag', '{"sourceSha":"abc1234"}'],
+    ['a non-boolean complete flag', '{"complete":"yes"}']
   ])('returns null for %s', ([, content]) => {
     expect(parseCoverageMetadata(content)).toBeNull()
   })
@@ -88,16 +57,11 @@ describe('completeness CLI', () => {
   }
 
   it('prints true only for a whole merge', () => {
-    expect(run('{"shardsFound":16,"shardsExpected":16,"complete":true}')).toBe(
-      'true'
-    )
+    expect(run('{"complete":true,"sourceSha":"abc1234"}')).toBe('true')
   })
 
   it.for([
-    [
-      'an incomplete merge',
-      '{"shardsFound":14,"shardsExpected":16,"complete":false}'
-    ],
+    ['an incomplete merge', '{"complete":false}'],
     ['malformed metadata', '{ truncated'],
     ['metadata without a flag', '{}'],
     ['an absent file', null]

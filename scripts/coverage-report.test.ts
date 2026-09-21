@@ -31,40 +31,17 @@ function render(metadata: Record<string, unknown> | null): string {
 
 describe('coverage-report shard banner', () => {
   it('says nothing extra for a whole merge', () => {
-    const output = render({
-      shardsFound: 16,
-      shardsExpected: 16,
-      complete: true
-    })
+    const output = render({ complete: true })
 
     expect(output).not.toContain('[!WARNING]')
     expect(output).not.toContain('[!NOTE]')
     expect(output).toContain('| Lines | 3 | 6 | 50.0%')
   })
 
-  // A short shard count is provably non-comparable, so it warns outright.
-  it('warns when shards are missing', () => {
-    const output = render({
-      shardsFound: 14,
-      shardsExpected: 16,
-      complete: false,
-      reason: 'only 14 of 16 shards reported coverage'
-    })
-
-    expect(output).toContain('[!WARNING]')
-    expect(output).toContain('only 14 of 16 shards reported coverage')
-    expect(output).toContain('not comparable with a whole merge')
-  })
-
-  // Every shard reported, so the totals may well be fine - the run just
-  // cannot prove it. That earns a note, not a warning.
-  it('only notes an unverified merge when every shard reported', () => {
-    const output = render({
-      shardsFound: 16,
-      shardsExpected: 16,
-      complete: false,
-      reason: 'the matrix did not pass'
-    })
+  // The totals may well be fine - a red matrix just cannot prove it. That
+  // earns a note, not a warning.
+  it('notes an unverified merge when the matrix did not pass', () => {
+    const output = render({ complete: false })
 
     expect(output).toContain('[!NOTE]')
     expect(output).not.toContain('[!WARNING]')
@@ -78,12 +55,10 @@ describe('coverage-report shard banner', () => {
     expect(output).toContain('could not be verified')
   })
 
-  it('still reports the totals whatever the banner says', () => {
-    for (const metadata of [
-      null,
-      { shardsFound: 1, shardsExpected: 16, complete: false }
-    ]) {
-      expect(render(metadata)).toContain('| Lines | 3 | 6 | 50.0%')
-    }
+  it.for([
+    ['absent metadata', null],
+    ['an unverified merge', { complete: false }]
+  ] as const)('still reports the totals with %s', ([, metadata]) => {
+    expect(render(metadata)).toContain('| Lines | 3 | 6 | 50.0%')
   })
 })

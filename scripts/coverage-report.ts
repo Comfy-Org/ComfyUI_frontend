@@ -131,28 +131,9 @@ if (!metadata) {
     ''
   )
 } else if (!metadata.complete) {
-  const { shardsFound, shardsExpected, reason } = metadata
-  // A short shard count is provably non-comparable; a failed matrix with every
-  // shard present only means it could not be confirmed.
-  const truncated =
-    shardsFound !== undefined &&
-    shardsExpected !== undefined &&
-    shardsFound < shardsExpected
-  const detail =
-    reason ??
-    (truncated
-      ? `only ${shardsFound} of ${shardsExpected} shards reported coverage`
-      : 'not every shard reported coverage')
   lines.push(
-    ...(truncated
-      ? [
-          '> [!WARNING]',
-          `> Incomplete shard merge — ${detail}. These totals are not comparable with a whole merge.`
-        ]
-      : [
-          '> [!NOTE]',
-          `> Unverified shard merge — ${detail}. These totals cannot be confirmed comparable with a whole merge.`
-        ]),
+    '> [!NOTE]',
+    '> The shard matrix did not pass, so these totals cannot be confirmed comparable with a whole merge.',
     ''
   )
 }

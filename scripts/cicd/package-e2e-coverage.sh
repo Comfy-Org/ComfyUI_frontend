@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards> <shards-succeeded> <source-sha>'
+USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <shards-succeeded> <source-sha>'
 SHARDS_DIR="${1:?$USAGE}"
 COVERAGE_DIR="${2:?$USAGE}"
 HTML_DIR="${3:?$USAGE}"
-EXPECTED_SHARDS="${4:?$USAGE}"
-SHARDS_SUCCEEDED="${5:?$USAGE}"
-SOURCE_SHA="${6:?$USAGE}"
-
-# Bash resolves a non-numeric operand of -lt to 0, which would silently mark
-# every partial merge complete.
-if ! [[ "$EXPECTED_SHARDS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "::error::expected-shards must be a positive integer, got '$EXPECTED_SHARDS'."
-  exit 1
-fi
+SHARDS_SUCCEEDED="${4:?$USAGE}"
+SOURCE_SHA="${5:?$USAGE}"
 
 if [[ "$SHARDS_SUCCEEDED" != true && "$SHARDS_SUCCEEDED" != false ]]; then
   echo "::error::shards-succeeded must be 'true' or 'false', got '$SHARDS_SUCCEEDED'."
   exit 1
 fi
+
+UNVERIFIED_REASON='E2E coverage is not verified as a whole merge: the shard matrix did not pass, so a shard may have stopped early or produced nothing.'
 
 append_summary() {
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
@@ -42,30 +36,14 @@ if [[ ${#COVERAGE_FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
-FOUND_SHARDS=${#COVERAGE_FILES[@]}
-
-# A tracefile proves a shard uploaded, not that it finished: globalTeardown
-# writes one even for a shard that died partway, and that shard's missing hits
-# skew the merge exactly like an absent one. The matrix verdict is the
-# coarsest signal that separates the two, and the only one available here.
-REASON=''
-if [[ "$FOUND_SHARDS" -lt "$EXPECTED_SHARDS" ]]; then
-  REASON="only $FOUND_SHARDS of $EXPECTED_SHARDS shards reported coverage"
-elif [[ "$SHARDS_SUCCEEDED" != true ]]; then
-  REASON="all $EXPECTED_SHARDS shards reported coverage but the matrix did not pass, so a shard may have stopped early"
-fi
-
-if [[ -n "$REASON" ]]; then
-  COMPLETE=false
-else
-  COMPLETE=true
-fi
+# A shard that produced no coverage fails its own upload, and one that died
+# partway still writes a tracefile, so neither absence nor thinness is visible
+# here. Both turn the matrix red, which is the signal this reads.
+COMPLETE="$SHARDS_SUCCEEDED"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     echo 'has-coverage=true'
-    echo "shards-found=$FOUND_SHARDS"
-    echo "shards-expected=$EXPECTED_SHARDS"
     echo "complete=$COMPLETE"
   } >> "$GITHUB_OUTPUT"
 fi
@@ -74,12 +52,12 @@ mkdir -p "$COVERAGE_DIR"
 
 # A lost shard drops hits from commonly-loaded code and can remove files only
 # it exercised, so an incomplete merge is not comparable with a whole one.
-printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s","sourceSha":"%s"}\n' \
-  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" "$REASON" "$SOURCE_SHA" \
+printf '{"complete":%s,"sourceSha":"%s"}\n' \
+  "$COMPLETE" "$SOURCE_SHA" \
   > "$COVERAGE_DIR/coverage-metadata.json"
 
 if [[ "$COMPLETE" != true ]]; then
-  echo "::warning::E2E coverage merge is not verified as whole — $REASON. It is excluded from trend reporting."
+  echo "::warning::$UNVERIFIED_REASON It is excluded from trend reporting."
 fi
 
 ADD_ARGS=()
@@ -94,11 +72,10 @@ MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' "$COVERAGE_DIR/coverage.lcov")
 append_summary '### Merged coverage'
 append_summary "- **$MERGED_SF** source files"
 append_summary "- **$MERGED_LH / $MERGED_LF** lines hit"
-append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
 if [[ "$COMPLETE" != true ]]; then
   append_summary ''
   append_summary "> [!WARNING]"
-  append_summary "> Not verified as a whole merge — $REASON. It is excluded from trend reporting."
+  append_summary "> $UNVERIFIED_REASON It is excluded from trend reporting."
 fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'
@@ -127,7 +104,7 @@ lcov --remove "$COVERAGE_DIR/coverage.lcov" \
 
 HTML_TITLE='ComfyUI E2E Coverage'
 if [[ "$COMPLETE" != true ]]; then
-  HTML_TITLE="$HTML_TITLE — NOT VERIFIED AS A WHOLE MERGE ($REASON)"
+  HTML_TITLE="$HTML_TITLE — NOT VERIFIED AS A WHOLE MERGE"
 fi
 
 genhtml "$COVERAGE_DIR/coverage.lcov" \

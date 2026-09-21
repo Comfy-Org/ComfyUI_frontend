@@ -225,15 +225,11 @@ describe('buildPayload', () => {
   })
 })
 
-describe('partial shard merges', () => {
-  it('reports E2E movement when every shard contributed', () => {
+describe('unverified shard merges', () => {
+  it('reports E2E movement when the merge is verified whole', () => {
     using fixture = notifyFixture()
     fixture.writeE2eBaseline(64, { complete: true })
-    fixture.writeE2e(67, {
-      shardsFound: 16,
-      shardsExpected: 16,
-      complete: true
-    })
+    fixture.writeE2e(67, { complete: true })
 
     const result = fixture.run()
 
@@ -241,16 +237,12 @@ describe('partial shard merges', () => {
     expect(result.stdout).toContain('64.0% → 67.0%')
   })
 
-  // The movement a partial run appears to make is an artifact of its lost
-  // shards, not coverage the team gained or lost.
-  it('says nothing when the merge lost shards', () => {
+  // The movement an unverified run appears to make can be an artifact of a
+  // shard that stopped early, not coverage the team gained or lost.
+  it('says nothing when the merge is not verified whole', () => {
     using fixture = notifyFixture()
     fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
-    fixture.writeE2e(67, {
-      shardsFound: 14,
-      shardsExpected: 16,
-      complete: false
-    })
+    fixture.writeE2e(67, { complete: false })
 
     const result = fixture.run()
 
@@ -331,12 +323,10 @@ describe('comparison span', () => {
     expect(result.stdout).toBe('')
   })
 
-  it('withholds a baseline whose own metadata says it was partial', () => {
+  it('withholds a baseline whose own metadata says it was unverified', () => {
     using fixture = notifyFixture()
     fixture.writeE2eBaseline(64, {
       complete: false,
-      shardsFound: 3,
-      shardsExpected: 16,
       sourceSha: 'abc1234def5678'
     })
     fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })

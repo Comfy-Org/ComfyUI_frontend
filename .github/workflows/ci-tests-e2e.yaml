@@ -125,7 +125,10 @@ jobs:
           name: e2e-coverage-shard-${{ matrix.shardIndex }}
           path: coverage/playwright/
           retention-days: 1
-          if-no-files-found: warn
+          # A shard that produced no coverage fails here rather than going
+          # missing from the merge, so the matrix result is the only
+          # completeness signal the packager needs.
+          if-no-files-found: error
 
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
@@ -260,11 +263,9 @@ jobs:
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
-      # Kept in sync with playwright-tests-chromium-sharded's shardTotal by
-      # scripts/cicd/package-e2e-coverage.test.ts.
-      shard_total: 16
-      # A shard that died partway still uploads a tracefile, so the merge is
-      # only trustworthy for trend reporting when the matrix itself passed.
+      # A shard that died partway still uploads a tracefile, and one that
+      # produced none fails its own upload, so the matrix verdict is what
+      # makes the merge trustworthy for trend reporting.
       shards_succeeded: ${{ needs.playwright-tests-chromium-sharded.result == 'success' }}
 
   # Records video only for tests newly added in this PR, to keep cost bounded.

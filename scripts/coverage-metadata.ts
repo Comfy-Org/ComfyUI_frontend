@@ -5,10 +5,6 @@ export const COVERAGE_METADATA_FILE = 'coverage-metadata.json'
 
 export interface CoverageMetadata {
   complete: boolean
-  /** Present for the warning text only; never gates the trust decision. */
-  shardsFound?: number
-  shardsExpected?: number
-  reason?: string
   /** Commit the shards ran against, so a lagging baseline can name itself. */
   sourceSha?: string
 }
@@ -30,18 +26,6 @@ export function parseCoverageMetadata(
 
   return {
     complete: parsed.complete,
-    shardsFound:
-      'shardsFound' in parsed && typeof parsed.shardsFound === 'number'
-        ? parsed.shardsFound
-        : undefined,
-    shardsExpected:
-      'shardsExpected' in parsed && typeof parsed.shardsExpected === 'number'
-        ? parsed.shardsExpected
-        : undefined,
-    reason:
-      'reason' in parsed && typeof parsed.reason === 'string' && parsed.reason
-        ? parsed.reason
-        : undefined,
     sourceSha:
       'sourceSha' in parsed &&
       typeof parsed.sourceSha === 'string' &&
