@@ -286,6 +286,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ),
       selection: selectedNodes(tags),
       attachments: attachments?.map((attachment) => attachment.ref),
+      // wfContext identifies a target tab with no cloud id yet - a fresh,
+      // unsaved tab, not the absence of a tab (that case leaves wfContext
+      // itself undefined, see targetWorkflowTurnContext). Telling the server
+      // this is a selected-but-unbound tab, not "nothing selected", is what
+      // keeps the seed from telling the model no workflow is selected - see
+      // PM-1429/PM-1430.
+      ...(wfContext !== undefined && wfContext.id === undefined
+        ? { currentTabUnbound: true }
+        : {}),
       ...(canSendDraft(threadId, wfContext, draft) ? { draft } : {})
     }
   }
