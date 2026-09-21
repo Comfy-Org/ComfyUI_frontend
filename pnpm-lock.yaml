@@ -176,7 +176,7 @@ catalogs:
       version: 14.4.0
     '@webgpu/types':
       specifier: ^0.1.72
-      version: 0.1.72
+      version: 0.1.74
     ag-psd:
       specifier: ^31.0.2
       version: 31.0.2
@@ -254,7 +254,7 @@ catalogs:
       version: 3.25.0
     fast-check:
       specifier: ^4.10.0
-      version: 4.10.1
+      version: 4.10.2
     firebase:
       specifier: ^11.6.0
       version: 11.10.0
@@ -302,7 +302,7 @@ catalogs:
       version: 3.0.4
     mediabunny:
       specifier: ^1.56.2
-      version: 1.58.0
+      version: 1.58.1
     mime-types:
       specifier: 3.0.2
       version: 3.0.2
@@ -317,7 +317,7 @@ catalogs:
       version: 2.13.0
     openai:
       specifier: ^7.15.0
-      version: 7.19.0
+      version: 7.20.0
     oxfmt:
       specifier: ^0.68.0
       version: 0.68.0
@@ -504,8 +504,8 @@ importers:
         specifier: workspace:*
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.3.0
+        version: 0.3.0
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -646,7 +646,7 @@ importers:
         version: 15.0.12
       mediabunny:
         specifier: 'catalog:'
-        version: 1.58.0
+        version: 1.58.1
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
@@ -776,7 +776,7 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       '@webgpu/types':
         specifier: 'catalog:'
-        version: 0.1.72
+        version: 0.1.74
       cross-env:
         specifier: 'catalog:'
         version: 10.1.0
@@ -821,7 +821,7 @@ importers:
         version: 3.25.0
       fast-check:
         specifier: 'catalog:'
-        version: 4.10.1
+        version: 4.10.2
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.6
@@ -857,7 +857,7 @@ importers:
         version: 2.13.0
       openai:
         specifier: 'catalog:'
-        version: 7.19.0(undici@7.29.0)(ws@8.21.1)(zod@3.25.76)
+        version: 7.20.0(undici@7.29.0)(ws@8.21.1)(zod@3.25.76)
       oxfmt:
         specifier: 'catalog:'
         version: 0.68.0
@@ -1943,8 +1943,8 @@ packages:
     resolution: {integrity: sha512-dlT1m5e/0yUL0kRNcQn7yGLVThkgbB0Ga/1AmfDDC/8ik6AIiSf2QLQO2zPYvefsHP0aFgxO93cVLCCfDp7kzQ==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.2.1':
-    resolution: {integrity: sha512-ReaO6GIKUv8ONwhFk/hjJPYiLU7aqbSgjtSaS754gUZqu8ouqLJiKIAJMqk76N92RnPeXALLjBH5bFugkaI3YQ==}
+  '@comfyorg/comfy-multi-player@0.3.0':
+    resolution: {integrity: sha512-s0jt4KpnCWnUd9vbdljGrbClMcXbpzor3aZWmn6qPVM0YqfwepocXmAYOEgt/kohnwPzGR+/xM6ckbCsErHgVg==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -5255,8 +5255,8 @@ packages:
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
 
-  '@webgpu/types@0.1.72':
-    resolution: {integrity: sha512-0cF7RFM2edNoiIS1ODJp0/Gzv4/xSXhwoR0YCza+OWpJWtn4wmo9DvK91aLlH9+uUnwIriP7ZiC3WitmyhuzBw==}
+  '@webgpu/types@0.1.74':
+    resolution: {integrity: sha512-lgiI4hbuLcI9unnm2cL/tvCaQU45dp0xcLWJh5uB/9MBGvIA4F8XIk7nSiBeg+K4xWGYwgZKn80LmERI5CxoTA==}
 
   '@xstate/fsm@1.6.5':
     resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
@@ -6368,8 +6368,8 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
-  fast-check@4.10.1:
-    resolution: {integrity: sha512-sB5Vghiu8MyCyToHoBVGsT0baZg3sZWNIY+a6Ct2EDrQJlT4YdH6MC1BSLNe3kX1k5i5g0q1O52XFgcKK/rGHg==}
+  fast-check@4.10.2:
+    resolution: {integrity: sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw==}
     engines: {node: '>=12.17.0'}
 
   fast-deep-equal@3.1.3:
@@ -6493,8 +6493,8 @@ packages:
     resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
     engines: {node: '>= 6'}
 
-  formatly@0.7.0:
-    resolution: {integrity: sha512-7CXJtIIA0zy/u12StsYk25qVKxvdLA2ep2sTNxK3ov0mGNIIDqIvAXDSgTnAfDJFsPfWjuz0WjfYSdpvnLA5Tg==}
+  formatly@0.7.1:
+    resolution: {integrity: sha512-ESuCEJE0SGgabl9q+zABI8LhJDmF+8nhpuqDzuM48HfJ9QTD5o6PqFJDFZY7w6f8xsh5lixuj5nJsQNvYOWvKQ==}
     engines: {node: '>=18.3.0'}
     hasBin: true
 
@@ -7500,8 +7500,8 @@ packages:
   media-encoder-host@9.0.31:
     resolution: {integrity: sha512-PTgBe18JxIAntMnxiiPU8bnWZi75ZVHp+ed9Zmm+ogUmtbEbCNkuuDu5T86FlEa2ekiQ0G7Lx0F7xA9EB+FKCA==}
 
-  mediabunny@1.58.0:
-    resolution: {integrity: sha512-0jW6vSDVqWwNe3+WBryrMzC2mUBfk6E5KQLGXLdKVGzclceXXIsbayEkAsNDCuoTcoMiVI62sPDnkkFDxiMjGw==}
+  mediabunny@1.58.1:
+    resolution: {integrity: sha512-edscMXOwBgUlMT+45wpAHdiXTGukCQb1nOJPE2D+fM4esNhAvGyB2yGGgnEer2VSwhEg+7gMliZDDQQqLaR7nA==}
 
   meow@14.1.0:
     resolution: {integrity: sha512-EDYo6VlmtnumlcBCbh1gLJ//9jvM/ndXHfVXIFrZVr6fGcwTUyCTFNTLCKuY3ffbK8L/+3Mzqnd58RojiZqHVw==}
@@ -7839,8 +7839,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@7.19.0:
-    resolution: {integrity: sha512-MX2s3u2L5racTO0CC/SWpCOasJQBCJrqLKXK+l82cAhdeF8mPMBEe/gxMm0ZFa2xpKpOFLRjxv5afYEZbBXmbQ==}
+  openai@7.20.0:
+    resolution: {integrity: sha512-5x5ru4cKEvEqHqYZbdIbT57OE7KqmP9YYxZiUKuKng016grOHXqom1vmu34MTPPW30q+lcP9RhxAbaRse+Xlcw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -10615,7 +10615,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.2.1':
+  '@comfyorg/comfy-multi-player@0.3.0':
     dependencies:
       yjs: 13.6.32
 
@@ -13769,7 +13769,7 @@ snapshots:
 
   '@webcontainer/env@1.1.1': {}
 
-  '@webgpu/types@0.1.72': {}
+  '@webgpu/types@0.1.74': {}
 
   '@xstate/fsm@1.6.5': {}
 
@@ -15057,7 +15057,7 @@ snapshots:
       '@fallow-cli/win32-x64-msvc': 3.25.0
       fallow-type-aware: 3.25.0
 
-  fast-check@4.10.1:
+  fast-check@4.10.2:
     dependencies:
       pure-rand: 8.4.2
 
@@ -15213,7 +15213,7 @@ snapshots:
       hasown: 2.0.4
       mime-types: 2.1.35
 
-  formatly@0.7.0:
+  formatly@0.7.1:
     dependencies:
       fd-package-json: 2.0.0
       package-manager-detector: 1.8.0
@@ -15911,7 +15911,7 @@ snapshots:
   knip@6.37.0:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.7)
-      formatly: 0.7.0
+      formatly: 0.7.1
       get-tsconfig: 4.14.3
       jiti: 2.7.0
       oxc-parser: 0.150.0
@@ -16370,7 +16370,7 @@ snapshots:
       media-encoder-host-worker: 10.0.29
       tslib: 2.8.1
 
-  mediabunny@1.58.0:
+  mediabunny@1.58.1:
     dependencies:
       '@types/dom-mediacapture-transform': 0.1.12
       '@types/dom-webcodecs': 0.1.13
@@ -16861,7 +16861,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@7.19.0(undici@7.29.0)(ws@8.21.1)(zod@3.25.76):
+  openai@7.20.0(undici@7.29.0)(ws@8.21.1)(zod@3.25.76):
     optionalDependencies:
       undici: 7.29.0
       ws: 8.21.1

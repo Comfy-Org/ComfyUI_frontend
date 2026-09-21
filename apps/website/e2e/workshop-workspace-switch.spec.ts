@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 
+import { AccountMenu } from './fixtures/accountMenu'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
 const WORKSPACES: ListWorkspacesResponse = {
@@ -84,20 +85,6 @@ async function startRun(page: Page) {
   return output
 }
 
-function accountMenu(page: Page) {
-  const trigger = page
-    .getByTestId('desktop-nav-cta')
-    .getByTestId('header-account')
-  return {
-    open: () => trigger.click(),
-    pickTeam: async () => {
-      await trigger.click()
-      await page.getByTestId('account-workspace').click()
-      await page.getByTestId(`account-workspace-${TEAM.id}`).click()
-    }
-  }
-}
-
 test('switching workspace during a run asks before it throws the run away', async ({
   page,
   modelsAccount
@@ -106,26 +93,32 @@ test('switching workspace during a run asks before it throws the run away', asyn
   // The run never answers, so it is still going when the workspace changes.
   await page.route('**/v2/models/**', () => {})
 
-  await signIn(page, modelsAccount)
-  const output = await startRun(page)
-  const menu = accountMenu(page)
-
-  await menu.pickTeam()
+  await test.step('sign in', () => signIn(page, modelsAccount))
+  const output = await test.step('start a run', () => startRun(page))
+  const menu = new AccountMenu(page)
   const dialog = page.getByTestId('run-leave-dialog')
-  await expect(dialog).toBeVisible()
 
-  await page.getByTestId('run-leave-stay').click()
-  await expect(dialog).toBeHidden()
-  await expect(output).toHaveAttribute('data-state', 'running')
+  await test.step('staying keeps the run', async () => {
+    await menu.pickWorkspace(TEAM.id)
+    await expect(dialog).toBeVisible()
 
-  await menu.pickTeam()
-  await page.getByTestId('run-leave-confirm').click()
-  await expect(output).toHaveAttribute('data-state', 'cancelled')
+    await page.getByTestId('run-leave-stay').click()
+    await expect(dialog).toBeHidden()
+    await expect(output).toHaveAttribute('data-state', 'running')
+  })
 
-  await menu.open()
-  await expect(page.getByTestId('account-workspace-current')).toContainText(
-    TEAM.name
-  )
+  await test.step('leaving throws the run away', async () => {
+    await menu.pickWorkspace(TEAM.id)
+    await page.getByTestId('run-leave-confirm').click()
+    await expect(output).toHaveAttribute('data-state', 'cancelled')
+  })
+
+  await test.step('the account menu shows the team workspace', async () => {
+    await menu.open()
+    await expect(page.getByTestId('account-workspace-current')).toContainText(
+      TEAM.name
+    )
+  })
 })
 
 test('a run that ends under the question answers it', async ({
@@ -148,21 +141,27 @@ test('a run that ends under the question answers it', async ({
     })
   })
 
-  await signIn(page, modelsAccount)
-  const output = await startRun(page)
-  const menu = accountMenu(page)
-
-  await menu.pickTeam()
+  await test.step('sign in', () => signIn(page, modelsAccount))
+  const output = await test.step('start a run', () => startRun(page))
+  const menu = new AccountMenu(page)
   const dialog = page.getByTestId('run-leave-dialog')
-  await expect(dialog).toBeVisible()
 
-  land()
+  await test.step('switching workspace raises the question', async () => {
+    await menu.pickWorkspace(TEAM.id)
+    await expect(dialog).toBeVisible()
+  })
 
-  await expect(output).toHaveAttribute('data-state', 'failed')
-  await expect(dialog).toBeHidden()
+  await test.step('the run ending answers the question', async () => {
+    land()
 
-  await menu.open()
-  await expect(page.getByTestId('account-workspace-current')).toContainText(
-    TEAM.name
-  )
+    await expect(output).toHaveAttribute('data-state', 'failed')
+    await expect(dialog).toBeHidden()
+  })
+
+  await test.step('the account menu shows the team workspace', async () => {
+    await menu.open()
+    await expect(page.getByTestId('account-workspace-current')).toContainText(
+      TEAM.name
+    )
+  })
 })
