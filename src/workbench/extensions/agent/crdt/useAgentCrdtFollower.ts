@@ -29,6 +29,7 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
+import type { DocFrameTransport } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
@@ -73,6 +74,17 @@ interface AgentCrdtOutcomeCounters {
   /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
   dropped: number
 }
+
+/**
+ * Why the follower can no longer deliver the document it intends to follow.
+ * `refused`: the host refused the subscribe and the FE-1901 retry budget is
+ * spent. `schema_error`: the KA-11 read gate closed on an unreadable doc.
+ * Either way `workflowId` (intent) is still set, but nothing will ever arrive
+ * for it until a confirmed subscribe or a retarget clears this. Distinct from
+ * a plain `connected: false`, which a reconnect produces for a moment and
+ * which the subscribe machinery repairs on its own.
+ */
+type AgentCrdtTerminalState = 'refused' | 'schema_error' | null
 
 function liveAddedNodeIds(
   added: readonly string[],
@@ -153,6 +165,7 @@ export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with
@@ -200,7 +213,15 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  /**
+   * Where document frames travel. Defaults to ComfyUI's same-origin socket,
+   * which carries them only because ingest relays the agent's frames onto it.
+   * A STANDALONE agent has no ingest, and ComfyUI's socket carries nothing from
+   * it, so this default can never see an update there — pass the standalone
+   * transport instead (see standaloneDocFrameTransport).
+   */
+  baseTransport: DocFrameTransport = apiTransport
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -210,6 +231,7 @@ export function useAgentCrdtFollower(
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
+    terminal: null,
     outcomes: {
       received: 0,
       applied: 0,
@@ -238,7 +260,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          baseTransport
         )
       )
     },
@@ -266,9 +289,11 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  baseTransport: DocFrameTransport
 ) {
   const connected = ref(false)
+  const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -282,7 +307,7 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport())
+  const client = new DocFrameClient(createLoggedTransport(baseTransport))
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -413,10 +438,15 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
+      // Only the refusal nothing will retry is terminal: while a retry is
+      // scheduled the subscribe machinery still owns the outcome, and the
+      // panel must keep withholding the draft seed exactly as on a reconnect.
+      if (lifecycle.onSubscribeRefused() === 'exhausted')
+        terminal.value = 'refused'
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -530,6 +560,7 @@ function startAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -564,12 +595,13 @@ function startAgentCrdtFollower(
     if (typeof detail?.workflowId !== 'string') return
     lifecycle.onSubscribeSent(detail.workflowId)
   }
-  const onReconnected: EventListener = () => {
+  const handleReconnected = (): void => {
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
+  const onReconnected: EventListener = () => handleReconnected()
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
    *
@@ -584,11 +616,12 @@ function startAgentCrdtFollower(
    * nothing unless a refused subscribe has a scheduled retry. In that case,
    * the retry timer owns the next attempt and its backoff.
    */
-  const onSocketActivity: EventListener = () => {
+  const reconcileIfIdle = (): void => {
     if (lifecycle.shouldDeferSubscribe()) return
     bridge.reconcile()
     resumeHeldOpsIfSubscribed()
   }
+  const onSocketActivity: EventListener = () => reconcileIfIdle()
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
@@ -601,6 +634,13 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
+  // A transport on a socket other than ComfyUI's (the standalone agent's)
+  // announces its own opens. Every open is treated as a reconnect: the server
+  // drops a connection's follows when its socket closes while the bridge
+  // still believes it is subscribed, so a reconcile (a no-op once intent
+  // equals reality) would leave the follower deaf. On a first open the
+  // resubscribe is one redundant frame the server answers as a resync.
+  const stopTransportConnected = baseTransport.onConnected?.(handleReconnected)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
@@ -722,6 +762,7 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      terminal.value = null
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -743,6 +784,7 @@ function startAgentCrdtFollower(
     runFollowerTeardown([
       () => lifecycle.destroy(),
       () => api.removeEventListener('reconnected', onReconnected),
+      () => stopTransportConnected?.(),
       () => api.removeEventListener('status', onSocketActivity),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),
       () => bridge.removeEventListener('doc_update', onUpdate),
@@ -765,6 +807,7 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
+    terminal: terminal.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
     outcomes: outcomes.value

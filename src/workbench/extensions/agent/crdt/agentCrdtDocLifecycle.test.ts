@@ -6,7 +6,8 @@ import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
   SUBSCRIBE_ACK_TIMEOUT_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
+  SUBSCRIBE_CATCHUP_GRACE_MS,
+  SUBSCRIBE_RETRY_MAX_ATTEMPTS
 } from './agentCrdtDocLifecycle'
 import { recordDevEvent } from './devPanelLog'
 
@@ -339,5 +340,81 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
 
     vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(resubscribe).toHaveBeenCalledTimes(3)
+  })
+})
+
+function bareLifecycle(workflowId: () => string | null = () => 'wf-1') {
+  const resubscribe = vi.fn()
+  return {
+    lifecycle: new AgentCrdtDocLifecycle(workflowId, resubscribe, vi.fn()),
+    resubscribe
+  }
+}
+
+/** Refuse, let the scheduled retry fire, until the whole budget is spent. */
+function spendRetryBudget(target: AgentCrdtDocLifecycle): void {
+  for (let attempt = 0; attempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS; attempt++) {
+    expect(target.onSubscribeRefused()).toBe('retrying')
+    vi.runOnlyPendingTimers()
+  }
+}
+
+/**
+ * The subscribe-retry budget as the follower observes it: whether a refusal
+ * still has a retry behind it, or was the last word.
+ */
+describe('AgentCrdtDocLifecycle subscribe retry budget', () => {
+  it('reports every budgeted refusal as retrying, and the one after as exhausted', () => {
+    vi.useFakeTimers()
+    const { lifecycle: target, resubscribe } = bareLifecycle()
+
+    spendRetryBudget(target)
+    expect(resubscribe).toHaveBeenCalledTimes(SUBSCRIBE_RETRY_MAX_ATTEMPTS)
+
+    expect(target.onSubscribeRefused()).toBe('exhausted')
+    vi.advanceTimersByTime(60_000)
+    expect(resubscribe).toHaveBeenCalledTimes(SUBSCRIBE_RETRY_MAX_ATTEMPTS)
+  })
+
+  it('a refusal while a retry is already pending is still retrying, not a second attempt', () => {
+    vi.useFakeTimers()
+    const { lifecycle: target, resubscribe } = bareLifecycle()
+
+    expect(target.onSubscribeRefused()).toBe('retrying')
+    expect(target.onSubscribeRefused()).toBe('retrying')
+    vi.runOnlyPendingTimers()
+
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('a confirmed subscribe restores the budget', () => {
+    vi.useFakeTimers()
+    const { lifecycle: target } = bareLifecycle()
+    spendRetryBudget(target)
+    expect(target.onSubscribeRefused()).toBe('exhausted')
+
+    target.onSubscribeConfirmed()
+
+    expect(target.onSubscribeRefused()).toBe('retrying')
+  })
+
+  it('a retarget restores the budget', () => {
+    vi.useFakeTimers()
+    const { lifecycle: target } = bareLifecycle()
+    spendRetryBudget(target)
+    expect(target.onSubscribeRefused()).toBe('exhausted')
+
+    target.clearForRetarget()
+
+    expect(target.onSubscribeRefused()).toBe('retrying')
+  })
+
+  it('a refusal with nothing bound has nothing to retry', () => {
+    vi.useFakeTimers()
+    const { lifecycle: target, resubscribe } = bareLifecycle(() => null)
+
+    expect(target.onSubscribeRefused()).toBe('exhausted')
+    vi.advanceTimersByTime(60_000)
+    expect(resubscribe).not.toHaveBeenCalled()
   })
 })

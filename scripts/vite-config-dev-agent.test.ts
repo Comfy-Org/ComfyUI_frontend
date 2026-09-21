@@ -23,6 +23,7 @@ async function importConfig(
         DEV_AGENT_URL: devAgentUrl,
         VITE_AGENT_STANDALONE: undefined,
         VITE_REMOTE_DEV: undefined,
+        DISTRIBUTION: undefined,
         ...overrides
       }
     }
@@ -77,4 +78,33 @@ describe('dev agent comfy credential', () => {
       '{"headers":{"Authorization":"Bearer test-session-token"}}'
     )
   })
+})
+
+describe('standalone agent harness distribution guard', () => {
+  // VITE_AGENT_STANDALONE forces the agent panel on for every user of the
+  // bundle it is baked into (extensions/core/agentPanel.ts), independent of
+  // the distribution. A cloud bundle built with it would ship that to
+  // production, so the build refuses the combination outright.
+  it('refuses to bake the standalone harness into a cloud distribution', async () => {
+    await expect(
+      importConfig('http://127.0.0.1:8095', {
+        DISTRIBUTION: 'cloud',
+        VITE_AGENT_STANDALONE: 'true'
+      })
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining('never a cloud distribution')
+    })
+  })
+
+  it.for(['localhost', 'desktop', undefined])(
+    'accepts the standalone harness for the %s distribution',
+    async (distribution) => {
+      await expect(
+        importConfig('http://127.0.0.1:8095', {
+          DISTRIBUTION: distribution,
+          VITE_AGENT_STANDALONE: 'true'
+        })
+      ).resolves.toBeDefined()
+    }
+  )
 })

@@ -274,7 +274,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       tags,
       workflowReferences
     )
-    if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
+    // A context with a tab but no workflow is a tab the agent has not been
+    // given a workflow for; say so, or the server reuses the thread's previous
+    // workflow and edits a tab the user is not looking at.
+    if (wfContext === undefined) return rest.postMessage(threadId, input)
+    if (wfContext.id === undefined)
+      return rest.postMessage(threadId, { ...input, currentTabUnbound: true })
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
   }
 

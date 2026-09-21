@@ -263,3 +263,9 @@ export function parseAgentWsEvent(
 ): z.SafeParseReturnType<unknown, AgentWsEvent> {
   return zAgentWsEvent.safeParse(value)
 }
+
+/** GET /agent/identity — the identity the agent authenticated this client as. */
+export const zAgentIdentityWire = z.object({
+  workspace_id: z.string().min(1),
+  user_id: z.string().min(1)
+})

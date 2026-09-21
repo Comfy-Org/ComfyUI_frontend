@@ -1,5 +1,22 @@
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
+/**
+ * The standalone agent's ONE socket. Chat frames come down it, and — because
+ * the agent speaks the same document protocol on it that ingest speaks on the
+ * cloud's /ws — document frames go up and down it too. `send` is what lets the
+ * doc transport ride this socket instead of opening a second one: a
+ * connection's follows are then frames, not a query string, so following a
+ * workflow never reconnects the chat stream mid-turn.
+ */
+export interface StandaloneAgentEventSource extends AgentEventSource {
+  /**
+   * Best-effort send, never throws. `false` when the socket is not OPEN —
+   * a normal state while the panel mounts — so a caller retries rather than
+   * aborts.
+   */
+  send(frame: string): boolean
+}
+
 interface StandaloneAgentEventSourceOptions {
   createSocket?: (url: string) => WebSocket
   endpoint?: string
@@ -10,7 +27,7 @@ export function createStandaloneAgentEventSource({
   createSocket = (url) => new WebSocket(url),
   endpoint = '/api/agent/events',
   reconnectDelayMs = 1000
-}: StandaloneAgentEventSourceOptions = {}): AgentEventSource {
+}: StandaloneAgentEventSourceOptions = {}): StandaloneAgentEventSource {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   let socket: WebSocket | null = null
@@ -77,6 +94,11 @@ export function createStandaloneAgentEventSource({
   }
 
   return {
+    send(frame) {
+      if (socket?.readyState !== WebSocket.OPEN) return false
+      socket.send(frame)
+      return true
+    },
     subscribe(listener) {
       listeners.add(listener)
       connect()
