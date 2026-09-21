@@ -432,8 +432,13 @@ export class AgentConversationHarness {
       .getNodeLocator(nodeId)
       .locator('.lg-node-header')
     await expect
-      .poll(async () => (await header.boundingBox())?.x ?? -1)
-      .toBeGreaterThan(0)
+      .poll(async () => {
+        const box = await header.boundingBox()
+        if (!box || box.x < 0) return false
+        const panelBox = await this.panel.boundingBox()
+        return panelBox === null || box.x + box.width < panelBox.x
+      })
+      .toBe(true)
     await this.vueNodes.selectNode(nodeId)
     await expect(this.vueNodes.getNodeLocator(nodeId)).toHaveClass(
       /outline-node-component-outline/

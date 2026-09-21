@@ -46,6 +46,11 @@ describe('shouldIgnoreCopyPaste', () => {
         Object.assign(document.createElement('input'), { type: 'text' })
     },
     {
+      name: 'a search input',
+      make: () =>
+        Object.assign(document.createElement('input'), { type: 'search' })
+    },
+    {
       name: 'a contenteditable element',
       make: () =>
         Object.assign(document.createElement('div'), {

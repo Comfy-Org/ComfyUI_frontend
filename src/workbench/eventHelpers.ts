@@ -6,7 +6,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 function selectedText(): Selection | null {
   const selection = window.getSelection()
-  return selection !== null && selection.toString().trim().length > 0
+  return selection !== null &&
+    !selection.isCollapsed &&
+    selection.toString().trim().length > 0
     ? selection
     : null
 }
@@ -69,7 +71,6 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'radio',
         'range',
         'reset',
-        'search',
         'submit'
       ].includes(target.type))
   return isTextInput || useCanvasStore().linearMode || selectedText() !== null
