@@ -604,10 +604,10 @@ describe('Retry-After contract', () => {
     expect(await retryAfterSeconds('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
   })
 
-  it('reads a leap second as the last ordinary second of its minute', async () => {
+  it('represents a leap second as the instant after :59', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(await retryAfterSeconds('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(89)
+    expect(await retryAfterSeconds('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(90)
   })
 
   // RFC 9110 asks recipients to be robust, and the weekday carries no

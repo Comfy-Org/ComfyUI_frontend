@@ -146,6 +146,25 @@ function monthNumber(name: string): number {
   return MONTHS.indexOf(name) + 1
 }
 
+function httpDateInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number
+): number {
+  const ordinaryInstant = Date.UTC(
+    year,
+    month - 1,
+    day,
+    hour,
+    minute,
+    Math.min(second, 59)
+  )
+  return ordinaryInstant + (second === 60 ? 1000 : 0)
+}
+
 /**
  * The four-digit year an RFC 850 two-digit year stands for. RFC 9110 requires a
  * timestamp that would read as more than 50 years in the future to be taken as
@@ -172,13 +191,13 @@ function expandTwoDigitYear(
     now.getUTCMilliseconds()
   )
   for (const year of [candidateYear + 100, candidateYear]) {
-    const candidate = Date.UTC(
+    const candidate = httpDateInstant(
       year,
-      month - 1,
+      month,
       day,
       hour,
       minute,
-      Math.min(second, 59)
+      second
     )
     if (candidate <= fiftyYearsFromNow) return year
   }
@@ -257,19 +276,12 @@ function parseHttpDate(value: string): number | undefined {
   if (fields === undefined) return undefined
   const { year, month, day, hour, minute, second } = fields
   if (year < 1900 || hour > 23 || minute > 59 || second > 60) return undefined
-  // JavaScript Date cannot represent the leap second admitted by the grammar,
-  // so this parser maps `:60` to `:59`.
-  const instant = Date.UTC(
-    year,
-    month - 1,
-    day,
-    hour,
-    minute,
-    Math.min(second, 59)
-  )
+  const instant = httpDateInstant(year, month, day, hour, minute, second)
   // `Date.UTC` rolls an impossible day into the next month (`31 Nov`, `29 Feb`
   // outside a leap year), so the round-trip is what proves the date exists.
-  const utc = new Date(instant)
+  // Subtract the represented leap second before validating the source date so
+  // `23:59:60` rolling into the next day remains valid.
+  const utc = new Date(instant - (second === 60 ? 1000 : 0))
   const exists =
     utc.getUTCFullYear() === year &&
     utc.getUTCMonth() === month - 1 &&
