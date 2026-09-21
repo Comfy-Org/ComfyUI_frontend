@@ -6407,15 +6407,15 @@ describe('AgentPanelRoot workflow binding', () => {
     const selection = await startVueNodeSelection()
 
     const selectionStore = useAgentNodeSelectionStore()
-    selectionStore.saveNodeIds('workflows/current.json', ['9', '12'])
-
     const active = workflowStore.activeWorkflow
     if (!active) throw new Error('expected an active workflow')
+    useAgentPanelStore().isOpen = false
     selection.unmount()
     active.path = 'workflows/renamed.json'
     active.filename = 'renamed'
     await nextTick()
     renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
     await nextTick()
 
     expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
