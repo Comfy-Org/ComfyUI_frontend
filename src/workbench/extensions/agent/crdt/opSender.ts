@@ -136,6 +136,8 @@ interface InFlight {
   opIds: Set<string>
   /** Successful `sendOps` calls: each may still draw one result. */
   sends: number
+  /** Cleared when a send cycle starts, so each cycle reports its first throw. */
+  reportedThrow: boolean
   resent: boolean
   parked: boolean
   timer: ReturnType<typeof setTimeout> | null
@@ -187,7 +189,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
-    if (!trySend(batch, attempt)) {
+    if (!trySend(batch)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
         // the result timer is armed only after a successful send) so
@@ -205,12 +207,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  function trySend(batch: InFlight, attempt: number): boolean {
+  function trySend(batch: InFlight): boolean {
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
     } catch (error) {
       // Every retry re-runs the same throwing call: report the cycle once.
-      if (attempt === 0)
+      if (!batch.reportedThrow) {
+        batch.reportedThrow = true
         reportError(error, {
           errorType: 'agent_human_ops_send_failed',
           tags: {
@@ -221,6 +224,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           },
           level: 'error'
         })
+      }
       return false
     }
   }
@@ -246,6 +250,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       // One silent-result resend of the SAME minted ops: idempotent at the
       // applier through the op_id gate.
       batch.resent = true
+      batch.reportedThrow = false
       transmit(batch, 0)
     }, RESULT_TIMEOUT_MS)
   }
@@ -259,6 +264,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       sends: 0,
+      reportedThrow: false,
       resent: false,
       parked: false,
       timer: null
