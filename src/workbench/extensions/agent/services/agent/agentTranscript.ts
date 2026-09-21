@@ -1,4 +1,5 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
@@ -138,13 +139,47 @@ function toolCallOk(
 }
 
 /**
- * A persisted assistant row's `tool_calls` are `ToolCallSummary` objects
- * (`id`, `tool_name`, `status`, plus omitted-when-empty detail fields this UI
- * does not render). They map onto the same `ToolPart` the live WebSocket path
- * builds from `agent_tool_call` events, so a reloaded transcript renders
- * through the identical work-summary UI as a live turn. A repeated `id`
- * within the list is deduped, keeping the last entry's data at the first
- * entry's position, matching how the live path updates a part in place.
+ * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`
+ * and maps it onto the same `ToolPart` the live WebSocket path builds from
+ * `agent_tool_call` events, so a reloaded transcript renders through the
+ * identical work-summary UI as a live turn. `undefined` for anything that
+ * doesn't validate (missing `id`/`tool_name`, wrong types, ...).
+ */
+function parseToolCallEntry(
+  entry: unknown,
+  isLive: boolean
+): ToolPart | undefined {
+  const parsed = zPersistedToolCallSummary.safeParse(entry)
+  if (!parsed.success) return undefined
+  const {
+    id,
+    tool_name: toolName,
+    status,
+    duration_ms: rawDuration
+  } = parsed.data
+  const state = toolCallPartState(status, isLive)
+  const ok = toolCallOk(status, state)
+  const durationMs =
+    typeof rawDuration === 'number' &&
+    Number.isFinite(rawDuration) &&
+    rawDuration >= 0
+      ? rawDuration
+      : undefined
+  return {
+    type: 'tool',
+    callId: id,
+    name: toolName,
+    state,
+    ...(ok !== undefined ? { ok } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {})
+  }
+}
+
+/**
+ * A persisted assistant row's `tool_calls` entries are parsed through
+ * `parseToolCallEntry`. A repeated `id` within the list is deduped, keeping
+ * the last entry's data at the first entry's position, matching how the
+ * live path updates a part in place rather than appending.
  */
 function parseToolCalls(
   content: Record<string, unknown> | undefined,
@@ -154,28 +189,8 @@ function parseToolCalls(
   if (!Array.isArray(raw)) return undefined
   const parts = new Map<string, ToolPart>()
   for (const entry of raw as unknown[]) {
-    if (typeof entry !== 'object' || entry === null) continue
-    const {
-      id,
-      tool_name: toolName,
-      status,
-      duration_ms: durationMs
-    } = entry as Record<string, unknown>
-    if (typeof id !== 'string' || typeof toolName !== 'string') continue
-    const state = toolCallPartState(status, isLive)
-    const ok = toolCallOk(status, state)
-    parts.set(id, {
-      type: 'tool',
-      callId: id,
-      name: toolName,
-      state,
-      ...(ok !== undefined ? { ok } : {}),
-      ...(typeof durationMs === 'number' &&
-      Number.isFinite(durationMs) &&
-      durationMs >= 0
-        ? { durationMs }
-        : {})
-    })
+    const part = parseToolCallEntry(entry, isLive)
+    if (part) parts.set(part.callId, part)
   }
   return parts.size > 0 ? [...parts.values()] : undefined
 }
@@ -239,6 +254,79 @@ function applyAssistantRow(
   return { messageId: row.id as TurnId, message }
 }
 
+/**
+ * A persisted user row's text/attachment/workflow-reference/workflow-target
+ * fields, resolved from `row.content` and ready for the caller to record
+ * onto its per-turn maps and `latestWorkflowId`.
+ */
+interface UserRowUpdate {
+  text: string
+  attachments?: UserAttachment[]
+  workflowReferences?: WorkflowReference[]
+  workflowId?: string
+}
+
+function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
+  const referenceUpdate = parseUserWorkflowReferences(
+    text,
+    row.content?.workflow_references
+  )
+  return {
+    text: referenceUpdate?.text ?? text,
+    attachments: parseUserAttachments(row.content),
+    workflowReferences: referenceUpdate?.references,
+    workflowId: row.workflow_id || undefined
+  }
+}
+
+/** Adds `turnId` to the stable turn ordering the first time it is seen. */
+function recordTurnOrder(
+  turnId: TurnId,
+  seenTurns: Set<TurnId>,
+  turnOrder: TurnId[]
+): void {
+  if (seenTurns.has(turnId)) return
+  seenTurns.add(turnId)
+  turnOrder.push(turnId)
+}
+
+/**
+ * Resolves a user row's update and records it onto the per-turn maps.
+ * Returns the row's `workflow_id`, if any, for the caller to fold into
+ * `latestWorkflowId`.
+ */
+function recordUserRow(
+  row: AgentMessages[number],
+  turnId: TurnId,
+  text: string,
+  userTexts: Map<TurnId, string>,
+  userAttachments: Map<TurnId, UserAttachment[]>,
+  userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+): string | undefined {
+  const update = applyUserRow(row, text)
+  userTexts.set(turnId, update.text)
+  if (update.attachments) userAttachments.set(turnId, update.attachments)
+  if (update.workflowReferences)
+    userWorkflowReferences.set(turnId, update.workflowReferences)
+  return update.workflowId
+}
+
+/**
+ * Applies an assistant row onto its turn's running message and records it
+ * onto `assistants`. Returns the row's `pending` entry, if it is mid-ask.
+ */
+function recordAssistantRow(
+  row: AgentMessages[number],
+  turnId: TurnId,
+  text: string,
+  assistants: Map<TurnId, AssistantMessage>
+): NormalizedAgentTranscript['pending'] {
+  const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+  const rowPending = applyAssistantRow(row, message, text)
+  assistants.set(turnId, message)
+  return rowPending
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -255,30 +343,22 @@ export function normalizeAgentTranscript(
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
     rowIds.add(row.id)
-    if (!seenTurns.has(turnId)) {
-      seenTurns.add(turnId)
-      turnOrder.push(turnId)
-    }
+    recordTurnOrder(turnId, seenTurns, turnOrder)
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
-      userTexts.set(turnId, text)
-      const attachments = parseUserAttachments(row.content)
-      if (attachments) userAttachments.set(turnId, attachments)
-      if (row.workflow_id) latestWorkflowId = row.workflow_id
-      const referenceUpdate = parseUserWorkflowReferences(
+      const workflowId = recordUserRow(
+        row,
+        turnId,
         text,
-        row.content?.workflow_references
+        userTexts,
+        userAttachments,
+        userWorkflowReferences
       )
-      if (referenceUpdate) {
-        userTexts.set(turnId, referenceUpdate.text)
-        userWorkflowReferences.set(turnId, referenceUpdate.references)
-      }
+      if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-      const rowPending = applyAssistantRow(row, message, text)
+      const rowPending = recordAssistantRow(row, turnId, text, assistants)
       if (rowPending) pending = rowPending
-      assistants.set(turnId, message)
     }
   }
 

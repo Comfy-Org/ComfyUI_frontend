@@ -523,6 +523,36 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [

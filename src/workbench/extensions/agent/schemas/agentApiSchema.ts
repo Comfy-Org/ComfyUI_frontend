@@ -94,6 +94,27 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+/**
+ * One entry of a persisted assistant row's `content.tool_calls` (see
+ * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
+ * to the live WebSocket's `zAgentToolCallData` above. `status` is
+ * deliberately `z.string()` rather than a closed enum: an unrecognized value
+ * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
+ * other than `pending`/`running`/`ok`/`success` as failure), so schema
+ * validation should reject a malformed *entry* (missing `id`/`tool_name`),
+ * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
+ * `z.unknown()` so a NaN/Infinity/negative value there doesn't sink the
+ * whole entry; `parseToolCallEntry` narrows it separately and just omits it.
+ */
+export const zPersistedToolCallSummary = z
+  .object({
+    id: z.string(),
+    tool_name: z.string(),
+    status: z.string(),
+    duration_ms: z.unknown().optional()
+  })
+  .passthrough()
+
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
     pending_ask: zAgentPendingAsk.optional()

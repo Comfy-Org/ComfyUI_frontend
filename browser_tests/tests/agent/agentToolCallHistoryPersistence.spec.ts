@@ -122,7 +122,16 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-    const summary = reopenedPanel.getByRole('button', { name: /worked/i })
+    // 420ms + 180ms = 600ms, so the exact label discriminates duration_ms
+    // parsing rather than only matching the zero-duration fallback string.
+    const workedLabel = enMessages.agent.workedForSeconds.replace(
+      '{seconds}',
+      '0.6'
+    )
+    const summary = reopenedPanel.getByRole('button', {
+      name: workedLabel,
+      exact: true
+    })
     await expect(summary).toBeVisible({ timeout: 10_000 })
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByText('Search nodes')).toBeHidden()
