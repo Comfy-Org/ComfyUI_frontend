@@ -1,5 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,11 +14,6 @@ import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 const NODE_ID = toNodeId(5)
-
-const settings = vi.hoisted(() => new Map<string, unknown>())
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: (key: string) => settings.get(key) })
-}))
 
 const getNodeDisplayPrice = vi.fn(() => '$0.05 x 3 Runs')
 vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
@@ -77,15 +71,13 @@ function nodeData(type: string): NodeState {
 
 describe('usePartitionedBadges', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    settings.clear()
-    settings.set('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.ShowAll)
-    settings.set(
-      'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+    useSettingStore().settingValues['Comfy.NodeBadge.NodeIdBadgeMode'] =
       NodeBadgeMode.ShowAll
-    )
-    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.ShowAll)
-    settings.set('Comfy.NodeBadge.ShowApiPricing', true)
+    useSettingStore().settingValues['Comfy.NodeBadge.NodeLifeCycleBadgeMode'] =
+      NodeBadgeMode.ShowAll
+    useSettingStore().settingValues['Comfy.NodeBadge.NodeSourceBadgeMode'] =
+      NodeBadgeMode.ShowAll
+    useSettingStore().settingValues['Comfy.NodeBadge.ShowApiPricing'] = true
   })
 
   it('partitions derived rows into core chips and pricing entries', () => {

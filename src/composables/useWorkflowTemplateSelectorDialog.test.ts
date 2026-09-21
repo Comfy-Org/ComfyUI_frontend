@@ -1,12 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useDialogService } from '@/services/dialogService'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const mockDialogService = vi.hoisted(() => ({
-  showLayoutDialog: vi.fn()
-}))
-
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
 const mockNewUserService = vi.hoisted(() => ({
   isNewUser: vi.fn()
@@ -16,13 +12,7 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => mockDialogService
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => mockDialogStore
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
@@ -42,6 +32,10 @@ vi.mock<unknown>(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
+  beforeEach(() => {
+    mockDialogStore = useDialogStore()
+  })
+
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
@@ -49,7 +43,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'all'
@@ -64,7 +58,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({ initialCategory: 'popular' })
         })
@@ -77,7 +71,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'all'
@@ -92,7 +86,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command', { initialCategory: 'custom-category' })
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'custom-category'
@@ -108,8 +102,11 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command', { afterClose })
 
-      const onClose =
-        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
+      assert(typeof onClose === 'function')
       onClose()
 
       expect(mockDialogStore.closeDialog).toHaveBeenCalled()
@@ -122,8 +119,11 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command')
 
-      const onClose =
-        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
+      assert(typeof onClose === 'function')
       expect(() => onClose()).not.toThrow()
     })
 

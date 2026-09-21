@@ -24,13 +24,6 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))

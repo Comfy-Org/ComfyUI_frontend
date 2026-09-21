@@ -1,9 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
   TreeExplorerDragAndDropData,
@@ -13,11 +14,16 @@ import type {
 
 import NodeBookmarkTreeExplorer from './NodeBookmarkTreeExplorer.vue'
 
+beforeEach(() => {
+  Object.assign(useNodeBookmarkStore(), { bookmarkedRoot: mockBookmarkedRoot })
+  vi.mocked(useNodeBookmarkStore().addBookmark).mockResolvedValue(undefined)
+  vi.mocked(useNodeBookmarkStore().toggleBookmark).mockResolvedValue(undefined)
+  vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder).mockResolvedValue(
+    undefined
+  )
+})
+
 const {
-  mockAddBookmark,
-  mockDeleteBookmarkFolder,
-  mockIsBookmarked,
-  mockToggleBookmark,
   mockAddNodeOnGraph,
   mockToggleNodeOnEvent,
   captureRoot,
@@ -26,10 +32,6 @@ const {
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
   return {
-    mockAddBookmark: vi.fn(),
-    mockDeleteBookmarkFolder: vi.fn(),
-    mockIsBookmarked: vi.fn().mockReturnValue(false),
-    mockToggleBookmark: vi.fn(),
     mockAddNodeOnGraph: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
     captureRoot: (root: TreeExplorerNode) => {
@@ -79,23 +81,6 @@ const mockBookmarkedRoot: TreeNode = {
     }
   ]
 }
-
-vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
-  useNodeBookmarkStore: () => ({
-    bookmarks: [],
-    bookmarkedRoot: mockBookmarkedRoot,
-    isBookmarked: mockIsBookmarked,
-    toggleBookmark: mockToggleBookmark,
-    addBookmark: mockAddBookmark,
-    deleteBookmarkFolder: mockDeleteBookmarkFolder,
-    addNewBookmarkFolder: vi.fn(),
-    renameBookmarkFolder: vi.fn(),
-    bookmarksCustomization: {},
-    defaultBookmarkIcon: 'pi-bookmark-fill',
-    defaultBookmarkColor: '#a1a1aa',
-    updateCustomization: vi.fn()
-  })
-}))
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
@@ -153,7 +138,7 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('NodeBookmarkTreeExplorer', () => {
   beforeEach(() => {
-    mockIsBookmarked.mockReturnValue(false)
+    vi.mocked(useNodeBookmarkStore().isBookmarked).mockReturnValue(false)
     resetRoot()
   })
 
@@ -182,11 +167,11 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(mockAddBookmark).toHaveBeenCalled()
+      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
     })
 
     it('moves bookmark when a node is dragged onto a folder and is bookmarked', async () => {
-      mockIsBookmarked.mockReturnValue(true)
+      vi.mocked(useNodeBookmarkStore().isBookmarked).mockReturnValue(true)
       const root = await renderAndGetRoot()
       const folderNode = root.children?.[0]
 
@@ -197,8 +182,10 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(mockToggleBookmark).toHaveBeenCalledWith(mockLeafNodeDef)
-      expect(mockAddBookmark).toHaveBeenCalled()
+      expect(
+        vi.mocked(useNodeBookmarkStore().toggleBookmark)
+      ).toHaveBeenCalledWith(mockLeafNodeDef)
+      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
     })
 
     it('is a no-op when the dragged node carries no data', async () => {
@@ -212,7 +199,9 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(mockAddBookmark).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useNodeBookmarkStore().addBookmark)
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -251,7 +240,9 @@ describe('NodeBookmarkTreeExplorer', () => {
         data: mockFolderNodeDef
       })
 
-      expect(mockDeleteBookmarkFolder).toHaveBeenCalledWith(mockFolderNodeDef)
+      expect(
+        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
+      ).toHaveBeenCalledWith(mockFolderNodeDef)
     })
 
     it('is a no-op when node data is missing', async () => {
@@ -260,7 +251,9 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await folderNode?.handleDelete?.call({ ...folderNode, data: undefined })
 
-      expect(mockDeleteBookmarkFolder).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
+      ).not.toHaveBeenCalled()
     })
   })
 })

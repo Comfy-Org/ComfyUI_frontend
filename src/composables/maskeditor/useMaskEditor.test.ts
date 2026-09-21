@@ -1,14 +1,9 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-const mockDialogStore = vi.hoisted(() => ({
-  showDialog: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => mockDialogStore
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
 vi.mock<unknown>(
   import('@/components/maskeditor/dialog/TopBarHeader.vue'),
@@ -42,6 +37,7 @@ describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    mockDialogStore = useDialogStore()
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 

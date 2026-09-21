@@ -1,11 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -18,6 +17,7 @@ import {
   LGraphEventMode,
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
+import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -25,23 +25,18 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
-vi.mock<unknown>(
-  import('@/utils/graphTraversalUtil'),
-  async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>
-    return {
-      ...actual,
-      getNodeByLocatorId: vi.fn(
-        () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
-      )
-    }
-  }
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mocked(getNodeByLocatorId).mockImplementation(() =>
+  fromAny<LiteGraphNode, unknown>(
+    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+  )
 )
 
 vi.mock<unknown>(
@@ -153,11 +148,6 @@ const i18n = createI18n({
   }
 })
 
-const pinia = createTestingPinia({
-  createSpy: vi.fn,
-  stubActions: false
-})
-
 function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
@@ -166,7 +156,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
     props,
     global: {
-      plugins: [pinia, i18n],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -205,14 +195,18 @@ const mockRerouteNodeData: NodeState = {
 
 describe('LGraphNode', () => {
   beforeEach(() => {
+    vi.mocked(getNodeByLocatorId).mockImplementation(() =>
+      fromAny<LiteGraphNode, unknown>(
+        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+      )
+    )
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
 
-    setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
     canvasStore.currentGraph = null
-    const settingStore = useSettingStore(pinia)
+    const settingStore = useSettingStore()
     useNodeOutputStore().nodeOutputs = {}
     useWidgetValueStore().clearGraph('graph-test')
     vi.mocked(settingStore.get).mockImplementation((key) => {
@@ -240,7 +234,7 @@ describe('LGraphNode', () => {
     const { container } = render(LGraphNode, {
       props: { nodeData: mockNodeData },
       global: {
-        plugins: [pinia, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -278,7 +272,7 @@ describe('LGraphNode', () => {
         nodeData: { ...mockNodeData, graphId: 'graph-test' }
       },
       global: {
-        plugins: [pinia, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           AsyncComponentWrapper: {
             props: ['modelValue'],

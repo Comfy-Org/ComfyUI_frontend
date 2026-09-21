@@ -3,7 +3,11 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import * as apiModule from '@/scripts/api'
-import * as workflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { usePartnerNodesInGraph } from './usePartnerNodesInGraph'
 
@@ -14,17 +18,7 @@ interface FakeNode {
 }
 
 const hoisted = vi.hoisted(() => ({
-  nodeDefsByName: {} as Record<
-    string,
-    { name: string; display_name: string; api_node: boolean }
-  >,
   rootGraph: undefined as { nodes: unknown[] } | undefined
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    fromLGraphNode: (node: FakeNode) => hoisted.nodeDefsByName[node.type]
-  })
 }))
 
 // Mirrors ComfyApp: reading `rootGraph` before init logs an error, so
@@ -57,38 +51,15 @@ const { __dispatchGraphChanged } = apiModule as typeof apiModule & {
   __dispatchGraphChanged: () => void
 }
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { ref } = await import('vue')
-    const activeWorkflow = ref<{ path: string } | null>(null)
-    return {
-      useWorkflowStore: () => ({
-        get activeWorkflow() {
-          return activeWorkflow.value
-        }
-      }),
-      __setActiveWorkflow: (workflow: { path: string } | null) => {
-        activeWorkflow.value = workflow
-      }
-    }
-  }
-)
-
-const { __setActiveWorkflow } =
-  workflowStoreModule as typeof workflowStoreModule & {
-    __setActiveWorkflow: (workflow: { path: string } | null) => void
-  }
-
 function defineNodeDef(
   name: string,
   { apiNode = false, displayName = '' } = {}
 ) {
-  hoisted.nodeDefsByName[name] = {
+  useNodeDefStore().nodeDefsByName[name] = fromPartial<ComfyNodeDefImpl>({
     name,
     display_name: displayName,
     api_node: apiNode
-  }
+  })
 }
 
 function node(type: string): FakeNode {
@@ -108,9 +79,7 @@ function setup() {
 
 describe('usePartnerNodesInGraph', () => {
   beforeEach(() => {
-    hoisted.nodeDefsByName = {}
     hoisted.rootGraph = undefined
-    __setActiveWorkflow(null)
   })
 
   afterEach(() => {
@@ -151,10 +120,11 @@ describe('usePartnerNodesInGraph', () => {
   })
 
   it('ignores a def that is missing the api_node field entirely', () => {
-    hoisted.nodeDefsByName['MalformedDef'] = {
-      name: 'MalformedDef',
-      display_name: 'Malformed'
-    } as (typeof hoisted.nodeDefsByName)[string]
+    useNodeDefStore().nodeDefsByName['MalformedDef'] =
+      fromPartial<ComfyNodeDefImpl>({
+        name: 'MalformedDef',
+        display_name: 'Malformed'
+      })
     hoisted.rootGraph = { nodes: [node('MalformedDef')] }
 
     const { hasPartnerNodes } = setup()
@@ -206,7 +176,11 @@ describe('usePartnerNodesInGraph', () => {
     nodes.push(node('Partner'))
     expect(hasPartnerNodes.value).toBe(false)
 
-    __setActiveWorkflow({ path: 'workflows/partner.json' })
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: fromPartial<ComfyWorkflow>({
+        path: 'workflows/partner.json'
+      })
+    })
     await nextTick()
 
     expect(hasPartnerNodes.value).toBe(true)

@@ -1,5 +1,8 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createTestSubgraph,
@@ -11,9 +14,11 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
@@ -38,22 +43,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     addEventListener: vi.fn()
   }
 }))
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: vi.fn(() => ({
-    prompt: () => 'testname',
-    confirm: () => true
-  }))
-}))
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => comfyApp.canvas
-  }))
-}))
-vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
-  useSubgraphNavigationStore: () => ({
-    beginWorkflowNavigation: () => 1
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -96,8 +86,13 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(
+      () => comfyApp.canvas
+    )
     store = useSubgraphStore()
   })
 

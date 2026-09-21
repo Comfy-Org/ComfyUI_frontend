@@ -1,3 +1,4 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -17,17 +18,14 @@ import type {
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'
 
-const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
+const { writePsd, downloadBlob } = vi.hoisted(() => ({
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),
-  downloadBlob: vi.fn(),
-  toastAdd: vi.fn()
+  downloadBlob: vi.fn()
 }))
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -173,6 +171,10 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
   } as unknown as LayerEditorSession
 }
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
 describe('useLayerEditorExport', () => {
   it('writes a psd matching the layer tree and triggers a download', async () => {
     const session = makeSession([
@@ -206,7 +208,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(toastAdd).not.toHaveBeenCalled()
+    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
   })
 
   it('shows an error toast when writing fails', async () => {
@@ -219,7 +221,7 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'layerEditor.exportPsdFailed'

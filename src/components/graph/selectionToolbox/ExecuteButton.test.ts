@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -49,12 +47,6 @@ describe('ExecuteButton', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn
-      })
-    )
-
     mockCanvas = fromPartial<LGraphCanvas>({
       setDirty: vi.fn()
     })

@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 const mockLocalStorage = vi.hoisted(() => ({
   getItem: vi.fn(),
@@ -7,42 +10,36 @@ const mockLocalStorage = vi.hoisted(() => ({
   clear: vi.fn()
 }))
 
-const mockSettingStore = vi.hoisted(() => ({
-  settingValues: {} as Record<string, unknown>,
-  get: vi.fn(),
-  set: vi.fn()
-}))
-
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
   writable: true
 })
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => mockSettingStore
-}))
-
 import { useNewUserService } from '@/services/useNewUserService'
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
+  let scope: ReturnType<typeof effectScope>
 
   beforeEach(() => {
-    mockSettingStore.settingValues = {}
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    useSettingStore().settingValues = {}
 
-    service = useNewUserService()
+    scope = effectScope()
+    scope.run(() => {
+      service = useNewUserService()
+    })
     service.reset()
 
     mockLocalStorage.getItem.mockReturnValue(null)
   })
 
+  afterEach(() => scope.stop())
+
   describe('checkIsNewUser logic', () => {
     it('should identify new user when all conditions are met', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -51,12 +48,11 @@ describe('useNewUserService', () => {
     })
 
     it('should identify new user when settings exist but TutorialCompleted is undefined', async () => {
-      mockSettingStore.settingValues = { 'some.setting': 'value' }
+      useSettingStore().settingValues = {
+        'Comfy.ColorPalette': 'dark'
+      }
 
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
 
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -66,11 +62,10 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when tutorial is completed', async () => {
-      mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': true }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
-      })
+      useSettingStore().settingValues = {
+        'Comfy.TutorialCompleted': true
+      }
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -79,11 +74,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when workflow exists', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'workflow') return 'some-workflow'
         return null
@@ -95,11 +87,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when previous workflow exists', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.PreviousWorkflow') return 'some-previous-workflow'
         return null
@@ -111,8 +100,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when V1 draft store keys exist', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.Workflow.Drafts') return '{}'
         return null
@@ -124,8 +113,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when V1 draft order key exists', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.Workflow.DraftOrder') return '[]'
         return null
@@ -137,8 +126,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when V2 draft index has entries', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
           return '{"v":2,"updatedAt":1,"order":["abc"],"entries":{"abc":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
@@ -151,8 +140,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify new user when V2 draft index exists but is empty', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
           return '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
@@ -165,8 +154,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify new user when V2 draft index is malformed', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return 'not json'
         return null
@@ -178,11 +167,10 @@ describe('useNewUserService', () => {
     })
 
     it('should identify new user when tutorial is explicitly false', async () => {
-      mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': false }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return false
-        return undefined
-      })
+      useSettingStore().settingValues = {
+        'Comfy.TutorialCompleted': false
+      }
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = false
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -191,14 +179,11 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when has both settings and tutorial completed', async () => {
-      mockSettingStore.settingValues = {
-        'some.setting': 'value',
+      useSettingStore().settingValues = {
+        'Comfy.ColorPalette': 'dark',
         'Comfy.TutorialCompleted': true
       }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
-      })
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -207,11 +192,8 @@ describe('useNewUserService', () => {
     })
 
     it('should identify existing user when only one condition fails', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'workflow') return 'some-workflow'
         if (key === 'Comfy.PreviousWorkflow') return null
@@ -228,11 +210,8 @@ describe('useNewUserService', () => {
     it('should execute callback immediately if new user is already determined', async () => {
       const mockCallback = vi.fn().mockResolvedValue(undefined)
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -258,11 +237,8 @@ describe('useNewUserService', () => {
         .mockRejectedValue(new Error('Callback error'))
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -279,32 +255,28 @@ describe('useNewUserService', () => {
 
   describe('initializeIfNewUser', () => {
     it('should set installed version for new users', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
+      expect(useSettingStore().set).toHaveBeenCalledWith(
         'Comfy.InstalledVersion',
         '1.24.0'
       )
     })
 
     it('should not set installed version for existing users', async () => {
-      mockSettingStore.settingValues = { 'some.setting': 'value' }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
-      })
+      useSettingStore().settingValues = {
+        'Comfy.ColorPalette': 'dark'
+      }
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
-      expect(mockSettingStore.set).not.toHaveBeenCalled()
+      expect(useSettingStore().set).not.toHaveBeenCalled()
     })
 
     it('should execute pending callbacks for new users', async () => {
@@ -314,11 +286,8 @@ describe('useNewUserService', () => {
       await service.registerInitCallback(mockCallback1)
       await service.registerInitCallback(mockCallback2)
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -332,11 +301,10 @@ describe('useNewUserService', () => {
 
       await service.registerInitCallback(mockCallback)
 
-      mockSettingStore.settingValues = { 'some.setting': 'value' }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
-      })
+      useSettingStore().settingValues = {
+        'Comfy.ColorPalette': 'dark'
+      }
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -350,11 +318,8 @@ describe('useNewUserService', () => {
 
       await service.registerInitCallback(mockCallback)
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -367,26 +332,20 @@ describe('useNewUserService', () => {
     })
 
     it('should not reinitialize if already determined', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
-      expect(mockSettingStore.set).toHaveBeenCalledTimes(1)
+      expect(useSettingStore().set).toHaveBeenCalledTimes(1)
 
       await service.initializeIfNewUser()
-      expect(mockSettingStore.set).toHaveBeenCalledTimes(1)
+      expect(useSettingStore().set).toHaveBeenCalledTimes(1)
     })
 
     it('should correctly determine new user status', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       expect(service.isNewUser()).toBeNull()
@@ -395,7 +354,7 @@ describe('useNewUserService', () => {
 
       expect(service.isNewUser()).toBe(true)
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
+      expect(useSettingStore().set).toHaveBeenCalledWith(
         'Comfy.InstalledVersion',
         expect.any(String)
       )
@@ -408,8 +367,8 @@ describe('useNewUserService', () => {
     })
 
     it('should return cached result after determination', async () => {
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockReturnValue(undefined)
+      useSettingStore().settingValues = {}
+
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -420,11 +379,10 @@ describe('useNewUserService', () => {
 
   describe('edge cases', () => {
     it('should handle settingStore.get returning false as not completed', async () => {
-      mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': false }
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return false
-        return undefined
-      })
+      useSettingStore().settingValues = {
+        'Comfy.TutorialCompleted': false
+      }
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = false
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -436,11 +394,8 @@ describe('useNewUserService', () => {
       const mockCallback1 = vi.fn().mockResolvedValue(undefined)
       const mockCallback2 = vi.fn().mockResolvedValue(undefined)
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
@@ -458,11 +413,8 @@ describe('useNewUserService', () => {
       const service1 = useNewUserService()
       const service2 = useNewUserService()
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service1.initializeIfNewUser()
@@ -481,11 +433,8 @@ describe('useNewUserService', () => {
       await service1.registerInitCallback(mockCallback1)
       await service2.registerInitCallback(mockCallback2)
 
-      mockSettingStore.settingValues = {}
-      mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
-      })
+      useSettingStore().settingValues = {}
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
       mockLocalStorage.getItem.mockReturnValue(null)
 
       await service1.initializeIfNewUser()

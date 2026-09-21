@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -880,10 +878,6 @@ describe('LGraphNode', () => {
 })
 
 describe('snapToGrid', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]

@@ -1,10 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -13,9 +13,7 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -23,7 +21,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+beforeEach(() => {
+  vi.spyOn(api, 'fetchApi').mockImplementation(fetchApi)
+})
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -55,17 +55,19 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }
 
 function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
@@ -111,15 +113,6 @@ describe('DockedAgentPanel', () => {
         errorType: 'agent_run_mode_load_failure'
       })
     )
-  })
-
-  it('fills the panel shell and draws the canvas seam border', () => {
-    openPanel()
-    renderPanel()
-
-    const shell = screen.getByTestId('docked-agent-panel-shell')
-
-    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
   })
 
   it('renders nothing while the panel is closed', () => {

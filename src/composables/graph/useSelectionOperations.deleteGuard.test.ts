@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { app } from '@/scripts/app'
@@ -14,9 +13,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined as unknown }
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ prompt: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 function stubCanvas(selectOnly: boolean) {
   const deleteSelected = vi.fn()
@@ -31,10 +28,6 @@ function stubCanvas(selectOnly: boolean) {
 }
 
 describe('useSelectionOperations delete guard', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('does not delete while the canvas is picking-only', () => {
     const { deleteSelected } = stubCanvas(true)
 

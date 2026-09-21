@@ -1,30 +1,13 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, reactive } from 'vue'
+import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBrushDrawing } from '@/composables/maskeditor/useBrushDrawing'
 import { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { Tools } from '@/extensions/core/maskeditor/types'
 
-type MockStore = {
-  currentTool: Tools
-  activeLayer: 'mask' | 'rgb'
-  pointerZone: HTMLElement | null
-  brushVisible: boolean
-  brushPreviewGradientVisible: boolean
-  isAdjustingBrush: boolean
-  isPanning: boolean
-}
-
-const mockStore = reactive<MockStore>({
-  currentTool: Tools.MaskPen,
-  activeLayer: 'mask',
-  pointerZone: null,
-  brushVisible: true,
-  brushPreviewGradientVisible: false,
-  isAdjustingBrush: false,
-  isPanning: false
-})
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const mockBrushDrawing = {
   startDrawing: vi.fn().mockResolvedValue(undefined),
@@ -47,10 +30,6 @@ const mockCoordinateTransform = {
   })),
   canvasToScreen: vi.fn()
 }
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
 
 vi.mock<unknown>(import('@/composables/maskeditor/useBrushDrawing'), () => ({
   useBrushDrawing: vi.fn(() => mockBrushDrawing)
@@ -137,6 +116,7 @@ const setup = (): ReturnType<typeof useToolManager> => {
 
 describe('useToolManager', () => {
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
     mockStore.currentTool = Tools.MaskPen
     mockStore.activeLayer = 'mask'
     mockStore.pointerZone = document.createElement('div')

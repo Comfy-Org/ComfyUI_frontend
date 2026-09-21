@@ -126,6 +126,7 @@ export function unflattenOutputAssets(
         jobId: job_id,
         subfolder: '',
         ...representative.user_metadata,
+        assetId: representative.id,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)
       }

@@ -4,6 +4,8 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useUserStore } from '@/stores/userStore'
+
 import UserSelectView from './UserSelectView.vue'
 
 const i18n = createI18n({
@@ -17,15 +19,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ push: mockRouterPush })
 }))
 
-const userStoreMock = vi.hoisted(() => ({
-  users: [] as Array<{ userId: string; username: string }>,
-  initialize: vi.fn().mockResolvedValue(undefined),
-  createUser: vi.fn(),
-  login: vi.fn().mockResolvedValue(undefined)
-}))
-vi.mock<unknown>(import('@/stores/userStore'), () => ({
-  useUserStore: () => userStoreMock
-}))
+let userStoreMock: ReturnType<typeof useUserStore>
 
 vi.mock<unknown>(import('@/views/templates/BaseViewTemplate.vue'), () => ({
   default: {
@@ -43,7 +37,9 @@ const mountView = () =>
 
 describe('UserSelectView', () => {
   beforeEach(() => {
-    userStoreMock.users = []
+    userStoreMock = useUserStore()
+    vi.mocked(userStoreMock.initialize).mockResolvedValue(undefined)
+    vi.mocked(userStoreMock.login).mockResolvedValue(undefined)
   })
 
   it('initializes the user store on mount', async () => {
@@ -68,7 +64,7 @@ describe('UserSelectView', () => {
 
   it('creates a new user, logs in, and navigates home', async () => {
     const newUser = { userId: 'u1', username: 'bob' }
-    userStoreMock.createUser.mockResolvedValueOnce(newUser)
+    vi.mocked(userStoreMock.createUser).mockResolvedValueOnce(newUser)
     mountView()
 
     await userEvent.type(
@@ -85,7 +81,7 @@ describe('UserSelectView', () => {
   })
 
   it('shows an error when the entered username already exists', async () => {
-    userStoreMock.users = [{ userId: 'u1', username: 'bob' }]
+    Object.assign(userStoreMock, { users: [{ userId: 'u1', username: 'bob' }] })
     mountView()
 
     await userEvent.type(
@@ -99,7 +95,7 @@ describe('UserSelectView', () => {
   })
 
   it('surfaces createUser failures as a login error', async () => {
-    userStoreMock.createUser.mockRejectedValueOnce(new Error('boom'))
+    vi.mocked(userStoreMock.createUser).mockRejectedValueOnce(new Error('boom'))
     mountView()
 
     await userEvent.type(

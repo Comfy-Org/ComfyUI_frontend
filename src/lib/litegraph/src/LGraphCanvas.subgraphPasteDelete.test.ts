@@ -41,13 +41,6 @@ import {
  * on host deletion — the delta is intended and called out inline.
  */
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))

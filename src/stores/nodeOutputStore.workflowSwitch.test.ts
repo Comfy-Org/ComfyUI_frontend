@@ -1,4 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,15 +10,6 @@ import { toNodeId } from '@/types/nodeId'
 const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
   WORKFLOW_A: 'workflows/a.json',
   WORKFLOW_B: 'workflows/b.json'
-}))
-
-const mocks = vi.hoisted(() => ({
-  workflowStore: null as unknown as {
-    activeWorkflow: { path: string } | null
-    openWorkflows: { path: string }[]
-    nodeIdToNodeLocatorId: (id: string | number) => string
-    nodeToNodeLocatorId: (node: { id: string | number }) => string
-  }
 }))
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -40,20 +32,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { reactive } = await import('vue')
-    mocks.workflowStore = reactive({
-      activeWorkflow: { path: WORKFLOW_A },
-      openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
-      nodeIdToNodeLocatorId: (id: string | number) => String(id),
-      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-    })
-    return { useWorkflowStore: () => mocks.workflowStore }
-  }
-)
-
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })
 
@@ -64,10 +42,10 @@ const createMockNode = (id: number): LGraphNode =>
  */
 function switchToWorkflow(path: string) {
   const store = useNodeOutputStore()
-  const leaving = mocks.workflowStore.activeWorkflow
+  const leaving = useWorkflowStore().activeWorkflow
   if (leaving) store.stashPreviewsForWorkflow(leaving.path)
   store.resetAllOutputsAndPreviews()
-  mocks.workflowStore.activeWorkflow = { path }
+  useWorkflowStore().activeWorkflow = fromPartial({ path })
   store.restorePreviewsForWorkflow(path)
 }
 
@@ -89,11 +67,10 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
       .mockImplementation(() => {})
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
-    mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
-    mocks.workflowStore.openWorkflows = [
-      { path: WORKFLOW_A },
-      { path: WORKFLOW_B }
-    ]
+    useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }]
+    })
   })
 
   it('keeps a finished run preview when the user switches tabs and comes back', () => {
@@ -157,7 +134,7 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     store.setNodePreviewsByNodeId(createMockNode(5).id, [previewUrl])
     switchToWorkflow(WORKFLOW_B)
 
-    mocks.workflowStore.openWorkflows = [{ path: WORKFLOW_B }]
+    Object.assign(useWorkflowStore(), { openWorkflows: [{ path: WORKFLOW_B }] })
     switchToWorkflow(WORKFLOW_B)
 
     expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
@@ -175,7 +152,7 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     // Back to A: a frame lands between app.clean() and afterLoadNewGraph().
     store.stashPreviewsForWorkflow(WORKFLOW_B)
     store.resetAllOutputsAndPreviews()
-    mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
+    useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
     store.setNodePreviewsByNodeId(node.id, [arrivedUrl])
     store.restorePreviewsForWorkflow(WORKFLOW_A)
 

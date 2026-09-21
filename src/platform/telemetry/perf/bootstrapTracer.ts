@@ -33,9 +33,12 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
+// eslint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
+import { datadogRum } from '@datadog/browser-rum'
+
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 import { perfMark, perfPoint } from './perfMark'
@@ -47,6 +50,10 @@ import type { PerfSpan } from './perfMark'
  * were minutes.
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
+
+function toRumTimingName(name: string): string {
+  return name.replace(/\//g, '.')
+}
 
 const BOOTSTRAP_PHASES = {
   startup: ['remote-config', 'telemetry-init', 'firebase-init', 'sentry-init'],
@@ -102,6 +109,7 @@ export class BootstrapTracer {
     if (!span) return 0
     this._spans.delete(phase)
     const durationMs = span.stop()
+    this._publishRumTiming(phase)
     this._timings.push({
       name: phase,
       startMs: Math.round(span.startMs),
@@ -131,7 +139,13 @@ export class BootstrapTracer {
    * Record a named milestone with no duration (e.g. "app shell mounted").
    */
   milestone(name: string): void {
-    perfPoint(`bootstrap/milestone/${name}`)
+    const milestoneName = `bootstrap/milestone/${name}`
+    perfPoint(milestoneName)
+    this._publishRumTiming(milestoneName)
+  }
+
+  private _publishRumTiming(name: string): void {
+    if (isCloud) datadogRum.addTiming(toRumTimingName(name))
   }
 
   /**
@@ -149,9 +163,6 @@ export class BootstrapTracer {
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
    * locally. Idempotent — only the first call reports.
-   *
-   * One row per session is what makes "how many users hit a slow load"
-   * answerable by percentile; fifteen separate per-phase events are not.
    */
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
@@ -191,20 +202,11 @@ export class BootstrapTracer {
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      const telemetry = useTelemetry()
-      if (telemetry) {
-        telemetry.trackBootstrapComplete(metadata)
-      } else if (isCloud && outcome === 'timed_out') {
-        void import('@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider')
-          .then(({ DatadogRumTelemetryProvider }) => {
-            new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
-          })
-          .catch((error: unknown) => {
-            reportError(error, {
-              errorType: 'bootstrap_telemetry_fallback_failure'
-            })
-          })
+      if (isCloud) {
+        datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       }
+      useTelemetry()?.trackBootstrapComplete(metadata)
+      if (isCloud && outcome === 'completed') datadogRum.setViewLoadingTime()
       this._logSummary(rows, totalMs)
     } catch {
       return

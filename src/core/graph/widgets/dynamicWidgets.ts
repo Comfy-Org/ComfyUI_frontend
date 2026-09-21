@@ -30,11 +30,8 @@ import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
-
-function setCanvasDirty(canvas: typeof app.canvas | undefined) {
-  canvas?.setDirty(true, true)
-}
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -120,17 +117,61 @@ function dynamicComboWidget(
     appArg,
     widgetName
   )
+  const removedWidgetValues = new Map<
+    string | undefined,
+    Map<string, { type: string; value: WidgetValue }>
+  >()
+  let activeOption = widget.value as string | undefined
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
+  }
+  function restoreRemovedValues(
+    value: string | undefined,
+    widgetNames: string[]
+  ) {
+    const widgets = node.widgets
+    if (!widgets) return
+    const graphId = resolveNodeRootGraphId(node)
+    const removedValues = removedWidgetValues.get(value)
+    const names = new Set(widgetNames)
+    for (const name of removedValues?.keys() ?? []) names.add(name)
+    for (const name of names) {
+      const addedWidget = widgets.find((widget) => widget.name === name)
+      if (!addedWidget) continue
+      const removed = removedValues?.get(name)
+      const positionalIndex = widgets
+        .filter((widget) => widget.serialize !== false)
+        .indexOf(addedWidget)
+      const restored =
+        graphId && positionalIndex >= 0
+          ? useWidgetValueStore().getRestoredWidgetValue(
+              graphId,
+              node.id,
+              name,
+              positionalIndex
+            )
+          : undefined
+      if (!restored && removed?.type === addedWidget.type) {
+        addedWidget.value = removed.value
+      }
+    }
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
+    const removedOption = activeOption
+    activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
     for (const widget of remove(node.widgets, isInGroup)) {
+      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
+      optionValues.set(widget.name, {
+        type: widget.type,
+        value: widget.value
+      })
+      removedWidgetValues.set(removedOption, optionValues)
       widget.onRemove?.()
       if (widget.widgetId) deleteWidget(widget.widgetId)
     }
@@ -167,6 +208,7 @@ function dynamicComboWidget(
     const inputInsertionPoint =
       node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
+    const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
@@ -178,6 +220,7 @@ function dynamicComboWidget(
         throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
+      restoreRemovedValues(value, addedWidgetNames)
       return
     }
     const addedInputs = node.inputs
@@ -203,18 +246,19 @@ function dynamicComboWidget(
     for (const { input, link, slot } of result.replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
+    restoreRemovedValues(value, addedWidgetNames)
 
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
-    setCanvasDirty(app.canvas)
+    node.graph.setDirtyCanvas(true, true)
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
   //keep the serialised height.
   widget.callback = useChainCallback(widget.callback, () => {
     node.size = [node.size[0], node.computeSize([...node.size])[1]]
-    setCanvasDirty(app.canvas)
+    node.graph?.setDirtyCanvas(true, true)
   })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
@@ -356,7 +400,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, idx, outputType)
       })
-      setCanvasDirty(app.canvas)
+      this.graph.setDirtyCanvas(true, true)
     }
   )
 }
@@ -464,7 +508,7 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
 }
 
 const ORDINAL_REGEX = /\d+$/
@@ -502,6 +546,20 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
+
+export function reconcileAutogrowInputs(node: LGraphNode): void {
+  if (!node.comfyDynamic?.autogrow) return
+  withComfyAutogrow(node)
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    const slot = node.inputs.findLastIndex(
+      (input, index) =>
+        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
+        node.getInputLink(index)
+    )
+    if (slot !== -1) autogrowInputConnected(slot, node)
+  }
+}
+
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
@@ -527,7 +585,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []

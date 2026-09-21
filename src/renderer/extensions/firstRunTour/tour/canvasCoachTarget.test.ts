@@ -1,19 +1,27 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import type * as Litegraph from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import * as VueUse from '@vueuse/core'
+import {
+  computed,
+  effectScope,
+  nextTick,
+  onScopeDispose,
+  reactive,
+  shallowRef
+} from 'vue'
 
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
-const { TITLE_HEIGHT } = vi.hoisted(() => ({ TITLE_HEIGHT: 30 }))
+const TITLE_HEIGHT = 30
 
 const state = vi.hoisted(() => ({
   camera: null as Record<string, number> | null,
-  currentGraph: null as {
-    getNodeById: (id: unknown) => unknown
-    rootGraph: { id: ReturnType<typeof createUuidv4> }
-  } | null,
+
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
   layoutReads: vi.fn(),
@@ -22,71 +30,69 @@ const state = vi.hoisted(() => ({
 }))
 
 function graph(id: string) {
-  return {
+  return fromPartial<Litegraph.LGraph>({
     id,
     rootGraph: { id: createUuidv4() },
-    getNodeById: (nodeId: unknown) => ({
-      collapsed: state.collapsed.has(String(nodeId))
-    })
-  }
+    getNodeById: (nodeId: unknown) =>
+      fromPartial<Litegraph.LGraphNode>({
+        constructor: {},
+        collapsed: state.collapsed.has(String(nodeId))
+      })
+  })
 }
 
-vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
-  LiteGraph: { NODE_TITLE_HEIGHT: TITLE_HEIGHT }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
-  async () => {
-    const { reactive } = await import('vue')
-    state.camera = reactive({ x: 0, y: 0, z: 1 })
+  () => {
+    state.camera = { x: 0, y: 0, z: 1 }
     return { useTransformState: () => ({ camera: state.camera }) }
   }
 )
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    canvas: { canvas: document.createElement('canvas') },
-    get currentGraph() {
-      return state.currentGraph
-    }
-  })
-}))
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
-  async () => {
-    const { shallowRef } = await import('vue')
-    state.layout = shallowRef<unknown>(null)
-    return {
-      layoutStore: {
-        getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
-          state.layoutReads(graphId, nodeId)
-          return state.layout
-        }
-      }
-    }
-  }
-)
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  const { computed, onScopeDispose } = await import('vue')
+
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
+  state.layout = { value: null }
   return {
-    ...actual,
-    useElementBounding: () => {
-      onScopeDispose(state.releaseBounds)
-      return {
-        left: computed(() => state.canvasOffset.left),
-        top: computed(() => state.canvasOffset.top)
+    layoutStore: {
+      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
+        state.layoutReads(graphId, nodeId)
+        return state.layout
       }
     }
   }
 })
-
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
   state.layout!.value = { bounds }
 }
 
+beforeEach(() => {
+  state.camera = reactive({ x: 0, y: 0, z: 1 })
+  state.layout = shallowRef<unknown>(null)
+  vi.mocked(VueUse.useElementBounding).mockImplementation(() => {
+    onScopeDispose(state.releaseBounds)
+    return {
+      bottom: computed(() => 0),
+      height: computed(() => 0),
+      left: computed(() => state.canvasOffset.left),
+      right: computed(() => 0),
+      top: computed(() => state.canvasOffset.top),
+      width: computed(() => 0),
+      x: computed(() => 0),
+      y: computed(() => 0),
+      update: vi.fn()
+    }
+  })
+  useCanvasStore().canvas = fromPartial({
+    graph: graph('root'),
+    canvas: document.createElement('canvas')
+  })
+  useCanvasStore().currentGraph = useCanvasStore().canvas!.graph
+})
+
 describe('canvasNodeTarget', () => {
   afterEach(() => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     state.collapsed.clear()
     state.canvasOffset = { left: 0, top: 0 }
     if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
@@ -96,7 +102,7 @@ describe('canvasNodeTarget', () => {
   })
 
   it('releases what it watches when the tour drops it', () => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     const target = canvasNodeTarget(toNodeId(1))
     expect(state.releaseBounds).not.toHaveBeenCalled()
 
@@ -109,7 +115,7 @@ describe('canvasNodeTarget', () => {
   })
 
   it('places the rect over the node, title bar included', () => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     placeNode({ x: 100, y: 200, width: 80, height: 40 })
 
     expect(
@@ -119,7 +125,7 @@ describe('canvasNodeTarget', () => {
   })
 
   it('carries the node through pan and zoom', () => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     placeNode({ x: 100, y: 200, width: 80, height: 40 })
     Object.assign(state.camera!, { x: 10, y: 20, z: 2 })
     state.canvasOffset = { left: 5, top: 7 }
@@ -138,8 +144,8 @@ describe('canvasNodeTarget', () => {
   })
 
   it('withholds a rect until the node has a layout', () => {
-    state.currentGraph = graph('root')
-    const rootGraphId = state.currentGraph.rootGraph.id
+    useCanvasStore().currentGraph = graph('root')
+    const rootGraphId = useCanvasStore().currentGraph!.rootGraph.id
     const nodeId = toNodeId(6)
 
     expect(
@@ -150,12 +156,12 @@ describe('canvasNodeTarget', () => {
   })
 
   it('withholds a rect once the graph it resolved against is gone', () => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     placeNode()
     const target = canvasNodeTarget(toNodeId(6))
     expect(target.getRect()).not.toBeNull()
 
-    state.currentGraph = graph('another-workflow')
+    useCanvasStore().currentGraph = graph('another-workflow')
 
     expect(
       target.getRect(),
@@ -164,7 +170,7 @@ describe('canvasNodeTarget', () => {
   })
 
   it('withholds a rect for a collapsed node, which renders no widget', () => {
-    state.currentGraph = graph('root')
+    useCanvasStore().currentGraph = graph('root')
     placeNode()
     state.collapsed.add('6')
 

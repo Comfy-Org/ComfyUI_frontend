@@ -1,6 +1,4 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   getComponent,
@@ -19,23 +17,7 @@ const {
   WidgetToggleSwitch
 } = FOR_TESTING
 
-vi.mock<unknown>(import('@/stores/queueStore'), () => ({
-  useQueueStore: vi.fn(() => ({
-    historyTasks: []
-  }))
-}))
-
-// Mock the settings store for components that might use it
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => 'before')
-  })
-}))
-
 describe('widgetRegistry', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia())
-  })
   describe('getComponent', () => {
     // Test number type mappings
     describe('number types', () => {

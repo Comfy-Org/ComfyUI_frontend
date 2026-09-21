@@ -17,15 +17,9 @@ const { getNodeById } = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: { graph: { getNodeById } } }
+  app: { canvas: { graph: { getNodeById } }, nodePreviewImages: {} }
 }))
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => ({
-    getNodeImageUrls: () => undefined,
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  })
-}))
+
 vi.mock(
   import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
   () => ({
@@ -63,10 +57,7 @@ function renderWidget() {
   return render(WidgetCompositor, {
     props: { nodeId },
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: { template: '<button v-bind="$attrs"><slot /></button>' }
-      }
+      plugins: [i18n]
     }
   })
 }

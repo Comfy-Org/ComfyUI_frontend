@@ -1,42 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 
-// Mock the store
-vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
-  useComfyRegistryStore: vi.fn()
-}))
-
 describe('useComfyRegistrySearchProvider', () => {
-  const mockSearchCall = vi.fn()
-  const mockSearchClear = vi.fn()
-  const mockListAllPacksCall = vi.fn()
-  const mockListAllPacksClear = vi.fn()
-
-  const createMockStore = (
-    params: Partial<ReturnType<typeof useComfyRegistryStore>> = {}
-  ) => {
-    return {
-      search: {
-        call: mockSearchCall,
-        clear: mockSearchClear,
-        cancel: vi.fn()
-      },
-      listAllPacks: {
-        call: mockListAllPacksCall,
-        clear: mockListAllPacksClear,
-        cancel: vi.fn()
-      },
-      ...params
-    } as Partial<ReturnType<typeof useComfyRegistryStore>> as ReturnType<
-      typeof useComfyRegistryStore
-    >
-  }
+  let mockSearchCall: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['search']['call']
+  >
+  let mockSearchClear: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['search']['clear']
+  >
+  let mockListAllPacksCall: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['listAllPacks']['call']
+  >
+  let mockListAllPacksClear: MockInstance<
+    ReturnType<typeof useComfyRegistryStore>['listAllPacks']['clear']
+  >
 
   beforeEach(() => {
-    // Setup store mock
-    vi.mocked(useComfyRegistryStore).mockReturnValue(createMockStore())
+    const store = useComfyRegistryStore()
+    mockSearchCall = vi.spyOn(store.search, 'call').mockResolvedValue(null)
+    mockSearchClear = vi.spyOn(store.search, 'clear')
+    mockListAllPacksCall = vi
+      .spyOn(store.listAllPacks, 'call')
+      .mockResolvedValue(null)
+    mockListAllPacksClear = vi.spyOn(store.listAllPacks, 'clear')
   })
 
   describe('searchPacks', () => {

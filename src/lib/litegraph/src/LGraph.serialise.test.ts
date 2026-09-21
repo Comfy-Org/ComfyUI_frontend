@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe } from 'vitest'
 
 import {
@@ -21,7 +19,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   mockReportError.mockClear()
 })
 

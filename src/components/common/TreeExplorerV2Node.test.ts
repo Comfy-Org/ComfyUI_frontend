@@ -1,45 +1,29 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import type { FlattenedItem } from 'reka-ui'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
 import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
+
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+  vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(false)
+  vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+})
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: { g: { delete: 'Delete' } } }
 })
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
-  useNodeBookmarkStore: () => ({
-    isBookmarked: vi.fn().mockReturnValue(false),
-    toggleBookmark: vi.fn()
-  })
-}))
-
-const mockDeleteBlueprint = vi.fn()
-const mockIsUserBlueprint = vi.fn().mockReturnValue(false)
-
-vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
-  useSubgraphStore: () => ({
-    isUserBlueprint: mockIsUserBlueprint,
-    deleteBlueprint: mockDeleteBlueprint,
-    typePrefix: 'SubgraphBlueprint.'
-  })
-}))
 
 vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: { template: '<div />' }
@@ -220,7 +204,7 @@ describe('TreeExplorerV2Node', () => {
 
   describe('blueprint actions', () => {
     it('shows delete button for user blueprints', () => {
-      mockIsUserBlueprint.mockReturnValue(true)
+      vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(true)
       renderComponent({
         item: createMockItem('node', {
           data: { name: 'SubgraphBlueprint.test' }
@@ -231,7 +215,7 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('hides delete button for non-blueprint nodes', () => {
-      mockIsUserBlueprint.mockReturnValue(false)
+      vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(false)
       renderComponent({
         item: createMockItem('node', {
           data: { name: 'KSampler' }
@@ -244,7 +228,7 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('always shows bookmark button', () => {
-      mockIsUserBlueprint.mockReturnValue(true)
+      vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(true)
       renderComponent({
         item: createMockItem('node', {
           data: { name: 'SubgraphBlueprint.test' }
@@ -258,7 +242,7 @@ describe('TreeExplorerV2Node', () => {
 
     it('calls deleteBlueprint when delete button is clicked', async () => {
       const user = userEvent.setup()
-      mockIsUserBlueprint.mockReturnValue(true)
+      vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(true)
       const nodeName = 'SubgraphBlueprint.test'
       renderComponent({
         item: createMockItem('node', {
@@ -269,7 +253,9 @@ describe('TreeExplorerV2Node', () => {
       const deleteButton = screen.getByRole('button', { name: 'Delete' })
       await user.click(deleteButton)
 
-      expect(mockDeleteBlueprint).toHaveBeenCalledWith(nodeName)
+      expect(
+        vi.mocked(useSubgraphStore().deleteBlueprint)
+      ).toHaveBeenCalledWith(nodeName)
     })
   })
 

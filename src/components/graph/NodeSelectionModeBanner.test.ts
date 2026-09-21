@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -17,8 +17,7 @@ vi.mock<unknown>(
 
 describe('NodeSelectionModeBanner', () => {
   it('shows the selection instructions and exits from the CTA', async () => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     const store = useAgentNodeSelectionStore()
     store.isActive = true
     store.isBannerVisible = true

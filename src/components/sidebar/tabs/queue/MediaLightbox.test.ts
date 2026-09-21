@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -7,16 +7,6 @@ import { createI18n } from 'vue-i18n'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: () => undefined })
-}))
-vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
-  useExtensionStore: () => ({
-    isExtensionInstalled: () => false,
-    isExtensionEnabled: () => false
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,

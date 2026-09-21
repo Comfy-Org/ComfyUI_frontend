@@ -10,16 +10,6 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { toNodeId } from '@/types/nodeId'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
-vi.mock<unknown>(import('@/stores/domWidgetStore'), () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
-}))
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))

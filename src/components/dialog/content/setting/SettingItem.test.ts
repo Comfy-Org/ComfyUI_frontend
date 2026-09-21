@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
@@ -37,7 +37,7 @@ describe('SettingItem', () => {
   function renderComponent(setting: SettingParams) {
     return render(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, createPinia()],
+        plugins: [PrimeVue, i18n, getActivePinia()!],
         components: { Tag },
         stubs: {
           FormItem: FormItemStub,

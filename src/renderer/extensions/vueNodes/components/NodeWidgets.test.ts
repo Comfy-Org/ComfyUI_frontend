@@ -1,9 +1,9 @@
+import { getActivePinia } from 'pinia'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -16,12 +16,6 @@ import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    rootGraphId: GRAPH_ID
-  })
-}))
 
 const WidgetStub = {
   name: 'WidgetStub',
@@ -85,8 +79,7 @@ function renderComponent({
   widgetIds?: readonly WidgetId[]
   setupStores?: () => void
 }) {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
   setupStores?.()
 
   return render(NodeWidgets, {
@@ -106,6 +99,10 @@ function renderComponent({
     }
   })
 }
+
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { rootGraphId: GRAPH_ID })
+})
 
 describe('NodeWidgets', () => {
   describe('node-type prop passing', () => {

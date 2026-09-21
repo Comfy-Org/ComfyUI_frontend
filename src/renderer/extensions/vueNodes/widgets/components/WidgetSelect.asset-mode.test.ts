@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,13 +18,15 @@ const flushPromises = () =>
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
-    shouldUseAssetBrowser: vi.fn(() => true),
-    isAssetAPIEnabled: vi.fn(() => true)
+    shouldUseWidgetAssetPicker: vi.fn(() => true),
+    isWidgetAssetPickerEnabled: vi.fn(() => true)
   }
 }))
 
 import { assetService } from '@/platform/assets/services/assetService'
-const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
+const mockShouldUseWidgetAssetPicker = vi.mocked(
+  assetService.shouldUseWidgetAssetPicker
+)
 
 const stubs = {
   WidgetSelectDropdown: {
@@ -48,7 +50,7 @@ describe('WidgetSelect asset mode', () => {
     })
 
   beforeEach(() => {
-    mockShouldUseAssetBrowser.mockReturnValue(true)
+    mockShouldUseWidgetAssetPicker.mockReturnValue(true)
   })
 
   const renderWidget = () => {
@@ -59,21 +61,21 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs
       }
     })
   }
 
-  it('uses dropdown when isCloud && UseAssetAPI && isEligible', async () => {
+  it('uses dropdown when isCloud && isEligible', async () => {
     renderWidget()
     await flushPromises()
 
     expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
   })
 
-  it('uses default widget when shouldUseAssetBrowser returns false', () => {
-    mockShouldUseAssetBrowser.mockReturnValue(false)
+  it('uses default widget when shouldUseWidgetAssetPicker returns false', () => {
+    mockShouldUseWidgetAssetPicker.mockReturnValue(false)
     renderWidget()
 
     expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
@@ -98,7 +100,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'ImageLoader'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs: {
           WidgetSelectDefault: stubs.WidgetSelectDefault,
           WidgetWithControl: stubs.WidgetWithControl

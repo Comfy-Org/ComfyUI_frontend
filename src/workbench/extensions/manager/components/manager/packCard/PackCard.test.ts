@@ -1,51 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import type {
   MergedNodePack,
   RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-
-const storageMap = vi.hoisted(() => new Map<string, unknown>())
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
-  () => ({
-    useComfyManagerStore: vi.fn(() => ({
-      isPackInstalled: vi.fn(() => false),
-      isPackEnabled: vi.fn(() => true),
-      isPackInstalling: vi.fn(() => false),
-      installedPacksIds: []
-    }))
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: { light_theme: true }
-  }))
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  whenever: vi.fn(),
-  useStorage: vi.fn((key: string, defaultValue: unknown) => {
-    if (!storageMap.has(key)) storageMap.set(key, defaultValue)
-    return storageMap.get(key)
-  }),
-  createSharedComposable: vi.fn((fn) => {
-    let cached: ReturnType<typeof fn>
-    return (...args: Parameters<typeof fn>) => (cached ??= fn(...args))
-  }),
-  useDocumentVisibility: vi.fn(() => ref<'visible' | 'hidden'>('visible'))
-}))
 
 vi.mock<unknown>(import('@/config'), () => ({
   default: {
@@ -53,18 +19,32 @@ vi.mock<unknown>(import('@/config'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
-  useSystemStatsStore: vi.fn(() => ({
-    systemStats: {
-      system: { os: 'Darwin' },
-      devices: [{ type: 'mps', name: 'Metal' }]
-    }
-  }))
-}))
-
 describe('PackCard', () => {
   beforeEach(() => {
-    storageMap.clear()
+    useSystemStatsStore().systemStats = {
+      system: {
+        os: 'Darwin',
+        ram_total: 0,
+        ram_free: 0,
+        comfyui_version: '0.3.41',
+        python_version: '3.11',
+        pytorch_version: '2.1',
+        embedded_python: false,
+        argv: []
+      },
+      devices: [
+        {
+          type: 'mps',
+          name: 'Metal',
+          index: 0,
+          vram_total: 0,
+          vram_free: 0,
+          torch_vram_total: 0,
+          torch_vram_free: 0
+        }
+      ]
+    }
+    useColorPaletteStore().activePaletteId = 'light'
   })
 
   function renderComponent(props: {
@@ -80,7 +60,7 @@ describe('PackCard', () => {
     return render(PackCard, {
       props,
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         components: {
           ProgressSpinner
         },

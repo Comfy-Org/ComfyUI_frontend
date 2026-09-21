@@ -1,7 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useExecutionStore } from '@/stores/executionStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -19,12 +18,6 @@ import {
   createMockLGraph,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
-
-const useExecutionStore = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore
-}))
 
 const ROOT_GRAPH_ID = '00000000-0000-0000-0000-000000000001'
 const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000002'
@@ -67,8 +60,7 @@ function rootGraph(
 
 describe('MinimapDataSource', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    useExecutionStore.mockReturnValue({ nodeLocationProgressStates: {} })
+    Object.assign(useExecutionStore(), { nodeLocationProgressStates: {} })
   })
 
   it('uses graph position and rendered size', () => {
@@ -89,7 +81,7 @@ describe('MinimapDataSource', () => {
       rootGraph: rootGraph(),
       _nodes: [node]
     })
-    useExecutionStore.mockReturnValue({
+    Object.assign(useExecutionStore(), {
       nodeLocationProgressStates: {
         [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
       }

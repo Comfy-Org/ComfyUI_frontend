@@ -1,57 +1,17 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPinia } from 'pinia'
-import { defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'
-
-const mockTeamWorkspaceStore = vi.hoisted(() => ({
-  workspaceName: { value: '' },
-  initState: { value: 'idle' },
-  isInPersonalWorkspace: { value: false }
-}))
+vi.mock(import('firebase/auth'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-
-// Mock all firebase modules
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async () => {
-    const { defineStore } = await import('pinia')
-    const { computed } = await import('vue')
-
-    return {
-      useTeamWorkspaceStore: defineStore('teamWorkspace', () => ({
-        workspaceName: computed(
-          () => mockTeamWorkspaceStore.workspaceName.value
-        ),
-        initState: computed(() => mockTeamWorkspaceStore.initState.value),
-        isInPersonalWorkspace: computed(
-          () => mockTeamWorkspaceStore.isInPersonalWorkspace.value
-        ),
-        activeWorkspace: computed(() => null)
-      }))
-    }
-  }
-)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -59,15 +19,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock the useCurrentUser composable
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: true,
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com'
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 // Mock the UserAvatar component
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
@@ -130,9 +82,15 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    mockTeamWorkspaceStore.workspaceName.value = ''
-    mockTeamWorkspaceStore.initState.value = 'idle'
-    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
+    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
+    useTeamWorkspaceStore().initState = 'uninitialized'
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockIsCloud.value = false
   })
 
@@ -146,7 +104,7 @@ describe('CurrentUserButton', () => {
 
     const result = render(CurrentUserButton, {
       global: {
-        plugins: [i18n, createPinia()],
+        plugins: [i18n],
         stubs: {
           CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
           Popover: defineComponent({
@@ -187,11 +145,11 @@ describe('CurrentUserButton', () => {
     expect(screen.getByText('Popover Content')).toBeInTheDocument()
   })
 
-  it.for(['loading', 'error'])(
+  it.for(['loading', 'error'] as const)(
     'shows account actions while Cloud workspace initialization is %s',
     async (initState) => {
       mockIsCloud.value = true
-      mockTeamWorkspaceStore.initState.value = initState
+      useTeamWorkspaceStore().initState = initState
       const { user } = renderComponent()
 
       await user.click(screen.getByRole('button', { name: 'Current user' }))
@@ -214,8 +172,8 @@ describe('CurrentUserButton', () => {
 
   it('shows UserAvatar in personal workspace', () => {
     mockIsCloud.value = true
-    mockTeamWorkspaceStore.initState.value = 'ready'
-    mockTeamWorkspaceStore.isInPersonalWorkspace.value = true
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
 
     renderComponent()
     expect(screen.getByText('Avatar')).toBeInTheDocument()
@@ -224,9 +182,9 @@ describe('CurrentUserButton', () => {
 
   it('shows WorkspaceProfilePic in team workspace', () => {
     mockIsCloud.value = true
-    mockTeamWorkspaceStore.initState.value = 'ready'
-    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
-    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'My Team' })
 
     renderComponent()
     expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
@@ -234,9 +192,9 @@ describe('CurrentUserButton', () => {
   })
 
   it('shows WorkspaceProfilePic for an active local team workspace', () => {
-    mockTeamWorkspaceStore.initState.value = 'ready'
-    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
-    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'My Team' })
 
     renderComponent()
 
@@ -245,7 +203,7 @@ describe('CurrentUserButton', () => {
   })
 
   it('shows workspace actions after local workspace initialization', async () => {
-    mockTeamWorkspaceStore.initState.value = 'ready'
+    useTeamWorkspaceStore().initState = 'ready'
     const { user } = renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Current user' }))

@@ -1,6 +1,8 @@
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
+import { useDialogStore } from '@/stores/dialogStore'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,11 +16,10 @@ import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
 const mockSwitchWorkspace = vi.fn()
 
-let pinia: ReturnType<typeof createTestingPinia>
+let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 vi.mock<unknown>(
@@ -29,12 +30,6 @@ vi.mock<unknown>(
     })
   })
 )
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
-  })
-}))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
@@ -60,13 +55,6 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size']
-}
-
 function mountComponent(props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
   const { container } = render(TeamWorkspacesDialogContent, {
@@ -74,7 +62,6 @@ function mountComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        Button: ButtonStub,
         WorkspaceProfilePic: true
       }
     }
@@ -134,10 +121,14 @@ function setOwnedWorkspaces() {
   ]
 }
 
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
 describe('TeamWorkspacesDialogContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []
   })
@@ -190,7 +181,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await flushPromises()
 
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('ws-1')
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
@@ -204,7 +195,7 @@ describe('TeamWorkspacesDialogContent', () => {
       await user.click(switchButton)
       await flushPromises()
 
-      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
@@ -287,7 +278,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
       expect(onConfirm).toHaveBeenCalledWith('New Team')
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
@@ -306,7 +297,7 @@ describe('TeamWorkspacesDialogContent', () => {
           detail: 'Limit reached'
         })
       )
-      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('shows separate toast when onConfirm fails but still closes dialog', async () => {
@@ -329,7 +320,7 @@ describe('TeamWorkspacesDialogContent', () => {
           detail: 'Setup failed'
         })
       )
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })
@@ -362,7 +353,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
 
     it('resets loading state after onConfirm fails', async () => {
@@ -378,7 +369,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
   })
 
@@ -388,7 +379,7 @@ describe('TeamWorkspacesDialogContent', () => {
       const closeBtn = container.querySelector('header button')!
       await user.click(closeBtn)
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
       })
     })

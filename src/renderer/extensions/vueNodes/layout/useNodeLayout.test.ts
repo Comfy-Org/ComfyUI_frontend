@@ -1,5 +1,6 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -32,16 +33,6 @@ function createNode(graphId: UUID, x: number): void {
   })
 }
 
-const state = vi.hoisted<{
-  canvasStore: { rootGraphId: UUID | undefined } | null
-}>(() => ({ canvasStore: null }))
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
-  const { reactive } = await import('vue')
-  state.canvasStore = reactive({ rootGraphId: undefined })
-  return { useCanvasStore: () => state.canvasStore }
-})
-
 const NodeLayoutHost = defineComponent({
   setup() {
     const { position } = useNodeLayout(NODE)
@@ -54,14 +45,14 @@ describe('useNodeLayout', () => {
     layoutStore.resetForTests()
     createNode(FIRST_WORKFLOW, 100)
     createNode(SECOND_WORKFLOW, 200)
-    state.canvasStore!.rootGraphId = FIRST_WORKFLOW
+    Object.assign(useCanvasStore(), { rootGraphId: FIRST_WORKFLOW })
   })
 
   it('follows layout changes when the workflow changes', async () => {
     const { container } = render(NodeLayoutHost)
     expect(container.textContent).toBe('100')
 
-    state.canvasStore!.rootGraphId = SECOND_WORKFLOW
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_WORKFLOW })
     await nextTick()
     expect(container.textContent).toBe('200')
 

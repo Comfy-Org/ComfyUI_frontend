@@ -1,8 +1,9 @@
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -10,44 +11,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      },
-      get modelUploadButtonEnabled() {
-        return false
-      }
-    }
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => {
-  const getAssets = vi.fn((key: string) => mockAssetsByKey.get(key) ?? [])
-  const isModelLoading = vi.fn(
-    (key: string) => mockLoadingByKey.get(key) ?? false
-  )
-  const updateModelsForNodeType = vi.fn()
-  const updateModelsForTag = vi.fn()
-  return {
-    useAssetsStore: () => ({
-      getAssets,
-      isModelLoading,
-      updateModelsForNodeType,
-      updateModelsForTag
-    })
-  }
-})
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
-  useModelToNodeStore: () => ({
-    getCategoryForNodeType: () => 'checkpoints'
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
   useModelTypes: () => ({
     fetchModelTypes: vi.fn().mockResolvedValue(undefined)
@@ -161,6 +126,25 @@ vi.mock<unknown>(import('@/platform/assets/components/AssetGrid.vue'), () => ({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
+beforeEach(() => {
+  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
+    () => 'checkpoints'
+  )
+})
+
+beforeEach(() => {
+  const getAssets = vi.fn((key: string) => mockAssetsByKey.get(key) ?? [])
+  const isModelLoading = vi.fn(
+    (key: string) => mockLoadingByKey.get(key) ?? false
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(getAssets)
+  vi.mocked(useAssetsStore().isModelLoading).mockImplementation(isModelLoading)
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockResolvedValue(
+    undefined
+  )
+  vi.mocked(useAssetsStore().updateModelsForTag).mockResolvedValue(undefined)
+})
+
 describe('AssetBrowserModal', () => {
   const createTestAsset = (
     id: string,
@@ -184,13 +168,10 @@ describe('AssetBrowserModal', () => {
   })
 
   function renderModal(props: Record<string, unknown>) {
-    const pinia = createPinia()
-    setActivePinia(pinia)
-
     return render(AssetBrowserModal, {
       props,
       global: {
-        plugins: [pinia, i18n],
+        plugins: [i18n],
         stubs: {
           'i-lucide:folder': {
             template: '<div data-testid="folder-icon"></div>'
@@ -203,7 +184,6 @@ describe('AssetBrowserModal', () => {
   beforeEach(() => {
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
-    mockSupportsModelTypeTags.value = false
   })
 
   describe('Integration with useAssetBrowser', () => {
@@ -412,7 +392,7 @@ describe('AssetBrowserModal', () => {
     })
 
     it('strips the model_type: prefix from the title when the flag is on', async () => {
-      mockSupportsModelTypeTags.value = true
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
       const assets = [
         createTestAsset('asset1', 'Model A', 'model_type:checkpoints')
       ]

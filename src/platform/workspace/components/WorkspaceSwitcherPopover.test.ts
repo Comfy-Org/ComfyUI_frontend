@@ -1,7 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
 
@@ -51,7 +53,14 @@ const i18n = createI18n({
   }
 })
 
-function createWorkspaceState(overrides: Record<string, unknown>) {
+type WorkspaceState = ReturnType<
+  typeof useTeamWorkspaceStore
+>['workspaces'][number]
+
+function createWorkspaceState(
+  overrides: Pick<WorkspaceState, 'id' | 'name' | 'type' | 'role'> &
+    Partial<WorkspaceState>
+): WorkspaceState {
   return {
     created_at: '2026-01-01T00:00:00Z',
     joined_at: '2026-01-01T00:00:00Z',
@@ -67,37 +76,33 @@ function createWorkspaceState(overrides: Record<string, unknown>) {
 function renderComponent(
   overrides: {
     activeWorkspaceId?: string
-    workspaces?: Record<string, unknown>[]
+    workspaces?: WorkspaceState[]
   } = {}
 ) {
+  const store: ReturnType<typeof useTeamWorkspaceStore> & {
+    activeWorkspaceId: string | null
+  } = useTeamWorkspaceStore()
+  store.activeWorkspaceId = overrides.activeWorkspaceId ?? 'ws-personal'
+  store.$patch({
+    isFetchingWorkspaces: false,
+    workspaces: overrides.workspaces ?? [
+      createWorkspaceState({
+        id: 'ws-personal',
+        name: 'Personal Workspace',
+        type: 'personal',
+        role: 'owner'
+      }),
+      createWorkspaceState({
+        id: 'ws-team-long',
+        name: LONG_WORKSPACE_NAME,
+        type: 'team',
+        role: 'member'
+      })
+    ]
+  })
   return render(WorkspaceSwitcherPopover, {
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          initialState: {
-            teamWorkspace: {
-              activeWorkspaceId: overrides.activeWorkspaceId ?? 'ws-personal',
-              isFetchingWorkspaces: false,
-              workspaces: overrides.workspaces ?? [
-                createWorkspaceState({
-                  id: 'ws-personal',
-                  name: 'Personal Workspace',
-                  type: 'personal',
-                  role: 'owner'
-                }),
-                createWorkspaceState({
-                  id: 'ws-team-long',
-                  name: LONG_WORKSPACE_NAME,
-                  type: 'team',
-                  role: 'member'
-                })
-              ]
-            }
-          }
-        }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceProfilePic: true
       }

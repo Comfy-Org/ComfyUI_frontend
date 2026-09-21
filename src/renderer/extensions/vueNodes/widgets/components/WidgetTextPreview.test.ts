@@ -1,18 +1,21 @@
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { getActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
@@ -20,17 +23,7 @@ import WidgetTextPreview from './WidgetTextPreview.vue'
 
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
-const LOCATOR = 'loc-1'
-
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before
-// component modules construct their module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
+const LOCATOR = createNodeLocatorId(null, NODE_ID)
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),
@@ -48,13 +41,6 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: () => ({})
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({ nodeToNodeLocatorId: () => LOCATOR })
-  })
-)
 
 interface SavedFile {
   filename: string
@@ -81,8 +67,7 @@ function renderPreview(
   text: string,
   opts: { markdown?: boolean; file?: SavedFile } = {}
 ) {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const canvasStore = useCanvasStore()
   canvasStore.canvas = fromPartial({ graph: { rootGraph: { id: GRAPH_ID } } })
@@ -113,6 +98,10 @@ function renderPreview(
     global: { plugins: [pinia, createTestI18n()] }
   })
 }
+
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockReturnValue(LOCATOR)
+})
 
 describe('WidgetTextPreview', () => {
   it('renders plaintext in a textarea by default', () => {

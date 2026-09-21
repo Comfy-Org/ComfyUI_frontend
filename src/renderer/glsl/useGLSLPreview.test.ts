@@ -1,6 +1,8 @@
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -8,10 +10,7 @@ import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
-
-type WidgetValueStoreStub = {
-  _widgetMap: Map<string, { value: unknown }>
-}
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)
@@ -70,41 +69,6 @@ vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
     mockRendererFactory.create(config)
 }))
 
-const mockSetNodePreviewsByNodeId = vi.fn()
-const mockRevokePreviewsByLocatorId = vi.fn()
-const mockNodeOutputs = reactive<Record<string, unknown>>({})
-
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => ({
-    setNodePreviewsByNodeId: mockSetNodePreviewsByNodeId,
-    setNodePreviewsByLocatorId: vi.fn(),
-    revokePreviewsByLocatorId: mockRevokePreviewsByLocatorId,
-    getNodeImageUrls: vi.fn(() => undefined),
-    nodeOutputs: mockNodeOutputs
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/widgetValueStore'), () => {
-  const widgetMap = new Map<string, { value: unknown }>()
-  const getWidget = vi.fn((id: string) => widgetMap.get(id))
-  return {
-    useWidgetValueStore: () => ({
-      getWidget,
-      _widgetMap: widgetMap
-    })
-  }
-})
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      nodeIdToNodeLocatorId: (id: string | number) => String(id),
-      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-    })
-  })
-)
-
 vi.mock(import('@/utils/objectUrlUtil'), () => ({
   createSharedObjectUrl: () => 'blob:test',
   releaseSharedObjectUrl: vi.fn()
@@ -134,6 +98,25 @@ function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
   global.ImageBitmap ??= class ImageBitmap {} as unknown as typeof ImageBitmap
 }
 
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().nodeIdToNodeLocatorId).mockImplementation((id) =>
+    createNodeLocatorId(null, id)
+  )
+  vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockImplementation((node) =>
+    createNodeLocatorId(null, node.id)
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByNodeId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().revokePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
+})
+
 describe('useGLSLPreview', () => {
   beforeEach(() => {
     mockRendererFactory.lastConfig.value = undefined
@@ -150,14 +133,16 @@ describe('useGLSLPreview', () => {
 
   it('does not activate before first execution', () => {
     const node = createMockNode()
-    Object.keys(mockNodeOutputs).forEach((k) => delete mockNodeOutputs[k])
+    Object.keys(useNodeOutputStore().nodeOutputs).forEach(
+      (k) => delete useNodeOutputStore().nodeOutputs[k]
+    )
     const { isActive } = useGLSLPreview(wrapNode(node))
     expect(isActive.value).toBe(false)
   })
 
   it('activates for GLSLShader nodes with execution output', () => {
     const node = createMockNode()
-    mockNodeOutputs['1'] = {
+    useNodeOutputStore().nodeOutputs['1'] = {
       images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
     }
     const { isActive } = useGLSLPreview(wrapNode(node))
@@ -183,17 +168,13 @@ describe('useGLSLPreview', () => {
 
   describe('autogrow config extraction', () => {
     async function triggerRender(node: LGraphNode) {
-      mockNodeOutputs[String(node.id)] = {
+      useNodeOutputStore().nodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
-      store._widgetMap.set(
+      const store = useWidgetValueStore()
+      store.registerWidget(
         widgetId('test-graph-id', node.id, 'fragment_shader'),
-        {
-          value: 'void main() {}'
-        }
+        { type: 'customtext', options: {}, value: 'void main() {}' }
       )
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
@@ -242,17 +223,13 @@ describe('useGLSLPreview', () => {
 
   describe('render pipeline', () => {
     async function setupAndRender(node: LGraphNode) {
-      mockNodeOutputs[String(node.id)] = {
+      useNodeOutputStore().nodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
-      store._widgetMap.set(
+      const store = useWidgetValueStore()
+      store.registerWidget(
         widgetId('test-graph-id', node.id, 'fragment_shader'),
-        {
-          value: 'void main() {}'
-        }
+        { type: 'customtext', options: {}, value: 'void main() {}' }
       )
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
@@ -292,9 +269,9 @@ describe('useGLSLPreview', () => {
       expect(mockRendererFactory.init).toHaveBeenCalledTimes(1)
 
       mockRendererFactory.isContextLost.mockReturnValueOnce(true)
-      delete mockNodeOutputs['1']
+      delete useNodeOutputStore().nodeOutputs['1']
       await nextTick()
-      mockNodeOutputs['1'] = {
+      useNodeOutputStore().nodeOutputs['1'] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
       await nextTick()
@@ -344,14 +321,12 @@ describe('useGLSLPreview', () => {
         ],
         getInputNode: vi.fn((slot: number) => fromAny(slot === 0 ? up0 : up1))
       })
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
-      store._widgetMap.set(
+      const store = useWidgetValueStore()
+      store.registerWidget(
         widgetId('test-graph-id', node.id, 'fragment_shader'),
-        { value: 'void main() {}' }
+        { type: 'customtext', options: {}, value: 'void main() {}' }
       )
-      mockNodeOutputs['1'] = {
+      useNodeOutputStore().nodeOutputs['1'] = {
         images: [{ filename: 'a.png', subfolder: '', type: 'temp' }]
       }
 
@@ -367,9 +342,9 @@ describe('useGLSLPreview', () => {
 
       up0.imgs = []
       vi.clearAllMocks()
-      delete mockNodeOutputs['1']
+      delete useNodeOutputStore().nodeOutputs['1']
       await nextTick()
-      mockNodeOutputs['1'] = {
+      useNodeOutputStore().nodeOutputs['1'] = {
         images: [{ filename: 'a.png', subfolder: '', type: 'temp' }]
       }
       await nextTick()
@@ -401,7 +376,9 @@ describe('useGLSLPreview', () => {
       for (let i = 0; i < 5; i++) await nextTick()
 
       expect(hideExecutedOutput.value).toBe(false)
-      expect(mockRevokePreviewsByLocatorId).toHaveBeenCalledWith('1')
+      expect(
+        useNodeOutputStore().revokePreviewsByLocatorId
+      ).toHaveBeenCalledWith('1')
       expect(mockRendererFactory.compileFragment).not.toHaveBeenCalled()
     })
 
@@ -426,13 +403,9 @@ describe('useGLSLPreview', () => {
 
     it('skips render when shader source is unavailable', async () => {
       const node = createMockNode()
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
-      store._widgetMap.delete(
-        widgetId('test-graph-id', node.id, 'fragment_shader')
-      )
-      mockNodeOutputs[String(node.id)] = {
+      const store = useWidgetValueStore()
+      store.deleteWidget(widgetId('test-graph-id', node.id, 'fragment_shader'))
+      useNodeOutputStore().nodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
 
@@ -447,53 +420,45 @@ describe('useGLSLPreview', () => {
     })
 
     it('uses custom resolution when size_mode is custom', async () => {
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
+      const store = useWidgetValueStore()
 
       const node = createMockNode()
-      store._widgetMap.set(widgetId('test-graph-id', node.id, 'size_mode'), {
+      store.registerWidget(widgetId('test-graph-id', node.id, 'size_mode'), {
+        type: 'customtext',
+        options: {},
         value: 'custom'
       })
-      store._widgetMap.set(
+      store.registerWidget(
         widgetId('test-graph-id', node.id, 'size_mode.width'),
-        {
-          value: 800
-        }
+        { type: 'customtext', options: {}, value: 800 }
       )
-      store._widgetMap.set(
+      store.registerWidget(
         widgetId('test-graph-id', node.id, 'size_mode.height'),
-        {
-          value: 600
-        }
+        { type: 'customtext', options: {}, value: 600 }
       )
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(800, 600)
 
-      store._widgetMap.delete(widgetId('test-graph-id', node.id, 'size_mode'))
-      store._widgetMap.delete(
-        widgetId('test-graph-id', node.id, 'size_mode.width')
-      )
-      store._widgetMap.delete(
-        widgetId('test-graph-id', node.id, 'size_mode.height')
-      )
+      store.deleteWidget(widgetId('test-graph-id', node.id, 'size_mode'))
+      store.deleteWidget(widgetId('test-graph-id', node.id, 'size_mode.width'))
+      store.deleteWidget(widgetId('test-graph-id', node.id, 'size_mode.height'))
     })
 
     it('uses default resolution when size_mode is not custom', async () => {
-      const store = fromAny<WidgetValueStoreStub, unknown>(
-        useWidgetValueStore()
-      )
+      const store = useWidgetValueStore()
 
       const node = createMockNode()
-      store._widgetMap.set(widgetId('test-graph-id', node.id, 'size_mode'), {
+      store.registerWidget(widgetId('test-graph-id', node.id, 'size_mode'), {
+        type: 'customtext',
+        options: {},
         value: 'from_input'
       })
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(512, 512)
 
-      store._widgetMap.delete(widgetId('test-graph-id', node.id, 'size_mode'))
+      store.deleteWidget(widgetId('test-graph-id', node.id, 'size_mode'))
     })
 
     it('disposes renderer and cancels debounce on cleanup', async () => {

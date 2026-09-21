@@ -1,44 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useMouse } from '@vueuse/core'
+import { nextTick } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import type { useSettingStore } from '@/platform/settings/settingStore'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-
-const { mockAdjustMouseEvent } = vi.hoisted(() => ({
-  mockAdjustMouseEvent: vi.fn((event: PointerEvent) => {
-    Object.assign(event, {
-      canvasX: 50,
-      canvasY: 75,
-      deltaX: 0,
-      deltaY: 0,
-      safeOffsetX: event.clientX,
-      safeOffsetY: event.clientY
-    })
-  })
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useMouse: vi.fn(() => ({
-    x: { value: 100 },
-    y: { value: 200 }
-  }))
-}))
-
-const mockSettingStore = createMockSettingStore()
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => mockSettingStore)
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      getCanvas: () => ({ adjustMouseEvent: mockAdjustMouseEvent })
-    })
-  })
-)
+import { createMockMinimapCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 function createMockPopover(): Pick<
   InstanceType<typeof NodeSearchBoxPopover>,
@@ -47,18 +15,24 @@ function createMockPopover(): Pick<
   return { showSearchBox: vi.fn() }
 }
 
-function createMockSettingStore(): ReturnType<typeof useSettingStore> {
-  return {
-    get: vi.fn()
-  } as Partial<ReturnType<typeof useSettingStore>> as ReturnType<
-    typeof useSettingStore
-  >
-}
-
 describe('useSearchBoxStore', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      createMockMinimapCanvas().getContext
+    )
+    const canvas = new LGraphCanvas(
+      document.createElement('canvas'),
+      new LGraph(),
+      { skip_render: true }
+    )
+    canvas.ds.scale = 2
+    canvas.ds.offset = [0, 25]
+    useCanvasStore().canvas = canvas
+  })
+
   describe('when user has new search box enabled', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('default')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] = 'default'
     })
 
     it('should show new search box is enabled', () => {
@@ -81,7 +55,8 @@ describe('useSearchBoxStore', () => {
 
   describe('when user has legacy search box enabled', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] =
+        'litegraph (legacy)'
     })
 
     it('should show new search box is disabled', () => {
@@ -89,10 +64,18 @@ describe('useSearchBoxStore', () => {
       expect(store.newSearchBoxEnabled).toBe(false)
     })
 
-    it('should open legacy search box at mouse position when user presses shortcut', () => {
+    it('should open legacy search box at mouse position when user presses shortcut', async () => {
       const store = useSearchBoxStore()
       const mockPopover = createMockPopover()
       store.setPopoverRef(mockPopover)
+      const adjustMouseEvent = vi.spyOn(
+        useCanvasStore().getCanvas(),
+        'adjustMouseEvent'
+      )
+      window.dispatchEvent(
+        new MouseEvent('mousemove', { clientX: 100, clientY: 200 })
+      )
+      await nextTick()
 
       expect(vi.mocked(store.visible)).toBe(false)
 
@@ -108,8 +91,7 @@ describe('useSearchBoxStore', () => {
           canvasY: 75
         })
       )
-      expect(useMouse).toHaveBeenCalledWith({ type: 'client' })
-      expect(mockAdjustMouseEvent).toHaveBeenCalledOnce()
+      expect(adjustMouseEvent).toHaveBeenCalledOnce()
     })
 
     it('should do nothing when user presses shortcut but popover is not ready', () => {
@@ -124,7 +106,8 @@ describe('useSearchBoxStore', () => {
 
   describe('when user configures popover reference', () => {
     beforeEach(() => {
-      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl'] =
+        'litegraph (legacy)'
     })
 
     it('should enable legacy search when popover is set', () => {

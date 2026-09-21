@@ -1,10 +1,13 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 type CapturedImageUploadOptions = {
@@ -18,21 +21,9 @@ type CapturedImageUploadOptions = {
 const mocks = vi.hoisted(() => ({
   capturedUploadOptions: undefined as CapturedImageUploadOptions | undefined,
   openFileSelection: vi.fn(),
-  setNodeOutputs: vi.fn(),
   showPreview: vi.fn(),
   captureCanvasState: vi.fn()
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: { captureCanvasState: mocks.captureCanvasState }
-      }
-    })
-  })
-)
 
 vi.mock(import('@/composables/node/useNodeImage'), () => ({
   useNodeImage: () => ({ showPreview: mocks.showPreview }),
@@ -51,12 +42,6 @@ vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
-}))
-
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => ({
-    setNodeOutputs: mocks.setNodeOutputs
-  })
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
@@ -116,6 +101,15 @@ const outputFolderCases: {
   }
 ]
 
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { captureCanvasState: mocks.captureCanvasState }
+  })
+  vi.mocked(useNodeOutputStore().setNodeOutputs).mockImplementation(
+    () => undefined
+  )
+})
+
 describe('useImageUploadWidget', () => {
   beforeEach(() => {
     mocks.capturedUploadOptions = undefined
@@ -131,9 +125,13 @@ describe('useImageUploadWidget', () => {
     mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
 
     expect(fileComboWidget.value).toBe('uploaded.png')
-    expect(mocks.setNodeOutputs).toHaveBeenCalledWith(node, 'uploaded.png', {
-      isAnimated: false
-    })
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'uploaded.png',
+      {
+        isAnimated: false
+      }
+    )
     expect(onWidgetChanged).toHaveBeenCalledWith(
       'image',
       'uploaded.png',
@@ -150,9 +148,28 @@ describe('useImageUploadWidget', () => {
     construct(node)
     frame.mock.calls[0][0]()
 
-    expect(mocks.setNodeOutputs).toHaveBeenCalledWith(node, 'beach.jpg', {
-      isAnimated: false
-    })
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'beach.jpg',
+      {
+        isAnimated: false
+      }
+    )
+  })
+
+  it('loads the new preview when the file combo changes', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    construct(node)
+    fileComboWidget.value = 'beach.jpg'
+
+    fileComboWidget.callback?.('beach.jpg')
+
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'beach.jpg',
+      { isAnimated: false }
+    )
+    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
   })
 
   it('does not preview a combo whose value is still unset', () => {
@@ -164,7 +181,7 @@ describe('useImageUploadWidget', () => {
     construct(node)
     frame.mock.calls[0][0]()
 
-    expect(mocks.setNodeOutputs).not.toHaveBeenCalled()
+    expect(useNodeOutputStore().setNodeOutputs).not.toHaveBeenCalled()
     expect(mocks.showPreview).toHaveBeenCalled()
   })
 

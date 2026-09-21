@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,17 +12,21 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { toNodeId } from '@/types/nodeId'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
-  rootGraph: null as LGraph | null
+  rootGraph: null as LGraph | null,
+  get rootGraphOrUndefined() {
+    return this.rootGraph ?? undefined
+  }
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
@@ -32,22 +35,7 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) => {
-      if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
-      if (key === 'Comfy.Sidebar.Location') return 'left'
-      if (key === 'Comfy.UseNewMenu') return 'Top'
-      if (key === 'Comfy.RightSidePanel.IsOpen') return true
-      return undefined
-    },
-    set: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 function createPanelI18n() {
   return createI18n({
@@ -58,7 +46,6 @@ function createPanelI18n() {
 }
 
 const panelStubs = {
-  Button: { template: '<button><slot /></button>' },
   EditableText: true,
   Tab: { template: '<button v-bind="$attrs"><slot /></button>' },
   TabErrors: true,
@@ -75,9 +62,16 @@ function renderPanel(
     currentGraph: LGraph
     node: LGraphNode
   },
-  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  pinia = getActivePinia()!
 ) {
-  setActivePinia(pinia)
+  useSettingStore().$patch({
+    settingValues: {
+      'Comfy.RightSidePanel.ShowErrorsTab': true,
+      'Comfy.Sidebar.Location': 'left',
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.RightSidePanel.IsOpen': true
+    }
+  })
 
   const rootGraph = graphContext?.rootGraph ?? new LGraph()
   const currentGraph = graphContext?.currentGraph ?? rootGraph
@@ -181,8 +175,16 @@ describe('RightSidePanel active tab fallback', () => {
   })
 
   it('keeps errors active for a pending subgraph interior node scan', () => {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
+
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Sidebar.Location': 'left',
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.RightSidePanel.IsOpen': true
+      }
+    })
     const subgraph = createTestSubgraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(7)
@@ -210,9 +212,16 @@ describe('RightSidePanel global parameters tab', () => {
 
   function renderWithNoSelection(
     activeWorkflowPath: string | null,
-    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    pinia = getActivePinia()!
   ) {
-    setActivePinia(pinia)
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Sidebar.Location': 'left',
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.RightSidePanel.IsOpen': true
+      }
+    })
     const onTabGlobalParametersSetup = vi.fn()
 
     const rootGraph = new LGraph()

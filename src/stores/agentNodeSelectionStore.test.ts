@@ -1,32 +1,12 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-const dialogStack = vi.hoisted(() => [] as unknown[])
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ dialogStack })
-}))
-
-const settings = vi.hoisted(() => {
-  const values = new Map<string, unknown>()
-  return {
-    values,
-    get: (key: string) => values.get(key),
-    set: vi.fn((key: string, value: unknown) => {
-      values.set(key, value)
-      return Promise.resolve()
-    })
-  }
-})
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => settings
-}))
 
 /**
  * Real nodes carry `pos`/`size`; `boundingRect` is litegraph-renderer cache that
@@ -64,10 +44,7 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
 describe('agentNodeSelectionStore', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    dialogStack.length = 0
-    settings.values.clear()
-    settings.set.mockClear()
-    setActivePinia(createPinia())
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   })
 
   afterEach(() => {
@@ -93,20 +70,20 @@ describe('agentNodeSelectionStore', () => {
   // Flipping the setting rather than overriding the minimap is what keeps the
   // user's own toggle working while they pick.
   it('turns a visible minimap off on entry and back on when leaving', async () => {
-    settings.values.set('Comfy.Minimap.Visible', true)
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const store = useAgentNodeSelectionStore()
 
     store.enter()
     await nextTick()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(false)
 
     store.exit()
     await nextTick()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(true)
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(true)
   })
 
   it('leaves the minimap setting alone when it was already off', async () => {
-    settings.values.set('Comfy.Minimap.Visible', false)
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = false
     const store = useAgentNodeSelectionStore()
 
     store.enter()
@@ -114,8 +91,8 @@ describe('agentNodeSelectionStore', () => {
     store.exit()
     await nextTick()
 
-    expect(settings.set).not.toHaveBeenCalled()
-    expect(settings.values.get('Comfy.Minimap.Visible')).toBe(false)
+    expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalled()
+    expect(useSettingStore().get('Comfy.Minimap.Visible')).toBe(false)
   })
 
   it('clears the canvas selection on exit', () => {
@@ -234,11 +211,12 @@ describe('agentNodeSelectionStore', () => {
     store.enter()
     await nextTick()
 
-    dialogStack.push({})
+    useDialogStore().showDialog({ key: 'test', component: {} })
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(store.isActive).toBe(true)
 
-    dialogStack.length = 0
+    useDialogStore().dialogStack.length = 0
+    await nextTick()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(store.isActive).toBe(false)
   })

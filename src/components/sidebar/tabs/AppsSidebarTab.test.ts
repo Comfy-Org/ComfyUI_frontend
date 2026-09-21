@@ -1,46 +1,28 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAppMode } from '@/composables/useAppMode'
+import {
+  useWorkflowStore,
+  useWorkflowBookmarkStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 import AppsSidebarTab from './AppsSidebarTab.vue'
+vi.mock(import('firebase/auth'))
 
-const execute = vi.hoisted(() => vi.fn())
-
-const workflowStoreState = vi.hoisted(() => ({
-  persistedWorkflows: [] as ComfyWorkflow[]
-}))
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { ComfyWorkflow } =
-      await import('@/platform/workflow/management/stores/comfyWorkflow')
-    return {
-      ComfyWorkflow,
-      useWorkflowStore: () => ({
-        get workflows() {
-          return workflowStoreState.persistedWorkflows
-        },
-        get persistedWorkflows() {
-          return workflowStoreState.persistedWorkflows
-        },
-        bookmarkedWorkflows: [],
-        openWorkflows: [],
-        activeWorkflow: undefined,
-        isSyncLoading: false,
-        syncWorkflows: vi.fn()
-      }),
-      useWorkflowBookmarkStore: () => ({ loadBookmarks: vi.fn() })
-    }
-  }
-)
+beforeEach(() => {
+  useAppMode().isAppMode = computed(() => true)
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
+    undefined
+  )
+})
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -56,18 +38,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => ({ shiftDown: false })
-}))
-
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { computed } = await import('vue')
-  return { useAppMode: () => ({ isAppMode: computed(() => true) }) }
-})
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: () => undefined })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
 const i18n = createI18n({
   legacy: false,
@@ -152,7 +123,7 @@ function renderTabWithRealBase() {
 
 describe('AppsSidebarTab', () => {
   beforeEach(() => {
-    workflowStoreState.persistedWorkflows = []
+    Object.assign(useWorkflowStore(), { persistedWorkflows: [] })
   })
 
   it('shows the create action only when there are results', () => {
@@ -171,7 +142,9 @@ describe('AppsSidebarTab', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create' }))
 
-    expect(execute).toHaveBeenCalledWith('Comfy.NewBlankWorkflow')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.NewBlankWorkflow'
+    )
   })
 
   it('runs the new-workflow command from the empty-state action', async () => {
@@ -179,15 +152,19 @@ describe('AppsSidebarTab', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create app' }))
 
-    expect(execute).toHaveBeenCalledWith('Comfy.NewBlankWorkflow')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.NewBlankWorkflow'
+    )
   })
 
   describe('with the real workflows tab', () => {
     it('counts only app workflows as results', async () => {
-      workflowStoreState.persistedWorkflows = [
-        await makeWorkflow('workflows/my-app.app.json'),
-        await makeWorkflow('workflows/regular.json')
-      ]
+      Object.assign(useWorkflowStore(), {
+        persistedWorkflows: [
+          await makeWorkflow('workflows/my-app.app.json'),
+          await makeWorkflow('workflows/regular.json')
+        ]
+      })
 
       renderTabWithRealBase()
 
@@ -198,9 +175,9 @@ describe('AppsSidebarTab', () => {
     })
 
     it('shows the empty state when no app workflows exist', async () => {
-      workflowStoreState.persistedWorkflows = [
-        await makeWorkflow('workflows/regular.json')
-      ]
+      Object.assign(useWorkflowStore(), {
+        persistedWorkflows: [await makeWorkflow('workflows/regular.json')]
+      })
 
       renderTabWithRealBase()
 

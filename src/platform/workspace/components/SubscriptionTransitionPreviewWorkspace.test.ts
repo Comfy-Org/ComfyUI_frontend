@@ -40,8 +40,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' },
-    Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
+    SubscriptionTermsNote: { template: '<div />' }
   }
 }
 

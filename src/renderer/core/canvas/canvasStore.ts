@@ -16,17 +16,8 @@ import type {
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
-import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
-
-function currentTransform(): LGraphCanvas['ds'] | null {
-  return app.canvas.ds
-}
-
-function transformElement(ds: LGraphCanvas['ds']): HTMLCanvasElement | null {
-  return ds.element
-}
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -71,36 +62,26 @@ export const useCanvasStore = defineStore('canvas', () => {
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
     undefined
   const initScaleSync = () => {
-    const ds = currentTransform()
-    if (ds) {
-      // Initial sync
-      originalOnChanged = ds.onChanged
-      updateAppScalePercentage(ds.scale)
+    const ds = canvas.value?.ds
+    if (!ds) return
 
-      // Set up continuous sync
-      ds.onChanged = () => {
-        const current = currentTransform()
-        if (!current) return
-        if (current.scale) {
-          updateAppScalePercentage(current.scale)
-        }
-        // Call original handler if exists
-        originalOnChanged?.(current.scale, current.offset)
+    originalOnChanged = ds.onChanged
+    updateAppScalePercentage(ds.scale)
+
+    ds.onChanged = () => {
+      if (ds.scale) {
+        updateAppScalePercentage(ds.scale)
       }
+      originalOnChanged?.(ds.scale, ds.offset)
     }
   }
 
   const cleanupScaleSync = () => {
-    const ds = currentTransform()
-    if (ds) {
-      ds.onChanged = originalOnChanged
-      originalOnChanged = undefined
-    }
+    const ds = canvas.value?.ds
+    if (!ds) return
+    ds.onChanged = originalOnChanged
+    originalOnChanged = undefined
   }
-
-  const nodeSelected = computed(() => selectedItems.value.some(isLGraphNode))
-  const groupSelected = computed(() => selectedItems.value.some(isLGraphGroup))
-  const rerouteSelected = computed(() => selectedItems.value.some(isReroute))
 
   const getCanvas = () => {
     if (!canvas.value) throw new Error('getCanvas: canvas is null')
@@ -112,18 +93,16 @@ export const useCanvasStore = defineStore('canvas', () => {
    * @param percentage - Zoom percentage value (1-1000, where 1000 = 1000% zoom)
    */
   const setAppZoomFromPercentage = (percentage: number) => {
-    const ds = currentTransform()
-    if (!ds || percentage <= 0) return
+    const currentCanvas = canvas.value
+    if (!currentCanvas || percentage <= 0) return
 
     // Convert percentage to scale (1000% = 10.0 scale)
     const newScale = percentage / 100
-    const element = transformElement(ds)
+    const { ds } = currentCanvas
+    const { element } = ds
 
-    ds.changeScale(
-      newScale,
-      element ? [element.width / 2, element.height / 2] : undefined
-    )
-    app.canvas.setDirty(true, true)
+    ds.changeScale(newScale, [element.width / 2, element.height / 2])
+    currentCanvas.setDirty(true, true)
 
     // Update reactive value immediately for UI consistency
     updateAppScalePercentage(newScale)
@@ -169,9 +148,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         newCanvas.canvas,
         'litegraph:set-graph',
         (event: CustomEvent<{ newGraph?: LGraph; oldGraph: LGraph }>) => {
-          const newGraph = event.detail.newGraph ?? app.canvas.graph // TODO: Ambiguous Graph
+          const newGraph = event.detail.newGraph ?? newCanvas.graph // TODO: Ambiguous Graph
           currentGraph.value = newGraph
-          isInSubgraph.value = Boolean(app.canvas.subgraph)
+          isInSubgraph.value = Boolean(newCanvas.subgraph)
         }
       )
 
@@ -206,9 +185,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
-    nodeSelected,
-    groupSelected,
-    rerouteSelected,
     appScalePercentage,
     linearMode,
     isReadOnly,

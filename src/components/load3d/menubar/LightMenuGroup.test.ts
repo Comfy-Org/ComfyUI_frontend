@@ -1,21 +1,22 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSettingStore } from '@/platform/settings/settingStore'
+
+beforeEach(() => {
+  useSettingStore().$patch({ settingValues })
+})
 
 const settingValues: Record<string, number> = {
   'Comfy.Load3D.LightIntensityMinimum': 1,
   'Comfy.Load3D.LightIntensityMaximum': 10,
   'Comfy.Load3D.LightAdjustmentIncrement': 0.1
 }
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: (key: string) => settingValues[key] })
-}))
 
 const i18n = createI18n({
   legacy: false,

@@ -1,6 +1,7 @@
+import { getActivePinia } from 'pinia'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
@@ -17,20 +18,7 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: {
-          checkState: mockCheckState
-        }
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
@@ -120,6 +108,12 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { checkState: mockCheckState }
+  })
+})
+
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
     mockMediaAssets.media.value = []
@@ -144,7 +138,7 @@ describe('WidgetSelectDropdown', () => {
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
+        plugins: [PrimeVue, getActivePinia()!, i18n]
       }
     })
   }

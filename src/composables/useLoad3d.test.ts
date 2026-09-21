@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref, shallowRef } from 'vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { nextTick, ref, shallowRef, effectScope } from 'vue'
+import type { EffectScope } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
   setLoad3dOutputCache,
-  useLoad3d
+  useLoad3d as useLoad3dImpl
 } from '@/composables/useLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -51,10 +53,6 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn()
-}))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn(),
@@ -68,38 +66,25 @@ vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key) => key)
 }))
 
-const { settingGetMock } = vi.hoisted(() => ({
-  settingGetMock: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: settingGetMock })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: vi.fn()
-  })
-)
-
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
   persistThumbnail: vi.fn().mockResolvedValue(undefined)
 }))
 
 describe('useLoad3d', () => {
+  let scope: EffectScope
+  function useLoad3d(...args: Parameters<typeof useLoad3dImpl>) {
+    return scope.run(() => useLoad3dImpl(...args))!
+  }
+  afterEach(() => scope.stop())
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
+    scope = effectScope()
     nodeToLoad3dMap.clear()
-    setActivePinia(undefined)
-    settingGetMock.mockImplementation((key: string) =>
-      key === 'Comfy.Load3D.BackgroundColor' ? '282828' : undefined
-    )
+    useSettingStore().settingValues['Comfy.Load3D.BackgroundColor'] = '282828'
 
     mockNode = createMockLGraphNode({
       properties: {
@@ -158,7 +143,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
@@ -217,12 +202,7 @@ describe('useLoad3d', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
+    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {
@@ -399,15 +379,7 @@ describe('useLoad3d', () => {
     })
 
     it('defaults background color from the Comfy.Load3D.BackgroundColor setting', () => {
-      setActivePinia(createPinia())
-      vi.mocked(useCanvasStore).mockReturnValue(
-        reactive({ appScalePercentage: 100 }) as unknown as ReturnType<
-          typeof useCanvasStore
-        >
-      )
-      settingGetMock.mockImplementation((key: string) =>
-        key === 'Comfy.Load3D.BackgroundColor' ? '123456' : undefined
-      )
+      useSettingStore().settingValues['Comfy.Load3D.BackgroundColor'] = '123456'
 
       const composable = useLoad3d(mockNode)
 
@@ -443,11 +415,7 @@ describe('useLoad3d', () => {
 
   describe('zoom watcher', () => {
     it('calls load3d.handleResize after debounce when canvas appScalePercentage changes', async () => {
-      const canvasStore = reactive({ appScalePercentage: 100 })
-      setActivePinia(createPinia())
-      vi.mocked(useCanvasStore).mockReturnValue(
-        canvasStore as unknown as ReturnType<typeof useCanvasStore>
-      )
+      const canvasStore = useCanvasStore()
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -464,11 +432,7 @@ describe('useLoad3d', () => {
     })
 
     it('debounces rapid zoom changes into a single handleResize call', async () => {
-      const canvasStore = reactive({ appScalePercentage: 100 })
-      setActivePinia(createPinia())
-      vi.mocked(useCanvasStore).mockReturnValue(
-        canvasStore as unknown as ReturnType<typeof useCanvasStore>
-      )
+      const canvasStore = useCanvasStore()
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1653,6 +1617,53 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('falls back to the last loaded model file when the node has no model widget', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'viewport_state', value: {} } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(Load3dUtils.splitFilePath).toHaveBeenCalledWith(
+        '3d/ComfyUI_00110.glb'
+      )
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
+    it('falls back to the last loaded model file when the model widget value is empty', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [{ name: 'image', value: '' } as unknown as IWidget]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
@@ -1867,6 +1878,26 @@ describe('useLoad3d', () => {
       markLoad3dSceneDirty(a)
       expect(isLoad3dSceneDirty(a)).toBe(true)
       expect(isLoad3dSceneDirty(b)).toBe(true)
+    })
+
+    it('setLoad3dOutputCache rejects a stale scene revision and keeps the node dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      const capturedRevision = getLoad3dSceneRevision(fresh)
+
+      markLoad3dSceneDirty(fresh)
+      expect(getLoad3dSceneRevision(fresh)).toBe(capturedRevision + 1)
+
+      expect(setLoad3dOutputCache(fresh, fakeCache, capturedRevision)).toBe(
+        false
+      )
+      expect(getLoad3dOutputCache(fresh)).toBeUndefined()
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+
+      expect(
+        setLoad3dOutputCache(fresh, fakeCache, getLoad3dSceneRevision(fresh))
+      ).toBe(true)
+      expect(getLoad3dOutputCache(fresh)).toBe(fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
     })
 
     it('markLoad3dSceneDirty on null is a no-op', () => {

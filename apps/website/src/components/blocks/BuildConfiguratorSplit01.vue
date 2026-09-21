@@ -123,15 +123,15 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
 <template>
   <section
     :class="
-      cn('max-w-9xl mx-auto w-full px-6 py-14 md:py-20 lg:px-12', className)
+      cn('mx-auto w-full max-w-9xl px-6 py-14 md:py-20 lg:px-12', className)
     "
   >
     <div
-      class="bg-primary-comfy-ink-light flex flex-col gap-10 rounded-4xl p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
+      class="flex flex-col gap-10 rounded-4xl bg-primary-comfy-ink-light p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
     >
       <div class="flex w-full flex-col justify-center lg:flex-1 lg:pl-6">
         <p
-          class="text-primary-comfy-yellow mb-6 text-sm font-extrabold tracking-wider uppercase"
+          class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
           {{ eyebrow }}
         </p>
@@ -155,7 +155,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             class="flex items-start gap-3 text-sm/relaxed text-primary-comfy-canvas md:text-base/relaxed"
           >
             <CheckIcon
-              class="text-primary-comfy-yellow mt-0.5 size-5 shrink-0"
+              class="mt-0.5 size-5 shrink-0 text-primary-comfy-yellow"
             />
             <span>{{ feature }}</span>
           </li>
@@ -291,7 +291,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
         </div>
 
         <div
-          class="border-primary-comfy-plum/25 mt-8 flex flex-col gap-5 border-t pt-5 sm:flex-row sm:items-end sm:justify-between"
+          class="mt-8 flex flex-col gap-5 border-t border-primary-comfy-plum/25 pt-5 sm:flex-row sm:items-end sm:justify-between"
         >
           <p
             class="font-mono text-[11.5px]/relaxed text-primary-warm-white/55"
