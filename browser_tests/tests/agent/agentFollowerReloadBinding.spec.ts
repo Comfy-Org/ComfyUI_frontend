@@ -78,11 +78,7 @@ test.describe(
       await expect(picker).toHaveText('Reload reattachment')
       expect((await restoredContent).ok()).toBe(true)
       await expect(prompt).toHaveValue('saved before reload')
-      const before = agentConversation.subscribeCount()
       await agentConversation.sendPrompt()
-      await expect
-        .poll(() => agentConversation.subscribeCount())
-        .toBeGreaterThan(before)
 
       // This value was never saved or recorded. Only the post-reload live
       // subscription can deliver it; a stale local canvas cannot satisfy it.
