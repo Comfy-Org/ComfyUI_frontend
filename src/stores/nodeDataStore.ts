@@ -131,8 +131,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    state.inputs = slots.inputs
-    state.outputs = slots.outputs
+    replaceSlotsInPlace(state, slots)
     return true
   }
 
@@ -145,8 +144,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
 
-    state.inputs.splice(0, state.inputs.length, ...replacement.inputs)
-    state.outputs.splice(0, state.outputs.length, ...replacement.outputs)
+    replaceSlotsInPlace(state, replacement)
     assignNodeFields(state, replacement)
     return true
   }
@@ -167,6 +165,20 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     if (!state || state.graphId !== graphScope.owningGraphId) return false
     assignNodeFields(state, replacement)
     return true
+  }
+
+  /**
+   * Refills the registered slot arrays in place so every holder of the live
+   * array (a node's own `inputs`/`outputs`, a reactive view over them) keeps
+   * the identity it was handed. Reassigning the properties instead would
+   * strand those holders on the previous arrays.
+   */
+  function replaceSlotsInPlace(
+    state: NodeState,
+    slots: Pick<NodeState, 'inputs' | 'outputs'>
+  ): void {
+    state.inputs.splice(0, state.inputs.length, ...slots.inputs)
+    state.outputs.splice(0, state.outputs.length, ...slots.outputs)
   }
 
   function assignNodeFields(state: NodeState, replacement: NodeState): void {
