@@ -20,7 +20,6 @@ test.describe(
     test('still draws the free autogrow slot on the node after the switch', async ({
       autogrow: { vueNodes, gptNodeId }
     }) => {
-      test.fail()
       await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
         'image_2'
       )
