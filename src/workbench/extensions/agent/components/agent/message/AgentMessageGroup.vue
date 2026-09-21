@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {
   ActivityPart,
-  AgentAskSelection
+  AgentAskAnswer
 } from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
@@ -25,7 +25,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, selection: AgentAskSelection]
+  answer: [askId: string, answer: AgentAskAnswer]
   openWorkflow: [workflowId: string, workflowName?: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -54,7 +54,7 @@ const emit = defineEmits<{
     v-else-if="group.kind === 'ask'"
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
-    @answer="(askId, selection) => emit('answer', askId, selection)"
+    @answer="(askId, answer) => emit('answer', askId, answer)"
     @open-workflow="
       (workflowId, workflowName) =>
         emit('openWorkflow', workflowId, workflowName)

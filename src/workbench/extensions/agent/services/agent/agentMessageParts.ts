@@ -61,24 +61,64 @@ export interface PermissionAskPart {
   reason?: string
 }
 
-export type AskPart = RunApprovalPart | PermissionAskPart
+interface AskUserOption {
+  id: string
+  label: string
+  description?: string
+}
+
+/** The generic `ask_user` question: a prompt plus every option the agent offered. */
+export interface AskUserPart {
+  type: 'askUser'
+  askId: string
+  prompt: string
+  options: AskUserOption[]
+  minSelections: number
+  maxSelections: number
+  allowOther: boolean
+}
+
+export type AskPart = RunApprovalPart | PermissionAskPart | AskUserPart
 
 export function isAskPart(part: MessagePart): part is AskPart {
-  return part.type === 'runApproval' || part.type === 'permissionAsk'
+  return (
+    part.type === 'runApproval' ||
+    part.type === 'permissionAsk' ||
+    part.type === 'askUser'
+  )
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
-export type AgentAskSelection = 'run' | 'cancel' | 'allow' | 'deny'
+/**
+ * The body of `POST /agent/threads/:id/asks/:ask_id/answer`: the chosen option
+ * ids plus, when the ask allows it, free text that counts as one more selection.
+ */
+export interface AgentAskAnswer {
+  selected: string[]
+  otherText?: string
+}
 
 export function toAskPart({
   kind,
   ask_id: askId,
-  context
-}: Pick<PendingAsk, 'kind' | 'ask_id' | 'context'>):
-  | RunApprovalPart
-  | PermissionAskPart
-  | undefined {
+  context,
+  prompt,
+  options,
+  min_selections: minSelections,
+  max_selections: maxSelections,
+  allow_other: allowOther
+}: Pick<
+  PendingAsk,
+  | 'kind'
+  | 'ask_id'
+  | 'context'
+  | 'prompt'
+  | 'options'
+  | 'min_selections'
+  | 'max_selections'
+  | 'allow_other'
+>): AskPart | undefined {
   if (kind === 'run_approval')
     return {
       type: 'runApproval',
@@ -95,6 +135,24 @@ export function toAskPart({
       target: context.target,
       reason: context.reason?.trim() || undefined
     }
+  if (kind === 'ask_user' || kind === undefined) {
+    const choices = options.map(({ id, label, description }) => ({
+      id,
+      label,
+      description: description?.trim() || undefined
+    }))
+    if (choices.length === 0 && !allowOther) return undefined
+    const max = Math.max(1, maxSelections)
+    return {
+      type: 'askUser',
+      askId,
+      prompt,
+      options: choices,
+      minSelections: Math.min(Math.max(0, minSelections), max),
+      maxSelections: max,
+      allowOther
+    }
+  }
   return undefined
 }
 
@@ -113,6 +171,7 @@ export type MessagePart =
   | TabLinkPart
   | RunApprovalPart
   | PermissionAskPart
+  | AskUserPart
   | PaywallPart
 
 export interface AssistantMessage {

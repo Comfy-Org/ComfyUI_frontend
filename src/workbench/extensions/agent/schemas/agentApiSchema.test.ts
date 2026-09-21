@@ -332,6 +332,45 @@ describe('agentApiSchema contract subtleties', () => {
     })
   })
 
+  it.for([
+    { label: 'omitted', context: undefined },
+    { label: 'null', context: null }
+  ])('parses an ask_user question with its context $label', ({ context }) => {
+    const ask = {
+      message_id: 'message-1',
+      ask_id: 'turn-1:call-1',
+      kind: 'ask_user',
+      context,
+      prompt: 'Which model should I use?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+        { id: 'flux', label: 'Flux Dev' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
+    }
+    const event = zAgentWsEvent.parse({
+      type: 'agent_ask',
+      data: { ...ask, thread_id: 'th-1' }
+    })
+    expect(event.data).toMatchObject({
+      options: ask.options,
+      max_selections: 2,
+      allow_other: true
+    })
+    const row = zAgentMessage.parse({
+      id: 'message-1',
+      thread_id: 'th-1',
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      turn_id: 'turn-1',
+      pending_ask: ask
+    })
+    expect(row.pending_ask).toMatchObject({ kind: 'ask_user' })
+  })
+
   it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {
     const parsed = zAgentWsEvent.safeParse({
       type: 'agent_active_tab',

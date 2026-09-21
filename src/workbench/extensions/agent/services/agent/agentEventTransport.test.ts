@@ -152,6 +152,27 @@ function permissionAsk(
   })
 }
 
+function askUser(askId = 'turn-1:call-3'): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'ask_user',
+      context: null,
+      prompt: 'Which model should I use?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+        { id: 'flux', label: 'Flux Dev' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
+    }
+  })
+}
+
 function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
@@ -475,6 +496,39 @@ describe('agentEventTransport permission ask', () => {
     ])
 
     expect(message.parts).toEqual([])
+  })
+})
+
+describe('agentEventTransport ask_user', () => {
+  it('places the question card, with every option, at the decision point', () => {
+    const message = drive([delta('before'), askUser(), delta('after')])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'askUser',
+        askId: 'turn-1:call-3',
+        prompt: 'Which model should I use?',
+        options: [
+          { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+          { id: 'flux', label: 'Flux Dev', description: undefined }
+        ],
+        minSelections: 1,
+        maxSelections: 2,
+        allowOther: true
+      },
+      { type: 'text', text: 'after', state: 'streaming' }
+    ])
+  })
+
+  it('removes the question card when its ask resolves', () => {
+    const message = drive([
+      runApproval('ask-1'),
+      askUser('ask-2'),
+      askResolved('ask-2')
+    ])
+
+    expect(message.parts.map((part) => part.type)).toEqual(['runApproval'])
   })
 })
 

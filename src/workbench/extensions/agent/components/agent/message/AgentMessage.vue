@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   ActivityPart,
-  AgentAskSelection,
+  AgentAskAnswer,
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -36,7 +36,7 @@ const { t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
-  answerAsk: [askId: string, selection: AgentAskSelection]
+  answerAsk: [askId: string, answer: AgentAskAnswer]
   openWorkflow: [workflowId: string, workflowName?: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -125,7 +125,7 @@ const status = computed(() => {
         :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
-        @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @answer="(askId, answer) => emit('answerAsk', askId, answer)"
         @open-workflow="
           (workflowId, workflowName) =>
             emit('openWorkflow', workflowId, workflowName)

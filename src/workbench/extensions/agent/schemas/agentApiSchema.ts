@@ -64,7 +64,7 @@ const zAgentPendingAsk = z
         reason: z.string().optional()
       })
       .passthrough()
-      .optional(),
+      .nullish(),
     prompt: z.string(),
     options: z.array(zAgentAskOption),
     min_selections: z.number().int(),
