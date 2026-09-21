@@ -123,12 +123,15 @@ export class HostDoc {
   applyWireOps(ops: Op[]): { frame: HostFrame; outcomes: ApplyOutcome[] } {
     const before = Y.encodeStateVector(this.doc)
     const result = applyOps(this.doc, ops, this.catalog)
-    this.seq += 1
+    const applied = result.outcomes
+      .filter((o) => o.outcome === 'applied')
+      .map((o) => o.op_id)
+    if (applied.length > 0) this.seq += 1
     return {
       frame: this.updateFrame(
         Y.encodeStateAsUpdate(this.doc, before),
         ops[0]?.actor ?? HOST_ACTOR,
-        ops.map((op) => op.op_id)
+        applied
       ),
       outcomes: result.outcomes
     }

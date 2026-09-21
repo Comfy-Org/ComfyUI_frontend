@@ -25,29 +25,18 @@ import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
  * closed for the real production path.
  */
 describe('idAllocation has no collision avoidance against a concurrent external mint (PM-1251)', () => {
-  it('mints the same id a same-baseline independent actor already claimed', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 0, max: 1_000_000 }), (lastObservedId) => {
-        // Both the frontend's graph and the server-side agent last
-        // synced the doc at the same node-id high-water mark — the
-        // ordinary starting condition, not an edge case.
-        const frontend = createLGraphState()
-        frontend.lastNodeId = lastObservedId
-
-        // The agent mints its own next id from that SAME baseline,
-        // independently, over a channel this graph's counter cannot see.
-        const agentMintedId = lastObservedId + 1
-
-        // The frontend mints locally in the same window, before any
-        // frame carrying the agent's id ever reaches `observeNodeId`.
-        const frontendMintedId = Number(mintNodeId(frontend))
-
-        return frontendMintedId === agentMintedId
-      })
-    )
-  })
-
-  it('keeps colliding across a run of independent local mints, not just the first', () => {
+  // Two states seeded to the same baseline, both minted by the SAME
+  // `mintNodeId` call, model "two actors independently running this
+  // naive counter" as closely as a single frontend module can: neither
+  // side carries an actor identity, so this is not a regression guard
+  // that a fix could flip red — 'sequential' mode is deliberately left
+  // unchanged by the 'crdt-disjoint' fix below and is not expected to stop
+  // colliding. It pins that accepted, by-design gap precisely, in place of
+  // the two overlapping variants of it this used to carry (a first-mint-only
+  // check against a hardcoded `lastObservedId + 1`, and a redundant
+  // multi-mint run of the same comparison) which added no signal beyond
+  // this one.
+  it('keeps colliding across a run of independent same-baseline local mints', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 1_000_000 }),

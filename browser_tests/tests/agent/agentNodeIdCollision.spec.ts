@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import {
-  SEED_NODE_ID,
+  driveCollision,
   idCollisionTest as test
 } from '@e2e/fixtures/agentCrdtIdCollisionFixture'
 
@@ -33,6 +33,13 @@ import {
  * Both tests are `test.fail()`: they assert the CORRECT/fixed behavior,
  * which the bug currently breaks. Flip `test.fail()` away once PM-1251 (or
  * PM-1250) ships a fix — the assertions below should not otherwise change.
+ *
+ * Both share `driveCollision` (in the fixture) for setup: duplicate the
+ * seed node for real, then force the agent's write to collide on that same
+ * id and resolve via the production applier. Its own assertions run before
+ * either test's `test.fail()`, so a setup regression there still fails the
+ * run — see its doc comment for why that ordering is what makes the guard
+ * effective, not the `test.fail()` call itself.
  */
 test.describe(
   'Agent/frontend node id collision (PM-1251)',
@@ -42,35 +49,12 @@ test.describe(
       'wipes a duplicated node and replaces it with a phantom node when ' +
         'the agent independently mints the same id',
       async ({ idCollision }, testInfo) => {
-        const { nodeId, op: humanOp } = await idCollision.duplicateSeedNode()
-        expect(nodeId).not.toBe(SEED_NODE_ID)
+        const { nodeId, agentApply } = await driveCollision(idCollision)
 
         await testInfo.attach('before-collision-duplicate-visible', {
           body: await idCollision.page.screenshot(),
           contentType: 'image/png'
         })
-
-        // The agent independently mints a competing `add_node` at the SAME
-        // id the frontend just chose, with a higher base_version so it
-        // deterministically wins the LWW register regardless of arrival
-        // order — the real race gives no ordering guarantee either way.
-        const agentOp = idCollision.mintAgentCollision(
-          nodeId,
-          humanOp.base_version + 1
-        )
-        const agentApply = idCollision.applyWireOps([agentOp])
-        expect(agentApply.outcomes).toEqual([
-          { op_id: agentOp.op_id, outcome: 'applied' }
-        ])
-
-        // The human's own write reaches the SAME production applier second
-        // and loses the register it shares with the agent's write — PM-1251's
-        // root cause, reproduced against the real conflict-resolution code,
-        // not asserted by narration.
-        const humanApply = idCollision.applyWireOps([humanOp])
-        expect(humanApply.outcomes).toEqual([
-          { op_id: humanOp.op_id, outcome: 'lww-dropped' }
-        ])
 
         // The agent's winning write reaches the client exactly as a live
         // `doc_update` broadcast would.
@@ -108,22 +92,7 @@ test.describe(
       "leaves the agent's own graph read disagreeing with the " +
         'still-visible canvas after its write is silently dropped',
       async ({ idCollision }, testInfo) => {
-        const { nodeId, op: humanOp } = await idCollision.duplicateSeedNode()
-
-        const agentOp = idCollision.mintAgentCollision(
-          nodeId,
-          humanOp.base_version + 1
-        )
-        idCollision.applyWireOps([agentOp])
-        const humanApply = idCollision.applyWireOps([humanOp])
-
-        // Structural: the collision genuinely happened and was silently
-        // dropped. Pinned before test.fail() so a setup regression (fixture
-        // wiring, applier contract change) fails loudly instead of being
-        // swallowed by the expected failure below.
-        expect(humanApply.outcomes).toEqual([
-          { op_id: humanOp.op_id, outcome: 'lww-dropped' }
-        ])
+        const { nodeId } = await driveCollision(idCollision)
 
         // Nothing is delivered back over /ws here — the drop is never
         // communicated to the client, so the canvas keeps showing the user's
@@ -150,6 +119,10 @@ test.describe(
         const canonicalNode = idCollision.host
           .projection()
           .nodes.find((node) => String(node.id) === nodeId)
+        expect(
+          canonicalNode,
+          `doc should still contain node ${nodeId}`
+        ).toBeDefined()
         expect(canonicalNode?.type).toBe('CLIPTextEncode')
       }
     )
