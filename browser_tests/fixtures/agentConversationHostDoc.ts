@@ -153,6 +153,59 @@ export class HostDoc {
     )
   }
 
+  /**
+   * Seed one subgraph definition that carries another inside its own
+   * `definitions` map, and broadcast the delta.
+   *
+   * `mint()` stores a nested `definitions` as a plain value, so minting alone
+   * never produces the map form. The map form is what a doc host folding in a
+   * raw update (or a snapshot decode) leaves behind, and it is the shape the
+   * follower's reader has to survive - the same construction
+   * `agentSubgraphDefinitions.test.ts` builds by hand.
+   *
+   * @returns the outer definition id the follower should end up registering.
+   */
+  seedNestedDefinition(
+    outer: object,
+    inner: object,
+    outerId: string,
+    innerId: string
+  ): { frame: HostFrame; outerId: string } {
+    const before = Y.encodeStateVector(this.doc)
+    const outerSource = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [outer] } },
+      this.catalog
+    ).getMap<Y.Map<unknown>>('definitions')
+    const innerSource = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [inner] } },
+      this.catalog
+    ).getMap<Y.Map<unknown>>('definitions')
+
+    const storedOuter = outerSource.get(outerId)
+    if (!storedOuter) throw new Error('the outer definition did not mint')
+    const definitions = this.doc.getMap<unknown>('definitions')
+    const clonedOuter = storedOuter.clone()
+    definitions.set(outerId, clonedOuter)
+    // The map form, not the plain form: `subgraphs` keyed by id beside the
+    // order register the reader is supposed to read it through.
+    clonedOuter.set(
+      'definitions',
+      new Y.Map<unknown>([
+        ['subgraphs', innerSource.clone()],
+        ['subgraph_order', [innerId]]
+      ])
+    )
+    this.seq += 1
+    return {
+      frame: this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        HOST_ACTOR,
+        []
+      ),
+      outerId
+    }
+  }
+
   replaceLink(link: HostLinkTuple): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const replacement = new Y.Array<unknown>()
