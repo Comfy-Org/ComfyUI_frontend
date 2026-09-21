@@ -2,6 +2,7 @@ name: Check Disabled Test Tracking
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -20,6 +21,9 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: printf '%s' "$PR_BODY" > "${RUNNER_TEMP}/pr-body.txt"
+
+      - name: Test disabled-test detection
+        run: python3 .github/scripts/test_find_new_disabled_tests.py
 
       - name: Check newly disabled tests name a follow-up
         run: |
