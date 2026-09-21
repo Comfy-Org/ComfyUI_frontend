@@ -102,8 +102,9 @@ interface LifecycleRoutes {
 
 interface CloudBootOptions {
   /**
-   * Serves `billing_sdk_subscription_enabled: true` on `/api/features`, the
-   * channel the staged rollout publishes on.
+   * The value served for `billing_sdk_subscription_enabled` on `/api/features`,
+   * the channel the staged rollout publishes on. Always sent, so a row that
+   * leaves the rail off pins it off rather than inheriting the live default.
    *
    * #18141 made `/api/features` the primary channel and demoted the websocket
    * handshake to fallback (`resolveFlag`: `remoteConfigValue ??
@@ -128,7 +129,7 @@ async function mockCloudBoot(
     r.fulfill(
       jsonRoute({
         unified_cloud_auth: true,
-        ...(railOnFeatures ? { billing_sdk_subscription_enabled: true } : {})
+        billing_sdk_subscription_enabled: railOnFeatures
       })
     )
   )
