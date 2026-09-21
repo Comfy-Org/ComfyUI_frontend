@@ -483,7 +483,7 @@ describe('usePaste', () => {
     })
   })
 
-  it('should leave the graph alone when another handler already claimed the paste', async () => {
+  it('should leave the graph alone when another handler already claimed the paste', () => {
     vi.mocked(createNode).mockResolvedValue(createMockNode())
 
     usePaste()
@@ -496,7 +496,7 @@ describe('usePaste', () => {
     event.preventDefault()
     document.dispatchEvent(event)
 
-    await vi.waitFor(() => expect(createNode).not.toHaveBeenCalled())
+    expect(createNode).not.toHaveBeenCalled()
   })
 
   it('should handle workflow JSON paste', async () => {
