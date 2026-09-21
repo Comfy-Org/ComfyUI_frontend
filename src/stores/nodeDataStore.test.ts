@@ -318,6 +318,45 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
   })
 
+  it('serializes a hand-made link on its actual slot after an earlier agent slot sync (PM-1449)', () => {
+    // updateNodeSlots is how an agent CRDT mutation (the 'connect' case in
+    // graphMutations.ts) syncs a node's slots — every message a user sends
+    // triggers changeTracker's captureCanvasState(), which calls
+    // LGraph.serialize(); that reads each node's slots from this store
+    // (serialiseStoredNodes), not from the live node directly.
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'IMAGE')
+    graph.add(source)
+
+    const node = new LGraphNode('test')
+    node.addInput('videos.video0', 'IMAGE')
+    node.addInput('codec', 'COMBO')
+    graph.add(node)
+    const scope = graphScope(graph.id, graph.id)
+
+    useNodeDataStore().updateNodeSlots(scope, node.id, {
+      inputs: [...node.inputs],
+      outputs: [...node.outputs]
+    })
+
+    // User hand-grows an autogrow port ahead of `codec` — the same mid-array
+    // insertion dynamicWidgets.ts's addAutogrowGroup performs — and wires it.
+    node.addInput('videos.video1', 'IMAGE')
+    const grown = node.inputs.pop()!
+    node.inputs.splice(1, 0, grown)
+    source.connect(0, node, 1)
+
+    const nodeJson = graph
+      .serialize()
+      .nodes.find((n) => String(n.id) === String(node.id))
+    const names = nodeJson?.inputs?.map((i) => i.name)
+
+    expect(names).toEqual(['videos.video0', 'videos.video1', 'codec'])
+    const linkedInput = nodeJson?.inputs?.find((i) => i.link !== null)
+    expect(linkedInput?.name).toBe('videos.video1')
+  })
+
   it('moves registered state to a same-id replacement without changing store membership', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')
