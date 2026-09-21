@@ -645,7 +645,6 @@ const isBoundWorkflowActive = computed(
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  acknowledgedWorkflowId,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
   activeBoundWorkflowId,
@@ -672,8 +671,8 @@ const {
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () =>
-    acknowledgedWorkflowId.value !== null &&
-    acknowledgedWorkflowId.value === activeBoundWorkflowId.value,
+    crdtStatus.value.connected &&
+    crdtStatus.value.workflowId === activeBoundWorkflowId.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,

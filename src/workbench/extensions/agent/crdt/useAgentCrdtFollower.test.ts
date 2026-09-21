@@ -215,15 +215,13 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
-  acknowledgedWorkflowId: () => string | null
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
-  let exposedAcknowledgedWorkflowId!: () => string | null
   const host = defineComponent({
     setup() {
-      const { status, acknowledgedWorkflowId } = useAgentCrdtFollower(
+      const { status } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -232,7 +230,6 @@ function mountFollower(
         events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
-      exposedAcknowledgedWorkflowId = () => acknowledgedWorkflowId.value
       return () => null
     }
   })
@@ -241,8 +238,7 @@ function mountFollower(
     unmount,
     workflowId,
     isTargetActive,
-    status: exposedStatus,
-    acknowledgedWorkflowId: exposedAcknowledgedWorkflowId
+    status: exposedStatus
   }
 }
 
@@ -402,25 +398,24 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('surfaces a binding only after the server acknowledges it', async () => {
-    const { unmount, workflowId, acknowledgedWorkflowId } =
-      mountFollower('wf-1')
+  it('reports a connection only after the server acknowledges it', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
 
-    expect(acknowledgedWorkflowId()).toBeNull()
+    expect(status().connected).toBe(false)
 
     dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
-    expect(acknowledgedWorkflowId()).toBe('wf-1')
+    expect(status().connected).toBe(true)
 
     workflowId.value = 'wf-2'
     await nextTick()
-    expect(acknowledgedWorkflowId()).toBeNull()
+    expect(status().connected).toBe(false)
 
     dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-2' })
-    expect(acknowledgedWorkflowId()).toBe('wf-2')
+    expect(status().connected).toBe(true)
 
     bridge().subscribedWorkflowId = null
     dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-2' })
-    expect(acknowledgedWorkflowId()).toBeNull()
+    expect(status().connected).toBe(false)
     unmount()
   })
 

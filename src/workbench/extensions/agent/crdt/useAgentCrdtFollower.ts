@@ -254,11 +254,6 @@ export function useAgentCrdtFollower(
         lastSeq: null,
         schemaError: null
       }),
-    // Forwarded through the facade: between retargets `follower` is undefined,
-    // and "no follower" is the same answer as "not acknowledged".
-    acknowledgedWorkflowId: computed(
-      () => follower.value?.acknowledgedWorkflowId.value ?? null
-    ),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations)
   }
