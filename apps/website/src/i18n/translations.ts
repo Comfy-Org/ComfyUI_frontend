@@ -60,7 +60,7 @@ const translations = {
     en: '{count} models',
     'zh-CN': '{count} 个模型'
   },
-  'workshop.empty': {
+  'workshop.empty.message': {
     en: 'No models match your filters.',
     'zh-CN': '没有符合这些筛选条件的模型。'
   },
@@ -2555,27 +2555,27 @@ Enterprise`
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
-  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.label': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
-  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.label': { en: 'Basics', 'zh-CN': '基础' },
   'learning.categories.basics.blurb': {
     en: 'Fundamentals and getting started',
     'zh-CN': '基础入门与上手指南'
   },
-  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.label': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
     'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.label': { en: 'Animations', 'zh-CN': '动画' },
   'learning.categories.animations.blurb': {
     en: 'Motion, retiming and character',
     'zh-CN': '运动、变速与角色'
   },
-  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.label': { en: 'Ads', 'zh-CN': '广告' },
   'learning.categories.ads.blurb': {
     en: 'Product shots and campaign assets',
     'zh-CN': '产品展示与广告素材'
@@ -6225,7 +6225,7 @@ Enterprise`
     en: 'Loading interactive demo…',
     'zh-CN': '正在加载互动演示…'
   },
-  'demos.noscript': {
+  'demos.noscript.text': {
     en: 'This interactive demo requires JavaScript.',
     'zh-CN': '此互动演示需要 JavaScript。'
   },
@@ -9551,7 +9551,7 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.label': { en: 'Version', 'zh-CN': '版本' },
   'workshop.proto.version.v1': {
     en: 'Discarded · Categories in tabs',
     'zh-CN': '已弃用 · 标签页分类'
@@ -10574,7 +10574,7 @@ Enterprise`
     en: 'Show the featured row',
     'zh-CN': '显示精选行'
   },
-  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.label': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
   'workshop.proto.session.new': {
     en: 'New account (no credits yet)',
@@ -10586,7 +10586,7 @@ Enterprise`
   },
   'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
   'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
-  'workshop.proto.outcome': {
+  'workshop.proto.outcome.label': {
     en: 'Simulate run outcome',
     'zh-CN': '模拟运行结果'
   },
@@ -10607,7 +10607,7 @@ Enterprise`
     en: 'Rate limit (429)',
     'zh-CN': '限流 (429)'
   },
-  'workshop.proto.gate': {
+  'workshop.proto.gate.label': {
     en: 'Simulate model state',
     'zh-CN': '模拟模型状态'
   },
