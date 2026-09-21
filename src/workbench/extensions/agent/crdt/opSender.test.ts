@@ -543,6 +543,25 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('an identified result for ops the sender never minted leaves the aborted batch its late-result credit', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
