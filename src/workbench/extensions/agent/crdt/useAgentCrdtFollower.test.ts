@@ -1551,7 +1551,8 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a doc_reset whose reconcile throws still settles the sent human batch', async () => {
+  it('a doc_reset whose reconcile throws still settles the sent human batch and finishes the reset', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
     const { enqueue, unmount } = mountWithHumanOps()
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -1560,15 +1561,26 @@ describe('useAgentCrdtFollower', () => {
       throw new Error('onRemoved threw')
     })
 
-    expect(() =>
-      dispatchFrame('doc_reset', {
-        workflowId: 'wf-1',
-        seq: 9,
-        actor: 'agent:x'
-      })
-    ).toThrow('onRemoved threw')
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
 
     expect(await settledHumanOpStates()).toEqual(['unconfirmed'])
+    // The handler's last statement: reaching it proves the reset ran to the end.
+    expect(
+      vi.mocked(recordDevEvent).mock.calls.map(([kind]) => kind)
+    ).toContain('doc_reset')
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'agent_doc_reset_reconcile_failed',
+        level: 'error',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'sync',
+          outcome: 'recovered'
+        }
+      }
+    )
     unmount()
   })
 
