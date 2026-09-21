@@ -1950,7 +1950,7 @@ export class ComfyApp {
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
-              error.response.error.type === 'missing_node_type'
+              error.response.error?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)

@@ -56,7 +56,7 @@ type CloudValidationResult =
   | { kind: 'promptError'; promptError: PromptError }
 
 export function normalizePromptError(
-  error: RawPromptError | undefined
+  error: RawPromptError | null | undefined
 ): PromptError | null {
   if (error && typeof error === 'object') {
     return {

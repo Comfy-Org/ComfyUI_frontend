@@ -1456,6 +1456,21 @@ describe('ComfyApp', () => {
       expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
     })
 
+    it('keeps the access dialog for a middleware 403 body with a null error', async () => {
+      prepareEmptyPromptQueue()
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({ error: null }, 403)
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(showDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'global-error' })
+      )
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+
     it('preserves a successful result when prompt errors omit node errors', async () => {
       prepareEmptyPromptQueue()
       vi.spyOn(api, 'queuePrompt').mockRejectedValue(
