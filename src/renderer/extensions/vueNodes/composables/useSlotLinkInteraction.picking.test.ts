@@ -1,9 +1,12 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasPickingPolicySync } from '@/renderer/core/canvas/interaction/useCanvasPickingPolicySync'
 import { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { app } from '@/scripts/app'
@@ -119,13 +122,21 @@ describe('useSlotLinkInteraction while picking nodes for the agent', () => {
   )
 
   it.for([
-    { pickingMidDrag: false, tracksPointer: true, drops: 1 },
-    { pickingMidDrag: true, tracksPointer: false, drops: 0 }
-  ])(
-    'a drag started while editable with picking begun mid-drag=$pickingMidDrag tracks the pointer: $tracksPointer and drops on the canvas $drops times',
-    ({ pickingMidDrag, tracksPointer, drops }) => {
+    { midDrag: 'nothing', tracksPointer: true, drops: 1 },
+    { midDrag: 'picking', tracksPointer: false, drops: 0 },
+    { midDrag: 'read-only', tracksPointer: false, drops: 1 }
+  ] as const)(
+    'a drag started while editable with $midDrag begun mid-drag tracks the pointer: $tracksPointer, drops on the canvas $drops times and captures undo state once',
+    ({ midDrag, tracksPointer, drops }) => {
       useAgentNodeSelectionStore().isActive = false
       const { canvas, target } = createConnectedGraph()
+      vi.spyOn(canvas, 'draw').mockImplementation(() => {})
+      scope.run(useCanvasPickingPolicySync)
+      const captureCanvasState = vi.fn()
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = fromPartial<
+        NonNullable<typeof workflowStore.activeWorkflow>
+      >({ changeTracker: { captureCanvasState } })
       const dropOnCanvas = vi
         .spyOn(LinkConnectorAdapter.prototype, 'dropOnCanvas')
         .mockImplementation(() => {})
@@ -141,7 +152,8 @@ describe('useSlotLinkInteraction while picking nodes for the agent', () => {
         })
       )
       const mouseBeforeMove = [...canvas.last_mouse]
-      useAgentNodeSelectionStore().isActive = pickingMidDrag
+      if (midDrag === 'picking') useAgentNodeSelectionStore().isActive = true
+      if (midDrag === 'read-only') useCanvasStore().isReadOnly = true
       window.dispatchEvent(
         new PointerEvent('pointermove', {
           pointerId: 1,
@@ -162,6 +174,7 @@ describe('useSlotLinkInteraction while picking nodes for the agent', () => {
         tracksPointer ? [40, 50] : mouseBeforeMove
       )
       expect(dropOnCanvas).toHaveBeenCalledTimes(drops)
+      expect(captureCanvasState).toHaveBeenCalledOnce()
     }
   )
 })

@@ -30,6 +30,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
@@ -577,25 +578,21 @@ export function useSlotLinkInteraction({
 
     raf.flush()
 
-    if (!state.source || !canEditNodes.value) {
-      cleanupInteraction()
-      app.canvas.setDirty(true, true)
-      return
-    }
+    if (state.source && !isSelectOnly(app.canvas)) {
+      const snappedCandidate = state.candidate?.compatible
+        ? state.candidate
+        : null
 
-    const snappedCandidate = state.candidate?.compatible
-      ? state.candidate
-      : null
+      const dropTarget = resolvePointerTarget(
+        event.clientX,
+        event.clientY,
+        canvasEvent.target
+      )
+      const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    const dropTarget = resolvePointerTarget(
-      event.clientX,
-      event.clientY,
-      canvasEvent.target
-    )
-    const hasConnected = connectByPriority(dropTarget, snappedCandidate)
-
-    if (!hasConnected && dropTarget === app.canvas.canvas) {
-      activeAdapter?.dropOnCanvas(canvasEvent)
+      if (!hasConnected && dropTarget === app.canvas.canvas) {
+        activeAdapter?.dropOnCanvas(canvasEvent)
+      }
     }
 
     cleanupInteraction()
