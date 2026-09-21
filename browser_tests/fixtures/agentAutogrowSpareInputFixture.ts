@@ -7,7 +7,9 @@ import { toNodeId } from '@/types/nodeId'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockAgentTurnApi,
+  mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -181,81 +183,23 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     'autogrow-e2e'
   )
   await hostSocket.install()
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
-  )
-  await page.route('**/api/agent/run-mode', (route) =>
-    route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))
-  )
-  // Include the workflow id in the mocked turn acknowledgement so this setup
-  // binds the follower to the seeded document.
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() !== 'POST') return route.fulfill(jsonRoute([]))
-    return route.fulfill({
-      status: 202,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        thread_id: THREAD_ID,
-        message_id: MESSAGE_ID,
-        workflow_id: WORKFLOW_ID
-      })
-    })
-  })
 
   await bootAgentApp(page, true, {
     objectInfo: 'server',
     settings: {
       'Comfy.Graph.CanvasInfo': false
+    },
+    beforeNavigate: async (page) => {
+      // Selecting the target does not itself bind the follower, so the
+      // mocked acknowledgement supplies the seeded workflow id.
+      await mockAgentTurnApi(page, {
+        thread_id: THREAD_ID,
+        message_id: MESSAGE_ID,
+        workflow_id: WORKFLOW_ID
+      })
+      await mockWorkflowPersistence(page, WORKFLOW_ID)
     }
   })
-
-  // Registered only now, same as `AgentConversationHarness.
-  // selectWorkflowTarget`: `bootAgentApp`'s own mocks blanket-match
-  // `**/api/userdata**` for every method, and Playwright runs the
-  // most-recently-registered matching route first, so these have to
-  // come after it to take over the workflow-save round trip.
-  let savedName: string | undefined
-  await page.route('**/api/userdata/*', (route) => {
-    const request = route.request()
-    const path = decodeURIComponent(
-      new URL(request.url()).pathname.split('/userdata/')[1]
-    )
-    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-      return route.fallback()
-    savedName = path.slice('workflows/'.length, -'.json'.length)
-    return route.fulfill(
-      jsonRoute({
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      })
-    )
-  })
-  await page.route('**/api/workflows?*', (route) =>
-    route.fulfill(
-      jsonRoute({
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: WORKFLOW_ID,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      })
-    )
-  )
 
   const topbar = new Topbar(page)
   const vueNodes = new VueNodeHelpers(page)
