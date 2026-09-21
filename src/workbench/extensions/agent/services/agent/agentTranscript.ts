@@ -102,18 +102,39 @@ function parseUserWorkflowReferences(
 
 /**
  * A persisted tool-call status is `pending`/`running` while it was still in
- * flight when the turn ended, `ok` on success, or `error` on failure. Only
- * `pending`/`running` reads as a live-looking, still-streaming row; a turn
- * that finished always sees `ok`/`error` for every call it made.
+ * flight when the turn ended, and some terminal string otherwise (`ok`,
+ * `success`, `error`, `failed`, `cancelled`, `timeout`, ...) — the exact
+ * terminal vocabulary is not yet settled between the backend's persisted and
+ * live wire formats, so anything other than `pending`/`running` is treated as
+ * terminal here.
+ *
+ * A restored (non-live) row has no transport left to ever settle its tool
+ * parts, so a `pending`/`running` status there would otherwise spin forever;
+ * only `isLive` (the row is the one actively backed by a live transport —
+ * the run_approval mid-ask case) keeps it in `streaming` state.
  */
-function toolCallPartState(status: unknown): ToolPart['state'] {
-  return status === 'pending' || status === 'running' ? 'streaming' : 'done'
+function toolCallPartState(
+  status: unknown,
+  isLive: boolean
+): ToolPart['state'] {
+  const inProgress = status === 'pending' || status === 'running'
+  return inProgress && isLive ? 'streaming' : 'done'
 }
 
-function toolCallOk(status: unknown): boolean | undefined {
-  if (status === 'ok') return true
-  if (status === 'error') return false
-  return undefined
+/**
+ * `undefined` while the call is still genuinely in progress (matching the
+ * live path, which omits `ok` until a terminal status arrives); once the
+ * part is in a `done` state, only `ok`/`success` counts as success — every
+ * other terminal string, including a restored `pending`/`running` call that
+ * had no live transport to finish it, reads as failure rather than being
+ * rendered as if it succeeded.
+ */
+function toolCallOk(
+  status: unknown,
+  state: ToolPart['state']
+): boolean | undefined {
+  if (state === 'streaming') return undefined
+  return status === 'ok' || status === 'success'
 }
 
 /**
@@ -121,46 +142,57 @@ function toolCallOk(status: unknown): boolean | undefined {
  * (`id`, `tool_name`, `status`, plus omitted-when-empty detail fields this UI
  * does not render). They map onto the same `ToolPart` the live WebSocket path
  * builds from `agent_tool_call` events, so a reloaded transcript renders
- * through the identical work-summary UI as a live turn.
+ * through the identical work-summary UI as a live turn. A repeated `id`
+ * within the list is deduped, keeping the last entry's data at the first
+ * entry's position, matching how the live path updates a part in place.
  */
 function parseToolCalls(
-  content: Record<string, unknown> | undefined
+  content: Record<string, unknown> | undefined,
+  isLive: boolean
 ): ToolPart[] | undefined {
   const raw = content?.tool_calls
   if (!Array.isArray(raw)) return undefined
-  const parts = (raw as unknown[]).flatMap((entry): ToolPart[] => {
-    if (typeof entry !== 'object' || entry === null) return []
+  const parts = new Map<string, ToolPart>()
+  for (const entry of raw as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) continue
     const {
       id,
       tool_name: toolName,
       status,
       duration_ms: durationMs
     } = entry as Record<string, unknown>
-    if (typeof id !== 'string' || typeof toolName !== 'string') return []
-    return [
-      {
-        type: 'tool',
-        callId: id,
-        name: toolName,
-        state: toolCallPartState(status),
-        ...(toolCallOk(status) !== undefined ? { ok: toolCallOk(status) } : {}),
-        ...(typeof durationMs === 'number' ? { durationMs } : {})
-      }
-    ]
-  })
-  return parts.length > 0 ? parts : undefined
+    if (typeof id !== 'string' || typeof toolName !== 'string') continue
+    const state = toolCallPartState(status, isLive)
+    const ok = toolCallOk(status, state)
+    parts.set(id, {
+      type: 'tool',
+      callId: id,
+      name: toolName,
+      state,
+      ...(ok !== undefined ? { ok } : {}),
+      ...(typeof durationMs === 'number' &&
+      Number.isFinite(durationMs) &&
+      durationMs >= 0
+        ? { durationMs }
+        : {})
+    })
+  }
+  return parts.size > 0 ? [...parts.values()] : undefined
 }
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
- * running message.
+ * running message. `isLive` is true only when this row is the one that will
+ * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
+ * its still-in-flight tool parts may legitimately stay `streaming`.
  */
 function appendAssistantContent(
   message: AssistantMessage,
   row: AgentMessages[number],
-  text: string
+  text: string,
+  isLive: boolean
 ): void {
-  const toolCalls = parseToolCalls(row.content)
+  const toolCalls = parseToolCalls(row.content, isLive)
   if (toolCalls) message.parts = [...message.parts, ...toolCalls]
   if (text)
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
@@ -196,10 +228,10 @@ function applyAssistantRow(
   text: string
 ): NormalizedAgentTranscript['pending'] {
   message.streaming = false
-  appendAssistantContent(message, row, text)
+  const runApproval =
+    row.status === 'streaming' ? pendingRunApproval(row) : undefined
+  appendAssistantContent(message, row, text, runApproval !== undefined)
 
-  if (row.status !== 'streaming') return undefined
-  const runApproval = pendingRunApproval(row)
   if (!runApproval) return undefined
 
   message.parts.push({ type: 'runApproval', ...runApproval })

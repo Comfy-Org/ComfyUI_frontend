@@ -371,6 +371,32 @@ describe('agentEventTransport text and tool parts', () => {
       }
     ])
   })
+
+  it('updates an already-restored tool part in place instead of duplicating it', () => {
+    const restored: ToolPart = {
+      type: 'tool',
+      callId: 'call-1',
+      name: 'run',
+      state: 'streaming'
+    }
+    const message = createAssistantMessage(T)
+    message.parts = [restored]
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'success', 'call-1'))
+
+    expect(toolParts(message)).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'run',
+        state: 'done',
+        ok: true,
+        durationMs: undefined
+      }
+    ])
+  })
 })
 
 describe('agentEventTransport run approval', () => {

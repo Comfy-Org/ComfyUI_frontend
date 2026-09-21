@@ -96,9 +96,10 @@ test(
                 duration_ms: 420
               },
               {
+                // Deliberately 'success' (not 'ok', like call-1) to cover both terminal vocabularies.
                 id: 'call-2',
                 tool_name: 'add_node',
-                status: 'ok',
+                status: 'success',
                 duration_ms: 180
               }
             ]
