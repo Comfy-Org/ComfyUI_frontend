@@ -110,6 +110,15 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('preserves new input on Enter without stopping an active run', async () => {
+    const { emitted } = mount({ streaming: true })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Next draft{Enter}')
+    expect(textbox).toHaveTextContent('Next draft')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
     const props = {
