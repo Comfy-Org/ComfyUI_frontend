@@ -28,7 +28,11 @@
       :base-z-index="1000"
       :pt="{
         root: {
-          class: cn('absolute z-50')
+          class: cn('absolute z-50'),
+          // A modal Reka dialog sets body pointer-events to none and only
+          // re-enables it on its own subtree; this popover teleports outside
+          // that subtree, so it must reinstate pointer-events itself.
+          style: { pointerEvents: 'auto' }
         },
         content: {
           class: cn(
