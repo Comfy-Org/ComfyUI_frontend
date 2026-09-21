@@ -190,6 +190,92 @@ describe('useNodeDataStore', () => {
     ).toBe(false)
     expect(registered.title).toBe('Renamed')
   })
+
+  it('updateNodeSlots refills the live slot arrays in place across a length change', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        inputs: [createMockNodeInputSlot({ name: 'a', type: 'IMAGE' })],
+        outputs: [
+          createMockNodeOutputSlot({ name: 'x', type: 'IMAGE' }),
+          createMockNodeOutputSlot({ name: 'y', type: 'IMAGE' })
+        ]
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+    const liveOutputs = registered.outputs
+
+    expect(
+      store.updateNodeSlots(scope, registered.id, {
+        inputs: [
+          createMockNodeInputSlot({ name: 'a', type: 'IMAGE' }),
+          createMockNodeInputSlot({ name: 'b', type: 'MASK' })
+        ],
+        outputs: [createMockNodeOutputSlot({ name: 'z', type: 'LATENT' })]
+      })
+    ).toBe(true)
+
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.outputs).toBe(liveOutputs)
+    expect(registered.inputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['a', 'IMAGE'],
+      ['b', 'MASK']
+    ])
+    expect(registered.outputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['z', 'LATENT']
+    ])
+  })
+
+  it('updateNode refills the live slot arrays in place across a length change', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        title: 'Host',
+        inputs: [createMockNodeInputSlot({ name: 'a', type: 'IMAGE' })],
+        outputs: []
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+    const liveOutputs = registered.outputs
+
+    expect(
+      store.updateNode(
+        scope,
+        registered.id,
+        createNodeState({
+          id: toNodeId(1),
+          graphId: rootA,
+          title: 'Renamed',
+          inputs: [
+            createMockNodeInputSlot({ name: 'a', type: 'IMAGE' }),
+            createMockNodeInputSlot({ name: 'b', type: 'MASK' })
+          ],
+          outputs: [createMockNodeOutputSlot({ name: 'out', type: 'LATENT' })]
+        })
+      )
+    ).toBe(true)
+
+    expect(registered.title).toBe('Renamed')
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.outputs).toBe(liveOutputs)
+    expect(registered.inputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['a', 'IMAGE'],
+      ['b', 'MASK']
+    ])
+    expect(registered.outputs.map((slot) => [slot.name, slot.type])).toEqual([
+      ['out', 'LATENT']
+    ])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {

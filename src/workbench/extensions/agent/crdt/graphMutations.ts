@@ -2,6 +2,11 @@ import { isPlainObject } from 'es-toolkit'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/interfaces'
+import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
@@ -77,7 +82,24 @@ const PATCHABLE_SLOT_FIELDS = [
   'locked',
   'nameLocked',
   'hasErrors'
-] as const
+] as const satisfies readonly (keyof INodeSlot)[]
+
+type PatchableSlot = INodeInputSlot | INodeOutputSlot
+
+// `K` pairs the read and write so TS can verify `live[field]` accepts
+// exactly what `serialized[field]` produced; a non-generic `keyof INodeSlot`
+// parameter loses that pairing and `live[field] = value` no longer
+// type-checks (the property's type collapses to the union of every field on
+// `INodeSlot`, which isn't assignable back to itself per-key).
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+function copySlotField<K extends keyof INodeSlot>(
+  live: INodeSlot,
+  serialized: INodeSlot,
+  field: K
+): void {
+  const value = serialized[field]
+  if (value !== undefined) live[field] = value
+}
 
 /**
  * Copies a serialized slot's presentation fields onto the live slot object
@@ -86,15 +108,16 @@ const PATCHABLE_SLOT_FIELDS = [
  * slot instance derives them from the link store and must not have them
  * assigned.
  */
-function patchLiveSlot(live: object, serialized: object): void {
-  const source = serialized as Record<string, unknown>
-  const target = live as Record<string, unknown>
+function patchLiveSlot<T extends PatchableSlot>(live: T, serialized: T): void {
   for (const field of PATCHABLE_SLOT_FIELDS) {
-    if (source[field] !== undefined) target[field] = source[field]
+    copySlotField(live, serialized, field)
   }
-  if (isPlainObject(live)) {
-    if (source.link !== undefined) target.link = source.link
-    if (source.links !== undefined) target.links = source.links
+  if (!isPlainObject(live)) return
+  if ('link' in serialized && serialized.link !== undefined) {
+    ;(live as INodeInputSlot).link = serialized.link
+  }
+  if ('links' in serialized && serialized.links !== undefined) {
+    ;(live as INodeOutputSlot).links = serialized.links
   }
 }
 
@@ -156,19 +179,32 @@ interface SemanticLiveWidgetMutationPort {
 }
 
 /**
+ * The live node's answer for whether `name` is a member of one of its
+ * autogrow groups. `unavailable` means the node itself couldn't be asked
+ * (unmounted, background workflow) and carries no opinion either way; only
+ * `member`/`notMember` are the node's own real provenance from its
+ * `comfyDynamic.autogrow` registration. Callers must fall back to
+ * `nameShapeAutogrowGroupOf`'s inference on `unavailable`, and never treat
+ * it as an authoritative "no".
+ */
+export type LiveAutogrowGroupAnswer =
+  | { readonly kind: 'unavailable' }
+  | { readonly kind: 'member'; readonly group: string }
+  | { readonly kind: 'notMember' }
+
+/**
  * Renderer-owned live node query port. Answers whether an input name is a
  * member of one of the live node's own autogrow groups -- real provenance
  * from the node's `comfyDynamic.autogrow` registration, rather than
- * `nameShapeAutogrowGroupOf`'s inference from the name's shape. Undefined
- * when the node isn't live (unmounted, background workflow) or `name` isn't
- * a member of any of its groups.
+ * `nameShapeAutogrowGroupOf`'s inference from the name's shape. See
+ * {@link LiveAutogrowGroupAnswer} for what each result means.
  */
 export interface SemanticLiveNodeQueryPort {
   autogrowGroupOf(
     scope: GraphScope,
     nodeId: NodeId,
     name: string
-  ): string | undefined
+  ): LiveAutogrowGroupAnswer
 }
 
 export interface GraphMutationBatch {
@@ -373,35 +409,17 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
 }
 
 /**
- * Merges supplied input slots onto the live list by NAME, but only when the
- * difference is local growth.
- *
- * Autogrow only ever ADDS inputs locally, so "every document input also exists
- * live" is exactly the growth signature. In that case a live slot the document
- * also names takes the document's fields, a live slot the document omits (the
- * grown one) stays where it is, and live order wins — which is what keeps a
- * wire on its named input after growth reordered the node.
- *
- * If the document names an input the live node does not have, the node's input
- * SET changed rather than merely its order: the definition moved, an input was
- * renamed, or the node is genuinely different. The document is authoritative
- * there, so fall back to positional preparation and let stale live slots go.
- * Preserving them would carry a dead slot (and its stale label) onto a node
- * that no longer has it.
- *
- * Growth is one-directional too: it only ever adds an unlinked trailing slot,
- * so a live-only name that is still unlinked is tolerated as unpropagated
- * growth. A live-only name that IS linked cannot be that — it is a slot the
- * document dropped (an autogrow group shrinking, an input removed from the
- * node def) while still carrying a live wire, and keeping it would leave that
- * wire attached to a slot the document no longer has. Fall back there too.
- */
-/**
- * True when the document's input set has diverged from live in a way that
- * growth alone can't explain: the document asks for a name more often than
- * live has it, or live kept a linked slot the document doesn't name. Either
- * means the input set genuinely changed (rename, definition change, an
- * autogrow group shrinking), not just live growing ahead of the document.
+ * A live node's input set can diverge from the document two ways: it grew
+ * (autogrow appended a member, not yet named by the document) or it changed
+ * for some other reason (a rename, a definition change, or autogrow itself
+ * removing a member on disconnect/shrink). `mergeInputSlotsByName` only
+ * merges by name on the growth path: every document input still exists
+ * live, and any live-only leftover is an unlinked, autogrow-shaped spare.
+ * `hasNonGrowthInputSetChange` (below) detects the other path -- the
+ * document naming something live doesn't have, or live keeping a leftover
+ * that is linked or not autogrow-shaped -- in which case the document is
+ * authoritative and the merge falls back to positional preparation, letting
+ * stale live slots go.
  */
 function hasNonGrowthInputSetChange(
   live: NodeState['inputs'],
@@ -416,23 +434,16 @@ function hasNonGrowthInputSetChange(
   for (const slot of documentInputs) {
     documentCounts.set(slot.name, (documentCounts.get(slot.name) ?? 0) + 1)
   }
-  // Names, not just names-with-counts: a name the document asks for more
-  // often than live has it (litegraph does not enforce unique names) is
-  // also a name the document has that live does not.
+  // litegraph does not enforce unique names, so "the document has a name
+  // live doesn't" also covers asking for more copies of a shared name than
+  // live has.
   const documentExceedsLive = [...documentCounts].some(
     ([name, count]) => count > (liveCounts.get(name) ?? 0)
   )
-  // Consume one document occurrence per live occurrence of the same name, in
-  // live order, so a repeated name is matched pairwise rather than by a
-  // presence check: with live `[dup, dup]` and a document naming `dup` once,
-  // only the first live `dup` is accounted for. Any live occurrence left over
-  // once the document's occurrences of that name are exhausted is, by name
-  // alone, indistinguishable from unpropagated growth — but growth only ever
-  // adds an UNLINKED trailing slot shaped like an autogrow member, so a
-  // leftover is only tolerated when it is both unlinked AND shaped that way
-  // (see `autogrowGroupOf`); an ordinary extra input the document
-  // legitimately dropped is neither linked nor autogrow-shaped, and must not
-  // survive.
+  // Consumes one document occurrence per live occurrence of the same name,
+  // in live order, so a repeated name is matched pairwise rather than by a
+  // presence check. Any live occurrence left unmatched is tolerated only
+  // when it is both unlinked and autogrow-shaped (see the contract above).
   const remainingByName = new Map(documentCounts)
   const liveOnlyIsUnaccountedFor = live.some((input) => {
     const remaining = remainingByName.get(input.name) ?? 0
@@ -778,18 +789,27 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     )
     // Prefers the live node's own autogrow group registration (real
     // provenance) over `nameShapeAutogrowGroupOf`'s inference from the
-    // name's shape. Trusts the live port's answer as-is, including
-    // "undefined" (not a member of any live group) -- it falls back to the
-    // heuristic only when no live port is wired at all, never as a second
-    // opinion on a live port's own "no" -- see `SemanticLiveNodeQueryPort`.
+    // name's shape. Trusts a `member`/`notMember` answer as authoritative
+    // and final -- it is a second opinion on the heuristic only when the
+    // live port itself has none to give, i.e. no port is wired at all, or
+    // the wired port answers `unavailable` (the live node couldn't be
+    // asked, not that it was asked and said no) -- see
+    // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`.
     const resolveAutogrowGroup = (
       nodeId: NodeId,
       name: unknown
     ): string | undefined => {
       if (typeof name !== 'string') return undefined
-      return deps.liveNodes
-        ? deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
-        : nameShapeAutogrowGroupOf(name)
+      if (!deps.liveNodes) return nameShapeAutogrowGroupOf(name)
+      const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
+      switch (answer.kind) {
+        case 'member':
+          return answer.group
+        case 'notMember':
+          return undefined
+        case 'unavailable':
+          return nameShapeAutogrowGroupOf(name)
+      }
     }
     const validateNodeUpsert = (
       node: PreparedNode,
