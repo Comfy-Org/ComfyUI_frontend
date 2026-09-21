@@ -457,9 +457,6 @@ test.describe(
           { timeout: 30_000 }
         )
         await expect(panel).toBeVisible({ timeout: 30_000 })
-        await expect
-          .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
-          .toBeGreaterThan(subscribesBeforeReload)
 
         // Explicitly reopens the persisted workflow by its saved filename
         // through the same real `agentPanel.selectWorkflow` picker the
@@ -467,8 +464,19 @@ test.describe(
         // whatever tab happened to restore itself -- every assertion below
         // is then scoped to a workflow chosen by name, not by incidental
         // reload continuity.
+        //
+        // This has to happen BEFORE polling `subscribeCount`: the follower
+        // only subscribes while its bound workflow is also the *active* tab
+        // (`isBoundWorkflowActive` in AgentPanelRoot.vue), and a fresh reload
+        // does not reopen this workflow's tab on its own. Polling first (as
+        // this test originally did) waits on a resubscribe that nothing
+        // before this selection would ever trigger, and reliably times out.
         if (savedName === undefined) throw new Error('workflow was not saved')
         await agentPanel.selectWorkflow(savedName)
+
+        await expect
+          .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
+          .toBeGreaterThan(subscribesBeforeReload)
 
         await expect(vueNodes.getNodeLocator(TARGET_ID)).toBeVisible({
           timeout: 30_000
