@@ -226,25 +226,25 @@ describe('reconcileAgentAdapters', () => {
   // step, not a content change: `materialize()` deletes and re-registers the
   // record's `NodeState` so a real `LGraphNode` can own it, but that record
   // is the same logical node the doc already described. Dropping its
-  // `lastSerialization` here means the very next reconcile sees a node with
-  // no baseline at all and cannot tell an unrelated local edit from a stale
-  // doc replay (graphMutations.ts's `resolveNodeTitle`).
-  it('keeps the record lastSerialization baseline across materialization', () => {
+  // `titleReconcileBaseline` here means the very next reconcile sees a node
+  // with no baseline at all and cannot tell an unrelated local edit from a
+  // stale doc replay (graphMutations.ts's `resolveNodeTitle`).
+  it('keeps the record titleReconcileBaseline across materialization', () => {
     const graph = new LGraph()
     const scope = seedAgentAddedNode(graph, 1)
-    const beforeSerialization = useNodeDataStore().getNode(
+    const beforeBaseline = useNodeDataStore().getNode(
       scope.rootGraphId,
       toNodeId(1)
-    )?.lastSerialization
-    expect(beforeSerialization).toBeDefined()
+    )?.titleReconcileBaseline
+    expect(beforeBaseline).toBeDefined()
 
     reconcileAgentAdapters(graph)
 
     expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(DummyNode)
     expect(
       useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
-        ?.lastSerialization
-    ).toEqual(beforeSerialization)
+        ?.titleReconcileBaseline
+    ).toEqual(beforeBaseline)
   })
 
   // Proves the behavior the carried-over baseline above exists for, not just

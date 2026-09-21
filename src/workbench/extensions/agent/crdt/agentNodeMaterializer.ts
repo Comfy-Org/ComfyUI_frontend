@@ -355,7 +355,7 @@ function materialize(
   // or the next reconcile sees a node with no baseline at all and treats an
   // unrelated local edit (e.g. a title set outside the doc) as unproven,
   // replaying the doc's possibly-stale value over it.
-  added._state.lastSerialization = state.lastSerialization
+  added._state.titleReconcileBaseline = state.titleReconcileBaseline
 
   try {
     node.configure(withNamedWidgetValues(serialised, widgets))

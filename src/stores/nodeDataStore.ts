@@ -186,6 +186,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       shape: undefined,
       showAdvanced: undefined,
       titleMode: undefined,
+      titleReconcileBaseline: undefined,
       ...next
     } satisfies Omit<NodeState, 'graphId' | 'id' | 'inputs' | 'outputs'>)
   }
