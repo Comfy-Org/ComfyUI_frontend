@@ -431,6 +431,14 @@ function missingNode(state: NodeState): LGraphNode {
  * A payload that already carries `widgets_values_named` keeps that slot as
  * the base of the overlay and gets no synthesised `widgets_values`, so hooks
  * keep seeing the wire payload.
+ *
+ * The two branches deliberately differ. The named branch preserves the wire
+ * record because it is the slot restoration reads. The other branch
+ * normalises through {@link parseWidgetValues}: a positional array is
+ * replaced by a detached copy (a hook that mutates `info.widgets_values`
+ * scribbles on the copy, not the op-layer payload) and a `widgets_values`
+ * that is `null` or a primitive is dropped rather than forwarded, which is
+ * exactly what `configure()` restores from it (`Array.from(x ?? [])`).
  */
 function withNamedWidgetValues(
   serialised: ISerialisedNode,
