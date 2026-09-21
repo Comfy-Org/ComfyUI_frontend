@@ -56,6 +56,7 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -425,7 +426,16 @@ const {
   isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => selectedTarget.value?.path ?? null,
-  dismissedSignature: dismissedSelectionSignature
+  dismissedSignature: dismissedSelectionSignature,
+  retainStagedNode: (node) => {
+    const locator = parseNodeLocatorId(selectedNodeKey(node))
+    if (!locator) return false
+    const viewedSubgraphUuid =
+      canvasStore.currentGraph?.isRootGraph === false
+        ? canvasStore.currentGraph.id
+        : null
+    return locator.subgraphUuid !== viewedSubgraphUuid
+  }
 })
 
 let nodeReferenceWorkflow = selectionTags.value.length

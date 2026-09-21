@@ -6703,12 +6703,18 @@ describe('AgentPanelRoot workflow binding', () => {
     state.selectedItems.add(rootNode)
     syncFakeSelection()
     state.selectItems.mockClear()
+    state.selectItems.mockImplementation((items: LGraphNode[]) => {
+      state.selectedItems.clear()
+      for (const item of items) {
+        if (item.graph?.isRootGraph !== false) state.selectedItems.add(item)
+      }
+    })
     await nextTick()
 
     await enterNodeSelectionMode()
 
     expect(state.selectItems).toHaveBeenCalledWith([rootNode, state.nodes[1]])
-    expect([...state.selectedItems]).toEqual([rootNode, state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([rootNode])
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
