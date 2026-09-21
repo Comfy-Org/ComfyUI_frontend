@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards> <shards-succeeded>'
+USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards> <shards-succeeded> <source-sha>'
 SHARDS_DIR="${1:?$USAGE}"
 COVERAGE_DIR="${2:?$USAGE}"
 HTML_DIR="${3:?$USAGE}"
 EXPECTED_SHARDS="${4:?$USAGE}"
 SHARDS_SUCCEEDED="${5:?$USAGE}"
+SOURCE_SHA="${6:?$USAGE}"
 
-# Bash resolves a non-numeric operand of -ge to 0, which would silently mark
+# Bash resolves a non-numeric operand of -lt to 0, which would silently mark
 # every partial merge complete.
 if ! [[ "$EXPECTED_SHARDS" =~ ^[1-9][0-9]*$ ]]; then
   echo "::error::expected-shards must be a positive integer, got '$EXPECTED_SHARDS'."
@@ -45,8 +46,8 @@ FOUND_SHARDS=${#COVERAGE_FILES[@]}
 
 # A tracefile proves a shard uploaded, not that it finished: globalTeardown
 # writes one even for a shard that died partway, and that shard's missing hits
-# skew the merge exactly like an absent one. The matrix verdict is the only
-# signal that separates the two.
+# skew the merge exactly like an absent one. The matrix verdict is the
+# coarsest signal that separates the two, and the only one available here.
 REASON=''
 if [[ "$FOUND_SHARDS" -lt "$EXPECTED_SHARDS" ]]; then
   REASON="only $FOUND_SHARDS of $EXPECTED_SHARDS shards reported coverage"
@@ -73,12 +74,12 @@ mkdir -p "$COVERAGE_DIR"
 
 # A lost shard drops hits from commonly-loaded code and can remove files only
 # it exercised, so an incomplete merge is not comparable with a whole one.
-printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s"}\n' \
-  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" "$REASON" \
+printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s","sourceSha":"%s"}\n' \
+  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" "$REASON" "$SOURCE_SHA" \
   > "$COVERAGE_DIR/coverage-metadata.json"
 
 if [[ "$COMPLETE" != true ]]; then
-  echo "::warning::E2E coverage merge is not whole — $REASON. The merged total is not comparable with a whole merge and is excluded from trend reporting."
+  echo "::warning::E2E coverage merge is not whole — $REASON. It is excluded from trend reporting."
 fi
 
 ADD_ARGS=()
@@ -97,7 +98,7 @@ append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
 if [[ "$COMPLETE" != true ]]; then
   append_summary ''
   append_summary "> [!WARNING]"
-  append_summary "> Not a whole merge — $REASON. This total is not comparable with a whole merge and is excluded from trend reporting."
+  append_summary "> Not a whole merge — $REASON. It is excluded from trend reporting."
 fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'
@@ -124,9 +125,14 @@ lcov --remove "$COVERAGE_DIR/coverage.lcov" \
   -o "$COVERAGE_DIR/coverage.lcov" \
   --ignore-errors unused
 
+HTML_TITLE='ComfyUI E2E Coverage'
+if [[ "$COMPLETE" != true ]]; then
+  HTML_TITLE="$HTML_TITLE — NOT A WHOLE MERGE ($REASON)"
+fi
+
 genhtml "$COVERAGE_DIR/coverage.lcov" \
   -o "$HTML_DIR" \
-  --title 'ComfyUI E2E Coverage' \
+  --title "$HTML_TITLE" \
   --no-function-coverage \
   --precision 1 \
   --ignore-errors source,unmapped \

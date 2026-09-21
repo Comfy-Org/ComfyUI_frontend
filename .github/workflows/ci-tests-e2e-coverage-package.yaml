@@ -49,7 +49,8 @@ jobs:
             coverage/playwright \
             coverage/html \
             "${{ inputs.shard_total }}" \
-            "${{ inputs.shards_succeeded }}"
+            "${{ inputs.shards_succeeded }}" \
+            "${{ inputs.source_sha }}"
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'

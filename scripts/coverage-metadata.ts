@@ -9,6 +9,8 @@ export interface CoverageMetadata {
   shardsFound?: number
   shardsExpected?: number
   reason?: string
+  /** Commit the shards ran against, so a lagging baseline can name itself. */
+  sourceSha?: string
 }
 
 export function parseCoverageMetadata(
@@ -39,6 +41,12 @@ export function parseCoverageMetadata(
     reason:
       'reason' in parsed && typeof parsed.reason === 'string' && parsed.reason
         ? parsed.reason
+        : undefined,
+    sourceSha:
+      'sourceSha' in parsed &&
+      typeof parsed.sourceSha === 'string' &&
+      parsed.sourceSha
+        ? parsed.sourceSha
         : undefined
   }
 }

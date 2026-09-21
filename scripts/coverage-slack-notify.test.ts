@@ -69,6 +69,21 @@ function notifyFixture() {
         )
       }
     },
+    writeE2eBaseline(
+      percentage: number,
+      metadata: Record<string, unknown> | null = null
+    ) {
+      this.write(
+        'temp/e2e-coverage-baseline/coverage.lcov',
+        tracefile(percentage)
+      )
+      if (metadata) {
+        this.write(
+          'temp/e2e-coverage-baseline/coverage-metadata.json',
+          JSON.stringify(metadata)
+        )
+      }
+    },
     run() {
       const result = spawnSync(
         TSX,
@@ -280,5 +295,35 @@ describe('partial shard merges', () => {
 
     expect(result.stdout).toContain('*Unit:*  70.0% → 72.0%')
     expect(result.stdout).not.toContain('E2E')
+  })
+})
+
+// The baseline only advances on whole merges, so a delta can span several of
+// them. The report has to say so instead of pinning it on one PR.
+describe('comparison span', () => {
+  it('names the commit the baseline measured', () => {
+    using fixture = notifyFixture()
+    fixture.writeE2eBaseline(64, {
+      complete: true,
+      sourceSha: 'abc1234def5678'
+    })
+    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+
+    const result = fixture.run()
+
+    expect(result.stdout).toContain('last whole merge (`abc1234`)')
+    expect(result.stdout).toContain('to `9876543`')
+    expect(result.stdout).toContain('may cover several merges')
+  })
+
+  it('claims no span when the baseline cannot identify itself', () => {
+    using fixture = notifyFixture()
+    fixture.writeE2eBaseline(64)
+    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+
+    const result = fixture.run()
+
+    expect(result.stdout).toContain('64.0% → 67.0%')
+    expect(result.stdout).not.toContain('last whole merge')
   })
 })

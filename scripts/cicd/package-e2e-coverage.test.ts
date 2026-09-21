@@ -16,19 +16,21 @@ import { parse } from 'yaml'
 const SCRIPT = join(import.meta.dirname, 'package-e2e-coverage.sh')
 
 interface WorkflowStep {
+  id?: string
+  if?: string
   uses?: string
   with?: { name?: string; path?: string }
 }
 
+interface WorkflowJob {
+  needs?: string[]
+  strategy?: { matrix?: { shardIndex?: number[]; shardTotal?: number[] } }
+  steps?: WorkflowStep[]
+  with?: { shard_total?: number; shards_succeeded?: string }
+}
+
 interface E2eWorkflow {
-  jobs?: Record<
-    string,
-    {
-      strategy?: { matrix?: { shardIndex?: number[]; shardTotal?: number[] } }
-      steps?: WorkflowStep[]
-      with?: { shard_total?: number }
-    }
-  >
+  jobs?: Record<string, WorkflowJob>
 }
 
 const readWorkflow = (path: string) =>
@@ -113,7 +115,10 @@ exit 1
       mkdirSync(shard, { recursive: true })
       writeFileSync(join(shard, 'coverage.lcov'), contents)
     },
-    run(expectedShards: string | number = 1, shardsSucceeded = true) {
+    run(
+      expectedShards: string | number = 1,
+      shardsSucceeded: string | boolean = true
+    ) {
       const result = spawnSync(
         'bash',
         [
@@ -122,7 +127,8 @@ exit 1
           output,
           html,
           String(expectedShards),
-          String(shardsSucceeded)
+          String(shardsSucceeded),
+          'abc1234def5678'
         ],
         {
           encoding: 'utf8',
@@ -167,7 +173,8 @@ describe('package-e2e-coverage.sh', () => {
       shardsFound: 2,
       shardsExpected: 2,
       complete: true,
-      reason: ''
+      reason: '',
+      sourceSha: 'abc1234def5678'
     })
     expect(result.output).not.toContain('::warning::')
   })
@@ -188,7 +195,8 @@ describe('package-e2e-coverage.sh', () => {
       shardsFound: 1,
       shardsExpected: 16,
       complete: false,
-      reason: 'only 1 of 16 shards reported coverage'
+      reason: 'only 1 of 16 shards reported coverage',
+      sourceSha: 'abc1234def5678'
     })
     expect(result.output).toContain(
       '::warning::E2E coverage merge is not whole — only 1 of 16 shards'
@@ -222,7 +230,8 @@ describe('package-e2e-coverage.sh', () => {
       shardsExpected: 2,
       complete: false,
       reason:
-        'all 2 shards reported coverage but the matrix did not pass, so a shard may have stopped early'
+        'all 2 shards reported coverage but the matrix did not pass, so a shard may have stopped early',
+      sourceSha: 'abc1234def5678'
     })
     expect(result.output).toContain(
       '::warning::E2E coverage merge is not whole'
@@ -233,7 +242,7 @@ describe('package-e2e-coverage.sh', () => {
     using fixture = coverageFixture()
     fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
 
-    const result = fixture.run(1, 'yes' as unknown as boolean)
+    const result = fixture.run(1, 'yes')
 
     expect(result.status).toBe(1)
     expect(result.output).toContain(
@@ -313,7 +322,50 @@ describe('e2e-coverage artifact contract', () => {
 
     expect(uploads).not.toHaveLength(0)
     for (const upload of uploads) {
-      expect(upload.with?.path).not.toMatch(/\.lcov$/)
+      const paths = (upload.with?.path ?? '')
+        .split('\n')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+
+      expect(paths).not.toHaveLength(0)
+      for (const path of paths) {
+        expect(path.replace(/\/$/, '')).toBe('coverage/playwright')
+      }
     }
+  })
+})
+
+// actionlint is not wired into CI, so these assertions are the only automated
+// guard on the two predicates that decide whether a number is trustworthy.
+describe('completeness gate wiring', () => {
+  const SHARDED = 'playwright-tests-chromium-sharded'
+
+  it('derives shards_succeeded from the sharded matrix verdict', () => {
+    const workflow = readWorkflow('.github/workflows/ci-tests-e2e.yaml')
+    const job = workflow.jobs?.['upload-e2e-coverage']
+
+    expect(job?.needs).toContain(SHARDED)
+    expect(job?.with?.shards_succeeded).toBe(
+      `\${{ needs.${SHARDED}.result == 'success' }}`
+    )
+  })
+
+  it('gates the saved E2E baseline on a whole merge', () => {
+    const workflow = readWorkflow(
+      '.github/workflows/coverage-slack-notify.yaml'
+    )
+    const steps = Object.values(workflow.jobs ?? {}).flatMap(
+      (job) => job.steps ?? []
+    )
+
+    expect(steps.some((step) => step.id === 'e2e-meta')).toBe(true)
+
+    const save = steps.find(
+      (step) =>
+        step.uses?.startsWith('actions/upload-artifact@') === true &&
+        step.with?.name === 'e2e-coverage-baseline'
+    )
+    expect(save?.if).toContain("steps.e2e-meta.outputs.complete == 'true'")
+    expect(save?.if).toContain('success()')
   })
 })

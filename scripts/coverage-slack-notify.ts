@@ -11,6 +11,7 @@ const MILESTONE_STEP = 5
 const MIN_DELTA = 0.05
 const BAR_WIDTH = 20
 const E2E_COVERAGE_DIR = 'temp/e2e-coverage'
+const E2E_BASELINE_DIR = 'temp/e2e-coverage-baseline'
 
 /** Repo-relative prefixes of the files whose coverage this report is about. */
 const PROJECT_SOURCE = /^(src|packages)\//
@@ -26,6 +27,8 @@ interface CoverageData {
 interface CoverageSnapshot {
   current: CoverageData | null
   baseline: CoverageData | null
+  currentSha?: string
+  baselineSha?: string
 }
 
 interface ReportContext {
@@ -106,12 +109,29 @@ function parseLcov(filePath: string): CoverageData | null {
  * invents the movement back. Absent or unreadable metadata is therefore
  * treated as incomplete: the artifact has to prove it is whole before its
  * number is published.
+ *
+ * Because incomplete merges never become baselines, the baseline can be
+ * several merges behind. It carries the commit it measured so the report can
+ * say so rather than implying one PR caused the whole movement.
  */
-function e2eCoverageIsComplete(): boolean {
+function readE2eSnapshot(): CoverageSnapshot {
   const metadata = readCoverageMetadata(
     join(E2E_COVERAGE_DIR, COVERAGE_METADATA_FILE)
   )
-  return metadata?.complete === true
+  if (metadata?.complete !== true) return { current: null, baseline: null }
+
+  return {
+    current: parseLcov(join(E2E_COVERAGE_DIR, 'coverage.lcov')),
+    baseline: parseLcov(join(E2E_BASELINE_DIR, 'coverage.lcov')),
+    currentSha: metadata.sourceSha,
+    baselineSha: readCoverageMetadata(
+      join(E2E_BASELINE_DIR, COVERAGE_METADATA_FILE)
+    )?.sourceSha
+  }
+}
+
+function shortSha(sha: string): string {
+  return sha.slice(0, 7)
 }
 
 function progressBar(percentage: number): string {
@@ -217,6 +237,22 @@ function direction(deltas: number[]): Direction {
   return 'mixed'
 }
 
+/**
+ * Names the commits an E2E delta actually spans. Silent unless the baseline
+ * identifies itself, so nothing is claimed that cannot be shown.
+ */
+function spanNote(
+  reported: ReportedMetric[],
+  e2e: CoverageSnapshot
+): string | null {
+  if (!reported.some((metric) => metric.label === 'E2E')) return null
+  if (e2e.baselineSha === undefined) return null
+
+  const head =
+    e2e.currentSha === undefined ? '' : ` to \`${shortSha(e2e.currentSha)}\``
+  return `_E2E measured from the last whole merge (\`${shortSha(e2e.baselineSha)}\`)${head}; this span may cover several merges._`
+}
+
 function progressLine(label: string, data: CoverageData): string {
   return `\`${progressBar(data.percentage)}\` ${formatPct(data.percentage)} ${label} → ${TARGET}% target`
 }
@@ -259,6 +295,9 @@ export function buildPayload(
   if (unit.current) summaryLines.push(progressLine('unit', unit.current))
   if (e2e.current) summaryLines.push(progressLine('e2e', e2e.current))
 
+  const e2eSpan = spanNote(reported, e2e)
+  if (e2eSpan) summaryLines.push('', e2eSpan)
+
   const blocks: SlackBlock[] = [
     {
       type: 'section',
@@ -286,14 +325,7 @@ function main() {
     baseline: parseLcov('temp/coverage-baseline/lcov.info')
   }
 
-  const e2e: CoverageSnapshot = e2eCoverageIsComplete()
-    ? {
-        current: parseLcov(join(E2E_COVERAGE_DIR, 'coverage.lcov')),
-        baseline: parseLcov('temp/e2e-coverage-baseline/coverage.lcov')
-      }
-    : { current: null, baseline: null }
-
-  const payload = buildPayload(unit, e2e, context)
+  const payload = buildPayload(unit, readE2eSnapshot(), context)
   if (payload === null) process.exit(0)
 
   process.stdout.write(JSON.stringify(payload))

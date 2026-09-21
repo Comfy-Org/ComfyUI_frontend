@@ -168,6 +168,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-baseline
-          path: temp/e2e-coverage/coverage.lcov
+          # The whole directory, so the baseline keeps the sourceSha that lets
+          # a later report name the commit it is comparing against.
+          path: temp/e2e-coverage/
           retention-days: 90
           if-no-files-found: warn
