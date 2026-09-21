@@ -99,24 +99,31 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
-- Terminal `unacknowledged` or `unconfirmed` deletes keep local intent
-  (`useAgentCrdtFollower`'s per-workflow `confirmedDeletes`) rather than
-  dropping it the moment the batch settles: the transport carried the batch
-  at least once, so the host may have applied it even without a confirming
-  result, and the reconcile must not resurrect it while that is still
-  possible. The document agreeing the node is gone ends that early. It is not
-  the only exit: no frame in this doc-sync system certifies "the host's
-  answer to this specific op is now settled", so retention also carries a
-  hard expiry (`PENDING_DELETE_EXPIRY_MS`, reusing the channel's own
-  `STALE_AFTER_MS` recency budget) and releases on that alone if the doc never
-  agrees. This is a deliberate, bounded resurrect risk in exchange for never
-  hiding a node past that budget. `undeliverable` deletes are excluded from
-  retention entirely: the transport never carried them, so the host is
-  certain to still hold the node and no later frame will ever say otherwise
-  on its own; keeping one would hide its node forever, not for a bounded
-  window. Immediate catch-up and lost-write feedback for a genuinely lost
-  `undeliverable` delete remain follow-up work; unknown outcomes are not
-  hidden indefinitely.
+- Retained delete intent (`useAgentCrdtFollower`'s per-workflow
+  `confirmedDeletes`) is not one policy - the retained reason matters, not
+  just whether a node id is in the set. An `acknowledged` result naming the
+  op `applied` is definitive: the host processed it, and only its own
+  removal effect frame lagging behind is left, so this reason stays pending
+  until the document itself no longer holds the node - no other exit,
+  because the outcome is already known and the lag is not bounded. Terminal
+  `unacknowledged` or `unconfirmed` deletes are the opposite: the transport
+  carried the batch at least once, so the host may have applied it even
+  without a confirming result, but nothing here certifies that it did.
+  These retain the same document-agrees exit, plus a hard expiry
+  (`PENDING_DELETE_EXPIRY_MS`, reusing the channel's own `STALE_AFTER_MS`
+  recency budget) that releases on its own if the doc never agrees - no
+  frame in this doc-sync system certifies "the host's answer to this
+  specific op is now settled" sooner. Applying that same expiry to the
+  `acknowledged` reason was tried and was wrong: a definitive delete whose
+  removal effect frame lags past the expiry would get pruned while the doc
+  still (correctly, if slowly) held the node, resurrecting it on the next
+  reconcile - the failure this ADR exists to prevent. `undeliverable`
+  deletes are excluded from retention entirely: the transport never carried
+  them, so the host is certain to still hold the node and no later frame
+  will ever say otherwise on its own; keeping one would hide its node
+  forever, not for a bounded window. Immediate catch-up and lost-write
+  feedback for a genuinely lost `undeliverable` delete remain follow-up
+  work; unknown outcomes are not hidden indefinitely.
 
 ## Notes
 
