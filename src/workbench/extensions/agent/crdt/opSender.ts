@@ -128,7 +128,8 @@ interface InFlight {
   workflowId: string
   ops: Op[]
   opIds: Set<string>
-  transmitted: boolean
+  /** Successful `sendOps` calls: each may still draw one result. */
+  sends: number
   resent: boolean
   parked: boolean
   timer: ReturnType<typeof setTimeout> | null
@@ -182,15 +183,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
-    batch.transmitted = true
+    batch.sends++
     armResultTimeout(batch)
   }
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
-    if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
+    staleAnonymousBudget += batch.sends
     settle({
-      state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
+      state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
     })
   }
@@ -200,7 +201,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += 2
+        staleAnonymousBudget += batch.sends
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -219,7 +220,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       workflowId: queued.workflowId,
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
-      transmitted: false,
+      sends: 0,
       resent: false,
       parked: false,
       timer: null
