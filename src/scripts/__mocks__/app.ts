@@ -241,8 +241,8 @@ export const app = {
   set rootGraphOrUndefined(value: RealComfyApp['rootGraphOrUndefined']) {
     state().rootGraph = value
   },
-  get graph(): RealComfyApp['graph'] {
-    return app.rootGraph
+  get graph(): RealComfyApp['rootGraphOrUndefined'] {
+    return state().rootGraph
   },
   set graph(value: RealComfyApp['graph']) {
     state().rootGraph = value
