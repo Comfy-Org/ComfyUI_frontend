@@ -4,8 +4,7 @@ import { hubWorkflowPath } from './catalogue-entries'
 import {
   getHubWorkflowPage,
   listHubWorkflows,
-  summarisePorts,
-  workflowJobTitle
+  summarisePorts
 } from './workflow-detail'
 
 describe('getHubWorkflowPage', () => {
@@ -65,27 +64,6 @@ describe('getHubWorkflowPage', () => {
     expect(page.related.map((other) => other.name)).not.toContain(
       'video_minimax_h3_i2v'
     )
-  })
-})
-
-describe('workflowJobTitle', () => {
-  // The registry writes "<model>: <operation>", so the name says which model
-  // runs before it says what the reader gets.
-  it.for([
-    ['api_nano_banana_pro', 'Nano Banana Pro'],
-    ['api_google_nano_banana2_image_edit', 'Nano Banana 2'],
-    ['video_minimax_h3_i2v', 'MiniMax H3']
-  ] as const)('reads the model out of %s', ([name, model]) => {
-    expect(workflowJobTitle(getHubWorkflowPage(name)!)?.model).toBe(model)
-  })
-
-  // A title that already leads with the job is the shape we want, so it keeps
-  // the words somebody chose for it.
-  it('leaves a title that already names its job', () => {
-    const page = getHubWorkflowPage('utility_seedvr2_3b_int8_upscale_video')!
-
-    expect(page.template.title).toMatch(/^Video Upscale/)
-    expect(workflowJobTitle(page)).toBeUndefined()
   })
 })
 

@@ -4,6 +4,7 @@ import { cardViewFor } from './catalogue-card'
 import type { CatalogueEntry } from './catalogue-entries'
 import { buildCatalogue, entryUseCases } from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
+import { workflowDisplayTitle } from './workflow-title'
 
 function modelEntry(
   entry: Extract<CatalogueEntry, { kind: 'model' }>,
@@ -32,7 +33,7 @@ function workflowEntry(
   return {
     key: entry.key,
     kind: entry.kind,
-    title: template.title,
+    title: workflowDisplayTitle(template, template.useCase),
     useCases: entryUseCases(entry, models),
     models: template.models,
     tags: template.tags,

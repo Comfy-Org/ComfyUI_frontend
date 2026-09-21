@@ -1,6 +1,7 @@
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
 import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
 import { getLogoPath } from './model-logos'
+import { workflowDisplayTitle } from './workflow-title'
 
 interface CardMedia {
   readonly url: string
@@ -53,7 +54,7 @@ function workflowCard(
     // The card opens the workflow, never the model behind it. Sending a
     // workflow card to a model page is what makes the two read as one thing.
     href: hubWorkflowPath(template.name),
-    title: template.title,
+    title: workflowDisplayTitle(template, template.useCase),
     media: template.thumbnails[0]
       ? { url: template.thumbnails[0], kind: 'image' }
       : undefined,

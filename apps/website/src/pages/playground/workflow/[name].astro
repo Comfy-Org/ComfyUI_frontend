@@ -21,10 +21,9 @@ import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
   getHubWorkflowPage,
   listHubWorkflows,
-  summarisePorts,
-  workflowJobTitle
+  summarisePorts
 } from '../../../lib/hub/workflow-detail'
-import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
+import { workflowDisplayTitle } from '../../../lib/hub/workflow-title'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -73,12 +72,7 @@ const pills = [
   details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
 ].filter((label): label is string => Boolean(label))
 
-const job = workflowJobTitle(page)
-const title = job
-  ? t('workshop.v2.workflow.jobTitle')
-      .replace('{useCase}', t(useCaseLabelKey[job.useCase]))
-      .replace('{model}', job.model)
-  : template.title
+const title = workflowDisplayTitle(template, page.useCase)
 
 const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
 
