@@ -484,6 +484,9 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
 
+patchedDependencies:
+  '@intlify/shared@11.4.10': 3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da
+
 importers:
 
   .:
@@ -11520,12 +11523,12 @@ snapshots:
     dependencies:
       '@intlify/devtools-types': 11.4.10
       '@intlify/message-compiler': 11.4.10
-      '@intlify/shared': 11.4.10
+      '@intlify/shared': 11.4.10(patch_hash=3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da)
 
   '@intlify/devtools-types@11.4.10':
     dependencies:
       '@intlify/core-base': 11.4.10
-      '@intlify/shared': 11.4.10
+      '@intlify/shared': 11.4.10(patch_hash=3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da)
 
   '@intlify/eslint-plugin-vue-i18n@4.5.1(eslint@10.10.0(jiti@2.7.0))(jsonc-eslint-parser@3.1.0)(vue-eslint-parser@10.4.1(eslint@10.10.0(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)':
     dependencies:
@@ -11553,10 +11556,10 @@ snapshots:
 
   '@intlify/message-compiler@11.4.10':
     dependencies:
-      '@intlify/shared': 11.4.10
+      '@intlify/shared': 11.4.10(patch_hash=3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da)
       source-map-js: 1.2.1
 
-  '@intlify/shared@11.4.10': {}
+  '@intlify/shared@11.4.10(patch_hash=3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da)': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -18910,7 +18913,7 @@ snapshots:
     dependencies:
       '@intlify/core-base': 11.4.10
       '@intlify/devtools-types': 11.4.10
-      '@intlify/shared': 11.4.10
+      '@intlify/shared': 11.4.10(patch_hash=3bb072663d30d72e581b2caa48f64e04ae2b113e3565fb5b134e414cce19f8da)
       '@vue/devtools-api': 6.6.4
       vue: 3.5.42(typescript@6.0.3)
 
