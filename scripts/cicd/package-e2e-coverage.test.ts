@@ -113,10 +113,17 @@ exit 1
       mkdirSync(shard, { recursive: true })
       writeFileSync(join(shard, 'coverage.lcov'), contents)
     },
-    run(expectedShards: string | number = 1) {
+    run(expectedShards: string | number = 1, shardsSucceeded = true) {
       const result = spawnSync(
         'bash',
-        [SCRIPT, shards, output, html, String(expectedShards)],
+        [
+          SCRIPT,
+          shards,
+          output,
+          html,
+          String(expectedShards),
+          String(shardsSucceeded)
+        ],
         {
           encoding: 'utf8',
           env: {
@@ -159,7 +166,8 @@ describe('package-e2e-coverage.sh', () => {
     expect(readMetadata(fixture.output)).toEqual({
       shardsFound: 2,
       shardsExpected: 2,
-      complete: true
+      complete: true,
+      reason: ''
     })
     expect(result.output).not.toContain('::warning::')
   })
@@ -179,10 +187,11 @@ describe('package-e2e-coverage.sh', () => {
     expect(readMetadata(fixture.output)).toEqual({
       shardsFound: 1,
       shardsExpected: 16,
-      complete: false
+      complete: false,
+      reason: 'only 1 of 16 shards reported coverage'
     })
     expect(result.output).toContain(
-      '::warning::Partial E2E coverage merge: 1/16 shards'
+      '::warning::E2E coverage merge is not whole — only 1 of 16 shards'
     )
     expect(
       readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
@@ -191,8 +200,45 @@ describe('package-e2e-coverage.sh', () => {
     const summary = readFileSync(fixture.summary, 'utf8')
     expect(summary).toContain('failed shard 1')
     expect(summary).toContain('**1 / 16** shards merged')
-    expect(summary).toContain('15 shard(s) reported no coverage')
+    expect(summary).toContain('only 1 of 16 shards reported coverage')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(true)
+  })
+
+  // A shard that dies partway still uploads a tracefile via globalTeardown,
+  // so a full count alone cannot prove the merge is whole.
+  it('flags a full shard count incomplete when the matrix did not pass', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+    fixture.writeShard('e2e-coverage-shard-2', coverage('src'))
+
+    const result = fixture.run(2, false)
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(fixture.githubOutput, 'utf8')).toContain(
+      'complete=false'
+    )
+    expect(readMetadata(fixture.output)).toEqual({
+      shardsFound: 2,
+      shardsExpected: 2,
+      complete: false,
+      reason:
+        'all 2 shards reported coverage but the matrix did not pass, so a shard may have stopped early'
+    })
+    expect(result.output).toContain(
+      '::warning::E2E coverage merge is not whole'
+    )
+  })
+
+  it('rejects a non-boolean shards-succeeded flag', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+
+    const result = fixture.run(1, 'yes' as unknown as boolean)
+
+    expect(result.status).toBe(1)
+    expect(result.output).toContain(
+      "shards-succeeded must be 'true' or 'false'"
+    )
   })
 
   it('skips successfully when no shard artifacts exist', () => {

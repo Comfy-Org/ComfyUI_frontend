@@ -9,6 +9,9 @@ on:
       shard_total:
         required: true
         type: number
+      shards_succeeded:
+        required: true
+        type: boolean
 
 permissions:
   contents: read
@@ -45,7 +48,8 @@ jobs:
             temp/coverage-shards \
             coverage/playwright \
             coverage/html \
-            "${{ inputs.shard_total }}"
+            "${{ inputs.shard_total }}" \
+            "${{ inputs.shards_succeeded }}"
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'

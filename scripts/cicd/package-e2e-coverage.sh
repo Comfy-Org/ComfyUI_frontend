@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards>'
+USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards> <shards-succeeded>'
 SHARDS_DIR="${1:?$USAGE}"
 COVERAGE_DIR="${2:?$USAGE}"
 HTML_DIR="${3:?$USAGE}"
 EXPECTED_SHARDS="${4:?$USAGE}"
+SHARDS_SUCCEEDED="${5:?$USAGE}"
 
 # Bash resolves a non-numeric operand of -ge to 0, which would silently mark
 # every partial merge complete.
 if ! [[ "$EXPECTED_SHARDS" =~ ^[1-9][0-9]*$ ]]; then
   echo "::error::expected-shards must be a positive integer, got '$EXPECTED_SHARDS'."
+  exit 1
+fi
+
+if [[ "$SHARDS_SUCCEEDED" != true && "$SHARDS_SUCCEEDED" != false ]]; then
+  echo "::error::shards-succeeded must be 'true' or 'false', got '$SHARDS_SUCCEEDED'."
   exit 1
 fi
 
@@ -36,10 +42,22 @@ if [[ ${#COVERAGE_FILES[@]} -eq 0 ]]; then
 fi
 
 FOUND_SHARDS=${#COVERAGE_FILES[@]}
-if [[ "$FOUND_SHARDS" -ge "$EXPECTED_SHARDS" ]]; then
-  COMPLETE=true
-else
+
+# A tracefile proves a shard uploaded, not that it finished: globalTeardown
+# writes one even for a shard that died partway, and that shard's missing hits
+# understate the merge exactly like an absent one. The matrix verdict is the
+# only signal that separates the two.
+REASON=''
+if [[ "$FOUND_SHARDS" -lt "$EXPECTED_SHARDS" ]]; then
+  REASON="only $FOUND_SHARDS of $EXPECTED_SHARDS shards reported coverage"
+elif [[ "$SHARDS_SUCCEEDED" != true ]]; then
+  REASON="all $EXPECTED_SHARDS shards reported coverage but the matrix did not pass, so a shard may have stopped early"
+fi
+
+if [[ -n "$REASON" ]]; then
   COMPLETE=false
+else
+  COMPLETE=true
 fi
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
@@ -53,14 +71,14 @@ fi
 
 mkdir -p "$COVERAGE_DIR"
 
-# Every shard loads the whole bundle, so a lost shard drops its hits but keeps
-# the lines they covered in the denominator: partial merges understate coverage.
-printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s}\n' \
-  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" \
+# Every shard loads the whole bundle, so lost hits stay in the denominator:
+# an incomplete merge understates coverage rather than omitting it.
+printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s"}\n' \
+  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" "$REASON" \
   > "$COVERAGE_DIR/coverage-metadata.json"
 
 if [[ "$COMPLETE" != true ]]; then
-  echo "::warning::Partial E2E coverage merge: $FOUND_SHARDS/$EXPECTED_SHARDS shards reported coverage. The merged total understates real coverage and is excluded from trend reporting."
+  echo "::warning::E2E coverage merge is not whole — $REASON. The merged total understates real coverage and is excluded from trend reporting."
 fi
 
 ADD_ARGS=()
@@ -79,7 +97,7 @@ append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
 if [[ "$COMPLETE" != true ]]; then
   append_summary ''
   append_summary "> [!WARNING]"
-  append_summary "> $((EXPECTED_SHARDS - FOUND_SHARDS)) shard(s) reported no coverage, so this total understates real coverage and is excluded from trend reporting."
+  append_summary "> Not a whole merge — $REASON. This total understates real coverage and is excluded from trend reporting."
 fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'

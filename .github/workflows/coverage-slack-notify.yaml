@@ -74,13 +74,10 @@ jobs:
         id: e2e-meta
         run: |
           META=temp/e2e-coverage/coverage-metadata.json
-          COMPLETE=false
-          if [ -f "$META" ]; then
-            COMPLETE=$(jq -r 'if .complete == true then "true" else "false" end' "$META" 2>/dev/null || echo false)
-          fi
+          COMPLETE=$(pnpm exec tsx scripts/coverage-metadata.ts "$META")
           echo "complete=$COMPLETE" >> "$GITHUB_OUTPUT"
           if [ "$COMPLETE" != 'true' ]; then
-            echo "::warning::E2E coverage is not a verified complete shard merge; skipping E2E trend reporting. Metadata: $(cat "$META" 2>/dev/null || echo absent)"
+            echo "::warning::E2E coverage is not a verified whole shard merge; skipping E2E trend reporting. Metadata: $(cat "$META" 2>/dev/null || echo absent)"
           fi
 
       - name: Resolve merged PR metadata
@@ -160,9 +157,13 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
+      # success(), not always(): the download below defaults to
+      # workflow_conclusion=success, so a baseline saved by a failing run is
+      # never readable. Uploading one anyway would make search_artifacts walk
+      # past it and re-report movement that was already announced.
       - name: Save E2E coverage baseline
         if: >
-          always() && steps.e2e-meta.outputs.complete == 'true' &&
+          success() && steps.e2e-meta.outputs.complete == 'true' &&
           hashFiles('temp/e2e-coverage/coverage.lcov') != ''
         uses: actions/upload-artifact@v6
         with:

@@ -263,6 +263,9 @@ jobs:
       # Kept in sync with playwright-tests-chromium-sharded's shardTotal by
       # scripts/cicd/package-e2e-coverage.test.ts.
       shard_total: 16
+      # A shard that died partway still uploads a tracefile, so the merge is
+      # only trustworthy for trend reporting when the matrix itself passed.
+      shards_succeeded: ${{ needs.playwright-tests-chromium-sharded.result == 'success' }}
 
   # Records video only for tests newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
