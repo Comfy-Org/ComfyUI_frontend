@@ -137,6 +137,11 @@ describe('bootstrapStore', () => {
 
       expect(settingStore.isReady).toBe(false)
 
+      await vi.waitFor(() => {
+        expect(store.isI18nReady).toBe(true)
+      })
+      expect(useAuthStore().isInitialized).toBe(false)
+
       useAuthStore().isInitialized = true
 
       await vi.waitFor(() => {
