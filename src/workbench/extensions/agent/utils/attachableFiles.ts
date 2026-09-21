@@ -31,3 +31,18 @@ export function isAgentAttachable(file: File): boolean {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
   return EXTRA_ATTACHABLE_EXTENSIONS.has(extension)
 }
+
+const IMAGE_MIME_PREFIX = 'image/'
+
+/* A clipboard screenshot is a bare bitmap that some browsers hand over
+   unnamed, and the check above judges by name alone. MIME is its only name. */
+function namedByImageType(file: File): File {
+  if (isAgentAttachable(file) || !file.type.startsWith(IMAGE_MIME_PREFIX))
+    return file
+  const extension = file.type.slice(IMAGE_MIME_PREFIX.length)
+  return new File([file], `pasted-image.${extension}`, { type: file.type })
+}
+
+export function attachableClipboardFiles(clipboard: DataTransfer): File[] {
+  return Array.from(clipboard.files, namedByImageType).filter(isAgentAttachable)
+}

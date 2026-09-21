@@ -15,6 +15,7 @@ import {
   composerReferenceKey,
   composerReferenceName
 } from '../../../types/composerPrompt'
+import { attachableClipboardFiles } from '../../../utils/attachableFiles'
 import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
 import {
   assetReferenceText,
@@ -57,6 +58,7 @@ const emit = defineEmits<{
   keyup: [event: KeyboardEvent]
   click: []
   blur: []
+  attachFiles: [files: File[]]
   openReferenceWorkflow: [id: string, name: string]
   removeWorkflowReference: [id: string]
   removeNodeReference: [id: string]
@@ -242,6 +244,11 @@ onMounted(() => {
     handlePaste(editor, event, slice) {
       const clipboard = event.clipboardData
       if (!clipboard) return false
+      const files = attachableClipboardFiles(clipboard)
+      if (files.length > 0) {
+        emit('attachFiles', files)
+        return true
+      }
       const text = clipboard.getData('text/plain')
       const { state } = editor
       const hasWorkflows = slice.content.content.some(

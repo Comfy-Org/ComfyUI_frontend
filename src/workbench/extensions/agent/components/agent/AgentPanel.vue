@@ -105,6 +105,7 @@ const emit = defineEmits<{
   ]
   stop: []
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -394,6 +395,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"
+            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  attachableClipboardFiles,
+  isAgentAttachable
+} from './attachableFiles'
 
 /* Dragged files often carry no MIME (glb, md) or a generic one, so the
    predicate must hold with an empty type. */
 function fileNamed(name: string): File {
   return new File(['x'], name, { type: '' })
+}
+
+function clipboardOf(...files: File[]): DataTransfer {
+  const clipboard = new DataTransfer()
+  for (const file of files) clipboard.items.add(file)
+  return clipboard
 }
 
 describe('isAgentAttachable', () => {
@@ -50,5 +60,39 @@ describe('isAgentAttachable', () => {
     'application/json'
   ])('includes %s in the picker accept list', (format) => {
     expect(AGENT_ATTACH_ACCEPT.split(',')).toContain(format)
+  })
+})
+
+describe('attachableClipboardFiles', () => {
+  it('keeps the original file when the clipboard names it', () => {
+    const photo = new File(['x'], 'photo.jpg', { type: 'image/jpeg' })
+    expect(attachableClipboardFiles(clipboardOf(photo))).toEqual([photo])
+  })
+
+  it.for([
+    ['image/png', 'pasted-image.png'],
+    ['image/jpeg', 'pasted-image.jpeg'],
+    ['image/webp', 'pasted-image.webp']
+  ] as const)('names an unnamed %s screenshot %s', async ([type, expected]) => {
+    const [named] = attachableClipboardFiles(
+      clipboardOf(new File(['x'], '', { type }))
+    )
+    expect(named).toMatchObject({ name: expected, type })
+    expect(await named.text()).toBe('x')
+  })
+
+  it('drops clipboard files the composer cannot attach', () => {
+    expect(
+      attachableClipboardFiles(
+        clipboardOf(
+          new File(['x'], 'archive.zip', { type: 'application/zip' }),
+          new File(['x'], 'workflow.json', { type: 'application/json' })
+        )
+      )
+    ).toEqual([])
+  })
+
+  it('is empty for a text-only clipboard, leaving the paste to the editor', () => {
+    expect(attachableClipboardFiles(clipboardOf())).toEqual([])
   })
 })

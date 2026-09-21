@@ -74,6 +74,7 @@ const emit = defineEmits<{
   ]
   stop: []
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -468,6 +469,7 @@ defineExpose({
             @selection-change="onEditorSelectionChange"
             @click="syncMention"
             @blur="closeMention()"
+            @attach-files="emit('attachFiles', $event)"
             @open-reference-workflow="
               (id, name) => emit('openReferenceWorkflow', id, name)
             "
