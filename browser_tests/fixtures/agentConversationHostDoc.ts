@@ -15,6 +15,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -166,11 +167,11 @@ export class HostDoc {
    * @returns the outer definition id the follower should end up registering.
    */
   seedNestedDefinition(
-    outer: object,
-    inner: object,
-    outerId: string,
-    innerId: string
+    outer: ExportedSubgraph,
+    inner: ExportedSubgraph
   ): { frame: HostFrame; outerId: string } {
+    const outerId = outer.id
+    const innerId = inner.id
     const before = Y.encodeStateVector(this.doc)
     const outerSource = mint(
       { nodes: [], links: [], definitions: { subgraphs: [outer] } },
