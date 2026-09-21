@@ -109,12 +109,6 @@ const options: {
     icon: 'icon-[lucide--zap]',
     title: 'agent.runModeAuto',
     description: 'agent.runModeAutoDescription'
-  },
-  {
-    mode: 'auto_limited',
-    icon: 'icon-[lucide--gauge]',
-    title: 'agent.runModeLimit',
-    description: 'agent.runModeLimitDescription'
   }
 ]
 </script>
@@ -131,7 +125,10 @@ const options: {
       "
     >
       <span>{{ triggerLabel }}</span>
-      <span class="icon-[lucide--chevron-down] size-3" />
+      <span
+        data-testid="run-mode-chevron"
+        class="icon-[lucide--chevron-down] size-4"
+      />
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent

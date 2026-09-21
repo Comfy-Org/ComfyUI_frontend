@@ -391,7 +391,7 @@ describe('scanNodeMediaCandidates', () => {
       const node = makeMediaNode(
         1,
         nodeType,
-        [makeMediaCombo(widgetName, value, ['other-file.png', value])],
+        [makeMediaCombo(widgetName, value, ['other-file.png'])],
         0
       )
       const graph = makeGraph([node])
@@ -670,6 +670,83 @@ describe('verifyMediaCandidates', () => {
       limit: 200,
       hasMore: false
     })
+  })
+
+  it.for([
+    { nodeType: 'LoadImage', widgetName: 'image', filename: 'photo.png' },
+    { nodeType: 'LoadVideo', widgetName: 'file', filename: 'clip.mp4' },
+    { nodeType: 'LoadAudio', widgetName: 'audio', filename: 'sound.wav' }
+  ])(
+    'resolves OSS $nodeType output from exact widget options without history',
+    async ({ nodeType, widgetName, filename }) => {
+      const value = `subfolder/${filename} [output]`
+      const node = makeMediaNode(1, nodeType, [
+        makeMediaCombo(widgetName, value, [value])
+      ])
+      const candidates = scanNodeMediaCandidates(makeGraph([node]), node, false)
+
+      await verifyMediaCandidates(candidates, { isCloud: false })
+
+      expect(candidates).toEqual([
+        expect.objectContaining({ name: value, isMissing: false })
+      ])
+      expect(mockFetchHistoryPage).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { option: 'other.png', hasHistory: true, isMissing: false },
+    { option: 'other.png', hasHistory: false, isMissing: true },
+    { option: 'subfolder/photo.png', hasHistory: false, isMissing: true },
+    {
+      option: 'subfolder/photo.png [input]',
+      hasHistory: false,
+      isMissing: true
+    },
+    {
+      option: 'other/photo.png [output]',
+      hasHistory: false,
+      isMissing: true
+    }
+  ])(
+    'verifies OSS output with option $option and history present $hasHistory',
+    async ({ option, hasHistory, isMissing }) => {
+      const value = 'subfolder/photo.png [output]'
+      const node = makeMediaNode(1, 'LoadImage', [
+        makeMediaCombo('image', value, [option])
+      ])
+      const candidates = scanNodeMediaCandidates(makeGraph([node]), node, false)
+      const jobs = hasHistory
+        ? [makeHistoryJob('photo.png', { subfolder: 'subfolder' })]
+        : []
+      mockFetchHistoryPage.mockResolvedValue({
+        jobs,
+        total: jobs.length,
+        offset: 0,
+        limit: 200,
+        hasMore: false
+      })
+
+      await verifyMediaCandidates(candidates, { isCloud: false })
+
+      expect(candidates).toEqual([
+        expect.objectContaining({ name: value, isMissing })
+      ])
+    }
+  )
+
+  it('does not trust backend output options when Cloud assets are missing', async () => {
+    const value = 'photo.png [output]'
+    const node = makeMediaNode(1, 'LoadImage', [
+      makeMediaCombo('image', value, [value])
+    ])
+    const candidates = scanNodeMediaCandidates(makeGraph([node]), node, true)
+
+    await verifyMediaCandidates(candidates, { isCloud: true })
+
+    expect(candidates).toEqual([
+      expect.objectContaining({ name: value, isMissing: true })
+    ])
   })
 
   it('matches candidates by available input asset name or hash', async () => {

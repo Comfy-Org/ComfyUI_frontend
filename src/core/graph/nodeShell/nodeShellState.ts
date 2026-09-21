@@ -107,7 +107,12 @@ export function registerNodeState(
   }
   assert(
     strandedScope === undefined,
-    'registerNodeState: node already registered under a different root graph'
+    'registerNodeState: node already registered under a different root graph',
+    {
+      nodeId: node.id,
+      previousRootGraphId: strandedScope?.rootGraphId,
+      nextRootGraphId: graphScope.rootGraphId
+    }
   )
 
   node._state.graphId = graph.id
@@ -125,11 +130,13 @@ export function registerNodeState(
  */
 export function unregisterNodeState(node: LGraphNode): void {
   if (!node._graphScope) return
-  const deleted = useNodeDataStore().deleteNode(node._graphScope, node._state)
+  const graphScope = node._graphScope
+  const deleted = useNodeDataStore().deleteNode(graphScope, node._state)
   node._graphScope = undefined
   assert(
     deleted,
-    'unregisterNodeState: node state not found in bucket (identity drift)'
+    'unregisterNodeState: node state not found in bucket (identity drift)',
+    { nodeId: node.id, rootGraphId: graphScope.rootGraphId }
   )
 }
 

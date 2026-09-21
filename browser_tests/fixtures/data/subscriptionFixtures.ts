@@ -16,6 +16,7 @@ export function createSubscriptionStatus(
     max_seats: 0,
     occupied_seats: 0,
     team_credit_stop: null,
+    scheduled_change: null,
     ...overrides
   }
 }

@@ -5,6 +5,7 @@ import { getActivePinia } from 'pinia'
 
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
@@ -163,7 +164,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
@@ -1658,6 +1659,53 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('falls back to the last loaded model file when the node has no model widget', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'viewport_state', value: {} } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(Load3dUtils.splitFilePath).toHaveBeenCalledWith(
+        '3d/ComfyUI_00110.glb'
+      )
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
+    it('falls back to the last loaded model file when the model widget value is empty', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [{ name: 'image', value: '' } as unknown as IWidget]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
@@ -1872,6 +1920,26 @@ describe('useLoad3d', () => {
       markLoad3dSceneDirty(a)
       expect(isLoad3dSceneDirty(a)).toBe(true)
       expect(isLoad3dSceneDirty(b)).toBe(true)
+    })
+
+    it('setLoad3dOutputCache rejects a stale scene revision and keeps the node dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      const capturedRevision = getLoad3dSceneRevision(fresh)
+
+      markLoad3dSceneDirty(fresh)
+      expect(getLoad3dSceneRevision(fresh)).toBe(capturedRevision + 1)
+
+      expect(setLoad3dOutputCache(fresh, fakeCache, capturedRevision)).toBe(
+        false
+      )
+      expect(getLoad3dOutputCache(fresh)).toBeUndefined()
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+
+      expect(
+        setLoad3dOutputCache(fresh, fakeCache, getLoad3dSceneRevision(fresh))
+      ).toBe(true)
+      expect(getLoad3dOutputCache(fresh)).toBe(fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
     })
 
     it('markLoad3dSceneDirty on null is a no-op', () => {
