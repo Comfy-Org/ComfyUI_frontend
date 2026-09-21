@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "קשב דליל-בלוקים באמצעות comfy_kitchen: כל בלוק שאילתה מבצע קשב מדויק על תת-קבוצה נבחרת של בלוקי מפתח, ובכך מפחית את עלות חישוב הקשב. שיפור המהירות היחסי גדל עם אורך הרצף, מאחר שרצפים קצרים בדרך כלל מהירים יותר בחישוב צפוף. מחוץ ללוח הזמנים הפעיל, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב של המודל הצפוף הפעיל.",
-    "display_name": "קשב דליל-בלוקים",
+    "description": "מחיל קשב דליל-בלוקים על שכבות הקשב המתאימות של המודל, ומפחית את החישוב עבור רצפים ארוכים. שיפור המהירות גדל עם אורך הרצף, מכיוון שקשב צפוף בדרך כלל מהיר יותר עבור רצפים קצרים. מחוץ ל-start/end_percent, ב-dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב הצפוף של המודל. השתמשו בצומת Model Attention Backend כדי לבחור חלופה זו.",
+    "display_name": "קשב דליל-בלוקים של המודל",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "קשב צפוף אחרי נקודה זו בלוח הזמנים."
+        "tooltip": "נקודת האחוז שבה מסתיים קשב דליל. לאחר נקודה זו, הקשב חוזר להיות צפוף."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "רצפים קצרים מערך זה נשארים בחישוב צפוף."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "המודל לתיקון."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "כיצד נבחרים בלוקי מפתח מדויקים. Sol-Attn: סף מסתגל לכל ראש/בלוק. top-k (SLA): keep_percent קבוע בכל מקום, מומלץ רק עם משקולות מאומנות. VSA (FastVideo): ריצוף הקוביות והענף הגס של FastH3-VSA, דורש משקולות שאומנו עבורו."
+        "tooltip": "השיטה המשמשת לבחירת בלוקי מפתח עבור קשב מלא ברמת אסימונים. sol-attn: Sparsifying Online Attention משתמש בסף הסתגלותי ללא אימון עבור כל ראש קשב ובלוק שאילתה. sla: Sparse-Linear Attention שומר אחוז קבוע מבלוקי המפתח בעלי הניקוד הגבוה ביותר; יש להשתמש רק עם משקלי מודל שאומנו עבור תבנית זו. vsa: Video Sparse Attention ‏(FastVideo) משתמש בריצוף קוביות וידאו תלת-ממדיות ובענף קשב גס נלמד; דורש משקלי מודל FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,10 +807,89 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "קשב צפוף לפני נקודה זו בלוח הזמנים."
+        "tooltip": "נקודת האחוז שבה מתחיל קשב דליל. לפני נקודה זו, הקשב נשאר צפוף."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "מתעד ביומן אם כל צורת קשב השתמשה בקשב דליל או מדוע נשארה צפופה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "המודל שעליו הוחל קשב דליל-בלוקים."
+      }
+    }
+  },
+  "BriaAddObject": {
+    "description": "הוספת אובייקט המתואר בטקסט פשוט לתמונה באמצעות Bria. ‏Bria מרנדרת מחדש את כל הפריים בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
+    "display_name": "Bria – הוספת אובייקט",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "image"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "מה להוסיף והיכן, למשל 'הנח אגרטל אדום עם פרחים על השולחן'."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות מודרציה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria אינה מקבלת כאן seed ומדמיינת מחדש את העריכה בכל קריאה, ולכן הרצות חוזרות עשויות להיות שונות. הערך לעולם אינו נשלח: הוא משנה רק את מפתח המטמון של צומת זה, כך שגרף הזהה מכל בחינה אחרת יריץ את העריכה שוב במקום להחזיר את התוצאה השמורה במטמון."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "הסרת אובייקט ששמו מצוין בטקסט פשוט מתמונה באמצעות Bria. ‏Bria מרנדרת מחדש את כל הפריים בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
+    "display_name": "Bria – מחיקה לפי טקסט",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות מודרציה"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "שם האובייקט להסרה, למשל 'המנורה'. ניתן לציין כמה אובייקטים בו-זמנית, למשל 'הטלפון והעפרונות'. ציון דבר שאינו בתמונה עדיין יחזיר תמונה שרונדרה מחדש ויחויב בתשלום."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "הסרת חזית התמונה באמצעות Bria ויצירת רקע במקומה. כל מה ש-Bria מזהה כחזית מוסר, ולא רק אנשים. הפיקסלים שלא שונו נשמרים, אך הפלט מרונדר מחדש בגודל תקני הקרוב למגה-פיקסל אחד.",
+    "display_name": "Bria – הסרת חזית",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות מודרציה"
       }
     },
     "outputs": {
@@ -1001,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "שינוי אווירת התאורה וכיוונה של תמונה באמצעות Bria. ‏Bria מרנדרת מחדש את כל הפריים בכמגה-פיקסל אחד, ולכן התוצאה אינה מיושרת ברמת הפיקסל לקלט.",
+    "display_name": "Bria – תאורה מחדש",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "light_direction": {
+        "name": "כיוון התאורה",
+        "tooltip": "המקום שממנו מגיע האור. אווירות עם אור קשה, כגון צוהריים, זרקור על הנושא ותאורת סטודיו חריפה, מושפעות מכך יותר מכל."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "אווירת התאורה להחלה."
+      },
+      "moderation": {
+        "name": "סינון",
+        "tooltip": "הגדרות סינון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "הנחיה מובנית",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לצורך עריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0.",
     "display_name": "Bria הסרת רקע מתמונה",
@@ -1051,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "החלפת רקע של תמונה באמצעות Bria, המתואר בהנחיה או מונחה על ידי תמונות הפניה. הפיקסלים של הנושא נשמרים; הרקע נוצר סביבם.",
+    "display_name": "Bria החלפת רקע בתמונה",
+    "inputs": {
+      "background": {
+        "name": "רקע",
+        "tooltip": "תארו את הרקע החדש באמצעות הנחיה, או הנחו אותו בעזרת תמונות הפניה."
+      },
+      "background_mode": {
+        "name": "מצב"
+      },
+      "background_prompt": {
+        "name": "הנחיה"
+      },
+      "background_refine_prompt": {
+        "name": "שיפור הנחיה"
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "moderation": {
+        "name": "סינון",
+        "tooltip": "הגדרות סינון"
+      },
+      "original_quality": {
+        "name": "איכות מקורית",
+        "tooltip": "החזרת מידות הפיקסלים המדויקות של הקלט במקום שינוי גודל התוצאה לכמגה-פיקסל אחד. קלט גדול יחזיר תמונה גדולה."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "אותו זרע מחזיר בדרך כלל את אותו רקע; שיפור ההנחיה האוטומטי עדיין עשוי לשנותו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "הנחיה משופרת",
+        "tooltip": "ההנחיה ש-Bria יצרה על בסיסה; ריקה בנתיב של תמונת ההפניה."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "החלפת אובייקט בתמונה באחר המתואר בטקסט חופשי באמצעות Bria. ‏Bria מעבדת מחדש את כל המסגרת בכמגה-פיקסל אחד, לכן התוצאה אינה מיושרת לקלט ברמת הפיקסל.",
+    "display_name": "Bria החלפת אובייקט",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "instruction": {
+        "name": "הוראה",
+        "tooltip": "מה להחליף ובמה, למשל „החלף את התפוח האדום באגס ירוק“."
+      },
+      "moderation": {
+        "name": "סינון",
+        "tooltip": "הגדרות סינון"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "Bria אינה מקבלת כאן seed ומדמיינת מחדש את העריכה בכל קריאה, לכן הפעלות חוזרות עשויות להניב תוצאות שונות. הערך לעולם אינו נשלח: הוא משנה רק את מפתח המטמון של צומת זה, כך שגרף זהה מכל בחינה אחרת יבצע שוב את העריכה במקום להחזיר את התוצאה השמורה במטמון."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "הנחיה מובנית",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לצורך עריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "העברת תמונה לעונה אחרת באמצעות Bria. הסצנה כולה מעובדת מחדש, לכן הנוף עשוי להשתנות מעבר לעונה עצמה. ‏Bria מעבדת מחדש את כל המסגרת בכמגה-פיקסל אחד, לכן התוצאה אינה מיושרת לקלט ברמת הפיקסל.",
+    "display_name": "Bria שינוי עונה",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות ניהול תוכן"
+      },
+      "season": {
+        "name": "עונה",
+        "tooltip": "העונה להחלה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "תקנו צילום ישן או פגום באמצעות Bria: גרעיניות, שריטות וטשטוש יוסרו, ויציקות צבע הקשורות לגיל ינוטרלו. ייתכן ששוליים של מסגרות קרטון וגבולות סטודיו ייחתכו, ופנים יצוירו מחדש. Bria מרנדר מחדש את כל הפריים בכמגה־פיקסל אחד, לכן התוצאה אינה מיושרת ברמת הפיקסל לקלט. השתמשו ב-Bria Increase Resolution כדי להגדיל במקום זאת.",
+    "display_name": "Bria – שחזור תמונה",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "הגדרות ניהול תוכן"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "הסרת הרקע מווידאו באמצעות Bria והחזרת פריימים חתוכים יחד עם מסכת alpha. חבר את שניהם לצומת קומפוזיטינג, או העבר אותם ל-Save WEBM כדי ליצור וידאו שקוף.",
     "display_name": "Bria הסרת רקע מווידאו (שקוף)",
@@ -1073,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "מחקו באמצעות Bria מהסרטון כל דבר שמכוסה במסכה לכל פריים ומלאו את החסר. המסכה חייבת להיות לבנה באזורים שיש להסיר ושחורה במקומות אחרים. Bria מקבלת קליפים באורך מרבי של 5.1 שניות, ב-20 עד 30 פריימים לשנייה ובמידות פיקסלים זוגיות; השמע נשמר כברירת מחדל. הקליפ המוחזר עשוי להיות קצר בכמה פריימים מהקלט.",
+    "display_name": "Bria – מחיקת וידאו",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "מסכה אחת לכל פריים של הסרטון, בצבע לבן במקום שבו נמצא האובייקט למחיקה. ספקו מסכה או סרטון מסכה, לא את שניהם."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "סרטון מסכה שכבר קודד, עם אותן מידות ומספר פריימים כמו הסרטון. ספקו מסכה או סרטון מסכה, לא את שניהם."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "שמרו את רצועת השמע של הקלט."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "קליפ שממנו יש למחוק."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3062,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "משרשר סרטונים לפי הסדר, ללא פענוח של קלטים מקודדים תואמים.",
+    "display_name": "שרשור וידאו",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec המשמש לקידוד טנזורי וידאו. Auto משתמש ב-H.264; סרטונים שכבר קודדו נותרים ללא שינוי."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "פסקול מלא אופציונלי עבור הסרטון המשורשר. מחליף את השמע שמגיע מסרטוני הקלט."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "מקטעי וידאו לשרשור לפי סדר הקלט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "הסרטון המשורשר."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "התניה (ממוצע)",
     "inputs": {
@@ -3095,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "התניה אל"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "טוען התניה שנשמרה באמצעות Save Conditioning, או כל קובץ safetensors עם טנזור 'conditioning', מתיקיית embeddings.",
+    "display_name": "טעינת התניה",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3906,6 +4207,10 @@
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
       },
+      "codec": {
+        "name": "codec",
+        "tooltip": "ניתן לקודד את הסרטון מיד. None שומר את התמונות בצורת טנזור; Auto משתמש ב-H.264."
+      },
       "color_space": {
         "name": "color_space",
         "tooltip": "מרחב הצבע של תמונות הקלט. HDR בוחר BT.2020/HLG ו-HDR PQ בוחר BT.2020/PQ."
@@ -4697,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "סרטון latent ריק של Cosmos",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -4758,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "latent ריק של תמונת Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -4777,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Empty HunyuanVideo 1.0 Latent",
+    "display_name": "latent ריק של סרטון Hunyuan 1.0",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -4799,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "latent ריק של סרטון Hunyuan 1.5",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -4838,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "וידאו latent ריק של LTXV",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה"
@@ -4877,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "latent ריק של Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "גודל_אצווה",
@@ -5018,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "מבנה latent ריק של Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5028,6 +5333,49 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "שמע latent ריק של YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "גודל אצווה"
+      },
+      "seconds": {
+        "name": "שניות"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "סיום לולאה",
+    "inputs": {
+      "accumulate": {
+        "name": "צבירה",
+        "tooltip": "מחזיר את output_value מכל איטרציה כאשר אפשרות זו מופעלת; אחרת מחזיר רק את האיטרציה הסופית."
+      },
+      "next_iteration_value": {
+        "name": "ערך האיטרציה הבאה",
+        "tooltip": "ערך הנשלח מסיום לולאה בחזרה להתחלת לולאה עבור האיטרציה הבאה."
+      },
+      "output_value": {
+        "name": "ערך פלט",
+        "tooltip": "הערך המוחזר על ידי סיום לולאה. מוחזרת האיטרציה הסופית או כל האיטרציות, בהתאם לאפשרות צבירה."
+      },
+      "terminations": {
+        "name": "סיומים",
+        "tooltip": "חברו פלטים שחייבים לפעול בכל איטרציה. הערכים שלהם אינם מוחזרים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פלטים",
+        "tooltip": "ה-output_value של האיטרציה הסופית, או ערכים שנצברו לאורך האיטרציות כאשר אפשרות הצבירה מופעלת."
       }
     }
   },
@@ -5895,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "עורך קטע וידאו לפי הוראה כתובה: הסרה, הוספה או החלפה של אובייקטים, שינוי הסביבה, שינוי סגנון הצילום, שינוי טקסט על המסך או החלפת הדיאלוג המדובר. האורך, המסגור, תנועת המצלמה והשמע מגיעים מקטע המקור.",
+    "display_name": "עריכת וידאו Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "הקטנה אוטומטית",
+        "tooltip": "מקטין אוטומטית לפני ההעלאה מקורות ששטחם גדול מ-1280x704 פיקסלים. יחס הממדים נשמר; סרטונים קטנים יותר אינם משתנים."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "מה לשנות, בשפה פשוטה, עד 4096 תווים. כל דבר שלא תציינו אמור להישאר כפי שהיה. הדיאלוג החלופי חייב להתאים למשך הזמן של הדיבור המקורי, וקטע שקט נשאר שקט."
+      },
+      "safety_tolerance": {
+        "name": "סבילות בטיחות",
+        "tooltip": "סבילות המיתון; 0 הוא הערך המחמיר ביותר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם יש להפעיל מחדש את הצומת; FLUX בוחר זרע משלו, ולכן התוצאות בפועל אינן דטרמיניסטיות ללא קשר לערך זה."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "קטע מקור באורך 0.7 עד 15 שניות, בגודל של לפחות 160x160 פיקסלים. הפלט מרונדר ב-24 fps ומוגבל לכ-0.9 מגה-פיקסל לפריים, לכן מקור גדול יותר יוחזר בגודל קטן יותר."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "הגדלת רזולוציית וידאו פי 1.5 עד 3 באמצעות רזולוציית-העל של FLUX, תוך שימור מדויק של המקור או שיפור יצירתי של פרטיו.",
     "display_name": "הגדלת רזולוציית וידאו של Flux",
@@ -6448,14 +6830,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -6468,6 +6844,42 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "הוראות יסודיות שמכתיבות את התנהגות המודל."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV3": {
+    "description": "יצירת תגובות טקסט באמצעות מודלי Gemini של Google. ספקו הנחיית טקסט, ובאופן אופציונלי תמונה אחת או יותר, קטעי שמע, סרטונים או קבצים כהקשר מולטימודלי.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל Gemini המשמש ליצירת התגובה."
+      },
+      "model_max_output_tokens": {
+        "name": "מספר אסימוני פלט מרבי"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_system_prompt": {
+        "name": "הנחיית מערכת"
+      },
+      "model_thinking_level": {
+        "name": "רמת חשיבה"
+      },
+      "model_video_processing": {
+        "name": "עיבוד וידאו"
       }
     },
     "outputs": {
@@ -6663,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "קבלת פריט מרשימה",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7644,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "הגדלת latent של Hunyuan Video 1.5 באמצעות מודל",
     "inputs": {
       "crop": {
         "name": "חיתוך"
@@ -7982,7 +8410,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "המרת sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). ערך 1.0 ליניארי משתמש באותו לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת על פני האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של הביניים. אלפא ישרה אינה עוברת המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
@@ -8709,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "חילוץ ערכו של מפתח מאובייקט JSON תקין ראשון בטקסט, כולל בלוקי קוד של Markdown.",
     "display_name": "חילוץ טקסט מ-JSON",
     "inputs": {
       "json_string": {
@@ -9703,6 +10132,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "הוספת פריימי מפתח מפורטים ל-latent של וידאו. כל פריים מפתח הוא פריים latent אחד של טוקנים, שמיקום ה-RoPE שלו משתרע על פריים פיקסלים יחיד; הם עוברים הפחתת רעש עם הווידאו ואינם חלק מהפלט המפוענח. המיקום הוא חריץ אחד בכל interval_frames פיקסלים, תוך דילוג על פריימי I2V, על מנחים קיימים ועל פריימי מפתח מפורטים שכבר נמצאים ב-cond. פריימי מפתח מחוברים הם תוכן בלבד וממוקמים מחדש על קנבס זה, אלא אם frame_indices מוגדר. ניתן לחלץ אותם בחזרה באמצעות LTXV Separate Generated Keyframes. נדרשת נקודת ביקורת שאומנה לפריימי מפתח שנוצרו (כזו הכוללת keyframes_abs_pos_embedding).",
+    "display_name": "LTXV הוספת פריימי מפתח שנוצרו",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "אינדקסים אופציונליים של פריימי פיקסלים. השאירו ריק כדי למקם מתוך interval_frames על הקנבס הנוכחי. כאשר מוגדר, רשימה זו קובעת את המיקום (פריימי מפתח מחוברים מותאמים לפי הסדר). הפריים האחרון מותר; פריים 0 אינו מותר (הוא כבר טוקן עצמאי)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "פסיעת פריימי פיקסלים למיקום אוטומטי. ברירת המחדל, 24, היא בערך פריים מפתח אחד לשנייה ב-24 fps. מתבצע דילוג על פיקסלים תפוסים. המאפיין אינו נלקח בחשבון כאשר frame_indices מוגדר."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "תוכן אופציונלי לאתחול פריימי המפתח החדשים. חברו פריימי מפתח מפעולת Separate קודמת (באותו גודל מרחבי), או latent וידאו רגיל להעתקת הפריים הקרוב ביותר בכל חריץ חדש (לדוגמה, לאחר הגדלה זמנית). אלה עדיין עוברים הפחתת רעש ואינם מקובעים כמנחים. אינדקסים מתועדים ב-latent של פריימי מפתח אינם נלקחים בחשבון, אלא אם frame_indices מוגדר. יש לכך השפעה רק כאשר הדגימה מתחילה מתחת ל-sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent וידאו רגיל בעל 5 ממדים, שלצדו ייווצרו פריימי מפתח. יש להוסיף אותם לפני Concat AV Latent."
+      },
+      "negative": {
+        "name": "שלילי",
+        "tooltip": "התניה שלילית שאליה מצורפים פריימי המפתח."
+      },
+      "positive": {
+        "name": "חיובי",
+        "tooltip": "התניה חיובית שאליה מצורפים פריימי המפתח."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "משמש רק לקריאת גורמי קנה המידה של ה-latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "התניה חיובית עם קשב לפריימי מפתח שנוצרו מצורף."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "התניה שלילית עם קשב לפריימי מפתח שנוצרו מצורף."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent של וידאו עם פריימי מפתח שנוצרו שנוספו ל-T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9749,6 +10226,55 @@
       },
       "2": {
         "name": "לטנט",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "מקבע latent שכבר קודד כמדריך, כאשר המדריך מגיע משלב מוקדם יותר ולא מתמונה. אותה השפעה כמו LTXV Add Guide ללא מחזור פענוח/קידוד של VAE. מדריך שגודלו המרחבי קטן מהיעד (הפניית IC-LoRA או הפניית פירוט) מורחב על גבי רשת דלילה, ומיקומי הסיום של RoPE שלו מורחבים באותו יחס כדי שיכסה את קנבס היעד במקום להתייחס רק לפינה השמאלית העליונה שלו.",
+    "display_name": "LTXV הוספת מדריך latent",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "מסכה מרחבית אופציונלית במרחב פיקסלים. שולטת בהשפעת ההתניה לפי אזור באמצעות קשב עצמי, ומוכפלת ב-strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "latent של המדריך. גודלו המרחבי חייב לחלק את גודל היעד באותו מספר שלם בשני הצירים; גודל זהה מקבע אותו כפי שהוא, וגודל של חצי מטופל כהפניית IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ה-latent של וידאו היעד שעליו מקובע המדריך."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "אינדקס פריים latent שממנו מתחיל המדריך, נספר בפריימי latent ולא בפריימי פיקסלים. ערכים שליליים ממקמים את המדריך בפריימים שלפני תחילת ה-latent, ולא נספרים לאחור מסופו."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "מוגבל ל-1.0. מדריך מורחב מסמן את מיקומי הריפוד שלו באמצעות מסכת denoise שלילית, כדי שהמודל ישמיט אותם; מעל 1.0 גם המיקומים הנשמרים יהפכו לשליליים והמדריך כולו יושמט. להגברה מעבר ל-1.0, השתמשו ב-attention_mask במקום זאת."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -9989,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "אודיו latent ריק של LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -10012,6 +10538,67 @@
       "0": {
         "name": "לטנט",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVFreezeLatent": {
+    "description": "מגדיר את noise_mask ל-0 כדי ש-latent זה יישאר נקי במהלך הדגימה. פועל על וידאו או אודיו. שימושים אופייניים: הקפאת אודיו לפני Concat AV כדי שיספק רק קשב צולב, או הקפאת כל latent שאין לבצע לו denoise.",
+    "display_name": "LTXV הקפאת latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent של וידאו או אודיו להקפאה. אודיו הוא 4D; וידאו הוא 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "מקבע פריימי מפתח שנוצרו בשלב מוקדם יותר כמדריכי תמונה קפואים על קנבס מאוחר יותר. הם מפוענחים כפריימים עצמאיים, משנים גודל בעת הצורך, ונכתבים עם noise_mask=0 כדי שלא יעברו denoise שוב. לאחר הגדלה זמנית, האינדקסים המתועדים מותאמים בקנה מידה מהקנבס שבו נוצרו לקנבס זה (אותם רגעים). השתמשו ב-override_frame_indices כדי להגדיר מיקומים במפורש. כדי להמשיך ליצור (ולבצע denoise) פריימי מפתח במיקומים חדשים, השתמשו ב-Add Generated Keyframes במקום זאת.",
+    "display_name": "LTXV המרת פריימי מפתח שנוצרו למדריכים",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "פלט תמונות המפתח של LTXV Separate Generated Keyframes, הנושא את אינדקס פריים הפיקסלים שבו נוצרה כל תמונת מפתח."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ה-latent של וידאו היעד שאליו יתווספו המדריכים, לדוגמה זה שעבר הגדלה זמנית."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "אופציונלי — קבע בפריימי פיקסלים אלה במקום במיקומים המתועדים (או המותאמים אוטומטית). ספק אינדקס אחד לכל תמונת מפתח. השאר ריק כדי להשתמש מחדש במיקומים המתועדים, או כדי להתאים את קנה המידה שלהם כאשר אורך קנבס היעד שונה (לדוגמה, לאחר temporal x2)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "עוצמת המנחה. 1.0 הוא קיבוע קשיח; ערכים נמוכים יותר מרפים אותו."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "התניה חיובית עם תמונות המפתח מקובעות כמנחי תמונה."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "התניה שלילית עם תמונות המפתח מקובעות כמנחי תמונה."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent של סרטון היעד עם תמונות המפתח שנוספו כמנחים קפואים."
       }
     }
   },
@@ -10242,6 +10829,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "פצל מתוך latent שנדגם את תמונות המפתח שנוצרו שנוספו על ידי LTXV Add Generated Keyframes, והסר אותן מההתניה. הפרד אותן לפני הגדלה מרחבית של latent הסרטון. אל תפעיל תחילה את LTXV Crop Guides — הוא מתייחס לתמונות מפתח שנוצרו כמנחים חד-פעמיים ומשמיט אותן.",
+    "display_name": "LTXV הפרדת תמונות מפתח שנוצרו",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "החזר את תמונות המפתח כאצווה של latents בעלי פריים יחיד. השאר כבוי כדי לקבל אותן כ-latent יחיד מרובה פריימים, כפי שמצפים ה-latent upsampler ו-Add Generated Keyframes מאוחר יותר."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "התניה חיובית עם הסרת מטא-נתונים של תמונות מפתח שנוצרו."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "התניה שלילית עם הסרת מטא-נתונים של תמונות מפתח שנוצרו."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent של סרטון שבו הוסרו תמונות המפתח שנוצרו."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "תמונות המפתח שחולצו, המסומנות באמצעות generated_keyframe_indices ו-generated_keyframe_num_frames. הזן אותן אל Add Generated Keyframes מאוחר יותר כדי לאתחל חריצים חדשים, או אל Generated Keyframes To Guides כדי לקבע אותן כמנחי תמונה קפואים (האינדקסים ממופים מחדש אם אורך הקנבס השתנה)."
       }
     }
   },
@@ -10813,7 +11437,8 @@
     "display_name": "טעינת 3D (מתקדם)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       },
       "model_file": {
         "name": "model_file"
@@ -10822,29 +11447,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממדי שנטען (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו Y כלפי מעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -11077,6 +11703,73 @@
       "1": {
         "name": "טקסטים",
         "tooltip": "רשימת כתוביות טקסט."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -12180,6 +12873,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "ממיר חיזוי מפוענח של Marigold V2 לתמונה: עומק מנורמל שבו הקרוב בהיר, נורמלי שטח ביחידת אורך, או אלבדו sRGB.",
+    "display_name": "עיבוד לאחר Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "שילוב מסכות",
     "inputs": {
@@ -12525,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "הפעל מעבר עידון נוסף לקבלת גאומטריה נאמנה יותר למקור עם פרטי פני שטח עדינים יותר."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "הרזולוציה של מעבר ה-ultra: ‏2k מפעיל אותו ב-2048³, ‏4k ב-4096³ לפרטי שטח עדינים ביותר. ‏4k דורש meshy-7.1 או גרסה עדכנית יותר. בשימוש רק כאשר ultra_mode מופעל."
       }
     },
     "outputs": {
@@ -12591,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "מצב סימטריה"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "הפעל מעבר ליטוש נוסף ב-2048³ לקבלת גאומטריה בנאמנות גבוהה יותר עם פרטי שטח עדינים יותר."
       }
     },
     "outputs": {
@@ -12732,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "הפעל מעבר עידון נוסף לקבלת גאומטריה נאמנה יותר למקור עם פרטי פני שטח עדינים יותר."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "הרזולוציה של מעבר ה-ultra: ‏2k מפעיל אותו ב-2048³, ‏4k ב-4096³ לפרטי שטח עדינים ביותר. ‏4k דורש meshy-7.1 או גרסה עדכנית יותר. בשימוש רק כאשר ultra_mode מופעל."
       }
     },
     "outputs": {
@@ -13490,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על העומק החזוי. מעברים נוספים מחדדים פרטים עדינים וקצוות בעלות ליניארית בקירוב. 0 משבית את החידוד. מתעלם מ-MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = הכי מהיר, 9 = הכי מפורט."
@@ -13520,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 בלבד: מעברי חידוד נפחיים דלילים על העומק החזוי. מעברים נוספים מחדדים פרטים עדינים וקצוות בעלות ליניארית בקירוב. 0 משבית את החידוד. מתעלם מ-MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -13586,13 +14316,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "בוחר את מימוש תשומת הלב הצפופה עבור המודל. בעת שימוש עם Block Sparse Attention, נעשה שימוש ב-backend זה בכל פעם שתשומת לב דלילה אינה פעילה או אינה נתמכת.",
+    "display_name": "backend תשומת הלב של המודל",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "backend תשומת הלב הצפופה. תשומת הלב של Comfy Kitchen משתמשת בתשומת לב INT8 מקוונטטת וזמינה רק במעבדי GPU של Nvidia ו-AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "המודל לתיקון."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מודל",
+        "tooltip": "המודל עם מנגנון הקשב שנבחר."
       }
     }
   },
@@ -15819,6 +16558,9 @@
       "model": {
         "name": "מודל"
       },
+      "sampling": {
+        "name": "דגימה"
+      },
       "shift": {
         "name": "היסט"
       }
@@ -16177,7 +16919,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "יוצר תמונות דרך נקודת הקצה של OpenAI GPT Image.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16264,6 +17006,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "יצירה או עריכה של תמונות דרך OpenRouter באמצעות מודלי MAI-Image-2.6 של Microsoft: טקסט לתמונה, או עריכה מונחית-תמונה עם עד חמש תמונות ייחוס, בשבעה יחסי רוחב-גובה וברזולוציית 1K או 1.5K.",
+    "display_name": "תמונת OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל התמונות של OpenRouter המשמש ליצירת התמונה."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {
@@ -16671,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "התניה של Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -16684,6 +17456,45 @@
       "image": {
         "name": "תמונה",
         "tooltip": "תמונה שעברה עיבוד מראש מ־ImageCropToMask (pad_factor=1.1 עבור Pixal3D)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "התניה מרובת-תצוגות של Pixal3D",
+    "inputs": {
+      "back": {
+        "name": "אחורי",
+        "tooltip": "תצוגה מרובעת של הצד האחורי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט משתרע על כ-1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, באותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר קדמי, שמאל, אחורי, ימין) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision מסוג DINOv3 ViT-L/16 עם משקלי NAF כלולים."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "שדה הראייה האופקי במעלות של התצוגות כפי שממוסגרות: 20 לעיבודי rig ולרוב המחוללים מרובי-התצוגות, או MoGeGeometryToFOV באחת מהתצוגות עבור תמונות."
+      },
+      "front": {
+        "name": "קדמי",
+        "tooltip": "תצוגה מרובעת של הצד הקדמי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט משתרע על כ-1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, באותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר קדמי, שמאל, אחורי, ימין) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "left": {
+        "name": "שמאל",
+        "tooltip": "תצוגה מרובעת של הצד השמאלי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט משתרע על כ-1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, באותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר קדמי, שמאל, אחורי, ימין) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "right": {
+        "name": "ימין",
+        "tooltip": "תצוגה מרובעת של הצד הימני של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט משתרע על כ-1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, באותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר קדמי, שמאל, אחורי, ימין) היא החזית שאליה מותאמת תנוחת ה-mesh."
       }
     },
     "outputs": {
@@ -17142,10 +17953,12 @@
     "display_name": "תצוגה מקדימה בתלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17158,29 +17971,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת-ממדי (glb/obj/stl/etc.) מצומת תלת-ממדי קודם."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם עם ציר Y כלפי מעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -17411,6 +18225,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "מנפיש תמונה לכדי וידאו באמצעות מודלי הווידאו של Pruna, עם אפשרות לפריים אחרון, צליל שנוצר או רצועת שמע.",
+    "display_name": "Pruna P-Video-2 מתמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_draft": {
+        "name": "טיוטה"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "יוצר וידאו מפרומפט טקסט באמצעות מודלי הווידאו של Pruna, עם צליל שנוצר באופן אופציונלי או רצועת שמע להפעלתו.",
+    "display_name": "Pruna P-Video-2 מטקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "טיוטה"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "מתכונים:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "טעינת CLIP (מרובע)",
@@ -17511,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "מאפשר להגדיר את התקן מטמון ה-KV ואת הכימות; כברירת מחדל המודל משתמש באפשרות auto. כימות עשוי להאיץ תהליכי עבודה של עריכה כאשר הזיכרון מוגבל.",
+    "display_name": "מטמון Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "התקן",
+        "tooltip": "auto משתמש תחילה ב-VRAM פנוי ולאחר מכן ב-RAM. ‏cpu ‏(RAM) נטען מראש במקביל לחישוב ופוגע מעט במהירות. ‏off מחשב מחדש את הקידומת בכל שלב, ולכן הוא איטי יותר אך זו הדרך היחידה להוציא את המטמון מהמשוואה."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "דיוק האחסון. ברירת המחדל היא ללא אובדן. int8 מקטין את המטמון בחצי בדיוק של bf16 בקירוב, ואילו int4 מקטין אותו לרבע אך מכפיל בקירוב את השגיאה בכל שלב."
+      },
+      "model": {
+        "name": "מודל"
       }
     },
     "outputs": {
@@ -20519,48 +21442,52 @@
     "display_name": "שמירת תלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "מידע מצלמה"
+        "name": "מידע מצלמה",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, תקריב וסוג."
       },
       "filename_prefix": {
         "name": "קידומת שם קובץ"
       },
       "height": {
-        "name": "גובה"
+        "name": "גובה",
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "מודל תלת-ממד",
         "tooltip": "קובץ מודל תלת-ממדי מצומת תלת-ממד במעלה הזרם."
       },
       "model_3d_info": {
-        "name": "מידע מודל תלת-ממד"
+        "name": "מידע מודל תלת-ממד",
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם עם ציר Y כלפי מעלה)."
       },
       "viewport_state": {
         "name": "מצב תצוגה"
       },
       "width": {
-        "name": "רוחב"
+        "name": "רוחב",
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממדי (glb/obj/stl/etc.) מצומת תלת־ממדי במעלה הזרם."
       },
       "1": {
         "name": "מידע מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה מעלה)."
       },
       "2": {
         "name": "מידע מצלמה",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "רוחב",
-        "tooltip": null
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "גובה",
-        "tooltip": null
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -20705,6 +21632,24 @@
     "outputs": {
       "0": {
         "name": "audio",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveConditioning": {
+    "description": "שומר התניה בתיקיית הפלט כ-safetensors; העבירו את הקובץ אל models/embeddings כדי לטעון אותו באמצעות Load Conditioning, למשל כדי לדלג על מקודד הטקסט.",
+    "display_name": "שמירת התניה",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
         "tooltip": null
       }
     }
@@ -21401,6 +22346,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "מתמלל מנגינות קוליות ואינסטרומנטליות ממוזיקה לתיווי ABC. חברו את פלט abc לצומת YuE2 Generate Music והשתמשו במצב התואם.",
+    "display_name": "SheetSage2 אודיו ל-ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "ערבוב אקראי של סדר התמונות ברשימה.",
     "display_name": "ערבב רשימת תמונות",
@@ -21827,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "תמונת latent ריקה של Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "גודל אצווה"
@@ -21870,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Stable Cascade שלב C קידוד VAE",
     "inputs": {
       "compression": {
         "name": "דחיסה"
@@ -22007,6 +22974,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "התחלת לולאה",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "שימוש חוזר בתוצאות איטרציה שלא השתנו מהפעלות קודמות. השביתו כדי לבצע שוב כל איטרציה."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "הערך הנחשף כ-current_iteration_value באיטרציה הראשונה."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "מצב איטרציית הלולאה."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "חברו את iteration_index מ-Start Loop חיצונית כדי לקנן לולאה זו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "האינדקס של איטרציית הלולאה הנוכחית."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "True במהלך האיטרציה הראשונה של הלולאה."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "True במהלך האיטרציה האחרונה של הלולאה."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "הפריט הנוכחי מהרשימה בעת שימוש במצב List. הערך הוא None במצבי Simple ו-For."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "ערך המועבר לאורך הלולאה עבור האיטרציה הנוכחית: initial_iteration_value באיטרציה הראשונה, ולאחר מכן next_iteration_value מ-End Loop בכל איטרציה עוקבת."
       }
     }
   },
@@ -22786,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "קידוד טקסט Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות ייחוס, הנצפות על ידי מקודד הטקסט ומשולבות ברצף כ־VAE latents."
+      },
+      "negative_prompt": {
+        "name": "הנחיה שלילית"
+      },
+      "prompt": {
+        "name": "הנחיה"
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "גודלן של תמונות הייחוס משתנה לכ־רזולוציה x רזולוציה פיקסלים, בכפולות של 32, תוך שמירה על יחס הממדים. 0 משאיר כל תמונת ייחוס בגודלה המקורי, מעוגל לכפולה של 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent ריק בגודל תמונת הייחוס הראשונה, כדי להתאים לדגימה, שכן כל שינוי גודל אחר מזיז את העריכה."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "קידוד טקסט Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -22809,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "קידוד טקסט Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -22885,6 +23937,10 @@
       "max_length": {
         "name": "אורך_מקסימלי"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי עם ראש חיזוי מרובה־טוקנים של נקודת הביקורת. ללא משקלי MTP אין השפעה. auto מתאים את עומק הטיוטה; 2-5 מקבע אותו. הפלט שנדגם נשאר בעל התפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו זרע."
+      },
       "prompt": {
         "name": "פרומפט"
       },
@@ -22946,6 +24002,10 @@
       },
       "max_length": {
         "name": "אורך מרבי"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי עם ראש חיזוי מרובה־טוקנים של נקודת הביקורת. ללא משקלי MTP אין השפעה. auto מתאים את עומק הטיוטה; 2-5 מקבע אותו. הפלט שנדגם נשאר בעל התפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו זרע."
       },
       "prompt": {
         "name": "פרומפט"
@@ -23462,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "התניה Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23484,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "שלב צורה Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -23512,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "שלב מרקם Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -23744,7 +24804,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: תמונה למודל",
+    "display_name": "Tripo: תמונה למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -23817,6 +24877,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: תמונה למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "התאם מודלים עם מרקם לגודלם בעולם האמיתי, במטרים. Tripo שומר את הגודל כהתמרת הסצנה של המודל ומטמיע אותו בעת המרה, הוספת שלד או התאמה מחדש של המודל; מתעלם מכך ללא מרקם."
+      },
+      "face_limit": {
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל־Tripo לבחור באופן מסתגל (כ־1.4M פאות ב־v3.x standard, 2M ב־detailed). Tripo מגביל בשקט: v2.5 ל־500,000, רשתות quad ל־150,000."
+      },
+      "geometry_quality": {
+        "name": "איכות גאומטריה"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "model_seed": {
+        "name": "זרע מודל"
+      },
+      "model_version": {
+        "name": "גרסת מודל",
+        "tooltip": "גרסת המודל לשימוש ביצירה"
+      },
+      "orientation": {
+        "name": "כיוון"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר PBR (צבע בסיס, מתכתיות, חספוס, נורמל). נדרש מרקם."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת quad. Tripo מספקת רשתות quad כ־FBX, ולכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת דלת־פוליגונים עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עלולים להיכשל."
+      },
+      "texture": {
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. השבתה מחזירה גאומטריה בלבד ומתעלמת מ־pbr."
+      },
+      "texture_alignment": {
+        "name": "יישור מרקם"
+      },
+      "texture_quality": {
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ב־8K."
+      },
+      "texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -24139,6 +25268,192 @@
       }
     }
   },
+  "TripoPSeriesImageToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים עם טופולוגיה נקייה מתוך תמונה, כרשת משולשים (GLB) או כרשת הנשלטת בידי quad ‏(FBX).",
+    "display_name": "Tripo P2: מתמונה למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים עם טופולוגיה נקייה מתצוגה קדמית ומאחת עד שלוש מהתצוגות השמאלית, האחורית והימנית, כרשת משולשים (GLB) או כרשת הנשלטת בידי quad ‏(FBX).",
+    "display_name": "Tripo P2: מתצוגות מרובות למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "זרע המודל"
+      },
+      "model_orientation": {
+        "name": "כיוון"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_quad": {
+        "name": "מרובעים"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_alignment": {
+        "name": "יישור מרקם"
+      },
+      "model_texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר אפשרות המרובעים מופעלת."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר אפשרות המרובעים מופעלת."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "יוצר מודל תלת־ממדי דל־פוליגונים עם טופולוגיה נקייה מתוך הנחיית טקסט, כרשת משולשים (GLB) או כרשת בעלת דומיננטיות של מרובעים (FBX).",
+    "display_name": "Tripo P2: טקסט למודל",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל מסדרת P של Tripo."
+      },
+      "model_auto_size": {
+        "name": "גודל אוטומטי"
+      },
+      "model_compress_geometry": {
+        "name": "דחיסת גאומטריה"
+      },
+      "model_export_uv": {
+        "name": "ייצוא UV"
+      },
+      "model_face_limit": {
+        "name": "מגבלת פאות"
+      },
+      "model_image_seed": {
+        "name": "זרע תמונה"
+      },
+      "model_model_seed": {
+        "name": "זרע המודל"
+      },
+      "model_negative_prompt": {
+        "name": "הנחיה שלילית"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quad": {
+        "name": "מרובעים"
+      },
+      "model_texture": {
+        "name": "מרקם"
+      },
+      "model_texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר אפשרות המרובעים מופעלת."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר אפשרות המרובעים מופעלת."
+      }
+    }
+  },
   "TripoRetargetNode": {
     "display_name": "Tripo: התאמת מודל מרושת",
     "inputs": {
@@ -24148,7 +25463,7 @@
       },
       "animation": {
         "name": "אנימציה",
-        "tooltip": "הנפשות preset:* פועלות עם שני דגמי ה-rig; הנפשות preset:biped:* דורשות rig שנוצר עם model v1.0-20240301."
+        "tooltip": "הנפשות preset:* פועלות עם שני מודלי ה-rig. הנפשות preset:biped:* מיועדות ל-rig-ים ממודל v1.0-20240301; rig מסוג v2.5 מקבל רק chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn ו-walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24312,6 +25627,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "מפצל מודל לחלקים בעלי משמעות סמנטית ונותן להם שמות. מתמונה, Tripo יוצר תחילה את המודל. מזהה המשימה של הפילוח מזין את Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model ו-Tripo: Convert model, בדומה לתוצאה של Tripo: Segment Model.",
+    "display_name": "Tripo: פילוח חכם",
+    "inputs": {
+      "source": {
+        "name": "מקור",
+        "tooltip": "פילוח מודל קיים, או יצירת מודל מתמונה ופילוחו."
+      },
+      "source_granularity": {
+        "name": "רמת פירוט"
+      },
+      "source_hint": {
+        "name": "רמז"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת פילוח",
+        "tooltip": null
+      },
+      "1": {
+        "name": "מזהה משימת מודל",
+        "tooltip": "המודל שפוצל למקטעים (שנוצר מהתמונה או יובא)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "שמות חלקים",
+        "tooltip": "שמות החלקים, מופרדים בפסיקים."
+      },
+      "4": {
+        "name": "חלקים",
+        "tooltip": "התיאור של Tripo לחלקים שאיתרה."
+      },
+      "5": {
+        "name": "מסכה",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "קידוד התמונה עם DINOv3 ו-Flux2 VAE ל-TripoSplat conditioning חיובי/שלילי, ויצירת יעד רעש בגודל קבוע (latent + מצלמה) עבור KSampler",
     "display_name": "TripoSplat Conditioning",
@@ -24408,7 +25765,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: טקסט למודל",
+    "display_name": "Tripo: טקסט למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24484,8 +25841,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: טקסט למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "גודל אוטומטי",
+        "tooltip": "שינוי קנה המידה של מודלים עם טקסטורה לגודלם האמיתי בעולם, במטרים. Tripo מאחסנת את הגודל כטרנספורמציית הסצנה של המודל ומטמיעה אותו כאשר המודל מומר, מרוגד או מותאם מחדש; מתעלמת מכך ללא טקסטורה."
+      },
+      "face_limit": {
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. -1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, 2M ב-detailed). Tripo מגבילה ללא התראה: v2.5 ל-500,000, ורשתות quad ל-150,000."
+      },
+      "geometry_quality": {
+        "name": "איכות גאומטריה"
+      },
+      "image_seed": {
+        "name": "זרע תמונה"
+      },
+      "model_seed": {
+        "name": "זרע מודל"
+      },
+      "model_version": {
+        "name": "גרסת מודל"
+      },
+      "negative_prompt": {
+        "name": "הנחיה שלילית",
+        "tooltip": "עד 255 תווים."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר PBR (צבע בסיס, מתכתי, חספוס, נורמל). דורש texture."
+      },
+      "prompt": {
+        "name": "הנחיה"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת quad. Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "low-poly חכם",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500-20,000 פאות, quad 500-10,000). מתאים במיוחד לנושאים פשוטים; נושאים מורכבים עלולים להיכשל."
+      },
+      "texture": {
+        "name": "טקסטורה",
+        "tooltip": "יצירת מפות טקסטורה. מצב כבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
+      },
+      "texture_quality": {
+        "name": "איכות טקסטורה",
+        "tooltip": "detailed = טקסטורות HD, extreme = טקסטורות 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "זרע טקסטורה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: מרקם למודל",
+    "display_name": "Tripo: הוספת טקסטורה למודל (מדור קודם)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24543,6 +25969,62 @@
         "tooltip": "ריק כאשר המקור הוא רשת מרובעת או ייבוא FBX."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: מודל טקסטורה",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "מודל טקסטורה: v3.0 לרשתות שנוצרו עם v3.x, ‏v2.5 לרשתות שנוצרו עם v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים מופרדים בפסיקים מתוך Tripo: Segment Model ליצירת טקסטורות. השארה ריקה יוצרת טקסטורות לכל החלקים."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומרים מסוג PBR (צבע בסיס, מתכתיות, חספוס, נורמל); כיבוי מספק טקסטורת צבע אחיד."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "תמונות ייחוס המנחות את הטקסטורות. לא ניתן לשלב עם texture_prompt או style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "תמונת ייחוס לסגנון האמנותי של הטקסטורות. בשימוש רק יחד עם texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "הנחיית טקסט אופציונלית ליצירת טקסטורות. נדרשת בפועל עבור מודלים מיובאים (Tripo: Import Model), שאין להם תמונת מקור שממנה ניתן להסיק צבעים. לא ניתן לשלב עם תמונות ייחוס."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = טקסטורות HD, extreme = טקסטורות Ultra ב־8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר המקור הוא רשת מרובעת או ייבוא FBX."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
       }
@@ -24770,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "פענוח VAE של Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -25078,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "פענוח צורה באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -25099,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "פענוח מבנה באמצעות VAE של Trellis2",
     "inputs": {
       "resolution": {
         "name": "רזולוציה"
@@ -25119,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "פענוח טקסטורה באמצעות VAE של Trellis2",
     "inputs": {
       "samples": {
         "name": "דגימות"
@@ -28013,6 +29495,114 @@
     "outputs": {
       "0": {
         "name": "רשת",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "יוצר את סימון ABC של שיר מתוך סגנון ומילים. חברו את abc לצומת YuE2 Generate Music.",
+    "display_name": "YuE2 יצירת ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "מספר אסימוני ABC האחרונים המשמשים להענשת חזרתיות."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "style": {
+        "name": "סגנון"
+      },
+      "temperature": {
+        "name": "טמפרטורה"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "יוצר אסימוני מוזיקה והתניה אקוסטית מסגנון, מילים ותיווי ABC. הזינו את מספר השניות שנוצר לצומת Empty YuE2 Latent Audio. קלט ABC ריק מתעלם מהמצב הנבחר.",
+    "display_name": "YuE2 יצירת מוזיקה",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "חברו את מחולל ה-ABC או ספקו תווים ערוכים. השאירו ריק כדי להשתמש במצב כבוי באופן אוטומטי."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "הנחיה אוטורגרסיבית עבור סגנון ומילים. 1.0 משבית CFG, בהתאם לתהליך העבודה של ABC. השתמשו ב-1.01 כדי להתאים להנחיה המקורית במצב כבוי."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "משך מרבי בשניות. מופחת אוטומטית עבור פרומפטים ארוכים; היצירה עשויה להסתיים מוקדם יותר."
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "מלא: יוצר מנגינה ואקורדים; מנגינה: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "style": {
+        "name": "סגנון"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "שניות",
         "tooltip": null
       }
     }

@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "توجه تنکِ بلوکی از طریق comfy_kitchen: هر بلوک پرس‌وجو دقیقاً به زیرمجموعه‌ای انتخاب‌شده از بلوک‌های کلید توجه می‌کند و محاسبات توجه را کاهش می‌دهد. افزایش سرعت نسبی با طول دنباله بیشتر می‌شود، زیرا دنباله‌های کوتاه معمولاً با حالت متراکم سریع‌تر هستند. خارج از بازهٔ زمان‌بندی فعال، برای dense_blocks و دنباله‌های کوتاه‌تر از min_tokens، مدل از بک‌اند توجه متراکم مدل فعال استفاده می‌کند.",
-    "display_name": "توجه تنکِ بلوکی",
+    "description": "توجه تنکِ بلوکی را به لایه‌های توجه واجدشرایط مدل اعمال می‌کند و محاسبات را برای توالی‌های بلند کاهش می‌دهد. افزایش سرعت با طول توالی بیشتر می‌شود، زیرا توالی‌های کوتاه معمولاً با حالت متراکم سریع‌تر هستند. خارج از start/end_percent، در dense_blocks و زیر min_tokens، مدل از بک‌اند توجه متراکم مدل استفاده می‌کند. برای انتخاب آن حالت جایگزین، از node «Model Attention Backend» استفاده کنید.",
+    "display_name": "توجه تنکِ مدل",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "پس از این نقطه از زمان‌بندی، متراکم است."
+        "tooltip": "نقطه درصدیِ پایان توجه تنک. پس از این نقطه، توجه به حالت متراکم بازمی‌گردد."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "دنباله‌های کوتاه‌تر از این مقدار متراکم باقی می‌مانند."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "مدلی که باید patch شود."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "نحوهٔ انتخاب دقیق بلوک‌های کلید. Sol-Attn: آستانهٔ تطبیقی برای هر سر/بلوک. top-k (SLA): keep_percent ثابت در همه‌جا؛ فقط با وزن‌های آموزش‌دیده توصیه می‌شود. VSA (FastVideo): کاشی‌بندی مکعبی و شاخهٔ درشت FastH3-VSA که به وزن‌های آموزش‌دیده برای آن نیاز دارد."
+        "tooltip": "روش مورد استفاده برای انتخاب بلوک‌های کلیدی جهت توجه کامل در سطح توکن. sol-attn: ‏Sparsifying Online Attention برای هر سرِ توجه و بلوک پرس‌وجو از یک آستانه تطبیقیِ بدون نیاز به آموزش استفاده می‌کند. sla: ‏Sparse-Linear Attention درصد ثابتی از بلوک‌های کلیدی با بالاترین امتیاز را نگه می‌دارد؛ فقط با وزن‌های مدلی استفاده کنید که برای این الگو آموزش دیده‌اند. vsa: ‏Video Sparse Attention (FastVideo) از کاشی‌کاری مکعب ویدیویی 3D و یک شاخه توجه درشتِ آموخته‌شده استفاده می‌کند؛ به وزن‌های مدل FastH3 نیاز دارد."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,10 +807,89 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "پیش از این نقطه از زمان‌بندی، متراکم است."
+        "tooltip": "نقطه درصدیِ آغاز توجه تنک. پیش از این نقطه، توجه متراکم باقی می‌ماند."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "ثبت می‌کند که هر شکلِ توجه از توجه تنک استفاده کرده است یا چرا متراکم مانده است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "مدلی که توجه تنکِ بلوکی روی آن اعمال شده است."
+      }
+    }
+  },
+  "BriaAddObject": {
+    "description": "شیئی را که با متن ساده توصیف شده است، با استفاده از Bria به تصویر وارد می‌کند. Bria کل فریم را در حدود ۱ مگاپیکسل بازترسیم می‌کند؛ بنابراین نتیجه با ورودی هم‌تراز پیکسلی نیست.",
+    "display_name": "افزودن شیء Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "چه چیزی و در کجا اضافه شود؛ مانند «یک گلدان قرمز با گل‌ها روی میز قرار بده»."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria در اینجا seed دریافت نمی‌کند و در هر فراخوانی ویرایش را دوباره تصور می‌کند؛ بنابراین اجراهای تکراری ممکن است متفاوت باشند. این مقدار هرگز ارسال نمی‌شود: فقط کلید کش این node را تغییر می‌دهد تا گرافی که در غیر این صورت یکسان است، به‌جای بازگرداندن نتیجه کش‌شده، ویرایش را دوباره اجرا کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توصیف ساخت‌یافته تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "شیئی را که در متن ساده نام برده شده است، با استفاده از Bria از تصویر حذف می‌کند. Bria کل فریم را در حدود ۱ مگاپیکسل بازترسیم می‌کند؛ بنابراین نتیجه با ورودی هم‌تراز پیکسلی نیست.",
+    "display_name": "حذف با متن Bria",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "نام شیئی که باید حذف شود؛ مانند «چراغ». چند شیء را می‌توان هم‌زمان نام برد؛ مانند «تلفن و مدادها». نام بردن از چیزی که در تصویر نیست نیز همچنان یک تصویر بازترسیم‌شده را بازمی‌گرداند و هزینه دارد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توصیف ساخت‌یافته تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "پیش‌زمینه یک تصویر را با Bria حذف می‌کند و به‌جای آن پس‌زمینه ایجاد می‌کند. هر چیزی که Bria آن را پیش‌زمینه تشخیص دهد حذف می‌شود، نه فقط افراد. پیکسل‌های دست‌نخورده حفظ می‌شوند، اما خروجی با اندازه استاندارد نزدیک به ۱ مگاپیکسل بازترسیم می‌شود.",
+    "display_name": "حذف پیش‌زمینه Bria",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
       }
     },
     "outputs": {
@@ -1001,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "حال‌وهوای نورپردازی و جهت نور یک تصویر را با استفاده از Bria تغییر می‌دهد. Bria کل فریم را در حدود ۱ مگاپیکسل بازترسیم می‌کند؛ بنابراین نتیجه با ورودی هم‌تراز پیکسلی نیست.",
+    "display_name": "تغییر نور Bria",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "light_direction": {
+        "name": "جهت نور",
+        "tooltip": "جهت تابش نور. فضاهای با نور سخت، مانند نیم‌روز، نورافکن روی سوژه و نورپردازی خشن استودیویی، بیشترین واکنش را به آن دارند."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "حال‌وهوای نورپردازی که باید اعمال شود."
+      },
+      "moderation": {
+        "name": "نظارت محتوا",
+        "tooltip": "تنظیمات نظارت محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "پرامپت ساختاریافته",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "حذف پس‌زمینه از یک تصویر با استفاده از Bria RMBG ۲.۰.",
     "display_name": "حذف پس‌زمینه تصویر Bria",
@@ -1051,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "پس‌زمینهٔ یک تصویر را با Bria جایگزین کنید؛ با پرامپت توصیف‌شده یا با تصاویر مرجع هدایت‌شده. پیکسل‌های سوژه حفظ می‌شوند و پس‌زمینه پیرامون آن‌ها تولید می‌شود.",
+    "display_name": "Bria جایگزینی پس‌زمینهٔ تصویر",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه",
+        "tooltip": "پس‌زمینهٔ جدید را با یک پرامپت توصیف کنید یا آن را با تصاویر مرجع هدایت کنید."
+      },
+      "background_mode": {
+        "name": "حالت"
+      },
+      "background_prompt": {
+        "name": "پرامپت"
+      },
+      "background_refine_prompt": {
+        "name": "پرامپت پالایش"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "نظارت محتوا",
+        "tooltip": "تنظیمات نظارت محتوا"
+      },
+      "original_quality": {
+        "name": "کیفیت اصلی",
+        "tooltip": "به‌جای مقیاس‌بندی نتیجه به حدود ۱ مگاپیکسل، اندازهٔ دقیق پیکسل ورودی را بازمی‌گرداند. در این صورت، ورودی بزرگ تصویری بزرگ بازمی‌گرداند."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "یک بذر یکسان معمولاً پس‌زمینهٔ یکسانی ایجاد می‌کند؛ بااین‌حال، پالایش خودکار پرامپت همچنان می‌تواند آن را تغییر دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "پرامپت پالایش‌شده",
+        "tooltip": "پرامپتی که Bria بر اساس آن تولید کرده است؛ در مسیر تصویر مرجع خالی است."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "یک شیء را در تصویر با شیء دیگری که با متن ساده توصیف شده است، با استفاده از Bria جایگزین کنید. Bria کل فریم را با حدود ۱ مگاپیکسل بازپردازی می‌کند؛ بنابراین نتیجه از نظر پیکسل با ورودی هم‌تراز نیست.",
+    "display_name": "Bria جایگزینی شیء",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "چه چیزی با چه چیزی جایگزین شود؛ برای نمونه «سیب قرمز را با گلابی سبز جایگزین کنید»."
+      },
+      "moderation": {
+        "name": "نظارت محتوا",
+        "tooltip": "تنظیمات نظارت محتوا"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "Bria در اینجا بذر نمی‌پذیرد و در هر فراخوانی ویرایش را دوباره تصور می‌کند؛ بنابراین اجرای تکراری می‌تواند متفاوت باشد. این مقدار هرگز ارسال نمی‌شود: فقط کلید کش این node را تغییر می‌دهد تا گرافی که در غیر این صورت یکسان است، به‌جای بازگرداندن نتیجهٔ کش‌شده، ویرایش را دوباره اجرا کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "پرامپت ساختاریافته",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "با Bria فصل یک تصویر را تغییر دهید. کل صحنه بازپردازی می‌شود، بنابراین ممکن است مناظر فراتر از خود فصل تغییر کنند. Bria کل فریم را با حدود ۱ مگاپیکسل بازپردازی می‌کند؛ بنابراین نتیجه از نظر پیکسل با ورودی هم‌تراز نیست.",
+    "display_name": "Bria تغییر فصل",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات نظارت"
+      },
+      "season": {
+        "name": "فصل",
+        "tooltip": "فصلی که اعمال می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "یک عکس قدیمی یا آسیب‌دیده را با Bria ترمیم کنید: دانه‌دانه‌شدن، خراش‌ها و تاری حذف می‌شوند و ته‌رنگ‌های ناشی از قدمت خنثی می‌گردند. ممکن است قاب‌های مقوایی و حاشیه‌های استودیویی برش بخورند و چهره‌ها بازطراحی شوند. Bria کل کادر را با وضوح حدود ۱ مگاپیکسل بازتولید می‌کند؛ بنابراین نتیجه از نظر پیکسل با ورودی هم‌تراز نیست. برای بزرگ‌نمایی، به‌جای آن از Bria Increase Resolution استفاده کنید.",
+    "display_name": "بازیابی عکس Bria",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات نظارت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "پس‌زمینه یک ویدیو را با استفاده از Bria حذف کنید و فریم‌های برش‌خورده به همراه ماسک آلفا را دریافت نمایید. هر دو را به یک node ترکیب‌کننده متصل کنید یا برای ذخیره ویدیو شفاف به Save WEBM ارسال نمایید.",
     "display_name": "حذف پس‌زمینه ویدیو با Bria (شفاف)",
@@ -1073,6 +1310,33 @@
       },
       "1": {
         "name": "ماسک",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "هر چیزی را که یک mask برای هر فریم در ویدئو پوشش می‌دهد، با Bria پاک کرده و جای خالی را پر کنید. mask باید روی بخش‌هایی که باید حذف شوند سفید و در سایر بخش‌ها سیاه باشد. Bria کلیپ‌های حداکثر ۵.۱ ثانیه‌ای با ۲۰ تا ۳۰ فریم‌برثانیه و ابعاد پیکسلی زوج را می‌پذیرد؛ صدا به‌طور پیش‌فرض حفظ می‌شود. کلیپ بازگردانده‌شده ممکن است چند فریم کوتاه‌تر از ورودی باشد.",
+    "display_name": "پاک‌کنندهٔ ویدئوی Bria",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "یک mask برای هر فریم ویدئو، که در محل شیء قابل‌حذف سفید است. فقط یکی از mask یا ویدئوی mask را ارائه کنید، نه هر دو."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "یک ویدئوی mask از پیش کدگذاری‌شده با همان ابعاد و تعداد فریم ویدئو. فقط یکی از mask یا ویدئوی mask را ارائه کنید، نه هر دو."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "ترک صوتی ورودی را حفظ کنید."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "کلیپی که باید از آن پاک شود."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3062,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "ویدئوها را به‌ترتیب، بدون رمزگشایی ورودی‌های کدگذاری‌شدهٔ سازگار، به هم متصل می‌کند.",
+    "display_name": "الحاق ویدئو",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "کدک مورد استفاده برای کدگذاری تنسورهای ویدئو. Auto از H.264 استفاده می‌کند؛ ویدئوهای از پیش کدگذاری‌شده بدون تغییر می‌مانند."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "موسیقی متن کامل اختیاری برای ویدئوی الحاق‌شده. صدای حمل‌شده توسط ویدئوهای ورودی را لغو می‌کند."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "بخش‌های ویدئو برای الحاق به ترتیب ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "ویدئوی الحاق‌شده."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "میانگین شرطی‌سازی",
     "inputs": {
@@ -3095,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "شرطی‌سازی مقصد"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "یک conditioning ذخیره‌شده با Save Conditioning، یا هر فایل safetensors دارای تنسور 'conditioning' را از پوشهٔ embeddings بارگذاری می‌کند.",
+    "display_name": "بارگذاری Conditioning",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3906,6 +4207,10 @@
         "name": "bit_depth",
         "tooltip": "خودکار برای sRGB از ۸-bit و برای HDR از ۱۰-bit استفاده می‌کند. انتخاب‌های صریح ۸-bit و ۱۰-bit مستقل از فضای رنگ هستند."
       },
+      "codec": {
+        "name": "codec",
+        "tooltip": "در صورت تمایل، ویدئو را فوراً کدگذاری کنید. None تصاویر را به‌صورت تنسور نگه می‌دارد؛ Auto از H.264 استفاده می‌کند."
+      },
       "color_space": {
         "name": "color_space",
         "tooltip": "فضای رنگ تصاویر ورودی. HDR، ‏BT.2020/HLG را انتخاب می‌کند و HDR PQ، ‏BT.2020/PQ را انتخاب می‌کند."
@@ -4697,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "ویدیوی نهفته Cosmos خالی",
+    "display_name": "ویدئوی latent خالی Cosmos",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -4758,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "تصویر نهفته Hunyuan خالی",
+    "display_name": "latent تصویر خالی Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -4777,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "ویدیوی نهفته Hunyuan ۱.۰ خالی",
+    "display_name": "ویدئوی latent خالی Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -4799,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "ویدیوی نهفته Hunyuan ۱.۵ خالی",
+    "display_name": "ویدئوی latent خالی Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -4838,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "ویدیوی نهفته خالی LTXV",
+    "display_name": "ویدیوی latent خالی LTXV",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته"
@@ -4877,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "نهفته Hunyuan 3D v2 خالی",
+    "display_name": "latent خالی Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "اندازه دسته",
@@ -5018,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "ساختار latent خالی Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5028,6 +5333,49 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صدای latent خالی YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "ثانیه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "پایان حلقه",
+    "inputs": {
+      "accumulate": {
+        "name": "انباشت",
+        "tooltip": "در صورت فعال بودن، output_value را از هر تکرار بازگردانید؛ در غیر این صورت فقط تکرار نهایی را بازگردانید."
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "مقداری که برای تکرار بعدی از پایان حلقه به شروع حلقه ارسال می‌شود."
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "مقدار بازگردانده‌شده توسط پایان حلقه. بسته به انباشت، تکرار نهایی یا همهٔ تکرارها را بازمی‌گرداند."
+      },
+      "terminations": {
+        "name": "پایان‌ها",
+        "tooltip": "خروجی‌هایی را متصل کنید که باید در هر تکرار اجرا شوند. مقادیر آن‌ها بازگردانده نمی‌شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "خروجی‌ها",
+        "tooltip": "output_value تکرار نهایی، یا در صورت فعال بودن انباشت، مقادیر انباشته‌شده در تکرارها."
       }
     }
   },
@@ -5895,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "یک clip را بر اساس دستور نوشتاری ویرایش می‌کند: اشیا را حذف، اضافه یا جایگزین می‌کند، محیط را تغییر می‌دهد، تصاویر را بازسبک‌سازی می‌کند، متن روی صفحه را تغییر می‌دهد یا گفت‌وگوی گفتاری را جایگزین می‌کند. مدت، کادربندی، حرکت دوربین و صدا از clip منبع گرفته می‌شوند.",
+    "display_name": "ویرایش ویدیوی Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "منابع بزرگ‌تر از ۱۲۸۰x۷۰۴ پیکسل را پیش از بارگذاری به‌طور خودکار کوچک‌مقیاس می‌کند. نسبت تصویر حفظ می‌شود؛ ویدیوهای کوچک‌تر بدون تغییر می‌مانند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "آنچه باید تغییر کند، با زبان ساده و حداکثر ۴۰۹۶ نویسه. هر چیزی که ذکر نکنید، باید همان‌طور که بوده باقی بماند. گفت‌وگوی جایگزین باید با مدت‌زمان گفتار اصلی هماهنگ باشد و clip بی‌صدا، بی‌صدا باقی می‌ماند."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین حالت است."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ FLUX بذر خود را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "clip منبع با مدت ۰٫۷ تا ۱۵ ثانیه و حداقل ۱۶۰x۱۶۰ پیکسل. خروجی با ۲۴ fps رندر شده و به حدود ۰٫۹ مگاپیکسل در هر فریم محدود می‌شود؛ بنابراین منبع بزرگ‌تر، کوچک‌تر بازمی‌گردد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "ویدئو را با وضوح فوق‌العادهٔ FLUX به اندازهٔ ۱٫۵ تا ۳ برابر افزایش می‌دهد؛ یا مبدأ را دقیقاً حفظ می‌کند یا جزئیات آن را به‌صورت خلاقانه بهبود می‌دهد.",
     "display_name": "افزایش وضوح ویدئوی Flux",
@@ -6448,14 +6830,8 @@
       "model_max_output_tokens": {
         "name": "حداکثر توکن خروجی"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "راهنما",
@@ -6468,6 +6844,42 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV3": {
+    "description": "پاسخ‌های متنی را با مدل‌های Gemini گوگل تولید می‌کند. یک prompt متنی و، به‌صورت اختیاری، یک یا چند تصویر، clip صوتی، ویدیو یا فایل را به‌عنوان زمینهٔ چندوجهی فراهم کنید.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Gemini مورداستفاده برای تولید پاسخ."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
       }
     },
     "outputs": {
@@ -6663,6 +7075,22 @@
       },
       "2": {
         "name": "اندازه دسته",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "دریافت مورد از فهرست",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7644,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "بزرگ‌نمایی Latent ویدیو ۱۵ با مدل",
+    "display_name": "افزایش مقیاس latent با مدل Hunyuan Video 1.5",
     "inputs": {
       "crop": {
         "name": "برش"
@@ -7982,7 +8410,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709)، HDR (Rec.2020 HLG) و HDR PQ (Rec.2020 PQ) را تبدیل می‌کند. از سفید SDR با ۲۰۳-nit و نمایشگر مرجع HLG با ۱۰۰۰-nit استفاده می‌کند. باریک‌سازی، روشنایی اضافی را در سراسر batch نگاشت تُن می‌کند و رنگ‌های خارج از گستره را فشرده می‌سازد. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگ نمی‌شود.",
+    "description": "تبدیل sRGB، Rec.709 خطی، HDR (Rec.2020 HLG) و HDR PQ (Rec.2020 PQ). خطی ۱.۰ از همان سفید مرجع ۲۰۳ نیتِ sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی خطی و تبدیل‌های خطی‌به-HDR مقادیر گسترده را بدون نگاشت تُن حفظ می‌کنند. خروجی SDR و تبدیل PQ-به-HLG روشنایی اضافی را در سراسر batch نگاشت تُن کرده و رنگ‌های خارج از gamut را فشرده می‌کنند. تبدیل‌ها در float32 محاسبه می‌شوند و device و dtype میانی را برمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
@@ -8709,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "مقدار یک کلید را از نخستین شیء JSON معتبر در متن، شامل بلوک‌های کد Markdown، استخراج می‌کند.",
     "display_name": "استخراج رشته از JSON",
     "inputs": {
       "json_string": {
@@ -9703,6 +10132,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "keyframeهای جزئیات را به یک video latent اضافه می‌کند. هر keyframe یک فریم latent از tokenها است که موقعیت RoPE آن یک فریم پیکسلی منفرد را پوشش می‌دهد؛ همراه ویدیو denoise می‌شوند و بخشی از خروجی decode‌شده نیستند. جای‌گذاری هر interval_frames پیکسل یک اسلات است و از فریم‌های I2V، guideهای موجود و keyframeهای جزئیاتِ ازپیش‌موجود روی cond صرف‌نظر می‌کند. keyframeهای متصل فقط محتوا هستند و، مگر اینکه frame_indices تنظیم شده باشد، دوباره روی این canvas جای‌گذاری می‌شوند. با LTXV Separate Generated Keyframes دوباره آن‌ها را خارج کنید. به checkpoint آموزش‌دیده برای keyframeهای تولیدشده نیاز دارد (که keyframes_abs_pos_embedding را داشته باشد).",
+    "display_name": "افزودن keyframeهای تولیدشده LTXV",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "شاخص‌های اختیاری فریم پیکسلی. برای قراردهی از interval_frames روی بوم فعلی، خالی بگذارید. هنگام تنظیم، این فهرست محل قرارگیری است (فریم‌های کلیدی متصل به‌ترتیب تطبیق داده می‌شوند). آخرین فریم مجاز است؛ فریم ۰ مجاز نیست (زیرا از قبل یک توکن مستقل است)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "گام فریم پیکسلی برای جای‌گذاری خودکار. مقدار پیش‌فرض ۲۴، در ۲۴ fps تقریباً یک keyframe در هر ثانیه است. پیکسل‌های اشغال‌شده رد می‌شوند. هنگام تنظیم frame_indices نادیده گرفته می‌شود."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "محتوای اختیاری برای مقداردهی اولیهٔ keyframeهای جدید. keyframeها را از یک Separate پیشین (با همان اندازهٔ فضایی) متصل کنید، یا یک video latent ساده برای کپی‌کردن نزدیک‌ترین فریم در هر اسلات جدید وارد کنید (برای نمونه، پس از افزایش مقیاس زمانی). این‌ها همچنان denoise می‌شوند و به‌عنوان guide ثابت نیستند. مگر اینکه frame_indices تنظیم شده باشد، اندیس‌های ثبت‌شده روی یک keyframes latent نادیده گرفته می‌شوند. فقط هنگامی اثر دارد که sampling زیر sigma 1 آغاز شود."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "video latent سادهٔ ۵بعدی برای تولید keyframe در کنار آن. آن‌ها را پیش از Concat AV Latent اضافه کنید."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "conditioning منفی که keyframeها به آن متصل هستند."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "conditioning مثبت که keyframeها به آن متصل هستند."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "فقط برای خواندن ضرایب مقیاس latent استفاده می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "شرطی‌سازی مثبت با توجهِ فریم کلیدی تولیدشده متصل‌شده."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "شرطی‌سازی منفی با توجهِ فریم کلیدی تولیدشده متصل‌شده."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent ویدئو با فریم‌های کلیدی تولیدشده که به T افزوده شده‌اند."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9745,6 +10222,55 @@
       },
       "1": {
         "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "یک latent از پیش کدگذاری‌شده را به‌عنوان راهنما تثبیت می‌کند؛ برای زمانی که راهنما به‌جای تصویر از مرحله‌ای پیشین می‌آید. همان اثر LTXV Add Guide را بدون رفت‌وبرگشت رمزگشایی/رمزگذاری VAE دارد. راهنمایی که از نظر فضایی کوچک‌تر از هدف باشد (مرجع IC-LoRA یا مرجع جزئیات)، روی یک شبکهٔ تنک گسترش می‌یابد و موقعیت‌های انتهایی RoPE آن نیز با همان نسبت بسط داده می‌شوند تا به‌جای اشاره فقط به گوشهٔ بالا-چپ، کل بوم هدف را پوشش دهد.",
+    "display_name": "افزودن راهنمای Latent در LTXV",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "mask فضایی اختیاری در فضای پیکسل. تأثیر شرطی‌سازی هر ناحیه را از طریق self-attention کنترل می‌کند و در strength ضرب می‌شود."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "latent راهنما. اندازهٔ فضایی آن باید در هر دو محور با یک عدد صحیح یکسان، مقسوم‌علیه اندازهٔ هدف باشد؛ اندازهٔ برابر آن را بدون تغییر تثبیت می‌کند و اندازهٔ نصف به‌عنوان مرجع x2 IC-LoRA در نظر گرفته می‌شود."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent ویدئوی هدف که راهنما روی آن تثبیت می‌شود."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "شاخص فریم latent برای شروع راهنما، که بر حسب فریم‌های latent و نه فریم‌های پیکسلی شمارش می‌شود. مقادیر منفی، راهنما را روی فریم‌های پیش از آغاز latent قرار می‌دهند و از انتهای آن به عقب شمرده نمی‌شوند."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "به ۱.۰ محدود می‌شود. یک راهنمای گسترش‌یافته، موقعیت‌های padding خود را با یک mask نویز منفی علامت‌گذاری می‌کند تا مدل آن‌ها را حذف کند؛ بالاتر از ۱.۰، موقعیت‌های نگه‌داشته‌شده نیز منفی می‌شوند و کل راهنما حذف خواهد شد. برای تقویت بیش از ۱.۰، به‌جای آن از attention_mask استفاده کنید."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       },
       "2": {
@@ -9989,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "صوت Latent خالی LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -10012,6 +10538,67 @@
       "0": {
         "name": "Latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask را روی 0 تنظیم می‌کند تا این latent در طول نمونه‌گیری پاک نگه داشته شود. برای ویدئو یا صوت کار می‌کند. کاربردهای معمول: ثابت‌کردن صوت پیش از Concat AV تا فقط cross-attention ارائه دهد، یا ثابت‌کردن هر latent که نباید نویززدایی شود.",
+    "display_name": "ثابت‌کردن Latent در LTXV",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent ویدئو یا صوت برای ثابت‌کردن. صوت ۴بعدی و ویدئو ۵بعدی است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "فریم‌های کلیدی تولیدشده از مرحله‌ای پیشین را به‌صورت راهنماهای تصویر ثابت روی بومی بعدی تثبیت می‌کند. آن‌ها به‌صورت فریم‌های مستقل رمزگشایی می‌شوند، در صورت نیاز تغییر اندازه می‌یابند و با noise_mask=0 نوشته می‌شوند تا دوباره نویززدایی نشوند. پس از بزرگ‌نمایی زمانی، شاخص‌های ثبت‌شده از بومی که روی آن تولید شده‌اند به این بوم مقیاس می‌شوند (همان لحظه‌ها). برای تعیین صریح موقعیت‌ها از override_frame_indices استفاده کنید. برای ادامهٔ تولید (و نویززدایی) فریم‌های کلیدی در موقعیت‌های جدید، به‌جای آن از Add Generated Keyframes استفاده کنید.",
+    "display_name": "تبدیل فریم‌های کلیدی تولیدشدهٔ LTXV به راهنما",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "خروجی keyframeهای «LTXV Separate Generated Keyframes» که ایندکس فریم پیکسلیِ تولید هر keyframe را حمل می‌کند."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent ویدئوی هدف برای افزودن راهنماها؛ برای مثال، نمونه‌ای که از نظر زمانی بزرگ‌نمایی شده است."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "اختیاری — به‌جای موقعیت‌های ثبت‌شده (یا مقیاس‌شدهٔ خودکار)، در این فریم‌های پیکسلی تثبیت کنید. برای هر keyframe یک ایندکس ارائه کنید. برای استفادهٔ مجدد از موقعیت‌های ثبت‌شده، یا مقیاس‌کردن آن‌ها هنگام تفاوت طول بوم هدف (برای نمونه پس از temporal x2)، خالی بگذارید."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "قدرت",
+        "tooltip": "قدرت راهنما. ۱.۰ یک تثبیت سخت است؛ مقادیر کمتر آن را آزادتر می‌کنند."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": "شرطی‌سازی مثبت با keyframeهای تثبیت‌شده به‌عنوان راهنمای تصویر."
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": "شرطی‌سازی منفی با keyframeهای تثبیت‌شده به‌عنوان راهنمای تصویر."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent ویدیوی هدف با keyframeهای افزوده‌شده به‌عنوان راهنماهای ثابت."
       }
     }
   },
@@ -10242,6 +10829,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "keyframeهای تولیدشده‌ای را که «LTXV Add Generated Keyframes» افزوده است از یک latent نمونه‌برداری‌شده جدا می‌کند و آن‌ها را از شرطی‌سازی حذف می‌کند. پیش از افزایش مقیاس فضایی latent ویدیو، آن‌ها را جدا کنید. ابتدا «LTXV Crop Guides» را اجرا نکنید — این node keyframeهای تولیدشده را راهنماهای قابل‌حذف تلقی کرده و آن‌ها را کنار می‌گذارد.",
+    "display_name": "LTXV جداسازی keyframeهای تولیدشده",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "keyframeها را به‌صورت یک batch از latentهای تک‌فریم بازمی‌گرداند. برای دریافت آن‌ها به‌شکل یک latent چندفریمی، که latent upsampler و «Add Generated Keyframes» بعدی انتظار دارند، غیرفعال بگذارید."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": "شرطی‌سازی مثبت با حذف فرادادهٔ keyframe تولیدشده."
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": "شرطی‌سازی منفی با حذف فرادادهٔ keyframe تولیدشده."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent ویدیو با حذف keyframeهای تولیدشده."
+      },
+      "3": {
+        "name": "keyframeها",
+        "tooltip": "keyframeهای جداشده، با برچسب‌های generated_keyframe_indices و generated_keyframe_num_frames. برای مقداردهی اولیهٔ اسلات‌های جدید، آن‌ها را به «Add Generated Keyframes» بعدی بدهید، یا برای تثبیت آن‌ها به‌عنوان راهنماهای تصویر ثابت به «Generated Keyframes To Guides» وصل کنید (اگر طول بوم تغییر کرده باشد، ایندکس‌ها بازنگاشت می‌شوند)."
       }
     }
   },
@@ -10813,7 +11437,8 @@
     "display_name": "بارگذاری ۳بعدی (پیشرفته)",
     "inputs": {
       "height": {
-        "name": "ارتفاع"
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع رندر viewport بر حسب پیکسل."
       },
       "model_file": {
         "name": "model_file"
@@ -10822,29 +11447,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": "عرض رندر viewport بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "مدل ۳بعدی",
-        "tooltip": null
+        "tooltip": "فایل مدل سه‌بعدی بارگذاری‌شده (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "اطلاعات مدل ۳بعدی",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهان با محور Y رو به بالا)."
       },
       "2": {
         "name": "اطلاعات دوربین",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین viewport: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "عرض",
-        "tooltip": null
+        "tooltip": "عرض رندر viewport بر حسب پیکسل."
       },
       "4": {
         "name": "ارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر viewport بر حسب پیکسل."
       }
     }
   },
@@ -11077,6 +11703,73 @@
       "1": {
         "name": "متن‌ها",
         "tooltip": "فهرست کپشن‌های متنی."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -12180,6 +12873,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "یک پیش‌بینی رمزگشایی‌شدهٔ Marigold V2 را به تصویر تبدیل می‌کند: عمق نرمال‌شده با نواحی نزدیکِ روشن، نرمال‌های سطحیِ واحد، یا آلبدوی sRGB.",
+    "display_name": "پس‌پردازش Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "prediction": {
+        "name": "پیش‌بینی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "ترکیب ماسک",
     "inputs": {
@@ -12525,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "برای هندسه با وفاداری بیشتر و جزئیات سطحی دقیق‌تر، یک مرحله پالایش اضافی اجرا کنید."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "وضوح گذر ultra: ۲k آن را با ۲۰۴۸³ و ۴k با ۴۰۹۶³ اجرا می‌کند تا ریزترین جزئیات سطح به‌دست آید. ۴k به meshy-7.1 یا جدیدتر نیاز دارد. فقط هنگامی استفاده می‌شود که ultra_mode فعال باشد."
       }
     },
     "outputs": {
@@ -12591,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "یک گذر اصلاحی اضافی را با ۲۰۴۸³ اجرا می‌کند تا هندسه‌ای با وفاداری بیشتر و جزئیات سطحی ظریف‌تر ایجاد شود."
       }
     },
     "outputs": {
@@ -12732,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "برای هندسه با وفاداری بیشتر و جزئیات سطحی دقیق‌تر، یک مرحله پالایش اضافی اجرا کنید."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "وضوح گذر ultra: ۲k آن را با ۲۰۴۸³ و ۴k با ۴۰۹۶³ اجرا می‌کند تا ریزترین جزئیات سطح به‌دست آید. ۴k به meshy-7.1 یا جدیدتر نیاز دارد. فقط هنگامی استفاده می‌شود که ultra_mode فعال باشد."
       }
     },
     "outputs": {
@@ -13490,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "فقط MoGe-3: گذرهای پالایش حجمیِ تنک روی عمق پیش‌بینی‌شده. گذرهای بیشتر، جزئیات و لبه‌های ظریف را با هزینه‌ای تقریباً خطی واضح‌تر می‌کنند. ۰ پالایش را غیرفعال می‌کند. توسط MoGe-1 / MoGe-2 نادیده گرفته می‌شود."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "۰ = سریع‌ترین، ۹ = بیشترین جزئیات."
@@ -13520,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "فقط MoGe-3: گذرهای پالایش حجمیِ تنک روی عمق پیش‌بینی‌شده. گذرهای بیشتر، جزئیات و لبه‌های ظریف را با هزینه‌ای تقریباً خطی واضح‌تر می‌کنند. ۰ پالایش را غیرفعال می‌کند. توسط MoGe-1 / MoGe-2 نادیده گرفته می‌شود."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -13586,13 +14316,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "پیاده‌سازی توجه متراکم را برای مدل انتخاب می‌کند. هنگام استفاده همراه با Block Sparse Attention، هرگاه توجه تنک غیرفعال یا پشتیبانی‌نشده باشد، از این بک‌اند استفاده می‌شود.",
+    "display_name": "بک‌اند توجه مدل",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "بک‌اند توجه متراکم. توجه Comfy Kitchen از توجه کوانتیزه‌شدهٔ INT8 استفاده می‌کند و فقط روی GPUهای Nvidia و AMD در دسترس است."
       },
       "model": {
-        "name": "مدل"
+        "name": "مدل",
+        "tooltip": "مدلی که باید patch شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل",
+        "tooltip": "مدل با بک‌اند توجه انتخاب‌شده."
       }
     }
   },
@@ -15819,6 +16558,9 @@
       "model": {
         "name": "مدل"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "شیفت"
       }
@@ -16177,7 +16919,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image ۲",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16264,6 +17006,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "تولید یا ویرایش تصویر از طریق OpenRouter با مدل‌های MAI-Image-2.6 مایکروسافت: متن به تصویر، یا ویرایش هدایت‌شده با تصویر با حداکثر پنج تصویر مرجع، در هفت نسبت ابعاد با وضوح ۱K یا ۱.۵K.",
+    "display_name": "تصویر OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل تصویر OpenRouter که برای تولید تصویر استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16671,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "شرطی‌سازی Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -16684,6 +17456,45 @@
       "image": {
         "name": "تصویر",
         "tooltip": "تصویر پیش‌پردازش‌شده از ImageCropToMask (pad_factor=1.1 برای Pixal3D)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "شرطی‌سازی چندنمایی Pixal3D",
+    "inputs": {
+      "back": {
+        "name": "عقب",
+        "tooltip": "نمای مربعی از سمت عقب شیء، با آلفا یا روی پس‌زمینهٔ سیاه، با کادربندی مانند ریگ: شیء در عریض‌ترین بخش خود حدود 1/1.1 کادر را می‌پوشاند و مقیاس در همهٔ نماها یکسان است. نخستین نمای متصل (به‌ترتیب جلو، چپ، عقب، راست) همان جلویی است که مش بر اساس آن ژست داده می‌شود."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision مدل DINOv3 ViT-L/16 با وزن‌های NAF همراه."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "میدان دید افقیِ نماها به درجه و مطابق کادربندی: ۲۰ برای رندرهای ریگ و بیشتر مولدهای چندنما، یا MoGeGeometryToFOV روی یکی از نماها برای عکس‌ها."
+      },
+      "front": {
+        "name": "جلو",
+        "tooltip": "نمای مربعی از سمت جلوی شیء، با آلفا یا روی پس‌زمینهٔ سیاه، با کادربندی مانند ریگ: شیء در عریض‌ترین بخش خود حدود 1/1.1 کادر را می‌پوشاند و مقیاس در همهٔ نماها یکسان است. نخستین نمای متصل (به‌ترتیب جلو، چپ، عقب، راست) همان جلویی است که مش بر اساس آن ژست داده می‌شود."
+      },
+      "left": {
+        "name": "چپ",
+        "tooltip": "نمای مربعی از سمت چپ شیء، با آلفا یا روی پس‌زمینهٔ سیاه، با کادربندی مانند ریگ: شیء در عریض‌ترین بخش خود حدود 1/1.1 کادر را می‌پوشاند و مقیاس در همهٔ نماها یکسان است. نخستین نمای متصل (به‌ترتیب جلو، چپ، عقب، راست) همان جلویی است که مش بر اساس آن ژست داده می‌شود."
+      },
+      "right": {
+        "name": "راست",
+        "tooltip": "نمای مربعی از سمت راست شیء، با آلفا یا روی پس‌زمینهٔ سیاه، با کادربندی مانند ریگ: شیء در عریض‌ترین بخش خود حدود 1/1.1 کادر را می‌پوشاند و مقیاس در همهٔ نماها یکسان است. نخستین نمای متصل (به‌ترتیب جلو، چپ، عقب، راست) همان جلویی است که مش بر اساس آن ژست داده می‌شود."
       }
     },
     "outputs": {
@@ -17142,10 +17953,12 @@
     "display_name": "پیش‌نمایش سه‌بعدی (پیشرفته)",
     "inputs": {
       "camera_info": {
-        "name": "اطلاعات دوربین"
+        "name": "اطلاعات دوربین",
+        "tooltip": "اطلاعات دوربین نماگذر: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "height": {
-        "name": "ارتفاع"
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع رندر نماگذر بر حسب پیکسل."
       },
       "model_3d": {
         "name": "مدل ۳بعدی",
@@ -17158,29 +17971,30 @@
         "name": "وضعیت نمای دید"
       },
       "width": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": "عرض رندر نماگذر بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "فایل مدل",
-        "tooltip": null
+        "tooltip": "فایل مدل سه‌بعدی (glb/obj/stl/etc.) از یک node سه‌بعدی بالادستی."
       },
       "1": {
         "name": "اطلاعات دوربین",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهان با محور Y رو به بالا)."
       },
       "2": {
         "name": "اطلاعات مدل سه‌بعدی",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین نماگذر: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "عرض",
-        "tooltip": null
+        "tooltip": "عرض رندر نماگذر بر حسب پیکسل."
       },
       "4": {
         "name": "ارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر viewport بر حسب پیکسل."
       }
     }
   },
@@ -17411,6 +18225,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "یک تصویر را با استفاده از مدل‌های ویدیویی Pruna به ویدیو متحرک تبدیل می‌کند، با فریم پایانی اختیاری، صدای تولیدشده یا ترک صوتی.",
+    "display_name": "Pruna P-Video-2 تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_draft": {
+        "name": "پیش‌نویس"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_enhance_prompt": {
+        "name": "بهبود پرامپت"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "با استفاده از مدل‌های ویدیویی Pruna، از یک پرامپت متنی ویدیو تولید می‌کند؛ همراه با صدای تولیدشدهٔ اختیاری یا یک ترک صوتی برای هدایت آن.",
+    "display_name": "Pruna P-Video-2 تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_draft": {
+        "name": "پیش‌نویس"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_enhance_prompt": {
+        "name": "بهبود پرامپت"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[دستورالعمل‌ها]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -17511,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "امکان تنظیم دستگاه کش KV و کوانتیزه‌سازی را فراهم می‌کند؛ مدل به‌طور پیش‌فرض از گزینهٔ auto استفاده می‌کند. کوانتیزه‌سازی می‌تواند هنگام کمبود حافظه، workflowهای ویرایش را سریع‌تر کند.",
+    "display_name": "کش Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "دستگاه",
+        "tooltip": "auto ابتدا از VRAM آزاد و سپس از RAM استفاده می‌کند. cpu (RAM) هم‌زمان با محاسبه پیش‌واکشی می‌شود و تأثیر اندکی بر سرعت دارد. off در هر گام پیشوند را دوباره محاسبه می‌کند که کندتر است، اما تنها راه برای کنار گذاشتن کش است."
+      },
+      "dtype": {
+        "name": "نوع داده",
+        "tooltip": "دقت ذخیره‌سازی. default بدون افت است. int8 حجم کش را با دقتی نزدیک به bf16 به نصف کاهش می‌دهد؛ int4 آن را به یک‌چهارم می‌رساند، اما تقریباً خطای هر گام را دوبرابر می‌کند."
+      },
+      "model": {
+        "name": "مدل"
       }
     },
     "outputs": {
@@ -20519,48 +21442,52 @@
     "display_name": "ذخیره سه‌بعدی (پیشرفته)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "اطلاعات دوربین viewport: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ارتفاع رندر viewport بر حسب پیکسل."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "عرض رندر viewport بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "فایل مدل 3D ‏(glb/obj/stl/etc.) از یک node سه‌بعدی بالادستی."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       }
     }
   },
@@ -20705,6 +21632,24 @@
     "outputs": {
       "0": {
         "name": "صدا",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveConditioning": {
+    "description": "یک conditioning را به‌صورت safetensors در پوشهٔ خروجی ذخیره می‌کند؛ برای بارگذاری آن با Load Conditioning، مثلاً برای رد کردن رمزگذار متن، فایل را به models/embeddings منتقل کنید.",
+    "display_name": "ذخیرهٔ Conditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
         "tooltip": null
       }
     }
@@ -21401,6 +22346,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "ملودی‌های آوازی و سازی را از موسیقی به نت‌نویسی ABC تبدیل می‌کند. خروجی abc را به گره YuE2 Generate Music متصل کرده و از حالت متناظر استفاده کنید.",
+    "display_name": "تبدیل صوت SheetSage2 به ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای کاورها توصیه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "ترتیب تصاویر را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر",
@@ -21827,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "تصویر latent خالی stable cascade",
     "inputs": {
       "batch_size": {
         "name": "اندازه بچ"
@@ -21870,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Encode vae مرحلهٔ C stable cascade",
     "inputs": {
       "compression": {
         "name": "فشرده‌سازی"
@@ -22007,6 +22974,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "شروع حلقه",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "نتایج تکرارهای بدون تغییر را از اجراهای قبلی دوباره استفاده می‌کند. برای اجرای دوبارهٔ همهٔ تکرارها، غیرفعال کنید."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "مقداری که در نخستین تکرار به‌عنوان current_iteration_value ارائه می‌شود."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "حالت تکرار حلقه."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "برای تو در تو کردن این حلقه، iteration_index را از یک شروع حلقهٔ بیرونی متصل کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "شاخص تکرار فعلی حلقه."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "در نخستین تکرار حلقه True است."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "در آخرین تکرار حلقه True است."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "هنگام استفاده از حالت List، مورد فعلی از فهرست است. در حالت‌های Simple و For برابر None است."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "مقدار منتقل‌شده در حلقه برای تکرار فعلی: در نخستین تکرار initial_iteration_value است و سپس در هر تکرار بعدی، next_iteration_value از End Loop است."
       }
     }
   },
@@ -22786,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "کدگذاری متن Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع که رمزگذار متن آن‌ها را می‌بیند و به‌صورت latentهای vae در دنباله درج می‌شوند."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "تصاویر مرجع با حفظ نسبت ابعاد، در مضارب ۳۲ به حدود وضوح × وضوح پیکسل تغییر اندازه می‌یابند. ۰ هر مرجع را در اندازهٔ خودش نگه می‌دارد و به مضرب ۳۲ گرد می‌کند. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent خالی با اندازهٔ نخستین تصویر مرجع، برای تطبیق با نمونه‌گیری؛ زیرا هر تغییر اندازه‌ای دیگر، ویرایش را جابه‌جا می‌کند."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "کدگذاری متن Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -22809,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "کدگذاری متن Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -22885,6 +23937,10 @@
       "max_length": {
         "name": "حداکثر طول"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی گمانه‌زن با هد پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق پیش‌نویس را تطبیق می‌دهد؛ ۲–۵ آن را ثابت می‌کند. خروجی نمونه‌گیری‌شده به‌درستی توزیع‌شده باقی می‌ماند، اما برای seed یکسان با خروجی بدون MTP تفاوت دارد."
+      },
       "prompt": {
         "name": "پرامپت"
       },
@@ -22946,6 +24002,10 @@
       },
       "max_length": {
         "name": "حداکثر طول"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی گمانه‌زن با هد پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق پیش‌نویس را تطبیق می‌دهد؛ ۲–۵ آن را ثابت می‌کند. خروجی نمونه‌گیری‌شده به‌درستی توزیع‌شده باقی می‌ماند، اما برای seed یکسان با خروجی بدون MTP تفاوت دارد."
       },
       "prompt": {
         "name": "پرامپت"
@@ -23462,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "شرطی‌سازی Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23484,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "مرحلهٔ شکل Trellis2",
     "inputs": {
       "negative": {
         "name": "منفی"
@@ -23512,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "مرحلهٔ بافت Trellis2",
     "inputs": {
       "negative": {
         "name": "منفی"
@@ -23744,7 +24804,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: تصویر به مدل",
+    "display_name": "Tripo: تصویر به مدل (قدیمی)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -23815,6 +24875,75 @@
         "tooltip": "هنگام فعال بودن quad خالی است."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن quad پر می‌شود."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: تصویر به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مدل‌های بافت‌دار را به اندازهٔ واقعی آن‌ها بر حسب متر مقیاس‌بندی می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنهٔ مدل ذخیره می‌کند و هنگام تبدیل، ریگ‌گذاری یا بازهدف‌گیری مدل آن را اعمال می‌کند؛ بدون بافت نادیده گرفته می‌شود."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "حداکثر تعداد وجه. -۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱.۴M وجه در استاندارد v۳.x و ۲M در detailed). Tripo بی‌صدا محدود می‌کند: v۲.۵ در ۵۰۰٬۰۰۰، مش‌های چهارضلعی در ۱۵۰٬۰۰۰."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "نسخهٔ مدل برای استفاده در تولید"
+      },
+      "orientation": {
+        "name": "جهت‌گیری"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، متالیک، زبری، نرمال). به بافت نیاز دارد."
+      },
+      "quad": {
+        "name": "چهارضلعی",
+        "tooltip": "خروجی مش چهارضلعی. Tripo مش‌های چهارضلعی را به‌صورت FBX ارائه می‌کند، بنابراین نتیجه در خروجی FBX می‌رسد و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "مش low-poly با توپولوژی تمیز به سبک دست‌ساخت (۵۰۰–۲۰٬۰۰۰ وجه، quad ۵۰۰–۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ ممکن است برای موارد پیچیده ناموفق باشد."
+      },
+      "texture": {
+        "name": "بافت",
+        "tooltip": "نقشه‌های بافت را تولید می‌کند. خاموش، هندسهٔ بدون پوشش را برمی‌گرداند و pbr را نادیده می‌گیرد."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسهٔ وظیفهٔ مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "هنگام فعال بودن quad خالی است."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "فقط هنگام فعال بودن quad پر می‌شود."
       }
@@ -24139,6 +25268,192 @@
       }
     }
   },
+  "TripoPSeriesImageToModelNode": {
+    "description": "یک مدل سه‌بعدی low-poly با توپولوژی تمیز از تصویر تولید می‌کند؛ به‌صورت مش مثلثی (GLB) یا مش با غالبیت چهارضلعی (FBX).",
+    "display_name": "Tripo P2: تصویر به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل سری P ترایپو."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسهٔ وظیفهٔ مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "هنگام فعال بودن quad خالی است."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن quad پر می‌شود."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "یک مدل سه‌بعدی low-poly با توپولوژی تمیز از نمای روبه‌رو به‌همراه یک تا سه نما از چپ، پشت و راست تولید می‌کند؛ به‌صورت مش مثلثی (GLB) یا مش با غالبیت چهارضلعی (FBX).",
+    "display_name": "Tripo P2: نماهای چندگانه به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل سری P ترایپو."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "بذر مدل"
+      },
+      "model_orientation": {
+        "name": "جهت‌گیری"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "چهارضلعی"
+      },
+      "model_texture": {
+        "name": "بافت"
+      },
+      "model_texture_alignment": {
+        "name": "هم‌ترازی بافت"
+      },
+      "model_texture_seed": {
+        "name": "بذر بافت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "هنگام فعال بودن چهارضلعی خالی است."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن چهارضلعی پُر می‌شود."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "یک مدل سه‌بعدی کم‌پلیگون با توپولوژی تمیز را از یک پرامپت متنی، به‌صورت مش مثلثی (GLB) یا مش با غلبهٔ چهارضلعی‌ها (FBX) تولید می‌کند.",
+    "display_name": "Tripo P2: تبدیل متن به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل سری P از Tripo."
+      },
+      "model_auto_size": {
+        "name": "اندازه‌گذاری خودکار"
+      },
+      "model_compress_geometry": {
+        "name": "فشرده‌سازی هندسه"
+      },
+      "model_export_uv": {
+        "name": "خروجی UV"
+      },
+      "model_face_limit": {
+        "name": "محدودیت وجه"
+      },
+      "model_image_seed": {
+        "name": "بذر تصویر"
+      },
+      "model_model_seed": {
+        "name": "بذر مدل"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quad": {
+        "name": "چهارضلعی"
+      },
+      "model_texture": {
+        "name": "بافت"
+      },
+      "model_texture_seed": {
+        "name": "بذر بافت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "هنگام فعال بودن چهارضلعی خالی است."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن چهارضلعی پُر می‌شود."
+      }
+    }
+  },
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
     "inputs": {
@@ -24148,7 +25463,7 @@
       },
       "animation": {
         "name": "انیمیشن",
-        "tooltip": "انیمیشن‌های preset:* با هر دو مدل rig کار می‌کنند؛ انیمیشن‌های preset:biped:* به rigi نیاز دارند که با مدل v1.0-20240301 ساخته شده باشد."
+        "tooltip": "انیمیشن‌های preset:* با هر دو مدل ریگ کار می‌کنند. انیمیشن‌های preset:biped:* برای ریگ‌های مدل v1.0-20240301 ساخته شده‌اند؛ یک ریگ v2.5 فقط chop، climb، dive، fall، hurt، idle، jump، run، shoot، slash، turn و walk را می‌پذیرد."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24312,6 +25627,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "یک مدل را به بخش‌های معنادار از نظر معنایی تقسیم و نام‌گذاری می‌کند. از یک تصویر، Tripo ابتدا مدل را تولید می‌کند. task_id بخش‌بندی مانند نتیجهٔ Tripo: Segment Model به Tripo: Complete Mesh Parts، Tripo: Retopology، Tripo: Texture model و Tripo: Convert model ارسال می‌شود.",
+    "display_name": "Tripo: بخش‌بندی هوشمند",
+    "inputs": {
+      "source": {
+        "name": "منبع",
+        "tooltip": "یک مدل موجود را بخش‌بندی کنید، یا از یک تصویر مدل تولید کرده و آن را بخش‌بندی کنید."
+      },
+      "source_granularity": {
+        "name": "دانه‌بندی"
+      },
+      "source_hint": {
+        "name": "راهنما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه وظیفه بخش‌بندی",
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": "مدلی که بخش‌بندی شده است (از تصویر تولید یا وارد شده)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "نام‌های بخش‌ها",
+        "tooltip": "نام بخش‌ها با ویرگول از هم جدا شده‌اند."
+      },
+      "4": {
+        "name": "بخش‌ها",
+        "tooltip": "توصیف Tripo از بخش‌هایی که پیدا کرده است."
+      },
+      "5": {
+        "name": "ماسک",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "رمزگذاری تصویر با DINOv3 و Flux2 VAE به شرط‌گذاری مثبت/منفی TripoSplat و ایجاد هدف نویز با اندازه ثابت (latent + دوربین) برای KSampler",
     "display_name": "شرط‌گذاری TripoSplat",
@@ -24408,7 +25765,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: متن به مدل",
+    "display_name": "Tripo: متن به مدل (قدیمی)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24484,8 +25841,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: متن به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "اندازه خودکار",
+        "tooltip": "مدل‌های بافت‌دار را به اندازهٔ واقعی‌شان بر حسب متر مقیاس می‌کند. Tripo اندازه را به‌عنوان تبدیل صحنهٔ مدل ذخیره می‌کند و هنگام تبدیل، rig یا retarget شدن مدل آن را اعمال می‌کند؛ بدون بافت نادیده گرفته می‌شود."
+      },
+      "face_limit": {
+        "name": "حد وجه",
+        "tooltip": "حداکثر تعداد وجه‌ها. -۱ به Tripo اجازه می‌دهد به‌صورت تطبیقی انتخاب کند (حدود ۱٫۴M وجه در standard نسخهٔ v3.x، ۲M در detailed). Tripo بی‌صدا محدود می‌کند: v2.5 روی ۵۰۰٬۰۰۰، مش‌های quad روی ۱۵۰٬۰۰۰."
+      },
+      "geometry_quality": {
+        "name": "کیفیت هندسه"
+      },
+      "image_seed": {
+        "name": "بذر تصویر"
+      },
+      "model_seed": {
+        "name": "بذر مدل"
+      },
+      "model_version": {
+        "name": "نسخه مدل"
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "تا ۲۵۵ نویسه."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، متالیک، زبری، نرمال). به بافت نیاز دارد."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "quad": {
+        "name": "چهارضلعی",
+        "tooltip": "خروجی مش چهارضلعی. Tripo مش‌های چهارضلعی را به‌صورت FBX ارائه می‌کند؛ بنابراین نتیجه در خروجی FBX می‌آید و خروجی GLB خالی می‌ماند."
+      },
+      "smart_low_poly": {
+        "name": "low-poly هوشمند",
+        "tooltip": "مش low-poly با توپولوژی تمیز به سبک دست‌ساخت (۵۰۰ تا ۲۰٬۰۰۰ وجه، quad: ۵۰۰ تا ۱۰٬۰۰۰). برای سوژه‌های ساده بهترین است؛ ممکن است برای سوژه‌های پیچیده ناموفق باشد."
+      },
+      "texture": {
+        "name": "بافت",
+        "tooltip": "نقشه‌های بافت را تولید می‌کند. حالت خاموش هندسهٔ بدون بافت را برمی‌گرداند و pbr را نادیده می‌گیرد."
+      },
+      "texture_quality": {
+        "name": "کیفیت بافت",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
+      },
+      "texture_seed": {
+        "name": "بذر بافت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "هنگام فعال بودن quad خالی است."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "فقط هنگام فعال بودن quad پر می‌شود."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: مدل بافت",
+    "display_name": "Tripo: بافت‌دهی مدل (قدیمی)",
     "inputs": {
       "model_task_id": {
         "name": "شناسه وظیفه مدل"
@@ -24543,6 +25969,62 @@
         "tooltip": "وقتی منبع یک مش چهارضلعی یا یک واردسازی FBX باشد، خالی است."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo برای مش‌های چهارضلعی و واردسازی‌های FBX، FBX برمی‌گرداند؛ در غیر این صورت خالی است."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: مدل بافت",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "مدل بافت: v3.0 برای مش‌های ایجادشده با v3.x و v2.5 برای مش‌های ایجادشده با v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "نام بخش‌ها، جداشده با ویرگول، از Tripo: Segment Model برای بافت‌دهی. خالی بودن، همهٔ بخش‌ها را بافت‌دهی می‌کند."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "نقشه‌های متریال PBR (رنگ پایه، فلزی، زبری، نرمال)؛ در حالت خاموش، بافتی با رنگ ساده ارائه می‌شود."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "تصاویر مرجع هدایت‌کنندهٔ بافت‌ها. با texture_prompt یا style_image قابل ترکیب نیست."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "تصویر مرجع برای سبک هنری بافت‌ها. فقط همراه با texture_prompt استفاده می‌شود."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "راهنمای متنی اختیاری برای بافت‌دهی. در عمل برای مدل‌های واردشده (Tripo: Import Model) که تصویر مبدأیی برای استنباط رنگ‌ها ندارند، لازم است. با تصاویر مرجع قابل ترکیب نیست."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = بافت‌های HD، extreme = بافت‌های Ultra ۸K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسهٔ وظیفهٔ مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "وقتی مبدأ یک مش چهارضلعی یا واردسازی FBX باشد، خالی است."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo برای مش‌های چهارضلعی و واردسازی‌های FBX، FBX برمی‌گرداند؛ در غیر این صورت خالی است."
       }
@@ -24770,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "رمزگشایی VAE Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "تعداد بخش‌ها"
@@ -25078,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "رمزگشایی شکل VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
@@ -25099,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "رمزگشایی ساختار VAE Trellis2",
     "inputs": {
       "resolution": {
         "name": "وضوح"
@@ -25119,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "رمزگشایی بافت VAE Trellis2",
     "inputs": {
       "samples": {
         "name": "نمونه‌ها"
@@ -28013,6 +29495,114 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "نت‌نویسی ABC یک آهنگ را از سبک و متن ترانه تولید می‌کند. abc را به گره YuE2 Generate Music متصل کنید.",
+    "display_name": "تولید ABC با YuE2",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای کاورها توصیه می‌شود."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "تعداد tokenهای اخیر ABC که برای جریمه‌کردن تکرار استفاده می‌شوند."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "tokenهای موسیقی و شرطی‌سازی آکوستیک را از سبک، ترانه و نت‌نویسی ABC تولید می‌کند. ثانیه‌های تولیدشده را به node «Empty YuE2 Latent Audio» بدهید. ورودی خالی ABC حالت انتخاب‌شده را نادیده می‌گیرد.",
+    "display_name": "تولید موسیقی YuE2",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "مولد ABC را متصل کنید یا یک پارتیتور ویرایش‌شده فراهم کنید. برای استفادهٔ خودکار از حالت off، آن را خالی بگذارید."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "هدایت خودرگرسیو برای سبک و ترانه. ۱.۰، CFG را غیرفعال می‌کند و با workflow ABC یکسان است. برای مطابقت با هدایت اصلی حالت off، از ۱.۰۱ استفاده کنید."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "ترانه"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "حداکثر مدت‌زمان بر حسب ثانیه. برای promptهای طولانی به‌طور خودکار کاهش می‌یابد؛ تولید ممکن است زودتر متوقف شود."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای بازخوانی‌ها توصیه می‌شود."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "style": {
+        "name": "سبک"
+      },
+      "temperature": {
+        "name": "دما"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثانیه",
         "tooltip": null
       }
     }
