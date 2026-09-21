@@ -1,10 +1,13 @@
 # ADR-CRDT-INPUTS-0030: Project Document Inputs onto Reordered Live Nodes by Name
 
-Date: 2026-09-09 (rescoped 2026-09-19)
+Date: 2026-09-09
 
 ## Status
 
 Proposed
+
+Rescoped 2026-09-19: covers the document-to-live projection direction only; the
+durable destination question stays with blocked-on-christian #448 (see Context).
 
 ## Context
 
