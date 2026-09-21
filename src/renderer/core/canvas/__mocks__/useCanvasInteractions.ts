@@ -4,6 +4,8 @@ import { computed } from 'vue'
 import type { useCanvasInteractions as realUseCanvasInteractions } from '../useCanvasInteractions'
 
 const shouldHandleNodePointerEvents = computed(() => true)
+const canEditNodes = computed(() => true)
+const canFocusWidgets = computed(() => true)
 
 const canvasInteractions: ReturnType<typeof realUseCanvasInteractions> = {
   handleWheel: vi.fn(),
@@ -11,13 +13,17 @@ const canvasInteractions: ReturnType<typeof realUseCanvasInteractions> = {
   handlePointerMove: vi.fn(),
   handlePointerUp: vi.fn(),
   forwardEventToCanvas: vi.fn(),
-  shouldHandleNodePointerEvents
+  shouldHandleNodePointerEvents,
+  canEditNodes,
+  canFocusWidgets
 }
 
 export const useCanvasInteractions = vi.fn(() => {
   onTestFinished(() => {
     canvasInteractions.shouldHandleNodePointerEvents =
       shouldHandleNodePointerEvents
+    canvasInteractions.canEditNodes = canEditNodes
+    canvasInteractions.canFocusWidgets = canFocusWidgets
   })
   return canvasInteractions
 })
