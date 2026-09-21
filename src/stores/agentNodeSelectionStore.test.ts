@@ -266,4 +266,23 @@ describe('agentNodeSelectionStore', () => {
     expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
     expect(store.nodeIds('workflows/untouched.json')).toEqual(['3'])
   })
+
+  it.for(['constructor', 'toString'])(
+    'does not read inherited %s workflow entries',
+    (path) => {
+      expect(useAgentNodeSelectionStore().nodeIds(path)).toEqual([])
+    }
+  )
+
+  it('does not move an inherited workflow entry', async () => {
+    const workflow = useWorkflowStore().createTemporary('original.json')
+    workflow.path = 'constructor'
+    const store = useAgentNodeSelectionStore()
+    store.saveNodeIds('workflows/renamed.json', ['20'])
+
+    workflow.path = 'workflows/renamed.json'
+    await nextTick()
+
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
+  })
 })

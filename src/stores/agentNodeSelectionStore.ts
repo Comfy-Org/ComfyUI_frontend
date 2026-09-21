@@ -164,7 +164,12 @@ export const useAgentNodeSelectionStore = defineStore(
     }
 
     function nodeIds(workflowPath: string | undefined): string[] {
-      return workflowPath ? (nodeIdsByWorkflow.value[workflowPath] ?? []) : []
+      if (
+        !workflowPath ||
+        !Object.hasOwn(nodeIdsByWorkflow.value, workflowPath)
+      )
+        return []
+      return nodeIdsByWorkflow.value[workflowPath] ?? []
     }
 
     function moveNodeIds(
@@ -177,7 +182,7 @@ export const useAgentNodeSelectionStore = defineStore(
         oldWorkflowPath === newWorkflowPath
       )
         return
-      if (!nodeIdsByWorkflow.value[oldWorkflowPath]) return
+      if (!Object.hasOwn(nodeIdsByWorkflow.value, oldWorkflowPath)) return
       const { [oldWorkflowPath]: ids, ...remaining } = nodeIdsByWorkflow.value
       nodeIdsByWorkflow.value = { ...remaining, [newWorkflowPath]: ids }
     }
