@@ -56,9 +56,16 @@ const QUARTER_STEP_INPUT_SPEC: InputSpec = {
   step: 0.25
 }
 
+// A declared step of zero would leave the stepper buttons inert.
+const ZERO_STEP_INPUT_SPEC: InputSpec = {
+  ...PRIMITIVE_FLOAT_INPUT_SPEC,
+  step: 0
+}
+
 const TEST_PRIMITIVE_FLOAT_TYPE = 'test/PrimitiveFloatNumericOptions'
 const TEST_PRIMITIVE_INT_TYPE = 'test/PrimitiveIntNumericOptions'
 const TEST_QUARTER_STEP_FLOAT_TYPE = 'test/QuarterStepFloatNumericOptions'
+const TEST_ZERO_STEP_FLOAT_TYPE = 'test/ZeroStepFloatNumericOptions'
 
 class TestPrimitiveFloatNode extends LGraphNode {
   static override title = 'Float'
@@ -90,6 +97,17 @@ class TestQuarterStepFloatNode extends LGraphNode {
     this.comfyClass = 'PrimitiveFloat'
     this.addOutput('FLOAT', 'FLOAT')
     useFloatWidget()(this, QUARTER_STEP_INPUT_SPEC)
+  }
+}
+
+class TestZeroStepFloatNode extends LGraphNode {
+  static override title = 'Float'
+
+  constructor() {
+    super('PrimitiveFloat')
+    this.comfyClass = 'PrimitiveFloat'
+    this.addOutput('FLOAT', 'FLOAT')
+    useFloatWidget()(this, ZERO_STEP_INPUT_SPEC)
   }
 }
 
@@ -127,6 +145,11 @@ describe('Primitive numeric widget options', () => {
       { name: 'PrimitiveFloat' } as ComfyNodeDef,
       app
     )
+    await extension.beforeRegisterNodeDef?.(
+      TestZeroStepFloatNode,
+      { name: 'PrimitiveFloat' } as ComfyNodeDef,
+      app
+    )
   })
 
   beforeEach(() => {
@@ -139,6 +162,7 @@ describe('Primitive numeric widget options', () => {
       TEST_QUARTER_STEP_FLOAT_TYPE,
       TestQuarterStepFloatNode
     )
+    LiteGraph.registerNodeType(TEST_ZERO_STEP_FLOAT_TYPE, TestZeroStepFloatNode)
   })
 
   describe('PrimitiveFloat', () => {
@@ -253,6 +277,24 @@ describe('Primitive numeric widget options', () => {
       expect(widget.options.step2).toBe(0.25)
       expect(getWidgetStep(widget.options)).toBe(0.25)
     })
+
+    it('keeps the stepper usable when the definition declares a zero step', () => {
+      const { widget } = createNode(TEST_ZERO_STEP_FLOAT_TYPE)
+
+      expect(widget.options.step2).toBe(0.1)
+      expect(getWidgetStep(widget.options)).toBeGreaterThan(0)
+    })
+
+    it.for([0, -1, '0.5'])(
+      'ignores an unusable step property rather than adopting it (%s)',
+      (step) => {
+        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+        node.properties.step = step
+
+        expect(widget.options.step2).toBe(0.1)
+      }
+    )
 
     it('ignores an unusable precision rather than half-applying it', () => {
       const { node, widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)

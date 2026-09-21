@@ -232,8 +232,14 @@ function onCustomFloatCreated(this: LGraphNode) {
       : clamp(Math.trunc(configured), 0, 100)
   }
 
+  // A step of zero or less leaves the stepper inert or reversed, so it is
+  // rejected the same way `useIntWidget` rejects one.
+  const usableStep = (value: unknown) => {
+    const configured = usableNumber(value)
+    return configured !== undefined && configured > 0 ? configured : undefined
+  }
+
   const defaultPrecision = usablePrecision(valueWidget.options.precision) ?? 1
-  const declaredStep = valueWidget.options.step2
   const declaredRound = valueWidget.options.round
 
   const nodePrecision = () => usablePrecision(this.properties.precision)
@@ -242,6 +248,8 @@ function onCustomFloatCreated(this: LGraphNode) {
     const places = precision()
     return Number((10 ** -places).toFixed(places))
   }
+  const declaredStep =
+    usableStep(valueWidget.options.step2) ?? lastDecimalPlace()
   // Only precision set on this node steers step and round; `defaultPrecision`
   // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
   const stepForPrecision = () =>
@@ -261,7 +269,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   Object.defineProperty(valueWidget.options, 'step2', {
-    get: () => this.properties.step || stepForPrecision(),
+    get: () => usableStep(this.properties.step) ?? stepForPrecision(),
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
