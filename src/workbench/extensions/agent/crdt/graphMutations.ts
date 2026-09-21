@@ -410,11 +410,11 @@ function hasNonGrowthInputSetChange(
   // only the first live `dup` is accounted for. Any live occurrence left over
   // once the document's occurrences of that name are exhausted is, by name
   // alone, indistinguishable from unpropagated growth — but growth only ever
-  // adds an UNLINKED trailing slot in an autogrow group specifically, so a
-  // leftover is only tolerated when it is both unlinked AND shaped like an
-  // autogrow slot (`group.member`, the naming `dynamicWidgets.ts` gives
-  // every grown slot); an ordinary extra input the document legitimately
-  // dropped is neither linked nor autogrow-shaped, and must not survive.
+  // adds an UNLINKED trailing slot shaped like an autogrow member, so a
+  // leftover is only tolerated when it is both unlinked AND shaped that way
+  // (see `autogrowGroupOf`); an ordinary extra input the document
+  // legitimately dropped is neither linked nor autogrow-shaped, and must not
+  // survive.
   const remainingByName = new Map(documentCounts)
   const liveOnlyIsUnaccountedFor = live.some((input) => {
     const remaining = remainingByName.get(input.name) ?? 0
@@ -428,17 +428,39 @@ function hasNonGrowthInputSetChange(
   return documentExceedsLive || liveOnlyIsUnaccountedFor
 }
 
+// The trailing-ordinal shape `dynamicWidgets.ts`'s `resolveAutogrowOrdinal`
+// itself falls back to when a group has no explicit `names` list.
+const AUTOGROW_ORDINAL_SUFFIX = /\d+$/
+
 /**
- * The group prefix of a dotted autogrow slot name (`group.member` ->
- * `group`), or undefined for an ordinary, non-autogrow input name.
- * `dynamicWidgets.ts`'s `addAutogrowGroup` is the only place that mints this
- * shape; this is the semantic layer's only way to recognize it, since a
- * `NodeState` input carries no other autogrow marker.
+ * The group prefix of a live-only input shaped like an autogrow member's
+ * DEFAULT naming (`group.prefixN`, ending in the member's ordinal) --
+ * undefined for anything else.
+ *
+ * `group.member` alone is not enough: `dynamicWidgets.ts`'s
+ * `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`) mints the exact same
+ * `${widget.name}.${key}` shape for an unrelated reason, where `key` is an
+ * ordinary schema field name (e.g. `mode.strength`), not an ordinal --
+ * treating every dot as autogrow would wrongly keep a dynamic-combo input
+ * the document had legitimately removed. Requiring the trailing digit
+ * `resolveAutogrowOrdinal` itself falls back to rules that out for the
+ * common (prefix-based) autogrow shape our own regression fixtures use
+ * (`ref_image_0`, `ref_video_1`, ...).
+ *
+ * This is the closest signal available at this semantic-state layer: a
+ * `NodeState` input carries no other autogrow marker, and this layer has no
+ * access to the node definition that would settle it exactly. A group
+ * using an explicit, non-numeric `names` list is not recognized by this
+ * check and falls through to being treated as an ordinary input -- a known,
+ * narrow gap, and strictly safer than the alternative of over-retaining a
+ * removed input.
  */
 function autogrowGroupOf(name: unknown): string | undefined {
   if (typeof name !== 'string') return undefined
   const dot = name.lastIndexOf('.')
-  return dot < 0 ? undefined : name.slice(0, dot)
+  if (dot < 0 || !AUTOGROW_ORDINAL_SUFFIX.test(name.slice(dot + 1)))
+    return undefined
+  return name.slice(0, dot)
 }
 
 function mergeInputSlotsByName(
