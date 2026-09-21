@@ -88,7 +88,10 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
     })
 
     test.describe('active widget edit', () => {
-      test.use({ conversationCase: 'agent-rec-replace-prompt-encoder' })
+      test.use({
+        conversationCase: 'agent-rec-replace-prompt-encoder',
+        humanOpsHost: 'apply'
+      })
 
       test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
         agentConversation
@@ -97,6 +100,9 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
         const nodeId = '4181654812796082'
         const appended = ' at sunset, golden hour, cinematic lighting'
         await agentConversation.runTurns()
+        await expect(
+          agentConversation.resyncWidget(nodeId, 'missing-widget')
+        ).rejects.toThrow(`Host widget ${nodeId}.missing-widget does not exist`)
 
         const field = agentConversation.vueNodes
           .getNodeLocator(nodeId)
