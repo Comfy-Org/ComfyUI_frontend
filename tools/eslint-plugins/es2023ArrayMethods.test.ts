@@ -28,6 +28,28 @@ describe('ES2023 array method restrictions', () => {
     ])
   })
 
+  it.each([
+    ['toReversed', 'items[`toReversed`]()'],
+    ['toSorted', 'items[`toSorted`]()'],
+    ['toSpliced', 'items[`toSpliced`](0, 1)'],
+    ['with', 'items[`with`](0, 1)']
+  ])(
+    'rejects template-literal %s calls in runtime files',
+    async (_name, code) => {
+      const [result] = await eslint.lintText(
+        `const items = [1, 2]\n${code}`,
+        { filePath: runtimeFilePath }
+      )
+
+      expect(result.messages).toEqual([
+        expect.objectContaining({
+          ruleId: 'no-restricted-syntax',
+          severity: 2
+        })
+      ])
+    }
+  )
+
   it('allows the restricted methods in test files', async () => {
     const [result] = await eslint.lintText(
       `const items = [1, 2]
