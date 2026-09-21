@@ -87,4 +87,38 @@ builder.with(3)`,
 
     expect(result.messages).toEqual([])
   })
+
+  it.for([
+    [
+      'constrained generic',
+      `function replaceFirst<T extends number[]>(items: T) {
+  return items.with(0, 1)
+}`
+    ],
+    [
+      'intersection',
+      `declare const items: number[] & { tag: string }
+items.with(0, 1)`
+    ],
+    [
+      'optional union',
+      `declare const items: number[] | undefined
+items?.with(0, 1)`
+    ]
+  ] as const)(
+    'rejects Array.with on a %s receiver',
+    async ([_name, code]) => {
+      const [result] = await eslint.lintText(code, {
+        filePath: runtimeFilePath
+      })
+
+      expect(result.messages).toEqual([
+        expect.objectContaining({
+          ruleId: 'es2022-compat/no-array-with',
+          severity: 2,
+          message: restrictionMessage
+        })
+      ])
+    }
+  )
 })

@@ -3,8 +3,22 @@ import type { TSESTree } from '@typescript-eslint/utils'
 import type ts from 'typescript'
 
 function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
+  const nonNullableType = checker.getNonNullableType(type)
+  if (nonNullableType !== type) {
+    return isArrayType(checker, nonNullableType)
+  }
+
+  const constraint = checker.getBaseConstraintOfType(type)
+  if (constraint && constraint !== type) {
+    return isArrayType(checker, constraint)
+  }
+
   if (type.isUnion()) {
     return type.types.every((member) => isArrayType(checker, member))
+  }
+
+  if (type.isIntersection()) {
+    return type.types.some((member) => isArrayType(checker, member))
   }
 
   return checker.isArrayType(type) || checker.isTupleType(type)
