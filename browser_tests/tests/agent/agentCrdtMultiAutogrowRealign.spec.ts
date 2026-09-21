@@ -412,7 +412,18 @@ test.describe(
         const subscribesBeforeReload = hostSocket.subscribeCount()
         await page.reload()
 
-        await agentPanel.open()
+        // The panel's open state persisted through the earlier `agentPanel.
+        // open()` call, so it remounts itself open once the agent gate
+        // resolves -- clicking the (toggle) open button again here races
+        // that restore and can flip it back closed. Wait for the gate
+        // instead, the same way `agentChatRefreshPersistence.spec.ts` and
+        // `agentPanelLifecycle.spec.ts`'s reload test do.
+        await expect(topbar.integratedTabBarActions).toHaveAttribute(
+          'data-agent-gate-settled',
+          'true',
+          { timeout: 30_000 }
+        )
+        await expect(panel).toBeVisible({ timeout: 30_000 })
         await expect
           .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
           .toBeGreaterThan(subscribesBeforeReload)
