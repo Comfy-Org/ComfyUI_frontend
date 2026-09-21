@@ -323,9 +323,6 @@ describe(usePromotedPreviews, () => {
     ])
   })
 
-  // The host renders the leaf's images, so the records must come from the
-  // leaf too. Joining the host's records to leaf URLs by position pairs a
-  // URL with a filename from a different node.
   it('carries the leaf records, not the host node records', () => {
     const innerSetup = createSetup()
     const leafNode = addInteriorNode(innerSetup, {
@@ -384,9 +381,6 @@ describe(usePromotedPreviews, () => {
     })
   })
 
-  // The URLs and the records must be resolved through the same accessor
-  // family. Pairing execution-sourced URLs with the interior node's locator
-  // records joins two different sources that need not even be the same length.
   it('pairs execution output urls with execution records, not locator records', () => {
     const { setup } = arrangePromotedPreview({ previewMediaType: 'image' })
     const outputStore = useNodeOutputStore()

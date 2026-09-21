@@ -274,8 +274,6 @@ describe('ImagePreview', () => {
       })
     })
 
-    // Live previews are not built from result items, so there is nothing
-    // authoritative to report -- better absent than invented.
     it('omits the result type when no record backs the image', async () => {
       renderImagePreview({
         imageUrls: ['/api/view?filename=p.png'],
@@ -339,8 +337,6 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(1)
     })
 
-    // The gallery can be shorter than the grid it replaces, so the handler
-    // must remain on the preview root.
     it('opens the lightbox from below the gallery panel', async () => {
       renderImagePreview()
       const user = userEvent.setup()

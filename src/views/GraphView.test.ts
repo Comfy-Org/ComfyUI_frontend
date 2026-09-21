@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -234,7 +235,10 @@ describe('GraphView - partner nodes education card', () => {
 
 describe('GraphView - media lightbox lifetime', () => {
   const makeWorkflow = (path: string) =>
-    ({ path, filename: path.split('/').pop() }) as LoadedComfyWorkflow
+    fromPartial<LoadedComfyWorkflow>({
+      path,
+      filename: path.split('/').pop()
+    })
 
   const galleryItem: AugmentedResultItem = {
     filename: 'a.png',

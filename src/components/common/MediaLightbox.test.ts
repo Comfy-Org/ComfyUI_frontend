@@ -162,6 +162,40 @@ describe('MediaLightbox', () => {
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
   })
 
+  it('returns focus to the opener after navigating and closing', async () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'Open gallery'
+    document.body.append(opener)
+    opener.focus()
+
+    const { rerender } = renderGallery({ activeIndex: -1 })
+    await rerender({ activeIndex: 0 })
+    await nextTick()
+    await rerender({ activeIndex: 1 })
+    await nextTick()
+    await rerender({ activeIndex: -1 })
+    await nextTick()
+
+    expect(opener).toHaveFocus()
+    opener.remove()
+  })
+
+  it('returns focus to the opener when the gallery is closed externally', async () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'Open gallery'
+    document.body.append(opener)
+    opener.focus()
+
+    const { rerender } = renderGallery({ activeIndex: -1 })
+    await rerender({ activeIndex: 0 })
+    await nextTick()
+    await rerender({ activeIndex: -1 })
+    await nextTick()
+
+    expect(opener).toHaveFocus()
+    opener.remove()
+  })
+
   it('keeps failed text media actionable until the viewer closes', async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(new Response(null, { status: 503 }))

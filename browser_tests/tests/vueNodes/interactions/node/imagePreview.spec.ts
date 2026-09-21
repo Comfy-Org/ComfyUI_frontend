@@ -243,8 +243,6 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
       const gridImages = node.imageGrid.locator('img')
 
-      // Only the third cell is a file the backend can serve, so the image the
-      // lightbox ends up showing identifies which cell the gesture selected.
       await test.step('Inject a multi-image grid', async () => {
         const images = [
           { filename: 'decoy-a.png', subfolder: '', type: 'input' },
@@ -256,13 +254,17 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(gridImages).toHaveCount(4)
       })
 
-      // Grid cells request re-encoded thumbnails; the lightbox must not.
       await expect(gridImages.first()).toHaveAttribute(
         'src',
         /[?&]preview=webp(%3B|;)75/
       )
 
       const nodeBoxBefore = await node.root.boundingBox()
+      const selectedBefore = await comfyPage.nodeOps.getSelectedNodeIds()
+      const gridCellBox = await node.imageGrid
+        .getByRole('button', { name: 'View image 3 of 4' })
+        .boundingBox()
+      if (!gridCellBox) throw new Error('grid cell has no bounding box')
 
       // The first click swaps the grid out for the gallery panel, so the
       // browser retargets the second click. jsdom cannot reproduce that,
@@ -287,9 +289,28 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       expect(downloads).toEqual([])
       await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
       expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
+      expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual(
+        selectedBefore
+      )
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(lightbox).toBeHidden()
+
+      await test.step('dragging from the preview neither moves nor selects', async () => {
+        const startX = gridCellBox.x + gridCellBox.width / 2
+        const startY = gridCellBox.y + gridCellBox.height / 2
+
+        await comfyPage.page.mouse.move(startX, startY)
+        await comfyPage.page.mouse.down()
+        await comfyPage.page.mouse.move(startX + 40, startY + 40, { steps: 8 })
+        await comfyPage.page.mouse.up()
+        await comfyPage.nextFrame()
+
+        expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
+        expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual(
+          selectedBefore
+        )
+      })
     }
   )
 
@@ -318,8 +339,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       // the gallery panel reveals on focus, so the second click of the gesture
       // retargets onto a control that did not exist when the gesture began.
       await test.step('Inject a dense grid', async () => {
-        const images = Array.from({ length: 16 }, () => ({
-          filename: 'example.png',
+        const images = Array.from({ length: 16 }, (_unused, index) => ({
+          filename: index === 1 ? 'example.png' : `decoy-${index}.png`,
           subfolder: '',
           type: 'input'
         }))
@@ -339,6 +360,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         'src',
         /[?&]filename=example\.png/
       )
+      await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
       await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
 
       expect(downloads).toEqual([])

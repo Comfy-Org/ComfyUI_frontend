@@ -3,6 +3,8 @@
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
+    @pointerdown.stop
+    @pointerup.stop
     @click.capture="handleRepeatedClick"
     @dblclick.stop="handleGalleryDoubleClick"
   >
