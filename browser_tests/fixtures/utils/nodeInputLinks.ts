@@ -2,7 +2,8 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-interface ConnectedInput {
+/** A connected input slot, paired with the node its link originates from. */
+export interface ConnectedInput {
   name: string
   originNodeId: string
 }
