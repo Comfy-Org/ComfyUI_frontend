@@ -50,13 +50,13 @@ const { card } = defineProps<{ card: RouterRoadmapCardId }>()
     <rect x="206" y="56" width="66" height="48" rx="14" fill="#efff45" />
   </svg>
   <svg v-else viewBox="0 0 300 160" class="size-full" fill="none">
-    <path d="M120 80h34M220 80h26" stroke="#6858a8" stroke-width="3" />
-    <circle cx="48" cy="80" r="22" fill="#efff45" />
-    <circle cx="48" cy="80" r="8" fill="#1d1723" />
-    <rect x="66" y="75" width="54" height="10" rx="3" fill="#efff45" />
-    <rect x="98" y="85" width="7" height="10" rx="2" fill="#efff45" />
-    <rect x="110" y="85" width="7" height="12" rx="2" fill="#efff45" />
-    <rect x="154" y="56" width="66" height="48" rx="14" fill="#4b3e78" />
-    <circle cx="266" cy="80" r="20" fill="#4b3e78" />
+    <rect x="162" y="30" width="108" height="100" rx="20" fill="#4b3e78" />
+    <circle cx="216" cy="70" r="13" fill="#1d1723" />
+    <rect x="209" y="76" width="14" height="30" rx="5" fill="#1d1723" />
+    <circle cx="58" cy="80" r="26" fill="#efff45" />
+    <circle cx="58" cy="80" r="9" fill="#1d1723" />
+    <rect x="80" y="73" width="78" height="14" rx="4" fill="#efff45" />
+    <rect x="124" y="87" width="10" height="14" rx="3" fill="#efff45" />
+    <rect x="142" y="87" width="10" height="20" rx="3" fill="#efff45" />
   </svg>
 </template>
