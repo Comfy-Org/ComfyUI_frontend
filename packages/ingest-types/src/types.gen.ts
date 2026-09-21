@@ -4516,6 +4516,10 @@ export type AgentPostMessageRequest = {
    */
   current_tab?: string
   /**
+   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
+   */
+  current_tab_unbound?: boolean
+  /**
    * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
    */
   draft?: {

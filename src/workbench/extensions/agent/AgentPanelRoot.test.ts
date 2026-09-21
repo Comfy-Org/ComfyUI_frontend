@@ -4806,6 +4806,34 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
   })
 
+  // A restored/existing thread (no turn of THIS session has bound anything
+  // yet - `New Chat` is what puts the session into that state here) whose
+  // target tab is still unbound must flag it AND still send its draft -
+  // dropping the draft here would hand the server's mint an empty canvas
+  // instead of the node already on the tab.
+  it('flags an unbound tab as unbound on a restored thread, with its draft attached', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[0]).toHaveProperty('draft')
+  })
+
   it('agent_active_tab with a cloud id activates the open saved tab without minting', async () => {
     makeTab()
     addTab('workflows/temp/duck.json', { isTemporary: true })
