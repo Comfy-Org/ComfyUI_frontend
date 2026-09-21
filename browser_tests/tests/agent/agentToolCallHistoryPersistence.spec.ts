@@ -24,7 +24,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'keeps a completed turn work summary after a browser refresh',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory }) => {
+  async ({ page, promptHistory, workflowSelection }) => {
     await page
       .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
@@ -36,6 +36,17 @@ test(
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
+    // The composer gates Send behind an explicit workflow target
+    // (agent.selectWorkflowForAgent); without this the click below never
+    // reaches promptHistory.
+    await panel
+      .getByRole('button', { name: enMessages.agent.switchWorkflow })
+      .click()
+    await page
+      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+      .click()
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    workflowSelection.finishSave(true)
 
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     await composer.pressSequentially('find a node for me')
