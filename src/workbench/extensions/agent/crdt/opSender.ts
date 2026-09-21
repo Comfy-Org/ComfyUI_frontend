@@ -80,7 +80,11 @@ export interface OpSender {
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
-  /** In-flight + queued batch count (observability; 0 = drained). */
+  /**
+   * Unsettled batch count for observability: in-flight, queued, and the open
+   * admission group as one until `flush()` seals it into wire-capped batches.
+   * 0 = drained.
+   */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
   pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
