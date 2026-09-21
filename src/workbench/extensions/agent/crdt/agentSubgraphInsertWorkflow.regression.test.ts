@@ -149,7 +149,7 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
           }
         ],
         links: []
-      } as unknown as WorkflowJSON,
+      },
       CATALOG
     )
     const follower = new FollowerDoc()
