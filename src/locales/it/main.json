@@ -65,6 +65,7 @@
     "dismiss": "Ignora",
     "downloadAssets": "Scarica risorse",
     "dragAndDropAssets": "Trascina qui le risorse",
+    "editWhileWorking": "Puoi continuare a modificare mentre lavora",
     "entryButton": "Agente",
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
@@ -99,6 +100,7 @@
       "selectNode": "Seleziona nodo"
     },
     "nodes": "Nodi",
+    "nodesAdded": "L'agente ha aggiunto 1 nodo al grafo | L'agente ha aggiunto {count} nodi al grafo",
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
     "otherOpenWorkflows": "Altri workflow aperti",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (non disponibile)",
     "unsavedWorkflow": "Non salvato",
     "untitledChat": "Senza titolo",
+    "updatingGraph": "L'agente sta aggiornando il grafo",
     "uploading": "Caricamento in corso",
+    "viewAddedNodes": "Visualizza nodo | Visualizza nodi",
     "worked": "Ha lavorato",
     "workedForMinutes": "Ha lavorato per {minutes}m {seconds}s",
     "workedForSeconds": "Ha lavorato per {seconds} secondi",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Annulla questa esecuzione",
     "deleteAllAssets": "Elimina tutte le risorse di questa esecuzione",
     "downloadAll": "Scarica {count} risorse da questa esecuzione",
+    "dragAndDropAudio": "Fai clic per sfogliare o trascina un file audio",
     "dragAndDropImage": "Clicca per sfogliare o trascina un'immagine",
+    "dragAndDropVideo": "Fai clic per sfogliare o trascina un video",
     "emptyWorkflowExplanation": "Il tuo workflow è vuoto. Devi aggiungere alcuni nodi per iniziare a costruire un'app.",
     "enterNodeGraph": "Entra nel grafo dei nodi",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nodi evidenziati: {count}",
+    "label": "Minimappa",
     "nodeColors": "Colori dei nodi",
     "renderBypassState": "Visualizza stato di bypass",
     "renderErrorState": "Visualizza stato di errore",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossibile caricare il workflow perché questa installazione di ComfyUI non ha i nodi core. Verifica che il backend sia stato avviato correttamente.",
     "a1111EmbeddingsUnavailable": "Non è stato possibile caricare gli embedding dal server. Il workflow è stato importato, ma i nomi degli embedding sono stati lasciati come testo normale.",
+    "assetDropFailed": "Impossibile caricare la risorsa trascinata",
     "cannotCreateSubgraph": "Impossibile creare il subgraph",
     "couldNotDetermineFileType": "Impossibile determinare il tipo di file",
     "dropFileError": "Impossibile elaborare l'elemento trascinato: {error}",

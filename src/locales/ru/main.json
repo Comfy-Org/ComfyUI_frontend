@@ -65,6 +65,7 @@
     "dismiss": "Закрыть",
     "downloadAssets": "Скачать ресурсы",
     "dragAndDropAssets": "Перетащите ресурсы сюда",
+    "editWhileWorking": "Вы можете продолжать редактирование, пока он работает",
     "entryButton": "Агент",
     "feedbackCaption": "Отправить отзыв",
     "focusNode": "Показать на холсте",
@@ -99,6 +100,7 @@
       "selectNode": "Выбрать узел"
     },
     "nodes": "Узлы",
+    "nodesAdded": "Агент добавил в граф 1 ноду | Агент добавил в граф {count} нод",
     "notHelpful": "Не полезно",
     "openWorkflowTab": "Открыть {name}",
     "otherOpenWorkflows": "Другие открытые рабочие процессы",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (недоступен)",
     "unsavedWorkflow": "Не сохранено",
     "untitledChat": "Без названия",
+    "updatingGraph": "Агент обновляет граф",
     "uploading": "Загрузка",
+    "viewAddedNodes": "Просмотреть ноду | Просмотреть ноды",
     "worked": "Выполнено",
     "workedForMinutes": "Работал {minutes} мин {seconds} с",
     "workedForSeconds": "Работал {seconds} с",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Отменить этот запуск",
     "deleteAllAssets": "Удалить все ресурсы из этого запуска",
     "downloadAll": "Скачать {count} ресурсов из этого запуска",
+    "dragAndDropAudio": "Нажмите для выбора или перетащите аудиофайл",
     "dragAndDropImage": "Перетащите изображение",
+    "dragAndDropVideo": "Нажмите для выбора или перетащите видео",
     "emptyWorkflowExplanation": "Ваш рабочий процесс пуст. Сначала добавьте несколько узлов, чтобы начать создавать приложение.",
     "enterNodeGraph": "Войти в граф узлов",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Выделенные ноды: {count}",
+    "label": "Миникарта",
     "nodeColors": "Цвета узлов",
     "renderBypassState": "Отображать состояние обхода",
     "renderErrorState": "Отображать состояние ошибки",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Не удалось загрузить рабочий процесс, так как в этой установке ComfyUI отсутствуют основные узлы. Проверьте, что сервер запущен корректно.",
     "a1111EmbeddingsUnavailable": "Не удалось загрузить embeddings с сервера. Рабочий процесс импортирован, но имена embeddings оставлены в виде обычного текста.",
+    "assetDropFailed": "Не удалось загрузить добавленный ресурс",
     "cannotCreateSubgraph": "Невозможно создать подграф",
     "couldNotDetermineFileType": "Не удалось определить тип файла",
     "dropFileError": "Не удалось обработать перетаскиваемый элемент: {error}",
