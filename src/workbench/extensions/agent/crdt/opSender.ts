@@ -324,6 +324,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
+  /**
+   * Whether `result` must be drained as a stale credit instead of settling
+   * the in-flight batch: it names ops that are not in flight (a retired
+   * batch's own result), or it is anonymous (empty lists, no failure
+   * `op_id`) while a credit from an earlier retirement is still outstanding
+   * - either way indistinguishable from this batch's own result otherwise.
+   */
+  function namesRetiredBatch(result: OpsResultView, batch: InFlight): boolean {
+    const identified = [...result.applied, ...result.skipped]
+    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (identified.length > 0) {
+      return !identified.some((opId) => batch.opIds.has(opId))
+    }
+    return staleAnonymousBudget > 0
+  }
+
   const unsubscribe = deps.onOpsResult((result) => {
     if (
       !inFlight ||
@@ -336,27 +352,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
-    if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
-        // Names ops that are not in flight: a retired batch's own result, if
-        // a credit is outstanding for one.
-        if (staleAnonymousBudget > 0) staleAnonymousBudget--
-        return
-      }
-      settle({
-        state: 'acknowledged',
-        ops: inFlight.ops,
-        result,
-        workflowId: inFlight.workflowId
-      })
-      return
-    }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
-    // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
+    if (namesRetiredBatch(result, inFlight)) {
+      if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
     settle({
