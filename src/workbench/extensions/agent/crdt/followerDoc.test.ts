@@ -21,7 +21,9 @@ describe('FollowerDoc.applyRemoteUpdate', () => {
     expect(onUpdate).toHaveBeenCalledOnce()
   })
 
-  it('propagates a malformed Yjs update without recording it', () => {
+it(
+  'throws for a truncated update without dispatching an event or incrementing updatesApplied',
+  () => {
     const follower = new FollowerDoc()
     const onUpdate = vi.fn()
     follower.addEventListener('update', onUpdate)
