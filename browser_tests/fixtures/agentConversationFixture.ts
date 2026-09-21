@@ -435,8 +435,9 @@ export class AgentConversationHarness {
       .poll(async () => {
         const box = await header.boundingBox()
         if (!box || box.x < 0) return false
+        if (!(await this.panel.isVisible())) return true
         const panelBox = await this.panel.boundingBox()
-        return panelBox === null || box.x + box.width < panelBox.x
+        return panelBox !== null && box.x + box.width < panelBox.x
       })
       .toBe(true)
     await this.vueNodes.selectNode(nodeId)
