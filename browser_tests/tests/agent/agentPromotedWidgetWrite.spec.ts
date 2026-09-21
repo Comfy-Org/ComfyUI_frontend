@@ -158,7 +158,7 @@ test.describe(
       comfyPage,
       postedMessages,
       getWebSocket
-    }, testInfo) => {
+    }) => {
       test.setTimeout(60_000)
       const page = comfyPage.page
 
@@ -186,9 +186,6 @@ test.describe(
           expect.arrayContaining([['steps', 8]])
         )
         expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
-        const hostNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
-        await hostNode.centerOnNode()
-        await page.screenshot({ path: testInfo.outputPath('before.png') })
 
         await agentPanel.open()
         const panel = agentPanel.root
@@ -293,8 +290,6 @@ test.describe(
         if (!validatedSave) throw new Error('Invalid saved workflow')
         await comfyPage.workflow.loadGraphData(validatedSave)
         await expect.poll(readState).toEqual(state)
-        await hostNode.centerOnNode()
-        await page.screenshot({ path: testInfo.outputPath('after-reload.png') })
       } finally {
         await unrouteObjectInfo()
       }
