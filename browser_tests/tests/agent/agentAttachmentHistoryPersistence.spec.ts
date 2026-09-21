@@ -30,17 +30,40 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
-const firstImage = { filename: 'ComfyUI_00002_.png', width: 64, visible: true }
-const secondImage = { filename: 'ComfyUI_00003_.png', width: 32, visible: true }
+const firstImage = {
+  filename: 'ComfyUI_00002_.png',
+  kind: 'image',
+  width: 64,
+  height: 64,
+  visible: true
+}
+const secondImage = {
+  filename: 'ComfyUI_00003_.png',
+  kind: 'image',
+  width: 32,
+  height: 32,
+  visible: true
+}
+const video = {
+  filename: 'ComfyUI_00004_.mp4',
+  kind: 'video',
+  width: 128,
+  height: 128,
+  visible: true
+}
 const references = [
   { name: firstImage.filename, id: 'asset-first', kind: 'image' },
   { name: secondImage.filename, id: 'asset-second', kind: 'image' }
 ]
 
-async function dropImages(page: Page, panel: Locator, filenames: string[]) {
-  for (const filename of filenames) {
+async function dropAssets(
+  page: Page,
+  panel: Locator,
+  assets: (typeof firstImage)[]
+) {
+  for (const { filename, kind } of assets) {
     const dataTransfer = await page.evaluateHandle(
-      ({ mime, filename }) => {
+      ({ mime, filename, kind }) => {
         const transfer = new DataTransfer()
         transfer.setData(
           mime,
@@ -49,46 +72,61 @@ async function dropImages(page: Page, panel: Locator, filenames: string[]) {
             subfolder: '',
             type: 'output',
             attachment_ref: filename,
-            media_kind: 'image'
+            media_kind: kind
           })
         )
         return transfer
       },
-      { mime: MIME_ASSET_INFO, filename }
+      { mime: MIME_ASSET_INFO, filename, kind }
     )
     await panel.dispatchEvent('drop', { dataTransfer })
     await dataTransfer.dispose()
   }
 }
 
-async function expectImages(panel: Locator, images: (typeof firstImage)[]) {
-  await expect(panel.getByTestId('reply-image-preview')).toHaveCount(
-    images.length
-  )
+async function expectAssets(panel: Locator, assets: (typeof firstImage)[]) {
+  const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
+  await expect(previews).toHaveCount(assets.length)
   await expect
     .poll(() =>
-      panel
-        .getByRole('img', { name: /^ComfyUI_0000[23]_\.png$/ })
-        .evaluateAll((elements) =>
-          elements.map((image) => ({
-            filename: image.getAttribute('alt'),
-            width: image instanceof HTMLImageElement ? image.naturalWidth : 0,
-            visible: image.checkVisibility()
-          }))
-        )
+      previews.evaluateAll((elements) =>
+        elements.map((element) => {
+          if (element instanceof HTMLImageElement) {
+            return {
+              filename: element.alt,
+              kind: 'image',
+              width: element.naturalWidth,
+              height: element.naturalHeight,
+              visible: element.checkVisibility()
+            }
+          }
+          if (element instanceof HTMLVideoElement) {
+            return {
+              filename: new URL(element.currentSrc).searchParams.get(
+                'filename'
+              ),
+              kind: 'video',
+              width: element.videoWidth,
+              height: element.videoHeight,
+              visible: element.checkVisibility()
+            }
+          }
+          return null
+        })
+      )
     )
-    .toEqual(images)
+    .toEqual(assets)
 }
 
 for (const scenario of [
   {
     name: 'one image from filenames',
-    images: [firstImage],
+    assets: [firstImage],
     historyContent: { attachments: [firstImage.filename] }
   },
   {
     name: 'two distinct images from filenames and references',
-    images: [firstImage, secondImage],
+    assets: [firstImage, secondImage],
     historyContent: {
       attachments: [firstImage.filename, secondImage.filename],
       attachment_refs: references
@@ -96,15 +134,25 @@ for (const scenario of [
   },
   {
     name: 'two distinct images from references only',
-    images: [firstImage, secondImage],
+    assets: [firstImage, secondImage],
     historyContent: { attachment_refs: references }
+  },
+  {
+    name: 'an image and video from references only',
+    assets: [firstImage, video],
+    historyContent: {
+      attachment_refs: [
+        references[0],
+        { name: video.filename, id: 'asset-video', kind: 'video' }
+      ]
+    }
   }
 ]) {
   test(
     `keeps ${scenario.name} after a browser refresh`,
     { tag: ['@cloud', '@ui'] },
     async ({ page, promptHistory, workflowSelection }, testInfo) => {
-      const filenames = scenario.images.map((image) => image.filename)
+      const filenames = scenario.assets.map((asset) => asset.filename)
 
       await page.route(
         `**/view?filename=${firstImage.filename}&type=input`,
@@ -113,6 +161,14 @@ for (const scenario of [
       await page.route(
         `**/view?filename=${secondImage.filename}&type=input`,
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
+      )
+      await page.route(
+        `**/view?filename=${video.filename}&type=input`,
+        (route) =>
+          route.fulfill({
+            path: assetPath('workflowInMedia/workflow.mp4'),
+            contentType: 'video/mp4'
+          })
       )
 
       // The real ingest API returns the message row's `content` map verbatim,
@@ -183,17 +239,17 @@ for (const scenario of [
       // Simulate dropping a generated asset card into the composer, the same
       // way agentBatchOutputAttachment.spec.ts does: the real drag source puts
       // this shape on the DataTransfer.
-      await dropImages(page, panel, filenames)
+      await dropAssets(page, panel, scenario.assets)
 
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-      await composer.pressSequentially('compare these images')
+      await composer.pressSequentially('compare these attachments')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
         .click()
       await expect.poll(() => promptHistory.requests.length).toBe(1)
       expect(promptHistory.requests[0].attachments).toEqual(filenames)
 
-      await expectImages(panel, scenario.images)
+      await expectAssets(panel, scenario.assets)
       await panel.screenshot({ path: testInfo.outputPath('before-reload.png') })
 
       // Settle the (WS-less) turn so the reload below is not racing a
@@ -209,7 +265,7 @@ for (const scenario of [
       const reopenedPanel = page.locator('#agent-panel-root')
       await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-      await expectImages(reopenedPanel, scenario.images)
+      await expectAssets(reopenedPanel, scenario.assets)
       await reopenedPanel.screenshot({
         path: testInfo.outputPath('after-reload.png')
       })
