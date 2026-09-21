@@ -72,6 +72,22 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+/**
+ * Live widget types the op layer's placeholder records never match:
+ * `widgetType()` derives `'string'` from a string seed, while the node
+ * registers `'text'` and `'combo'` widgets for the same values.
+ */
+class MixedWidgetNode extends LGraphNode {
+  constructor() {
+    super('mixed-widget-node')
+    this.addWidget('number', 'width', 512, () => {})
+    this.addWidget('text', 'prompt', '', () => {})
+    this.addWidget('combo', 'sampler', 'euler', () => {}, {
+      values: ['euler', 'dpmpp_2m']
+    })
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -120,6 +136,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
+    'mixed-widget-node': { widget_order: ['width', 'prompt', 'sampler'] },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
   }
@@ -213,6 +230,7 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('mixed-widget-node', MixedWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -382,6 +400,41 @@ describe('reconcileAgentAdapters', () => {
         )?.value
       ).toBe(7)
     })
+
+    it.each([
+      { name: 'width', seeded: 832 },
+      { name: 'prompt', seeded: 'a cat on a bench' },
+      { name: 'sampler', seeded: 'dpmpp_2m' }
+    ])(
+      'keeps the seeded $name value when the live widget type differs from the placeholder',
+      ({ name, seeded }) => {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        remoteMutations(scope).addNode(
+          {
+            ...nodePayload(1, 'mixed-widget-node'),
+            widgets_values: {
+              width: 832,
+              prompt: 'a cat on a bench',
+              sampler: 'dpmpp_2m'
+            }
+          },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        const node = graph.getNodeById(toNodeId(1))
+        const widget = node?.widgets?.find((w) => w.name === name)
+        expect(widget?.value).toBe(seeded)
+        expect(
+          useWidgetValueStore().getWidget(
+            widgetId(scope.rootGraphId, toNodeId(1), name)
+          )?.value
+        ).toBe(seeded)
+        expect(LiteGraph.namedValuesRestore).toBe(false)
+      }
+    )
 
     it('applies a widget update received before the node materializes', () => {
       const graph = new LGraph()
