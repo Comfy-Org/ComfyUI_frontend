@@ -32,7 +32,12 @@ const action =
       <a
         v-if="runsHere"
         :href="WORKSHOP_API_HASH"
-        :class="cn(action, 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90')"
+        :class="
+          cn(
+            action,
+            'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
+          )
+        "
         data-testid="workflow-endpoint"
       >
         {{ t('workshop.v2.workflow.endpoint', locale) }}
