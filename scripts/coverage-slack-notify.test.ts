@@ -226,8 +226,8 @@ describe('partial shard merges', () => {
     expect(result.stdout).toContain('64.0% → 67.0%')
   })
 
-  // The "recovery" a partial run appears to make is just its lost shards
-  // coming back, so it must not be reported as coverage the team gained.
+  // The movement a partial run appears to make is an artifact of its lost
+  // shards, not coverage the team gained or lost.
   it('says nothing when the merge lost shards', () => {
     using fixture = notifyFixture()
     fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
@@ -245,7 +245,7 @@ describe('partial shard merges', () => {
 
   // Absence must not read as "whole": otherwise narrowing the uploaded
   // artifact back to coverage.lcov alone would quietly restore the old
-  // behaviour of publishing understated numbers.
+  // behaviour of publishing non-comparable numbers.
   it('withholds E2E when the artifact carries no shard metadata', () => {
     using fixture = notifyFixture()
     fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))

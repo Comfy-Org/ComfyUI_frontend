@@ -127,7 +127,7 @@ const metadata = readCoverageMetadata(
 if (!metadata) {
   lines.push(
     '> [!NOTE]',
-    '> Shard completeness could not be verified for this run, so these totals may understate real coverage.',
+    '> Shard completeness could not be verified for this run, so these totals may not be comparable with a whole merge.',
     ''
   )
 } else if (!metadata.complete) {
@@ -139,7 +139,7 @@ if (!metadata) {
       : 'not every shard reported coverage')
   lines.push(
     '> [!WARNING]',
-    `> Incomplete shard merge — ${detail}. Every shard loads the whole bundle, so these totals understate real coverage.`,
+    `> Incomplete shard merge — ${detail}. These totals are not comparable with a whole merge.`,
     ''
   )
 }

@@ -45,8 +45,8 @@ FOUND_SHARDS=${#COVERAGE_FILES[@]}
 
 # A tracefile proves a shard uploaded, not that it finished: globalTeardown
 # writes one even for a shard that died partway, and that shard's missing hits
-# understate the merge exactly like an absent one. The matrix verdict is the
-# only signal that separates the two.
+# skew the merge exactly like an absent one. The matrix verdict is the only
+# signal that separates the two.
 REASON=''
 if [[ "$FOUND_SHARDS" -lt "$EXPECTED_SHARDS" ]]; then
   REASON="only $FOUND_SHARDS of $EXPECTED_SHARDS shards reported coverage"
@@ -71,14 +71,14 @@ fi
 
 mkdir -p "$COVERAGE_DIR"
 
-# Every shard loads the whole bundle, so lost hits stay in the denominator:
-# an incomplete merge understates coverage rather than omitting it.
+# A lost shard drops hits from commonly-loaded code and can remove files only
+# it exercised, so an incomplete merge is not comparable with a whole one.
 printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s"}\n' \
   "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" "$REASON" \
   > "$COVERAGE_DIR/coverage-metadata.json"
 
 if [[ "$COMPLETE" != true ]]; then
-  echo "::warning::E2E coverage merge is not whole — $REASON. The merged total understates real coverage and is excluded from trend reporting."
+  echo "::warning::E2E coverage merge is not whole — $REASON. The merged total is not comparable with a whole merge and is excluded from trend reporting."
 fi
 
 ADD_ARGS=()
@@ -97,7 +97,7 @@ append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
 if [[ "$COMPLETE" != true ]]; then
   append_summary ''
   append_summary "> [!WARNING]"
-  append_summary "> Not a whole merge — $REASON. This total understates real coverage and is excluded from trend reporting."
+  append_summary "> Not a whole merge — $REASON. This total is not comparable with a whole merge and is excluded from trend reporting."
 fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'

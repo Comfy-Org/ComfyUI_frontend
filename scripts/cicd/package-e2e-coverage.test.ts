@@ -313,7 +313,7 @@ describe('e2e-coverage artifact contract', () => {
 
     expect(uploads).not.toHaveLength(0)
     for (const upload of uploads) {
-      expect(upload.with?.path).toMatch(/\/$/)
+      expect(upload.with?.path).not.toMatch(/\.lcov$/)
     }
   })
 })

@@ -100,11 +100,12 @@ function parseLcov(filePath: string): CoverageData | null {
 }
 
 /**
- * Every shard loads the whole bundle, so a lost shard drops its hits while the
- * lines they covered stay in the denominator. Reporting that against a complete
- * baseline invents a regression, and storing it invents the recovery that
- * follows. Absent or unreadable metadata is therefore treated as incomplete:
- * the artifact has to prove it is whole before its number is published.
+ * A lost shard drops hits from commonly-loaded code and can remove files only
+ * it exercised, so an incomplete merge is not comparable with a whole one.
+ * Reporting it against a whole baseline invents movement, and storing it
+ * invents the movement back. Absent or unreadable metadata is therefore
+ * treated as incomplete: the artifact has to prove it is whole before its
+ * number is published.
  */
 function e2eCoverageIsComplete(): boolean {
   const metadata = readCoverageMetadata(
