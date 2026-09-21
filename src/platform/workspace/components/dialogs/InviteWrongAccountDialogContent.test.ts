@@ -1,15 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import InviteWrongAccountDialogContent from './InviteWrongAccountDialogContent.vue'
@@ -42,9 +38,7 @@ function renderComponent() {
 
 describe('InviteWrongAccountDialogContent', () => {
   beforeEach(() => {
-    vi.mocked(setPersistence).mockResolvedValue(undefined)
-    vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-    vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+    stubFirebaseAuthHarness()
     mockLogout.mockResolvedValue()
   })
 
