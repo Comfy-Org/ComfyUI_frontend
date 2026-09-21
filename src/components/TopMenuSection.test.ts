@@ -573,9 +573,9 @@ describe('TopMenuSection', () => {
     expect(
       screen.getByRole('button', { name: 'menu.manageExtensions' })
     ).toBeInTheDocument()
-    expect(
-      container.querySelector('.actionbar-container')!.classList
-    ).not.toContain('w-0')
+    expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+      'w-0'
+    )
     expect(screen.getByTestId('action-bar-card')).toHaveClass('floating-panel')
   })
 
