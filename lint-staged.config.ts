@@ -1,13 +1,7 @@
 import path from 'node:path'
 
-/**
- * lint-staged splits a large stage into chunks and calls this config once per
- * chunk, running the chunks concurrently. The commands below scan the whole
- * repository and ignore the file list they are handed, so a chunked commit
- * starts a copy of each per chunk: two full lint passes together exhaust the
- * memory on a 16GB machine and both are killed, which is what a branch merging
- * main back in runs into. Give each one to the first chunk that asks for it.
- */
+// lint-staged calls this config once per concurrent chunk in one process.
+// Claim each fixed-scope command once so only its first matching chunk runs it.
 const claimed = new Set<string>()
 
 function repoWide(command: string) {

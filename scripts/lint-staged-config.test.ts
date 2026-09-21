@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-const chunkOf = (prefix: string, count: number) =>
-  Array.from({ length: count }, (_, index) => `src/${prefix}${index}.ts`)
+function chunkOf(prefix: string, count: number) {
+  return Array.from({ length: count }, (_, index) => `src/${prefix}${index}.ts`)
+}
 
-/** A fresh module, so one test's chunks never claim commands for the next. */
 async function freshConfig() {
   vi.resetModules()
   const { default: lintStaged } = await import('../lint-staged.config')
@@ -23,8 +23,6 @@ describe('lint-staged config', () => {
     expect(second).not.toContain('pnpm typecheck')
   })
 
-  // Only the chunk holding these files asks for their typecheck, and an
-  // earlier chunk taking the plain one must not swallow it.
   it.for([
     ['browser_tests/example.spec.ts', 'pnpm typecheck:browser'],
     ['apps/website/src/pages/index.astro', 'pnpm typecheck:website']
