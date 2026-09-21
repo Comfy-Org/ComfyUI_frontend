@@ -187,7 +187,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
-    if (!trySend(batch)) {
+    if (!trySend(batch, attempt)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
         // the result timer is armed only after a successful send) so
@@ -205,11 +205,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  function trySend(batch: InFlight): boolean {
+  function trySend(batch: InFlight, attempt: number): boolean {
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
     } catch (error) {
-      reportError(error, { errorType: 'agent_human_ops_send_failed' })
+      // Every retry re-runs the same throwing call: report the cycle once.
+      if (attempt === 0)
+        reportError(error, {
+          errorType: 'agent_human_ops_send_failed',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'agent',
+            operation: 'sync',
+            outcome: 'recovered'
+          },
+          level: 'error'
+        })
       return false
     }
   }
