@@ -82,6 +82,8 @@ export interface AgentSessionDeps {
       isCurrent: () => boolean
     ): Promise<void> | void
     prepare?(): Promise<void>
+    /** The server refused this workflow id; forget every cached trace of it. */
+    disowned?(workflowId: string): void
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
@@ -401,15 +403,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * The server will not serve the id this turn was posted under, and the
    * binding that produced it outlives the page. Left in place it poisons the
    * tab: every later turn re-posts the same dead id, and a reload re-affirms
-   * the binding through the thread's own workflow pointer. Releasing it lets
-   * the next turn resolve the tab again.
+   * the binding through the thread's own workflow pointer.
+   *
+   * Everything here is keyed by the refused id, never by its tab path: the tab
+   * may already have been rebound to a healthy workflow while the POST was in
+   * flight. `disowned` evicts the id from the resolver's cloud index, which
+   * `cloudIdFor` consults ahead of the binding store.
    */
   function releaseDisownedWorkflow(
     sent: WorkflowTurnContext | undefined,
     error: unknown
   ): void {
     if (sent?.id === undefined || !disownsWorkflow(error)) return
-    bindingStore.unbind(sent.tabPath)
+    bindingStore.unbindWorkflow(sent.id)
+    workflow?.disowned?.(sent.id)
     if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
     if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
   }
@@ -448,8 +455,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
-      if (generation !== loadGeneration) return false
+      // Before the generation guard: the binding store is page-global and
+      // persisted, so a refusal that lands after newChat()/loadThread() has
+      // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
+      if (generation !== loadGeneration) return false
       recordSendError(error, text)
       return false
     }
