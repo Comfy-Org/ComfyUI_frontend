@@ -19,7 +19,7 @@
         size="icon-lg"
         class="absolute top-4 right-4 z-10 rounded-full"
         :aria-label="$t('g.close')"
-        @click="close"
+        @click="onCloseClick"
       >
         <i class="icon-[lucide--x] size-5" />
       </Button>
@@ -144,8 +144,20 @@ function navigateImage(direction: number) {
 
 let maskMouseDownTarget: EventTarget | null = null
 
+// A control that opens this dialog on a single click leaves the second half of
+// a double-click landing here, on a dialog that did not exist when the gesture
+// began. Those clicks must not dismiss what the gesture just opened.
+function isRepeatClick(event: MouseEvent) {
+  return event.detail >= 2
+}
+
 function onMaskMouseDown(event: MouseEvent) {
-  maskMouseDownTarget = event.target
+  maskMouseDownTarget = isRepeatClick(event) ? null : event.target
+}
+
+function onCloseClick(event: MouseEvent) {
+  if (isRepeatClick(event)) return
+  close()
 }
 
 function onMaskMouseUp(event: MouseEvent) {

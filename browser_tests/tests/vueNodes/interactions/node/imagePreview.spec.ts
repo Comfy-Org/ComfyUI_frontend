@@ -350,6 +350,43 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   )
 
   wstest(
+    'stays open when the lightbox action button is double-clicked',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+      execution.executed('', '1', {
+        images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
+      })
+      await expect(node.imagePreview.locator('img').first()).toBeVisible()
+
+      await node.imagePreview.getByRole('region').hover()
+      await comfyPage.page
+        .getByRole('button', { name: 'Open in lightbox' })
+        .dblclick()
+
+      // The button opens on the first click, so the second lands on a backdrop
+      // that did not exist when the gesture began and must not dismiss it.
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+      await comfyPage.nextFrame()
+      await expect(lightbox).toBeVisible()
+
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(lightbox).toBeHidden()
+    }
+  )
+
+  wstest(
     'requests lightweight thumbnail URLs for grid cells',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
