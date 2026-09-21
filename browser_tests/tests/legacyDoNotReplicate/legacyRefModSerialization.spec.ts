@@ -22,21 +22,28 @@ test.describe(
         'RefMod Loader Compatibility',
         'mod_8'
       )
-      await expect(mod).toContainText('voice.refmod')
-      await expect(unused).toBeHidden()
 
-      const saved = await comfyPage.workflow.getExportedWorkflow()
-      await comfyPage.workflow.loadGraphData(saved)
+      await test.step('Verify the selected model and hidden unused slot', async () => {
+        await expect(mod).toContainText('voice.refmod')
+        await expect(unused).toBeHidden()
+      })
 
-      const node = await comfyPage.nodeOps.getNodeRefByType(
-        'DevToolsRefModLoader'
-      )
-      const selected = await node.getWidgetByName('mod_1')
-      const strength = await node.getWidgetByName('strength_1')
+      await test.step('Save and reload the workflow', async () => {
+        const saved = await comfyPage.workflow.getExportedWorkflow()
+        await comfyPage.workflow.loadGraphData(saved)
+      })
 
-      await expect.poll(() => selected.getValue()).toBe('voice.refmod')
-      await expect.poll(() => strength.getValue()).toBe(0.65)
-      await expect(unused).toBeHidden()
+      await test.step('Verify values and unused-slot visibility survive reload', async () => {
+        const node = await comfyPage.nodeOps.getNodeRefByType(
+          'DevToolsRefModLoader'
+        )
+        const selected = await node.getWidgetByName('mod_1')
+        const strength = await node.getWidgetByName('strength_1')
+
+        await expect.poll(() => selected.getValue()).toBe('voice.refmod')
+        await expect.poll(() => strength.getValue()).toBe(0.65)
+        await expect(unused).toBeHidden()
+      })
     })
   }
 )

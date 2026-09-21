@@ -18,23 +18,28 @@ test.describe('WAS Pause live disabled getter', { tag: '@widget' }, () => {
     async ({ comfyPage }) => {
       const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
       const resume = await node.getWidgetByName('Resume')
-      await expect
-        .poll(() => node.getProperty('properties'))
-        .toMatchObject({ resumed: false })
 
-      await comfyPage.page.evaluate(
-        (id) =>
-          window.dispatchEvent(
-            new CustomEvent('devtools-was-pause', { detail: String(id) })
-          ),
-        node.id
-      )
-      await comfyPage.nextFrame()
+      await test.step('Pause execution', async () => {
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: false })
 
-      await resume.click()
-      await expect
-        .poll(() => node.getProperty('properties'))
-        .toMatchObject({ resumed: true })
+        await comfyPage.page.evaluate(
+          (id) =>
+            window.dispatchEvent(
+              new CustomEvent('devtools-was-pause', { detail: String(id) })
+            ),
+          node.id
+        )
+        await comfyPage.nextFrame()
+      })
+
+      await test.step('Resume execution through the canvas button', async () => {
+        await resume.click()
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: true })
+      })
     }
   )
 
@@ -46,25 +51,30 @@ test.describe('WAS Pause live disabled getter', { tag: '@widget' }, () => {
       const button = comfyPage.vueNodes
         .getNodeLocator(node.id)
         .getByRole('button', { name: 'Resume', exact: true })
-      await expect
-        .poll(() => node.getProperty('properties'))
-        .toMatchObject({ resumed: false })
 
-      await comfyPage.page.evaluate(
-        (id) =>
-          window.dispatchEvent(
-            new CustomEvent('devtools-was-pause', { detail: String(id) })
-          ),
-        node.id
-      )
-      await comfyPage.nextFrame()
+      await test.step('Pause execution', async () => {
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: false })
 
-      await expect(button).toBeVisible()
-      await expect(button).toBeEnabled()
-      await button.click()
-      await expect
-        .poll(() => node.getProperty('properties'))
-        .toMatchObject({ resumed: true })
+        await comfyPage.page.evaluate(
+          (id) =>
+            window.dispatchEvent(
+              new CustomEvent('devtools-was-pause', { detail: String(id) })
+            ),
+          node.id
+        )
+        await comfyPage.nextFrame()
+      })
+
+      await test.step('Resume execution through the enabled Vue button', async () => {
+        await expect(button).toBeVisible()
+        await expect(button).toBeEnabled()
+        await button.click()
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: true })
+      })
     }
   )
 })
