@@ -513,6 +513,26 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
+  test('asks nothing about the provider moderation checks and sends nothing', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await page.getByTestId('playground-advanced').locator('summary').click()
+
+    await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
+    await expect(
+      page.getByRole('combobox', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('slider', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await expect(page.getByTestId('snippet')).not.toContainText(
+      'safety_tolerance'
+    )
+  })
+
   test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
     page,
     modelsAccount
