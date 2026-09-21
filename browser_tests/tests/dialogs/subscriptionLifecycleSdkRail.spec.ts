@@ -100,7 +100,7 @@ interface LifecycleRoutes {
   refusePortal: () => void
 }
 
-interface BootOptions {
+interface CloudBootOptions {
   /**
    * Serves `billing_sdk_subscription_enabled: true` on `/api/features`, the
    * channel the staged rollout publishes on.
@@ -117,7 +117,7 @@ interface BootOptions {
 
 async function mockCloudBoot(
   page: Page,
-  { railOnFeatures = false }: BootOptions = {}
+  { railOnFeatures = false }: CloudBootOptions = {}
 ): Promise<LifecycleRoutes> {
   const resubscribeRequests: Request[] = []
   const portalRequests: Request[] = []
@@ -254,12 +254,15 @@ async function mockCloudBoot(
   }
 }
 
-interface BootOptions {
+interface AppBootOptions {
   /** Every `window.open` is refused, as a browser blocking the popup does. */
   blockPopups?: boolean
 }
 
-async function bootApp(page: Page, { blockPopups = false }: BootOptions = {}) {
+async function bootApp(
+  page: Page,
+  { blockPopups = false }: AppBootOptions = {}
+) {
   await new CloudAuthHelper(page).mockAuth()
   await page.addInitScript((refuseEveryOpen: boolean) => {
     localStorage.setItem('Comfy.userId', 'test-user-e2e')
