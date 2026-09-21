@@ -47,7 +47,8 @@ describe('RouterRoadmapSection', () => {
     const cards = [
       { title: /comfy workflows/i, details: /Workflows run today/ },
       { title: /routing strategies/i, details: /Name the outcome you want/ },
-      { title: /route by use case/i, details: /Describe the task instead/ }
+      { title: /route by use case/i, details: /Describe the task instead/ },
+      { title: /byok/i, details: /Bring your own key/ }
     ]
 
     for (const card of cards) {

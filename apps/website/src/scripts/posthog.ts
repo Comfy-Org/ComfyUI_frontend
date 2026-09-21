@@ -56,7 +56,7 @@ export type CliClientId =
   | 'terminal'
   | 'ci'
 
-export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case'
+export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
   | {

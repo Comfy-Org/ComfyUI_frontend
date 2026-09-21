@@ -138,6 +138,20 @@ const copy = {
     'zh-CN':
       '描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。'
   },
+  'platform.router.roadmap.4.title': {
+    en: 'BYOK',
+    'zh-CN': '自带密钥（BYOK）'
+  },
+  'platform.router.roadmap.4.description': {
+    en: 'Use your own provider key for supported models while keeping the same Comfy Router integration.',
+    'zh-CN':
+      '在支持的模型上使用你自己的供应商密钥，同时保留同一套 Comfy Router 集成。'
+  },
+  'platform.router.roadmap.4.details': {
+    en: 'Bring your own key for the models that support it and nothing else changes: the same route, the same request shape and the same job surface. BYOK is available for select models on Enterprise today, enabled by request.',
+    'zh-CN':
+      '在支持的模型上使用你自己的密钥，其余一切不变：同一条路由、同一种请求格式、同一套任务接口。目前企业版的部分模型已支持 BYOK，需申请开通。'
+  },
   'platform.router.roadmap.learnMore': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'

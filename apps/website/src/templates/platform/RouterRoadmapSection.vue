@@ -40,6 +40,12 @@ const cards: readonly {
     title: routerT('platform.router.roadmap.3.title', locale),
     description: routerT('platform.router.roadmap.3.description', locale),
     details: routerT('platform.router.roadmap.3.details', locale)
+  },
+  {
+    id: 'byok',
+    title: routerT('platform.router.roadmap.4.title', locale),
+    description: routerT('platform.router.roadmap.4.description', locale),
+    details: routerT('platform.router.roadmap.4.details', locale)
   }
 ]
 
@@ -121,7 +127,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 
     <div
       ref="grid"
-      class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start"
+      class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start xl:grid-cols-4"
     >
       <FeatureCard
         v-for="(card, index) in cards"
@@ -191,7 +197,12 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
                 fill="#4b3e78"
               />
             </svg>
-            <svg v-else viewBox="0 0 300 160" class="size-full" fill="none">
+            <svg
+              v-else-if="card.id === 'use-case'"
+              viewBox="0 0 300 160"
+              class="size-full"
+              fill="none"
+            >
               <path
                 d="M96 35c55 0 55 45 110 45M96 80h110M96 125c55 0 55-45 110-45"
                 stroke="#6858a8"
@@ -226,6 +237,36 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
                 y="56"
                 width="66"
                 height="48"
+                rx="14"
+                fill="#efff45"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 300 160" class="size-full" fill="none">
+              <path d="M55 80h62M183 80h62" stroke="#6858a8" stroke-width="3" />
+              <circle cx="42" cy="80" r="20" fill="#4b3e78" />
+              <rect
+                x="117"
+                y="56"
+                width="66"
+                height="48"
+                rx="14"
+                fill="#4b3e78"
+              />
+              <circle cx="121" cy="60" r="14" fill="#efff45" />
+              <rect
+                x="119"
+                y="60"
+                width="4"
+                height="16"
+                rx="2"
+                fill="#efff45"
+              />
+              <rect x="123" y="70" width="6" height="4" rx="1" fill="#efff45" />
+              <rect
+                x="238"
+                y="60"
+                width="40"
+                height="40"
                 rx="14"
                 fill="#efff45"
               />
