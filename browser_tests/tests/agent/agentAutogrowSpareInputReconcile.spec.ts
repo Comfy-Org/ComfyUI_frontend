@@ -392,8 +392,8 @@ test.describe(
       page
     }) => {
       test.setTimeout(60_000)
-      test.fail()
       const { vueNodes, gptNodeId } = await wireAutogrowNodeAndSwitchTabs(page)
+      test.fail()
       await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
         IMAGE_2_FRIENDLY_LABEL
       )
