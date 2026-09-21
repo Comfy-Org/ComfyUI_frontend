@@ -88,16 +88,14 @@ function assetsQueryInternal(
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
-        let reachedKnownId = false
-        for (const asset of assets) {
-          if (knownIds.has(asset.id)) {
-            reachedKnownId = true
-            break
+        const reachedKnownId = assets.some((asset) => {
+          if (knownIds.has(asset.id)) return true
+          if (!seenIds.has(asset.id)) {
+            seenIds.add(asset.id)
+            newItems.push(asset)
           }
-          if (seenIds.has(asset.id)) continue
-          seenIds.add(asset.id)
-          newItems.push(asset)
-        }
+          return false
+        })
         if (reachedKnownId || !has_more || next_cursor === undefined) break
         headCursor = next_cursor
       }
@@ -107,8 +105,10 @@ function assetsQueryInternal(
 
   async function invalidate(stale?: string[]) {
     if (stale) {
-      const ids = new Set(stale)
-      items.value = items.value.filter((item) => !ids.has(item.id))
+      await preempt(async () => {
+        const ids = new Set(stale)
+        items.value = items.value.filter((item) => !ids.has(item.id))
+      })
       return
     }
     await preempt(async () => {
@@ -145,11 +145,15 @@ function assetsQueryInternal(
     const jsonresp = await resp
       .json()
       .catch((e) => onError('failed to decode asset json response', e))
-    if (!jsonresp) return
+    if (!jsonresp) {
+      morePages.value = false
+      return
+    }
 
     const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
+      morePages.value = false
       return
     }
     return parseResult.data

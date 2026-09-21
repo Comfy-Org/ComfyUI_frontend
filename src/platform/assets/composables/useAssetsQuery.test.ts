@@ -101,42 +101,20 @@ describe('useAssetsQuery page size', () => {
   })
 })
 
-// `useAssetsQuery`'s internal `backingOff` ref (src/platform/assets/composables/
-// useAssetsQuery.ts) auto-resets after 2000ms via `refAutoReset`. It is only armed
-// for the "no response object" (network reject) and 5xx/429 branches of `doQuery`,
-// not for a successfully-received-but-malformed body. Each case below advances
-// fake timers past that window before asserting `hasMore` recovers, matching real
-// backoff timing instead of assuming an immediate reset (the original PR's shared
-// assertion that `hasMore` stays `true` right after failure only actually holds for
-// the malformed-JSON case).
 const transientFailures: {
   name: string
   fail: () => Promise<Response>
   reason: string
-  backsOff: boolean
 }[] = [
   {
     name: 'HTTP 500',
     fail: () => Promise.resolve(new Response(null, { status: 500 })),
-    reason: 'asset request failed',
-    backsOff: true
-  },
-  {
-    name: 'malformed JSON',
-    fail: () =>
-      Promise.resolve(
-        new Response('{', {
-          headers: { 'Content-Type': 'application/json' }
-        })
-      ),
-    reason: 'failed to decode asset json response',
-    backsOff: false
+    reason: 'asset request failed'
   },
   {
     name: 'offline request',
     fail: () => Promise.reject(new Error('offline')),
-    reason: 'asset fetch failed',
-    backsOff: true
+    reason: 'asset fetch failed'
   }
 ]
 
@@ -147,7 +125,7 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
 
   it.for(transientFailures)(
     'retains rows and retries the same cursor after $name',
-    async ({ fail, reason, backsOff }) => {
+    async ({ fail, reason }) => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`retry-${reason}`, ['newest'], {
         hasMore: true,
@@ -162,12 +140,8 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
 
       expect(error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
-      if (backsOff) {
-        // 5xx / network-reject branches arm the 2s backoff, which gates
-        // hasMore off until it auto-resets.
-        expect(toValue(list.hasMore)).toBe(false)
-        await vi.advanceTimersByTimeAsync(2000)
-      }
+      expect(toValue(list.hasMore)).toBe(false)
+      await vi.advanceTimersByTimeAsync(2000)
       expect(toValue(list.hasMore)).toBe(true)
 
       await list.loadMore()
@@ -181,6 +155,73 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
       ])
     }
   )
+})
+
+const malformedResponses: {
+  name: string
+  response: Response
+  reason: string
+}[] = [
+  {
+    name: 'malformed JSON',
+    response: new Response('{', {
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    reason: 'failed to decode asset json response'
+  },
+  {
+    name: 'an invalid response schema',
+    response: new Response(JSON.stringify({ assets: [] }), {
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    reason: 'Failed to parse asset response'
+  }
+]
+
+describe('useAssetsQuery malformed response', () => {
+  it.for(malformedResponses)(
+    'terminates pagination after $name',
+    async ({ response, reason }) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const list = await createList(`malformed-${reason}`, ['newest'], {
+        hasMore: true,
+        nextCursor: 'page-2'
+      })
+      fetchApiMock.mockResolvedValueOnce(response)
+
+      await expect(list.loadMore()).resolves.toBe(false)
+
+      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
+      expect(toValue(list.hasMore)).toBe(false)
+
+      await expect(list.loadMore()).resolves.toBe(false)
+      expect(requestedAfterCursors()).toEqual(['page-2'])
+    }
+  )
+})
+
+describe('useAssetsQuery stale invalidation', () => {
+  it('does not restore a stale asset from an in-flight page', async () => {
+    const list = await createList('stale-in-flight', ['deleted', 'newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    let resolvePage!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePage = resolve
+      })
+    )
+
+    const loading = list.loadMore()
+    await vi.waitFor(() => expect(fetchApiMock).toHaveBeenCalledTimes(2))
+    const invalidating = list.invalidate(['deleted'])
+    resolvePage(response(['deleted', 'older']))
+    await Promise.all([loading, invalidating])
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest', 'older'])
+  })
 })
 
 describe('useAssetsQuery loadNew pagination', () => {

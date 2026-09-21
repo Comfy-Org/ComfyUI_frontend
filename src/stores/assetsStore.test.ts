@@ -130,6 +130,28 @@ describe('assetsStore - OSS history pagination', () => {
       vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
     ).toEqual([{ offset: 0 }, { offset: 200 }])
   })
+
+  it('loads history pages until it finds the requested output asset', async () => {
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockResolvedValueOnce(createHistoryPage(200))
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('stops looking when history has no more pages', async () => {
+    vi.mocked(api.getHistory).mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('missing-job')).resolves.toBe(false)
+
+    expect(api.getHistory).toHaveBeenCalledOnce()
+  })
 })
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
