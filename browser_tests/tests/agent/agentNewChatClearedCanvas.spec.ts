@@ -74,16 +74,18 @@ async function recordPostedTurns(
   await page.route('**/api/agent/threads/*/messages', (route) => {
     const request = route.request()
     if (request.method() !== 'POST') return route.fallback()
-    const threadId = new URL(request.url()).pathname.split('/').at(-2)!
+    const threadId = new URL(request.url()).pathname.split('/').at(-2)
+    if (!threadId) throw new Error('Agent message route has no thread segment')
+    const body = zAgentPostMessageRequest.parse(request.postDataJSON())
     posted.push({
       threadId,
-      body: zAgentPostMessageRequest.parse(request.postDataJSON())
+      body
     })
     if (posted.length === 1) return route.fallback()
     const accepted: AgentTurnAccepted = {
       thread_id: NEW_CHAT_THREAD_ID,
       message_id: NEW_CHAT_TURN_ID,
-      workflow_id: posted.at(-1)!.body.workflow_id ?? FRESH_WORKFLOW_ID
+      workflow_id: body.workflow_id ?? FRESH_WORKFLOW_ID
     }
     return route.fulfill({ ...jsonRoute(accepted), status: 202 })
   })
