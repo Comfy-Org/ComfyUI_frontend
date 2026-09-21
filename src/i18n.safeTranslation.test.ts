@@ -101,4 +101,15 @@ describe('the HTML sanitizer stays linear and correct', () => {
       translate(`<a ${'x'.repeat(200)}="1" href="javascript:alert(1)">`)
     ).toContain('href="about:blank"')
   })
+
+  // The boundary is enforced in the callback, not by consuming a char, so an
+  // attribute that abuts the previous value's closing quote still matches.
+  it('neutralizes a javascript: url that abuts the previous attribute', () => {
+    expect(translate('<a x="1"href="javascript:alert(1)">')).toContain(
+      'href="about:blank"'
+    )
+    expect(translate("<a x='1'href='javascript:alert(1)'>")).toContain(
+      "href='about:blank'"
+    )
+  })
 })
