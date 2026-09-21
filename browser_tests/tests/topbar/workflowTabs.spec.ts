@@ -293,14 +293,14 @@ test.describe('Workflow tabs', () => {
       await expect(scrollLeft).toBeVisible()
       await expect(scrollLeft).toBeEnabled()
       await expect(scrollRight).toBeDisabled()
+      const scrollArrowBox = await scrollRight.boundingBox()
       await expect
-        .poll(async () => {
-          const box = await topbar.workflowTabs
+        .poll(() =>
+          topbar.workflowTabs
             .getByRole('button', { name: 'More workflows', exact: true })
             .boundingBox()
-          return box?.height ?? 0
-        })
-        .toBeGreaterThanOrEqual(32)
+        )
+        .toMatchObject({ height: scrollArrowBox?.height })
 
       const activeTabName = await topbar.getActiveTabName()
       await scrollLeft.dispatchEvent('mousedown')
