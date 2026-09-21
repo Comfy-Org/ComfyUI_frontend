@@ -179,4 +179,27 @@ describe('LGraphNode extension payload fallbacks', () => {
 
     expect(serialized.extensions).toBeUndefined()
   })
+
+  it('keeps sibling namespaced entries when one entry cannot be cloned', () => {
+    const node = new LGraphNode('TestNode')
+    const brokenValue = new Proxy(
+      { label: 'not serializable' },
+      {
+        get(target, property, receiver) {
+          if (property === 'toJSON') throw new Error('Cannot serialize')
+          return Reflect.get(target, property, receiver)
+        }
+      }
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', {
+        healthyExt: { note: 'kept' },
+        brokenExt: brokenValue
+      })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
 })

@@ -124,19 +124,30 @@ const isSafeExtensionKey = (key: string): boolean => key !== '__proto__'
 
 const readPayload = (value: unknown): ExtensionPayload => {
   if (value === undefined) return {}
-  const clonedValue = safeCloneExtensionValue(value)
-  if (
-    clonedValue === undefined ||
-    clonedValue === null ||
-    typeof clonedValue !== 'object' ||
-    Array.isArray(clonedValue)
-  ) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
-  return Object.fromEntries(
-    Object.entries(clonedValue).filter(([key]) => isSafeExtensionKey(key))
-  )
+  // Clone each namespaced entry on its own so one uncloneable extension does
+  // not discard the payloads of every sibling extension.
+  let entries: [string, unknown][]
+  try {
+    entries = Object.entries(value)
+  } catch {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
+    return {}
+  }
+  const payload: ExtensionPayload = {}
+  for (const [key, entry] of entries) {
+    if (!isSafeExtensionKey(key)) continue
+    const clonedEntry = safeCloneExtensionValue(entry)
+    if (clonedEntry !== undefined) {
+      payload[key] = clonedEntry
+    } else {
+      console.warn('LiteGraph: ignoring non-serializable extension payload')
+    }
+  }
+  return payload
 }
 
 function copyExtensionFields(
