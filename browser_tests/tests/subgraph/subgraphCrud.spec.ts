@@ -82,6 +82,54 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
       await expect.poll(() => comfyPage.subgraph.getNodeCount()).toBe(1)
     })
 
+    test.describe('Empty selection', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.deselectAll()
+          const tracker =
+            window.app!.extensionManager.workflow.activeWorkflow!.changeTracker
+          tracker.reset()
+          tracker.updateModified()
+        })
+        await comfyPage.nextFrame()
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+          .toBe(0)
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(false)
+      })
+
+      test('Empty selection conversion shows an error toast and leaves the graph unchanged', async ({
+        comfyPage
+      }) => {
+        test.fail()
+        const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+        await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Cannot create subgraph'
+        )
+        await expect(comfyPage.toast.toastErrors).toContainText(
+          'Failed to convert items to subgraph'
+        )
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(initialCount)
+        await expect
+          .poll(
+            async () =>
+              (await comfyPage.nodeOps.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE))
+                .length
+          )
+          .toBe(0)
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(false)
+      })
+    })
+
     test('Can delete subgraph node', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 

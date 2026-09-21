@@ -65,6 +65,29 @@ function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
 }
 
 describe('SubgraphConversion', () => {
+  it('rejects an empty selection without mutating the graph', () => {
+    const rootGraph = createTestRootGraph()
+    const before = JSON.stringify(rootGraph.serialize())
+    const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
+
+    expect(() => rootGraph.convertToSubgraph(new Set())).toThrow(
+      'Cannot convert to subgraph: nothing to convert'
+    )
+    expect(beforeChange).not.toHaveBeenCalled()
+    expect(JSON.stringify(rootGraph.serialize())).toBe(before)
+  })
+
+  it('returns the converted subgraph and node on success', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const source = createTestNode(rootGraph)
+
+    const result = rootGraph.convertToSubgraph(new Set([source]))
+
+    expect(result.subgraph).toBe(rootGraph.subgraphs.values().next().value)
+    expect(result.node.subgraph).toBe(result.subgraph)
+  })
+
   describe('Convert to Subgraph store integrity', () => {
     it('keeps interior and boundary-derived input links registered in the link store', () => {
       const rootGraph = createTestRootGraph()

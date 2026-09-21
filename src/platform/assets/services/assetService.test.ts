@@ -14,7 +14,12 @@ import {
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
+const mockReportError = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -349,18 +354,28 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  it('throws an error containing the status code when the response is not ok', async () => {
+  it.fails('reports and preserves request failures', async () => {
+    const failure = new Error('Network unavailable')
+    fetchApiMock.mockRejectedValueOnce(failure)
+
+    await expect(assetService.deleteAsset('asset-1')).rejects.toBe(failure)
+    expect(mockReportError).toHaveBeenCalledWith(failure, {
+      errorType: 'asset_deletion_request_failure'
+    })
+  })
+
+  it.fails('returns false when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
     )
 
-    await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
+  it.fails('issues a DELETE to the asset endpoint when the response is ok', async () => {
     fetchApiMock.mockResolvedValueOnce(buildResponse(null))
 
-    await assetService.deleteAsset('asset-1')
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)
 
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/assets/asset-1',

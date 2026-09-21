@@ -3,8 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { helpFallbackNodeDef } from '@e2e/fixtures/data/helpFallbackNodeDef'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.beforeEach(async ({ page }) => {
@@ -401,6 +403,59 @@ This is English documentation.
         const helpPage = await openSelectionToolboxHelp(comfyPage)
         await expect(helpPage).toContainText('KSamplerノード')
         await expect(helpPage).toContainText('これは日本語のドキュメントです')
+      })
+    })
+
+    test.describe('Custom-node documentation fallback', () => {
+      test.use({
+        page: async ({ page }, use) => {
+          await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+            objectInfo[helpFallbackNodeDef.name] = helpFallbackNodeDef
+          })
+          await page.route(
+            '**/extensions/help_fallback_pack/docs/HelpFallbackNode/en.md',
+            (route) => route.abort('failed')
+          )
+          await page.route(
+            '**/extensions/help_fallback_pack/docs/HelpFallbackNode.md',
+            (route) =>
+              route.fulfill({
+                status: 200,
+                contentType: 'text/markdown',
+                body: '# Custom fallback help\n\nNonlocalized custom node docs.'
+              })
+          )
+          await use(page)
+        }
+      })
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.nodeOps.addNode(helpFallbackNodeDef.name, undefined, {
+          x: 200,
+          y: 200
+        })
+        await comfyPage.nextFrame()
+      })
+
+      test.afterEach(async ({ comfyPage }) => {
+        await comfyPage.canvasOps.resetView()
+      })
+
+      test('Falls back to nonlocalized custom-node docs after a locale request fails', async ({
+        comfyPage
+      }) => {
+        test.fail()
+        const customNode = await comfyPage.nodeOps.getNodeRefByType(
+          helpFallbackNodeDef.name
+        )
+        await comfyPage.nodeOps.selectNodeWithPan(customNode)
+
+        const helpPage = await openSelectionToolboxHelp(comfyPage)
+        await expect(helpPage).toContainText('Custom fallback help')
+        await expect(helpPage).toContainText('Nonlocalized custom node docs.')
+        await expect(helpPage).not.toContainText(
+          'Custom node description fallback'
+        )
       })
     })
 
