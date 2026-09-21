@@ -12,8 +12,9 @@ import {
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { previewImageNodeFixture } from '@e2e/fixtures/previewImageNodeFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-const wstest = mergeTests(test, webSocketFixture)
+const wstest = mergeTests(test, webSocketFixture, previewImageNodeFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
@@ -225,32 +226,17 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     }
   )
 
-  async function addPreviewImageNode(comfyPage: ComfyPage) {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
-
-    await comfyPage.searchBoxV2.addNode('Preview Image')
-    await expect(
-      comfyPage.vueNodes.getNodeByTitle('Preview Image')
-    ).toBeVisible()
-
-    return comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-  }
-
-  function collectDownloads(comfyPage: ComfyPage) {
-    const downloads: string[] = []
-    comfyPage.page.on('download', (download) =>
-      downloads.push(download.suggestedFilename())
-    )
-    return downloads
-  }
-
   wstest(
     'opens the lightbox when a grid image is double-clicked',
-    async ({ comfyPage, comfyMouse, getWebSocket }) => {
+    async ({
+      comfyPage,
+      comfyMouse,
+      getWebSocket,
+      addPreviewImageNode,
+      downloads
+    }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const downloads = collectDownloads(comfyPage)
-      const node = await addPreviewImageNode(comfyPage)
+      const node = await addPreviewImageNode()
       const gridImages = node.imageGrid.locator('img')
 
       await test.step('Inject a multi-image grid', async () => {
@@ -316,10 +302,9 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
   wstest(
     'opens the lightbox on a dense grid cell that the action bar covers',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket, addPreviewImageNode, downloads }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const downloads = collectDownloads(comfyPage)
-      const node = await addPreviewImageNode(comfyPage)
+      const node = await addPreviewImageNode()
       const gridImages = node.imageGrid.locator('img')
 
       await test.step('Inject a dense grid', async () => {
@@ -357,9 +342,9 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
   wstest(
     'stays open when the lightbox action button is double-clicked',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket, addPreviewImageNode }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const node = await addPreviewImageNode(comfyPage)
+      const node = await addPreviewImageNode()
 
       execution.executed('', '1', {
         images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
@@ -382,9 +367,9 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
   wstest(
     'keeps tab focus inside the lightbox in both directions',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket, addPreviewImageNode }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const node = await addPreviewImageNode(comfyPage)
+      const node = await addPreviewImageNode()
       const gridImages = node.imageGrid.locator('img')
 
       execution.executed('', '1', {
@@ -404,14 +389,10 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(lightbox).toBeVisible()
 
       const focusIsInsideDialog = () =>
-        comfyPage.page.evaluate(() => {
-          const dialog = document.querySelector('[data-mask]')
-          return !!(
-            dialog &&
-            document.activeElement &&
-            dialog.contains(document.activeElement)
-          )
-        })
+        lightbox.evaluate(
+          (dialog) =>
+            !!document.activeElement && dialog.contains(document.activeElement)
+        )
 
       for (const key of ['Tab', 'Shift+Tab']) {
         for (let press = 0; press < 5; press++) {

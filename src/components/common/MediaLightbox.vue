@@ -44,31 +44,7 @@
         </Button>
 
         <div class="flex max-h-full max-w-full items-center justify-center">
-          <template v-if="activeItem">
-            <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
-              <ComfyImage
-                v-if="isImageResult(activeItem)"
-                :key="resultItemUrl(activeItem)"
-                :src="resultItemUrl(activeItem)"
-                :contain="false"
-                :alt="activeItem.filename"
-                class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-              />
-              <ResultVideo
-                v-else-if="isVideoResult(activeItem)"
-                :key="resultItemUrl(activeItem)"
-                :result="activeItem"
-              />
-              <ResultAudio
-                v-else-if="isAudioResult(activeItem)"
-                :result="activeItem"
-              />
-              <ResultText
-                v-else-if="isTextResult(activeItem)"
-                :result="activeItem"
-              />
-            </KeepAlive>
-          </template>
+          <MediaLightboxItem v-if="activeItem" :item="activeItem" />
         </div>
 
         <Button
@@ -90,20 +66,9 @@
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
 
-import ComfyImage from '@/components/common/ComfyImage.vue'
+import MediaLightboxItem from '@/components/common/MediaLightboxItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
-import {
-  isAudioResult,
-  isImageResult,
-  isTextResult,
-  isVideoResult
-} from '@/utils/resultItem'
-
-import ResultAudio from './ResultAudio.vue'
-import ResultText from './ResultText.vue'
-import ResultVideo from './ResultVideo.vue'
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
@@ -113,9 +78,6 @@ const { allGalleryItems, activeIndex } = defineProps<{
   readonly allGalleryItems: AugmentedResultItem[]
   readonly activeIndex: number
 }>()
-
-/* Keeps the active video plus its neighbors buffered across gallery moves. */
-const RETAINED_VIDEO_COUNT = 3
 
 const galleryVisible = ref(false)
 const dialogRef = ref<HTMLElement>()
@@ -132,7 +94,9 @@ watch(
       openingGestureActive = false
       const opener = previouslyFocusedElement
       previouslyFocusedElement = null
-      void nextTick(() => opener?.focus())
+      void nextTick(() => {
+        if (opener?.isConnected) opener.focus()
+      })
       return
     }
     if (previousIndex !== undefined && previousIndex !== -1) return
@@ -157,9 +121,6 @@ function navigateImage(direction: number) {
 
 let maskMouseDownTarget: EventTarget | null = null
 
-// A single-click control can open this dialog under a double-click, leaving the
-// trailing press on a dialog that did not exist when the gesture began. Reject
-// that one gesture here, so every control below stays a plain semantic action.
 function onDialogGestureCapture(event: MouseEvent) {
   if (!openingGestureActive) return
   if (event.detail >= 2) {

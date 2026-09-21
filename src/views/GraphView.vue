@@ -300,7 +300,14 @@ onBeforeUnmount(() => {
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => {
+    const wasOpen = galleryStore.activeIndex !== -1
     galleryStore.close()
+    if (!wasOpen) return
+    void nextTick(() => {
+      graphCanvasContainerRef.value
+        ?.querySelector<HTMLElement>('#graph-canvas')
+        ?.focus()
+    })
   }
 )
 

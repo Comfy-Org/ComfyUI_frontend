@@ -134,7 +134,12 @@ vi.mock<unknown>(
     default: { template: '<div data-testid="education-card-stub" />' }
   })
 )
-vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
+  default: {
+    template:
+      '<canvas id="graph-canvas" tabindex="-1" aria-label="Graph canvas" />'
+  }
+}))
 vi.mock<unknown>(import('@/components/common/MediaLightbox.vue'), () => ({
   default: { template: '<div />' }
 }))
@@ -266,6 +271,20 @@ describe('GraphView - media lightbox lifetime', () => {
     await nextTick()
 
     expect(galleryStore.activeIndex).toBe(-1)
+  })
+
+  it('focuses the incoming canvas when a workflow switch closes the gallery', async () => {
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
+
+    render(GraphView, { global: { plugins: [i18n] } })
+    openLightbox()
+
+    workflowStore.activeWorkflow = makeWorkflow('/workflows/b.json')
+    await nextTick()
+    await nextTick()
+
+    expect(screen.getByLabelText('Graph canvas')).toHaveFocus()
   })
 
   it('leaves the lightbox open while the active workflow is unchanged', async () => {
