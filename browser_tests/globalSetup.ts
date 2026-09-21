@@ -18,6 +18,22 @@ dotenvConfig()
  * Same URL resolution as `ComfyPage`, so this checks the endpoint the fixture
  * will actually call.
  */
+/**
+ * `null` when the route is present or the backend is unreachable — an
+ * unreachable backend is a different failure with its own clear message, so it
+ * is left to the fixture rather than guessed at here. Otherwise the status that
+ * says the route is absent: 404 or 405. Any other status, including a 4xx about
+ * the payload, means devtools answered.
+ */
+async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
+  try {
+    const { status } = await fetch(endpoint, { method: 'POST', body: '{}' })
+    return status === 404 || status === 405 ? status : null
+  } catch {
+    return null
+  }
+}
+
 async function assertDevtoolsInstalled(): Promise<void> {
   const apiUrl =
     process.env.PLAYWRIGHT_SETUP_API_URL ||
@@ -25,18 +41,8 @@ async function assertDevtoolsInstalled(): Promise<void> {
     'http://localhost:8188'
   const endpoint = `${apiUrl}/api/devtools/set_settings`
 
-  let status: number
-  try {
-    status = (await fetch(endpoint, { method: 'POST', body: '{}' })).status
-  } catch {
-    // Unreachable backend is a different failure with its own clear message;
-    // leave it to the fixture rather than guessing here.
-    return
-  }
-
-  // 404/405 mean the route is absent, i.e. devtools is not loaded. Anything
-  // else — including a 4xx about the payload — means the route exists.
-  if (status !== 404 && status !== 405) return
+  const status = await missingDevtoolsStatus(endpoint)
+  if (status === null) return
 
   throw new Error(
     [
