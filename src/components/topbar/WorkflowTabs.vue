@@ -379,7 +379,7 @@ onUpdated(checkOverflow)
   background-color: transparent;
   padding: 0;
   min-width: 90px;
-  color: var(--muted-foreground);
+  color: rgb(from var(--base-foreground) r g b / 0.75);
 }
 
 .overflow-arrow {
