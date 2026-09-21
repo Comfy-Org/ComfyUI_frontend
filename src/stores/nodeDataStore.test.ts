@@ -1,8 +1,13 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  NodeInputSlot,
+  NodeOutputSlot
+} from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -485,6 +490,45 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(registeredState(graph, original)).toBe(registered)
     expect(original._graphScope).toBeDefined()
     expect(replacement._graphScope).toBeUndefined()
+  })
+
+  it('never reads the deprecated link accessor merging a node’s own unchanged live slots into itself', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'IMAGE')
+    graph.add(source)
+
+    const node = new LGraphNode('test')
+    node.addInput('in', 'IMAGE')
+    graph.add(node)
+    source.connect(0, node, 0)
+    expect(node.isInputConnected(0)).toBe(true)
+    expect(source.isOutputConnected(0)).toBe(true)
+
+    const inputLinkGetter = vi.spyOn(NodeInputSlot.prototype, 'link', 'get')
+    const outputLinksGetter = vi.spyOn(NodeOutputSlot.prototype, 'links', 'get')
+    const scope = graphScope(graph.id, graph.id)
+    const store = useNodeDataStore()
+
+    // Mirrors graphMutations.ts's `connect` case: the untouched side's own
+    // live array is passed back as both the existing state and the
+    // incoming payload, so every slot matches itself by identity.
+    store.updateNodeSlots(scope, node.id, {
+      inputs: node.inputs,
+      outputs: [...node.outputs]
+    })
+    store.updateNodeSlots(scope, source.id, {
+      inputs: [...source.inputs],
+      outputs: source.outputs
+    })
+
+    expect(inputLinkGetter).not.toHaveBeenCalled()
+    expect(outputLinksGetter).not.toHaveBeenCalled()
+    expect(node.isInputConnected(0)).toBe(true)
+    expect(source.isOutputConnected(0)).toBe(true)
+
+    inputLinkGetter.mockRestore()
+    outputLinksGetter.mockRestore()
   })
 
   it('drops the registration when the node is removed', () => {

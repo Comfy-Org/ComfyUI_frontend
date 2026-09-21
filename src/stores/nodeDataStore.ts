@@ -13,12 +13,12 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
 
 /**
- * Whether `key` resolves through a getter/setter pair somewhere in `obj`'s
- * prototype chain, as opposed to a plain own data property. `NodeInputSlot`
- * and `NodeOutputSlot` define `link`/`links` this way once a slot is
- * upgraded from a plain descriptor to a live class instance; a slot this
- * store tracks before that upgrade (e.g. in a headless CRDT-only test) has
- * no such accessor, and `link`/`links` are its only record of connectivity.
+ * Whether `key` resolves through a getter somewhere in `obj`'s prototype
+ * chain, as opposed to a plain own data property. `NodeInputSlot` and
+ * `NodeOutputSlot` define `link`/`links` this way once a slot is upgraded
+ * from a plain descriptor to a live class instance; a slot this store tracks
+ * before that upgrade (e.g. in a headless CRDT-only test) has no such
+ * accessor, and `link`/`links` are its only record of connectivity.
  */
 function hasAccessor(obj: object, key: PropertyKey): boolean {
   for (
@@ -47,16 +47,26 @@ function hasAccessor(obj: object, key: PropertyKey): boolean {
  * (`node.removeInput`/`removeOutput`).
  *
  * `linkKey` (`link` for inputs, `links` for outputs) is excluded from the
- * assignment for an already-upgraded matched slot: the caller
- * (`graphMutations.ts`'s `connect` case) already established real topology
- * in `linkStore` before calling this, and the deprecated accessor resolves
- * by identity (`this.node.inputs`/`outputs.indexOf(this)`) — assigning
- * through it here would fight that lookup instead of the topology it
- * already reflects. For a matched slot that is still a plain descriptor,
- * `linkKey` is its only record of connectivity and is merged like any
- * other field. Every field is assigned through the reactive slot object
- * itself (never `toRaw`), so Vue's dependents (e.g. the node renderer)
- * invalidate.
+ * assignment for an already-upgraded matched slot: `linkStore` owns
+ * connectivity for a class-instance slot, and callers update it separately
+ * from this store (there is no ordering guarantee — `removeLink` calls
+ * `detachLinkSlots`/`updateNodeSlots` before `linkStore.deleteLink`, for
+ * instance) — so the deprecated accessor's identity-based lookup
+ * (`this.node.inputs`/`outputs.indexOf(this)`) must never be written
+ * through here. For a matched slot that is still a plain descriptor,
+ * `linkKey` is its only record of connectivity and is merged like any other
+ * field. Every field is assigned through the reactive slot object itself
+ * (never `toRaw`), so Vue's dependents (e.g. the node renderer) invalidate.
+ *
+ * The excluded key's value is never read either, even to discard it:
+ * `graphMutations.ts`'s `connect` case calls this with a node's own live
+ * `inputs`/`outputs` array passed back as both `existing` and `incoming`
+ * for the side it didn't just connect, so every slot there matches itself
+ * by identity. Reading `incomingSlot[linkKey]` in that case is reading the
+ * live getter on the slot itself, which resyncs its legacy link cache as a
+ * side effect — harmless as a value, but a real mutation triggered by a
+ * merge that should be a no-op. Copying via `Object.keys` instead of
+ * destructuring skips the excluded key entirely, so it's never read.
  */
 function mergeSlotsByName<Slot extends { name: string }>(
   existing: Slot[],
@@ -72,8 +82,9 @@ function mergeSlotsByName<Slot extends { name: string }>(
     }
     const target = existing[index]
     if (hasAccessor(toRaw(target), linkKey)) {
-      const { [linkKey]: _link, ...fields } = incomingSlot
-      Object.assign(target, fields)
+      for (const key of Object.keys(incomingSlot) as (keyof Slot)[]) {
+        if (key !== linkKey) target[key] = incomingSlot[key]
+      }
     } else {
       Object.assign(target, incomingSlot)
     }
