@@ -65,6 +65,7 @@
     "dismiss": "Fermer",
     "downloadAssets": "Télécharger les ressources",
     "dragAndDropAssets": "Glissez-déposez des ressources ici",
+    "editWhileWorking": "Vous pouvez continuer à modifier pendant qu’il travaille",
     "entryButton": "Agent",
     "feedbackCaption": "Partager vos commentaires",
     "focusNode": "Afficher sur le canevas",
@@ -99,6 +100,7 @@
       "selectNode": "Sélectionner un nœud"
     },
     "nodes": "Nœuds",
+    "nodesAdded": "L’agent a ajouté 1 nœud au graphe | L’agent a ajouté {count} nœuds au graphe",
     "notHelpful": "Pas utile",
     "openWorkflowTab": "Ouvrir {name}",
     "otherOpenWorkflows": "Autres workflows ouverts",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (indisponible)",
     "unsavedWorkflow": "Non enregistré",
     "untitledChat": "Sans titre",
+    "updatingGraph": "L’agent met à jour le graphe",
     "uploading": "Envoi en cours",
+    "viewAddedNodes": "Voir le nœud | Voir les nœuds",
     "worked": "Terminé",
     "workedForMinutes": "A travaillé pendant {minutes} min {seconds} s",
     "workedForSeconds": "A travaillé pendant {seconds} secondes",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Annuler cette exécution",
     "deleteAllAssets": "Supprimer toutes les ressources de cette exécution",
     "downloadAll": "Télécharger {count} ressources de cette exécution",
+    "dragAndDropAudio": "Cliquez pour parcourir ou faites glisser un fichier audio",
     "dragAndDropImage": "Glissez-déposez une image",
+    "dragAndDropVideo": "Cliquez pour parcourir ou faites glisser une vidéo",
     "emptyWorkflowExplanation": "Votre workflow est vide. Vous devez d'abord ajouter des nodes pour commencer à créer une application.",
     "enterNodeGraph": "Entrer dans le graphique de nœuds",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nœuds mis en évidence : {count}",
+    "label": "Mini-carte",
     "nodeColors": "Couleurs des nœuds",
     "renderBypassState": "Afficher l'état de contournement",
     "renderErrorState": "Afficher l'état d'erreur",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossible de charger le workflow car cette installation de ComfyUI ne dispose pas des nœuds principaux. Vérifiez que le backend a démarré correctement.",
     "a1111EmbeddingsUnavailable": "Les embeddings n’ont pas pu être chargés depuis le serveur. Le workflow a été importé, mais les noms des embeddings ont été conservés sous forme de texte brut.",
+    "assetDropFailed": "Impossible de charger la ressource déposée",
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
     "couldNotDetermineFileType": "Impossible de déterminer le type de fichier",
     "dropFileError": "Impossible de traiter l'élément déposé : {error}",
