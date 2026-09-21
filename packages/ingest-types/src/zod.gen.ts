@@ -2677,7 +2677,6 @@ export const zAgentPostMessageRequest = z.object({
   attachments: z.array(z.string()).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
-  current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
       content: z.record(z.unknown()).optional(),
