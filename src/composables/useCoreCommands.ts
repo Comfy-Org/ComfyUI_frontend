@@ -1176,6 +1176,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-pencil',
       label: 'Set Subgraph Description',
       versionAdded: '1.39.7',
+      mutatesGraph: true,
       function: async (metadata?: Record<string, unknown>) => {
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
@@ -1208,6 +1209,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-search',
       label: 'Set Subgraph Search Aliases',
       versionAdded: '1.39.7',
+      mutatesGraph: true,
       function: async (metadata?: Record<string, unknown>) => {
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph

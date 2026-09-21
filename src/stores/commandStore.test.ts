@@ -1,8 +1,6 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
@@ -104,12 +102,12 @@ describe('commandStore', () => {
     })
 
     it.for([
-      { selectOnly: false, calls: 1 },
-      { selectOnly: true, calls: 0 }
+      { locked: false, calls: 1 },
+      { locked: true, calls: 0 }
     ])(
-      'executes graph mutations $calls times with selectOnly=$selectOnly',
-      async ({ selectOnly, calls }) => {
-        useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly })
+      'executes graph mutations $calls times with graphMutationsLocked=$locked',
+      async ({ locked, calls }) => {
+        useCommandPolicyStore().graphMutationsLocked = locked
         const fn = vi.fn()
         const store = useCommandStore()
         store.registerCommand({
@@ -124,8 +122,32 @@ describe('commandStore', () => {
       }
     )
 
-    it('evaluates conditional graph mutation capabilities at execution', async () => {
-      useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly: true })
+    it.for([
+      { lockedAtDispatch: true, lockedBeforeResume: false, calls: 0 },
+      { lockedAtDispatch: false, lockedBeforeResume: true, calls: 1 }
+    ])(
+      'decides at dispatch: locked=$lockedAtDispatch then $lockedBeforeResume before the promise resumes runs $calls times',
+      async ({ lockedAtDispatch, lockedBeforeResume, calls }) => {
+        const policy = useCommandPolicyStore()
+        policy.graphMutationsLocked = lockedAtDispatch
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        const execution = store.execute('graph.mutation')
+        policy.graphMutationsLocked = lockedBeforeResume
+        await execution
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it('evaluates conditional graph mutation capabilities at dispatch', async () => {
+      useCommandPolicyStore().graphMutationsLocked = true
       const fn = vi.fn()
       const store = useCommandStore()
       store.registerCommand({

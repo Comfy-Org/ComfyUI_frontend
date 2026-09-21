@@ -4,6 +4,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 
 import { acquireSelectOnlyPin, releaseSelectOnlyPin } from './selectOnlyPin'
 
@@ -11,6 +12,7 @@ export function useCanvasPickingPolicySync() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const agentNodeSelectionStore = useAgentNodeSelectionStore()
+  const commandPolicyStore = useCommandPolicyStore()
   const owner = Symbol('useCanvasPickingPolicySync')
 
   let pinnedCanvas: LGraphCanvas | undefined
@@ -35,6 +37,7 @@ export function useCanvasPickingPolicySync() {
       () => agentNodeSelectionStore.isActive
     ],
     ([canvasInfoEnabled, canvas, picking]) => {
+      commandPolicyStore.graphMutationsLocked = picking
       if (picking && canvas) pinSelectOnly(canvas)
       else releasePin()
       if (!canvas) return

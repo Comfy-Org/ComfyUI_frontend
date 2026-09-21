@@ -7,6 +7,7 @@ import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useCanvasPickingPolicySync } from './useCanvasPickingPolicySync'
@@ -84,6 +85,19 @@ describe('useCanvasPickingPolicySync', () => {
     expect(canvasStore.canvas.selectOnly).toBe(false)
     expect(canvasStore.canvas.show_info).toBe(true)
     expect(draw).toHaveBeenCalledTimes(2)
+  })
+
+  it('locks graph mutations for the command store exactly while picking', () => {
+    useCanvasStore().canvas = createCanvas()
+    scope.run(useCanvasPickingPolicySync)
+
+    useAgentNodeSelectionStore().isActive = true
+
+    expect(useCommandPolicyStore().graphMutationsLocked).toBe(true)
+
+    useAgentNodeSelectionStore().isActive = false
+
+    expect(useCommandPolicyStore().graphMutationsLocked).toBe(false)
   })
 
   it('honours a CanvasInfo toggle made while picking once the mode ends', () => {

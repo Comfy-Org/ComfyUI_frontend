@@ -17,6 +17,7 @@ import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -367,8 +368,7 @@ describe('useCoreCommands', () => {
       app.canvas.selectedItems = new Set([
         selectedItem
       ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
-      useCanvasStore().canvas = app.canvas
+      useCommandPolicyStore().graphMutationsLocked = true
       useCommandStore().registerCommands(useCoreCommands())
 
       await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')

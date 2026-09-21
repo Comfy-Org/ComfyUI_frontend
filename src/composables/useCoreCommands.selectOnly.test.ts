@@ -2,9 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -32,6 +31,8 @@ const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Graph.ToggleWidgetPromotion',
   'Comfy.Graph.UnpackSubgraph',
   'Comfy.Redo',
+  'Comfy.Subgraph.SetDescription',
+  'Comfy.Subgraph.SetSearchAliases',
   'Comfy.Undo'
 ]
 
@@ -56,14 +57,14 @@ describe('useCoreCommands selection-only policy', () => {
     })
 
     it.for([
-      { id: 'Comfy.Undo', history: 'undo', selectOnly: true, calls: 0 },
-      { id: 'Comfy.Undo', history: 'undo', selectOnly: false, calls: 1 },
-      { id: 'Comfy.Redo', history: 'redo', selectOnly: true, calls: 0 },
-      { id: 'Comfy.Redo', history: 'redo', selectOnly: false, calls: 1 }
+      { id: 'Comfy.Undo', history: 'undo', locked: true, calls: 0 },
+      { id: 'Comfy.Undo', history: 'undo', locked: false, calls: 1 },
+      { id: 'Comfy.Redo', history: 'redo', locked: true, calls: 0 },
+      { id: 'Comfy.Redo', history: 'redo', locked: false, calls: 1 }
     ] as const)(
-      '$id with selectOnly=$selectOnly runs the workflow tracker $calls times',
-      async ({ id, history, selectOnly, calls }) => {
-        useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly })
+      '$id with graphMutationsLocked=$locked runs the workflow tracker $calls times',
+      async ({ id, history, locked, calls }) => {
+        useCommandPolicyStore().graphMutationsLocked = locked
 
         await useCommandStore().execute(id)
 
@@ -75,7 +76,7 @@ describe('useCoreCommands selection-only policy', () => {
       { id: 'Comfy.Undo', history: 'undo' },
       { id: 'Comfy.Redo', history: 'redo' }
     ] as const)(
-      '$id while select-only still runs the open mask editor history $history',
+      '$id while locked still runs the open mask editor history $history',
       async ({ id, history }) => {
         vi.mocked(useDialogStore().isDialogOpen).mockImplementation(
           (key) => key === 'global-mask-editor'
@@ -83,11 +84,31 @@ describe('useCoreCommands selection-only policy', () => {
         const maskHistory = vi
           .spyOn(useMaskEditorStore().canvasHistory, history)
           .mockImplementation(() => {})
-        useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-          selectOnly: true
-        })
+        useCommandPolicyStore().graphMutationsLocked = true
 
         await useCommandStore().execute(id)
+
+        expect(maskHistory).toHaveBeenCalledOnce()
+        expect(tracker[history]).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { id: 'Comfy.Undo', history: 'undo' },
+      { id: 'Comfy.Redo', history: 'redo' }
+    ] as const)(
+      '$id while locked runs the history the mask editor state at dispatch selects, even if the editor closes before the promise resumes',
+      async ({ id, history }) => {
+        const isDialogOpen = vi.mocked(useDialogStore().isDialogOpen)
+        isDialogOpen.mockImplementation((key) => key === 'global-mask-editor')
+        const maskHistory = vi
+          .spyOn(useMaskEditorStore().canvasHistory, history)
+          .mockImplementation(() => {})
+        useCommandPolicyStore().graphMutationsLocked = true
+
+        const execution = useCommandStore().execute(id)
+        isDialogOpen.mockReturnValue(false)
+        await execution
 
         expect(maskHistory).toHaveBeenCalledOnce()
         expect(tracker[history]).not.toHaveBeenCalled()
