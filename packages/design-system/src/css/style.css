@@ -22,7 +22,6 @@
 
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
-  --shadow-floating-panel: var(--interface-floating-panel-shadow);
   --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
   --text-2xs: 0.625rem;
@@ -588,7 +587,8 @@
   border-radius: var(--radius-xl);
   padding: --spacing(1);
   background-color: var(--color-interface-panel-surface);
-  box-shadow: var(--shadow-inset-highlight), var(--shadow-floating-panel);
+  box-shadow:
+    var(--shadow-inset-highlight), var(--interface-floating-panel-shadow);
 }
 
 @utility highlight {
