@@ -12,15 +12,17 @@ test(
     const dragRegion = tabBar.locator('.window-actions-spacer.app-drag')
     await expect(dragRegion).toBeVisible()
     await expect(dragRegion).toHaveCSS('-webkit-app-region', 'drag')
-    const tabBarBox = await tabBar.boundingBox()
-    await expect
-      .poll(() => dragRegion.boundingBox())
-      .toMatchObject({
+    await expect(async () => {
+      const [tabBarBox, dragRegionBox] = await Promise.all([
+        tabBar.boundingBox(),
+        dragRegion.boundingBox()
+      ])
+      expect(tabBarBox).not.toBeNull()
+      expect(dragRegionBox).toMatchObject({
         y: tabBarBox?.y,
         height: tabBarBox?.height
       })
-    await expect
-      .poll(async () => (await dragRegion.boundingBox())?.width ?? 0)
-      .toBeGreaterThan(0)
+      expect(dragRegionBox?.width).toBeGreaterThan(0)
+    }).toPass({ timeout: 5000 })
   }
 )
