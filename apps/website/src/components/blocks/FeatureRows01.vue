@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { splitInlineCode } from '../../lib/inline-code'
 import GlassCard from '../common/GlassCard.vue'
+import InlineCodeText from '../common/InlineCodeText.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import type { VideoTrack } from '../common/VideoPlayer.vue'
@@ -44,6 +44,19 @@ const {
   rows: readonly FeatureRow[]
   titleClass?: string
 }>()
+
+// Rows alternate which side the media sits on from lg up.
+function textOrder(index: number): string {
+  return index % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
+}
+
+function mediaOrder(index: number): string {
+  return index % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
+}
+
+function mediaLabel(row: FeatureRow): string {
+  return row.media.alt ?? row.title
+}
 </script>
 
 <template>
@@ -67,7 +80,7 @@ const {
           :class="
             cn(
               'order-2 flex flex-col justify-center gap-4 p-6 lg:flex-1 lg:p-12',
-              i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
+              textOrder(i)
             )
           "
         >
@@ -82,15 +95,7 @@ const {
             {{ row.title }}
           </h3>
           <p class="text-sm text-pretty text-smoke-700 lg:text-base">
-            <template
-              v-for="(part, partIndex) in splitInlineCode(row.description)"
-              :key="partIndex"
-              ><code
-                v-if="part.code"
-                class="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary-comfy-canvas"
-                >{{ part.text }}</code
-              ><template v-else>{{ part.text }}</template></template
-            >
+            <InlineCodeText :text="row.description" />
           </p>
         </div>
 
@@ -100,14 +105,14 @@ const {
           :class="
             cn(
               'relative order-1 aspect-620/364 w-full lg:w-155 lg:shrink-0',
-              i % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
+              mediaOrder(i)
             )
           "
         >
           <img
             v-if="row.media.type === 'image'"
             :src="row.media.src"
-            :alt="row.media.alt ?? row.title"
+            :alt="mediaLabel(row)"
             loading="lazy"
             decoding="async"
             :class="
@@ -120,7 +125,7 @@ const {
           <VideoPlayer
             v-else
             :locale="locale"
-            :aria-label="row.media.alt ?? row.title"
+            :aria-label="mediaLabel(row)"
             :src="row.media.src"
             :poster="row.media.poster"
             :tracks="row.media.tracks"

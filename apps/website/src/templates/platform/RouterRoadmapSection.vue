@@ -237,7 +237,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
           :style="panelStyle(index, isExpanded(card.id))"
           :class="
             cn(
-              'grid transition-[grid-template-rows,min-height,visibility] duration-300 ease-out motion-reduce:transition-none',
+              'grid transition-all duration-300 ease-out motion-reduce:transition-none',
               isExpanded(card.id) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
             )
           "
