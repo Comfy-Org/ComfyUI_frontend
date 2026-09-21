@@ -507,9 +507,9 @@ test.describe('Model playground', () => {
     await page.goto(MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
     await expect(advanced).toBeVisible()
-    await expect(page.getByTestId('field-safety_tolerance')).not.toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
     await advanced.locator('summary').click()
-    await expect(page.getByTestId('field-safety_tolerance')).toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).toBeVisible()
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
