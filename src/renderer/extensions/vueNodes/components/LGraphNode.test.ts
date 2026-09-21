@@ -19,6 +19,7 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -26,7 +27,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 
 interface ResizeResult {
   size: { width: number; height: number }
