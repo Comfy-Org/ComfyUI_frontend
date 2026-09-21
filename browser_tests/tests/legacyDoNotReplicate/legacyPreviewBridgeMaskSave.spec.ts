@@ -47,7 +47,6 @@ test.describe(
       const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
       expect(prompt[nodeId]).toBeDefined()
 
-      test.fail(true, 'Mask saves bypass the extension image.value setter')
       expect(prompt[nodeId].inputs.image).toBe('$preview-after-mask')
 
       const node = await comfyPage.nodeOps.getNodeRefByType('LoadImage')

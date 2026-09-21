@@ -70,18 +70,10 @@ for (const vueNodes of [false, true]) {
             .getNodeLocator(node.id)
             .getByRole('button', { name: 'Resume', exact: true })
           await expect(button).toBeVisible()
-          test.fail(
-            true,
-            'Vue buttons retain the initial disabled snapshot after the pause event'
-          )
           await expect(button).toBeEnabled()
           await button.click()
         } else {
           await resume.click()
-          test.fail(
-            true,
-            'Widget adoption discards the live disabled getter result'
-          )
         }
         await expect
           .poll(() => node.getProperty('properties'))

@@ -100,10 +100,6 @@ test.describe(
       const selected = await node.getWidgetByName('mod_1')
       const strength = await node.getWidgetByName('strength_1')
 
-      test.fail(
-        true,
-        'Graph saves bypass the extension schema-order serialize wrapper'
-      )
       await expect.poll(() => selected.getValue()).toBe('voice.refmod')
       await expect.poll(() => strength.getValue()).toBe(0.65)
       await expect(unused).toBeHidden()
