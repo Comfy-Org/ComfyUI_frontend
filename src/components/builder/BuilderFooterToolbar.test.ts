@@ -17,7 +17,7 @@ const mockState = {
   mode: 'builder:inputs' as AppMode
 }
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     mode: computed(() => mockState.mode),
     isBuilderMode: ref(true),
@@ -27,7 +27,7 @@ vi.mock('@/composables/useAppMode', () => ({
 
 const mockHasOutputs = ref(true)
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: () => ({
     exitBuilder: mockExitBuilder,
     hasOutputs: mockHasOutputs,
@@ -35,7 +35,7 @@ vi.mock('@/stores/appModeStore', () => ({
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     dialogStack: []
   })
@@ -51,23 +51,26 @@ const mockActiveWorkflow = ref<{
   initialMode: 'app'
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { extra: {} } }
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
-vi.mock('./useBuilderSave', () => ({
+vi.mock<unknown>(import('./useBuilderSave'), () => ({
   useBuilderSave: () => ({
     save: mockSave,
     saveAs: mockSaveAs,

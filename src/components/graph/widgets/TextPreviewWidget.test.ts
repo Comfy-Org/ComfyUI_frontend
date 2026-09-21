@@ -16,7 +16,7 @@ const execHolder = vi.hoisted(() => ({
   } | null
 }))
 
-vi.mock('@/stores/executionStore', async () => {
+vi.mock<unknown>(import('@/stores/executionStore'), async () => {
   const { reactive } = await import('vue')
   execHolder.state = reactive({
     executingNodeIds: [] as Array<string | number>,

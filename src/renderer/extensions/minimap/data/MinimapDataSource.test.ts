@@ -22,7 +22,9 @@ import {
 
 const useExecutionStore = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/executionStore', () => ({ useExecutionStore }))
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
+  useExecutionStore
+}))
 
 const ROOT_GRAPH_ID = '00000000-0000-0000-0000-000000000001'
 const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000002'

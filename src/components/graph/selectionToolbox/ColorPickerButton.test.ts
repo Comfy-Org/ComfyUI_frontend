@@ -43,7 +43,7 @@ function createMockWorkflow(
 }
 
 // Mock the litegraph module
-vi.mock('@/lib/litegraph/src/litegraph', async () => {
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), async () => {
   const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
   return {
     ...actual,
@@ -62,12 +62,12 @@ vi.mock('@/lib/litegraph/src/litegraph', async () => {
 })
 
 // Mock the colorUtil module
-vi.mock('@/utils/colorUtil', () => ({
+vi.mock(import('@/utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_light')
 }))
 
 // Mock the litegraphUtil module
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   getItemsColorOption: vi.fn(() => null),
   isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
   isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup'),

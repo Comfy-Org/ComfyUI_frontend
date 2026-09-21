@@ -13,21 +13,21 @@
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
   "agent": {
-    "addFromAssets": "Adicionar pelo painel de recursos",
-    "addNodesFromGraph": "Adicionar nós do grafo",
+    "addFromAssets": "Arraste um ativo do painel de ativos",
+    "addNodesFromGraph": "Mencionar nós do grafo",
     "addPromptToSend": "Adicionar um prompt para enviar",
     "addToPrompt": "Adicionar ao prompt",
     "alpha": "ALFA",
     "askComfyAgent": "Pergunte ao Comfy Agent",
     "assetNotAttachable": "Imagens, vídeos, áudios, modelos 3D e arquivos de texto podem ser anexados",
     "attach": "Anexar um arquivo",
-    "attachFiles": "Anexar imagens ou arquivos",
+    "attachFiles": "Envie imagens ou arquivos",
     "attachmentTooLarge": "{name} é maior que {limit}",
     "attachmentUploadFailed": "Não foi possível enviar {name}",
     "backToPreviousChat": "Voltar à conversa anterior",
     "caption": "O agente de IA pode cometer erros",
     "captionExpanded": "O agente de IA pode cometer erros. Verifique sua resposta novamente.",
-    "changeWorkflowForChat": "Alterar o fluxo de trabalho desta conversa",
+    "changeWorkflowForChat": "Altere o fluxo de trabalho que o agente pode editar",
     "chatOptions": "Opções de conversa",
     "chooseWorkflow": "Escolha um fluxo de trabalho",
     "chooseWorkflowForChat": "Escolha um fluxo de trabalho para este chat",
@@ -69,13 +69,13 @@
     "noNodesToMention": "Não há nós neste fluxo de trabalho",
     "nodeSelection": {
       "bannerSubtitle": "Selecione um ou mais nós para adicionar como referência",
-      "bannerTitle": "Adicionar nós do grafo",
+      "bannerTitle": "Mencionar nós do grafo",
       "exit": "Sair do modo",
       "selectNode": "Selecionar nó"
     },
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
-    "placeholder": "Descreva ideias, {'@'} para referenciar,\nadicione nós do grafo ou arraste recursos",
+    "placeholder": "Descreva ideias, {'@'} para referenciar,\nmencione nós do grafo ou arraste ativos",
     "ranToolCalls": "Executou {count} chamada de ferramenta | Executou {count} chamadas de ferramenta",
     "ranToolCallsTimed": "Executou {count} chamada de ferramenta por {seconds} segundos | Executou {count} chamadas de ferramenta por {seconds} segundos",
     "remove": "Remover",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "Atualize seu método de pagamento para restaurar a assinatura do workspace e executar fluxos de trabalho.",
       "ownerRunLabel": "Atualize o pagamento para executar",
       "ownerRunTooltip": "Atualize o pagamento para restaurar esta assinatura",
+      "paymentFailedMemberDescription": "Peça ao proprietário do espaço de trabalho para atualizar a forma de pagamento do espaço de trabalho.",
+      "paymentFailedMemberTitle": "O pagamento deste espaço de trabalho não foi processado",
+      "paymentFailedOwnerDescription": "Atualize sua forma de pagamento para continuar executando fluxos de trabalho.",
+      "paymentFailedOwnerTitle": "Seu pagamento não foi processado",
       "title": "Assinatura pausada"
     },
     "perMonth": "/ mês",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "Valor Global",
       "randomize": "Valor Aleatório",
       "randomizeDesc": "Embaralha o valor aleatoriamente após cada geração"
+    },
+    "vueOnly": {
+      "Chart": "Gráfico",
+      "Compositor": "Compositor",
+      "Fileupload": "Envio de arquivo",
+      "Galleria": "Galeria",
+      "ImageCompare": "Comparação de imagens",
+      "Markdown": "Markdown",
+      "MultiSelect": "Seleção múltipla",
+      "SelectButton": "Botão de seleção"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "A assinatura deste workspace está pausada. Atualize o pagamento para retomar.",
         "memberBody": "A assinatura deste workspace está pausada. Os administradores do workspace precisam atualizar o método de pagamento.",
         "title": "Assinatura pausada"
+      },
+      "planChange": {
+        "body": "Seu plano atual permanece ativo até lá.",
+        "title": "Seu plano muda para {plan} em {date}"
       },
       "updatePayment": "Atualizar pagamento",
       "warning": {

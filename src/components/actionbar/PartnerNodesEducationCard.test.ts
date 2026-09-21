@@ -15,20 +15,23 @@ import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/sto
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 
-vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
-  const { computed, ref } = await import('vue')
-  const hasNodes = ref(true)
-  return {
-    usePartnerNodesInGraph: () => ({
-      hasPartnerNodes: computed(() => hasNodes.value)
-    }),
-    __setHasPartnerNodes: (value: boolean) => {
-      hasNodes.value = value
+vi.mock<unknown>(
+  import('@/composables/node/usePartnerNodesInGraph'),
+  async () => {
+    const { computed, ref } = await import('vue')
+    const hasNodes = ref(true)
+    return {
+      usePartnerNodesInGraph: () => ({
+        hasPartnerNodes: computed(() => hasNodes.value)
+      }),
+      __setHasPartnerNodes: (value: boolean) => {
+        hasNodes.value = value
+      }
     }
   }
-})
+)
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
+vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
   const { computed, ref } = await import('vue')
   const gate = ref<'sign-in' | 'none'>('none')
   return {
@@ -45,7 +48,7 @@ vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
 })
 
 const showApiNodesSignInDialog = vi.fn()
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showApiNodesSignInDialog })
 }))
 

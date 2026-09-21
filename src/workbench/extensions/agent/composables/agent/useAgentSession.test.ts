@@ -1,3 +1,4 @@
+import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,7 +16,10 @@ import type {
   TurnId,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -28,7 +32,9 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -177,6 +183,23 @@ const historyRow = (
   turn_id: turnId,
   content: { text }
 })
+
+type AgentAdmissionReason = AgentAdmissionError['error']['reason']
+
+function admissionError(
+  reason: AgentAdmissionReason,
+  message: string
+): AgentApiError {
+  const serviceUnavailable = reason === 'funds_unavailable'
+  const body = zAgentAdmissionError.parse({
+    error: {
+      message,
+      type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
+      reason
+    }
+  })
+  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+}
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
@@ -501,6 +524,148 @@ describe('useAgentSession (v1 composition root)', () => {
         (part) => part.type === 'runApproval'
       )
     ).toBe(true)
+  })
+
+  it('renders no_funds as the paywall reply while keeping the rejected prompt', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        admissionError(
+          'no_funds',
+          "You're out of credits. Add credits to keep running the agent."
+        )
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'make a cat' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'paywall' }]
+      }
+    ])
+    expect(session.threadId.value).toBeNull()
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it.for(['paywall', 'notice'] as const)(
+    'preserves both rejected prompts and distinct %s replies across a panel remount',
+    async (partType) => {
+      const error =
+        partType === 'paywall'
+          ? admissionError('no_funds', 'Out of credits')
+          : new AgentApiError('Request failed', 500, undefined)
+      const rest = fakeRest({
+        postMessage: vi
+          .fn<AgentRestClient['postMessage']>()
+          .mockRejectedValue(error)
+      })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      expect(await first.sendMessage('first prompt')).toBe(false)
+      const firstReplyId = first.entries.value[1].id
+      first.stop()
+      await Promise.resolve()
+
+      const second = useAgentSession({ rest, events: fakeEvents().source })
+      second.start()
+      expect(await second.sendMessage('second prompt')).toBe(false)
+
+      expect(second.entries.value).toMatchObject([
+        { role: 'user', text: 'first prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] },
+        { role: 'user', text: 'second prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] }
+      ])
+      expect(second.entries.value[3].id).not.toBe(firstReplyId)
+      second.stop()
+      await Promise.resolve()
+    }
+  )
+
+  it('renders manual_block as its contact-support error instead of a paywall', async () => {
+    const message =
+      'This workspace is blocked. Contact support to restore access.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('manual_block', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not retry a funds_unavailable denial even when a draft is attached', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        draft: () => ({ content: { nodes: [] }, version: 1 })
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(postMessage).toHaveBeenCalledOnce()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not infer no_funds from a 402 without an admission reason', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('payment required', 402, {
+          error: { message: 'payment required', type: 'PAYMENT_REQUIRED' }
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('make a cat')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: payment required'
+        }
+      ]
+    })
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {

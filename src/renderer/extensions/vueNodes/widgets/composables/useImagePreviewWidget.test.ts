@@ -17,17 +17,17 @@ const mockCanvas = vi.hoisted(() => ({
   setDirty: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => mockSettingStore
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => mockCanvas
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       emitBeforeChange: vi.fn(),
@@ -44,6 +44,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+// oxlint-disable-next-line vitest/prefer-import-in-mock -- import() would mark createImageHost used and retire its knip tag
 vi.mock('@/scripts/ui/imagePreview', () => ({
   calculateImageGrid: vi.fn(() => ({
     cellWidth: 100,
@@ -54,7 +55,7 @@ vi.mock('@/scripts/ui/imagePreview', () => ({
   }))
 }))
 
-vi.mock('@/utils/imageUtil', () => ({
+vi.mock(import('@/utils/imageUtil'), () => ({
   is_all_same_aspect_ratio: vi.fn(() => true)
 }))
 

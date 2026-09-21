@@ -102,6 +102,7 @@
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/hoisted-apis-on-top": "error",
+    "vitest/prefer-import-in-mock": "error",
     "typescript/no-misused-spread": "error",
     "vitest/consistent-each-for": [
       "error",
@@ -171,6 +172,31 @@
       "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
       "rules": {
         "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
+      "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": ["test"],
+                "message": "Use a fixture based on networkIsolationFixture instead of raw Playwright test."
+              }
+            ]
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "continue",
+            "message": "Use route.fallback() so requests pass through the network policy."
+          }
+        ]
       }
     },
     {

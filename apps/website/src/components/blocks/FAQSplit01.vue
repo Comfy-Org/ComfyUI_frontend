@@ -68,6 +68,11 @@ const parsedFaqs = computed(() =>
                   class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
                   >{{ part.label ?? part.value }}</a
                 >
+                <strong
+                  v-else-if="part.type === 'strong'"
+                  class="font-semibold text-primary-comfy-canvas"
+                  >{{ part.value }}</strong
+                >
                 <template v-else>{{ part.value }}</template>
               </template>
             </p>

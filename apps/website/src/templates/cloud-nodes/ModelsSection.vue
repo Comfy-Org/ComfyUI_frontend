@@ -2,7 +2,7 @@
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t, tPlural } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
@@ -56,7 +56,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <span
             class="shrink-0 rounded-full bg-white/15 px-3 py-1 text-xs whitespace-nowrap text-primary-comfy-canvas backdrop-blur-sm"
           >
-            {{ t(card.nodesKey, locale) }}
+            {{
+              tPlural(
+                'cloudNodesLaunch.models.nodeCount',
+                card.nodeCount,
+                locale
+              )
+            }}
           </span>
         </div>
       </li>

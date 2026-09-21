@@ -11,11 +11,11 @@ const mockSelectionState = vi.hoisted(() => ({
   isSingleImageNode: { value: true }
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: mockExecute })
 }))
 
-vi.mock('@/composables/graph/useSelectionState', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   useSelectionState: () => mockSelectionState
 }))
 

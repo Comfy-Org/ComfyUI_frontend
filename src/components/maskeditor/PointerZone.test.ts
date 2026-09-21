@@ -34,7 +34,7 @@ const mockPanZoom = vi.hoisted(() => ({
   updateCursorPosition: vi.fn()
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 

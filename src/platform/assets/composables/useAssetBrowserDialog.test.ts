@@ -6,9 +6,9 @@ import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBro
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock('@/stores/dialogStore')
+vi.mock(import('@/stores/dialogStore'))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, string>) => {
     if (params) {
       return `${key}:${JSON.stringify(params)}`

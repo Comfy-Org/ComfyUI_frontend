@@ -6,7 +6,7 @@ type CloudNodeModelMedia =
 
 export interface CloudNodeModelCard {
   titleKey: TranslationKey
-  nodesKey: TranslationKey
+  nodeCount: number
   media: CloudNodeModelMedia
 }
 
@@ -15,32 +15,32 @@ const BASE = 'https://media.comfy.org/website/cloud-nodes/models'
 export const cloudNodeModelCards: readonly CloudNodeModelCard[] = [
   {
     titleKey: 'cloudNodesLaunch.models.flux2',
-    nodesKey: 'cloudNodesLaunch.models.oneNode',
+    nodeCount: 1,
     media: { kind: 'image', src: `${BASE}/flux-2.webp` }
   },
   {
     titleKey: 'cloudNodesLaunch.models.minimaxH3',
-    nodesKey: 'cloudNodesLaunch.models.threeNodes',
+    nodeCount: 3,
     media: { kind: 'video', src: `${BASE}/minimax-h3.webm` }
   },
   {
     titleKey: 'cloudNodesLaunch.models.zImageTurbo',
-    nodesKey: 'cloudNodesLaunch.models.oneNode',
+    nodeCount: 1,
     media: { kind: 'image', src: `${BASE}/z-image-turbo.webp` }
   },
   {
     titleKey: 'cloudNodesLaunch.models.mageFlow',
-    nodesKey: 'cloudNodesLaunch.models.oneNode',
+    nodeCount: 1,
     media: { kind: 'image', src: `${BASE}/mage-flow.webp` }
   },
   {
     titleKey: 'cloudNodesLaunch.models.mageFlowTurbo',
-    nodesKey: 'cloudNodesLaunch.models.oneNode',
+    nodeCount: 1,
     media: { kind: 'image', src: `${BASE}/mage-flow-turbo.webp` }
   },
   {
     titleKey: 'cloudNodesLaunch.models.minimaxMusic3',
-    nodesKey: 'cloudNodesLaunch.models.oneNode',
+    nodeCount: 1,
     media: { kind: 'image', src: `${BASE}/minimax-music-3.webp` }
   }
 ]

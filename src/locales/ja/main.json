@@ -13,21 +13,21 @@
     "shareTooltip": "ワークフローを共有"
   },
   "agent": {
-    "addFromAssets": "アセットパネルから追加",
-    "addNodesFromGraph": "グラフからノードを追加",
+    "addFromAssets": "アセットパネルからアセットをドラッグ",
+    "addNodesFromGraph": "グラフのノードに言及",
     "addPromptToSend": "送信するプロンプトを追加",
     "addToPrompt": "プロンプトに追加",
     "alpha": "アルファ",
     "askComfyAgent": "Comfy Agentに質問",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
-    "attachFiles": "画像またはファイルを添付",
+    "attachFiles": "画像またはファイルをアップロード",
     "attachmentTooLarge": "{name} は {limit} を超えています",
     "attachmentUploadFailed": "{name} をアップロードできませんでした",
     "backToPreviousChat": "前のチャットに戻る",
     "caption": "AIエージェントは間違えることがあります",
     "captionExpanded": "AIエージェントは間違えることがあります。応答を再確認してください。",
-    "changeWorkflowForChat": "このチャットのワークフローを変更",
+    "changeWorkflowForChat": "エージェントが編集できるワークフローを変更",
     "chatOptions": "チャットオプション",
     "chooseWorkflow": "ワークフローを選択",
     "chooseWorkflowForChat": "このチャット用のワークフローを選択",
@@ -69,13 +69,13 @@
     "noNodesToMention": "このワークフローにはノードがありません",
     "nodeSelection": {
       "bannerSubtitle": "参照として追加するノードを1つ以上選択",
-      "bannerTitle": "グラフからノードを追加",
+      "bannerTitle": "グラフのノードに言及",
       "exit": "モードを終了",
       "selectNode": "ノードを選択"
     },
     "notHelpful": "役に立たなかった",
     "openWorkflowTab": "{name} を開く",
-    "placeholder": "アイデアを説明し、{'@'} で参照し、\nグラフからノードを追加するかアセットをドラッグしてください",
+    "placeholder": "アイデアを説明し、{'@'} で参照、\nグラフのノードに言及するか、アセットをドラッグ",
     "ranToolCalls": "{count} 回のツール呼び出しを実行 | {count} 回のツール呼び出しを実行",
     "ranToolCallsTimed": "{count} 回のツール呼び出しを {seconds} 秒間実行 | {count} 回のツール呼び出しを {seconds} 秒間実行",
     "remove": "削除",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "お支払い方法を更新してワークスペースのサブスクリプションとワークフローの実行を復元してください。",
       "ownerRunLabel": "支払い方法を更新して実行",
       "ownerRunTooltip": "支払い方法を更新してこのサブスクリプションを復元",
+      "paymentFailedMemberDescription": "ワークスペースのオーナーに、お支払い方法を更新するよう依頼してください。",
+      "paymentFailedMemberTitle": "このワークスペースのお支払いが完了しませんでした",
+      "paymentFailedOwnerDescription": "ワークフローを引き続き実行するには、お支払い方法を更新してください。",
+      "paymentFailedOwnerTitle": "お支払いが完了しませんでした",
       "title": "サブスクリプションが一時停止中"
     },
     "perMonth": "USD / 月",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "グローバル値",
       "randomize": "値をランダム化",
       "randomizeDesc": "各生成後に値をランダムにシャッフルします"
+    },
+    "vueOnly": {
+      "Chart": "グラフ",
+      "Compositor": "コンポジター",
+      "Fileupload": "ファイルアップロード",
+      "Galleria": "ギャラリー",
+      "ImageCompare": "画像比較",
+      "Markdown": "Markdown",
+      "MultiSelect": "複数選択",
+      "SelectButton": "選択ボタン"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。",
         "memberBody": "このワークスペースのサブスクリプションは一時停止されています。ワークスペース管理者がお支払い方法を更新する必要があります。",
         "title": "サブスクリプションが一時停止中"
+      },
+      "planChange": {
+        "body": "それまでは現在のプランが有効です。",
+        "title": "{date} にプランが {plan} に変更されます"
       },
       "updatePayment": "お支払い方法を更新",
       "warning": {

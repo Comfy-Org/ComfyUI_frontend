@@ -1,8 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { AuthStoreError } from '@/stores/authStore'
 
-import { useResubscribe } from './useResubscribe'
+import { useResubscribe as createResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
@@ -15,11 +18,11 @@ const state = vi.hoisted(() => ({
   trackBillingEvent: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ resubscribe: state.resubscribe })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
       get value() {
@@ -29,43 +32,49 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canReactivate: {
-      get value() {
-        return state.canReactivate
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canReactivate: {
+        get value() {
+          return state.canReactivate
         }
       }
-    },
-    canReactivatePlan: {
-      get value() {
-        return state.canReactivatePlan
-      }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
+        }
+      },
+      canReactivatePlan: {
+        get value() {
+          return state.canReactivatePlan
+        }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackResubscribeClicked: state.trackResubscribeClicked,
     trackBillingEvent: state.trackBillingEvent
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock(import('@/stores/authStore'), () => ({
   AuthStoreError: class AuthStoreError extends Error {
     readonly status: number | undefined
     constructor(message: string, status?: number) {
@@ -76,13 +85,35 @@ vi.mock('@/stores/authStore', () => ({
   }
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: state.toastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: state.toastAdd })
+  })
+)
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+const apps: App<Element>[] = []
+
+function useResubscribe(): ReturnType<typeof createResubscribe> {
+  let result: ReturnType<typeof createResubscribe> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createResubscribe()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('resubscribe composable not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useResubscribe', () => {
   beforeEach(() => {

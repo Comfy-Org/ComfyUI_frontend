@@ -11,13 +11,13 @@ const settingValues: Record<string, unknown> = {
   'Comfy.Load3D.LightAdjustmentIncrement': 0.5
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) => settingValues[key]
   })
 }))
 
-vi.mock('@/components/ui/slider/Slider.vue')
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,

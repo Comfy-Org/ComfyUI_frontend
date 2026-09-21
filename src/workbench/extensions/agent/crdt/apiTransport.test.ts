@@ -10,8 +10,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({ app: { graph: null } }))
-vi.mock('@/scripts/api', () => ({ api: { socket: null } }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: null } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
 
 import { api } from '@/scripts/api'
 

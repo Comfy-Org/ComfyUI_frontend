@@ -8,7 +8,7 @@ import { i18n } from '@/i18n'
 
 import EssentialNodesPanel from './EssentialNodesPanel.vue'
 
-vi.mock('./EssentialNodeCard.vue', () => ({
+vi.mock<unknown>(import('./EssentialNodeCard.vue'), () => ({
   default: {
     props: ['tile', 'previewPanel'],
     template: '<div data-testid="essential-node-card">{{ tile.nodeName }}</div>'

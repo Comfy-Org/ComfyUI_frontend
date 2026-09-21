@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useStablePrimeVueSplitterSizer } from './useStablePrimeVueSplitterSizer'
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),

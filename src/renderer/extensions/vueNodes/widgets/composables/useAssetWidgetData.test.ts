@@ -6,7 +6,7 @@ import { nextTick, ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
@@ -17,7 +17,7 @@ const mockInitializedKeys = new Set<string>()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetCategoryForNodeType = vi.fn()
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     getAssets: (key: string) => mockAssetsByKey.get(key) ?? [],
     isModelLoading: (key: string) => mockLoadingByKey.get(key) ?? false,
@@ -27,7 +27,7 @@ vi.mock('@/stores/assetsStore', () => ({
   })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({
     getCategoryForNodeType: mockGetCategoryForNodeType
   })

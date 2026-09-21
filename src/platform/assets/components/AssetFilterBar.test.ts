@@ -24,17 +24,19 @@ const i18n = createI18n({
 })
 
 // Mock components with minimal functionality for business logic testing
-vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
-  default: {
-    name: 'MultiSelect',
-    props: {
-      modelValue: Array,
-      label: String,
-      options: Array,
-      class: String
-    },
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@/components/ui/multi-select/MultiSelect.vue'),
+  () => ({
+    default: {
+      name: 'MultiSelect',
+      props: {
+        modelValue: Array,
+        label: String,
+        options: Array,
+        class: String
+      },
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="multi-select">
         <select multiple @change="$emit('update:modelValue', Array.from($event.target.selectedOptions).map(o => ({ name: o.text, value: o.value })))">
           <option v-for="option in options" :key="option.value" :value="option.value">
@@ -43,20 +45,23 @@ vi.mock('@/components/ui/multi-select/MultiSelect.vue', () => ({
         </select>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
-vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
-  default: {
-    name: 'SingleSelect',
-    props: {
-      modelValue: String,
-      label: String,
-      options: Array,
-      class: String
-    },
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@/components/ui/single-select/SingleSelect.vue'),
+  () => ({
+    default: {
+      name: 'SingleSelect',
+      props: {
+        modelValue: String,
+        label: String,
+        options: Array,
+        class: String
+      },
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="single-select">
         <select @change="$emit('update:modelValue', $event.target.value)">
           <option v-for="option in options" :key="option.value" :value="option.value">
@@ -65,8 +70,9 @@ vi.mock('@/components/ui/single-select/SingleSelect.vue', () => ({
         </select>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
 // Test factory functions
 function mountAssetFilterBar(props = {}) {

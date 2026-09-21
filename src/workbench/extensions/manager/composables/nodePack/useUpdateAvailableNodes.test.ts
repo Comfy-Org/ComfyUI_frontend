@@ -10,17 +10,22 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 // Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
+
   () => ({
     useInstalledPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
 
-vi.mock('semver', () => ({
+  () => ({
+    useComfyManagerStore: vi.fn()
+  })
+)
+
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn()
 }))

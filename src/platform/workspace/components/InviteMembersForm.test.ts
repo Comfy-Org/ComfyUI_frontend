@@ -25,29 +25,35 @@ const {
   mockTrackInviteFailed: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ fetchStatus: mockFetchStatus })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite as (
-      email: string
-    ) => Promise<WorkspacePendingInvite>,
-    fetchPendingInvites: mockFetchPendingInvites,
-    get pendingInvites() {
-      return [...mockPendingInvites.value]
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      createInvite: mockCreateInvite as (
+        email: string
+      ) => Promise<WorkspacePendingInvite>,
+      fetchPendingInvites: mockFetchPendingInvites,
+      get pendingInvites() {
+        return [...mockPendingInvites.value]
+      }
+    })
   })
-}))
+)
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWorkspaceInviteSent: mockTrackInviteSent,
     trackWorkspaceInviteFailed: mockTrackInviteFailed

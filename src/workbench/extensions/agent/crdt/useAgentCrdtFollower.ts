@@ -7,7 +7,10 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+import {
+  readSubgraphDefinitionIds,
+  readSubgraphDefinitions
+} from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import { wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -249,6 +252,7 @@ export function useAgentCrdtFollower(
         if (!(event instanceof CustomEvent)) return
         const detail = event.detail as OpsResultView & { failed?: unknown }
         listener({
+          workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
@@ -553,9 +557,11 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing.
+   * nothing unless a refused subscribe has a scheduled retry. In that case,
+   * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
+    if (subscribeRetryTimer !== null) return
     bridge.reconcile()
   }
 
@@ -580,10 +586,14 @@ export function useAgentCrdtFollower(
   function reconcileLiveGraph(docId: string): void {
     const graph = getGraph()
     if (!graph) return
-    const nodeIds = reconcileAgentAdapters(
-      graph,
-      readSubgraphDefinitions(bridge.follower.doc)
+    const definitionIds = readSubgraphDefinitionIds(bridge.follower.doc)
+    const hasMissingDefinition = definitionIds.some(
+      (id) => !graph.rootGraph.subgraphs.has(id)
     )
+    const definitions = hasMissingDefinition
+      ? readSubgraphDefinitions(bridge.follower.doc)
+      : []
+    const nodeIds = reconcileAgentAdapters(graph, definitions)
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId: docId,

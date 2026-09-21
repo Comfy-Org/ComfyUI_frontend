@@ -13,21 +13,21 @@
     "shareTooltip": "워크플로우 공유"
   },
   "agent": {
-    "addFromAssets": "에셋 패널에서 추가",
-    "addNodesFromGraph": "그래프에서 노드 추가",
+    "addFromAssets": "에셋 패널에서 에셋 드래그",
+    "addNodesFromGraph": "그래프의 노드 언급",
     "addPromptToSend": "보낼 프롬프트 추가",
     "addToPrompt": "프롬프트에 추가",
     "alpha": "ALPHA",
     "askComfyAgent": "Comfy Agent에게 물어보기",
     "assetNotAttachable": "이미지, 동영상, 오디오, 3D 모델 및 텍스트 파일을 첨부할 수 있습니다",
     "attach": "파일 첨부",
-    "attachFiles": "이미지 또는 파일 첨부",
+    "attachFiles": "이미지 또는 파일 업로드",
     "attachmentTooLarge": "{name}의 크기가 {limit}보다 큽니다",
     "attachmentUploadFailed": "{name}을(를) 업로드할 수 없습니다",
     "backToPreviousChat": "이전 채팅으로 돌아가기",
     "caption": "AI 에이전트는 실수할 수 있습니다",
     "captionExpanded": "AI 에이전트는 실수할 수 있습니다. 응답을 다시 확인하세요.",
-    "changeWorkflowForChat": "이 채팅의 워크플로 변경",
+    "changeWorkflowForChat": "에이전트가 편집할 수 있는 워크플로 변경",
     "chatOptions": "채팅 옵션",
     "chooseWorkflow": "워크플로 선택",
     "chooseWorkflowForChat": "이 채팅에 사용할 워크플로 선택",
@@ -69,13 +69,13 @@
     "noNodesToMention": "이 워크플로에 노드가 없습니다",
     "nodeSelection": {
       "bannerSubtitle": "참조로 추가할 노드를 하나 이상 선택하세요",
-      "bannerTitle": "그래프에서 노드 추가",
+      "bannerTitle": "그래프의 노드 언급",
       "exit": "모드 종료",
       "selectNode": "노드 선택"
     },
     "notHelpful": "도움되지 않음",
     "openWorkflowTab": "{name} 열기",
-    "placeholder": "아이디어를 설명하고, {'@'}로 참조하거나,\n그래프에서 노드를 추가하거나 에셋을 끌어다 놓으세요",
+    "placeholder": "아이디어를 설명하고, {'@'}로 참조하며,\n그래프의 노드를 언급하거나 에셋을 드래그하세요",
     "ranToolCalls": "{count}개 도구 호출 실행 | {count}개 도구 호출 실행",
     "ranToolCallsTimed": "{seconds}초 동안 {count}개 도구 호출 실행 | {seconds}초 동안 {count}개 도구 호출 실행",
     "remove": "제거",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "결제 수단을 업데이트하여 워크스페이스의 구독을 복구하고 워크플로우를 실행하세요.",
       "ownerRunLabel": "실행하려면 결제 정보 업데이트",
       "ownerRunTooltip": "이 구독을 복구하려면 결제 정보를 업데이트하세요",
+      "paymentFailedMemberDescription": "워크스페이스 소유자에게 워크스페이스의 결제 수단을 업데이트해 달라고 요청하세요.",
+      "paymentFailedMemberTitle": "이 워크스페이스의 결제가 처리되지 않았습니다",
+      "paymentFailedOwnerDescription": "워크플로를 계속 실행하려면 결제 수단을 업데이트하세요.",
+      "paymentFailedOwnerTitle": "결제가 처리되지 않았습니다",
       "title": "구독이 일시 중지됨"
     },
     "perMonth": "USD / 월",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "글로벌 값",
       "randomize": "값 무작위화",
       "randomizeDesc": "각 생성 후 값을 무작위로 섞습니다"
+    },
+    "vueOnly": {
+      "Chart": "차트",
+      "Compositor": "컴포지터",
+      "Fileupload": "파일 업로드",
+      "Galleria": "갤러리",
+      "ImageCompare": "이미지 비교",
+      "Markdown": "Markdown",
+      "MultiSelect": "다중 선택",
+      "SelectButton": "선택 버튼"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "이 워크스페이스의 구독이 일시 중지되었습니다. 결제를 업데이트하여 다시 시작하세요.",
         "memberBody": "이 워크스페이스의 구독이 일시 중지되었습니다. 워크스페이스 관리자가 결제 수단을 업데이트해야 합니다.",
         "title": "구독 일시 중지됨"
+      },
+      "planChange": {
+        "body": "그때까지 현재 요금제가 유지됩니다.",
+        "title": "{date}에 요금제가 {plan}(으)로 변경됩니다"
       },
       "updatePayment": "결제 업데이트",
       "warning": {

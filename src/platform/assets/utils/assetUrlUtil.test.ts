@@ -10,7 +10,7 @@ const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188/api${path}`)
 )
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: mockApiURL }
 }))
 

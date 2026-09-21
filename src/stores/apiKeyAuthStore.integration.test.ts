@@ -1,8 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createTestingPinia } from '@pinia/testing'
-import type { Pinia } from 'pinia'
-import { disposePinia, setActivePinia } from 'pinia'
+import { disposePinia, getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
@@ -11,76 +9,57 @@ import { useAuthStore } from '@/stores/authStore'
 
 const mockFetch = vi.fn()
 
-vi.mock('vuefire', () => ({
+vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
-}))
+vi.mock(import('firebase/auth'))
 
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    }
-  }
-})
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud',
   isCloud: true,
   isDesktop: false
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: { unifiedCloudAuthEnabled: false }
   })
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    clearWorkspaceContext: vi.fn(),
-    getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-    getUnifiedToken: vi.fn().mockReturnValue(undefined),
-    mintAtLogin: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => ({
+      clearWorkspaceContext: vi.fn(),
+      getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
+      getUnifiedToken: vi.fn().mockReturnValue(undefined),
+      mintAtLogin: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspaceId: null,
-    resetForIdentityChange: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      activeWorkspaceId: null,
+      resetForIdentityChange: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })
 }))
 
 describe('API key authentication initialization', () => {
-  let pinia: Pinia
-
   beforeEach(() => {
     localStorage.clear()
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockResolvedValue({
       ok: true,
@@ -101,7 +80,8 @@ describe('API key authentication initialization', () => {
   })
 
   afterEach(() => {
-    disposePinia(pinia)
+    const pinia = getActivePinia()
+    if (pinia) disposePinia(pinia)
   })
 
   const customerResponse = (id: string) => ({

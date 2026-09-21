@@ -11,7 +11,7 @@ const flushPromises = () =>
 
 const mockGet = vi.fn()
 const mockSet = vi.fn()
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: mockGet,
     set: mockSet

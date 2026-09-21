@@ -36,18 +36,22 @@ const mockCanvasStore = {
   linearMode: false
 }
 
-vi.mock('@/composables/element/useDomClipping', () => ({
+vi.mock(import('@/composables/element/useDomClipping'), () => ({
   useDomClipping: () => ({
     style: mockClippingStyle,
     updateClipPath: mockUpdateClipPath
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/platform/settings/settingStore', () => ({
+  () => ({
+    useCanvasStore: () => mockCanvasStore
+  })
+)
+
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) =>
       key === 'Comfy.DOMClippingEnabled' ? mockDomClippingEnabled.value : false

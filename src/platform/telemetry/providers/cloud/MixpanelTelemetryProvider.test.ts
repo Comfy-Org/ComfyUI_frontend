@@ -8,21 +8,21 @@ const mockMixpanel = vi.hoisted(() => ({
   people: { set: vi.fn() }
 }))
 
-vi.mock('mixpanel-browser', () => ({
+vi.mock<unknown>(import('mixpanel-browser'), () => ({
   default: mockMixpanel
 }))
 
 const mockOnUserResolved = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
+vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: { value: null }
 }))
 

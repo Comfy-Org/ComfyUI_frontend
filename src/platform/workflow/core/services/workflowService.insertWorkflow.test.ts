@@ -17,40 +17,48 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { _deserializeItems: vi.fn() }
   }
 }))
 
-vi.mock('@/scripts/defaultGraph', () => ({
+vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
     confirm: vi.fn()
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/services/litegraphService', () => ({
+  () => ({
+    useCanvasStore: () => ({})
+  })
+)
+
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/platform/telemetry', () => ({
+  () => ({
+    useWorkflowThumbnail: () => ({
+      storeThumbnail: vi.fn(),
+      getThumbnail: vi.fn()
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: vi.fn(),
@@ -58,24 +66,27 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: () => ({
-    saveDraft: vi.fn(() => true),
-    getDraft: vi.fn(),
-    removeDraft: vi.fn(),
-    markDraftUsed: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/persistence/stores/workflowDraftStoreV2'),
+  () => ({
+    useWorkflowDraftStoreV2: () => ({
+      saveDraft: vi.fn(() => true),
+      getDraft: vi.fn(),
+      removeDraft: vi.fn(),
+      markDraftUsed: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/stores/domWidgetStore', () => ({
+vi.mock<unknown>(import('@/stores/domWidgetStore'), () => ({
   useDomWidgetStore: () => ({ clear: vi.fn() })
 }))
 
-vi.mock('@/stores/subgraphNavigationStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
   useSubgraphNavigationStore: () => ({ saveCurrentViewport: vi.fn() })
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({})
 }))
 

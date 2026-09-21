@@ -13,21 +13,21 @@
     "shareTooltip": "分享工作流程"
   },
   "agent": {
-    "addFromAssets": "從資產面板加入",
-    "addNodesFromGraph": "從圖表加入節點",
+    "addFromAssets": "從資產面板拖曳加入資產",
+    "addNodesFromGraph": "提及圖表中的節點",
     "addPromptToSend": "新增要傳送的提示詞",
     "addToPrompt": "加入提示詞",
     "alpha": "早期測試版",
     "askComfyAgent": "詢問 Comfy Agent",
     "assetNotAttachable": "可附加圖片、影片、音訊、3D 模型和文字檔",
     "attach": "附加檔案",
-    "attachFiles": "附加圖片或檔案",
+    "attachFiles": "上傳影像或檔案",
     "attachmentTooLarge": "{name} 大於 {limit}",
     "attachmentUploadFailed": "無法上傳 {name}",
     "backToPreviousChat": "返回上一個聊天",
     "caption": "AI 代理程式可能會犯錯",
     "captionExpanded": "AI 代理程式可能會犯錯。請再次確認回應。",
-    "changeWorkflowForChat": "變更此聊天的工作流程",
+    "changeWorkflowForChat": "變更代理程式可編輯的工作流程",
     "chatOptions": "聊天選項",
     "chooseWorkflow": "選擇工作流程",
     "chooseWorkflowForChat": "選擇此聊天的工作流程",
@@ -69,13 +69,13 @@
     "noNodesToMention": "此工作流程中沒有節點",
     "nodeSelection": {
       "bannerSubtitle": "選取一個或多個節點以加入作為參照",
-      "bannerTitle": "從圖表加入節點",
+      "bannerTitle": "提及圖表中的節點",
       "exit": "離開模式",
       "selectNode": "選取節點"
     },
     "notHelpful": "沒有幫助",
     "openWorkflowTab": "開啟 {name}",
-    "placeholder": "描述想法，使用 {'@'} 參照，\n從圖表加入節點或拖曳資產",
+    "placeholder": "描述想法，使用 {'@'} 引用，\n提及圖表中的節點或拖曳加入資產",
     "ranToolCalls": "已執行 {count} 次工具呼叫 | 已執行 {count} 次工具呼叫",
     "ranToolCallsTimed": "已執行 {count} 次工具呼叫，耗時 {seconds} 秒 | 已執行 {count} 次工具呼叫，耗時 {seconds} 秒",
     "remove": "移除",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "請更新您的付款方式以恢復工作區的訂閱並執行工作流程。",
       "ownerRunLabel": "更新付款後執行",
       "ownerRunTooltip": "更新付款方式以恢復此訂閱",
+      "paymentFailedMemberDescription": "請要求工作區擁有者更新工作區的付款方式。",
+      "paymentFailedMemberTitle": "此工作區的付款未成功",
+      "paymentFailedOwnerDescription": "請更新付款方式，以持續執行工作流程。",
+      "paymentFailedOwnerTitle": "您的付款未成功",
       "title": "訂閱已暫停"
     },
     "perMonth": "美元 / 月",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "全域數值",
       "randomize": "隨機數值",
       "randomizeDesc": "每次生成後隨機打亂數值"
+    },
+    "vueOnly": {
+      "Chart": "圖表",
+      "Compositor": "合成器",
+      "Fileupload": "檔案上傳",
+      "Galleria": "圖庫",
+      "ImageCompare": "影像比較",
+      "Markdown": "Markdown",
+      "MultiSelect": "多重選取",
+      "SelectButton": "選取按鈕"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "此工作區的訂閱已暫停。請更新付款方式以恢復使用。",
         "memberBody": "此工作區的訂閱已暫停。請聯絡工作區管理員更新付款方式。",
         "title": "訂閱已暫停"
+      },
+      "planChange": {
+        "body": "您目前的方案將持續有效至該日期。",
+        "title": "您的方案將於 {date} 變更為 {plan}"
       },
       "updatePayment": "更新付款方式",
       "warning": {

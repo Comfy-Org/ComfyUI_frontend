@@ -7,17 +7,20 @@ const { mockGetSetting, mockUnseenAddedAssetsCount } = vi.hoisted(() => ({
   mockUnseenAddedAssetsCount: { value: 0 }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: mockGetSetting
   })
 }))
 
-vi.mock('@/components/sidebar/tabs/AssetsSidebarTab.vue', () => ({
-  default: {}
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/AssetsSidebarTab.vue'),
+  () => ({
+    default: {}
+  })
+)
 
-vi.mock('@/stores/workspace/assetsSidebarBadgeStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/assetsSidebarBadgeStore'), () => ({
   useAssetsSidebarBadgeStore: () => ({
     unseenAddedAssetsCount: mockUnseenAddedAssetsCount.value
   })

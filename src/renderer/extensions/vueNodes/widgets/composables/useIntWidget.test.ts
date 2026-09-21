@@ -7,11 +7,11 @@ import {
   useIntWidget
 } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidget: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn(() => false)
   })

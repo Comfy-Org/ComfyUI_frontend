@@ -18,7 +18,7 @@ const { addNodeOnGraph } = vi.hoisted(() => ({
   addNodeOnGraph: vi.fn()
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({
     getCanvasCenter: vi.fn(() => [0, 0]),
     addNodeOnGraph

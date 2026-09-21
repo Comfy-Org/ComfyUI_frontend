@@ -8,25 +8,28 @@ const state = vi.hoisted(() => ({
   openWorkflows: [] as unknown[]
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: (key: string) => state.settings[key] })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ openWorkflows: state.openWorkflows })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ openWorkflows: state.openWorkflows })
+  })
+)
 
-vi.mock('@/stores/workspace/bottomPanelStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/bottomPanelStore'), () => ({
   useBottomPanelStore: () => ({
     bottomPanelVisible: state.bottomPanelVisible
   })
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/rightSidePanelStore'), () => ({
   useRightSidePanelStore: () => ({ isOpen: state.rightSidePanelOpen })
 }))
 
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
   useSidebarTabStore: () => ({
     activeSidebarTabId: state.activeSidebarTabId
   })

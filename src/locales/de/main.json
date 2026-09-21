@@ -13,21 +13,21 @@
     "shareTooltip": "Workflow teilen"
   },
   "agent": {
-    "addFromAssets": "Aus dem Assets-Panel hinzufügen",
-    "addNodesFromGraph": "Nodes aus dem Graphen hinzufügen",
+    "addFromAssets": "Ziehen Sie ein Asset aus dem Asset-Panel hinein",
+    "addNodesFromGraph": "Erwähnen Sie Nodes aus dem Graphen",
     "addPromptToSend": "Prompt zum Senden hinzufügen",
     "addToPrompt": "Zum Prompt hinzufügen",
     "alpha": "ALPHA",
     "askComfyAgent": "Comfy Agent fragen",
     "assetNotAttachable": "Bilder, Videos, Audio, 3D-Modelle und Textdateien können angehängt werden",
     "attach": "Datei anhängen",
-    "attachFiles": "Bilder oder Dateien anhängen",
+    "attachFiles": "Laden Sie Bilder oder Dateien hoch",
     "attachmentTooLarge": "{name} ist größer als {limit}",
     "attachmentUploadFailed": "{name} konnte nicht hochgeladen werden",
     "backToPreviousChat": "Zum vorherigen Chat zurück",
     "caption": "Der KI-Agent kann Fehler machen",
     "captionExpanded": "Der KI-Agent kann Fehler machen. Überprüfen Sie die Antwort noch einmal.",
-    "changeWorkflowForChat": "Workflow für diesen Chat ändern",
+    "changeWorkflowForChat": "Ändern Sie den Workflow, den der Agent bearbeiten kann",
     "chatOptions": "Chatoptionen",
     "chooseWorkflow": "Workflow auswählen",
     "chooseWorkflowForChat": "Workflow für diesen Chat auswählen",
@@ -69,13 +69,13 @@
     "noNodesToMention": "Keine Nodes in diesem Workflow",
     "nodeSelection": {
       "bannerSubtitle": "Wählen Sie einen oder mehrere Nodes als Referenz aus",
-      "bannerTitle": "Nodes aus dem Graphen hinzufügen",
+      "bannerTitle": "Erwähnen Sie Nodes aus dem Graphen",
       "exit": "Modus verlassen",
       "selectNode": "Node auswählen"
     },
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
-    "placeholder": "Beschreiben Sie Ideen, {'@'} zum Referenzieren,\nfügen Sie Nodes aus dem Graphen hinzu oder ziehen Sie Assets herein",
+    "placeholder": "Beschreiben Sie Ideen, {'@'} zum Referenzieren,\nerwähnen Sie Nodes aus dem Graphen oder ziehen Sie Assets hinein",
     "ranToolCalls": "Hat {count} Tool-Aufruf ausgeführt | Hat {count} Tool-Aufrufe ausgeführt",
     "ranToolCallsTimed": "Hat {count} Tool-Aufruf {seconds} Sekunden lang ausgeführt | Hat {count} Tool-Aufrufe {seconds} Sekunden lang ausgeführt",
     "remove": "Entfernen",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "Aktualisieren Sie Ihre Zahlungsmethode, um das Abonnement des Workspace wiederherzustellen und Workflows auszuführen.",
       "ownerRunLabel": "Zahlung zum Ausführen aktualisieren",
       "ownerRunTooltip": "Aktualisieren Sie die Zahlung, um dieses Abonnement wiederherzustellen",
+      "paymentFailedMemberDescription": "Bitten Sie den Workspace-Inhaber, die Zahlungsmethode des Workspace zu aktualisieren.",
+      "paymentFailedMemberTitle": "Die Zahlung dieses Workspace konnte nicht verarbeitet werden",
+      "paymentFailedOwnerDescription": "Aktualisieren Sie Ihre Zahlungsmethode, damit Sie weiterhin Workflows ausführen können.",
+      "paymentFailedOwnerTitle": "Ihre Zahlung konnte nicht verarbeitet werden",
       "title": "Abonnement pausiert"
     },
     "perMonth": "/ Monat",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "Globaler Wert",
       "randomize": "Wert zufällig festlegen",
       "randomizeDesc": "Legt den Wert nach jeder Generierung zufällig fest"
+    },
+    "vueOnly": {
+      "Chart": "Diagramm",
+      "Compositor": "Compositor",
+      "Fileupload": "Datei-Upload",
+      "Galleria": "Galerie",
+      "ImageCompare": "Bildvergleich",
+      "Markdown": "Markdown",
+      "MultiSelect": "Mehrfachauswahl",
+      "SelectButton": "Auswahlbutton"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "Das Abonnement dieses Workspace ist pausiert. Aktualisieren Sie die Zahlungsmethode, um es fortzusetzen.",
         "memberBody": "Bitten Sie den Besitzer Ihres Workspace, das Abonnement des Workspace wiederherzustellen.",
         "title": "Abonnement pausiert"
+      },
+      "planChange": {
+        "body": "Ihr aktueller Plan bleibt bis dahin aktiv.",
+        "title": "Ihr Plan wechselt am {date} zu {plan}"
       },
       "updatePayment": "Zahlungsmethode aktualisieren",
       "warning": {

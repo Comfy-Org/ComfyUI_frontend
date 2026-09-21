@@ -5,7 +5,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`,
     addEventListener: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
 }))
 

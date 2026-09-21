@@ -7,17 +7,20 @@ const { mockActiveJobsCount, mockActiveSidebarTabId } = vi.hoisted(() => ({
   mockActiveSidebarTabId: { value: null as string | null }
 }))
 
-vi.mock('@/components/sidebar/tabs/JobHistorySidebarTab.vue', () => ({
-  default: {}
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/JobHistorySidebarTab.vue'),
+  () => ({
+    default: {}
+  })
+)
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => ({
     activeJobsCount: mockActiveJobsCount.value
   })
 }))
 
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
   useSidebarTabStore: () => ({
     activeSidebarTabId: mockActiveSidebarTabId.value
   })

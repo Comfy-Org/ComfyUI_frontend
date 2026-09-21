@@ -40,7 +40,7 @@ test.describe('Release Notifications', () => {
           ])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -121,7 +121,7 @@ test.describe('Release Notifications', () => {
           body: JSON.stringify({ error: 'Server error' })
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -169,7 +169,7 @@ test.describe('Release Notifications', () => {
           body: JSON.stringify([createMockRelease({ attention: 'high' })])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -222,7 +222,7 @@ test.describe('Release Notifications', () => {
           body: JSON.stringify([])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -255,7 +255,7 @@ test.describe('Release Notifications', () => {
           body: JSON.stringify([createMockRelease()])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -304,7 +304,7 @@ test.describe('Release Notifications', () => {
           ])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 
@@ -365,7 +365,7 @@ test.describe('Release Notifications', () => {
           body: JSON.stringify([])
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
 

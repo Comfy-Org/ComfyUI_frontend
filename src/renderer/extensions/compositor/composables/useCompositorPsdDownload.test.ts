@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -16,25 +18,53 @@ const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
   }))
 
 vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorSession',
+  import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
     loadCompositorSession
   })
 )
 vi.mock(
-  '@/renderer/extensions/layerEditor/composables/useLayerEditorExport',
+  import('@/renderer/extensions/layerEditor/composables/useLayerEditorExport'),
   () => ({
     buildSessionPsdBlob,
     psdExportFilename: () => 'comfyui-layers-test.psd'
   })
 )
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+const apps: App[] = []
+
+function renderPsdDownload(
+  createSession?: () => LayerEditorSession
+): ReturnType<typeof useCompositorPsdDownload> {
+  let psdDownload: ReturnType<typeof useCompositorPsdDownload> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        psdDownload = useCompositorPsdDownload(createSession)
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!psdDownload) throw new Error('PSD download not initialized')
+  return psdDownload
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 function makeSession(glOk = true) {
   return {
@@ -53,7 +83,7 @@ describe('useCompositorPsdDownload', () => {
 
   it('loads a throwaway session, downloads the psd, and disposes it', async () => {
     const session = makeSession()
-    const { exporting, downloadPsd } = useCompositorPsdDownload(
+    const { exporting, downloadPsd } = renderPsdDownload(
       () => session as unknown as LayerEditorSession
     )
 
@@ -75,7 +105,7 @@ describe('useCompositorPsdDownload', () => {
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
     const session = makeSession(false)
-    const { downloadPsd } = useCompositorPsdDownload(
+    const { downloadPsd } = renderPsdDownload(
       () => session as unknown as LayerEditorSession
     )
 
@@ -94,7 +124,7 @@ describe('useCompositorPsdDownload', () => {
   it('refuses to export when some layers failed to load', async () => {
     loadCompositorSession.mockResolvedValueOnce(2)
     const session = makeSession()
-    const { downloadPsd } = useCompositorPsdDownload(
+    const { downloadPsd } = renderPsdDownload(
       () => session as unknown as LayerEditorSession
     )
 
@@ -109,7 +139,7 @@ describe('useCompositorPsdDownload', () => {
   it('reports an error and disposes when export fails midway', async () => {
     buildSessionPsdBlob.mockRejectedValueOnce(new Error('boom'))
     const session = makeSession()
-    const { exporting, downloadPsd } = useCompositorPsdDownload(
+    const { exporting, downloadPsd } = renderPsdDownload(
       () => session as unknown as LayerEditorSession
     )
 
@@ -122,7 +152,7 @@ describe('useCompositorPsdDownload', () => {
   })
 
   it('recovers when session creation throws', async () => {
-    const { exporting, downloadPsd } = useCompositorPsdDownload(() => {
+    const { exporting, downloadPsd } = renderPsdDownload(() => {
       throw new Error('boom')
     })
 
@@ -139,7 +169,7 @@ describe('useCompositorPsdDownload', () => {
       () => new Promise<Blob>((resolve) => (resolveBlob = resolve))
     )
     const session = makeSession()
-    const { downloadPsd } = useCompositorPsdDownload(
+    const { downloadPsd } = renderPsdDownload(
       () => session as unknown as LayerEditorSession
     )
 

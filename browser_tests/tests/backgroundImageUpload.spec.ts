@@ -1,8 +1,12 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ comfyPage }) => {
+test.beforeEach(async ({ page, comfyPage }) => {
+  await page.route('https://example.com/*.png', (route) =>
+    route.fulfill({ path: assetPath('image32x32.webp') })
+  )
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 

@@ -78,16 +78,30 @@ export const useAgentConversationStore = defineStore(
       threadId.value = id
     }
 
+    function recordSettledReply(
+      turnId: TurnId,
+      text: string,
+      parts: AssistantMessage['parts']
+    ): void {
+      userTexts.value.set(turnId, text)
+      const message = createAssistantMessage(turnId)
+      message.streaming = false
+      message.parts = parts
+      messages.value.push(message)
+    }
+
     function recordFailedSend(
       turnId: TurnId,
       text: string,
       noticeText: string
     ): void {
-      userTexts.value.set(turnId, text)
-      const message = createAssistantMessage(turnId)
-      message.streaming = false
-      message.parts = [{ type: 'notice', level: 'error', text: noticeText }]
-      messages.value.push(message)
+      recordSettledReply(turnId, text, [
+        { type: 'notice', level: 'error', text: noticeText }
+      ])
+    }
+
+    function recordPaywall(turnId: TurnId, text: string): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall' }])
     }
 
     function startTurn(turnId: TurnId): void {
@@ -296,6 +310,7 @@ export const useAgentConversationStore = defineStore(
       recordUser,
       setThreadId,
       recordFailedSend,
+      recordPaywall,
       startTurn,
       ingest,
       abortActiveTurn,

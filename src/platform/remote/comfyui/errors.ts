@@ -28,8 +28,10 @@ const MARKUP_DOCUMENT = /^<[a-z!/]/i
  * The API emits this shape for all error responses; this helper is the
  * single place that tolerates legacy/partial flat `ErrorResponse` payloads
  * (missing `code`, missing `message`, non-object bodies) so call sites never
- * shape-sniff. Nested/domain error envelopes (e.g. `PromptExecutionError`)
- * are out of scope.
+ * shape-sniff. The workspace billing service wraps the same fields one level
+ * down — `{ "error": { code, message } }` (cloud billing_write.go
+ * errorEnvelope) — so that envelope is unwrapped here too. Deeper domain
+ * envelopes (e.g. `PromptExecutionError`) are out of scope.
  *
  * @param body - The parsed response body (any JSON value, or `undefined`)
  * @param fallbackMessage - Used when the body carries no usable message
@@ -49,7 +51,10 @@ export function errorResponseFromBody(
       message: usable ? trimmed : fallbackMessage
     }
   }
-  const record: Record<PropertyKey, unknown> = isPlainObject(body) ? body : {}
+  const raw: Record<PropertyKey, unknown> = isPlainObject(body) ? body : {}
+  const record: Record<PropertyKey, unknown> = isPlainObject(raw.error)
+    ? raw.error
+    : raw
   const code =
     typeof record.code === 'string' && record.code !== ''
       ? record.code

@@ -13,21 +13,21 @@
     "shareTooltip": "Condividi workflow"
   },
   "agent": {
-    "addFromAssets": "Aggiungi dal pannello delle risorse",
-    "addNodesFromGraph": "Aggiungi nodi dal grafo",
+    "addFromAssets": "Trascina una risorsa dal pannello delle risorse",
+    "addNodesFromGraph": "Menziona nodi dal grafo",
     "addPromptToSend": "Aggiungi un prompt da inviare",
     "addToPrompt": "Aggiungi al prompt",
     "alpha": "ALPHA",
     "askComfyAgent": "Chiedi a Comfy Agent",
     "assetNotAttachable": "È possibile allegare immagini, video, audio, modelli 3D e file di testo",
     "attach": "Allega un file",
-    "attachFiles": "Allega immagini o file",
+    "attachFiles": "Carica immagini o file",
     "attachmentTooLarge": "{name} è più grande di {limit}",
     "attachmentUploadFailed": "Non è stato possibile caricare {name}",
     "backToPreviousChat": "Torna alla chat precedente",
     "caption": "L'agente AI può commettere errori",
     "captionExpanded": "L'agente AI può commettere errori. Verifica attentamente la risposta.",
-    "changeWorkflowForChat": "Cambia il flusso di lavoro per questa chat",
+    "changeWorkflowForChat": "Cambia il flusso di lavoro che l'agente può modificare",
     "chatOptions": "Opzioni chat",
     "chooseWorkflow": "Scegli un flusso di lavoro",
     "chooseWorkflowForChat": "Scegli un flusso di lavoro per questa chat",
@@ -69,13 +69,13 @@
     "noNodesToMention": "Nessun nodo in questo flusso di lavoro",
     "nodeSelection": {
       "bannerSubtitle": "Seleziona uno o più nodi da aggiungere come riferimento",
-      "bannerTitle": "Aggiungi nodi dal grafo",
+      "bannerTitle": "Menziona nodi dal grafo",
       "exit": "Esci dalla modalità",
       "selectNode": "Seleziona nodo"
     },
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
-    "placeholder": "Descrivi le tue idee, usa {'@'} per fare riferimento,\naggiungi nodi dal grafo o trascina risorse",
+    "placeholder": "Descrivi idee, usa {'@'} per fare riferimento,\nmenciona nodi dal grafo o trascina risorse",
     "ranToolCalls": "Eseguita {count} chiamata a uno strumento | Eseguite {count} chiamate a strumenti",
     "ranToolCallsTimed": "Eseguita {count} chiamata a uno strumento per {seconds} secondi | Eseguite {count} chiamate a strumenti per {seconds} secondi",
     "remove": "Rimuovi",
@@ -4420,6 +4420,10 @@
       "ownerDescription": "Aggiorna il metodo di pagamento per ripristinare l'abbonamento del workspace ed eseguire workflow.",
       "ownerRunLabel": "Aggiorna pagamento per eseguire",
       "ownerRunTooltip": "Aggiorna pagamento per ripristinare questo abbonamento",
+      "paymentFailedMemberDescription": "Chiedi al proprietario dello spazio di lavoro di aggiornare il metodo di pagamento dello spazio di lavoro.",
+      "paymentFailedMemberTitle": "Il pagamento di questo spazio di lavoro non è andato a buon fine",
+      "paymentFailedOwnerDescription": "Aggiorna il metodo di pagamento per continuare a eseguire i flussi di lavoro.",
+      "paymentFailedOwnerTitle": "Il pagamento non è andato a buon fine",
       "title": "Abbonamento in pausa"
     },
     "perMonth": "/ mese",
@@ -4959,6 +4963,16 @@
       "linkToGlobalSeed": "Valore Globale",
       "randomize": "Valore casuale",
       "randomizeDesc": "Mescola il valore casualmente dopo ogni generazione"
+    },
+    "vueOnly": {
+      "Chart": "Grafico",
+      "Compositor": "Compositore",
+      "Fileupload": "Caricamento file",
+      "Galleria": "Galleria",
+      "ImageCompare": "Confronto immagini",
+      "Markdown": "Markdown",
+      "MultiSelect": "Selezione multipla",
+      "SelectButton": "Pulsante di selezione"
     }
   },
   "workflowService": {
@@ -5025,6 +5039,10 @@
         "body": "L'abbonamento di questo workspace è in pausa. Aggiorna il pagamento per riprendere.",
         "memberBody": "Chiedi al proprietario del workspace di ripristinare l'abbonamento.",
         "title": "Abbonamento in pausa"
+      },
+      "planChange": {
+        "body": "Il tuo piano attuale rimane attivo fino ad allora.",
+        "title": "Il tuo piano passa a {plan} il {date}"
       },
       "updatePayment": "Aggiorna pagamento",
       "warning": {

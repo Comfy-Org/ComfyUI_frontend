@@ -690,8 +690,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
             },
             { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
           ],
-          RESOLVED_PROMOTED_MODEL_NAME,
-          FAKE_MODEL_NAME
+          RESOLVED_PROMOTED_MODEL_NAME
         )
       }
     )

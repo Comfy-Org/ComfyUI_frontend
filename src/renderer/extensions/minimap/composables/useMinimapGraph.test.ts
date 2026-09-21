@@ -20,7 +20,7 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useThrottleFn: vi.fn((fn) => fn)
 }))
 
@@ -28,13 +28,13 @@ const { mockProgressStates } = vi.hoisted(() => ({
   mockProgressStates: {} as Record<string, { state: string }>
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: vi.fn(() => ({
     nodeProgressStates: mockProgressStates
   }))
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()

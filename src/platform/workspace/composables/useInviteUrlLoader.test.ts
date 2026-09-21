@@ -1,7 +1,10 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useInviteUrlLoader } from './useInviteUrlLoader'
+import { useInviteUrlLoader as createInviteUrlLoader } from './useInviteUrlLoader'
 
 /**
  * Unit tests for useInviteUrlLoader composable
@@ -21,7 +24,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -30,7 +33,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn())
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -40,37 +43,59 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
-  })
-}))
-
-vi.mock('vue-i18n', () => ({
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  }),
-  useI18n: () => ({
-    t: vi.fn((key: string, params?: Record<string, unknown>) => {
-      if (key === 'workspace.inviteAccepted') return 'Invite Accepted'
-      if (key === 'workspace.addedToWorkspace') {
-        return `You have been added to ${params?.workspaceName}`
-      }
-      if (key === 'workspace.inviteFailed') return 'Failed to Accept Invite'
-      if (key === 'g.unknownError') return 'Unknown error'
-      return key
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
     })
   })
-}))
+)
 
 const mockAcceptInvite = vi.hoisted(() => vi.fn())
-vi.mock('../stores/teamWorkspaceStore', () => ({
+vi.mock<unknown>(import('../stores/teamWorkspaceStore'), () => ({
   useTeamWorkspaceStore: () => ({
     acceptInvite: mockAcceptInvite
   })
 }))
+
+const apps: App<Element>[] = []
+
+function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
+  let result: ReturnType<typeof createInviteUrlLoader> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createInviteUrlLoader()
+        return () => null
+      }
+    })
+  )
+  app.use(
+    createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          workspace: {
+            inviteAccepted: 'Invite Accepted',
+            addedToWorkspace: 'You have been added to {workspaceName}',
+            inviteFailed: 'Failed to Accept Invite'
+          },
+          g: { unknownError: 'Unknown error' }
+        }
+      }
+    })
+  )
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('invite URL loader not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useInviteUrlLoader', () => {
   beforeEach(() => {

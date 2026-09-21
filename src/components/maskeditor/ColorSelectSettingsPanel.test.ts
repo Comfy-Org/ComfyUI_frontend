@@ -19,36 +19,45 @@ const mockStore = vi.hoisted(() => ({
   setMaskTolerance: vi.fn()
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-control="slider" :aria-label="label" @click="$emit('update:modelValue', 99)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-control="slider" :aria-label="label" @click="$emit('update:modelValue', 99)">{{ modelValue }}</button>`
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/controls/ToggleControl.vue', () => ({
-  default: {
-    name: 'ToggleControlStub',
-    props: ['label', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-control="toggle" :aria-label="label" @click="$emit('update:modelValue', !modelValue)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/ToggleControl.vue'),
+  () => ({
+    default: {
+      name: 'ToggleControlStub',
+      props: ['label', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-control="toggle" :aria-label="label" @click="$emit('update:modelValue', !modelValue)">{{ modelValue }}</button>`
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/controls/DropdownControl.vue', () => ({
-  default: {
-    name: 'DropdownControlStub',
-    props: ['label', 'options', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-control="dropdown" :aria-label="label" @click="$emit('update:modelValue', 'lab')">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/DropdownControl.vue'),
+  () => ({
+    default: {
+      name: 'DropdownControlStub',
+      props: ['label', 'options', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-control="dropdown" :aria-label="label" @click="$emit('update:modelValue', 'lab')">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

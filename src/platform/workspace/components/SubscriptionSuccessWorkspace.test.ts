@@ -1,16 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-    n: (value: number) => String(value)
-  })
-}))
 
 const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
   () => ({
@@ -20,14 +14,14 @@ const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     maxSeats: mockMaxSeats,
     occupiedSeats: mockOccupiedSeats
   })
 }))
 
-vi.mock('./InviteMembersForm.vue', () => ({
+vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
   default: {
     name: 'InviteMembersForm',
     props: [
@@ -98,6 +92,10 @@ const ButtonStub = {
   template: '<button @click="$emit(\'click\')"><slot /></button>'
 }
 
+function createTestI18n() {
+  return createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+}
+
 function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
@@ -108,7 +106,7 @@ function renderCard(props: Record<string, unknown> = {}) {
       ...props
     },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [createTestI18n()],
       stubs: {
         Button: ButtonStub
       }
@@ -149,7 +147,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
     expect(screen.getByText('$630')).toBeTruthy()
-    expect(screen.getByText(/147700/)).toBeTruthy()
+    expect(screen.getByText(/147,700/)).toBeTruthy()
   })
 
   it('shows the annual total (not a monthly-equivalent) for an annual personal plan', () => {
@@ -159,7 +157,7 @@ describe('SubscriptionSuccessWorkspace', () => {
         previewData: makePreviewData(33_600, 'ANNUAL')
       },
       global: {
-        mocks: { $t: (key: string) => key },
+        plugins: [createTestI18n()],
         stubs: {
           Button: ButtonStub
         }
@@ -168,7 +166,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText('$336')).toBeTruthy()
     expect(screen.queryByText('$28')).toBeNull()
     expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
-    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+    expect(screen.getByText(/88,800 subscription\.perYear/)).toBeTruthy()
   })
 
   it('shows the monthly price and monthly credits for a monthly personal plan', () => {
@@ -178,7 +176,7 @@ describe('SubscriptionSuccessWorkspace', () => {
         previewData: makePreviewData(3_500, 'MONTHLY')
       },
       global: {
-        mocks: { $t: (key: string) => key },
+        plugins: [createTestI18n()],
         stubs: {
           Button: {
             template: '<button @click="$emit(\'click\')"><slot /></button>'
@@ -188,7 +186,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     })
     expect(screen.getByText('$35')).toBeTruthy()
     expect(screen.getByText('subscription.usdPerMonth')).toBeTruthy()
-    expect(screen.getByText(/7400 subscription\.perMonth/)).toBeTruthy()
+    expect(screen.getByText(/7,400 subscription\.perMonth/)).toBeTruthy()
   })
 
   it('shows the annual total price and annual credit total for a yearly team plan', () => {
@@ -196,7 +194,7 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText('$7560')).toBeTruthy()
     expect(screen.queryByText('$630')).toBeNull()
     expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
-    expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
+    expect(screen.getByText(/1,772,400 subscription\.perYear/)).toBeTruthy()
   })
 
   it('prefers the fetched preview price over the client-computed team total for a team plan change', () => {

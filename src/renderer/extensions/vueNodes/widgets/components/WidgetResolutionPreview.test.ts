@@ -7,7 +7,9 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 const resolveNodeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/utils/litegraphUtil', () => ({ resolveNode: resolveNodeMock }))
+vi.mock(import('@/utils/litegraphUtil'), () => ({
+  resolveNode: resolveNodeMock
+}))
 
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'

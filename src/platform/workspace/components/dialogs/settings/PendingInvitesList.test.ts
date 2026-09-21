@@ -11,7 +11,7 @@ import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
 
 const mockMenuClose = vi.hoisted(() => vi.fn())
 
-vi.mock('@/components/button/MoreButton.vue', () => ({
+vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: mockMenuClose }))
 }))

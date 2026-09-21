@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { popoverCloseSpy } from '@/components/ui/__mocks__/popoverMockState'
 import { i18n } from '@/i18n'
 
-vi.mock('@/components/ui/Popover.vue')
+vi.mock(import('@/components/ui/Popover.vue'))
 
 const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
   key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
@@ -18,7 +18,7 @@ const mockSidebarTabStore = {
   activeSidebarTabId: null as string | null
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: mockGetSetting,
     set: mockSetSetting,
@@ -26,7 +26,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 

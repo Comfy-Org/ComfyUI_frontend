@@ -10,8 +10,6 @@ export class ImageCropWidget
   extends BaseWidget<IImageCropWidget>
   implements IImageCropWidget
 {
-  override type = 'imagecrop' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'ImageCrop')
   }

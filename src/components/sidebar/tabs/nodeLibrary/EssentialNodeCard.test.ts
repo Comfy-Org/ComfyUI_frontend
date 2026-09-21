@@ -9,7 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn().mockReturnValue('left')
   })
@@ -20,14 +20,14 @@ const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
   mockHandleNativeDrop: vi.fn()
 }))
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
     handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
-vi.mock('@/components/node/NodePreviewCard.vue', () => ({
+vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: {
     template: '<div class="mock-preview" data-testid="node-preview" />'
   }

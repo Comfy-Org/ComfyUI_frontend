@@ -21,16 +21,16 @@ const mocks = vi.hoisted(() => ({
   catalog: [] as { name: string }[]
 }))
 
-vi.mock('./firstRunEntry', () => ({
+vi.mock<unknown>(import('./firstRunEntry'), () => ({
   useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
 }))
 
-vi.mock('../tour/useFirstRunTourController', () => ({
+vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   async () => {
     const { ref } = await import('vue')
     mocks.loadingTemplateId = ref<string | null>(null)
@@ -45,8 +45,8 @@ vi.mock(
   }
 )
 
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: () => ({
       get isLoaded() {
@@ -62,7 +62,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: mocks.toastAdd })
 }))
 

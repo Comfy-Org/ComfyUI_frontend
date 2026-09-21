@@ -9,15 +9,15 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 const showDialog = vi.fn()
 const handleViewerClose = vi.fn()
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({ handleViewerClose })
 }))
 
-vi.mock('@/components/load3d/Load3dViewerContent.vue', () => ({
+vi.mock<unknown>(import('@/components/load3d/Load3dViewerContent.vue'), () => ({
   default: { name: 'Load3DViewerContentStub', template: '<div />' }
 }))
 

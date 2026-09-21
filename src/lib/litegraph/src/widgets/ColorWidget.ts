@@ -27,8 +27,6 @@ export class ColorWidget
   extends BaseWidget<IColorWidget>
   implements IColorWidget
 {
-  override type = 'color' as const
-
   private get hexValue(): string {
     return typeof this.value === 'number'
       ? intToHex(this.value)

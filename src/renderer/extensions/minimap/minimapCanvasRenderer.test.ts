@@ -19,15 +19,15 @@ import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: mockUseColorPaletteStore
 }))
 
-vi.mock('@/utils/colorUtil', () => ({
+vi.mock(import('@/utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: vi.fn(() => ({
     nodeLocationProgressStates: {}
   }))

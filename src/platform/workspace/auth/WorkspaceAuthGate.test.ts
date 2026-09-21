@@ -13,7 +13,7 @@ async function flushPromises() {
 }
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -21,19 +21,19 @@ const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 const mockLogout = vi.fn()
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     isInitialized: mockIsInitialized,
     currentUser: mockCurrentUser
   })
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({ logout: mockLogout })
 }))
 
 const mockRefreshRemoteConfig = vi.fn()
-vi.mock('@/platform/remoteConfig/refreshRemoteConfig', () => ({
+vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
 
@@ -47,13 +47,13 @@ const mockRemoteConfigState = vi.hoisted(() => ({
 const mockRemoteConfigErrorStatus = vi.hoisted(() => ({
   value: null as number | null
 }))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfigState: mockRemoteConfigState,
   remoteConfigErrorStatus: mockRemoteConfigErrorStatus
 }))
 
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get unifiedCloudAuthEnabled() {
@@ -65,12 +65,15 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 const mockMintAtLogin = vi.fn()
 const mockGetUnifiedToken = vi.fn()
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    mintAtLogin: mockMintAtLogin,
-    getUnifiedToken: mockGetUnifiedToken
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => ({
+      mintAtLogin: mockMintAtLogin,
+      getUnifiedToken: mockGetUnifiedToken
+    })
   })
-}))
+)
 
 const mockWorkspaceStoreInitialize = vi.fn()
 const mockWorkspaceStoreReset = vi.fn()
@@ -81,21 +84,24 @@ const mockWorkspaceStoreInitState = vi.hoisted(() => ({
 const mockActiveWorkspaceId = vi.hoisted(() => ({
   value: 'workspace-123' as string | null
 }))
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get initState() {
-      return mockWorkspaceStoreInitState.value
-    },
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    initialize: mockWorkspaceStoreInitialize,
-    resetForIdentityChange: mockWorkspaceStoreReset
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get initState() {
+        return mockWorkspaceStoreInitState.value
+      },
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId.value
+      },
+      initialize: mockWorkspaceStoreInitialize,
+      resetForIdentityChange: mockWorkspaceStoreReset
+    })
   })
-}))
+)
 
 const mockApiKeyAuthenticated = ref(false)
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: () => ({
     get isAuthenticated() {
       return mockApiKeyAuthenticated.value
@@ -104,14 +110,17 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    initialize: mockBillingCapabilitiesInitialize
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      initialize: mockBillingCapabilitiesInitialize
+    })
   })
-}))
+)
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }

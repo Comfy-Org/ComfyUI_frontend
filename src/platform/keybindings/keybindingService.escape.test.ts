@@ -26,20 +26,20 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/stores/dialogStore', () => {
+vi.mock<unknown>(import('@/stores/dialogStore'), () => {
   const dialogStack = reactive<DialogInstance[]>([])
   return {
     useDialogStore: () => ({ dialogStack })
   }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }

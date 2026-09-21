@@ -26,13 +26,13 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
 }))
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
@@ -75,8 +75,18 @@ const mockBillingType = ref<BillingType>('workspace')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
-const mockScheduledPlanSlug = ref<string | null>(null)
-const mockChangeAt = ref<string | null>(null)
+const mockScheduledChange = ref<SubscriptionInfo['scheduledChange']>(null)
+
+function scheduledChange(
+  planSlug: string,
+  effectiveAt: string
+): NonNullable<SubscriptionInfo['scheduledChange']> {
+  return {
+    plan_slug: planSlug,
+    effective_at: effectiveAt,
+    team_credit_stop: null
+  }
+}
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -157,8 +167,7 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
-        scheduledPlanSlug: mockScheduledPlanSlug.value,
-        changeAt: mockChangeAt.value,
+        scheduledChange: mockScheduledChange.value,
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
@@ -174,7 +183,7 @@ const mockInitialize = vi.fn()
 const mockIsLoading = ref(false)
 const mockError = ref<string | null>(null)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     type: mockBillingType,
     canAccessSubscriptionFeatures: computed(
@@ -198,12 +207,15 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+    })
   })
-}))
+)
 
 const mockIsTeamPlanCancelled = computed(
   () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
@@ -218,52 +230,62 @@ const mockIsDeleteDisabled = computed(
     !(mockSubscription.value?.isCancelled ?? false)
 )
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
-    })),
-    canReactivatePlan: mockCanReactivatePlan,
-    canOpenPricingSurface: mockCanOpenPricingSurface,
-    uiConfig: computed(() => mockUiConfig.value),
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    canAccessSubscriptionFeatures: computed(
-      () => mockIsActiveSubscription.value
-    ),
-    isSubscriptionCancelled: mockIsSubscriptionCancelled,
-    isTeamPlanCancelled: mockIsTeamPlanCancelled,
-    isDeleteDisabled: mockIsDeleteDisabled,
-    deleteDisabledTooltipKey: computed(() =>
-      mockIsDeleteDisabled.value
-        ? mockUiConfig.value.workspaceMenuDisabledTooltip
-        : null
-    )
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: mockCanManageSubscription.value,
+        canManageSubscriptionLifecycle:
+          mockCanManageSubscriptionLifecycle.value,
+        canLeaveWorkspace: mockCanLeaveWorkspace.value
+      })),
+      canReactivatePlan: mockCanReactivatePlan,
+      canOpenPricingSurface: mockCanOpenPricingSurface,
+      uiConfig: computed(() => mockUiConfig.value),
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      canAccessSubscriptionFeatures: computed(
+        () => mockIsActiveSubscription.value
+      ),
+      isSubscriptionCancelled: mockIsSubscriptionCancelled,
+      isTeamPlanCancelled: mockIsTeamPlanCancelled,
+      isDeleteDisabled: mockIsDeleteDisabled,
+      deleteDisabledTooltipKey: computed(() =>
+        mockIsDeleteDisabled.value
+          ? mockUiConfig.value.workspaceMenuDisabledTooltip
+          : null
+      )
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canCancel: mockCanCancel,
-    canReactivate: mockCanReactivate,
-    canChangeSeats: mockCanChangeSeats,
-    canSubscribeSelfServe: mockCanSubscribeSelfServe
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canCancel: mockCanCancel,
+      canReactivate: mockCanReactivate,
+      canChangeSeats: mockCanChangeSeats,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    get isSettingUp() {
-      return mockIsSettingUp.value
-    },
-    get subscriptionActionOperation() {
-      return mockSubscriptionActionOperation.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({
+      get isSettingUp() {
+        return mockIsSettingUp.value
+      },
+      get subscriptionActionOperation() {
+        return mockSubscriptionActionOperation.value
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
     showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
@@ -272,16 +294,19 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
   })
 )
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: vi.fn() })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -345,8 +370,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockBillingType.value = 'workspace'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
-    mockScheduledPlanSlug.value = null
-    mockChangeAt.value = null
+    mockScheduledChange.value = null
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -568,8 +592,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     })
 
     it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
-      mockScheduledPlanSlug.value = 'enterprise_monthly'
-      mockChangeAt.value = END_DATE_ISO
+      mockScheduledChange.value = scheduledChange(
+        'enterprise_monthly',
+        END_DATE_ISO
+      )
       renderComponent()
 
       expect(
@@ -581,8 +607,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {
-    mockScheduledPlanSlug.value = 'pro-annual'
-    mockChangeAt.value = END_DATE_ISO
+    mockScheduledChange.value = scheduledChange('pro-annual', END_DATE_ISO)
     renderComponent()
 
     expect(
@@ -592,8 +617,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('does not show an incomplete scheduled plan change', () => {
-    mockScheduledPlanSlug.value = 'missing-plan'
-    mockChangeAt.value = END_DATE_ISO
+    mockScheduledChange.value = scheduledChange('missing-plan', END_DATE_ISO)
     renderComponent()
 
     expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
@@ -818,8 +842,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
-    mockScheduledPlanSlug.value = 'pro-annual'
-    mockChangeAt.value = RENEWAL_DATE_ISO
+    mockScheduledChange.value = scheduledChange('pro-annual', RENEWAL_DATE_ISO)
     mockCanLeaveWorkspace.value = false
     renderComponent()
 

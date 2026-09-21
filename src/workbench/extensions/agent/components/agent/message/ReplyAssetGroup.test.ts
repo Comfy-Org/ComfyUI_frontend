@@ -8,7 +8,7 @@ import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
 const showDialog = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
 
@@ -19,7 +19,7 @@ const findServerPreviewUrl = vi.hoisted(() =>
 const findOutputAsset = vi.hoisted(() =>
   vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
 )
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   findServerPreviewUrl,
   findOutputAsset
@@ -28,7 +28,7 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
 const generateModelThumbnail = vi.hoisted(() =>
   vi.fn(async (): Promise<string | null> => null)
 )
-vi.mock('@/components/load3d/modelThumbnail', () => ({
+vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
   generateModelThumbnail
 }))
 

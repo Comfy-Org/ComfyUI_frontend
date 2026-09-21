@@ -6,7 +6,9 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
+}))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {

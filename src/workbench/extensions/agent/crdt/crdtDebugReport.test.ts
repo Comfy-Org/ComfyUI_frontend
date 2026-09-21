@@ -10,7 +10,7 @@ const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => getSystemStats(),
     getLogs: () => getLogs(),
@@ -19,11 +19,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({ extensions: [{ name: 'Comfy.TestExtension' }] })
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
 }))
 

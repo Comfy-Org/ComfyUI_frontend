@@ -27,42 +27,48 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
 let members: WorkspaceMember[]
 let workspaceType: 'personal' | 'team'
 
-vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
-  useTeamPlan: () => ({
-    maxSeats: mockMaxSeats,
-    hasMemberSeats: computed(
-      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
-    ),
-    isPlanLoading: mockIsPlanLoading
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      workspaceRole: ref('owner')
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useTeamPlan'),
+  () => ({
+    useTeamPlan: () => ({
+      maxSeats: mockMaxSeats,
+      hasMemberSeats: computed(
+        () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+      ),
+      isPlanLoading: mockIsPlanLoading
     })
-  }
-})
+  })
+)
 
-vi.mock(
-  '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { ref } = require('vue') as typeof import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        workspaceRole: ref('owner')
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'),
   () => ({
     default: { name: 'SubscriptionPanelContentWorkspace', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'),
   () => ({
     default: { name: 'MembersPanelContent', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'),
   () => ({
     default: {
       name: 'BillingStatusBanner',

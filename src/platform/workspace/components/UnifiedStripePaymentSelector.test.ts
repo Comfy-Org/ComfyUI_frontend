@@ -32,7 +32,7 @@ const stripeMocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@stripe/stripe-js/pure', () => ({
+vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: stripeMocks.loadStripe
 }))
 

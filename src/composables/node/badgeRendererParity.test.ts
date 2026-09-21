@@ -18,10 +18,10 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 
 const settings = vi.hoisted(() => ({ values: new Map<string, unknown>() }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: (key: string) => settings.values.get(key) })
 }))
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: () => ({
     completedActivePalette: {
       colors: {

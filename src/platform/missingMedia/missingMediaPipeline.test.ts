@@ -22,7 +22,7 @@ const { activeWorkflow } = vi.hoisted(() => {
 
 // The real store reaches authStore -> firebase setPersistence, which has no
 // config under vitest. Mirrors missingModelPipeline.test.ts.
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ workflow: { activeWorkflow } })
 }))
 

@@ -15,15 +15,18 @@ const hostWorkflow = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  const store = reactive({
-    activeWorkflow: null as FakeTab | null,
-    openWorkflows: [] as FakeTab[]
-  })
-  hostWorkflow.store = store
-  return { useWorkflowStore: () => store }
-})
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    const store = reactive({
+      activeWorkflow: null as FakeTab | null,
+      openWorkflows: [] as FakeTab[]
+    })
+    hostWorkflow.store = store
+    return { useWorkflowStore: () => store }
+  }
+)
 
 describe('registerWorkflowTabActivityTracker', () => {
   let stop: () => void

@@ -5,12 +5,12 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: {
     addError: (...args: unknown[]) => addError(...args),
     getInitConfiguration: () => getInitConfiguration()
@@ -49,11 +49,44 @@ describe('reportError', () => {
       })
     )
     expect(addError).toHaveBeenCalledWith(
-      error,
+      expect.objectContaining({
+        name: 'workspace_auth_gate_initialization_failure',
+        message: error.message
+      }),
       expect.objectContaining({
         error_type: 'workspace_auth_gate_initialization_failure'
       })
     )
+  })
+
+  it('names a Datadog copy without changing the original error', async () => {
+    const { reportError } = await loadReportError()
+    const cause = new Error('Connection closed')
+    const error = Object.freeze(
+      Object.assign(
+        new TypeError('Failed to fetch /assets/app-123.js', { cause }),
+        {
+          dd_fingerprint: 'asset_load',
+          dd_context: { asset: '/assets/app-123.js' }
+        }
+      )
+    )
+
+    reportError(error, { errorType: 'resource_load_error' })
+
+    const [datadogError] = addError.mock.calls[0]
+    expect(datadogError).toBeInstanceOf(Error)
+    expect(datadogError).not.toBe(error)
+    expect(datadogError).toMatchObject({
+      name: 'resource_load_error',
+      message: error.message,
+      stack: error.stack,
+      cause,
+      dd_fingerprint: error.dd_fingerprint,
+      dd_context: error.dd_context
+    })
+    expect(captureException.mock.calls[0][0]).toBe(error)
+    expect(error.name).toBe('TypeError')
   })
 
   it('still reports to Datadog when Sentry is inert', async () => {
@@ -78,7 +111,10 @@ describe('reportError', () => {
     flushErrorReports()
 
     expect(addError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'early' }),
+      expect.objectContaining({
+        name: 'resource_load_error',
+        message: 'early'
+      }),
       expect.objectContaining({ error_type: 'resource_load_error' })
     )
   })
@@ -118,7 +154,10 @@ describe('reportError', () => {
     reportError('just a string', { errorType: 'bootstrap_auth_wait_timeout' })
 
     expect(addError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'just a string' }),
+      expect.objectContaining({
+        name: 'bootstrap_auth_wait_timeout',
+        message: 'just a string'
+      }),
       expect.anything()
     )
   })
@@ -149,6 +188,62 @@ describe('reportError', () => {
     })
 
     expect(() => flushErrorReports()).not.toThrow()
+  })
+
+  it('writes the failure to the console so callers need no second sink', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const error = new Error('listener failed')
+
+    reportError(error, { errorType: 'canvas_layout_listener_failed' })
+
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
+      error
+    )
+  })
+
+  it('logs a warning-level report through console.warn', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+
+    reportError(new Error('cookie denied'), {
+      errorType: 'session_cookie_creation_failure',
+      level: 'warning'
+    })
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure`,
+      expect.any(Error)
+    )
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('skips the console line for a caller that already logged', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('[Assertion failed]: graph must exist'), {
+      errorType: 'invariant_assert',
+      logToConsole: false
+    })
+
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('logs a buffered report once, when it is raised', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(consoleError).toHaveBeenCalledOnce()
   })
 
   it('does not throw when a sink throws', async () => {

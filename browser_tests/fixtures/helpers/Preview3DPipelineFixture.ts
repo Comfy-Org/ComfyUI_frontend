@@ -219,15 +219,7 @@ export class Preview3DPipelineContext {
 
   async reloadPageAndWaitForAppShell(): Promise<void> {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager,
-      { timeout: 30_000 }
-    )
-    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
-      state: 'hidden',
-      timeout: 30_000
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.waitForAppReady()
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {

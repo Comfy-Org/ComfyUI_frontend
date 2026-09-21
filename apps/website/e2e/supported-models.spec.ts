@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Supported model FAQ @smoke', () => {
   test('renders the same questions as the FAQPage schema', async ({ page }) => {

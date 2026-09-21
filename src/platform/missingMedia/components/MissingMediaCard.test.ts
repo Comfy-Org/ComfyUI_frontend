@@ -8,11 +8,11 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import MissingMediaCard from './MissingMediaCard.vue'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: {} }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn()
 }))
 

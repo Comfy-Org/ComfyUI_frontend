@@ -77,45 +77,54 @@ const {
 
 const mockWorkflowStore = reactive(mockWorkflowStoreState)
 
-vi.mock('@/components/common/NoResultsPlaceholder.vue', () => ({
-  default: { name: 'NoResultsPlaceholder', template: '<div />' }
-}))
+vi.mock<unknown>(
+  import('@/components/common/NoResultsPlaceholder.vue'),
+  () => ({
+    default: { name: 'NoResultsPlaceholder', template: '<div />' }
+  })
+)
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template: '<div data-testid="search-input" />',
-    props: ['modelValue', 'placeholder'],
-    setup(
-      _props: { modelValue: string; placeholder?: string },
-      {
-        emit,
-        expose
-      }: {
-        emit: (event: 'update:modelValue' | 'search', value: string) => void
-        expose: (value: { focus: () => void }) => void
+vi.mock<unknown>(
+  import('@/components/ui/search-input/SearchInput.vue'),
+  () => ({
+    default: {
+      name: 'SearchInput',
+      template: '<div data-testid="search-input" />',
+      props: ['modelValue', 'placeholder'],
+      setup(
+        _props: { modelValue: string; placeholder?: string },
+        {
+          emit,
+          expose
+        }: {
+          emit: (event: 'update:modelValue' | 'search', value: string) => void
+          expose: (value: { focus: () => void }) => void
+        }
+      ) {
+        const focus = vi.fn()
+        expose({ focus })
+        registerSearchHandlers(
+          (query: string) => emit('update:modelValue', query),
+          (query: string) => emit('search', query)
+        )
+        return {}
       }
-    ) {
-      const focus = vi.fn()
-      expose({ focus })
-      registerSearchHandlers(
-        (query: string) => emit('update:modelValue', query),
-        (query: string) => emit('search', query)
-      )
-      return {}
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/components/sidebar/tabs/SidebarTopArea.vue', () => ({
-  default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/SidebarTopArea.vue'),
+  () => ({
+    default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
+  })
+)
 
-vi.mock('@/components/common/TextDivider.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TextDivider.vue'), () => ({
   default: { name: 'TextDivider', template: '<div />' }
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
     name: 'TreeExplorer',
     template: '<div data-testid="tree-explorer" />',
@@ -133,43 +142,52 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/TreeExplorerTreeNode.vue', () => ({
-  default: {
-    name: 'TreeExplorerTreeNode',
-    template:
-      '<div><slot name="before-label" :node="node" /><slot /><slot name="actions" :node="node" /></div>',
-    props: ['node']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/common/TreeExplorerTreeNode.vue'),
+  () => ({
+    default: {
+      name: 'TreeExplorerTreeNode',
+      template:
+        '<div><slot name="before-label" :node="node" /><slot /><slot name="actions" :node="node" /></div>',
+      props: ['node']
+    }
+  })
+)
 
-vi.mock('@/components/sidebar/tabs/SidebarTabTemplate.vue', () => ({
-  default: {
-    name: 'SidebarTabTemplate',
-    template:
-      '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/SidebarTabTemplate.vue'),
+  () => ({
+    default: {
+      name: 'SidebarTabTemplate',
+      template:
+        '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
+    }
+  })
+)
 
-vi.mock('@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue', () => ({
-  default: { name: 'WorkflowTreeLeaf', template: '<div />', props: ['node'] }
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'),
+  () => ({
+    default: { name: 'WorkflowTreeLeaf', template: '<div />', props: ['node'] }
+  })
+)
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
   default: { name: 'Button', template: '<button><slot /></button>' }
 }))
 
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: mockExpandNode,
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({ isAppMode: ref(false) })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.Workflow.WorkflowTabsPosition') return 'Sidebar'
@@ -178,21 +196,27 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => mockWorkflowService
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => mockWorkflowService
+  })
+)
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore,
-  useWorkflowBookmarkStore: () => ({ loadBookmarks: mockLoadBookmarks }),
-  ComfyWorkflow: class {
-    static basePath = 'workflows/'
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => mockWorkflowStore,
+    useWorkflowBookmarkStore: () => ({ loadBookmarks: mockLoadBookmarks }),
+    ComfyWorkflow: class {
+      static basePath = 'workflows/'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

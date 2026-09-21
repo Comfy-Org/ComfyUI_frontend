@@ -1,7 +1,9 @@
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
+import type { ListSavedPaymentMethodsResponse } from '@comfyorg/ingest-types'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { EMPTY_BILLING_PLANS } from '@e2e/fixtures/data/cloudWorkspace'
 import {
   createSubscriptionHelper,
   withUnsubscribed
@@ -43,6 +45,15 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
 
     await comfyPage.cloudAuth.mockAuth()
     await mockWorkspace(page, workspace('personal', 'owner'), [])
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill({ json: EMPTY_BILLING_PLANS })
+    )
+    await page.route('**/api/billing/payment-methods', (route) =>
+      route.fulfill({ json: [] satisfies ListSavedPaymentMethodsResponse })
+    )
     await page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,

@@ -16,18 +16,24 @@ const {
   mockFetchPendingInvites: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () =>
-    reactive({
-      workspaceName: ref('Acme Team'),
-      fetchMembers: mockFetchMembers,
-      fetchPendingInvites: mockFetchPendingInvites
-    })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () =>
+      reactive({
+        workspaceName: ref('Acme Team'),
+        fetchMembers: mockFetchMembers,
+        fetchPendingInvites: mockFetchPendingInvites
+      })
+  })
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
+  })
+)
 
 const BillingStatusBanner = defineComponent({
   setup() {

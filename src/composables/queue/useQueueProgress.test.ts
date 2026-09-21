@@ -1,6 +1,7 @@
 import { render } from '@testing-library/vue'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
@@ -8,9 +9,14 @@ import { formatPercent0 } from '@/utils/numberUtil'
 
 type ProgressValue = number | null
 
-const localeRef: Ref<string> = ref('en-US')
 const executionProgressRef: Ref<ProgressValue> = ref(null)
 const executingNodeProgressRef: Ref<ProgressValue> = ref(null)
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en-US',
+  messages: { 'en-US': {}, 'fr-FR': {} }
+})
 
 const createExecutionStoreMock = () => ({
   get executionProgress() {
@@ -21,25 +27,22 @@ const createExecutionStoreMock = () => ({
   }
 })
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    locale: localeRef
-  })
-}))
-
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => createExecutionStoreMock()
 }))
 
 const mountUseQueueProgress = () => {
   let composable: ReturnType<typeof useQueueProgress>
-  render({
-    template: '<div />',
-    setup() {
-      composable = useQueueProgress()
-      return {}
-    }
-  })
+  render(
+    {
+      template: '<div />',
+      setup() {
+        composable = useQueueProgress()
+        return {}
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
   return { composable: composable! }
 }
 
@@ -53,7 +56,7 @@ const setExecutingNodeProgress = (value?: number | null) => {
 
 describe('useQueueProgress', () => {
   beforeEach(() => {
-    localeRef.value = 'en-US'
+    i18n.global.locale.value = 'en-US'
     setExecutionProgress(null)
     setExecutingNodeProgress(null)
   })
@@ -96,10 +99,10 @@ describe('useQueueProgress', () => {
     expect(composable.totalPercent.value).toBe(expectedTotal)
     expect(composable.currentNodePercent.value).toBe(expectedNode)
     expect(composable.totalPercentFormatted.value).toBe(
-      formatPercent0(localeRef.value, expectedTotal)
+      formatPercent0(i18n.global.locale.value, expectedTotal)
     )
     expect(composable.currentNodePercentFormatted.value).toBe(
-      formatPercent0(localeRef.value, expectedNode)
+      formatPercent0(i18n.global.locale.value, expectedNode)
     )
   })
 
@@ -116,7 +119,7 @@ describe('useQueueProgress', () => {
       formatPercent0('en-US', composable.currentNodePercent.value)
     )
 
-    localeRef.value = 'fr-FR'
+    i18n.global.locale.value = 'fr-FR'
     await nextTick()
 
     expect(composable.totalPercentFormatted.value).toBe(
