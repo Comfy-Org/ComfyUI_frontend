@@ -1,0 +1,80 @@
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+
+// Explicit reattachment after navigation, not automatic restoration of the old
+// page-session binding. See https://github.com/Comfy-Org/ComfyUI_frontend/pull/16849
+test.describe(
+  'Agent saved-workflow reattachment',
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
+  () => {
+    test.use({ conversationCase: 'agent-rec-set-widget-existing' })
+
+    test('reloads a saved workflow and receives a fresh host edit after a new turn', async ({
+      agentConversation,
+      page
+    }, testInfo) => {
+      test.setTimeout(90_000)
+      await agentConversation.persistSavedWorkflow()
+      await agentConversation.runTurns()
+      const prompt = agentConversation.vueNodes
+        .getNodeLocator('6')
+        .getByRole('textbox')
+      await prompt.fill('saved before reload')
+      await agentConversation.topbar.saveWorkflowAs('Reload reattachment')
+      const before = agentConversation.subscribeCount()
+      const beforePath = testInfo.outputPath('before-reload.png')
+      await page.screenshot({ path: beforePath })
+      await testInfo.attach('before-reload', {
+        path: beforePath,
+        contentType: 'image/png'
+      })
+
+      const restoredContent = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          decodeURIComponent(new URL(response.url()).pathname) ===
+            '/api/userdata/workflows/Reload reattachment.json'
+      )
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
+      const picker = agentConversation.panel.getByRole('button', {
+        name: enMessages.agent.switchWorkflow
+      })
+      await picker.click()
+      await page
+        .getByRole('menuitemradio', {
+          name: 'Reload reattachment',
+          exact: true
+        })
+        .click()
+      await expect(picker).toHaveText('Reload reattachment')
+      expect((await restoredContent).ok()).toBe(true)
+      await expect(prompt).toHaveValue('saved before reload')
+      await agentConversation.sendPrompt()
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBeGreaterThan(before)
+
+      // This value was never saved or recorded. Only the post-reload live
+      // subscription can deliver it; a stale local canvas cannot satisfy it.
+      agentConversation.pushHostOps([
+        {
+          op: 'set_widget',
+          node_id: 6,
+          widget: 'text',
+          value: 'fresh host edit after reload'
+        }
+      ])
+      await expect(prompt).toHaveValue('fresh host edit after reload')
+      const afterPath = testInfo.outputPath('after-host-edit.png')
+      await page.screenshot({ path: afterPath })
+      await testInfo.attach('after-host-edit', {
+        path: afterPath,
+        contentType: 'image/png'
+      })
+    })
+  }
+)

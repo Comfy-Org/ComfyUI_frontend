@@ -3,7 +3,12 @@ import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  JobsListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
@@ -325,6 +330,42 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText('Unsaved Workflow')
   }
 
+  async persistSavedWorkflow(): Promise<void> {
+    let saved: { info: UserDataFullInfo; content: string } | undefined
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+      if (request.method() === 'POST' && path.startsWith('workflows/')) {
+        saved = {
+          info: {
+            path,
+            modified: Date.now(),
+            size: request.postDataBuffer()?.length ?? 0
+          },
+          content: request.postData() ?? '{}'
+        }
+      }
+      if (request.method() === 'GET' && saved) {
+        if (path === saved.info.path)
+          return route.fulfill({
+            contentType: 'application/json',
+            body: saved.content
+          })
+        if (url.searchParams.get('dir') === 'workflows')
+          return route.fulfill(
+            jsonRoute([
+              {
+                ...saved.info,
+                path: saved.info.path.slice('workflows/'.length)
+              }
+            ])
+          )
+      }
+      return route.fallback()
+    })
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
@@ -607,6 +648,19 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
+    const folders: ModelFolderInfo[] = []
+    await page.route('**/api/experiment/models', (route) =>
+      route.fulfill(jsonRoute(folders))
+    )
+    const jobs: JobsListResponse = {
+      jobs: [],
+      pagination: { offset: 0, limit: 200, total: 0, has_more: false }
+    }
+    await page.route('**/api/jobs?*', (route) => route.fulfill(jsonRoute(jobs)))
+    const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+    await page.route('**/api/agent/run-mode', (route) =>
+      route.fulfill(jsonRoute(runMode))
+    )
     await page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute({ threads: [] }))
     )
