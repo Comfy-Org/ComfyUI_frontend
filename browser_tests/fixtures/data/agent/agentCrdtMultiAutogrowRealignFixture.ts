@@ -2,14 +2,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
-/**
- * Fixture data for `agentCrdtMultiAutogrowRealign.spec.ts`: a node with two
- * independent COMFY_AUTOGROW_V3 groups (reduced from
- * MiniMaxH3ReferenceToVideo's `ref_images`/`ref_videos` shape), already
- * grown to two members each on a saved graph, plus two plain scalar widgets
- * the spec fills with sentinel values. See that spec file for the regression
- * this reproduces.
- */
+/** Fixture data for `agentCrdtMultiAutogrowRealign.spec.ts`. */
 
 export const NODE_TYPE = 'TestMultiAutogrowRealign'
 export const SOURCE_NODE_TYPE = 'TestMultiAutogrowRealignSource'
@@ -98,13 +91,6 @@ export const catalog: WidgetCatalog = {
   }
 }
 
-// The shape a saved MiniMax-style template reaches disk in: two autogrow
-// groups (ref_images, ref_videos) both already grown to two slots -- the
-// last of each still spare -- interleaved with two plain scalar widgets.
-// Every named link below must survive materialization landing on the input
-// it names, not on whichever input the document happens to have at that
-// position; `prompt`/`width` are plain (unlinked) widgets so the spec can
-// also prove a literal widget value survives under its own name.
 export const seed: WorkflowJSON = {
   nodes: [
     {
@@ -170,22 +156,15 @@ export const EXPECTED_TARGETS: readonly { linkId: number; name: string }[] = [
   { linkId: VID1_LINK, name: 'ref_videos.ref_video_1' }
 ]
 
-// The two socket-only slots each group keeps spare after its grown, linked
-// ones -- these render a real `.lg-slot--input` row this test can check is
-// NOT connected, unlike the widget-backed scalars. Named rather than
-// indexed: interleaved autogrow growth during `node.configure()` does not
-// preserve the document's input order in the live node (each group's
-// members bubble in as their connections are replayed), so a slot's final
-// live index cannot be assumed from its position in `seed` above -- only
-// its name is stable.
+// Named rather than indexed: interleaved autogrow growth during
+// `node.configure()` does not preserve `seed`'s input order in the live
+// node, so a slot's final live index cannot be assumed from its position
+// above -- only its name is stable.
 export const SPARE_SLOTS: readonly { name: string }[] = [
   { name: 'ref_images.ref_image_2' },
   { name: 'ref_videos.ref_video_2' }
 ]
 
-// Socket-only slots (the autogrow groups), named so the test can check the
-// connected DOM class a widget-backed scalar never renders, at whatever
-// live index growth actually left them.
 export const CONNECTED_SOCKET_SLOTS: readonly { name: string }[] = [
   { name: 'ref_images.ref_image_0' },
   { name: 'ref_images.ref_image_1' },
