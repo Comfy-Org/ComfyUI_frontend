@@ -6719,6 +6719,50 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
+  it('keeps every staged reference when the viewed graph is replaced while picking', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const subgraphNode = nestSelectionCanvasInSubgraph(state)
+    const subgraph = state.canvas.graph
+    state.nodes[1].id = toNodeId('shared')
+
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+
+    const rootNode: LGraphNode = createMockLGraphNode({
+      isNodeFake: true,
+      id: 'shared',
+      title: 'Root node',
+      boundingRect: {}
+    })
+    appMock.graph.nodes = [subgraphNode, rootNode]
+    showRootGraph(state, [rootNode])
+    state.selectedItems.clear()
+    state.selectedItems.add(rootNode)
+    canvasStore.updateSelectedItems()
+    await nextTick()
+    await enterNodeSelectionMode()
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+
+    canvasStore.currentGraph = fromPartial({
+      ...subgraph,
+      id: SUBGRAPH_UUID,
+      isRootGraph: false
+    })
+    state.selectedItems.clear()
+    canvasStore.updateSelectedItems()
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
   it('restores an off-view subgraph context chip without a focus action', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
