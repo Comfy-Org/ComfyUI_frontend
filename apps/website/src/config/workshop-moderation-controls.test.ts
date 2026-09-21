@@ -5,13 +5,9 @@ import contractsJson from '../content/workshop-router-contracts.json'
 import { workshopContractRecordSchema } from './workshop-contract'
 import { workshopModels } from './workshop-browse-content'
 import { initialWorkshopPageState } from './workshop-page-state'
+import { prepareWorkshopRouterInput } from './workshop-request'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
-/**
- * Switches that turn a provider's own content checks up or down. Relaxing them
- * is a policy call, not a reader's preference, so the catalogue asks nobody and
- * sends nothing: every provider applies its own default.
- */
 const MODERATION_CONTROLS = [
   'contentModeration',
   'enable_copyright_detection',
@@ -26,11 +22,18 @@ const MODERATION_CONTROLS = [
 ]
 
 const contracts = z.array(workshopContractRecordSchema).parse(contractsJson)
+const jsonObject = z.record(z.string(), z.json())
 
 const states = workshopModels.flatMap((model) => {
   const detail = getRouterWorkshopModelDetail(model.slug)
   return detail ? [[model.slug, initialWorkshopPageState(detail)] as const] : []
 })
+
+function contractFor(id: string) {
+  const contract = contracts.find((entry) => entry.id === id)
+  if (!contract) throw new Error(`Missing contract: ${id}`)
+  return contract
+}
 
 describe('provider moderation controls', () => {
   it('reaches no model form', () => {
@@ -43,7 +46,7 @@ describe('provider moderation controls', () => {
     expect(asked).toEqual([])
   })
 
-  it('sends no value of its own', () => {
+  it('seeds no editable moderation value', () => {
     const sent = states.flatMap(([slug, state]) =>
       Object.keys(state.values)
         .filter((name) => MODERATION_CONTROLS.includes(name))
@@ -95,10 +98,47 @@ describe('provider moderation controls', () => {
   ] as const)(
     'keeps sending %s its curated safe value',
     ([id, name, value]) => {
-      const contract = contracts.find((entry) => entry.id === id)
-      if (!contract) throw new Error(`Missing contract: ${id}`)
-
+      const contract = contractFor(id)
       expect(contract.defaultInput).toMatchObject({ [name]: value })
     }
   )
+
+  it.for([
+    ['bfl/flux-2-max', 'safety_tolerance'],
+    ['bria/fibo', 'prompt_content_moderation'],
+    ['fal/h3-max', 'enable_safety_checker']
+  ] as const)('leaves %s at its endpoint default', ([id, name]) => {
+    expect(contractFor(id).defaultInput).not.toHaveProperty(name)
+  })
+
+  it('enforces fixed checks in prepared requests', async () => {
+    const contract = contractFor('bria/image-edit-expand')
+    const example = jsonObject.parse(contract.inputSchema.example)
+    const signal = new AbortController().signal
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        { request_body: JSON.stringify(example) },
+        signal
+      )
+    ).resolves.toMatchObject({
+      prompt_content_moderation: true,
+      visual_input_content_moderation: true,
+      visual_output_content_moderation: true
+    })
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        {
+          request_body: JSON.stringify({
+            ...example,
+            visual_output_content_moderation: false
+          })
+        },
+        signal
+      )
+    ).rejects.toMatchObject({ reason: 'validation' })
+  })
 })
