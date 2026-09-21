@@ -2,12 +2,11 @@ import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type {
   AssistantMessage,
-  RunApprovalPart,
   TextPart,
   ThinkingPart,
   ToolPart
 } from './agentMessageParts'
-import { snapshotMessage } from './agentMessageParts'
+import { snapshotMessage, toAskPart } from './agentMessageParts'
 
 export type AgentChatEvent = Extract<
   AgentWsEvent,
@@ -127,24 +126,20 @@ export function createAgentEventTransport(
         break
       }
       case 'agent_ask': {
-        if (event.data.kind !== 'run_approval') return
+        const part = toAskPart(event.data)
+        if (!part) return
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
-        const part: RunApprovalPart = {
-          type: 'runApproval',
-          askId: event.data.ask_id,
-          workflowId: event.data.context?.workflow_id || undefined,
-          workflowName: event.data.context?.workflow_name || undefined
-        }
         message.parts.push(part)
         break
       }
       case 'agent_ask_resolved':
         message.parts = message.parts.filter(
           (part) =>
-            part.type !== 'runApproval' || part.askId !== event.data.ask_id
+            (part.type !== 'runApproval' && part.type !== 'permissionAsk') ||
+            part.askId !== event.data.ask_id
         )
         break
       case 'agent_message_delta':

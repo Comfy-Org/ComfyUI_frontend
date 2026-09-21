@@ -1,6 +1,7 @@
 import type {
   NoticePart,
   PaywallPart,
+  PermissionAskPart,
   RunApprovalPart,
   TabLinkPart,
   TextPart
@@ -13,3 +14,4 @@ export type AgentMessageGroup =
   | { kind: 'trace' }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
   | { kind: 'runApproval'; part: RunApprovalPart }
+  | { kind: 'permissionAsk'; part: PermissionAskPart }

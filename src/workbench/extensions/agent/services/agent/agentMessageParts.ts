@@ -1,4 +1,4 @@
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -52,6 +52,46 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
+export interface PermissionAskPart {
+  type: 'permissionAsk'
+  askId: string
+  requestId?: string
+  targetKind: 'path' | 'host'
+  target: string
+  reason?: string
+}
+
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
+
+export type AgentAskSelection = 'run' | 'cancel' | 'allow' | 'deny'
+
+export function toAskPart({
+  kind,
+  ask_id: askId,
+  context
+}: Pick<PendingAsk, 'kind' | 'ask_id' | 'context'>):
+  | RunApprovalPart
+  | PermissionAskPart
+  | undefined {
+  if (kind === 'run_approval')
+    return {
+      type: 'runApproval',
+      askId,
+      workflowId: context?.workflow_id || undefined,
+      workflowName: context?.workflow_name || undefined
+    }
+  if (kind === 'permission' && context?.target_kind && context.target)
+    return {
+      type: 'permissionAsk',
+      askId,
+      requestId: context.request_id || undefined,
+      targetKind: context.target_kind,
+      target: context.target,
+      reason: context.reason?.trim() || undefined
+    }
+  return undefined
+}
+
 export interface PaywallPart {
   type: 'paywall'
   message?: string
@@ -66,6 +106,7 @@ export type MessagePart =
   | NoticePart
   | TabLinkPart
   | RunApprovalPart
+  | PermissionAskPart
   | PaywallPart
 
 export interface AssistantMessage {

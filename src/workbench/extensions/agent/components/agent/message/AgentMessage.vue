@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   ActivityPart,
+  AgentAskSelection,
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -33,7 +34,7 @@ const { t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, selection: AgentAskSelection]
   openWorkflow: [workflowId: string, workflowName?: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -63,6 +64,8 @@ const groups = computed<Group[]>(() => {
       else out.push({ kind: 'tabLinks', parts: [part] })
     } else if (part.type === 'runApproval') {
       out.push({ kind: 'runApproval', part })
+    } else if (part.type === 'permissionAsk') {
+      out.push({ kind: 'permissionAsk', part })
     } else if (part.type === 'paywall') {
       out.push({ kind: 'paywall', part })
     } else {
@@ -96,6 +99,7 @@ const composing = computed(
     message.parts.every(
       (part) =>
         part.type !== 'runApproval' &&
+        part.type !== 'permissionAsk' &&
         (!('state' in part) || part.state === 'done')
     )
 )

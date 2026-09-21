@@ -13,6 +13,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type { AgentAskSelection } from '../../services/agent/agentMessageParts'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
@@ -34,7 +35,7 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, selection: AgentAskSelection]
   openWorkflow: [workflowId: string, workflowName?: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
@@ -117,7 +118,7 @@ watch(
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
+                (askId: string, selection: AgentAskSelection) =>
                   emit('answerAsk', askId, selection)
               "
               @open-workflow="

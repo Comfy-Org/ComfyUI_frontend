@@ -14,6 +14,7 @@ import {
   toTurnId,
   zAgentAdmissionError
 } from '../../schemas/agentApiSchema'
+import type { AgentAskSelection } from '../../services/agent/agentMessageParts'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -486,7 +487,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    selection: 'run' | 'cancel'
+    selection: AgentAskSelection
   ): Promise<void> {
     const currentThreadId = conversationStore.threadId
     const messageId = conversationStore.activeTurnId

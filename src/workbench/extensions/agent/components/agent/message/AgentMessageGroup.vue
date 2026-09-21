@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ActivityPart } from '../../../services/agent/agentMessageParts'
+import type {
+  ActivityPart,
+  AgentAskSelection
+} from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
@@ -9,6 +12,7 @@ import type {
 import ActivityTrace from './ActivityTrace.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
+import PermissionAskCard from './PermissionAskCard.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import type { AgentMessageGroup } from './agentMessageGroup'
@@ -23,7 +27,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, selection: 'run' | 'cancel']
+  answer: [askId: string, selection: AgentAskSelection]
   openWorkflow: [workflowId: string, workflowName?: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -57,6 +61,12 @@ const emit = defineEmits<{
       (workflowId, workflowName) =>
         emit('openWorkflow', workflowId, workflowName)
     "
+  />
+  <PermissionAskCard
+    v-else-if="group.kind === 'permissionAsk'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="(askId, selection) => emit('answer', askId, selection)"
   />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
