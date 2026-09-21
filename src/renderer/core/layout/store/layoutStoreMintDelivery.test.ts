@@ -265,7 +265,13 @@ describe('mint ports against the real layout store delivery', () => {
     ])
   })
 
-  it('re-mints add_node for an id a graph-load teardown clear removed', async () => {
+  it('does not re-mint add_node for an id an incidental graph-load teardown clear removed (id_collision guard)', async () => {
+    // A graph-load teardown clear bracketed by onBeforeGraphLoad/
+    // onAfterGraphConfigure but never wrapped in runIntentionalClear is not
+    // a human clear - it must not forget the bound root's dedupe bucket for
+    // a node this port already relayed, or a later replay re-mints it
+    // (id_collision). Mirrors the incidental-clear regression in
+    // layoutMintPort.test.ts.
     graphNodes.set('5', {
       id: toNodeId('5'),
       serialize: () => ({ id: 5, type: 'TestNode' })
@@ -290,15 +296,7 @@ describe('mint ports against the real layout store delivery', () => {
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     await realDelivery()
 
-    expect(minted).toEqual([
-      {
-        op: 'add_node',
-        node_id: toNodeId('5'),
-        class_type: 'TestNode',
-        pos: [10, 20],
-        node: { id: 5, type: 'TestNode' }
-      }
-    ])
+    expect(minted).toEqual([])
   })
 
   it('surfaces a real bare disconnect as divergence after the sweep', async () => {
