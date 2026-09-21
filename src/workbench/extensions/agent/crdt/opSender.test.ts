@@ -596,6 +596,29 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
+  it('reports a throw that only starts on a retry, after the transport first refused', () => {
+    transportUp = false
+
+    sender.enqueue([addNode(1)])
+
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+
+    transportThrows = true
+    vi.advanceTimersByTime(1_500)
+
+    expect(sent).toHaveLength(0)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    transportThrows = false
+    transportUp = true
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
